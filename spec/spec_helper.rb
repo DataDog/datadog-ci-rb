@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "ddtrace"
 require "datadog/ci"
 
 RSpec.configure do |config|
