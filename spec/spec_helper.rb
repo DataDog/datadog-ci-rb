@@ -10,6 +10,9 @@ require "support/log_helpers"
 require "support/tracer_helpers"
 require "support/span_helpers"
 require "support/test_helpers"
+require 'support/platform_helpers'
+
+require 'climate_control'
 
 RSpec.configure do |config|
   config.include ConfigurationHelpers

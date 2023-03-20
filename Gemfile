@@ -8,6 +8,8 @@ gemspec
 gem "pry"
 gem "rake"
 gem "rspec"
+gem "os"
+gem 'climate_control'
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "rubocop", require: false

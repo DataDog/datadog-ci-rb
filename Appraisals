@@ -19,7 +19,7 @@ end
 #     Gem::Version.new(RUBY_VERSION) < Gem::Version.new(full_version).bump
 # end
 
-alias_method :original_appraise, :appraise
+alias original_appraise appraise
 
 REMOVED_GEMS = {
   check: [

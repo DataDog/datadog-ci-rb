@@ -2,6 +2,7 @@
 
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
+require 'pry'
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -12,7 +13,13 @@ RuboCop::RakeTask.new
 desc "Run RSpec"
 # rubocop:disable Metrics/BlockLength
 namespace :spec do
-  task all: [:cucumber, :rspec]
+  task all: [:main, :cucumber, :rspec]
+
+  RSpec::Core::RakeTask.new(:main) do |t, args|
+    t.pattern = 'spec/**/*_spec.rb'
+    t.exclude_pattern = 'spec/**/{contrib}/**/*_spec.rb,'
+    t.rspec_opts = args.to_a.join(' ')
+  end
 
   # Datadog CI integrations
   [
@@ -43,7 +50,7 @@ def declare(rubies_to_command)
     "#{RUBY_ENGINE}-#{RUBY_VERSION}" # For Ruby < 2.3
   end
 
-  command.sub!(/^bundle exec appraisal /, "bundle exec appraisal #{ruby_runtime}-")
+  command = command.sub(/^bundle exec appraisal /, "bundle exec appraisal #{ruby_runtime}-")
 
   if total_executors && current_executor && total_executors > 1
     @execution_count ||= 0
@@ -56,11 +63,11 @@ end
 
 desc "CI task; it runs all tests for current version of Ruby"
 task :ci do
+  declare '✅ 2.1 / ✅ 2.2 / ✅ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby' => 'bundle exec rake spec:main'
   declare "✅ 2.1 / ✅ 2.2 / ✅ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal rspec-3 rake spec:rspec"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-3 rake spec:cucumber"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-4 rake spec:cucumber"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-5 rake spec:cucumber"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-6 rake spec:cucumber"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-7 rake spec:cucumber"
-  declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-8 rake spec:cucumber"
 end

@@ -2,10 +2,6 @@
 
 RSpec.describe Datadog::CI do
   it "has a version number" do
-    expect(Datadog::Ci::VERSION).not_to be nil
-  end
-
-  it "does something useful" do
-    expect(false).to eq(true)
+    expect(Datadog::CI::VERSION).to eq("0.1.0")
   end
 end
