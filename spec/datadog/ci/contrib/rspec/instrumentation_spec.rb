@@ -32,7 +32,9 @@ RSpec.describe "RSpec hooks" do
   it "creates span for example" do
     spec = with_new_rspec_environment do
       RSpec.describe "some test" do
-        it "foo" do; end
+        it "foo" do
+          # DO NOTHING
+        end
       end.tap(&:run)
     end
 
@@ -53,7 +55,7 @@ RSpec.describe "RSpec hooks" do
 
   it "creates correct span on shared examples" do
     spec = with_new_rspec_environment do
-      require "spec/datadog/ci/contrib/rspec/some_shared_examples"
+      require_relative "./some_shared_examples"
       spec = RSpec.describe "some test" do
         include_examples "Testing shared examples"
       end.tap(&:run)
@@ -67,7 +69,9 @@ RSpec.describe "RSpec hooks" do
     with_new_rspec_environment do
       RSpec.describe "many tests" do
         num_examples.times do |n|
-          it n do; end
+          it n do
+            # DO NOTHING
+          end
         end
       end.run
     end
@@ -98,7 +102,9 @@ RSpec.describe "RSpec hooks" do
                       context "8" do
                         context "9" do
                           context "10" do
-                            it "foo" do; end
+                            it "foo" do
+                              # DO NOTHING
+                            end
                           end
                         end
                       end
@@ -167,7 +173,9 @@ RSpec.describe "RSpec hooks" do
             raise "failure"
           end
 
-          it "foo" do; end
+          it "foo" do
+            # DO NOTHING
+          end
         end.run
       end
 
@@ -181,7 +189,9 @@ RSpec.describe "RSpec hooks" do
             raise "failure"
           end
 
-          it "foo" do; end
+          it "foo" do
+            # DO NOTHING
+          end
         end.run
       end
 
@@ -195,7 +205,9 @@ RSpec.describe "RSpec hooks" do
             raise "failure"
           end
 
-          it "foo" do; end
+          it "foo" do
+            # DO NOTHING
+          end
         end.run
       end
 

@@ -5,6 +5,7 @@ source "https://rubygems.org"
 gem "pry"
 gem "rake"
 gem "rspec"
+gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "rubocop", require: false
 gem "standard"
@@ -12,7 +13,6 @@ gem "appraisal"
 gem "cucumber", "~> 7"
 
 group :check do
-
 end
 
 gemspec path: "../"

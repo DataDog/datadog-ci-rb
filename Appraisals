@@ -1,14 +1,14 @@
-lib = File.expand_path('../lib', __FILE__)
+lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 # require 'ddtrace/version'
 
 module DisableBundleCheck
   def check_command
-    ['bundle', 'exec', 'false']
+    ["bundle", "exec", "false"]
   end
 end
 
-if ['true', 'y', 'yes', '1'].include?(ENV['APPRAISAL_SKIP_BUNDLE_CHECK'])
+if ["true", "y", "yes", "1"].include?(ENV["APPRAISAL_SKIP_BUNDLE_CHECK"])
   ::Appraisal::Appraisal.prepend(DisableBundleCheck)
 end
 
@@ -19,18 +19,18 @@ end
 #     Gem::Version.new(RUBY_VERSION) < Gem::Version.new(full_version).bump
 # end
 
-alias original_appraise appraise
+alias_method :original_appraise, :appraise
 
 REMOVED_GEMS = {
-  :check => [
-    'rbs',
-    'steep',
-  ],
+  check: [
+    "rbs",
+    "steep"
+  ]
 }
 
 def appraise(group, &block)
   # Specify the environment variable APPRAISAL_GROUP to load only a specific appraisal group.
-  if ENV['APPRAISAL_GROUP'].nil? || ENV['APPRAISAL_GROUP'] == group
+  if ENV["APPRAISAL_GROUP"].nil? || ENV["APPRAISAL_GROUP"] == group
     original_appraise(group) do
       instance_exec(&block)
 
@@ -48,7 +48,7 @@ end
 
 def self.gem_cucumber(version)
   appraise "cucumber#{version}" do
-    gem 'cucumber', "~>#{version}"
+    gem "cucumber", "~>#{version}"
     # Locks the profiler's protobuf dependency to avoid conflict with cucumber.
     # Without this, we can get this error:
     # > TypeError:
@@ -59,29 +59,30 @@ def self.gem_cucumber(version)
     # This only affects: 4.0.0 >= cucumber > 7.0.0.
     #
     # DEV: Ideally, the profiler would not be loaded when running cucumber tests as it is unrelated.
-    if Gem::Version.new(version) >= Gem::Version.new('4.0.0') &&
-      Gem::Version.new(version) < Gem::Version.new('7.0.0')
-      gem 'google-protobuf', '3.10.1' if RUBY_PLATFORM != 'java'
-      gem 'protobuf-cucumber', '3.10.8'
+    if Gem::Version.new(version) >= Gem::Version.new("4.0.0") &&
+        Gem::Version.new(version) < Gem::Version.new("7.0.0")
+      gem "google-protobuf", "3.10.1" if RUBY_PLATFORM != "java"
+      gem "protobuf-cucumber", "3.10.8"
     end
   end
 end
 
-(3..8).each do |n|
+# WIP: Support cucumber 8
+(3..7).each do |n|
   appraise "cucumber-#{n}" do
-    gem 'cucumber', "~> #{n}"
+    gem "cucumber", "~> #{n}"
   end
 end
 
-appraise 'rspec-3' do
-  gem 'rspec', "~> 3"
+appraise "rspec-3" do
+  gem "rspec", "~> 3"
 end
 
 ruby_runtime = if defined?(RUBY_ENGINE_VERSION)
-                 "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
-               else
-                 "#{RUBY_ENGINE}-#{RUBY_VERSION}" # For Ruby < 2.3
-               end
+  "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
+else
+  "#{RUBY_ENGINE}-#{RUBY_VERSION}" # For Ruby < 2.3
+end
 
 appraisals.each do |appraisal|
   appraisal.name.prepend("#{ruby_runtime}-")

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Datadog::Ci do
+RSpec.describe Datadog::CI do
   it "has a version number" do
     expect(Datadog::Ci::VERSION).not_to be nil
   end
