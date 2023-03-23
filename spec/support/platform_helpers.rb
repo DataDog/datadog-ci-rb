@@ -1,4 +1,4 @@
-require 'os'
+require "os"
 
 module PlatformHelpers
   module_function
@@ -6,15 +6,15 @@ module PlatformHelpers
   # Ruby runtime engines
 
   def mri?
-    RUBY_ENGINE == 'ruby'.freeze
+    RUBY_ENGINE == "ruby".freeze
   end
 
   def jruby?
-    RUBY_ENGINE == 'jruby'.freeze
+    RUBY_ENGINE == "jruby".freeze
   end
 
   def truffleruby?
-    RUBY_ENGINE == 'truffleruby'.freeze
+    RUBY_ENGINE == "truffleruby".freeze
   end
 
   def engine_version
@@ -35,7 +35,7 @@ module PlatformHelpers
   # Environment
 
   def ci?
-    ENV.key?('CI')
+    ENV.key?("CI")
   end
 
   # Feature support

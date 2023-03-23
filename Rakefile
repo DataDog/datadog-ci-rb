@@ -2,7 +2,6 @@
 
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
-require 'pry'
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -10,15 +9,17 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
+Dir.glob("tasks/*.rake").each { |r| import r }
+
 desc "Run RSpec"
 # rubocop:disable Metrics/BlockLength
 namespace :spec do
   task all: [:main, :cucumber, :rspec]
 
   RSpec::Core::RakeTask.new(:main) do |t, args|
-    t.pattern = 'spec/**/*_spec.rb'
-    t.exclude_pattern = 'spec/**/{contrib}/**/*_spec.rb,'
-    t.rspec_opts = args.to_a.join(' ')
+    t.pattern = "spec/**/*_spec.rb"
+    t.exclude_pattern = "spec/**/{contrib}/**/*_spec.rb,"
+    t.rspec_opts = args.to_a.join(" ")
   end
 
   # Datadog CI integrations
@@ -61,13 +62,27 @@ def declare(rubies_to_command)
   end
 end
 
+# | Cucumber | Ruby required |
+# |----------|---------------|
+# | 3.x      |   2.2+        |
+# | 4.x      |   2.3+        |
+# | 5.x      |   2.5+        |
+# | 6.x      |   2.5+        |
+# | 7.x      |   2.5+        |
+# | 8.x      |   2.6+        |
+
 desc "CI task; it runs all tests for current version of Ruby"
 task :ci do
-  declare '✅ 2.1 / ✅ 2.2 / ✅ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby' => 'bundle exec rake spec:main'
+  declare "✅ 2.1 / ✅ 2.2 / ✅ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec rake spec:main"
+
+  # RSpec
   declare "✅ 2.1 / ✅ 2.2 / ✅ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal rspec-3 rake spec:rspec"
+
+  # Cucumber
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-3 rake spec:cucumber"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-4 rake spec:cucumber"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-5 rake spec:cucumber"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-6 rake spec:cucumber"
   declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-7 rake spec:cucumber"
+  # declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ❌ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-8 rake spec:cucumber"
 end
