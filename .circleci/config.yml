@@ -28,7 +28,8 @@ test_containers:
     resource_class: <<parameters.resource_class_to_use>>
   - &container_base_environment
     BUNDLE_GEMFILE: /app/Gemfile
-    JRUBY_OPTS: --dev # Faster JVM startup: https://github.com/jruby/jruby/wiki/Improving-startup-time#use-the---dev-flag
+    # Faster JVM startup: https://github.com/jruby/jruby/wiki/Improving-startup-time#use-the---dev-flag
+    JRUBY_OPTS: --dev 
     # Override number of concurrent compiles in grpc gem, see https://github.com/grpc/grpc/pull/28250 and https://github.com/DataDog/dd-trace-rb/issues/1791
     # If you see gem installation failing with "Killed" on CircleCI and `gem install --platform ruby grpc` reproduces the
     # issue when you connect to the testing container via ssh, then try lowering this file a notch.
@@ -47,7 +48,7 @@ test_containers:
     <<: *job_parameters
     docker:
       - *container_base
-    - &container_agent
+      - &container_agent
     image: datadog/agent
     environment:
       - DD_APM_ENABLED=true
