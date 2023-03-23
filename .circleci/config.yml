@@ -48,7 +48,7 @@ test_containers:
     <<: *job_parameters
     docker:
       - *container_base
-      - &container_agent
+  - &container_agent
     image: datadog/agent
     environment:
       - DD_APM_ENABLED=true
@@ -154,8 +154,8 @@ filters_only_release_tags: &filters_only_release_tags
 
 orbs:
   orb:
-    orbs:
-      codecov: codecov/codecov@3.2.3
+    # orbs:
+    #   codecov: codecov/codecov@3.2.3
     jobs:
       build:
         <<: *test_job_default
@@ -283,7 +283,7 @@ orbs:
         docker:
           - image: circleci/buildpack-deps:stretch
 
-jobs:
+# jobs:
   # "deploy release":
   #   <<: *job_defaults
   #   docker:
