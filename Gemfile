@@ -9,7 +9,13 @@ gem "pry"
 gem "rake"
 gem "rspec"
 gem "os"
-gem "climate_control"
+
+if RUBY_VERSION >= "2.5"
+  gem "climate_control"
+else
+  gem 'climate_control', '~> 0.2.0'
+end
+
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "rubocop", require: false

@@ -6,7 +6,7 @@ gem "pry"
 gem "rake"
 gem "rspec", "~> 3"
 gem "os"
-gem "climate_control"
+gem "climate_control", "~> 0.2.0"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "rubocop", require: false
