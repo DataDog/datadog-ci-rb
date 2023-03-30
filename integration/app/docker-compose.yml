@@ -10,17 +10,15 @@ services:
     environment:
       - BUNDLE_GEMFILE=/app/Gemfile
       - DD_AGENT_HOST=ddagent
-      - DD_TRACE_DEBUG=true
-      - LOCAL_GEM_PATH=${LOCAL_GEM_PATH}"
+      # - DD_TRACE_DEBUG=true
     expose:
       - "80"
     stdin_open: true
     tty: true
     volumes:
       - .:/app
-      - ./data/app:/data/app
       - bundle:/usr/local/bundle
-      - ../..:${LOCAL_GEM_PATH}"
+      - ../..:/vendor/datadog-ci
   ddagent:
     image: datadog/agent
     environment:

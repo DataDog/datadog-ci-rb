@@ -4,8 +4,7 @@ FROM ${BASE_IMAGE}
 
 WORKDIR /app
 COPY . .
-RUN bundle install
 
 # Set entrypoint
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD [ "pwd" ]
+CMD ["bundle exec rake test"]

@@ -1,3 +1,2 @@
 export DD_API_KEY==<Your Datadog API key here>
 export DD_HOSTNAME=$(hostname)
-export LOCAL_GEM_PATH=/vendor/datadog-ci

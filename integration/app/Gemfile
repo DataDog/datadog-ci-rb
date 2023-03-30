@@ -4,5 +4,6 @@ source "https://rubygems.org"
 
 gem "pry"
 gem "rspec"
+gem "rake"
 gem "cucumber", "~> 7"
-gem "datadog-ci", path: ENV.fetch("LOCAL_GEM_PATH")
+gem "datadog-ci", path: "/vendor/datadog-ci"
