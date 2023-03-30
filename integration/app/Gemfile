@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "pry"
+gem "rspec"
+gem "datadog-ci", path: ENV.fetch("LOCAL_GEM_PATH")
