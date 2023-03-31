@@ -1,0 +1,10 @@
+require "rspec/core/rake_task"
+require "cucumber"
+require "cucumber/rake/task"
+
+Cucumber::Rake::Task.new(:features)
+RSpec::Core::RakeTask.new(:unit)
+
+task default: %w[test]
+
+task test: [:unit, :features]

@@ -1,0 +1,37 @@
+version: '3.4'
+services:
+  app:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ghcr.io/datadog/dd-trace-rb/ruby:3.0.4-dd
+    depends_on:
+      - ddagent
+    environment:
+      - BUNDLE_GEMFILE=/app/Gemfile
+      - DD_AGENT_HOST=ddagent
+      # - DD_TRACE_DEBUG=true
+    expose:
+      - "80"
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/app
+      - bundle:/usr/local/bundle
+      - ../..:/vendor/datadog-ci
+  ddagent:
+    image: datadog/agent
+    environment:
+      - DD_APM_ENABLED=true
+      - DD_PROCESS_AGENT_ENABLED=false
+      - DD_BIND_HOST=0.0.0.0
+      - DD_API_KEY
+      - "DD_HOSTNAME=${DD_HOSTNAME}"
+      - LOG_LEVEL=DEBUG
+      - DD_LOGS_STDOUT=yes
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    expose:
+      - "8125/udp"
+      - "8126"
+volumes:
+  bundle:
