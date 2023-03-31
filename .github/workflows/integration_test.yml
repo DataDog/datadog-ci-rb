@@ -6,6 +6,12 @@ on:
 jobs:
   build_and_run_integration_test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby_image:
+          - ruby:3.0
+          - ruby:3.1
+          - ruby:3.2
     steps:
       - name: Checkout datadog-ci
         uses: actions/checkout@v3
@@ -16,4 +22,4 @@ jobs:
       - name: Run test
         working-directory: integration/app
         run: |
-          docker compose run --rm --no-deps app "bundle install && bundle exec rake test"
+          BASE_IMAGE=${{matrix.ruby_image}} docker compose run --rm --no-deps app "bundle install && bundle exec rake test"

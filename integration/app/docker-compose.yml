@@ -3,6 +3,8 @@ services:
   app:
     build:
       context: .
+      args:
+        BASE_IMAGE: ${BASE_IMAGE}
     depends_on:
       - ddagent
     environment:
