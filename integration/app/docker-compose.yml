@@ -3,8 +3,6 @@ services:
   app:
     build:
       context: .
-      args:
-        BASE_IMAGE: ghcr.io/datadog/dd-trace-rb/ruby:3.0.4-dd
     depends_on:
       - ddagent
     environment:
