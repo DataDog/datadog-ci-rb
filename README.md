@@ -1,22 +1,62 @@
-# Datadog::Ci
+# Datadog::CI
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/datadog/ci`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+Datadog's Ruby Library for instrumenting your test and continuous integration pipeline. Checkout to learn more at our [official website](https://docs.datadoghq.com/continuous_integration/tests/ruby/?tab=azurepipelines).
 
 ## Installation
 
-Install the gem and add to the application's Gemfile by executing:
-
-    $ bundle add datadog-ci
-
-If bundler is not being used to manage dependencies, install the gem by executing:
-
-    $ gem install datadog-ci
+Add to your Gemfile.
+```
+group :test do
+  gem "datadog-ci"
+end
+```
 
 ## Usage
 
-TODO: Write usage instructions here
+#### Cucumber
+
+Activate `Cucumber` integration with configuration
+
+```
+Datadog.configure do |c|
+  # Only activates test instrumentation on CI
+  c.tracing.enabled = (ENV["DD_ENV"] == "ci")
+
+  # Configures the tracer to ensure results delivery
+  c.ci.enabled = true
+
+  # The name of the service or library under test
+  c.service = 'my-ruby-app'
+
+  # Enables the Cucumber instrumentation
+  c.ci.instrument :cucumber
+end
+
+```
+
+#### RSpec
+
+To activate `RSpec` integration, add this to the `spec_helper.rb` file:
+
+```
+require 'rspec'
+require 'datadog/ci'
+
+Datadog.configure do |c|
+  # Only activates test instrumentation on CI
+  c.tracing.enabled = (ENV["DD_ENV"] == "ci")
+
+  # Configures the tracer to ensure results delivery
+  c.ci.enabled = true
+
+  # The name of the service or library under test
+  c.service = 'my-ruby-app'
+
+  # Enables the RSpec instrumentation
+  c.ci.instrument :rspec
+end
+
+```
 
 ## Development
 
@@ -26,12 +66,9 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/datadog-ci. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/datadog-ci/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/Datadog/datadog-ci. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/Datadog/datadog-ci/blob/main/CODE_OF_CONDUCT.md).
 
-## License
-
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 ## Code of Conduct
 
-Everyone interacting in the Datadog::Ci project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/datadog-ci/blob/main/CODE_OF_CONDUCT.md).
+Everyone interacting in the `Datadog::CI` project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/Datadog/datadog-ci/blob/main/CODE_OF_CONDUCT.md).
