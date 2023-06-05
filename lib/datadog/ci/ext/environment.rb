@@ -400,18 +400,18 @@ module Datadog
         end
 
         def extract_codefresh(env)
-          branch, tag = branch_or_tag(env['CF_BRANCH'])
+          branch, tag = branch_or_tag(env["CF_BRANCH"])
 
           {
-            TAG_PROVIDER_NAME => 'codefresh',
-            TAG_PIPELINE_ID => env['CF_BUILD_ID'],
-            TAG_PIPELINE_NAME => env['CF_PIPELINE_NAME'],
-            TAG_PIPELINE_URL => env['CF_BUILD_URL'],
-            TAG_JOB_NAME => env['CF_STEP_NAME'],
+            TAG_PROVIDER_NAME => "codefresh",
+            TAG_PIPELINE_ID => env["CF_BUILD_ID"],
+            TAG_PIPELINE_NAME => env["CF_PIPELINE_NAME"],
+            TAG_PIPELINE_URL => env["CF_BUILD_URL"],
+            TAG_JOB_NAME => env["CF_STEP_NAME"],
             Core::Git::Ext::TAG_BRANCH => branch,
             Core::Git::Ext::TAG_TAG => tag,
             TAG_CI_ENV_VARS => {
-              'CF_BUILD_ID' => env['CF_BUILD_ID'],
+              "CF_BUILD_ID" => env["CF_BUILD_ID"]
             }.to_json
           }
         end
