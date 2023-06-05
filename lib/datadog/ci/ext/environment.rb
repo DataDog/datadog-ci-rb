@@ -20,8 +20,8 @@ module Datadog
         TAG_STAGE_NAME = "ci.stage.name"
         TAG_WORKSPACE_PATH = "ci.workspace_path"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
-        TAG_NODE_LABELS = 'ci.node.labels'
-        TAG_NODE_NAME = 'ci.node.name'
+        TAG_NODE_LABELS = "ci.node.labels"
+        TAG_NODE_NAME = "ci.node.name"
 
         PROVIDERS = [
           ["APPVEYOR", :extract_appveyor],
@@ -35,8 +35,8 @@ module Datadog
           ["JENKINS_URL", :extract_jenkins],
           ["TEAMCITY_VERSION", :extract_teamcity],
           ["TRAVIS", :extract_travis],
-          ['BITRISE_BUILD_SLUG', :extract_bitrise],
-          ['CF_BUILD_ID', :extract_codefresh]
+          ["BITRISE_BUILD_SLUG", :extract_bitrise],
+          ["CF_BUILD_ID", :extract_codefresh]
         ].freeze
 
         module_function
@@ -323,8 +323,7 @@ module Datadog
             name = name.split("/").reject { |v| v.nil? || v.include?("=") }.join("/")
           end
 
-          node_labels = env['NODE_LABELS'].split.to_json unless env['NODE_LABELS'].nil?
-          
+          node_labels = env["NODE_LABELS"].split.to_json unless env["NODE_LABELS"].nil?
           {
             Core::Git::Ext::TAG_BRANCH => branch,
             Core::Git::Ext::TAG_COMMIT_SHA => env["GIT_COMMIT"],
