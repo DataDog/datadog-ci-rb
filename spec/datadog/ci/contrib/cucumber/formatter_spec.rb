@@ -1,10 +1,7 @@
-require "datadog/ci/contrib/support/spec_helper"
+require_relative "../support/spec_helper"
 
 require "stringio"
 require "cucumber"
-
-require "datadog/tracing"
-require "datadog/tracing/metadata/ext"
 
 RSpec.describe "Cucumber formatter" do
   extend ConfigurationHelpers

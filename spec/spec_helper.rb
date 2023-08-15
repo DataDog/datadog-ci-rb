@@ -1,17 +1,15 @@
 # frozen_string_literal: true
 
-require "ddtrace"
-require "datadog/ci"
+require_relative "../lib/datadog/ci"
+
+require_relative "support/configuration_helpers"
+require_relative "support/log_helpers"
+require_relative "support/tracer_helpers"
+require_relative "support/span_helpers"
+require_relative "support/test_helpers"
+require_relative "support/platform_helpers"
 
 require "rspec/collection_matchers"
-
-require "support/configuration_helpers"
-require "support/log_helpers"
-require "support/tracer_helpers"
-require "support/span_helpers"
-require "support/test_helpers"
-require "support/platform_helpers"
-
 require "climate_control"
 
 RSpec.configure do |config|

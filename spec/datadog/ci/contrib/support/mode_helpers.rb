@@ -1,6 +1,3 @@
-require "datadog/core/configuration/settings"
-require "datadog/core/configuration/components"
-
 RSpec.shared_context "CI mode activated" do
   let(:settings) do
     Datadog::Core::Configuration::Settings.new.tap do |settings|

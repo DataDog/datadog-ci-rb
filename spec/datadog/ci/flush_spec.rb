@@ -1,11 +1,3 @@
-require "datadog/ci/spec_helper"
-
-require "datadog/ci/flush"
-require "datadog/tracing/metadata/ext"
-require "datadog/tracing/span"
-require "datadog/tracing/trace_operation"
-require "datadog/tracing/trace_segment"
-
 RSpec.shared_context "CI trace operation" do
   let(:trace_op) do
     instance_double(

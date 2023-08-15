@@ -1,9 +1,3 @@
-require "datadog/ci/spec_helper"
-require "datadog/ci/configuration/settings"
-
-require "datadog/core/configuration/settings"
-require "datadog/tracing/flush"
-
 RSpec.describe Datadog::CI::Configuration::Settings do
   context "when used to extend Datadog::Core::Configuration::Settings" do
     subject(:settings) do

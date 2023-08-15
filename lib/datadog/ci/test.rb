@@ -4,6 +4,7 @@ require "datadog/tracing/contrib/analytics"
 
 require_relative "ext/app_types"
 require_relative "ext/test"
+require_relative "ext/environment"
 
 require "rbconfig"
 

@@ -1,10 +1,6 @@
 require "time"
 
-require "datadog/tracing"
-require "datadog/tracing/metadata/ext"
-
-require "datadog/ci/contrib/support/spec_helper"
-require "datadog/ci/contrib/rspec/integration"
+require_relative "../support/spec_helper"
 
 RSpec.describe "RSpec hooks" do
   include_context "CI mode activated"
