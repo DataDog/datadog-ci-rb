@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-TOP_LEVEL_MODULE_FILE = "lib/ddtrace.rb"
+TOP_LEVEL_MODULE_FILE = "lib/datadog/ci.rb"
 
 # The top-level `Datadog` module gets its docstring overwritten by
 # on almost every file in the repo, due to comments at the top of the file
