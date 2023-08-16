@@ -1,4 +1,4 @@
-require "support/faux_writer"
+require_relative "../../../../support/faux_writer"
 
 module Contrib
   # Contrib-specific tracer helpers.

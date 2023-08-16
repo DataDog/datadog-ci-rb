@@ -1,6 +1,4 @@
-require "datadog/tracing/writer"
-
-require "support/faux_transport"
+require_relative "faux_transport"
 
 # FauxWriter is a dummy writer that buffers spans locally.
 class FauxWriter < Datadog::Tracing::Writer
