@@ -12,3 +12,5 @@
 Gemfile.lock
 Gemfile-*.lock
 .envrc
+.ruby-version
+.DS_Store

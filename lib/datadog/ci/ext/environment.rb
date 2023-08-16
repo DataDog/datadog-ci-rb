@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+p "DATADOG CI ENVIRONMENT"
+
 require "datadog/core/git/ext"
 
 require "open3"
@@ -19,6 +21,8 @@ module Datadog
         TAG_PROVIDER_NAME = "ci.provider.name"
         TAG_STAGE_NAME = "ci.stage.name"
         TAG_WORKSPACE_PATH = "ci.workspace_path"
+        TAG_NODE_LABELS = "ci.node.labels"
+        TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
         TAG_NODE_LABELS = "ci.node.labels"
         TAG_NODE_NAME = "ci.node.name"
@@ -171,7 +175,7 @@ module Datadog
             Core::Git::Ext::TAG_REPOSITORY_URL => env["BITBUCKET_GIT_SSH_ORIGIN"],
             Core::Git::Ext::TAG_TAG => env["BITBUCKET_TAG"],
             TAG_JOB_URL => url,
-            TAG_PIPELINE_ID => env["BITBUCKET_PIPELINE_UUID"] ? env["BITBUCKET_PIPELINE_UUID"].tr("{}", "") : nil,
+            TAG_PIPELINE_ID => env["BITBUCKET_PIPELINE_UUID"] && env["BITBUCKET_PIPELINE_UUID"].tr("{}", ""),
             TAG_PIPELINE_NAME => env["BITBUCKET_REPO_FULL_NAME"],
             TAG_PIPELINE_NUMBER => env["BITBUCKET_BUILD_NUMBER"],
             TAG_PIPELINE_URL => url,
@@ -323,7 +327,8 @@ module Datadog
             name = name.split("/").reject { |v| v.nil? || v.include?("=") }.join("/")
           end
 
-          node_labels = env["NODE_LABELS"].split.to_json unless env["NODE_LABELS"].nil?
+          node_labels = env["NODE_LABELS"] && env["NODE_LABELS"].split.to_json
+
           {
             Core::Git::Ext::TAG_BRANCH => branch,
             Core::Git::Ext::TAG_COMMIT_SHA => env["GIT_COMMIT"],

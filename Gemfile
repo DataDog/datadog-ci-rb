@@ -20,3 +20,6 @@ gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "appraisal"
 gem "standard", "<= 1.24.3" if RUBY_VERSION >= "2.2.0"
+
+gem "yard"
+gem "webrick"

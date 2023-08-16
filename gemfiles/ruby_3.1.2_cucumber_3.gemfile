@@ -9,9 +9,10 @@ gem "os"
 gem "climate_control"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
-gem "rubocop", require: false
-gem "standard"
 gem "appraisal"
+gem "standard", "<= 1.24.3"
+gem "yard"
+gem "webrick"
 gem "cucumber", "~> 3"
 
 group :check do

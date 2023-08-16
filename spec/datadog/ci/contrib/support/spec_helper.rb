@@ -1,7 +1,5 @@
-require "datadog/ci/spec_helper"
-require "datadog/ci/contrib/support/mode_helpers"
-require "datadog/ci/contrib/support/tracer_helpers"
-# require "datadog/tracing/contrib/support/spec_helper"
+require_relative "mode_helpers"
+require_relative "tracer_helpers"
 
 if defined?(Warning.ignore)
   # Caused by https://github.com/cucumber/cucumber-ruby/blob/47c8e2d7c97beae8541c895a43f9ccb96324f0f1/lib/cucumber/encoding.rb#L5-L6

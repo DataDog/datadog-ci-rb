@@ -1,8 +1,5 @@
 require "support/faux_writer"
 
-require "datadog/tracing/tracer"
-require "datadog/tracing/span"
-
 module Contrib
   # Contrib-specific tracer helpers.
   # For contrib, we only allow one tracer to be active:

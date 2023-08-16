@@ -1,0 +1,3 @@
+--readme README.md
+--files LICENSE
+-e ./yard/extensions.rb

@@ -1,11 +1,3 @@
-require "datadog/ci/spec_helper"
-
-require "datadog/ci/configuration/components"
-require "datadog/ci/configuration/settings"
-require "datadog/ci/flush"
-require "datadog/core/configuration/components"
-require "datadog/core/configuration/settings"
-
 RSpec.describe Datadog::CI::Configuration::Components do
   context "when used to extend Datadog::Core::Configuration::Components" do
     subject(:components) do

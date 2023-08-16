@@ -2,10 +2,23 @@
 
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
+require "datadog/ci/version"
+require "yard"
 
 RSpec::Core::RakeTask.new(:spec)
 
 Dir.glob("tasks/*.rake").each { |r| import r }
+
+YARD::Rake::YardocTask.new(:docs) do |t|
+  # Options defined in `.yardopts` are read first, then merged with
+  # options defined here.
+  #
+  # It's recommended to define options in `.yardopts` instead of here,
+  # as `.yardopts` can be read by external YARD tools, like the
+  # hot-reload YARD server `yard server --reload`.
+
+  t.options += ["--title", "datadog-ci #{Datadog::CI::VERSION} documentation"]
+end
 
 desc "Run RSpec"
 # rubocop:disable Metrics/BlockLength

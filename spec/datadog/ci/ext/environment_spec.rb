@@ -1,13 +1,10 @@
-require "datadog/ci/spec_helper"
-
 require "json"
-require "datadog/ci/ext/environment"
 
-RSpec.describe Datadog::CI::Ext::Environment do
+RSpec.describe ::Datadog::CI::Ext::Environment do
   FIXTURE_DIR = "#{File.dirname(__FILE__)}/fixtures/" # rubocop:disable all
 
   describe ".tags" do
-    subject(:tags) do
+    subject(:extracted_tags) do
       ClimateControl.modify(environment_variables) { described_class.tags(env) }
     end
 
@@ -29,7 +26,7 @@ RSpec.describe Datadog::CI::Ext::Environment do
       File.open(filename) do |f|
         context "for fixture #{File.basename(filename)}" do
           # Create a context for each example inside the JSON fixture file
-          JSON.parse(f.read).each_with_index do |(env, tags), i|
+          JSON.parse(f.read).each_with_index do |(env, fixture_tags), i|
             context "##{i}" do
               # Modify HOME so that '~' expansion matches CI home directory.
               let(:environment_variables) { super().merge("HOME" => env["HOME"]) }
@@ -53,7 +50,7 @@ RSpec.describe Datadog::CI::Ext::Environment do
                         "git.commit.message" => "First commit!",
                         "git.commit.sha" => "9322ca1d57975b49b8c00b449d21b06660ce8b5b",
                         "git.repository_url" => "https://datadoghq.com/git/test.git"
-                      }.merge(tags)
+                      }.merge(fixture_tags)
                     )
                 end
               end
@@ -62,7 +59,7 @@ RSpec.describe Datadog::CI::Ext::Environment do
                 include_context "without git installed"
 
                 it "matches only CI tags" do
-                  is_expected.to eq(tags)
+                  is_expected.to eq(fixture_tags)
                 end
               end
             end

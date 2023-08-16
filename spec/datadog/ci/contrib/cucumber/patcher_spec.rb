@@ -1,7 +1,4 @@
-require "datadog/ci/contrib/support/spec_helper"
-require "datadog/ci/contrib/cucumber/patcher"
-
-require "cucumber"
+require_relative "../support/spec_helper"
 
 RSpec.describe Datadog::CI::Contrib::Cucumber::Patcher do
   describe ".patch" do
