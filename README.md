@@ -13,32 +13,11 @@ end
 
 ## Usage
 
-#### Cucumber
-
-Activate `Cucumber` integration with configuration
-
-```
-Datadog.configure do |c|
-  # Only activates test instrumentation on CI
-  c.tracing.enabled = (ENV["DD_ENV"] == "ci")
-
-  # Configures the tracer to ensure results delivery
-  c.ci.enabled = true
-
-  # The name of the service or library under test
-  c.service = 'my-ruby-app'
-
-  # Enables the Cucumber instrumentation
-  c.ci.instrument :cucumber
-end
-
-```
-
-#### RSpec
+### RSpec
 
 To activate `RSpec` integration, add this to the `spec_helper.rb` file:
 
-```
+```ruby
 require 'rspec'
 require 'datadog/ci'
 
@@ -53,10 +32,83 @@ Datadog.configure do |c|
   c.service = 'my-ruby-app'
 
   # Enables the RSpec instrumentation
-  c.ci.instrument :rspec
+  c.ci.instrument :rspec, **options
 end
 
 ```
+
+`options` are the following keyword arguments:
+
+| Key | Description | Default |
+| --- | ----------- | ------- |
+| `enabled` | Defines whether RSpec tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
+| `service_name` | Service name used for `rspec` instrumentation. | `'rspec'` |
+| `operation_name` | Operation name used for `rspec` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'rspec.example'` |
+
+
+### Minitest
+
+The Minitest integration will trace all executions of tests when using `minitest` test framework.
+
+To activate your integration, use the `Datadog.configure` method:
+
+```ruby
+require 'minitest'
+require 'datadog/ci'
+
+# Configure default Minitest integration
+Datadog.configure do |c|
+  # Only activates test instrumentation on CI
+  c.tracing.enabled = (ENV["DD_ENV"] == "ci")
+
+  # Configures the tracer to ensure results delivery
+  c.ci.enabled = true
+
+  # The name of the service or library under test
+  c.service = 'my-ruby-app'
+
+  c.ci.instrument :minitest, **options
+end
+```
+
+`options` are the following keyword arguments:
+
+| Key | Description | Default |
+| --- | ----------- | ------- |
+| `enabled` | Defines whether Minitest tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
+| `service_name` | Service name used for `minitest` instrumentation. | `'minitest'` |
+| `operation_name` | Operation name used for `minitest` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'minitest.test'` |
+
+### Cucumber
+
+Activate `Cucumber` integration with configuration
+
+```ruby
+require 'cucumber'
+require 'datadog/ci'
+
+Datadog.configure do |c|
+  # Only activates test instrumentation on CI
+  c.tracing.enabled = (ENV["DD_ENV"] == "ci")
+
+  # Configures the tracer to ensure results delivery
+  c.ci.enabled = true
+
+  # The name of the service or library under test
+  c.service = 'my-ruby-app'
+
+  # Enables the Cucumber instrumentation
+  c.ci.instrument :cucumber, **options
+end
+```
+
+`options` are the following keyword arguments:
+
+| Key | Description | Default |
+| --- | ----------- | ------- |
+| `enabled` | Defines whether Cucumber tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
+| `service_name` | Service name used for `cucumber` instrumentation. | `'cucumber'` |
+| `operation_name` | Operation name used for `cucumber` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'cucumber.test'` |
 
 ## Development
 

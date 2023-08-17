@@ -83,6 +83,14 @@ def self.with_cucumber_gem(versions:)
   end
 end
 
+def self.with_minitest_gem(versions: 5)
+  Array(versions).each do |v|
+    appraise "minitest-#{v}" do
+      gem "minitest", "~> #{v}"
+    end
+  end
+end
+
 # WIP: Support cucumber 8
 
 # | Cucumber | Ruby required |
@@ -111,15 +119,19 @@ elsif ruby_version?("2.6")
   with_rspec_gem
   with_cucumber_gem(versions: 3..7)
 elsif ruby_version?("2.7")
+  with_minitest_gem
   with_rspec_gem
   with_cucumber_gem(versions: 3..7)
 elsif ruby_version?("3.0")
+  with_minitest_gem
   with_rspec_gem
   with_cucumber_gem(versions: 3..7)
 elsif ruby_version?("3.1")
+  with_minitest_gem
   with_rspec_gem
   with_cucumber_gem(versions: 3..7)
 elsif ruby_version?("3.2")
+  with_minitest_gem
   with_rspec_gem
   with_cucumber_gem(versions: 3..7)
 end
