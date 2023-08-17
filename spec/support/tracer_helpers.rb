@@ -1,6 +1,4 @@
-require "datadog/tracing/tracer"
-require "datadog/tracing/trace_operation"
-require "support/faux_writer"
+require_relative "faux_writer"
 
 module TracerHelpers
   # Return a test tracer instance with a faux writer.

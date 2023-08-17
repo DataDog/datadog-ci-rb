@@ -1,5 +1,3 @@
-require "datadog/tracing/metadata/ext"
-
 module SpanHelpers
   RSpec::Matchers.define :have_error do
     match do |span|
