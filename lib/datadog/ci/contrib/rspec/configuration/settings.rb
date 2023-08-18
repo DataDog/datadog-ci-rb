@@ -1,4 +1,3 @@
-require "datadog/tracing/contrib/configuration/settings"
 require_relative "../ext"
 
 module Datadog
