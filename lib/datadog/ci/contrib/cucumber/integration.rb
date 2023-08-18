@@ -1,5 +1,3 @@
-require "datadog/tracing/contrib/integration"
-
 require_relative "configuration/settings"
 require_relative "patcher"
 
