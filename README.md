@@ -1,11 +1,12 @@
-# Datadog::CI
+# Datadog CI Visibility for Ruby
 
 Datadog's Ruby Library for instrumenting your test and continuous integration pipeline. Checkout to learn more at our [official website](https://docs.datadoghq.com/continuous_integration/tests/ruby/?tab=azurepipelines).
 
 ## Installation
 
 Add to your Gemfile.
-```
+
+```ruby
 group :test do
   gem "datadog-ci"
 end
@@ -44,7 +45,6 @@ end
 | `enabled` | Defines whether RSpec tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `rspec` instrumentation. | `'rspec'` |
 | `operation_name` | Operation name used for `rspec` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'rspec.example'` |
-
 
 ### Minitest
 
@@ -118,8 +118,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/Datadog/datadog-ci. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/Datadog/datadog-ci/blob/main/CODE_OF_CONDUCT.md).
-
+Bug reports and pull requests are welcome on [GitHub](https://github.com/Datadog/datadog-ci). This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/Datadog/datadog-ci/blob/main/CODE_OF_CONDUCT.md).
 
 ## Code of Conduct
 
