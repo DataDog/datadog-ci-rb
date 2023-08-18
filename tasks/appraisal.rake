@@ -2,9 +2,9 @@
 
 namespace :appraisal do # rubocop:disable Metrics/BlockLength
   def ruby_versions(versions)
-    return TRACER_VERSIONS if versions.empty?
+    return RUBY_VERSIONS if versions.empty?
 
-    TRACER_VERSIONS & versions
+    RUBY_VERSIONS & versions
   end
 
   def bundler_version(ruby_version)
@@ -43,17 +43,11 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
 
   def lockfile_prefix(ruby_version)
     ruby_version = {
-      "2.1" => "2.1.10",
-      "2.2" => "2.2.10",
-      "2.3" => "2.3.8",
-      "2.4" => "2.4.10",
-      "2.5" => "2.5.9",
-      "2.6" => "2.6.10",
       "2.7" => "2.7.6",
       "3.0" => "3.0.4",
       "3.1" => "3.1.2",
       "3.2" => "3.2.0",
-      "jruby-9.2" => "jruby-9.2.21.0",
+      "3.3" => "3.3.0",
       "jruby-9.3" => "jruby-9.3.9.0",
       "jruby-9.4" => "jruby-9.4.0.0"
     }[ruby_version]
@@ -150,42 +144,20 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
   end
 end
 
-TRACER_VERSIONS = [
-  "2.1",
-  "2.2",
-  "2.3",
-  "2.4",
-  "2.5",
-  "2.6",
+RUBY_VERSIONS = [
   "2.7",
   "3.0",
   "3.1",
   "3.2",
-  "jruby-9.2",
+  "3.3",
   "jruby-9.3",
   "jruby-9.4"
 ].freeze
 
 FORCE_BUNDLER_VERSION = {
-  # Some groups require bundler 1.x https://github.com/DataDog/dd-trace-rb/issues/2444
-  "2.3" => "1.17.3",
-
-  # 2.4.x seems to cause problems with appraisal
-  "2.6" => "2.3.26",
   "2.7" => "2.3.26",
   "3.0" => "2.3.26",
   "3.1" => "2.3.26",
-  "3.2" => "2.3.26"
+  "3.2" => "2.3.26",
+  "3.3" => "2.4.19"
 }.freeze
-
-# TODO: remove with 2.0
-task :install_appraisal_gemfiles do
-  warn "This task has been removed, please use rake appraisal:install instead"
-  exit 1
-end
-
-# TODO: remove with 2.0
-task :update_appraisal_gemfiles do
-  warn "This task has been removed, please use rake appraisal:update instead"
-  exit 1
-end

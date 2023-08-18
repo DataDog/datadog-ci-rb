@@ -16,8 +16,7 @@ module Datadog
           register_as :rspec, auto_patch: true
 
           def self.version
-            Gem.loaded_specs["rspec-core"] \
-              && Gem.loaded_specs["rspec-core"].version
+            Gem.loaded_specs["rspec-core"]&.version
           end
 
           def self.loaded?

@@ -2,14 +2,6 @@
 # Remove from this list as you refactor files.
 ---
 ignore:
-- lib/datadog/ci/contrib/minitest/integration.rb:
-  - Style/SafeNavigation
-- lib/datadog/ci/contrib/cucumber/integration.rb:
-  - Style/SafeNavigation
-- lib/datadog/ci/contrib/rspec/integration.rb:
-  - Style/SafeNavigation
-- lib/datadog/ci/ext/environment.rb:
-  - Style/SafeNavigation
 - spec/support/log_helpers.rb:
   - Performance/UnfreezeString
 - Appraisals:

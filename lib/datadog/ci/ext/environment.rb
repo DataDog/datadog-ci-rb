@@ -86,7 +86,7 @@ module Datadog
         end
 
         def filter_sensitive_info(url)
-          url.gsub(%r{(https?://)[^/]*@}, '\1') unless url.nil?
+          url&.gsub(%r{(https?://)[^/]*@}, '\1')
         end
 
         # CI providers
@@ -175,7 +175,7 @@ module Datadog
             Core::Git::Ext::TAG_REPOSITORY_URL => env["BITBUCKET_GIT_SSH_ORIGIN"],
             Core::Git::Ext::TAG_TAG => env["BITBUCKET_TAG"],
             TAG_JOB_URL => url,
-            TAG_PIPELINE_ID => env["BITBUCKET_PIPELINE_UUID"] && env["BITBUCKET_PIPELINE_UUID"].tr("{}", ""),
+            TAG_PIPELINE_ID => env["BITBUCKET_PIPELINE_UUID"]&.tr("{}", ""),
             TAG_PIPELINE_NAME => env["BITBUCKET_REPO_FULL_NAME"],
             TAG_PIPELINE_NUMBER => env["BITBUCKET_BUILD_NUMBER"],
             TAG_PIPELINE_URL => url,
@@ -554,7 +554,7 @@ module Datadog
 
         def branch_or_tag(branch_or_tag)
           branch = tag = nil
-          if branch_or_tag && branch_or_tag.include?("tags/")
+          if branch_or_tag&.include?("tags/")
             tag = branch_or_tag
           else
             branch = branch_or_tag

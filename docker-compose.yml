@@ -1,113 +1,17 @@
 version: '3.2'
 services:
   # MRI
-  datadog-ci-2.1:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:2.1.10-dd
-    command: /bin/bash
-    depends_on:
-      - ddagent
-    env_file: ./.env
-    environment: &common-environment
-      BUNDLE_GEMFILE: /app/Gemfile-2.1
-      DD_AGENT_HOST: ddagent
-      TEST_DATADOG_INTEGRATION: 1
-      DDTRACE_CI: true
-    stdin_open: true
-    tty: true
-    volumes:
-      - .:/app
-      - extension-build-tmp:/app/tmp
-      - bundle-2.1:/usr/local/bundle
-      - "ddagent_var_run:${TEST_DDAGENT_VAR_RUN}"
-  datadog-ci-2.2:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:2.2.10-dd
-    command: /bin/bash
-    depends_on:
-      - ddagent
-    env_file: ./.env
-    environment:
-      <<: *common-environment
-      BUNDLE_GEMFILE: /app/Gemfile-2.2
-    stdin_open: true
-    tty: true
-    volumes:
-      - .:/app
-      - extension-build-tmp:/app/tmp
-      - bundle-2.2:/usr/local/bundle
-      - "ddagent_var_run:${TEST_DDAGENT_VAR_RUN}"
-  datadog-ci-2.3:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:2.3.8-dd
-    command: /bin/bash
-    depends_on:
-      - ddagent
-    env_file: ./.env
-    environment:
-      <<: *common-environment
-      BUNDLE_GEMFILE: /app/Gemfile-2.3
-    stdin_open: true
-    tty: true
-    volumes:
-      - .:/app
-      - extension-build-tmp:/app/tmp
-      - bundle-2.3:/usr/local/bundle
-      - "ddagent_var_run:${TEST_DDAGENT_VAR_RUN}"
-  datadog-ci-2.4:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:2.4.10-dd
-    command: /bin/bash
-    depends_on:
-      - ddagent
-    env_file: ./.env
-    environment:
-      <<: *common-environment
-      BUNDLE_GEMFILE: /app/Gemfile-2.4
-    stdin_open: true
-    tty: true
-    volumes:
-      - .:/app
-      - extension-build-tmp:/app/tmp
-      - bundle-2.4:/usr/local/bundle
-      - "ddagent_var_run:${TEST_DDAGENT_VAR_RUN}"
-  datadog-ci-2.5:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:2.5.9-dd
-    command: /bin/bash
-    depends_on:
-      - ddagent
-    env_file: ./.env
-    environment:
-      <<: *common-environment
-      BUNDLE_GEMFILE: /app/Gemfile-2.5
-    stdin_open: true
-    tty: true
-    volumes:
-      - .:/app
-      - extension-build-tmp:/app/tmp
-      - bundle-2.5:/usr/local/bundle
-      - "ddagent_var_run:${TEST_DDAGENT_VAR_RUN}"
-  datadog-ci-2.6:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:2.6.10-dd
-    command: /bin/bash
-    depends_on:
-      - ddagent
-    env_file: ./.env
-    environment:
-      <<: *common-environment
-      BUNDLE_GEMFILE: /app/Gemfile-2.6
-    stdin_open: true
-    tty: true
-    volumes:
-      - .:/app
-      - extension-build-tmp:/app/tmp
-      - bundle-2.6:/usr/local/bundle
-      - "ddagent_var_run:${TEST_DDAGENT_VAR_RUN}"
   datadog-ci-2.7:
     image: ghcr.io/datadog/dd-trace-rb/ruby:2.7.6-dd
     command: /bin/bash
     depends_on:
       - ddagent
     env_file: ./.env
-    environment:
-      <<: *common-environment
+    environment: &common-environment
       BUNDLE_GEMFILE: /app/Gemfile-2.7
+      DD_AGENT_HOST: ddagent
+      TEST_DATADOG_INTEGRATION: 1
+      DDTRACE_CI: true
     stdin_open: true
     tty: true
     volumes:
@@ -163,22 +67,23 @@ services:
       - extension-build-tmp:/app/tmp
       - bundle-3.2:/usr/local/bundle
       - "ddagent_var_run:${TEST_DDAGENT_VAR_RUN}"
-  # ADD NEW RUBIES HERE
-  datadog-ci-jruby-9.2:
-    image: ghcr.io/datadog/dd-trace-rb/jruby:9.2.21.0-dd
+  datadog-ci-3.3:
+    image: ghcr.io/datadog/dd-trace-rb/ruby:3.3.0-dd
     command: /bin/bash
     depends_on:
       - ddagent
     env_file: ./.env
     environment:
-      <<: *common-environment
-      BUNDLE_GEMFILE: /app/Gemfile-jruby-9.2
+      <<: *common-environment-3x
+      BUNDLE_GEMFILE: /app/Gemfile-3.3
     stdin_open: true
     tty: true
     volumes:
       - .:/app
-      - bundle-jruby-9.2:/usr/local/bundle
+      - extension-build-tmp:/app/tmp
+      - bundle-3.3:/usr/local/bundle
       - "ddagent_var_run:${TEST_DDAGENT_VAR_RUN}"
+  # ADD NEW RUBIES HERE
   datadog-ci-jruby-9.3:
     image: ghcr.io/datadog/dd-trace-rb/jruby:9.3.9.0-dd
     command: /bin/bash
@@ -236,6 +141,7 @@ volumes:
   bundle-3.0:
   bundle-3.1:
   bundle-3.2:
+  bundle-3.3:
   # ADD NEW RUBIES HERE
   bundle-jruby-9.2:
   bundle-jruby-9.3:

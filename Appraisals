@@ -69,46 +69,11 @@ def self.with_minitest_gem(versions: 5)
   end
 end
 
-if ruby_version?("2.1")
-  with_rspec_gem
-elsif ruby_version?("2.2")
-  with_rspec_gem
-  with_cucumber_gem(versions: 3)
-elsif ruby_version?("2.3")
-  with_rspec_gem
-  with_cucumber_gem(versions: 3..4)
-elsif ruby_version?("2.4")
-  with_rspec_gem
-  with_cucumber_gem(versions: 3..4)
-elsif ruby_version?("2.5")
-  with_rspec_gem
-  with_cucumber_gem(versions: 3..7)
-elsif ruby_version?("2.6")
-  with_rspec_gem
-  with_cucumber_gem(versions: 3..8)
-elsif ruby_version?("2.7")
-  with_minitest_gem
-  with_rspec_gem
-  with_cucumber_gem(versions: 3..8)
-elsif ruby_version?("3.0")
-  with_minitest_gem
-  with_rspec_gem
-  with_cucumber_gem(versions: 3..8)
-elsif ruby_version?("3.1")
-  with_minitest_gem
-  with_rspec_gem
-  with_cucumber_gem(versions: 3..8)
-elsif ruby_version?("3.2")
-  with_minitest_gem
-  with_rspec_gem
-  with_cucumber_gem(versions: 3..8)
-end
+with_minitest_gem
+with_rspec_gem
+with_cucumber_gem(versions: 3..8)
 
-ruby_runtime = if defined?(RUBY_ENGINE_VERSION)
-  "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
-else
-  "#{RUBY_ENGINE}-#{RUBY_VERSION}" # For Ruby < 2.3
-end
+ruby_runtime = "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
 
 appraisals.each do |appraisal|
   appraisal.name.prepend("#{ruby_runtime}-")
