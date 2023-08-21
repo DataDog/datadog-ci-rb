@@ -55,11 +55,7 @@ def declare(rubies_to_command)
   total_executors = ENV.key?("CIRCLE_NODE_TOTAL") ? ENV["CIRCLE_NODE_TOTAL"].to_i : nil
   current_executor = ENV.key?("CIRCLE_NODE_INDEX") ? ENV["CIRCLE_NODE_INDEX"].to_i : nil
 
-  ruby_runtime = if defined?(RUBY_ENGINE_VERSION)
-    "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
-  else
-    "#{RUBY_ENGINE}-#{RUBY_VERSION}" # For Ruby < 2.3
-  end
+  ruby_runtime = "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
 
   command = command.sub(/^bundle exec appraisal /, "bundle exec appraisal #{ruby_runtime}-")
 
@@ -83,19 +79,19 @@ end
 
 desc "CI task; it runs all tests for current version of Ruby"
 task :ci do
-  declare "✅ 2.1 / ✅ 2.2 / ✅ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec rake spec:main"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec rake spec:main"
 
   # RSpec
-  declare "✅ 2.1 / ✅ 2.2 / ✅ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal rspec-3 rake spec:rspec"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal rspec-3 rake spec:rspec"
 
   # Cucumber
-  declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-3 rake spec:cucumber"
-  declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ✅ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-4 rake spec:cucumber"
-  declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-5 rake spec:cucumber"
-  declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-6 rake spec:cucumber"
-  declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ✅ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-7 rake spec:cucumber"
-  declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ❌ 2.5 / ✅ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal cucumber-8 rake spec:cucumber"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-3 rake spec:cucumber"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-4 rake spec:cucumber"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-5 rake spec:cucumber"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-6 rake spec:cucumber"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-7 rake spec:cucumber"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-8 rake spec:cucumber"
 
   # Minitest
-  declare "❌ 2.1 / ❌ 2.2 / ❌ 2.3 / ❌ 2.4 / ❌ 2.5 / ❌ 2.6 / ✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ jruby" => "bundle exec appraisal minitest-5 rake spec:minitest"
+  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal minitest-5 rake spec:minitest"
 end

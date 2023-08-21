@@ -4,14 +4,16 @@ source "https://rubygems.org"
 
 gem "pry"
 gem "rake"
-gem "rspec", "~> 3"
+gem "rspec"
 gem "os"
-gem "climate_control", "~> 0.2.0"
+gem "climate_control"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "appraisal"
+gem "standard", "<= 1.24.3"
 gem "yard"
 gem "webrick"
+gem "cucumber", "~> 8"
 
 group :check do
 

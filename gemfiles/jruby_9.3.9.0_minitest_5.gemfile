@@ -13,7 +13,7 @@ gem "appraisal"
 gem "standard", "<= 1.24.3"
 gem "yard"
 gem "webrick"
-gem "cucumber", "~> 4"
+gem "minitest", "~> 5"
 
 group :check do
 
