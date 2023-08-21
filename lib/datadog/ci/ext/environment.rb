@@ -86,7 +86,7 @@ module Datadog
         end
 
         def filter_sensitive_info(url)
-          url&.gsub(%r{(https?://)[^/]*@}, '\1')
+          url.gsub(%r{(https?://)[^/]*@}, '\1') unless url.nil?
         end
 
         # CI providers

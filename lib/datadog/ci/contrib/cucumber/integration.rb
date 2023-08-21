@@ -14,7 +14,8 @@ module Datadog
           register_as :cucumber, auto_patch: true
 
           def self.version
-            Gem.loaded_specs["cucumber"]&.version
+            Gem.loaded_specs["cucumber"] \
+              && Gem.loaded_specs["cucumber"].version
           end
 
           def self.loaded?

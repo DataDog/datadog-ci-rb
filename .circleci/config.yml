@@ -376,10 +376,10 @@ job_configuration:
     <<: *config-3_2
     resource_class_to_use: small
     # ADD NEW RUBIES HERE
-  - &config-jruby-9_3
+  - &config-jruby-9_4
     <<: *filters_all_branches_and_tags
-    ruby_version: 'jruby-9.3.9.0'
-    image: ghcr.io/datadog/dd-trace-rb/jruby:9.3.9.0-dd
+    ruby_version: 'jruby-9.4.0.0'
+    image: ghcr.io/datadog/dd-trace-rb/jruby:9.4.0.0-dd
     resource_class_to_use: medium+
 
 workflows:
@@ -401,7 +401,7 @@ workflows:
       #       - test-3.2
       #       - test-3.3
       #       # ADD NEW RUBIES HERE
-      #       - test-jruby-9.3
+      #       - test-jruby-9.4
       # - orb/changelog:
       #     <<: *config-3_2-small
       #     name: changelog
@@ -454,13 +454,13 @@ workflows:
             - build-3.3
       # ADD NEW RUBIES HERE
       - orb/build:
-          <<: *config-jruby-9_3
-          name: build-jruby-9.3
+          <<: *config-jruby-9_4
+          name: build-jruby-9.4
       - orb/test:
-          <<: *config-jruby-9_3
-          name: test-jruby-9.3
+          <<: *config-jruby-9_4
+          name: test-jruby-9.4
           requires:
-            - build-jruby-9.3
+            - build-jruby-9.4
       # Release jobs
       # - "deploy prerelease Gem":
       #     <<: *filters_all_branches_and_tags
@@ -472,7 +472,7 @@ workflows:
       #       - test-3.2
       #       - test-3.3
       #       # ADD NEW RUBIES HERE
-      #       - test-jruby-9.3
+      #       - test-jruby-9.4
       # - "deploy release":
       #     <<: *filters_only_release_tags
       #     requires:
@@ -483,4 +483,4 @@ workflows:
       #       - test-3.2
       #       - test-3.3
       #       # ADD NEW RUBIES HERE
-      #       - test-jruby-9.3
+      #       - test-jruby-9.4
