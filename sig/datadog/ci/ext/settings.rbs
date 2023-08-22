@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Ext
+      module Settings
+        ENV_MODE_ENABLED: String
+      end
+    end
+  end
+end

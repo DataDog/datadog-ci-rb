@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-p "DATADOG CI ENVIRONMENT"
-
 require "datadog/core/git/ext"
 
 require "open3"

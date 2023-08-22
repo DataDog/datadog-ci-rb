@@ -2,7 +2,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
   context "when used to extend Datadog::Core::Configuration::Components" do
     subject(:components) do
       # When 'datadog/ci' is required, it automatically extends Components.
-      components = if Datadog::Core::Configuration::Components <= described_class
+      components = if described_class >= Datadog::Core::Configuration::Components
         Datadog::Core::Configuration::Components.new(settings)
       else
         components_class = Datadog::Core::Configuration::Components.dup

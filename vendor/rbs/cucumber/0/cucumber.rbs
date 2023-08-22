@@ -1,0 +1,6 @@
+module Cucumber
+end
+
+class Cucumber::Runtime
+  def formatters: () -> untyped
+end

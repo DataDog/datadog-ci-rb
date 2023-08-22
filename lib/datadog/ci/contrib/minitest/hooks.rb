@@ -11,7 +11,7 @@ module Datadog
             test_name = "#{class_name}##{name}"
 
             path, = method(name).source_location
-            test_suite = Pathname.new(path).relative_path_from(Pathname.pwd).to_s
+            test_suite = Pathname.new(path.to_s).relative_path_from(Pathname.pwd).to_s
 
             span = CI::Test.trace(
               configuration[:operation_name],

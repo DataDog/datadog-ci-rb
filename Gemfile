@@ -15,7 +15,15 @@ gem "climate_control"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "appraisal"
-gem "standard", "<= 1.24.3"
+gem "standard", "~> 1.31.0"
 
 gem "yard"
 gem "webrick"
+
+# type checking
+group :check do
+  if RUBY_PLATFORM != "java"
+    gem "rbs", "~> 3.1.0", require: false
+    gem "steep", "~> 1.4.0", require: false
+  end
+end

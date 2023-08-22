@@ -48,7 +48,6 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
       "3.1" => "3.1.2",
       "3.2" => "3.2.0",
       "3.3" => "3.3.0",
-      "jruby-9.3" => "jruby-9.3.9.0",
       "jruby-9.4" => "jruby-9.4.0.0"
     }[ruby_version]
 
@@ -150,7 +149,6 @@ RUBY_VERSIONS = [
   "3.1",
   "3.2",
   "3.3",
-  "jruby-9.3",
   "jruby-9.4"
 ].freeze
 
