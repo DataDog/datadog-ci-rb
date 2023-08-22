@@ -11,13 +11,6 @@ if ["true", "y", "yes", "1"].include?(ENV["APPRAISAL_SKIP_BUNDLE_CHECK"])
   ::Appraisal::Appraisal.prepend(DisableBundleCheck)
 end
 
-def ruby_version?(version)
-  full_version = "#{version}.0" # Turn 2.1 into 2.1.0 otherwise #bump below doesn't work as expected
-
-  Gem::Version.new(full_version) <= Gem::Version.new(RUBY_VERSION) &&
-    Gem::Version.new(RUBY_VERSION) < Gem::Version.new(full_version).bump
-end
-
 alias original_appraise appraise
 
 REMOVED_GEMS = {
