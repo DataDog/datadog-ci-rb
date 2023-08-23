@@ -23,7 +23,7 @@ end
 desc "Run RSpec"
 # rubocop:disable Metrics/BlockLength
 namespace :spec do
-  task all: [:main, :cucumber, :rspec]
+  task all: [:main]
 
   RSpec::Core::RakeTask.new(:main) do |t, args|
     t.pattern = "spec/**/*_spec.rb"
