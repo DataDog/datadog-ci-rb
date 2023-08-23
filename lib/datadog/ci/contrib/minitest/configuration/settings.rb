@@ -1,5 +1,7 @@
 require_relative "../ext"
 
+require "datadog/tracing/contrib/configuration/settings"
+
 module Datadog
   module CI
     module Contrib

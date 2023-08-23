@@ -51,7 +51,7 @@ RSpec.describe "RSpec hooks" do
 
   it "creates correct span on shared examples" do
     spec = with_new_rspec_environment do
-      require_relative "./some_shared_examples"
+      require_relative "some_shared_examples"
       spec = RSpec.describe "some test" do
         include_examples "Testing shared examples"
       end.tap(&:run)

@@ -1,0 +1,13 @@
+module RSpec
+end
+
+module RSpec::Core
+end
+
+module RSpec::Core::Example
+  def run: () -> untyped
+  def execution_result: () -> untyped
+  def metadata: () -> untyped
+  def description: () -> String
+  def full_description: () -> String
+end

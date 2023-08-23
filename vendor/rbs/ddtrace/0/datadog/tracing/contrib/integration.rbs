@@ -1,0 +1,13 @@
+module Datadog
+  module Tracing
+    module Contrib
+      module Integration
+        def self.included: (untyped base) -> untyped
+
+        def compatible?: () -> bool
+
+        def register_as: (Symbol key, Hash[Symbol, untyped] options) -> untyped
+      end
+    end
+  end
+end

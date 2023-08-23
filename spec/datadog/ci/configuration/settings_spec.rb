@@ -2,7 +2,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
   context "when used to extend Datadog::Core::Configuration::Settings" do
     subject(:settings) do
       # When 'datadog/ci' is required, it automatically extends Settings.
-      if Datadog::Core::Configuration::Settings <= described_class
+      if described_class >= Datadog::Core::Configuration::Settings
         Datadog::Core::Configuration::Settings.new
       else
         Datadog::Core::Configuration::Settings.new.tap do |settings|
