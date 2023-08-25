@@ -33,35 +33,35 @@ module Datadog
 
         def self?.normalize_ref: (untyped name) -> untyped
 
-        def self?.filter_sensitive_info: (untyped url) -> (untyped | nil)
+        def self?.filter_sensitive_info: (untyped url) -> (String | nil)
 
-        def self?.extract_appveyor: (untyped env) -> ::Hash[untyped, "appveyor" | untyped]
+        def self?.extract_appveyor: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_azure_pipelines: (untyped env) -> ::Hash[untyped, "azurepipelines" | untyped]
+        def self?.extract_azure_pipelines: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_bitbucket: (untyped env) -> ::Hash[untyped, untyped | "bitbucket"]
+        def self?.extract_bitbucket: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_buddy: (untyped env) -> ::Hash[untyped, "buddy" | ::String | untyped]
+        def self?.extract_buddy: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_buildkite: (untyped env) -> untyped
+        def self?.extract_buildkite: (untyped env) -> Hash[String, String?]
 
-        def self?.extract_circle_ci: (untyped env) -> ::Hash[untyped, untyped | ::String | "circleci"]
+        def self?.extract_circle_ci: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_github_actions: (untyped env) -> ::Hash[untyped, untyped | ::String | "github"]
+        def self?.extract_github_actions: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_gitlab: (untyped env) -> ::Hash[untyped, untyped | "gitlab"]
+        def self?.extract_gitlab: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_jenkins: (untyped env) -> ::Hash[untyped, untyped | "jenkins"]
+        def self?.extract_jenkins: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_teamcity: (untyped env) -> ::Hash[untyped, "teamcity" | untyped]
+        def self?.extract_teamcity: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_travis: (untyped env) -> ::Hash[untyped, untyped | ::String | "travisci"]
+        def self?.extract_travis: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_bitrise: (untyped env) -> ::Hash[untyped, "bitrise" | untyped]
+        def self?.extract_bitrise: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_codefresh: (untyped env) -> ::Hash[untyped, "codefresh" | untyped]
+        def self?.extract_codefresh: (untyped env) -> ::Hash[String, String?]
 
-        def self?.extract_user_defined_git: (untyped env) -> untyped
+        def self?.extract_user_defined_git: (untyped env) -> Hash[String, String?]
 
         def self?.git_commit_users: () -> untyped
 
