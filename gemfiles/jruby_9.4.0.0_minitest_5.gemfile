@@ -13,6 +13,8 @@ gem "appraisal"
 gem "standard", "~> 1.31.0"
 gem "yard"
 gem "webrick"
+gem "simplecov"
+gem "simplecov-cobertura", "~> 2.1.0"
 gem "minitest", "~> 5"
 
 group :check do
