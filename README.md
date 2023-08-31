@@ -112,7 +112,7 @@ end
 
 ## Contributing
 
-See [development guide](/docs/DevelopmentGuide.md), [static typing guide](docs/StaticTypingGuide.md) and [contributing guidelines]().
+See [development guide](/docs/DevelopmentGuide.md), [static typing guide](docs/StaticTypingGuide.md) and [contributing guidelines](/CONTRIBUTING.md).
 
 ## Code of Conduct
 
