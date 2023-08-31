@@ -1,4 +1,4 @@
-SimpleCov.enable_coverage :branch
+SimpleCov.enable_coverage :branch if RUBY_VERSION >= "2.5.0"
 
 SimpleCov.add_filter %r{/vendor/}
 SimpleCov.add_filter %r{/spec/support/}
