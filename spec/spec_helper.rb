@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+# +SimpleCov.start+ must be invoked before any application code is loaded
+require "simplecov"
+SimpleCov.start do
+  formatter SimpleCov::Formatter::SimpleFormatter
+end
+
 require_relative "../lib/datadog/ci"
 
 require_relative "support/configuration_helpers"

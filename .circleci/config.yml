@@ -5,6 +5,7 @@ job_defaults: &job_defaults
   # TODO: We should move away from using a directory
   # TODO: that requires root permission to be created.
   # TODO: Changing this requires rebuilding all docker images.
+  # TODO: remove this when using our own Dockerfile for datadog-ci-rb
   working_directory: /app
   shell: /bin/bash --login
 
@@ -30,11 +31,6 @@ test_containers:
     BUNDLE_GEMFILE: /app/Gemfile
     # Faster JVM startup: https://github.com/jruby/jruby/wiki/Improving-startup-time#use-the---dev-flag
     JRUBY_OPTS: --dev
-    # Override number of concurrent compiles in grpc gem, see https://github.com/grpc/grpc/pull/28250 and https://github.com/DataDog/dd-trace-rb/issues/1791
-    # If you see gem installation failing with "Killed" on CircleCI and `gem install --platform ruby grpc` reproduces the
-    # issue when you connect to the testing container via ssh, then try lowering this file a notch.
-    GRPC_RUBY_BUILD_PROCS: 6
-    DDTRACE_CI: true
   - &container_parameters_environment
     - *container_base_environment
     - TEST_DATADOG_INTEGRATION: 1
@@ -54,7 +50,7 @@ test_containers:
       - DD_APM_ENABLED=true
       - DD_BIND_HOST=0.0.0.0
       - DD_API_KEY=00000000000000000000000000000000
-      - DD_HOSTNAME=dd-trace-rb-ci
+      - DD_HOSTNAME=datadog-ci-rb-ci
   - &agent_port 8126
 
 check_exact_bundle_cache_hit: &check_exact_bundle_cache_hit
@@ -90,9 +86,9 @@ step_bundle_install: &step_bundle_install
       else
         echo "All required gems were found in cache."
       fi
-step_rubocop: &step_rubocop
+step_lint: &step_lint
   run:
-    name: Delint with Rubocop
+    name: Lint with standardrb
     # There's no straightforward way to get the number of available processors & CPU threads in CircleCI.
     # Currently it always return 18 physical processors and 36 threads, regardless of executor size.
     # The workaround is to use `cpu.shares / 1024`:
@@ -108,6 +104,7 @@ step_appraisal_install: &step_appraisal_install
         bundle exec appraisal generate # Generate the appraisal files to match the lockfiles in the tree
         echo "All required gems were found in cache."
       fi
+# TODO: this is something to use for edge tests (against newest versions of rspec, minitest, etc.)
 # step_appraisal_update: &step_appraisal_update
 #   run:
 #     name: Update Appraisal gems
@@ -154,8 +151,8 @@ filters_only_release_tags: &filters_only_release_tags
 
 orbs:
   orb:
-    # orbs:
-    #   codecov: codecov/codecov@3.2.3
+    orbs:
+      codecov: codecov/codecov@3.2.3
     jobs:
       build:
         <<: *test_job_default
@@ -188,7 +185,7 @@ orbs:
         docker:
           - <<: *container_base
           - *container_agent
-        parallelism: 10
+        parallelism: 8
         steps:
           - restore_cache:
               keys:
@@ -196,21 +193,21 @@ orbs:
           - restore_cache:
               keys:
                 - bundle-{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ checksum ".circleci/images/primary/binary_version" }}-<<parameters.ruby_version>>-{{ checksum "lib/datadog/ci/version.rb" }}-{{ .Branch }}-{{ checksum ".circleci/bundle_checksum" }}
-          # - run:
-          #     name: Set coverage report directory
-          #     command: |
-          #       # Create a unique coverage directory for this job, to avoid conflicts when merging all results
-          #       echo 'export COVERAGE_DIR="$COVERAGE_BASE_DIR/versions/$CIRCLE_JOB/$CIRCLE_NODE_INDEX"' >> $BASH_ENV
+          - run:
+              name: Set coverage report directory
+              command: |
+                # Create a unique coverage directory for this job, to avoid conflicts when merging all results
+                echo 'export COVERAGE_DIR="$COVERAGE_BASE_DIR/versions/$CIRCLE_JOB/$CIRCLE_NODE_INDEX"' >> $BASH_ENV
           # Wait for containers to start
           - docker-wait:
               port: *agent_port
           - *step_run_all_tests
           - store_test_results:
               path: /tmp/rspec
-          # - persist_to_workspace:
-          #     root: .
-          #     paths:
-          #       - coverage
+          - persist_to_workspace:
+              root: .
+              paths:
+                - coverage
       lint:
         <<: *test_job_default
         steps:
@@ -220,29 +217,29 @@ orbs:
           - restore_cache:
               keys:
                 - bundle-{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ checksum ".circleci/images/primary/binary_version" }}-<<parameters.ruby_version>>-{{ checksum "lib/datadog/ci/version.rb" }}-{{ .Branch }}-{{ checksum ".circleci/bundle_checksum" }}
-          - *step_rubocop
-      # coverage:
-      #   <<: *test_job_default
-      #   steps:
-      #     - restore_cache:
-      #         keys:
-      #           - '{{ .Environment.CIRCLE_CACHE_VERSION }}-bundled-repo-<<parameters.ruby_version>>-{{ .Environment.CIRCLE_SHA1 }}'
-      #     - restore_cache:
-      #         keys:
-      #           - bundle-{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ checksum ".circleci/images/primary/binary_version" }}-<<parameters.ruby_version>>-{{ checksum "lib/datadog/ci/version.rb" }}-{{ .Branch }}-{{ checksum ".circleci/bundle_checksum" }}
-      #     - attach_workspace:
-      #         at: /tmp/workspace
-      #     - run:
-      #         name: Generate combined coverage report for all tests
-      #         command: COVERAGE_DIR=/tmp/workspace/coverage bundle exec rake coverage:report
-      #     - codecov/upload:
-      #         file: /tmp/workspace/coverage/report/coverage.xml
-      #     - run:
-      #         name: Generate individual coverage report for each Ruby version
-      #         command: COVERAGE_DIR=/tmp/workspace/coverage bundle exec rake coverage:report_per_ruby_version
-      #     - store_artifacts:
-      #         path: /tmp/workspace/coverage/report/
-      #         destination: coverage
+          - *step_lint
+      coverage:
+        <<: *test_job_default
+        steps:
+          - restore_cache:
+              keys:
+                - '{{ .Environment.CIRCLE_CACHE_VERSION }}-bundled-repo-<<parameters.ruby_version>>-{{ .Environment.CIRCLE_SHA1 }}'
+          - restore_cache:
+              keys:
+                - bundle-{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ checksum ".circleci/images/primary/binary_version" }}-<<parameters.ruby_version>>-{{ checksum "lib/datadog/ci/version.rb" }}-{{ .Branch }}-{{ checksum ".circleci/bundle_checksum" }}
+          - attach_workspace:
+              at: /tmp/workspace
+          - run:
+              name: Generate combined coverage report for all tests
+              command: COVERAGE_DIR=/tmp/workspace/coverage bundle exec rake coverage:report
+          - codecov/upload:
+              file: /tmp/workspace/coverage/report/coverage.xml
+          - run:
+              name: Generate individual coverage report for each Ruby version
+              command: COVERAGE_DIR=/tmp/workspace/coverage bundle exec rake coverage:report_per_ruby_version
+          - store_artifacts:
+              path: /tmp/workspace/coverage/report/
+              destination: coverage
       # changelog:
       #   <<: *test_job_default
       #   steps:
@@ -391,17 +388,17 @@ workflows:
           name: lint
           requires:
             - build-3.2
-      # - orb/coverage:
-      #     <<: *config-3_2-small
-      #     name: coverage
-      #     requires:
-      #       - test-2.7
-      #       - test-3.0
-      #       - test-3.1
-      #       - test-3.2
-      #       - test-3.3
-      #       # ADD NEW RUBIES HERE
-      #       - test-jruby-9.4
+      - orb/coverage:
+          <<: *config-3_2-small
+          name: coverage
+          requires:
+            - test-2.7
+            - test-3.0
+            - test-3.1
+            - test-3.2
+            - test-3.3
+            # ADD NEW RUBIES HERE
+            - test-jruby-9.4
       # - orb/changelog:
       #     <<: *config-3_2-small
       #     name: changelog

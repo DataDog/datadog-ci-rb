@@ -20,6 +20,9 @@ gem "standard", "~> 1.31.0"
 gem "yard"
 gem "webrick"
 
+gem "simplecov"
+gem "simplecov-cobertura", "~> 2.1.0"
+
 # type checking
 group :check do
   if RUBY_PLATFORM != "java"
