@@ -185,7 +185,7 @@ orbs:
         docker:
           - <<: *container_base
           - *container_agent
-        parallelism: 10
+        parallelism: 8
         steps:
           - restore_cache:
               keys:
