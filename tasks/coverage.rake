@@ -24,7 +24,12 @@ namespace :coverage do
   task :report_per_ruby_version do
     require "simplecov"
 
-    versions = Dir["#{ENV.fetch("COVERAGE_DIR", "coverage")}/versions/*"].map { |f| File.basename(f) }
+    versions = Dir["#{ENV.fetch("COVERAGE_DIR", "coverage")}/versions/*"]
+      # do not include jruby coverage for now
+      # see https://github.com/simplecov-ruby/simplecov/pull/972
+      .filter { |version| !version.include?("jruby") }
+      .map { |f| File.basename(f) }
+
     versions.map do |version|
       puts "Generating report for: #{version}"
       SimpleCov.collate Dir["#{ENV.fetch("COVERAGE_DIR", "coverage")}/versions/#{version}/**/.resultset.json"] do
