@@ -1,6 +1,5 @@
 SimpleCov.enable_coverage :branch
 
-# Exclude code not maintained by this project
 SimpleCov.add_filter %r{/vendor/}
 SimpleCov.add_filter %r{/spec/support/}
 
