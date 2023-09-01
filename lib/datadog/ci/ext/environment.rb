@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["BUILDKITE", :extract_buildkite],
           ["CIRCLECI", :extract_circle_ci],
           ["GITHUB_SHA", :extract_github_actions],
           ["GITLAB_CI", :extract_gitlab],

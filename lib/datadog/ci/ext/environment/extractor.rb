@@ -16,12 +16,14 @@ module Datadog
           require_relative "providers/azure"
           require_relative "providers/bitbucket"
           require_relative "providers/buddy"
+          require_relative "providers/buildkite"
 
           EXTRACTORS = [
             ["APPVEYOR", Providers::Appveyor],
             ["TF_BUILD", Providers::Azure],
             ["BITBUCKET_COMMIT", Providers::Bitbucket],
-            ["BUDDY", Providers::Buddy]
+            ["BUDDY", Providers::Buddy],
+            ["BUILDKITE", Providers::Buildkite]
           ]
 
           def self.for_environment(env)
@@ -61,7 +63,13 @@ module Datadog
               Git::TAG_COMMIT_COMMITTER_NAME => git_commit_committer_name,
               Git::TAG_COMMIT_MESSAGE => git_commit_message,
               Git::TAG_COMMIT_SHA => git_commit_sha
-            }.reject { |_, v| v.nil? }
+            }.reject do |_, v|
+              # setting type of v here to untyped because steep does not
+              # understand `v.nil? || something`
+
+              # @type var v: untyped
+              v.nil? || v.strip.empty?
+            end
           end
 
           private
