@@ -1,0 +1,67 @@
+module Datadog
+  module CI
+    module Ext
+      module Providers
+        class Extractor
+          EXTRACTORS: ::Array[::Array["APPVEYOR" | untyped]]
+
+          def self.for_environment: (untyped env) -> Extractor
+
+          def initialize: (Hash[String, String] env) -> void
+
+          def tags: () -> Hash[String, untyped]
+
+          private
+
+          attr_reader env: untyped
+
+          def job_name: () -> nil
+
+          def job_url: () -> nil
+
+          def pipeline_id: () -> nil
+
+          def pipeline_name: () -> nil
+
+          def pipeline_number: () -> nil
+
+          def pipeline_url: () -> nil
+
+          def provider_name: () -> nil
+
+          def stage_name: () -> nil
+
+          def workspace_path: () -> nil
+
+          def node_labels: () -> nil
+
+          def node_name: () -> nil
+
+          def ci_env_vars: () -> nil
+
+          def git_branch: () -> nil
+
+          def git_repository_url: () -> nil
+
+          def git_tag: () -> nil
+
+          def git_commit_author_date: () -> nil
+
+          def git_commit_author_email: () -> nil
+
+          def git_commit_author_name: () -> nil
+
+          def git_commit_committer_date: () -> nil
+
+          def git_commit_committer_email: () -> nil
+
+          def git_commit_committer_name: () -> nil
+
+          def git_commit_message: () -> nil
+
+          def git_commit_sha: () -> nil
+        end
+      end
+    end
+  end
+end

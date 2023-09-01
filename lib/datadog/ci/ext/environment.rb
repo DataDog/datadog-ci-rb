@@ -4,6 +4,7 @@ require "open3"
 require "json"
 
 require_relative "git"
+require_relative "providers/extractor"
 
 module Datadog
   module CI
@@ -22,11 +23,8 @@ module Datadog
         TAG_NODE_LABELS = "ci.node.labels"
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
-        TAG_NODE_LABELS = "ci.node.labels"
-        TAG_NODE_NAME = "ci.node.name"
 
         PROVIDERS = [
-          ["APPVEYOR", :extract_appveyor],
           ["TF_BUILD", :extract_azure_pipelines],
           ["BITBUCKET_COMMIT", :extract_bitbucket],
           ["BUDDY", :extract_buddy],
@@ -46,7 +44,7 @@ module Datadog
         def tags(env)
           # Extract metadata from CI provider environment variables
           _, extractor = PROVIDERS.find { |provider_env_var, _| env.key?(provider_env_var) }
-          tags = extractor ? public_send(extractor, env).reject { |_, v| v.nil? || v.strip.empty? } : {}
+          tags = extractor ? public_send(extractor, env).reject { |_, v| v.nil? || v.strip.empty? } : Providers::Extractor.for_environment(env).tags
 
           # If user defined metadata is defined, overwrite
           tags.merge!(extract_user_defined_git(env))
@@ -88,41 +86,6 @@ module Datadog
         end
 
         # CI providers
-
-        def extract_appveyor(env)
-          url = "https://ci.appveyor.com/project/#{env["APPVEYOR_REPO_NAME"]}/builds/#{env["APPVEYOR_BUILD_ID"]}"
-
-          if env["APPVEYOR_REPO_PROVIDER"] == "github"
-            repository = "https://github.com/#{env["APPVEYOR_REPO_NAME"]}.git"
-            commit = env["APPVEYOR_REPO_COMMIT"]
-            branch = (env["APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH"] || env["APPVEYOR_REPO_BRANCH"])
-            tag = env["APPVEYOR_REPO_TAG_NAME"]
-          end
-
-          commit_message = env["APPVEYOR_REPO_COMMIT_MESSAGE"]
-          if commit_message
-            extended = env["APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED"]
-            commit_message = "#{commit_message}\n#{extended}" if extended
-          end
-
-          {
-            TAG_PROVIDER_NAME => "appveyor",
-            Git::TAG_REPOSITORY_URL => repository,
-            Git::TAG_COMMIT_SHA => commit,
-            TAG_WORKSPACE_PATH => env["APPVEYOR_BUILD_FOLDER"],
-            TAG_PIPELINE_ID => env["APPVEYOR_BUILD_ID"],
-            TAG_PIPELINE_NAME => env["APPVEYOR_REPO_NAME"],
-            TAG_PIPELINE_NUMBER => env["APPVEYOR_BUILD_NUMBER"],
-            TAG_PIPELINE_URL => url,
-            TAG_JOB_URL => url,
-            Git::TAG_BRANCH => branch,
-            Git::TAG_TAG => tag,
-            Git::TAG_COMMIT_AUTHOR_NAME => env["APPVEYOR_REPO_COMMIT_AUTHOR"],
-            Git::TAG_COMMIT_AUTHOR_EMAIL => env["APPVEYOR_REPO_COMMIT_AUTHOR_EMAIL"],
-            Git::TAG_COMMIT_MESSAGE => commit_message
-          }
-        end
-
         def extract_azure_pipelines(env)
           build_id = env["BUILD_BUILDID"]
 
