@@ -2,13 +2,13 @@ module Datadog
   module CI
     module Ext
       module Providers
-        class Appveyor < Extractor
+        class Azure < Extractor
           private
 
-          @github_repo_provider: bool
-          @url: String
+          @pipeline_url: String
+          @job_url: String
 
-          def provider_name: () -> "appveyor"
+          def provider_name: () -> "azurepipelines"
 
           def pipeline_url: () -> String?
 
@@ -18,9 +18,13 @@ module Datadog
 
           def pipeline_id: () -> String?
 
+          def pipeline_number: () -> String?
+
           def pipeline_name: () -> String?
 
-          def pipeline_number: () -> String?
+          def stage_name: () -> String?
+
+          def job_name: () -> String?
 
           def git_repository_url: () -> String?
 
@@ -36,9 +40,17 @@ module Datadog
 
           def git_commit_message: () -> String?
 
-          def github_repo_provider?: () -> bool
+          def ci_env_vars: () -> String?
 
-          def url: () -> String?
+          def build_id: () -> String?
+
+          def team_foundation_server_uri: () -> String?
+
+          def team_project_id: () -> String?
+
+          def url_defined?: () -> bool
+
+          def set_branch_and_tag: () -> [String?, String?]
         end
       end
     end

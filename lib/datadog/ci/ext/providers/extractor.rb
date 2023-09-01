@@ -1,20 +1,23 @@
 # frozen_string_literal: true
 
-require_relative "../providers"
+require_relative "../environment"
 require_relative "../git"
 
 module Datadog
   module CI
     module Ext
       module Providers
+        # Provider is a specific CI provider like Azure Pipelines, Github Actions, Gitlab CI, etc
         # Providers::Extractor is responsible for detecting where pipeline is being executed based on environment vars
         # and return the specific extractor that is able to return environment- and git-specific tags
         class Extractor
           require_relative "default"
           require_relative "appveyor"
+          require_relative "azure"
 
           EXTRACTORS = [
-            ["APPVEYOR", Appveyor]
+            ["APPVEYOR", Appveyor],
+            ["TF_BUILD", Azure]
           ]
 
           def self.for_environment(env)
@@ -30,18 +33,18 @@ module Datadog
 
           def tags
             {
-              Providers::TAG_JOB_NAME => job_name,
-              Providers::TAG_JOB_URL => job_url,
-              Providers::TAG_PIPELINE_ID => pipeline_id,
-              Providers::TAG_PIPELINE_NAME => pipeline_name,
-              Providers::TAG_PIPELINE_NUMBER => pipeline_number,
-              Providers::TAG_PIPELINE_URL => pipeline_url,
-              Providers::TAG_PROVIDER_NAME => provider_name,
-              Providers::TAG_STAGE_NAME => stage_name,
-              Providers::TAG_WORKSPACE_PATH => workspace_path,
-              Providers::TAG_NODE_LABELS => node_labels,
-              Providers::TAG_NODE_NAME => node_name,
-              Providers::TAG_CI_ENV_VARS => ci_env_vars,
+              Environment::TAG_JOB_NAME => job_name,
+              Environment::TAG_JOB_URL => job_url,
+              Environment::TAG_PIPELINE_ID => pipeline_id,
+              Environment::TAG_PIPELINE_NAME => pipeline_name,
+              Environment::TAG_PIPELINE_NUMBER => pipeline_number,
+              Environment::TAG_PIPELINE_URL => pipeline_url,
+              Environment::TAG_PROVIDER_NAME => provider_name,
+              Environment::TAG_STAGE_NAME => stage_name,
+              Environment::TAG_WORKSPACE_PATH => workspace_path,
+              Environment::TAG_NODE_LABELS => node_labels,
+              Environment::TAG_NODE_NAME => node_name,
+              Environment::TAG_CI_ENV_VARS => ci_env_vars,
 
               Git::TAG_BRANCH => git_branch,
               Git::TAG_REPOSITORY_URL => git_repository_url,
@@ -128,6 +131,17 @@ module Datadog
           end
 
           def git_commit_sha
+          end
+
+          def branch_or_tag(branch_or_tag_string)
+            @branch = @tag = nil
+            if branch_or_tag_string && branch_or_tag_string.include?("tags/")
+              @tag = branch_or_tag_string
+            else
+              @branch = branch_or_tag_string
+            end
+
+            [@branch, @tag]
           end
         end
       end

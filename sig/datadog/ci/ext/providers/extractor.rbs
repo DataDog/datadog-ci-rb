@@ -3,7 +3,10 @@ module Datadog
     module Ext
       module Providers
         class Extractor
-          EXTRACTORS: ::Array[::Array["APPVEYOR" | untyped]]
+
+          EXTRACTORS: ::Array[::Array[String | untyped]]
+          @branch: String?
+          @tag: String?
 
           def self.for_environment: (untyped env) -> Extractor
 
@@ -60,6 +63,8 @@ module Datadog
           def git_commit_message: () -> nil
 
           def git_commit_sha: () -> nil
+
+          def branch_or_tag: (String? branch_or_tag_string) -> [String?, String?]
         end
       end
     end

@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["TF_BUILD", :extract_azure_pipelines],
           ["BITBUCKET_COMMIT", :extract_bitbucket],
           ["BUDDY", :extract_buddy],
           ["BUILDKITE", :extract_buildkite],
@@ -86,47 +85,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_azure_pipelines(env)
-          build_id = env["BUILD_BUILDID"]
-
-          if build_id &&
-              (team_foundation_server_uri = env["SYSTEM_TEAMFOUNDATIONSERVERURI"]) &&
-              (team_project_id = env["SYSTEM_TEAMPROJECTID"])
-            pipeline_url = "#{team_foundation_server_uri}#{team_project_id}/_build/results?buildId=#{build_id}"
-            job_url = "#{pipeline_url}&view=logs&j=#{env["SYSTEM_JOBID"]}&t=#{env["SYSTEM_TASKINSTANCEID"]}"
-          end
-
-          branch, tag = branch_or_tag(
-            env["SYSTEM_PULLREQUEST_SOURCEBRANCH"] || env["BUILD_SOURCEBRANCH"] || env["BUILD_SOURCEBRANCHNAME"]
-          )
-
-          {
-            TAG_PROVIDER_NAME => "azurepipelines",
-            TAG_WORKSPACE_PATH => env["BUILD_SOURCESDIRECTORY"],
-            TAG_PIPELINE_ID => build_id,
-            TAG_PIPELINE_NAME => env["BUILD_DEFINITIONNAME"],
-            TAG_PIPELINE_NUMBER => build_id,
-            TAG_PIPELINE_URL => pipeline_url,
-            TAG_JOB_URL => job_url,
-            TAG_STAGE_NAME => env["SYSTEM_STAGEDISPLAYNAME"],
-            TAG_JOB_NAME => env["SYSTEM_JOBDISPLAYNAME"],
-            Git::TAG_REPOSITORY_URL =>
-              env["SYSTEM_PULLREQUEST_SOURCEREPOSITORYURI"] || env["BUILD_REPOSITORY_URI"],
-            Git::TAG_COMMIT_SHA => env["SYSTEM_PULLREQUEST_SOURCECOMMITID"] \
-                                                       || env["BUILD_SOURCEVERSION"],
-            Git::TAG_BRANCH => branch,
-            Git::TAG_TAG => tag,
-            Git::TAG_COMMIT_AUTHOR_NAME => env["BUILD_REQUESTEDFORID"],
-            Git::TAG_COMMIT_AUTHOR_EMAIL => env["BUILD_REQUESTEDFOREMAIL"],
-            Git::TAG_COMMIT_MESSAGE => env["BUILD_SOURCEVERSIONMESSAGE"],
-            TAG_CI_ENV_VARS => {
-              "SYSTEM_TEAMPROJECTID" => env["SYSTEM_TEAMPROJECTID"],
-              "BUILD_BUILDID" => env["BUILD_BUILDID"],
-              "SYSTEM_JOBID" => env["SYSTEM_JOBID"]
-            }.to_json
-          }
-        end
-
         def extract_bitbucket(env)
           pipeline_url = "https://bitbucket.org/#{env["BITBUCKET_REPO_FULL_NAME"]}/addon/pipelines/home#" \
             "!/results/#{env["BITBUCKET_BUILD_NUMBER"]}"

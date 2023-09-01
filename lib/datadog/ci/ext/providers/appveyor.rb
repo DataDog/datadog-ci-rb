@@ -6,10 +6,12 @@ module Datadog
   module CI
     module Ext
       module Providers
-        # TODO
+        # Appveyor: https://www.appveyor.com/
+        # Environment variables docs: https://www.appveyor.com/docs/environment-variables/
         class Appveyor < Extractor
           private
 
+          # overridden methods
           def provider_name
             "appveyor"
           end
@@ -79,6 +81,8 @@ module Datadog
             commit_message
           end
 
+          # appveyor-specific logic
+
           def github_repo_provider?
             return @github_repo_provider if defined?(@github_repo_provider)
 
@@ -86,7 +90,7 @@ module Datadog
           end
 
           def url
-            "https://ci.appveyor.com/project/#{env["APPVEYOR_REPO_NAME"]}/builds/#{env["APPVEYOR_BUILD_ID"]}"
+            @url ||= "https://ci.appveyor.com/project/#{env["APPVEYOR_REPO_NAME"]}/builds/#{env["APPVEYOR_BUILD_ID"]}"
           end
         end
       end
