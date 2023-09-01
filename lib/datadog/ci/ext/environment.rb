@@ -82,39 +82,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_buildkite(env)
-          tags = {
-            Git::TAG_BRANCH => env["BUILDKITE_BRANCH"],
-            Git::TAG_COMMIT_SHA => env["BUILDKITE_COMMIT"],
-            Git::TAG_REPOSITORY_URL => env["BUILDKITE_REPO"],
-            Git::TAG_TAG => env["BUILDKITE_TAG"],
-            TAG_PIPELINE_ID => env["BUILDKITE_BUILD_ID"],
-            TAG_PIPELINE_NAME => env["BUILDKITE_PIPELINE_SLUG"],
-            TAG_PIPELINE_NUMBER => env["BUILDKITE_BUILD_NUMBER"],
-            TAG_PIPELINE_URL => env["BUILDKITE_BUILD_URL"],
-            TAG_JOB_URL => "#{env["BUILDKITE_BUILD_URL"]}##{env["BUILDKITE_JOB_ID"]}",
-            TAG_PROVIDER_NAME => "buildkite",
-            TAG_WORKSPACE_PATH => env["BUILDKITE_BUILD_CHECKOUT_PATH"],
-            Git::TAG_COMMIT_AUTHOR_NAME => env["BUILDKITE_BUILD_AUTHOR"],
-            Git::TAG_COMMIT_AUTHOR_EMAIL => env["BUILDKITE_BUILD_AUTHOR_EMAIL"],
-            Git::TAG_COMMIT_MESSAGE => env["BUILDKITE_MESSAGE"],
-            TAG_NODE_NAME => env["BUILDKITE_AGENT_ID"],
-            TAG_CI_ENV_VARS => {
-              "BUILDKITE_BUILD_ID" => env["BUILDKITE_BUILD_ID"],
-              "BUILDKITE_JOB_ID" => env["BUILDKITE_JOB_ID"]
-            }.to_json
-          }
-
-          extra_tags = env
-            .select { |key| key.start_with?("BUILDKITE_AGENT_META_DATA_") }
-            .map { |key, value| "#{key.to_s.sub("BUILDKITE_AGENT_META_DATA_", "").downcase}:#{value}" }
-            .sort_by(&:length)
-
-          tags[TAG_NODE_LABELS] = extra_tags.to_json unless extra_tags.empty?
-
-          tags
-        end
-
         def extract_circle_ci(env)
           {
             Git::TAG_BRANCH => env["CIRCLE_BRANCH"],
