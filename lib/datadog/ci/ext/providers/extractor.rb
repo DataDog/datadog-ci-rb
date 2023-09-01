@@ -14,10 +14,12 @@ module Datadog
           require_relative "default"
           require_relative "appveyor"
           require_relative "azure"
+          require_relative "bitbucket"
 
           EXTRACTORS = [
             ["APPVEYOR", Appveyor],
-            ["TF_BUILD", Azure]
+            ["TF_BUILD", Azure],
+            ["BITBUCKET_COMMIT", Bitbucket]
           ]
 
           def self.for_environment(env)
@@ -104,6 +106,7 @@ module Datadog
           end
 
           def git_repository_url
+            raise NoMethodError.new("This method must be overridden")
           end
 
           def git_tag
@@ -131,6 +134,7 @@ module Datadog
           end
 
           def git_commit_sha
+            raise NoMethodError.new("This method must be overridden")
           end
 
           def branch_or_tag(branch_or_tag_string)

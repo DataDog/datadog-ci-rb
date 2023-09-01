@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["BITBUCKET_COMMIT", :extract_bitbucket],
           ["BUDDY", :extract_buddy],
           ["BUILDKITE", :extract_buildkite],
           ["CIRCLECI", :extract_circle_ci],
@@ -85,29 +84,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_bitbucket(env)
-          pipeline_url = "https://bitbucket.org/#{env["BITBUCKET_REPO_FULL_NAME"]}/addon/pipelines/home#" \
-            "!/results/#{env["BITBUCKET_BUILD_NUMBER"]}"
-
-          repository_url = filter_sensitive_info(
-            env["BITBUCKET_GIT_SSH_ORIGIN"] || env["BITBUCKET_GIT_HTTP_ORIGIN"]
-          )
-
-          {
-            Git::TAG_BRANCH => env["BITBUCKET_BRANCH"],
-            Git::TAG_COMMIT_SHA => env["BITBUCKET_COMMIT"],
-            Git::TAG_REPOSITORY_URL => repository_url,
-            Git::TAG_TAG => env["BITBUCKET_TAG"],
-            TAG_JOB_URL => pipeline_url,
-            TAG_PIPELINE_ID => env["BITBUCKET_PIPELINE_UUID"] ? env["BITBUCKET_PIPELINE_UUID"].tr("{}", "") : nil,
-            TAG_PIPELINE_NAME => env["BITBUCKET_REPO_FULL_NAME"],
-            TAG_PIPELINE_NUMBER => env["BITBUCKET_BUILD_NUMBER"],
-            TAG_PIPELINE_URL => pipeline_url,
-            TAG_PROVIDER_NAME => "bitbucket",
-            TAG_WORKSPACE_PATH => env["BITBUCKET_CLONE_DIR"]
-          }
-        end
-
         def extract_buddy(env)
           {
             TAG_PROVIDER_NAME => "buddy",

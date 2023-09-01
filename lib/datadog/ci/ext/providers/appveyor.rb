@@ -81,7 +81,7 @@ module Datadog
             commit_message
           end
 
-          # appveyor-specific logic
+          # appveyor-specific methods
 
           def github_repo_provider?
             return @github_repo_provider if defined?(@github_repo_provider)

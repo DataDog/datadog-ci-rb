@@ -94,7 +94,7 @@ module Datadog
             }.to_json
           end
 
-          # azure-specific logic
+          # azure-specific methods
 
           def build_id
             env["BUILD_BUILDID"]
