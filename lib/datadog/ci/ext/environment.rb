@@ -4,7 +4,7 @@ require "open3"
 require "json"
 
 require_relative "git"
-require_relative "providers/extractor"
+require_relative "environment/extractor"
 
 module Datadog
   module CI
@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["BUDDY", :extract_buddy],
           ["BUILDKITE", :extract_buildkite],
           ["CIRCLECI", :extract_circle_ci],
           ["GITHUB_SHA", :extract_github_actions],
@@ -42,7 +41,7 @@ module Datadog
         def tags(env)
           # Extract metadata from CI provider environment variables
           _, extractor = PROVIDERS.find { |provider_env_var, _| env.key?(provider_env_var) }
-          tags = extractor ? public_send(extractor, env).reject { |_, v| v.nil? || v.strip.empty? } : Providers::Extractor.for_environment(env).tags
+          tags = extractor ? public_send(extractor, env).reject { |_, v| v.nil? || v.strip.empty? } : Environment::Extractor.for_environment(env).tags
 
           # If user defined metadata is defined, overwrite
           tags.merge!(extract_user_defined_git(env))
@@ -84,24 +83,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_buddy(env)
-          {
-            TAG_PROVIDER_NAME => "buddy",
-            TAG_PIPELINE_ID => "#{env["BUDDY_PIPELINE_ID"]}/#{env["BUDDY_EXECUTION_ID"]}",
-            TAG_PIPELINE_NAME => env["BUDDY_PIPELINE_NAME"],
-            TAG_PIPELINE_NUMBER => env["BUDDY_EXECUTION_ID"],
-            TAG_PIPELINE_URL => env["BUDDY_EXECUTION_URL"],
-            TAG_WORKSPACE_PATH => env["CI_WORKSPACE_PATH"],
-            Git::TAG_REPOSITORY_URL => env["BUDDY_SCM_URL"],
-            Git::TAG_COMMIT_SHA => env["BUDDY_EXECUTION_REVISION"],
-            Git::TAG_BRANCH => env["BUDDY_EXECUTION_BRANCH"],
-            Git::TAG_TAG => env["BUDDY_EXECUTION_TAG"],
-            Git::TAG_COMMIT_MESSAGE => env["BUDDY_EXECUTION_REVISION_MESSAGE"],
-            Git::TAG_COMMIT_COMMITTER_NAME => env["BUDDY_EXECUTION_REVISION_COMMITTER_NAME"],
-            Git::TAG_COMMIT_COMMITTER_EMAIL => env["BUDDY_EXECUTION_REVISION_COMMITTER_EMAIL"]
-          }
-        end
-
         def extract_buildkite(env)
           tags = {
             Git::TAG_BRANCH => env["BUILDKITE_BRANCH"],

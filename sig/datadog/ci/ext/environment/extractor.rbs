@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module Ext
-      module Providers
+      module Environment
         class Extractor
 
           EXTRACTORS: ::Array[::Array[String | untyped]]

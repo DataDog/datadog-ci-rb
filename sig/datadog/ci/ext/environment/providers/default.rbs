@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Ext
+      module Environment
+        module Providers
+          class Default < Extractor
+            def tags: () -> ::Hash[String, untyped]
+          end
+        end
+      end
+    end
+  end
+end

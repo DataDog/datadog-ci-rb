@@ -6,25 +6,27 @@ require_relative "../git"
 module Datadog
   module CI
     module Ext
-      module Providers
+      module Environment
         # Provider is a specific CI provider like Azure Pipelines, Github Actions, Gitlab CI, etc
-        # Providers::Extractor is responsible for detecting where pipeline is being executed based on environment vars
+        # Extractor is responsible for detecting where pipeline is being executed based on environment vars
         # and return the specific extractor that is able to return environment- and git-specific tags
         class Extractor
-          require_relative "default"
-          require_relative "appveyor"
-          require_relative "azure"
-          require_relative "bitbucket"
+          require_relative "providers/default"
+          require_relative "providers/appveyor"
+          require_relative "providers/azure"
+          require_relative "providers/bitbucket"
+          require_relative "providers/buddy"
 
           EXTRACTORS = [
-            ["APPVEYOR", Appveyor],
-            ["TF_BUILD", Azure],
-            ["BITBUCKET_COMMIT", Bitbucket]
+            ["APPVEYOR", Providers::Appveyor],
+            ["TF_BUILD", Providers::Azure],
+            ["BITBUCKET_COMMIT", Providers::Bitbucket],
+            ["BUDDY", Providers::Buddy]
           ]
 
           def self.for_environment(env)
             _, extractor_klass = EXTRACTORS.find { |provider_env_var, _| env.key?(provider_env_var) }
-            extractor_klass = Default if extractor_klass.nil?
+            extractor_klass = Providers::Default if extractor_klass.nil?
 
             extractor_klass.new(env)
           end
