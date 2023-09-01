@@ -18,7 +18,7 @@ module Datadog
           require_relative "providers/buddy"
           require_relative "providers/buildkite"
 
-          EXTRACTORS = [
+          PROVIDERS = [
             ["APPVEYOR", Providers::Appveyor],
             ["TF_BUILD", Providers::Azure],
             ["BITBUCKET_COMMIT", Providers::Bitbucket],
@@ -27,7 +27,7 @@ module Datadog
           ]
 
           def self.for_environment(env)
-            _, extractor_klass = EXTRACTORS.find { |provider_env_var, _| env.key?(provider_env_var) }
+            _, extractor_klass = PROVIDERS.find { |provider_env_var, _| env.key?(provider_env_var) }
             extractor_klass = Providers::Default if extractor_klass.nil?
 
             extractor_klass.new(env)

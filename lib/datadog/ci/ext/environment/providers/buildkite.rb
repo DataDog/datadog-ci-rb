@@ -90,7 +90,6 @@ module Datadog
             end
 
             # buildkite-specific methods
-
           end
         end
       end

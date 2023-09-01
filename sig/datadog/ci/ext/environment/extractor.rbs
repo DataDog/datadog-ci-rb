@@ -4,7 +4,7 @@ module Datadog
       module Environment
         class Extractor
 
-          EXTRACTORS: ::Array[::Array[String | untyped]]
+          PROVIDERS: ::Array[[String, singleton(Extractor)]]
           @branch: String?
           @tag: String?
 
