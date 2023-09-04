@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["JENKINS_URL", :extract_jenkins],
           ["TEAMCITY_VERSION", :extract_teamcity],
           ["TRAVIS", :extract_travis],
           ["BITRISE_BUILD_SLUG", :extract_bitrise],
@@ -79,35 +78,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_jenkins(env)
-          branch, tag = branch_or_tag(env["GIT_BRANCH"])
-
-          if (name = env["JOB_NAME"])
-            name = name.gsub("/#{normalize_ref(branch)}", "") if branch
-            name = name.split("/").reject { |v| v.nil? || v.include?("=") }.join("/")
-          end
-
-          node_labels = env["NODE_LABELS"] && env["NODE_LABELS"].split.to_json
-
-          {
-            Git::TAG_BRANCH => branch,
-            Git::TAG_COMMIT_SHA => env["GIT_COMMIT"],
-            Git::TAG_REPOSITORY_URL => env["GIT_URL"] || env["GIT_URL_1"],
-            Git::TAG_TAG => tag,
-            TAG_PIPELINE_ID => env["BUILD_TAG"],
-            TAG_PIPELINE_NAME => name,
-            TAG_PIPELINE_NUMBER => env["BUILD_NUMBER"],
-            TAG_PIPELINE_URL => env["BUILD_URL"],
-            TAG_PROVIDER_NAME => "jenkins",
-            TAG_WORKSPACE_PATH => env["WORKSPACE"],
-            TAG_NODE_LABELS => node_labels,
-            TAG_NODE_NAME => env["NODE_NAME"],
-            TAG_CI_ENV_VARS => {
-              "DD_CUSTOM_TRACE_ID" => env["DD_CUSTOM_TRACE_ID"]
-            }.to_json
-          }
-        end
-
         def extract_teamcity(env)
           {
             TAG_PROVIDER_NAME => "teamcity",

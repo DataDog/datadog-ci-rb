@@ -20,6 +20,7 @@ module Datadog
           require_relative "providers/circleci"
           require_relative "providers/github_actions"
           require_relative "providers/gitlab"
+          require_relative "providers/jenkins"
 
           PROVIDERS = [
             ["APPVEYOR", Providers::Appveyor],
@@ -29,7 +30,8 @@ module Datadog
             ["BUILDKITE", Providers::Buildkite],
             ["CIRCLECI", Providers::Circleci],
             ["GITHUB_SHA", Providers::GithubActions],
-            ["GITLAB_CI", Providers::Gitlab]
+            ["GITLAB_CI", Providers::Gitlab],
+            ["JENKINS_URL", Providers::Jenkins]
           ]
 
           def self.for_environment(env)
@@ -162,6 +164,17 @@ module Datadog
             end
 
             [@branch, @tag]
+          end
+
+          def normalize_ref(name)
+            refs = %r{^refs/(heads/)?}
+            origin = %r{^origin/}
+            tags = %r{^tags/}
+            name.gsub(refs, "").gsub(origin, "").gsub(tags, "") unless name.nil?
+          end
+
+          def filter_sensitive_info(url)
+            url.gsub(%r{(https?://)[^/]*@}, '\1') unless url.nil?
           end
         end
       end
