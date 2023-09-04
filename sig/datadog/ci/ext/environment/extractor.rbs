@@ -5,6 +5,7 @@ module Datadog
         class Extractor
 
           PROVIDERS: ::Array[[String, singleton(Extractor)]]
+          @tags: Hash[String, untyped]
           @branch: String?
           @tag: String?
 
@@ -68,9 +69,11 @@ module Datadog
 
           def set_branch_and_tag: () -> [String?, String?]
 
-          def normalize_git!: (Hash[String, untyped] tags) -> void
+          def normalize_git!: () -> void
 
-          def expand_workspace!: (Hash[String, untyped] tags) -> void
+          def expand_workspace!: () -> void
+
+          def is_git_tag?: (String? ref) -> bool
 
           def normalize_ref: (String? name) -> String?
 

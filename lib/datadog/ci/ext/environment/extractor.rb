@@ -54,7 +54,9 @@ module Datadog
           end
 
           def tags
-            tags = {
+            return @tags if defined?(@tags)
+
+            @tags = {
               Environment::TAG_JOB_NAME => job_name,
               Environment::TAG_JOB_URL => job_url,
               Environment::TAG_PIPELINE_ID => pipeline_id,
@@ -79,7 +81,15 @@ module Datadog
               Git::TAG_COMMIT_COMMITTER_NAME => git_commit_committer_name,
               Git::TAG_COMMIT_MESSAGE => git_commit_message,
               Git::TAG_COMMIT_SHA => git_commit_sha
-            }.reject do |_, v|
+            }
+
+            # Normalize Git references and filter sensitive data
+            normalize_git!
+            # Expand ~
+            expand_workspace!
+
+            # remove empty tags
+            @tags.reject! do |_, v|
               # setting type of v here to untyped because steep does not
               # understand `v.nil? || something`
 
@@ -87,12 +97,7 @@ module Datadog
               v.nil? || v.strip.empty?
             end
 
-            # Normalize Git references and filter sensitive data
-            normalize_git!(tags)
-            # Expand ~
-            expand_workspace!(tags)
-
-            tags
+            @tags
           end
 
           private
@@ -179,33 +184,36 @@ module Datadog
           def git_commit_sha
           end
 
-          def normalize_git!(tags)
-            if !tags[Git::TAG_BRANCH].nil? && tags[Git::TAG_BRANCH].include?("tags/")
-              tags[Git::TAG_TAG] = tags[Git::TAG_BRANCH]
-              tags.delete(Git::TAG_BRANCH)
+          def normalize_git!
+            branch_ref = @tags[Git::TAG_BRANCH]
+            if is_git_tag?(branch_ref)
+              @tags[Git::TAG_TAG] = branch_ref
+              @tags.delete(Git::TAG_BRANCH)
             end
 
-            tags[Git::TAG_TAG] = normalize_ref(tags[Git::TAG_TAG]) if tags[Git::TAG_TAG]
-            tags[Git::TAG_BRANCH] = normalize_ref(tags[Git::TAG_BRANCH]) if tags[Git::TAG_BRANCH]
+            @tags[Git::TAG_TAG] = normalize_ref(@tags[Git::TAG_TAG])
+            @tags[Git::TAG_BRANCH] = normalize_ref(@tags[Git::TAG_BRANCH])
+            @tags[Git::TAG_REPOSITORY_URL] = filter_sensitive_info(
+              @tags[Git::TAG_REPOSITORY_URL]
+            )
+          end
 
-            if tags[Git::TAG_REPOSITORY_URL]
-              tags[Git::TAG_REPOSITORY_URL] = filter_sensitive_info(
-                tags[Git::TAG_REPOSITORY_URL]
-              )
+          def expand_workspace!
+            workspace_path = @tags[TAG_WORKSPACE_PATH]
+
+            if !workspace_path.nil? && (workspace_path == "~" || workspace_path.start_with?("~/"))
+              @tags[TAG_WORKSPACE_PATH] = File.expand_path(workspace_path)
             end
           end
 
-          def expand_workspace!(tags)
-            workspace_path = tags[TAG_WORKSPACE_PATH]
-
-            if !workspace_path.nil? && (workspace_path == "~" || workspace_path.start_with?("~/"))
-              tags[TAG_WORKSPACE_PATH] = File.expand_path(workspace_path)
-            end
+          def is_git_tag?(ref)
+            !ref.nil? && ref.include?("tags/")
           end
 
           def set_branch_and_tag
             branch_or_tag_string = git_branch_or_tag
             @branch = @tag = nil
+
             if branch_or_tag_string && branch_or_tag_string.include?("tags/")
               @tag = branch_or_tag_string
             else
