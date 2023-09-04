@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["GITHUB_SHA", :extract_github_actions],
           ["GITLAB_CI", :extract_gitlab],
           ["JENKINS_URL", :extract_jenkins],
           ["TEAMCITY_VERSION", :extract_teamcity],
@@ -81,59 +80,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_circle_ci(env)
-          {
-            Git::TAG_BRANCH => env["CIRCLE_BRANCH"],
-            Git::TAG_COMMIT_SHA => env["CIRCLE_SHA1"],
-            Git::TAG_REPOSITORY_URL => env["CIRCLE_REPOSITORY_URL"],
-            Git::TAG_TAG => env["CIRCLE_TAG"],
-            TAG_PIPELINE_ID => env["CIRCLE_WORKFLOW_ID"],
-            TAG_PIPELINE_NAME => env["CIRCLE_PROJECT_REPONAME"],
-            TAG_PIPELINE_URL => "https://app.circleci.com/pipelines/workflows/#{env["CIRCLE_WORKFLOW_ID"]}",
-            TAG_JOB_NAME => env["CIRCLE_JOB"],
-            TAG_JOB_URL => env["CIRCLE_BUILD_URL"],
-            TAG_PROVIDER_NAME => "circleci",
-            TAG_WORKSPACE_PATH => env["CIRCLE_WORKING_DIRECTORY"],
-            Git::TAG_COMMIT_AUTHOR_NAME => env["BUILD_REQUESTEDFORID"],
-            Git::TAG_COMMIT_AUTHOR_EMAIL => env["BUILD_REQUESTEDFOREMAIL"],
-            Git::TAG_COMMIT_MESSAGE => env["BUILD_SOURCEVERSIONMESSAGE"],
-            TAG_CI_ENV_VARS => {
-              "CIRCLE_WORKFLOW_ID" => env["CIRCLE_WORKFLOW_ID"],
-              "CIRCLE_BUILD_NUM" => env["CIRCLE_BUILD_NUM"]
-            }.to_json
-          }
-        end
-
-        def extract_github_actions(env)
-          ref = env["GITHUB_HEAD_REF"]
-          ref = env["GITHUB_REF"] if ref.nil? || ref.empty?
-          branch, tag = branch_or_tag(ref)
-
-          pipeline_url = "#{env["GITHUB_SERVER_URL"]}/#{env["GITHUB_REPOSITORY"]}/actions/runs/#{env["GITHUB_RUN_ID"]}"
-          pipeline_url = "#{pipeline_url}/attempts/#{env["GITHUB_RUN_ATTEMPT"]}" if env["GITHUB_RUN_ATTEMPT"]
-
-          {
-            Git::TAG_BRANCH => branch,
-            Git::TAG_COMMIT_SHA => env["GITHUB_SHA"],
-            Git::TAG_REPOSITORY_URL => "#{env["GITHUB_SERVER_URL"]}/#{env["GITHUB_REPOSITORY"]}.git",
-            Git::TAG_TAG => tag,
-            TAG_JOB_URL => "#{env["GITHUB_SERVER_URL"]}/#{env["GITHUB_REPOSITORY"]}/commit/#{env["GITHUB_SHA"]}/checks",
-            TAG_JOB_NAME => env["GITHUB_JOB"],
-            TAG_PIPELINE_ID => env["GITHUB_RUN_ID"],
-            TAG_PIPELINE_NAME => env["GITHUB_WORKFLOW"],
-            TAG_PIPELINE_NUMBER => env["GITHUB_RUN_NUMBER"],
-            TAG_PIPELINE_URL => pipeline_url,
-            TAG_PROVIDER_NAME => "github",
-            TAG_WORKSPACE_PATH => env["GITHUB_WORKSPACE"],
-            TAG_CI_ENV_VARS => {
-              "GITHUB_SERVER_URL" => env["GITHUB_SERVER_URL"],
-              "GITHUB_REPOSITORY" => env["GITHUB_REPOSITORY"],
-              "GITHUB_RUN_ID" => env["GITHUB_RUN_ID"],
-              "GITHUB_RUN_ATTEMPT" => env["GITHUB_RUN_ATTEMPT"]
-            }.reject { |_k, v| v.nil? }.to_json
-          }
-        end
-
         def extract_gitlab(env)
           commit_author_name, commit_author_email = extract_name_email(env["CI_COMMIT_AUTHOR"])
 
