@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["BITRISE_BUILD_SLUG", :extract_bitrise],
           ["CF_BUILD_ID", :extract_codefresh]
         ].freeze
 
@@ -76,36 +75,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_bitrise(env)
-          commit = (
-            env["BITRISE_GIT_COMMIT"] || env["GIT_CLONE_COMMIT_HASH"]
-          )
-          branch = (
-            env["BITRISEIO_GIT_BRANCH_DEST"] || env["BITRISE_GIT_BRANCH"]
-          )
-          commiter_email = (
-            env["GIT_CLONE_COMMIT_COMMITER_EMAIL"] || env["GIT_CLONE_COMMIT_COMMITER_NAME"]
-          )
-
-          {
-            TAG_PROVIDER_NAME => "bitrise",
-            TAG_PIPELINE_ID => env["BITRISE_BUILD_SLUG"],
-            TAG_PIPELINE_NAME => env["BITRISE_TRIGGERED_WORKFLOW_ID"],
-            TAG_PIPELINE_NUMBER => env["BITRISE_BUILD_NUMBER"],
-            TAG_PIPELINE_URL => env["BITRISE_BUILD_URL"],
-            TAG_WORKSPACE_PATH => env["BITRISE_SOURCE_DIR"],
-            Git::TAG_REPOSITORY_URL => env["GIT_REPOSITORY_URL"],
-            Git::TAG_COMMIT_SHA => commit,
-            Git::TAG_BRANCH => branch,
-            Git::TAG_TAG => env["BITRISE_GIT_TAG"],
-            Git::TAG_COMMIT_MESSAGE => env["BITRISE_GIT_MESSAGE"],
-            Git::TAG_COMMIT_AUTHOR_NAME => env["GIT_CLONE_COMMIT_AUTHOR_NAME"],
-            Git::TAG_COMMIT_AUTHOR_EMAIL => env["GIT_CLONE_COMMIT_AUTHOR_EMAIL"],
-            Git::TAG_COMMIT_COMMITTER_NAME => env["GIT_CLONE_COMMIT_COMMITER_NAME"],
-            Git::TAG_COMMIT_COMMITTER_EMAIL => commiter_email
-          }
-        end
-
         def extract_codefresh(env)
           branch, tag = branch_or_tag(env["CF_BRANCH"])
 

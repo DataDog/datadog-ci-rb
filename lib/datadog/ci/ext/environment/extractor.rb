@@ -23,6 +23,7 @@ module Datadog
           require_relative "providers/jenkins"
           require_relative "providers/teamcity"
           require_relative "providers/travis"
+          require_relative "providers/bitrise"
 
           PROVIDERS = [
             ["APPVEYOR", Providers::Appveyor],
@@ -35,7 +36,8 @@ module Datadog
             ["GITLAB_CI", Providers::Gitlab],
             ["JENKINS_URL", Providers::Jenkins],
             ["TEAMCITY_VERSION", Providers::Teamcity],
-            ["TRAVIS", Providers::Travis]
+            ["TRAVIS", Providers::Travis],
+            ["BITRISE_BUILD_SLUG", Providers::Bitrise]
           ]
 
           def self.for_environment(env)
