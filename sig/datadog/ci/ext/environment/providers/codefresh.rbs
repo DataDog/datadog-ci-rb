@@ -15,13 +15,9 @@ module Datadog
 
             def pipeline_url: () -> String?
 
-            def git_branch: () -> String?
-
-            def git_tag: () -> String?
+            def git_branch_or_tag: () -> String?
 
             def ci_env_vars: () -> String
-
-            def set_branch_and_tag: () -> [String?, String?]
           end
         end
       end

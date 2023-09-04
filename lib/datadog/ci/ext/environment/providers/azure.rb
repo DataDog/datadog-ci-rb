@@ -61,18 +61,8 @@ module Datadog
               env["SYSTEM_PULLREQUEST_SOURCECOMMITID"] || env["BUILD_SOURCEVERSION"]
             end
 
-            def git_branch
-              return @branch if defined?(@branch)
-
-              set_branch_and_tag
-              @branch
-            end
-
-            def git_tag
-              return @tag if defined?(@tag)
-
-              set_branch_and_tag
-              @tag
+            def git_branch_or_tag
+              env["SYSTEM_PULLREQUEST_SOURCEBRANCH"] || env["BUILD_SOURCEBRANCH"] || env["BUILD_SOURCEBRANCHNAME"]
             end
 
             def git_commit_author_name
@@ -111,12 +101,6 @@ module Datadog
 
             def url_defined?
               !(build_id && team_foundation_server_uri && team_project_id).nil?
-            end
-
-            def set_branch_and_tag
-              @branch, @tag = branch_or_tag(
-                env["SYSTEM_PULLREQUEST_SOURCEBRANCH"] || env["BUILD_SOURCEBRANCH"] || env["BUILD_SOURCEBRANCHNAME"]
-              )
             end
           end
         end

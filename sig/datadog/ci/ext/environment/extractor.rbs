@@ -66,7 +66,7 @@ module Datadog
 
           def git_commit_sha: () -> nil
 
-          def branch_or_tag: (String? branch_or_tag_string) -> [String?, String?]
+          def set_branch_and_tag: () -> [String?, String?]
 
           def normalize_ref: (String? name) -> String?
 

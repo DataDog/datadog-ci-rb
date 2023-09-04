@@ -33,29 +33,14 @@ module Datadog
               env["CF_BUILD_URL"]
             end
 
-            def git_branch
-              return @branch if defined?(@branch)
-
-              set_branch_and_tag
-              @branch
-            end
-
-            def git_tag
-              return @tag if defined?(@tag)
-
-              set_branch_and_tag
-              @tag
+            def git_branch_or_tag
+              env["CF_BRANCH"]
             end
 
             def ci_env_vars
               {
                 "CF_BUILD_ID" => env["CF_BUILD_ID"]
               }.to_json
-            end
-
-            # codefresh-specific methods
-            def set_branch_and_tag
-              @branch, @tag = branch_or_tag(env["CF_BRANCH"])
             end
           end
         end

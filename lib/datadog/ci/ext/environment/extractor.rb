@@ -129,12 +129,20 @@ module Datadog
           end
 
           def git_branch
+            return @branch if defined?(@branch)
+
+            set_branch_and_tag
+            @branch
           end
 
           def git_repository_url
           end
 
           def git_tag
+            return @tag if defined?(@tag)
+
+            set_branch_and_tag
+            @tag
           end
 
           def git_branch_or_tag
@@ -164,7 +172,8 @@ module Datadog
           def git_commit_sha
           end
 
-          def branch_or_tag(branch_or_tag_string)
+          def set_branch_and_tag
+            branch_or_tag_string = git_branch_or_tag
             @branch = @tag = nil
             if branch_or_tag_string && branch_or_tag_string.include?("tags/")
               @tag = branch_or_tag_string

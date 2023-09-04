@@ -55,18 +55,10 @@ module Datadog
               env["GITHUB_SHA"]
             end
 
-            def git_branch
-              return @branch if defined?(@branch)
-
-              set_branch_and_tag
-              @branch
-            end
-
-            def git_tag
-              return @tag if defined?(@tag)
-
-              set_branch_and_tag
-              @tag
+            def git_branch_or_tag
+              ref = env["GITHUB_HEAD_REF"]
+              ref = env["GITHUB_REF"] if ref.nil? || ref.empty?
+              ref
             end
 
             def ci_env_vars
@@ -76,20 +68,6 @@ module Datadog
                 "GITHUB_RUN_ID" => env["GITHUB_RUN_ID"],
                 "GITHUB_RUN_ATTEMPT" => env["GITHUB_RUN_ATTEMPT"]
               }.reject { |_, v| v.nil? }.to_json
-            end
-
-            # github-specific methods
-
-            def ref
-              return @ref if defined?(@ref)
-
-              @ref = env["GITHUB_HEAD_REF"]
-              @ref = env["GITHUB_REF"] if @ref.nil? || @ref.empty?
-              @ref
-            end
-
-            def set_branch_and_tag
-              @branch, @tag = branch_or_tag(ref)
             end
           end
         end

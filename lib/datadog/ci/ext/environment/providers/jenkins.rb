@@ -57,30 +57,14 @@ module Datadog
               env["GIT_COMMIT"]
             end
 
-            def git_branch
-              return @branch if defined?(@branch)
-
-              set_branch_and_tag
-              @branch
-            end
-
-            def git_tag
-              return @tag if defined?(@tag)
-
-              set_branch_and_tag
-              @tag
+            def git_branch_or_tag
+              env["GIT_BRANCH"]
             end
 
             def ci_env_vars
               {
                 "DD_CUSTOM_TRACE_ID" => env["DD_CUSTOM_TRACE_ID"]
               }.to_json
-            end
-
-            # jenkins-specific methods
-
-            def set_branch_and_tag
-              @branch, @tag = branch_or_tag(env["GIT_BRANCH"])
             end
           end
         end
