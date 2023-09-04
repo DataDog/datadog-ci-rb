@@ -1,0 +1,65 @@
+# frozen_string_literal: true
+
+require_relative "../extractor"
+
+module Datadog
+  module CI
+    module Ext
+      module Environment
+        module Providers
+          # Codefresh: https://codefresh.io/
+          # Environment variables docs: https://codefresh.io/docs/docs/pipelines/variables/#export-variables-to-all-steps-with-cf_export
+          class Codefresh < Extractor
+            private
+
+            # overridden methods
+            def provider_name
+              "codefresh"
+            end
+
+            def job_name
+              env["CF_STEP_NAME"]
+            end
+
+            def pipeline_id
+              env["CF_BUILD_ID"]
+            end
+
+            def pipeline_name
+              env["CF_PIPELINE_NAME"]
+            end
+
+            def pipeline_url
+              env["CF_BUILD_URL"]
+            end
+
+            def git_branch
+              return @branch if defined?(@branch)
+
+              set_branch_and_tag
+              @branch
+            end
+
+            def git_tag
+              return @tag if defined?(@tag)
+
+              set_branch_and_tag
+              @tag
+            end
+
+            def ci_env_vars
+              {
+                "CF_BUILD_ID" => env["CF_BUILD_ID"]
+              }.to_json
+            end
+
+            # codefresh-specific methods
+            def set_branch_and_tag
+              @branch, @tag = branch_or_tag(env["CF_BRANCH"])
+            end
+          end
+        end
+      end
+    end
+  end
+end

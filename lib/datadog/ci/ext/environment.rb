@@ -24,16 +24,11 @@ module Datadog
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
-        PROVIDERS = [
-          ["CF_BUILD_ID", :extract_codefresh]
-        ].freeze
-
         module_function
 
         def tags(env)
           # Extract metadata from CI provider environment variables
-          _, extractor = PROVIDERS.find { |provider_env_var, _| env.key?(provider_env_var) }
-          tags = extractor ? public_send(extractor, env).reject { |_, v| v.nil? || v.strip.empty? } : Environment::Extractor.for_environment(env).tags
+          tags = Environment::Extractor.for_environment(env).tags
 
           # If user defined metadata is defined, overwrite
           tags.merge!(extract_user_defined_git(env))
@@ -75,23 +70,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_codefresh(env)
-          branch, tag = branch_or_tag(env["CF_BRANCH"])
-
-          {
-            TAG_PROVIDER_NAME => "codefresh",
-            TAG_PIPELINE_ID => env["CF_BUILD_ID"],
-            TAG_PIPELINE_NAME => env["CF_PIPELINE_NAME"],
-            TAG_PIPELINE_URL => env["CF_BUILD_URL"],
-            TAG_JOB_NAME => env["CF_STEP_NAME"],
-            Git::TAG_BRANCH => branch,
-            Git::TAG_TAG => tag,
-            TAG_CI_ENV_VARS => {
-              "CF_BUILD_ID" => env["CF_BUILD_ID"]
-            }.to_json
-          }
-        end
-
         def extract_user_defined_git(env)
           {
             Git::TAG_REPOSITORY_URL => env[Git::ENV_REPOSITORY_URL],

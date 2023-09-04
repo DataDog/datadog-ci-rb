@@ -48,6 +48,8 @@ module Datadog
 
           def git_tag: () -> nil
 
+          def git_branch_or_tag: () -> nil
+
           def git_commit_author_date: () -> nil
 
           def git_commit_author_email: () -> nil

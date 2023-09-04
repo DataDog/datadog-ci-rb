@@ -15,29 +15,31 @@ module Datadog
           require_relative "providers/appveyor"
           require_relative "providers/azure"
           require_relative "providers/bitbucket"
+          require_relative "providers/bitrise"
           require_relative "providers/buddy"
           require_relative "providers/buildkite"
           require_relative "providers/circleci"
+          require_relative "providers/codefresh"
           require_relative "providers/github_actions"
           require_relative "providers/gitlab"
           require_relative "providers/jenkins"
           require_relative "providers/teamcity"
           require_relative "providers/travis"
-          require_relative "providers/bitrise"
 
           PROVIDERS = [
             ["APPVEYOR", Providers::Appveyor],
             ["TF_BUILD", Providers::Azure],
             ["BITBUCKET_COMMIT", Providers::Bitbucket],
+            ["BITRISE_BUILD_SLUG", Providers::Bitrise],
             ["BUDDY", Providers::Buddy],
             ["BUILDKITE", Providers::Buildkite],
             ["CIRCLECI", Providers::Circleci],
+            ["CF_BUILD_ID", Providers::Codefresh],
             ["GITHUB_SHA", Providers::GithubActions],
             ["GITLAB_CI", Providers::Gitlab],
             ["JENKINS_URL", Providers::Jenkins],
             ["TEAMCITY_VERSION", Providers::Teamcity],
-            ["TRAVIS", Providers::Travis],
-            ["BITRISE_BUILD_SLUG", Providers::Bitrise]
+            ["TRAVIS", Providers::Travis]
           ]
 
           def self.for_environment(env)
@@ -133,6 +135,9 @@ module Datadog
           end
 
           def git_tag
+          end
+
+          def git_branch_or_tag
           end
 
           def git_commit_author_date

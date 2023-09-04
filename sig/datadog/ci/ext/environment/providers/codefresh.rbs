@@ -1,0 +1,30 @@
+module Datadog
+  module CI
+    module Ext
+      module Environment
+        module Providers
+          class Codefresh < Extractor
+            private
+            def provider_name: () -> "codefresh"
+
+            def job_name: () -> String?
+
+            def pipeline_id: () -> String?
+
+            def pipeline_name: () -> String?
+
+            def pipeline_url: () -> String?
+
+            def git_branch: () -> String?
+
+            def git_tag: () -> String?
+
+            def ci_env_vars: () -> String
+
+            def set_branch_and_tag: () -> [String?, String?]
+          end
+        end
+      end
+    end
+  end
+end
