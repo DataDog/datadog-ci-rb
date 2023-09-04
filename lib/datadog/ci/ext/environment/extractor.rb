@@ -21,6 +21,7 @@ module Datadog
           require_relative "providers/github_actions"
           require_relative "providers/gitlab"
           require_relative "providers/jenkins"
+          require_relative "providers/teamcity"
 
           PROVIDERS = [
             ["APPVEYOR", Providers::Appveyor],
@@ -31,7 +32,8 @@ module Datadog
             ["CIRCLECI", Providers::Circleci],
             ["GITHUB_SHA", Providers::GithubActions],
             ["GITLAB_CI", Providers::Gitlab],
-            ["JENKINS_URL", Providers::Jenkins]
+            ["JENKINS_URL", Providers::Jenkins],
+            ["TEAMCITY_VERSION", Providers::Teamcity]
           ]
 
           def self.for_environment(env)
@@ -124,7 +126,6 @@ module Datadog
           end
 
           def git_repository_url
-            raise NoMethodError.new("This method must be overridden")
           end
 
           def git_tag
@@ -152,7 +153,6 @@ module Datadog
           end
 
           def git_commit_sha
-            raise NoMethodError.new("This method must be overridden")
           end
 
           def branch_or_tag(branch_or_tag_string)

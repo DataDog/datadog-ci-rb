@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["TEAMCITY_VERSION", :extract_teamcity],
           ["TRAVIS", :extract_travis],
           ["BITRISE_BUILD_SLUG", :extract_bitrise],
           ["CF_BUILD_ID", :extract_codefresh]
