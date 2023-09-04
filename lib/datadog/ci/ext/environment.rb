@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["CIRCLECI", :extract_circle_ci],
           ["GITHUB_SHA", :extract_github_actions],
           ["GITLAB_CI", :extract_gitlab],
           ["JENKINS_URL", :extract_jenkins],
@@ -44,12 +43,12 @@ module Datadog
 
           # If user defined metadata is defined, overwrite
           tags.merge!(extract_user_defined_git(env))
+
+          # Normalize Git references
           if !tags[Git::TAG_BRANCH].nil? && tags[Git::TAG_BRANCH].include?("tags/")
             tags[Git::TAG_TAG] = tags[Git::TAG_BRANCH]
             tags.delete(Git::TAG_BRANCH)
           end
-
-          # Normalize Git references
           tags[Git::TAG_TAG] = normalize_ref(tags[Git::TAG_TAG])
           tags[Git::TAG_BRANCH] = normalize_ref(tags[Git::TAG_BRANCH])
           tags[Git::TAG_REPOSITORY_URL] = filter_sensitive_info(

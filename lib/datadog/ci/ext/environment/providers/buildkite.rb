@@ -88,8 +88,6 @@ module Datadog
                 "BUILDKITE_JOB_ID" => env["BUILDKITE_JOB_ID"]
               }.to_json
             end
-
-            # buildkite-specific methods
           end
         end
       end
