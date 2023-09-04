@@ -19,6 +19,7 @@ module Datadog
           require_relative "providers/buildkite"
           require_relative "providers/circleci"
           require_relative "providers/github_actions"
+          require_relative "providers/gitlab"
 
           PROVIDERS = [
             ["APPVEYOR", Providers::Appveyor],
@@ -27,7 +28,8 @@ module Datadog
             ["BUDDY", Providers::Buddy],
             ["BUILDKITE", Providers::Buildkite],
             ["CIRCLECI", Providers::Circleci],
-            ["GITHUB_SHA", Providers::GithubActions]
+            ["GITHUB_SHA", Providers::GithubActions],
+            ["GITLAB_CI", Providers::Gitlab]
           ]
 
           def self.for_environment(env)

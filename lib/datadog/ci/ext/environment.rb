@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["GITLAB_CI", :extract_gitlab],
           ["JENKINS_URL", :extract_jenkins],
           ["TEAMCITY_VERSION", :extract_teamcity],
           ["TRAVIS", :extract_travis],
@@ -80,37 +79,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_gitlab(env)
-          commit_author_name, commit_author_email = extract_name_email(env["CI_COMMIT_AUTHOR"])
-
-          {
-            Git::TAG_BRANCH => env["CI_COMMIT_REF_NAME"],
-            Git::TAG_COMMIT_SHA => env["CI_COMMIT_SHA"],
-            Git::TAG_REPOSITORY_URL => env["CI_REPOSITORY_URL"],
-            Git::TAG_TAG => env["CI_COMMIT_TAG"],
-            Git::TAG_COMMIT_AUTHOR_NAME => commit_author_name,
-            Git::TAG_COMMIT_AUTHOR_EMAIL => commit_author_email,
-            Git::TAG_COMMIT_AUTHOR_DATE => env["CI_COMMIT_TIMESTAMP"],
-            TAG_STAGE_NAME => env["CI_JOB_STAGE"],
-            TAG_JOB_NAME => env["CI_JOB_NAME"],
-            TAG_JOB_URL => env["CI_JOB_URL"],
-            TAG_PIPELINE_ID => env["CI_PIPELINE_ID"],
-            TAG_PIPELINE_NAME => env["CI_PROJECT_PATH"],
-            TAG_PIPELINE_NUMBER => env["CI_PIPELINE_IID"],
-            TAG_PIPELINE_URL => env["CI_PIPELINE_URL"],
-            TAG_PROVIDER_NAME => "gitlab",
-            TAG_WORKSPACE_PATH => env["CI_PROJECT_DIR"],
-            TAG_NODE_LABELS => env["CI_RUNNER_TAGS"],
-            TAG_NODE_NAME => env["CI_RUNNER_ID"],
-            Git::TAG_COMMIT_MESSAGE => env["CI_COMMIT_MESSAGE"],
-            TAG_CI_ENV_VARS => {
-              "CI_PROJECT_URL" => env["CI_PROJECT_URL"],
-              "CI_PIPELINE_ID" => env["CI_PIPELINE_ID"],
-              "CI_JOB_ID" => env["CI_JOB_ID"]
-            }.to_json
-          }
-        end
-
         def extract_jenkins(env)
           branch, tag = branch_or_tag(env["GIT_BRANCH"])
 
@@ -353,17 +321,6 @@ module Datadog
           end
 
           [branch, tag]
-        end
-
-        def extract_name_email(name_and_email)
-          if name_and_email.include?("<") && (match = /^([^<]*)<([^>]*)>$/.match(name_and_email))
-            name = match[1]
-            name = name.strip if name
-            email = match[2]
-            return [name, email] if name && email
-          end
-
-          [nil, name_and_email]
         end
       end
     end
