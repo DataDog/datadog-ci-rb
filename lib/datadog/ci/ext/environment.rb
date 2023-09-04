@@ -25,7 +25,6 @@ module Datadog
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
         PROVIDERS = [
-          ["TRAVIS", :extract_travis],
           ["BITRISE_BUILD_SLUG", :extract_bitrise],
           ["CF_BUILD_ID", :extract_codefresh]
         ].freeze
@@ -77,31 +76,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_teamcity(env)
-          {
-            TAG_PROVIDER_NAME => "teamcity",
-            TAG_JOB_NAME => env["TEAMCITY_BUILDCONF_NAME"],
-            TAG_JOB_URL => env["BUILD_URL"]
-          }
-        end
-
-        def extract_travis(env)
-          {
-            Git::TAG_BRANCH => (env["TRAVIS_PULL_REQUEST_BRANCH"] || env["TRAVIS_BRANCH"]),
-            Git::TAG_COMMIT_SHA => env["TRAVIS_COMMIT"],
-            Git::TAG_REPOSITORY_URL => "https://github.com/#{env["TRAVIS_REPO_SLUG"]}.git",
-            Git::TAG_TAG => env["TRAVIS_TAG"],
-            TAG_JOB_URL => env["TRAVIS_JOB_WEB_URL"],
-            TAG_PIPELINE_ID => env["TRAVIS_BUILD_ID"],
-            TAG_PIPELINE_NAME => env["TRAVIS_REPO_SLUG"],
-            TAG_PIPELINE_NUMBER => env["TRAVIS_BUILD_NUMBER"],
-            TAG_PIPELINE_URL => env["TRAVIS_BUILD_WEB_URL"],
-            TAG_PROVIDER_NAME => "travisci",
-            TAG_WORKSPACE_PATH => env["TRAVIS_BUILD_DIR"],
-            Git::TAG_COMMIT_MESSAGE => env["TRAVIS_COMMIT_MESSAGE"]
-          }
-        end
-
         def extract_bitrise(env)
           commit = (
             env["BITRISE_GIT_COMMIT"] || env["GIT_CLONE_COMMIT_HASH"]
