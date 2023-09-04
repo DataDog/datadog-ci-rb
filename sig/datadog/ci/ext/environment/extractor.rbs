@@ -68,6 +68,10 @@ module Datadog
 
           def set_branch_and_tag: () -> [String?, String?]
 
+          def normalize_git!: (Hash[String, untyped] tags) -> void
+
+          def expand_workspace!: (Hash[String, untyped] tags) -> void
+
           def normalize_ref: (String? name) -> String?
 
           def filter_sensitive_info: (String? url) -> String?

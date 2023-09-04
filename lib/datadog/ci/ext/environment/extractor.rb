@@ -54,7 +54,7 @@ module Datadog
           end
 
           def tags
-            {
+            tags = {
               Environment::TAG_JOB_NAME => job_name,
               Environment::TAG_JOB_URL => job_url,
               Environment::TAG_PIPELINE_ID => pipeline_id,
@@ -86,6 +86,13 @@ module Datadog
               # @type var v: untyped
               v.nil? || v.strip.empty?
             end
+
+            # Normalize Git references and filter sensitive data
+            normalize_git!(tags)
+            # Expand ~
+            expand_workspace!(tags)
+
+            tags
           end
 
           private
@@ -172,6 +179,30 @@ module Datadog
           def git_commit_sha
           end
 
+          def normalize_git!(tags)
+            if !tags[Git::TAG_BRANCH].nil? && tags[Git::TAG_BRANCH].include?("tags/")
+              tags[Git::TAG_TAG] = tags[Git::TAG_BRANCH]
+              tags.delete(Git::TAG_BRANCH)
+            end
+
+            tags[Git::TAG_TAG] = normalize_ref(tags[Git::TAG_TAG]) if tags[Git::TAG_TAG]
+            tags[Git::TAG_BRANCH] = normalize_ref(tags[Git::TAG_BRANCH]) if tags[Git::TAG_BRANCH]
+
+            if tags[Git::TAG_REPOSITORY_URL]
+              tags[Git::TAG_REPOSITORY_URL] = filter_sensitive_info(
+                tags[Git::TAG_REPOSITORY_URL]
+              )
+            end
+          end
+
+          def expand_workspace!(tags)
+            workspace_path = tags[TAG_WORKSPACE_PATH]
+
+            if !workspace_path.nil? && (workspace_path == "~" || workspace_path.start_with?("~/"))
+              tags[TAG_WORKSPACE_PATH] = File.expand_path(workspace_path)
+            end
+          end
+
           def set_branch_and_tag
             branch_or_tag_string = git_branch_or_tag
             @branch = @tag = nil
@@ -185,14 +216,18 @@ module Datadog
           end
 
           def normalize_ref(name)
+            return nil if name.nil?
+
             refs = %r{^refs/(heads/)?}
             origin = %r{^origin/}
             tags = %r{^tags/}
-            name.gsub(refs, "").gsub(origin, "").gsub(tags, "") unless name.nil?
+            name.gsub(refs, "").gsub(origin, "").gsub(tags, "")
           end
 
           def filter_sensitive_info(url)
-            url.gsub(%r{(https?://)[^/]*@}, '\1') unless url.nil?
+            return nil if url.nil?
+
+            url.gsub(%r{(https?://)[^/]*@}, '\1')
           end
         end
       end
