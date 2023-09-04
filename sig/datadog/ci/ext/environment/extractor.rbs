@@ -18,53 +18,53 @@ module Datadog
 
           attr_reader env: untyped
 
-          def job_name: () -> nil
+          def job_name: () -> String?
 
-          def job_url: () -> nil
+          def job_url: () -> String?
 
-          def pipeline_id: () -> nil
+          def pipeline_id: () -> String?
 
-          def pipeline_name: () -> nil
+          def pipeline_name: () -> String?
 
-          def pipeline_number: () -> nil
+          def pipeline_number: () -> String?
 
-          def pipeline_url: () -> nil
+          def pipeline_url: () -> String?
 
-          def provider_name: () -> nil
+          def provider_name: () -> String?
 
-          def stage_name: () -> nil
+          def stage_name: () -> String?
 
-          def workspace_path: () -> nil
+          def workspace_path: () -> String?
 
-          def node_labels: () -> nil
+          def node_labels: () -> String?
 
-          def node_name: () -> nil
+          def node_name: () -> String?
 
-          def ci_env_vars: () -> nil
+          def ci_env_vars: () -> String?
 
-          def git_branch: () -> nil
+          def git_branch: () -> String?
 
-          def git_repository_url: () -> nil
+          def git_repository_url: () -> String?
 
-          def git_tag: () -> nil
+          def git_tag: () -> String?
 
-          def git_branch_or_tag: () -> nil
+          def git_branch_or_tag: () -> String?
 
-          def git_commit_author_date: () -> nil
+          def git_commit_author_date: () -> String?
 
-          def git_commit_author_email: () -> nil
+          def git_commit_author_email: () -> String?
 
-          def git_commit_author_name: () -> nil
+          def git_commit_author_name: () -> String?
 
-          def git_commit_committer_date: () -> nil
+          def git_commit_committer_date: () -> String?
 
-          def git_commit_committer_email: () -> nil
+          def git_commit_committer_email: () -> String?
 
-          def git_commit_committer_name: () -> nil
+          def git_commit_committer_name: () -> String?
 
-          def git_commit_message: () -> nil
+          def git_commit_message: () -> String?
 
-          def git_commit_sha: () -> nil
+          def git_commit_sha: () -> String?
 
           def set_branch_and_tag: () -> [String?, String?]
 

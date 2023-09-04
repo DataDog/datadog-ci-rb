@@ -5,6 +5,7 @@ require "json"
 
 require_relative "git"
 require_relative "environment/extractor"
+require_relative "environment/user_defined_tags"
 
 module Datadog
   module CI
@@ -31,7 +32,9 @@ module Datadog
           tags = Environment::Extractor.for_environment(env).tags
 
           # If user defined metadata is defined, overwrite
-          tags.merge!(extract_user_defined_git(env))
+          tags.merge!(
+            UserDefinedTags.new(env).tags
+          )
 
           # Normalize Git references
           if !tags[Git::TAG_BRANCH].nil? && tags[Git::TAG_BRANCH].include?("tags/")
@@ -70,22 +73,6 @@ module Datadog
         end
 
         # CI providers
-        def extract_user_defined_git(env)
-          {
-            Git::TAG_REPOSITORY_URL => env[Git::ENV_REPOSITORY_URL],
-            Git::TAG_COMMIT_SHA => env[Git::ENV_COMMIT_SHA],
-            Git::TAG_BRANCH => env[Git::ENV_BRANCH],
-            Git::TAG_TAG => env[Git::ENV_TAG],
-            Git::TAG_COMMIT_MESSAGE => env[Git::ENV_COMMIT_MESSAGE],
-            Git::TAG_COMMIT_AUTHOR_NAME => env[Git::ENV_COMMIT_AUTHOR_NAME],
-            Git::TAG_COMMIT_AUTHOR_EMAIL => env[Git::ENV_COMMIT_AUTHOR_EMAIL],
-            Git::TAG_COMMIT_AUTHOR_DATE => env[Git::ENV_COMMIT_AUTHOR_DATE],
-            Git::TAG_COMMIT_COMMITTER_NAME => env[Git::ENV_COMMIT_COMMITTER_NAME],
-            Git::TAG_COMMIT_COMMITTER_EMAIL => env[Git::ENV_COMMIT_COMMITTER_EMAIL],
-            Git::TAG_COMMIT_COMMITTER_DATE => env[Git::ENV_COMMIT_COMMITTER_DATE]
-          }.reject { |_, v| v.nil? || v.strip.empty? }
-        end
-
         def git_commit_users
           # Get committer and author information in one command.
           output = exec_git_command("git show -s --format='%an\t%ae\t%at\t%cn\t%ce\t%ct'")
