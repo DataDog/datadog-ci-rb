@@ -3,9 +3,28 @@ module Datadog
     module Ext
       module Environment
         class LocalGit < Extractor
+          class GitUser
+            attr_reader name: String?
+            attr_reader email: String?
+            attr_reader timestamp: String?
+
+            @name: String?
+            @email: String?
+            @timestamp: String?
+
+            def initialize: (String? name, String? email, String? timestamp) -> void
+
+            def date: () -> String?
+          end
+
+          class NilUser < GitUser
+            def initialize: () -> void
+          end
+
           private
 
-          @commit_users: Hash[Symbol, String?]
+          @author: GitUser
+          @committer: GitUser
 
           def git_repository_url: () -> String?
 
@@ -33,7 +52,11 @@ module Datadog
 
           def exec_git_command: (String cmd) -> String?
 
-          def git_commit_users: () -> Hash[Symbol, String?]
+          def author: () -> GitUser
+
+          def committer: () -> GitUser
+
+          def set_git_commit_users: () -> void
         end
       end
     end
