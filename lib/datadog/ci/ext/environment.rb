@@ -23,6 +23,8 @@ module Datadog
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
+        HEX_NUMBER_REGEXP = /[0-9a-f]{40}/i.freeze
+
         module_function
 
         def tags(env)
@@ -40,7 +42,41 @@ module Datadog
             tags[key] ||= value
           end
 
+          ensure_post_conditions(tags)
+
           tags
+        end
+
+        def ensure_post_conditions(tags)
+          validate_repository_url(tags[Git::TAG_REPOSITORY_URL])
+          validate_git_sha(tags[Git::TAG_COMMIT_SHA])
+        end
+
+        def validate_repository_url(repo_url)
+          return if !repo_url.nil? && !repo_url.empty?
+
+          Datadog.logger.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
+        end
+
+        def validate_git_sha(git_sha)
+          message = "DD_GIT_COMMIT_SHA must be a full-length git SHA."
+
+          if git_sha.nil? || git_sha.empty?
+            message += " No value was set and no SHA was automatically extracted."
+            Datadog.logger.error(message)
+            return
+          end
+
+          if git_sha.length < Git::SHA_LENGTH
+            message += " Expected SHA length #{Git::SHA_LENGTH}, was #{git_sha.length}."
+            Datadog.logger.error(message)
+            return
+          end
+
+          unless HEX_NUMBER_REGEXP =~ git_sha
+            message += " Expected SHA to be a valid HEX number, got #{git_sha}."
+            Datadog.logger.error(message)
+          end
         end
       end
     end
