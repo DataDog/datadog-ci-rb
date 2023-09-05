@@ -5,23 +5,31 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in datadog-ci.gemspec
 gemspec
 
-gem "pry"
+# build tasks, utils
 gem "rake"
-gem "rspec"
 gem "os"
 
-gem "climate_control"
-
+# testing
+gem "rspec"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
+gem "climate_control"
+# dependency management for tests
 gem "appraisal"
+# code coverage
+gem "simplecov"
+gem "simplecov-cobertura", "~> 2.1.0"
+
+# ruby linting and formatting
 gem "standard", "~> 1.31.0"
 
+# docs
 gem "yard"
 gem "webrick"
 
-gem "simplecov"
-gem "simplecov-cobertura", "~> 2.1.0"
+# debug
+gem "debug", ">= 1.0.0" if RUBY_PLATFORM != "java"
+gem "pry"
 
 # type checking
 group :check do

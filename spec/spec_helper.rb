@@ -18,6 +18,10 @@ require_relative "support/platform_helpers"
 require "rspec/collection_matchers"
 require "climate_control"
 
+if RUBY_PLATFORM != "java"
+  require "debug"
+end
+
 RSpec.configure do |config|
   config.include ConfigurationHelpers
   config.include TracerHelpers

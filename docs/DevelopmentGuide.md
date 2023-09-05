@@ -125,3 +125,13 @@ To check, run:
 ```bash
 bundle exec standardrb
 ```
+
+## Debugging
+
+We use gem `debug` for debugging.
+
+TBD
+
+Alternative options for debugging is `pry`.
+
+TBD

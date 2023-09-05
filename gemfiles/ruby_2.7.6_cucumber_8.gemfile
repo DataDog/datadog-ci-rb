@@ -2,19 +2,20 @@
 
 source "https://rubygems.org"
 
-gem "pry"
 gem "rake"
-gem "rspec"
 gem "os"
-gem "climate_control"
+gem "rspec"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
+gem "climate_control"
 gem "appraisal"
+gem "simplecov"
+gem "simplecov-cobertura", "~> 2.1.0"
 gem "standard", "~> 1.31.0"
 gem "yard"
 gem "webrick"
-gem "simplecov"
-gem "simplecov-cobertura", "~> 2.1.0"
+gem "debug", ">= 1.0.0"
+gem "pry"
 gem "cucumber", "~> 8"
 
 group :check do
