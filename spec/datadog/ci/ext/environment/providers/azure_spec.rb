@@ -65,9 +65,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Azure do
 
         let(:expected_tags) do
           hash = super()
-          hash.merge!({
-            "_dd.ci.env_vars" => "{\"SYSTEM_TEAMPROJECTID\":\"azure-pipelines-project-id\",\"BUILD_BUILDID\":null,\"SYSTEM_JOBID\":\"azure-pipelines-job-id\"}"
-          })
+          hash["_dd.ci.env_vars"] = "{\"SYSTEM_TEAMPROJECTID\":\"azure-pipelines-project-id\",\"BUILD_BUILDID\":null,\"SYSTEM_JOBID\":\"azure-pipelines-job-id\"}"
           ["ci.pipeline.id", "ci.pipeline.number", "ci.pipeline.url", "ci.job.url"].each do |key|
             hash.delete(key)
           end
