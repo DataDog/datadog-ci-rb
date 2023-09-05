@@ -88,6 +88,17 @@ $ bundle exec rake test:minitest'[--seed 1234]'
 
 This can be useful for replicating conditions from CI or isolating certain tests.
 
+#### Running one single test
+
+Many times we want to run one test file or one single test instead of rerunning the whole test suite.
+To do that, you could use `--example` RSpec argument.
+
+For example, to run only tests for  Minitest hooks you can do:
+
+```bash
+bundle exec rake test:minitest'[--example hooks]'
+```
+
 #### Checking test coverage
 
 You can check test code coverage by creating a report *after* running a test suite:
