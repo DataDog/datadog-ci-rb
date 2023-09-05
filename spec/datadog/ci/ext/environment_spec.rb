@@ -1,8 +1,6 @@
 require "json"
 
 RSpec.describe ::Datadog::CI::Ext::Environment do
-  FIXTURE_DIR = "#{File.dirname(__FILE__)}/fixtures/" # rubocop:disable all
-
   let(:logger) { instance_double(Datadog::Core::Logger) }
   before do
     allow(Datadog).to receive(:logger).and_return(logger)
@@ -17,16 +15,6 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
 
     let(:env) { {} }
     let(:environment_variables) { {} }
-
-    shared_context "with git fixture" do |git_fixture|
-      let(:environment_variables) do
-        super().merge("GIT_DIR" => "#{FIXTURE_DIR}/git/#{git_fixture}", "GIT_WORK_TREE" => "#{FIXTURE_DIR}/git/")
-      end
-    end
-
-    shared_context "without git installed" do
-      before { allow(Open3).to receive(:capture2e).and_raise(Errno::ENOENT, "No such file or directory - git") }
-    end
 
     Dir.glob("#{FIXTURE_DIR}/ci/*.json").sort.each do |filename|
       # Parse each CI provider file
@@ -46,7 +34,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                   is_expected
                     .to eq(
                       {
-                        "ci.workspace_path" => "#{Dir.pwd}/spec/datadog/ci/ext/fixtures/git",
+                        "ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git",
                         "git.branch" => "master",
                         "git.commit.author.date" => "2011-02-16T13:00:00+00:00",
                         "git.commit.author.email" => "bot@friendly.test",
@@ -79,7 +67,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
       context "with a newly created git repository" do
         include_context "with git fixture", "gitdir_empty"
         it "matches tags" do
-          is_expected.to eq("ci.workspace_path" => "#{Dir.pwd}/spec/datadog/ci/ext/fixtures/git")
+          is_expected.to eq("ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git")
         end
       end
 
@@ -87,7 +75,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
         include_context "with git fixture", "gitdir_with_commit"
         it "matches tags" do
           is_expected.to eq(
-            "ci.workspace_path" => "#{Dir.pwd}/spec/datadog/ci/ext/fixtures/git",
+            "ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git",
             "git.branch" => "master",
             "git.commit.author.date" => "2011-02-16T13:00:00+00:00",
             "git.commit.author.email" => "bot@friendly.test",
@@ -143,7 +131,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
           it "returns user provided metadata" do
             is_expected.to eq(
               {
-                "ci.workspace_path" => "#{Dir.pwd}/spec/datadog/ci/ext/fixtures/git",
+                "ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git",
                 "git.branch" => env["DD_GIT_BRANCH"],
                 "git.tag" => env["DD_GIT_TAG"],
                 "git.commit.author.date" => env["DD_GIT_COMMIT_AUTHOR_DATE"],
