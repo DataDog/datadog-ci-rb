@@ -46,11 +46,19 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Jenkins do
 
       context "no git branch info" do
         let(:env) do
-          super().except("GIT_BRANCH")
+          hash = super()
+          hash.delete("GIT_BRANCH")
+          hash
+        end
+
+        let(:expected_tags) do
+          hash = super()
+          hash.delete("git.branch")
+          hash.merge({"ci.pipeline.name" => "jobName/master"})
         end
 
         it "does not remove branch name from job name" do
-          is_expected.to eq(expected_tags.except("git.branch").merge({"ci.pipeline.name" => "jobName/master"}))
+          is_expected.to eq(expected_tags)
         end
       end
     end

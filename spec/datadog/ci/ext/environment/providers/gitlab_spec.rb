@@ -64,12 +64,14 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Gitlab do
             super().merge({"CI_COMMIT_AUTHOR" => "John Doe john@doe.com>"})
           end
 
+          let(:expected_tags) do
+            hash = super()
+            hash.delete("git.commit.author.name")
+            hash.merge({"git.commit.author.email" => "John Doe john@doe.com>"})
+          end
+
           it "puts CI_COMMIT_AUTHOR under git.commit.author.email" do
-            is_expected.to eq(
-              expected_tags.except("git.commit.author.name").merge(
-                {"git.commit.author.email" => "John Doe john@doe.com>"}
-              )
-            )
+            is_expected.to eq(expected_tags)
           end
         end
       end

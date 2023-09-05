@@ -42,9 +42,20 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Bitbucket do
       end
 
       context "when no BITBUCKET_PIPELINE_UUID provided" do
-        let(:env) { super().except("BITBUCKET_PIPELINE_UUID") }
+        let(:env) do
+          hash = super()
+          hash.delete("BITBUCKET_PIPELINE_UUID")
+          hash
+        end
+
+        let(:expected_tags) do
+          hash = super()
+          hash.delete("ci.pipeline.id")
+          hash
+        end
+
         it "omits pipeline_id" do
-          is_expected.to eq(expected_tags.except("ci.pipeline.id"))
+          is_expected.to eq(expected_tags)
         end
       end
     end

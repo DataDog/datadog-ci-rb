@@ -50,15 +50,29 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Appveyor do
       end
 
       context "when commit message is not provided" do
-        let(:env) { super().except("APPVEYOR_REPO_COMMIT_MESSAGE") }
+        let(:env) do
+          hash = super()
+          hash.delete("APPVEYOR_REPO_COMMIT_MESSAGE")
+          hash
+        end
+
+        let(:expected_tags) do
+          hash = super()
+          hash.delete("git.commit.message")
+          hash
+        end
 
         it "omits git.commit.message" do
-          is_expected.to eq(expected_tags.except("git.commit.message"))
+          is_expected.to eq(expected_tags)
         end
       end
 
       context "when extended commit message is not provided" do
-        let(:env) { super().except("APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED") }
+        let(:env) do
+          hash = super()
+          hash.delete("APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED")
+          hash
+        end
 
         it "does not append extended commit message" do
           is_expected.to eq(expected_tags.merge({"git.commit.message" => "appveyor-commit-message"}))
