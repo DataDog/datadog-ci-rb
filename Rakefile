@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "lib/datadog/ci/version"
+
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
-require "datadog/ci/version"
 require "yard"
 
 RSpec::Core::RakeTask.new(:spec)
@@ -20,11 +21,70 @@ YARD::Rake::YardocTask.new(:docs) do |t|
   t.options += ["--title", "datadog-ci #{Datadog::CI::VERSION} documentation"]
 end
 
-desc "Run RSpec"
-# rubocop:disable Metrics/BlockLength
-namespace :spec do
-  task all: [:main]
+TEST_METADATA = {
+  "main" => {
+    "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+  },
+  "cucumber" => {
+    "cucumber-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+    "cucumber-4" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+    "cucumber-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+    "cucumber-6" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+    "cucumber-7" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+    "cucumber-8" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+  },
+  "rspec" => {
+    "rspec-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+  },
+  "minitest" => {
+    "minitest-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+  }
+}
 
+namespace :test do
+  task all: TEST_METADATA.map { |k, _| "test:#{k}" }
+
+  ruby_version = RUBY_VERSION[0..2]
+  ruby_runtime = "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
+
+  TEST_METADATA.each do |key, spec_metadata|
+    spec_task = "spec:#{key}"
+
+    desc "Run #{spec_task} tests"
+    task key, [:task_args] do |_, args|
+      spec_arguments = args.task_args
+
+      appraisals = spec_metadata.select do |_, rubies|
+        (RUBY_PLATFORM == "java" && rubies.include?("✅ jruby")) || rubies.include?("✅ #{ruby_version}")
+      end
+
+      appraisals.each do |appraisal_group, _|
+        command = if appraisal_group.empty?
+          "bundle exec rake #{spec_task}"
+        else
+          "bundle exec appraisal #{ruby_runtime}-#{appraisal_group} rake #{spec_task}"
+        end
+
+        command += "'[#{spec_arguments}]'" if spec_arguments
+
+        total_executors = ENV.key?("CIRCLE_NODE_TOTAL") ? ENV["CIRCLE_NODE_TOTAL"].to_i : nil
+        current_executor = ENV.key?("CIRCLE_NODE_INDEX") ? ENV["CIRCLE_NODE_INDEX"].to_i : nil
+
+        if total_executors && current_executor && total_executors > 1
+          @execution_count ||= 0
+          @execution_count += 1
+          sh(command) if @execution_count % total_executors == current_executor
+        else
+          sh(command)
+        end
+      end
+    end
+  end
+end
+
+desc "Run RSpec"
+namespace :spec do
+  desc "" # "Explicitly hiding from `rake -T`"
   RSpec::Core::RakeTask.new(:main) do |t, args|
     t.pattern = "spec/**/*_spec.rb"
     t.exclude_pattern = "spec/**/{contrib}/**/*_spec.rb,"
@@ -37,6 +97,7 @@ namespace :spec do
     :rspec,
     :minitest
   ].each do |contrib|
+    desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|
       t.pattern = "spec/datadog/ci/contrib/#{contrib}/**/*_spec.rb"
       t.rspec_opts = args.to_a.join(" ")
@@ -44,54 +105,5 @@ namespace :spec do
   end
 end
 
-# Declare a command for execution.
-# Jobs are parallelized if running in CI.
-def declare(rubies_to_command)
-  rubies, command = rubies_to_command.first
-
-  return unless rubies.include?("✅ #{RUBY_VERSION[0..2]}")
-  return if RUBY_PLATFORM == "java" && rubies.include?("❌ jruby")
-
-  total_executors = ENV.key?("CIRCLE_NODE_TOTAL") ? ENV["CIRCLE_NODE_TOTAL"].to_i : nil
-  current_executor = ENV.key?("CIRCLE_NODE_INDEX") ? ENV["CIRCLE_NODE_INDEX"].to_i : nil
-
-  ruby_runtime = "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
-
-  command = command.sub(/^bundle exec appraisal /, "bundle exec appraisal #{ruby_runtime}-")
-
-  if total_executors && current_executor && total_executors > 1
-    @execution_count ||= 0
-    @execution_count += 1
-    sh(command) if @execution_count % total_executors == current_executor
-  else
-    sh(command)
-  end
-end
-
-# | Cucumber | Ruby required |
-# |----------|---------------|
-# | 3.x      |   2.2+        |
-# | 4.x      |   2.3+        |
-# | 5.x      |   2.5+        |
-# | 6.x      |   2.5+        |
-# | 7.x      |   2.5+        |
-# | 8.x      |   2.6+        |
-
 desc "CI task; it runs all tests for current version of Ruby"
-task :ci do
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec rake spec:main"
-
-  # RSpec
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal rspec-3 rake spec:rspec"
-
-  # Cucumber
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-3 rake spec:cucumber"
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-4 rake spec:cucumber"
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-5 rake spec:cucumber"
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-6 rake spec:cucumber"
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-7 rake spec:cucumber"
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal cucumber-8 rake spec:cucumber"
-
-  # Minitest
-  declare "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby" => "bundle exec appraisal minitest-5 rake spec:minitest"
-end
+task ci: "test:all"
