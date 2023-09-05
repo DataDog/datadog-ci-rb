@@ -64,7 +64,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Azure do
         it "omits URLs" do
           is_expected.to eq(
             expected_tags.merge({
-              "_dd.ci.env_vars" => "{\"SYSTEM_TEAMPROJECTID\":\"azure-pipelines-project-id\",\"BUILD_BUILDID\":null,\"SYSTEM_JOBID\":\"azure-pipelines-job-id\"}",
+              "_dd.ci.env_vars" => "{\"SYSTEM_TEAMPROJECTID\":\"azure-pipelines-project-id\",\"BUILD_BUILDID\":null,\"SYSTEM_JOBID\":\"azure-pipelines-job-id\"}"
             }).except("ci.pipeline.id", "ci.pipeline.number", "ci.pipeline.url", "ci.job.url")
           )
         end
