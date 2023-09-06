@@ -3,9 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Azure < Extractor
-            private
-
+          class Azure < Base
             @pipeline_url: String
             @job_url: String
 
@@ -40,6 +38,8 @@ module Datadog
             def git_commit_message: () -> String?
 
             def ci_env_vars: () -> String?
+
+            private
 
             def build_id: () -> String?
 

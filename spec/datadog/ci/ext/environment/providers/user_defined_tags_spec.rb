@@ -1,11 +1,6 @@
-RSpec.describe ::Datadog::CI::Ext::Environment::UserDefinedTags do
+RSpec.describe ::Datadog::CI::Ext::Environment::Providers::UserDefinedTags do
   describe ".tags" do
-    subject(:extracted_tags) do
-      ClimateControl.modify(environment_variables) { described_class.new(env).tags }
-    end
-
-    let(:env) { {} }
-    let(:environment_variables) { {} }
+    include_context "extract tags from environment with given provider and use a subject"
 
     context "example fixture" do
       let(:env) do

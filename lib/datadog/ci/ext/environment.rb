@@ -2,6 +2,8 @@
 
 require_relative "git"
 require_relative "environment/extractor"
+require_relative "environment/providers/local_git"
+require_relative "environment/providers/user_defined_tags"
 
 module Datadog
   module CI
@@ -31,11 +33,11 @@ module Datadog
 
           # If user defined metadata is defined, overwrite
           tags.merge!(
-            Environment::Extractor.new(env, provider: Providers::UserDefinedTags).tags
+            Environment::Extractor.new(env, provider: Providers::UserDefinedTags.new(env)).tags
           )
 
           # Fill out tags from local git as fallback
-          local_git_tags = Environment::Extractor.new(env, provider: Providers::LocalGit).tags
+          local_git_tags = Environment::Extractor.new(env, provider: Providers::LocalGit.new(env)).tags
           local_git_tags.each do |key, value|
             tags[key] ||= value
           end

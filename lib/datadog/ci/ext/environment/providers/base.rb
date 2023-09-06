@@ -90,10 +90,13 @@ module Datadog
             def git_commit_sha
             end
 
+            private
+
             def set_branch_and_tag
               branch_or_tag_string = git_branch_or_tag
               @branch = @tag = nil
 
+              # @type var branch_or_tag_string: untyped
               if branch_or_tag_string && branch_or_tag_string.include?("tags/")
                 @tag = branch_or_tag_string
               else

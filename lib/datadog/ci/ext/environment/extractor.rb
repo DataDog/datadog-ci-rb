@@ -2,6 +2,7 @@
 
 require_relative "../environment"
 require_relative "../git"
+require_relative "../../utils/git"
 require_relative "providers"
 
 module Datadog
@@ -68,13 +69,13 @@ module Datadog
 
           def normalize_git!
             branch_ref = @tags[Git::TAG_BRANCH]
-            if is_git_tag?(branch_ref)
+            if Datadog::CI::Utils::Git.is_git_tag?(branch_ref)
               @tags[Git::TAG_TAG] = branch_ref
               @tags.delete(Git::TAG_BRANCH)
             end
 
-            @tags[Git::TAG_TAG] = normalize_ref(@tags[Git::TAG_TAG])
-            @tags[Git::TAG_BRANCH] = normalize_ref(@tags[Git::TAG_BRANCH])
+            @tags[Git::TAG_TAG] = Datadog::CI::Utils::Git.normalize_ref(@tags[Git::TAG_TAG])
+            @tags[Git::TAG_BRANCH] = Datadog::CI::Utils::Git.normalize_ref(@tags[Git::TAG_BRANCH])
             @tags[Git::TAG_REPOSITORY_URL] = filter_sensitive_info(
               @tags[Git::TAG_REPOSITORY_URL]
             )
@@ -86,19 +87,6 @@ module Datadog
             if !workspace_path.nil? && (workspace_path == "~" || workspace_path.start_with?("~/"))
               @tags[TAG_WORKSPACE_PATH] = File.expand_path(workspace_path)
             end
-          end
-
-          def is_git_tag?(ref)
-            !ref.nil? && ref.include?("tags/")
-          end
-
-          def normalize_ref(name)
-            return nil if name.nil?
-
-            refs = %r{^refs/(heads/)?}
-            origin = %r{^origin/}
-            tags = %r{^tags/}
-            name.gsub(refs, "").gsub(origin, "").gsub(tags, "")
           end
 
           def filter_sensitive_info(url)

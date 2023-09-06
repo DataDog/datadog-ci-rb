@@ -10,9 +10,6 @@ module Datadog
           # Travis CI: https://www.travis-ci.com/
           # Environment variables docs: https://docs.travis-ci.com/user/environment-variables#default-environment-variables
           class Travis < Base
-            private
-
-            # overridden methods
             def provider_name
               "travisci"
             end

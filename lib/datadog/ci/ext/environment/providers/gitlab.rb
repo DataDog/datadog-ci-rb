@@ -10,9 +10,6 @@ module Datadog
           # Gitlab CI: https://docs.gitlab.com/ee/ci/
           # Environment variables docs: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
           class Gitlab < Base
-            private
-
-            # overridden methods
             def provider_name
               "gitlab"
             end
@@ -99,7 +96,7 @@ module Datadog
               }.to_json
             end
 
-            # gitlab-specific methods
+            private
 
             def extract_name_email
               return @name_email_tuple if defined?(@name_email_tuple)

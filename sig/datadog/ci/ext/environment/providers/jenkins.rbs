@@ -3,8 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Jenkins < Extractor
-            private
+          class Jenkins < Base
             def provider_name: () -> "jenkins"
 
             def pipeline_id: () -> String?

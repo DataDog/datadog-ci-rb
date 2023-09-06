@@ -10,9 +10,6 @@ module Datadog
           # Bitrise: https://bitrise.io/
           # Environment variables docs: https://devcenter.bitrise.io/en/references/available-environment-variables.html
           class Bitrise < Base
-            private
-
-            # overridden methods
             def provider_name
               "bitrise"
             end

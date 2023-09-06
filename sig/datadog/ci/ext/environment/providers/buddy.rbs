@@ -4,7 +4,6 @@ module Datadog
       module Environment
         module Providers
           class Buddy < Extractor
-            private
             def provider_name: () -> "buddy"
 
             def pipeline_id: () -> ::String

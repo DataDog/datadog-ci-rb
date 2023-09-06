@@ -10,9 +10,6 @@ module Datadog
           # Teamcity: https://www.jetbrains.com/teamcity/
           # Environment variables docs: https://www.jetbrains.com/help/teamcity/predefined-build-parameters.html
           class Teamcity < Base
-            private
-
-            # overridden methods
             def provider_name
               "teamcity"
             end

@@ -12,9 +12,6 @@ module Datadog
           # Buildkite: https://buildkite.com/
           # Environment variables docs: https://buildkite.com/docs/pipelines/environment-variables
           class Buildkite < Base
-            private
-
-            # overridden methods
             def provider_name
               "buildkite"
             end

@@ -4,8 +4,6 @@ module Datadog
       module Environment
         module Providers
           class Gitlab < Extractor
-            private
-
             @name_email_tuple: [String?, String?]
 
             def provider_name: () -> "gitlab"
@@ -47,6 +45,8 @@ module Datadog
             def git_commit_message: () -> String?
 
             def ci_env_vars: () -> String?
+
+            private
 
             def extract_name_email: () -> [String?, String?]
           end

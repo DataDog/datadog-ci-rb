@@ -10,9 +10,6 @@ module Datadog
           # Appveyor: https://www.appveyor.com/
           # Environment variables docs: https://www.appveyor.com/docs/environment-variables/
           class Appveyor < Base
-            private
-
-            # overridden methods
             def provider_name
               "appveyor"
             end
@@ -82,7 +79,7 @@ module Datadog
               commit_message
             end
 
-            # appveyor-specific methods
+            private
 
             def github_repo_provider?
               return @github_repo_provider if defined?(@github_repo_provider)

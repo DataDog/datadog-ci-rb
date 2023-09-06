@@ -4,7 +4,6 @@ module Datadog
       module Environment
         module Providers
           class Circleci < Extractor
-            private
             def provider_name: () -> "circleci"
 
             def job_url: () -> String?

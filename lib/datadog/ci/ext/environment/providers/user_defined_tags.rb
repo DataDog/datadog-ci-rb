@@ -10,9 +10,7 @@ module Datadog
         module Providers
           # Parses user defined git data from the environment variables
           # User documentation: https://docs.datadoghq.com/continuous_integration/troubleshooting/#data-appears-in-test-runs-but-not-tests
-          class UserDefinedTags  < Base
-            private
-
+          class UserDefinedTags < Base
             def git_repository_url
               env[Git::ENV_REPOSITORY_URL]
             end

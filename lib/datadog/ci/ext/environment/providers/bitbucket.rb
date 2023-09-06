@@ -10,8 +10,6 @@ module Datadog
           # Bitbucket Pipelines: https://bitbucket.org/product/features/pipelines
           # Environment variables docs: https://support.atlassian.com/bitbucket-cloud/docs/variables-and-secrets/
           class Bitbucket < Base
-            private
-
             # overridden methods
             def provider_name
               "bitbucket"
@@ -57,7 +55,7 @@ module Datadog
               env["BITBUCKET_TAG"]
             end
 
-            # bitbucket-specific methods
+            private
 
             def url
               "https://bitbucket.org/#{env["BITBUCKET_REPO_FULL_NAME"]}/addon/pipelines/home#" \

@@ -4,7 +4,6 @@ module Datadog
       module Environment
         module Providers
           class GithubActions < Extractor
-            private
             @ref: String
 
             def provider_name: () -> "github"

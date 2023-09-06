@@ -4,7 +4,6 @@ module Datadog
       module Environment
         module Providers
           class Teamcity < Extractor
-            private
             def provider_name: () -> "teamcity"
 
             def job_name: () -> String?

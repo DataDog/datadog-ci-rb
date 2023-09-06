@@ -1,11 +1,9 @@
-RSpec.describe ::Datadog::CI::Ext::Environment::LocalGit do
+RSpec.describe ::Datadog::CI::Ext::Environment::Providers::LocalGit do
   let(:env) { {} }
   let(:environment_variables) { {} }
 
   describe "#tags" do
-    subject(:extracted_tags) do
-      ClimateControl.modify(environment_variables) { described_class.new(env).tags }
-    end
+    include_context "extract tags from environment with given provider and use a subject"
 
     context "example git repository" do
       include_context "with git fixture", "gitdir_with_commit"
@@ -36,7 +34,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::LocalGit do
     include_context "with git fixture", "gitdir_with_commit"
 
     subject(:committer_email) do
-      ClimateControl.modify(environment_variables) { described_class.new(env).tags["git.commit.committer.email"] }
+      ClimateControl.modify(environment_variables) { described_class.new(env).git_commit_committer_email }
     end
 
     it "returns committer from the latest commit in the repository" do

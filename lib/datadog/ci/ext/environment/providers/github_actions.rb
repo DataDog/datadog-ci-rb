@@ -12,9 +12,6 @@ module Datadog
           # Github Actions: https://github.com/features/actions
           # Environment variables docs: https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
           class GithubActions < Base
-            private
-
-            # overridden methods
             def provider_name
               "github"
             end

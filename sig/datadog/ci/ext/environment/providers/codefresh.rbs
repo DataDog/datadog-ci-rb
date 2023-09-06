@@ -4,7 +4,6 @@ module Datadog
       module Environment
         module Providers
           class Codefresh < Extractor
-            private
             def provider_name: () -> "codefresh"
 
             def job_name: () -> String?

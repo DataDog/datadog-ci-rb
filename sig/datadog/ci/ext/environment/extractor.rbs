@@ -3,15 +3,11 @@ module Datadog
     module Ext
       module Environment
         class Extractor
-
-          PROVIDERS: ::Array[[String, singleton(Extractor)]]
+          @env: Hash[String, String?]
+          @provider: Providers::Base
           @tags: Hash[String, untyped]
-          @branch: String?
-          @tag: String?
 
-          def self.for_environment: (untyped env) -> Extractor
-
-          def initialize: (Hash[String, String] env) -> void
+          def initialize: (Hash[String, String?] env, ?provider: Providers::Base?) -> void
 
           def tags: () -> Hash[String, untyped]
 
@@ -19,63 +15,9 @@ module Datadog
 
           attr_reader env: untyped
 
-          def job_name: () -> String?
-
-          def job_url: () -> String?
-
-          def pipeline_id: () -> String?
-
-          def pipeline_name: () -> String?
-
-          def pipeline_number: () -> String?
-
-          def pipeline_url: () -> String?
-
-          def provider_name: () -> String?
-
-          def stage_name: () -> String?
-
-          def workspace_path: () -> String?
-
-          def node_labels: () -> String?
-
-          def node_name: () -> String?
-
-          def ci_env_vars: () -> String?
-
-          def git_branch: () -> String?
-
-          def git_repository_url: () -> String?
-
-          def git_tag: () -> String?
-
-          def git_branch_or_tag: () -> String?
-
-          def git_commit_author_date: () -> String?
-
-          def git_commit_author_email: () -> String?
-
-          def git_commit_author_name: () -> String?
-
-          def git_commit_committer_date: () -> String?
-
-          def git_commit_committer_email: () -> String?
-
-          def git_commit_committer_name: () -> String?
-
-          def git_commit_message: () -> String?
-
-          def git_commit_sha: () -> String?
-
-          def set_branch_and_tag: () -> [String?, String?]
-
           def normalize_git!: () -> void
 
           def expand_workspace!: () -> void
-
-          def is_git_tag?: (String? ref) -> bool
-
-          def normalize_ref: (String? name) -> String?
 
           def filter_sensitive_info: (String? url) -> String?
         end

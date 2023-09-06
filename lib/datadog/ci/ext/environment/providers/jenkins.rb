@@ -3,6 +3,7 @@
 require "json"
 
 require_relative "base"
+require_relative "../../../utils/git"
 
 module Datadog
   module CI
@@ -12,9 +13,6 @@ module Datadog
           # Jenkins: https://www.jenkins.io/
           # Environment variables docs: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#using-environment-variables
           class Jenkins < Base
-            private
-
-            # overridden methods
             def provider_name
               "jenkins"
             end
@@ -25,7 +23,7 @@ module Datadog
 
             def pipeline_name
               if (name = env["JOB_NAME"])
-                name = name.gsub("/#{normalize_ref(git_branch)}", "") if git_branch
+                name = name.gsub("/#{Datadog::CI::Utils::Git.normalize_ref(git_branch)}", "") if git_branch
                 name = name.split("/").reject { |v| v.nil? || v.include?("=") }.join("/")
               end
               name

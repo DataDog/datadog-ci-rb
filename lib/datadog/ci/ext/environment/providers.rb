@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "providers/default"
+require_relative "providers/base"
 require_relative "providers/appveyor"
 require_relative "providers/azure"
 require_relative "providers/bitbucket"
@@ -38,7 +38,7 @@ module Datadog
 
           def self.for_environment(env)
             _, provider_klass = PROVIDERS.find { |provider_env_var, _| env.key?(provider_env_var) }
-            provider_klass = Providers::Default if provider_klass.nil?
+            provider_klass = Providers::Base if provider_klass.nil?
 
             provider_klass.new(env)
           end

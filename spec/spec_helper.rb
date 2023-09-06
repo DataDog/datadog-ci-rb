@@ -15,6 +15,7 @@ require_relative "support/span_helpers"
 require_relative "support/test_helpers"
 require_relative "support/platform_helpers"
 require_relative "support/git_helpers"
+require_relative "support/provider_test_helpers"
 
 require "rspec/collection_matchers"
 require "climate_control"

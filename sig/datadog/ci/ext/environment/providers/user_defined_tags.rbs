@@ -3,19 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Bitrise < Base
-            def provider_name: () -> "bitrise"
-
-            def pipeline_id: () -> String?
-
-            def pipeline_name: () -> String?
-
-            def pipeline_number: () -> String?
-
-            def pipeline_url: () -> String?
-
-            def workspace_path: () -> String?
-
+          class UserDefinedTags < Base
             def git_repository_url: () -> String?
 
             def git_commit_sha: () -> String?
@@ -30,9 +18,13 @@ module Datadog
 
             def git_commit_author_email: () -> String?
 
+            def git_commit_author_date: () -> String?
+
             def git_commit_committer_name: () -> String?
 
             def git_commit_committer_email: () -> String?
+
+            def git_commit_committer_date: () -> String?
           end
         end
       end

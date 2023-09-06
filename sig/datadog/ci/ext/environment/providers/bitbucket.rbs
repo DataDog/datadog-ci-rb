@@ -3,8 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Bitbucket < Extractor
-            private
+          class Bitbucket < Base
             def provider_name: () -> "bitbucket"
 
             def pipeline_id: () -> String?
@@ -26,6 +25,8 @@ module Datadog
             def git_branch: () -> String?
 
             def git_tag: () -> String?
+
+            private
 
             def url: () -> ::String?
           end

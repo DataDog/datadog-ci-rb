@@ -3,9 +3,9 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Default < Extractor
-            def tags: () -> ::Hash[String, untyped]
-          end
+          PROVIDERS: ::Array[[String, untyped]]
+
+          def self.for_environment: (Hash[String, String?] env) -> Providers::Base
         end
       end
     end

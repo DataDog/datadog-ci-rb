@@ -4,7 +4,6 @@ module Datadog
       module Environment
         module Providers
           class Travis < Extractor
-            private
             def provider_name: () -> "travisci"
 
             def job_url: () -> String?

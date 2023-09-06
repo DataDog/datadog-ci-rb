@@ -12,9 +12,6 @@ module Datadog
           # Azure Pipelines: https://azure.microsoft.com/en-us/products/devops/pipelines
           # Environment variables docs: https://learn.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml
           class Azure < Base
-            private
-
-            # overridden methods
             def provider_name
               "azurepipelines"
             end
@@ -87,7 +84,7 @@ module Datadog
               }.to_json
             end
 
-            # azure-specific methods
+            private
 
             def build_id
               env["BUILD_BUILDID"]

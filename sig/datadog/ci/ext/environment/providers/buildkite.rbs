@@ -4,7 +4,6 @@ module Datadog
       module Environment
         module Providers
           class Buildkite < Extractor
-            private
             def provider_name: () -> "buildkite"
 
             def job_url: () -> ::String

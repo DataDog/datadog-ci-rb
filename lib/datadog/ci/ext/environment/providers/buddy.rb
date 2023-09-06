@@ -10,9 +10,6 @@ module Datadog
           # Buddy: https://buddy.works/
           # Environment variables docs: https://buddy.works/docs/pipelines/environment-variables
           class Buddy < Base
-            private
-
-            # overridden methods
             def provider_name
               "buddy"
             end
