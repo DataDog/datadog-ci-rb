@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "datadog/tracing/contrib/integration"
 
 require_relative "configuration/settings"
