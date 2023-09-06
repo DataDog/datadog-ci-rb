@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -9,7 +9,7 @@ module Datadog
         module Providers
           # Bitrise: https://bitrise.io/
           # Environment variables docs: https://devcenter.bitrise.io/en/references/available-environment-variables.html
-          class Bitrise < Extractor
+          class Bitrise < Base
             private
 
             # overridden methods

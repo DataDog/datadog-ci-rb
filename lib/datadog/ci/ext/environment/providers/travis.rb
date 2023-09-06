@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -9,7 +9,7 @@ module Datadog
         module Providers
           # Travis CI: https://www.travis-ci.com/
           # Environment variables docs: https://docs.travis-ci.com/user/environment-variables#default-environment-variables
-          class Travis < Extractor
+          class Travis < Base
             private
 
             # overridden methods

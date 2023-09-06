@@ -2,7 +2,7 @@
 
 require "json"
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -11,7 +11,7 @@ module Datadog
         module Providers
           # Jenkins: https://www.jenkins.io/
           # Environment variables docs: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#using-environment-variables
-          class Jenkins < Extractor
+          class Jenkins < Base
             private
 
             # overridden methods

@@ -2,7 +2,7 @@
 
 require "json"
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -11,7 +11,7 @@ module Datadog
         module Providers
           # Buildkite: https://buildkite.com/
           # Environment variables docs: https://buildkite.com/docs/pipelines/environment-variables
-          class Buildkite < Extractor
+          class Buildkite < Base
             private
 
             # overridden methods

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -8,7 +8,7 @@ module Datadog
       module Environment
         module Providers
           # TODO
-          class Default < Extractor
+          class Default < Base
             def tags
               {}
             end

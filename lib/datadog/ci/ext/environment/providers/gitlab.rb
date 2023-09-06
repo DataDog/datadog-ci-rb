@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -9,7 +9,7 @@ module Datadog
         module Providers
           # Gitlab CI: https://docs.gitlab.com/ee/ci/
           # Environment variables docs: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
-          class Gitlab < Extractor
+          class Gitlab < Base
             private
 
             # overridden methods

@@ -2,7 +2,7 @@
 
 require "json"
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -11,7 +11,7 @@ module Datadog
         module Providers
           # Azure Pipelines: https://azure.microsoft.com/en-us/products/devops/pipelines
           # Environment variables docs: https://learn.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml
-          class Azure < Extractor
+          class Azure < Base
             private
 
             # overridden methods

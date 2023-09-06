@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -9,7 +9,7 @@ module Datadog
         module Providers
           # Bitbucket Pipelines: https://bitbucket.org/product/features/pipelines
           # Environment variables docs: https://support.atlassian.com/bitbucket-cloud/docs/variables-and-secrets/
-          class Bitbucket < Extractor
+          class Bitbucket < Base
             private
 
             # overridden methods

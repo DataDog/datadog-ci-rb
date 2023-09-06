@@ -2,7 +2,7 @@
 
 require "json"
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -11,7 +11,7 @@ module Datadog
         module Providers
           # Github Actions: https://github.com/features/actions
           # Environment variables docs: https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
-          class GithubActions < Extractor
+          class GithubActions < Base
             private
 
             # overridden methods
