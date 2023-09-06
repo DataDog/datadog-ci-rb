@@ -82,7 +82,6 @@ namespace :test do
   end
 end
 
-desc "Run RSpec"
 namespace :spec do
   desc "" # "Explicitly hiding from `rake -T`"
   RSpec::Core::RakeTask.new(:main) do |t, args|
