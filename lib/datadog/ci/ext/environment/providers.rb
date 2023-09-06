@@ -15,6 +15,9 @@ require_relative "providers/jenkins"
 require_relative "providers/teamcity"
 require_relative "providers/travis"
 
+require_relative "providers/local_git"
+require_relative "providers/user_defined_tags"
+
 module Datadog
   module CI
     module Ext

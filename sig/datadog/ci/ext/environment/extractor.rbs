@@ -7,7 +7,7 @@ module Datadog
           @provider: Providers::Base
           @tags: Hash[String, untyped]
 
-          def initialize: (Hash[String, String?] env, ?provider: Providers::Base?) -> void
+          def initialize: (Hash[String, String?] env, ?provider_klass: singleton(Providers::Base)?) -> void
 
           def tags: () -> Hash[String, untyped]
 
