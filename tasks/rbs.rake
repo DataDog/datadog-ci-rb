@@ -1,6 +1,7 @@
 require "fileutils"
 
 namespace :rbs do  # rubocop:disable Metrics/BlockLength
+  desc "Checks if there are any stale RBS files"
   task :stale do |_task, args|
     glob = args.to_a.map { |g| /\.rbs$/.match?(g) ? g : "#{g}/**/*.rbs" }
     glob = ["sig/**/*.rbs"] if glob.empty?
@@ -41,6 +42,7 @@ namespace :rbs do  # rubocop:disable Metrics/BlockLength
     end
   end
 
+  desc "Checks if there are any missing RBS files"
   task :missing do |_task, args|
     glob = args.to_a.map { |g| /\.rb$/.match?(g) ? g : "#{g}/**/*.rb" }
     glob = ["lib/**/*.rb"] if glob.empty?
@@ -80,6 +82,7 @@ namespace :rbs do  # rubocop:disable Metrics/BlockLength
     end
   end
 
+  desc "Deletes stale RBS files and empty directories in sig/*"
   task :clean do |_task, args|
     glob = args.to_a.map { |g| /\.rbs$/.match?(g) ? g : "#{g}/**/*.rbs" }
     glob = ["sig/**/*.rbs"] if glob.empty?
@@ -106,6 +109,7 @@ namespace :rbs do  # rubocop:disable Metrics/BlockLength
     end
   end
 
+  desc "Creates RBS prototypes for any ruby files missing types"
   task :prototype do |_task, args|
     a = args.to_a
 
