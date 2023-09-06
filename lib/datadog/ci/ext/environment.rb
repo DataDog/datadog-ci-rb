@@ -2,8 +2,6 @@
 
 require_relative "git"
 require_relative "environment/extractor"
-require_relative "environment/user_defined_tags"
-require_relative "environment/local_git"
 
 module Datadog
   module CI
@@ -29,15 +27,15 @@ module Datadog
 
         def tags(env)
           # Extract metadata from CI provider environment variables
-          tags = Environment::Extractor.for_environment(env).tags
+          tags = Environment::Extractor.new(env).tags
 
           # If user defined metadata is defined, overwrite
           tags.merge!(
-            UserDefinedTags.new(env).tags
+            Environment::Extractor.new(env, provider: Providers::UserDefinedTags).tags
           )
 
           # Fill out tags from local git as fallback
-          local_git_tags = LocalGit.new(env).tags
+          local_git_tags = Environment::Extractor.new(env, provider: Providers::LocalGit).tags
           local_git_tags.each do |key, value|
             tags[key] ||= value
           end

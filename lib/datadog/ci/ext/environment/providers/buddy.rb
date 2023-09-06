@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -9,7 +9,7 @@ module Datadog
         module Providers
           # Buddy: https://buddy.works/
           # Environment variables docs: https://buddy.works/docs/pipelines/environment-variables
-          class Buddy < Extractor
+          class Buddy < Base
             private
 
             # overridden methods

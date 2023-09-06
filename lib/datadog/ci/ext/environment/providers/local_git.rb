@@ -2,15 +2,15 @@
 
 require "open3"
 
-require_relative "extractor"
-require_relative "../git"
+require_relative "base"
+require_relative "../../git"
 
 module Datadog
   module CI
     module Ext
       module Environment
         # As a fallback we try to fetch git information from the local git repository
-        class LocalGit < Extractor
+        class LocalGit  < Base
           private
 
           def git_repository_url

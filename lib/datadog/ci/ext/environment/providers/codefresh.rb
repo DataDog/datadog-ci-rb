@@ -2,7 +2,7 @@
 
 require "json"
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -11,7 +11,7 @@ module Datadog
         module Providers
           # Codefresh: https://codefresh.io/
           # Environment variables docs: https://codefresh.io/docs/docs/pipelines/variables/#export-variables-to-all-steps-with-cf_export
-          class Codefresh < Extractor
+          class Codefresh < Base
             private
 
             # overridden methods

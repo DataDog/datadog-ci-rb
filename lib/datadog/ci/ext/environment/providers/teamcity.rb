@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -9,7 +9,7 @@ module Datadog
         module Providers
           # Teamcity: https://www.jetbrains.com/teamcity/
           # Environment variables docs: https://www.jetbrains.com/help/teamcity/predefined-build-parameters.html
-          class Teamcity < Extractor
+          class Teamcity < Base
             private
 
             # overridden methods

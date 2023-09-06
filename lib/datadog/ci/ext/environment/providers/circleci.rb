@@ -2,7 +2,7 @@
 
 require "json"
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -11,7 +11,7 @@ module Datadog
         module Providers
           # Circle CI: https://circleci.com/
           # Environment variables docs: https://circleci.com/docs/variables/#built-in-environment-variables
-          class Circleci < Extractor
+          class Circleci < Base
             private
 
             # overridden methods

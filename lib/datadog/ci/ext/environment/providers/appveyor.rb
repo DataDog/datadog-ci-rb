@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../extractor"
+require_relative "base"
 
 module Datadog
   module CI
@@ -9,7 +9,7 @@ module Datadog
         module Providers
           # Appveyor: https://www.appveyor.com/
           # Environment variables docs: https://www.appveyor.com/docs/environment-variables/
-          class Appveyor < Extractor
+          class Appveyor < Base
             private
 
             # overridden methods
