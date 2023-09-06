@@ -52,8 +52,8 @@ All changes should be covered by a corresponding RSpec tests. Unit tests are pre
 
 All tests should run in CI. When adding new `spec.rb` files, you may need to add a test task to ensure your test file is run in CI.
 
-- Ensure that there is a corresponding Rake task defined in `Rakefile` under the the `spec` namespace, whose pattern matches your test file.
-- Verify the Rake task is configured to run for the appropriate Ruby runtimes in the `ci` Rake task.
+- Ensure that there is a corresponding Rake task defined in `Rakefile` under the `spec` namespace, whose pattern matches your test file.
+- Verify that this task is in the `TEST_METADATA` hash in `Rakefile`.
 
 ### Running tests
 
@@ -64,27 +64,18 @@ Simplest way to run tests is to run `bundle exec rake ci`, which will run the en
 Run the tests for the core library with:
 
 ```bash
-bundle exec rake spec:main
+bundle exec rake test:main
 ```
 
 #### For integrations
 
 Integrations which interact with dependencies not listed in the `datadog-ci` gemspec will need to load these dependencies to run their tests.
 
-To do so, load the dependencies using [Appraisal](https://github.com/thoughtbot/appraisal). You can see a list of available appraisals with `bundle exec appraisal list`, or examine the `Appraisals` file.
+To get a list of the spec tasks run `bundle exec rake -T 'test:'`
 
-Then to run tests, prefix the test commain with the appraisal.
+To run any of the specs above run `bundle exec rake 'test:<spec_name>'`.
 
-`bundle exec appraisal <appraisal_name> rake <test_comand>`
-
-For example:
-
-```bash
-# Runs tests for rspec-3
-$ bundle exec appraisal ruby-3.2.0-rspec-3 rake spec:rspec
-# Runs tests for minitest-5
-$ bundle exec appraisal ruby-3.2.0-minitest-5 rake spec:minitest
-```
+For example: `bundle exec rake test:minitest`
 
 #### Passing arguments to tests
 
@@ -92,10 +83,21 @@ When running tests, you may pass additional args as parameters to the Rake task.
 
 ```bash
 # Runs minitest integration tests with seed 1234
-$ bundle exec appraisal ruby-3.2.0-minitest-5 rake spec:minitest'[--seed,1234]'
+$ bundle exec rake test:minitest'[--seed 1234]'
 ```
 
 This can be useful for replicating conditions from CI or isolating certain tests.
+
+#### Running one single test
+
+Many times we want to run one test file or one single test instead of rerunning the whole test suite.
+To do that, you could use `--example` RSpec argument.
+
+For example, to run only tests for  Minitest hooks you can do:
+
+```bash
+bundle exec rake test:minitest'[--example hooks]'
+```
 
 #### Checking test coverage
 
@@ -103,7 +105,7 @@ You can check test code coverage by creating a report *after* running a test sui
 
 ```bash
 # Run the desired test suite
-$ bundle exec appraisal ruby-3.2.0-rspec-3 rake spec:rspec
+$ bundle exec rake test:rspec
 # Generate report for the suite executed
 $ bundle exec rake coverage:report
 ```

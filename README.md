@@ -110,18 +110,10 @@ end
 | `service_name` | Service name used for `cucumber` instrumentation. | `'cucumber'` |
 | `operation_name` | Operation name used for `cucumber` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'cucumber.test'` |
 
-## Development
-
-See [development guide](/docs/DevelopmentGuide.md).
-
-### Static typing
-
-See [static typing guide](docs/StaticTypingGuide.md).
-
 ## Contributing
 
-Bug reports and pull requests are welcome on [GitHub](https://github.com/Datadog/datadog-ci). This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/Datadog/datadog-ci/blob/main/CODE_OF_CONDUCT.md).
+See [development guide](/docs/DevelopmentGuide.md), [static typing guide](docs/StaticTypingGuide.md) and [contributing guidelines](/CONTRIBUTING.md).
 
 ## Code of Conduct
 
-Everyone interacting in the `Datadog::CI` project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/Datadog/datadog-ci/blob/main/CODE_OF_CONDUCT.md).
+Everyone interacting in the `Datadog::CI` project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](/CODE_OF_CONDUCT.md).
