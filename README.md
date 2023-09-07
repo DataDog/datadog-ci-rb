@@ -35,7 +35,6 @@ Datadog.configure do |c|
   # Enables the RSpec instrumentation
   c.ci.instrument :rspec, **options
 end
-
 ```
 
 `options` are the following keyword arguments:
