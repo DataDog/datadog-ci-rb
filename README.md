@@ -1,15 +1,17 @@
 # Datadog CI Visibility for Ruby
 
-Datadog's Ruby Library for instrumenting your test and continuous integration pipeline. Checkout to learn more at our [official website](https://docs.datadoghq.com/continuous_integration/tests/ruby/?tab=azurepipelines).
+Datadog's Ruby Library for instrumenting your test and continuous integration pipeline.
+Learn more on our [official website](https://docs.datadoghq.com/continuous_integration/tests/ruby/?tab=azurepipelines).
+
+NOTE: currently this gem is a runtime dependency for the `ddtrace` gem and is not supposed to be used standalone. This will
+change when ddtrace v2.0 and datadog-ci v1.0 are released.
 
 ## Installation
 
 Add to your Gemfile.
 
 ```ruby
-group :test do
-  gem "datadog-ci"
-end
+gem "ddtrace"
 ```
 
 ## Usage
