@@ -76,6 +76,7 @@ GEM
     parser (3.2.2.3)
       ast (~> 2.4.1)
       racc
+    pimpmychangelog (0.1.3)
     protobuf-cucumber (3.10.8)
       activesupport (>= 3.2)
       middleware
@@ -164,6 +165,7 @@ DEPENDENCIES
   cucumber (~> 4)
   datadog-ci!
   os
+  pimpmychangelog (>= 0.1.2)
   pry
   rake
   rspec
