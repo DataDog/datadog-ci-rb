@@ -6,8 +6,11 @@ module Datadog
       MAJOR = "0"
       MINOR = "1"
       PATCH = "0"
+      PRE = nil
+      BUILD = nil
+      # PRE and BUILD above are modified for dev gems during gem build GHA workflow
 
-      STRING = [MAJOR, MINOR, PATCH].compact.join(".")
+      STRING = [MAJOR, MINOR, PATCH, PRE, BUILD].compact.join(".")
 
       MINIMUM_RUBY_VERSION = "2.1.0"
 
