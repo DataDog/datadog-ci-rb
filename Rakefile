@@ -55,7 +55,11 @@ namespace :test do
       spec_arguments = args.task_args
 
       appraisals = spec_metadata.select do |_, rubies|
-        (RUBY_PLATFORM == "java" && rubies.include?("✅ jruby")) || rubies.include?("✅ #{ruby_version}")
+        if RUBY_PLATFORM == "java"
+          rubies.include?("✅ #{ruby_version}") && rubies.include?("✅ jruby")
+        else
+          rubies.include?("✅ #{ruby_version}")
+        end
       end
 
       appraisals.each do |appraisal_group, _|
