@@ -1,7 +1,7 @@
 # Datadog CI Visibility for Ruby
 
 Datadog's Ruby Library for instrumenting your test and continuous integration pipeline.
-Learn more on our [official website](https://docs.datadoghq.com/continuous_integration/tests/ruby/?tab=azurepipelines).
+Learn more on our [official website](https://docs.datadoghq.com/continuous_integration/tests/ruby/).
 
 > [!IMPORTANT]
 > The `datadog-ci` gem is currently a component of [`ddtrace`](https://github.com/datadog/dd-trace-rb) and should not be used without it.
