@@ -19,6 +19,7 @@ gem "standard", "~> 1.31.0"
 
 gem "yard"
 gem "webrick"
+gem "pimpmychangelog", ">= 0.1.2"
 
 gem "simplecov"
 gem "simplecov-cobertura", "~> 2.1.0"
