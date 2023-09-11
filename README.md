@@ -1,12 +1,15 @@
 # Datadog CI Visibility for Ruby
 
+[![codecov](https://codecov.io/gh/DataDog/datadog-ci-rb/branch/main/graph/badge.svg)](https://app.codecov.io/gh/DataDog/datadog-ci-rb/branch/main)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/DataDog/datadog-ci-rb/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/DataDog/datadog-ci-rb/tree/main)
+
 Datadog's Ruby Library for instrumenting your test and continuous integration pipeline.
 Learn more on our [official website](https://docs.datadoghq.com/continuous_integration/tests/ruby/).
 
 > [!IMPORTANT]
 > The `datadog-ci` gem is currently a component of [`ddtrace`](https://github.com/datadog/dd-trace-rb) and should not be used without it.
 >
-> We expect this to change in the future. 
+> We expect this to change in the future.
 
 ## Installation
 
