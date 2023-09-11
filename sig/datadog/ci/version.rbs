@@ -1,5 +1,16 @@
 module Datadog
   module CI
-    VERSION: "0.1.0"
+    module VERSION
+      MAJOR: "0"
+      MINOR: "1"
+      PATCH: "0"
+      PRE: String?
+      BUILD: String?
+
+      STRING: String
+
+      MINIMUM_RUBY_VERSION: "2.1.0"
+      MAXIMUM_RUBY_VERSION: "3.4"
+    end
   end
 end

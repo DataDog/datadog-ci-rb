@@ -2,12 +2,11 @@ PATH
   remote: ..
   specs:
     datadog-ci (0.1.0)
-      ddtrace (~> 1)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (7.0.7)
+    activesupport (7.0.7.2)
       concurrent-ruby (~> 1.0, >= 1.0.2)
       i18n (>= 1.6, < 2)
       minitest (>= 5.1)
@@ -49,7 +48,7 @@ GEM
       cucumber-core (~> 7.0, >= 7.0.0)
       cucumber-cucumber-expressions (~> 10.1, >= 10.1.0)
       cucumber-messages (~> 12.1, >= 12.1.1)
-    ddtrace (1.13.1)
+    ddtrace (1.14.0)
       debase-ruby_core_source (= 3.2.1)
       libdatadog (~> 3.0.0.1.0)
       libddwaf (~> 1.9.0.0.0)
@@ -68,7 +67,7 @@ GEM
     lint_roller (1.1.0)
     method_source (1.0.0)
     middleware (0.1.0)
-    minitest (5.19.0)
+    minitest (5.20.0)
     msgpack (1.7.2)
     multi_test (0.1.2)
     os (1.1.4)
@@ -107,7 +106,7 @@ GEM
     rspec-support (3.12.1)
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
-    rubocop (1.56.1)
+    rubocop (1.56.2)
       base64 (~> 0.1.1)
       json (~> 2.3)
       language_server-protocol (>= 3.17.0)
@@ -164,6 +163,7 @@ DEPENDENCIES
   climate_control
   cucumber (~> 4)
   datadog-ci!
+  ddtrace
   os
   pimpmychangelog (>= 0.1.2)
   pry
