@@ -1,6 +1,30 @@
 ## [Unreleased]
 
-## [0.1.0] - TBD
+## 0.1.0 - 2023-09-12
 
-- Initial release
+### Added
 
+* Add cucumber 8.0.0 support ([#7][])
+* Docs: contribution documentation ([#14][], [#28][])
+* Dev process: issue templates ([#20][])
+
+### Changed
+
+* Validate customer-supplied git tags ([#15][])
+
+### Fixed
+
+* Fix Datadog::CI::Environment to support the new CI specs ([#11][])
+
+### Removed
+
+* Ruby versions < 2.7 no longer supported ([#8][])
+
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.1.0...main
+[#7]: https://github.com/DataDog/datadog-ci-rb/issues/7
+[#8]: https://github.com/DataDog/datadog-ci-rb/issues/8
+[#11]: https://github.com/DataDog/datadog-ci-rb/issues/11
+[#14]: https://github.com/DataDog/datadog-ci-rb/issues/14
+[#15]: https://github.com/DataDog/datadog-ci-rb/issues/15
+[#20]: https://github.com/DataDog/datadog-ci-rb/issues/20
+[#28]: https://github.com/DataDog/datadog-ci-rb/issues/28
