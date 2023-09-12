@@ -116,7 +116,7 @@ In addition, if you already know which appraisal group definition to work with, 
 
 ```bash
 # This would only install dependencies for `cucumber` group definition
-APPRAISAL_GROUP=cucumber bundle exec appraisal install
+APPRAISAL_GROUP=cucumber-8 bundle exec appraisal install
 ```
 
 #### Passing arguments to tests
