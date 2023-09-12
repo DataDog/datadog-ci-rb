@@ -115,8 +115,8 @@ To install dependencies, run `bundle exec appraisal install`.
 In addition, if you already know which appraisal group definition to work with, you can target a specific group operation with environment vairable `APPRAISAL_GROUP`, instead of all the groups from your environment. For example:
 
 ```bash
-# This would only install dependencies for `rspec` group definition
-APPRAISAL_GROUP=rspec bundle exec appraisal install
+# This would only install dependencies for `cucumber` group definition
+APPRAISAL_GROUP=cucumber bundle exec appraisal install
 ```
 
 #### Passing arguments to tests
