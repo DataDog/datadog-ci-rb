@@ -40,20 +40,43 @@ Then within this container you can [run tests](#running-tests), [check code qual
 
 ## Testing
 
-The test suite uses [RSpec](https://rspec.info/) tests to verify the correctness of both the core trace library and its integrations.
+The test suite uses [RSpec](https://rspec.info/) tests to verify the correctness of both the core library and its integrations with various test frameworks.
 
 ### Writing tests
 
-New tests should be written as RSpec tests in the `spec/ddtrace` folder. Test files should generally mirror the structure of `lib`.
+New tests should be written as RSpec tests in the `spec/datadog/ci` folder. Test files should generally mirror the structure of `lib`.
 
 All changes should be covered by a corresponding RSpec tests. Unit tests are preferred, and integration tests are accepted where appropriate (e.g. acceptance tests, verifying compatibility with datastores, etc) but should be kept to a minimum.
 
 #### Considerations for CI
 
-All tests should run in CI. When adding new `spec.rb` files, you may need to add a test task to ensure your test file is run in CI.
+All tests should run in CI. When adding new `_spec.rb` files, you may need to add a rake task to ensure your test file is run in CI.
 
-- Ensure that there is a corresponding Rake task defined in `Rakefile` under the `spec` namespace, whose pattern matches your test file.
-- Verify that this task is in the `TEST_METADATA` hash in `Rakefile`.
+- Ensure that there is a corresponding Rake task defined in `Rakefile` under the `spec` namespace, whose pattern matches your test file. For example
+
+```ruby
+  namespace :spec do
+    desc ""
+    RSpec::Core::RakeTask.new(:foo) do |t, args|
+      t.pattern = "spec/datadog/ci/contrib/bar/**/*_spec.rb"
+      t.rspec_opts = args.to_a.join(' ')
+    end
+  end
+```
+
+- Ensure the Rake task is configured to run for the appropriate Ruby runtimes, by introducing it to our test matrix. You should find the task with `bundle exec rake -T test:<foo>`.
+
+```ruby
+TEST_METADATA = {
+  "foo" => {
+    # Without any appraisal group dependencies
+    "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+
+    # or with appraisal group definition `bar`
+    "bar" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+  }
+}
+```
 
 ### Running tests
 
@@ -69,13 +92,32 @@ bundle exec rake test:main
 
 #### For integrations
 
-Integrations which interact with dependencies not listed in the `datadog-ci` gemspec will need to load these dependencies to run their tests.
+Integrations which interact with dependencies not listed in the `datadog-ci` gemspec will need to load these dependencies to run their tests. Each test task could consist of multiple spec tasks which are executed with different groups of dependencies (likely against different versions or variations).
 
 To get a list of the spec tasks run `bundle exec rake -T 'test:'`
 
 To run any of the specs above run `bundle exec rake 'test:<spec_name>'`.
 
 For example: `bundle exec rake test:minitest`
+
+#### Working with appraisal groups
+
+Checkout [Apppraisal](https://github.com/thoughtbot/appraisal) to learn the basics.
+
+Groups are defined in the `Apparisals` file and their names are prefixed with Ruby runtime based on the environment. `*.gemfile` and `*.gemfile.lock` from `gemfiles/` directory are generated from those definitions.
+
+To find out existing groups in your environment, run `bundle exec appraisal list`
+
+After introducing a new group definition or changing existing one, run `bundle exec appraisal generate` to propagate the changes.
+
+To install dependencies, run `bundle exec appraisal install`.
+
+In addition, if you already know which appraisal group definition to work with, you can target a specific group operation with environment vairable `APPRAISAL_GROUP`, instead of all the groups from your environment. For example:
+
+```bash
+# This would only install dependencies for `cucumber` group definition
+APPRAISAL_GROUP=cucumber-8 bundle exec appraisal install
+```
 
 #### Passing arguments to tests
 
