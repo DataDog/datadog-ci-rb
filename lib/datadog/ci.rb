@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "ddtrace"
 require_relative "ci/version"
 
 require "datadog/core"
