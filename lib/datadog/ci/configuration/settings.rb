@@ -21,16 +21,19 @@ module Datadog
                 o.default false
               end
 
-              # DEV: Alias to Datadog::Tracing::Contrib::Extensions::Configuration::Settings#instrument.
-              # DEV: Should be removed when CI implement its own `c.ci.instrument`.
               define_method(:instrument) do |integration_name, options = {}, &block|
-                Datadog.configuration.tracing.instrument(integration_name, options, &block)
-              end
+                return unless enabled
 
-              # DEV: Alias to Datadog::Tracing::Contrib::Extensions::Configuration::Settings#instrument.
-              # DEV: Should be removed when CI implement its own `c.ci[]`.
-              define_method(:[]) do |integration_name, key = :default|
-                Datadog.configuration.tracing[integration_name, key]
+                registered_integration = Datadog::CI::Contrib::Integration.registry[integration_name]
+                return unless registered_integration
+
+                klass = registered_integration.klass
+                return unless klass.loaded? && klass.compatible?
+
+                instance = klass.new
+                return if instance.patcher.patched?
+
+                instance.patcher.patch
               end
 
               # TODO: Deprecate in the next major version, as `instrument` better describes this method's purpose

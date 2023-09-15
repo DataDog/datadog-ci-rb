@@ -1,3 +1,38 @@
+# Dummy Integration
+class FakeIntegration
+  module Patcher
+    module_function
+
+    def patched?
+      @patched
+    end
+
+    def patch
+      @patched = true
+    end
+
+    def reset
+      @patched = nil
+    end
+  end
+
+  def self.loaded?
+    true
+  end
+
+  def self.compatible?
+    true
+  end
+
+  def self.auto_instrument?
+    false
+  end
+
+  def patcher
+    Patcher
+  end
+end
+
 RSpec.describe Datadog::CI::Configuration::Settings do
   context "when used to extend Datadog::Core::Configuration::Settings" do
     subject(:settings) do
@@ -50,6 +85,87 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             .to change { settings.ci.enabled }
             .from(false)
             .to(true)
+        end
+      end
+
+      describe "#instrument" do
+        let(:registry) { {} }
+        let(:integration_name) { :fake }
+
+        subject(:instrument) { settings.ci.instrument(integration_name) }
+
+        before do
+          registry[integration_name] = instance_double(
+            Datadog::CI::Contrib::Integration::RegisteredIntegration,
+            klass: FakeIntegration
+          )
+
+          allow(Datadog::CI::Contrib::Integration).to receive(:registry).and_return(registry)
+          settings.ci.enabled = ci_enabled
+        end
+
+        after do
+          FakeIntegration::Patcher.reset
+        end
+
+        context "ci enabled" do
+          let(:ci_enabled) { true }
+
+          context "when integration exists" do
+            context "when loaded and compatible" do
+              it "patches the integration" do
+                expect(FakeIntegration::Patcher).to receive(:patch)
+
+                instrument
+              end
+            end
+
+            context "when called multiple times" do
+              it "does not patch the integration multiple times" do
+                expect(FakeIntegration::Patcher).to receive(:patch).and_call_original.once
+
+                instrument
+                instrument
+              end
+            end
+
+            context "when not loaded" do
+              before { expect(FakeIntegration).to receive(:loaded?).and_return(false) }
+
+              it "does not patch the integration" do
+                expect(FakeIntegration::Patcher).to_not receive(:patch)
+
+                instrument
+              end
+            end
+
+            context "when loaded and not compatible" do
+              before { expect(FakeIntegration).to receive(:compatible?).and_return(false) }
+
+              it "does not patch the integration" do
+                expect(FakeIntegration::Patcher).to_not receive(:patch)
+
+                instrument
+              end
+            end
+
+            context "when integration does not exist" do
+              let(:integration_name) { :not_exiting }
+
+              it "does not patch the integration" do
+                expect { instrument }.to_not raise_error
+              end
+            end
+          end
+
+          context "ci is not enabled" do
+            let(:ci_enabled) { false }
+
+            it "does not patch the integration" do
+              expect(FakeIntegration::Patcher).to_not receive(:patch)
+              instrument
+            end
+          end
         end
       end
 

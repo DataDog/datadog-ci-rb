@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Contrib
+      module Integration
+        # TODO: replace with Struct[] when https://github.com/ruby/rbs/pull/1456 is merged
+        RegisteredIntegration: untyped
+
+        self.@registry: Hash[Symbol, Struct[untyped]]
+
+        def self.included: (Module base) -> void
+        module ClassMethods
+          def register_as: (Symbol name, ?::Hash[Symbol, untyped] options) -> void
+
+          def compatible?: () -> bool
+        end
+
+        def self.register: (Object integration, Symbol name, ::Hash[Symbol, untyped] options) -> void
+
+        def self.registry: () -> Hash[Symbol, Struct[untyped]]
+      end
+    end
+  end
+end
