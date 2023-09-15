@@ -1,3 +1,5 @@
+require "datadog/tracing"
+
 module Contrib
   # Contrib-specific tracer helpers.
   # For contrib, we only allow one tracer to be active:

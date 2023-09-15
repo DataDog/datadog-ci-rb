@@ -1,3 +1,4 @@
+require "datadog/tracing"
 require_relative "faux_writer"
 
 module TracerHelpers

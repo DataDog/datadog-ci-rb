@@ -1,16 +1,21 @@
 # frozen_string_literal: true
 
+require "datadog/tracing/contrib/configurable"
+require "datadog/tracing/contrib/patchable"
+
 module Datadog
   module CI
     module Contrib
-      # Base provides features that are shared across all integrations
       module Integration
         @registry = {}
 
-        RegisteredIntegration = Struct.new(:name, :klass, :options)
+        RegisteredIntegration = Struct.new(:name, :integration, :options)
 
         def self.included(base)
           base.extend(ClassMethods)
+
+          base.include(Datadog::Tracing::Contrib::Patchable)
+          base.include(Datadog::Tracing::Contrib::Configurable)
         end
 
         # Class-level methods for Integration
@@ -18,14 +23,10 @@ module Datadog
           def register_as(name, options = {})
             Integration.register(self, name, options)
           end
-
-          def compatible?
-            true
-          end
         end
 
-        def self.register(integration, name, options)
-          registry[name] = RegisteredIntegration.new(name, integration, options)
+        def self.register(klass, name, options)
+          registry[name] = RegisteredIntegration.new(name, klass.new, options)
         end
 
         def self.registry

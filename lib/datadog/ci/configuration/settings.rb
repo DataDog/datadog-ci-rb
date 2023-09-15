@@ -5,8 +5,10 @@ require_relative "../ext/settings"
 module Datadog
   module CI
     module Configuration
-      # Adds CI behavior to Datadog trace settings
+      # Adds CI behavior to ddtrace settings
       module Settings
+        InvalidIntegrationError = Class.new(StandardError)
+
         def self.extended(base)
           base = base.singleton_class unless base.is_a?(Class)
           add_settings!(base)
@@ -24,16 +26,20 @@ module Datadog
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
-                registered_integration = Datadog::CI::Contrib::Integration.registry[integration_name]
-                return unless registered_integration
+                integration = fetch_integration(integration_name)
+                return unless integration.class.compatible?
 
-                klass = registered_integration.klass
-                return unless klass.loaded? && klass.compatible?
+                return unless integration.default_configuration.enabled
+                integration.configure(:default, options, &block)
 
-                instance = klass.new
-                return if instance.patcher.patched?
+                return if integration.patcher.patched?
+                integration.patcher.patch
+              end
 
-                instance.patcher.patch
+              define_method(:[]) do |integration_name, key = :default|
+                integration = fetch_integration(integration_name)
+
+                integration.resolve(key) unless integration.nil?
               end
 
               # TODO: Deprecate in the next major version, as `instrument` better describes this method's purpose
@@ -44,6 +50,13 @@ module Datadog
               option :writer_options do |o|
                 o.type :hash
                 o.default({})
+              end
+
+              define_method(:fetch_integration) do |name|
+                registered = Datadog::CI::Contrib::Integration.registry[name]
+                raise(InvalidIntegrationError, "'#{name}' is not a valid integration.") if registered.nil?
+
+                registered.integration
               end
             end
           end

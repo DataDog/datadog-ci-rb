@@ -3,7 +3,7 @@ require_relative "../support/spec_helper"
 RSpec.describe Datadog::CI::Contrib::Cucumber::Integration do
   extend ConfigurationHelpers
 
-  let(:integration) { described_class.new(:cucumber) }
+  let(:integration) { described_class.new }
 
   describe ".version" do
     subject(:version) { described_class.version }
