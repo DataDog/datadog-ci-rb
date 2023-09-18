@@ -95,6 +95,10 @@ module Datadog
             @configuration = nil
           end
 
+          def enabled
+            configuration.enabled
+          end
+
           # The patcher module to inject instrumented objects into the instrumentation target.
           #
           # {Contrib::Patcher} includes the basic functionality of a patcher. `include`ing

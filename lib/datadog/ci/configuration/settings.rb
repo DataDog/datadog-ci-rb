@@ -29,7 +29,7 @@ module Datadog
                 integration = fetch_integration(integration_name)
                 integration.configure(options, &block)
 
-                return unless integration.configuration.enabled
+                return unless integration.enabled
 
                 patch_results = integration.patch
                 next if patch_results == true
