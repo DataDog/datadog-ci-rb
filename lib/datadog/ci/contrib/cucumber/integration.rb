@@ -14,7 +14,7 @@ module Datadog
 
           MINIMUM_VERSION = Gem::Version.new("3.0.0")
 
-          register_as :cucumber, auto_patch: true
+          register_as :cucumber
 
           def self.version
             Gem.loaded_specs["cucumber"] \

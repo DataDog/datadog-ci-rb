@@ -3,7 +3,8 @@ module Datadog
     module Contrib
       module Cucumber
         class Integration
-          extend Datadog::Tracing::Contrib::Integration
+          extend Datadog::CI::Contrib::Integration::ClassMethods
+          include Datadog::CI::Contrib::Integration::InstanceMethods
 
           MINIMUM_VERSION: Gem::Version
 

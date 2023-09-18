@@ -54,8 +54,8 @@ RSpec.describe Datadog::CI::Contrib::RSpec::Integration do
     it { is_expected.to be(false) }
   end
 
-  describe "#default_configuration" do
-    subject(:default_configuration) { integration.default_configuration }
+  describe "#configuration" do
+    subject(:configuration) { integration.configuration }
 
     it { is_expected.to be_a_kind_of(Datadog::CI::Contrib::RSpec::Configuration::Settings) }
   end

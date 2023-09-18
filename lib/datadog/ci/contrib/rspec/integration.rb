@@ -14,7 +14,7 @@ module Datadog
 
           MINIMUM_VERSION = Gem::Version.new("3.0.0")
 
-          register_as :rspec, auto_patch: true
+          register_as :rspec
 
           def self.version
             Gem.loaded_specs["rspec-core"] \

@@ -3,7 +3,7 @@ module Datadog
     module Contrib
       module RSpec
         module Configuration
-          class Settings < Datadog::Tracing::Contrib::Configuration::Settings
+          class Settings < Datadog::CI::Contrib::Settings
           end
         end
       end

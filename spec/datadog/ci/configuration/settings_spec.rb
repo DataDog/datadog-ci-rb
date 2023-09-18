@@ -1,8 +1,8 @@
 # Dummy Integration
 class FakeIntegration
-  def initialize(configuration)
-    @configuration = configuration
-  end
+  include Datadog::CI::Contrib::Integration
+
+  register_as :fake
 
   module Patcher
     module_function
@@ -20,6 +20,10 @@ class FakeIntegration
     end
   end
 
+  def self.version
+    "0.1"
+  end
+
   def self.loaded?
     true
   end
@@ -34,13 +38,6 @@ class FakeIntegration
 
   def patcher
     Patcher
-  end
-
-  def default_configuration
-    @configuration
-  end
-
-  def configure(name, options, &block)
   end
 end
 
@@ -100,21 +97,14 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       end
 
       describe "#instrument" do
-        let(:registry) { {} }
         let(:integration_name) { :fake }
 
-        let(:integration_config) { double(enabled: true) }
-        let(:integration) { FakeIntegration.new(integration_config) }
+        let(:integration) { FakeIntegration.new }
+        let(:enabled) { true }
 
-        subject(:instrument) { settings.ci.instrument(integration_name) }
+        subject(:instrument) { settings.ci.instrument(integration_name, enabled: enabled) }
 
         before do
-          registry[integration_name] = instance_double(
-            Datadog::CI::Contrib::Integration::RegisteredIntegration,
-            integration: integration
-          )
-
-          allow(Datadog::CI::Contrib::Integration).to receive(:registry).and_return(registry)
           settings.ci.enabled = ci_enabled
         end
 
@@ -141,8 +131,28 @@ RSpec.describe Datadog::CI::Configuration::Settings do
               end
             end
 
+            context "when not loaded" do
+              before { allow(FakeIntegration).to receive(:loaded?).and_return(false) }
+
+              it "does not patch the integration" do
+                expect(FakeIntegration::Patcher).to_not receive(:patch)
+
+                instrument
+              end
+            end
+
+            context "when not available" do
+              before { allow(FakeIntegration).to receive(:available?).and_return(false) }
+
+              it "does not patch the integration" do
+                expect(FakeIntegration::Patcher).to_not receive(:patch)
+
+                instrument
+              end
+            end
+
             context "when not compatible" do
-              before { expect(FakeIntegration).to receive(:compatible?).and_return(false) }
+              before { allow(FakeIntegration).to receive(:compatible?).and_return(false) }
 
               it "does not patch the integration" do
                 expect(FakeIntegration::Patcher).to_not receive(:patch)
@@ -152,9 +162,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             end
 
             context "when not enabled" do
-              before do
-                allow(integration_config).to receive(:enabled).and_return(false)
-              end
+              # before do
+              #   allow(integration.configuration).to receive(:enabled).and_return(false)
+              # end
+              let(:enabled) { false }
 
               it "does not patch the integration" do
                 expect(FakeIntegration::Patcher).to_not receive(:patch)
@@ -165,10 +176,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
           end
 
           context "when integration does not exist" do
-            let(:integration_name) { :not_exiting }
+            let(:integration_name) { :not_existing }
 
             it "does not patch the integration" do
-              expect { instrument }.to_not raise_error
+              expect { instrument }.to raise_error(Datadog::CI::Configuration::Settings::InvalidIntegrationError)
             end
           end
 

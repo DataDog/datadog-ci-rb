@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../ext"
-
-require "datadog/tracing/contrib/configuration/settings"
+require_relative "../../settings"
 
 module Datadog
   module CI
@@ -11,7 +10,7 @@ module Datadog
         module Configuration
           # Custom settings for the RSpec integration
           # TODO: mark as `@public_api` when GA
-          class Settings < Datadog::Tracing::Contrib::Configuration::Settings
+          class Settings < Datadog::CI::Contrib::Settings
             option :enabled do |o|
               o.type :bool
               o.env Ext::ENV_ENABLED

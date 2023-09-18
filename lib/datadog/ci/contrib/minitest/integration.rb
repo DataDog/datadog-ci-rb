@@ -14,7 +14,7 @@ module Datadog
 
           MINIMUM_VERSION = Gem::Version.new("5.0.0")
 
-          register_as :minitest, auto_patch: true
+          register_as :minitest
 
           def self.version
             Gem.loaded_specs["minitest"] && Gem.loaded_specs["minitest"].version

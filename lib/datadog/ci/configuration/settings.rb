@@ -27,19 +27,24 @@ module Datadog
                 return unless enabled
 
                 integration = fetch_integration(integration_name)
-                return unless integration.class.compatible?
+                integration.configure(options, &block)
 
-                return unless integration.default_configuration.enabled
-                integration.configure(:default, options, &block)
+                return unless integration.configuration.enabled
 
-                return if integration.patcher.patched?
-                integration.patcher.patch
+                patch_results = integration.patch
+                next if patch_results == true
+
+                error_message = <<-ERROR
+                  Available?: #{patch_results[:available]}, Loaded?: #{patch_results[:loaded]},
+                  Compatible?: #{patch_results[:compatible]}, Patchable?: #{patch_results[:patchable]}"
+                ERROR
+                Datadog.logger.warn("Unable to patch #{integration_name} (#{error_message})")
               end
 
-              define_method(:[]) do |integration_name, key = :default|
+              define_method(:[]) do |integration_name|
                 integration = fetch_integration(integration_name)
 
-                integration.resolve(key) unless integration.nil?
+                integration.configuration unless integration.nil?
               end
 
               # TODO: Deprecate in the next major version, as `instrument` better describes this method's purpose
