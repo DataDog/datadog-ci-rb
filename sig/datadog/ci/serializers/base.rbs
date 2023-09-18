@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module Serializers
+      class Base
+        attr_reader trace: Datadog::Tracing::TraceOperation
+
+        def initialize: (Datadog::Tracing::TraceOperation trace) -> void
+
+        def to_json: () -> nil
+
+        def to_msgpack: () -> nil
+      end
+    end
+  end
+end

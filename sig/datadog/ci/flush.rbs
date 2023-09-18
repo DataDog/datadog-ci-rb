@@ -2,7 +2,7 @@ module Datadog
   module CI
     module Flush
       module Tagging
-        def get_trace: (untyped trace_op) -> untyped
+        def get_trace: (Datadog::Tracing::TraceOperation trace_op) -> untyped
       end
       class Finished < Tracing::Flush::Finished
         prepend Tagging
