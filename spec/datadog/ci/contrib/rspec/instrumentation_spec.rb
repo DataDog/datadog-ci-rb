@@ -3,12 +3,9 @@ require "time"
 require_relative "../support/spec_helper"
 
 RSpec.describe "RSpec hooks" do
-  include_context "CI mode activated"
-
-  before do
-    Datadog.configure do |c|
-      c.ci.instrument :rspec, service_name: "lspec"
-    end
+  include_context "CI mode activated" do
+    let(:integration_name) { :rspec }
+    let(:integration_options) { {service_name: "lspec"} }
   end
 
   # Yields to a block in a new RSpec global context. All RSpec

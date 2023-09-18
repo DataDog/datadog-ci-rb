@@ -5,15 +5,14 @@ require "minitest/spec"
 require_relative "../support/spec_helper"
 
 RSpec.describe "Minitest hooks" do
-  include_context "CI mode activated"
+  include_context "CI mode activated" do
+    let(:integration_name) { :minitest }
+    let(:integration_options) { {service_name: "ltest"} }
+  end
 
   before do
     # required to call .runnable_methods
     Minitest.seed = 1
-
-    Datadog.configure do |c|
-      c.ci.instrument :minitest, service_name: "ltest"
-    end
   end
 
   it "creates span for test" do

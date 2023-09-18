@@ -6,7 +6,10 @@ require "cucumber"
 RSpec.describe "Cucumber formatter" do
   extend ConfigurationHelpers
 
-  include_context "CI mode activated"
+  include_context "CI mode activated" do
+    let(:integration_name) { :cucumber }
+    let(:integration_options) { {service_name: "jalapenos"} }
+  end
 
   # Cucumber runtime setup
   let(:existing_runtime) { Cucumber::Runtime.new(runtime_options) }
@@ -24,12 +27,6 @@ RSpec.describe "Cucumber formatter" do
       Cucumber::Cli::Main.new(args, stdin, stdout, stderr, kernel)
     else
       Cucumber::Cli::Main.new(args, stdout, stderr, kernel)
-    end
-  end
-
-  before do
-    Datadog.configure do |c|
-      c.ci.instrument :cucumber, service_name: "jalapenos"
     end
   end
 
