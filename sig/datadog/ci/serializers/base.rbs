@@ -2,9 +2,9 @@ module Datadog
   module CI
     module Serializers
       class Base
-        attr_reader trace: Datadog::Tracing::TraceOperation
+        attr_reader trace: Datadog::Tracing::TraceSegment
 
-        def initialize: (Datadog::Tracing::TraceOperation trace) -> void
+        def initialize: (Datadog::Tracing::TraceSegment trace) -> void
 
         def to_json: () -> nil
 
