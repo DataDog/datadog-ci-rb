@@ -2,10 +2,7 @@ module Datadog
   module CI
     module Contrib
       module Integration
-        # TODO: replace with Struct[] when https://github.com/ruby/rbs/pull/1456 is merged
-        RegisteredIntegration: untyped
-
-        self.@registry: Hash[Symbol, Struct[untyped]]
+        self.@registry: Hash[Symbol, untyped]
 
         def self.included: (Module base) -> void
 

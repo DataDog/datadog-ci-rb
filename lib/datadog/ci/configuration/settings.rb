@@ -42,9 +42,7 @@ module Datadog
               end
 
               define_method(:[]) do |integration_name|
-                integration = fetch_integration(integration_name)
-
-                integration.configuration unless integration.nil?
+                fetch_integration(integration_name).configuration
               end
 
               # TODO: Deprecate in the next major version, as `instrument` better describes this method's purpose
@@ -58,10 +56,8 @@ module Datadog
               end
 
               define_method(:fetch_integration) do |name|
-                registered = Datadog::CI::Contrib::Integration.registry[name]
-                raise(InvalidIntegrationError, "'#{name}' is not a valid integration.") if registered.nil?
-
-                registered.integration
+                Datadog::CI::Contrib::Integration.registry[name] ||
+                  raise(InvalidIntegrationError, "'#{name}' is not a valid integration.")
               end
             end
           end
