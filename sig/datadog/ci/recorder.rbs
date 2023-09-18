@@ -1,6 +1,6 @@
 module Datadog
   module CI
-    module Test
+    module Recorder
       self.@environment_tags: Hash[String, String]
 
       def self.trace: (untyped span_name, ?::Hash[untyped, untyped] options) ?{ (untyped, untyped) -> untyped } -> untyped

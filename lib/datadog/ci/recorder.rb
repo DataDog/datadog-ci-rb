@@ -12,7 +12,7 @@ require "rbconfig"
 module Datadog
   module CI
     # Common behavior for CI tests
-    module Test
+    module Recorder
       # Creates a new span for a CI test
       def self.trace(span_name, options = {})
         span_options = {
