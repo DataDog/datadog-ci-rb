@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Transport
+      class HTTP
+        def initialize: () -> void
+      end
+    end
+  end
+end

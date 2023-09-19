@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module TestVisibility
+      module Events
+        class Event
+          def initialize: () -> void
+
+          def to_msgpack: () -> nil
+        end
+      end
+    end
+  end
+end

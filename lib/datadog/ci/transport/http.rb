@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require "../base"
-
 module Datadog
   module CI
-    module Serializers
-      module V1
-        class TestSerializer < Base
+    module Transport
+      class HTTP
+        def initialize
         end
       end
     end

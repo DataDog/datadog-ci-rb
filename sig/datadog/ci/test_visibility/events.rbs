@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module TestVisibility
+      module Events
+        def self?.extract_from_trace: (untyped trace) -> untyped
+
+        def self?.convert_span: (untyped span) -> untyped
+      end
+    end
+  end
+end

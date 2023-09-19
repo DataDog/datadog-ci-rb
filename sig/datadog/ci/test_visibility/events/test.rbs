@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module TestVisibility
+      module Events
+        class Test < Event
+          def initialize: () -> void
+        end
+      end
+    end
+  end
+end
