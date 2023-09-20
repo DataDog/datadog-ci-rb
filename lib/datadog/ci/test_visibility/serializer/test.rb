@@ -9,7 +9,7 @@ module Datadog
       module Serializer
         class Test < Base
           def to_msgpack(packer = nil)
-            packer ||= MessagePack::Packer.new unless defined?(@packer)
+            packer ||= MessagePack::Packer.new
 
             packer.write_map_header(3)
 
@@ -50,9 +50,8 @@ module Datadog
             packer.write("meta")
             packer.write(@span.meta)
 
-            # metrics have the same value as meta
             packer.write("metrics")
-            packer.write({})
+            packer.write(@span.metrics)
           end
         end
       end
