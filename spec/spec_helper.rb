@@ -12,7 +12,6 @@ require_relative "support/configuration_helpers"
 require_relative "support/log_helpers"
 require_relative "support/tracer_helpers"
 require_relative "support/span_helpers"
-require_relative "support/test_helpers"
 require_relative "support/platform_helpers"
 require_relative "support/git_helpers"
 require_relative "support/provider_test_helpers"
@@ -33,8 +32,6 @@ RSpec.configure do |config|
   config.include ConfigurationHelpers
   config.include TracerHelpers
   config.include SpanHelpers
-
-  config.include TestHelpers::RSpec::Integration, :integration
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"

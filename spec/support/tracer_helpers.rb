@@ -8,6 +8,43 @@ module TracerHelpers
     Datadog::Tracing.send(:tracer)
   end
 
+  def produce_test_trace(
+    framework: "rspec", operation: "rspec.example",
+    test_name: "test_add", test_suite: "calculator_tests",
+    service: "rspec-test-suite", with_http_span: false
+  )
+    Datadog::CI::Recorder.trace(
+      operation,
+      {
+        span_options: {
+          resource: test_name,
+          service: service
+        },
+        framework: framework,
+        framework_version: "1.0.0",
+        test_name: test_name,
+        test_suite: test_suite,
+        test_type: "test"
+      }
+    ) do |span|
+      if with_http_span
+        Datadog::Tracing.trace("http-call", type: "http", service: "net-http") do |span, trace|
+          span.set_tag("custom_tag", "custom_tag_value")
+        end
+      end
+
+      Datadog::CI::Recorder.passed!(span)
+    end
+  end
+
+  def first_test_span
+    spans.find { |span| span.type == "test" }
+  end
+
+  def first_other_span
+    spans.find { |span| span.type != "test" }
+  end
+
   # Returns spans and caches it (similar to +let(:spans)+).
   def traces
     @traces ||= fetch_traces
