@@ -1,7 +1,5 @@
 require "time"
 
-require_relative "../support/spec_helper"
-
 RSpec.describe "RSpec hooks" do
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }

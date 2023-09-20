@@ -2,8 +2,6 @@ require "time"
 require "minitest"
 require "minitest/spec"
 
-require_relative "../support/spec_helper"
-
 RSpec.describe "Minitest hooks" do
   include_context "CI mode activated" do
     let(:integration_name) { :minitest }

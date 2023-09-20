@@ -1,5 +1,3 @@
-require_relative "../support/spec_helper"
-
 RSpec.describe Datadog::CI::Contrib::Cucumber::Integration do
   extend ConfigurationHelpers
 

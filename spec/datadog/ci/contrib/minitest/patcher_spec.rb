@@ -1,5 +1,3 @@
-require_relative "../support/spec_helper"
-
 require "minitest"
 
 RSpec.describe Datadog::CI::Contrib::Minitest::Patcher do
