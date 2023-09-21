@@ -10,8 +10,10 @@ module Datadog
         class TestV1 < Base
           def content_fields
             @content_fields ||= [
-              "trace_id", "span_id", "name", "resource", "service",
-              "start", "duration", "meta", "metrics", "error",
+              "trace_id", "span_id",
+              "name", "resource", "service",
+              "error", "start", "duration",
+              "meta", "metrics",
               "type" => "span_type"
             ]
           end

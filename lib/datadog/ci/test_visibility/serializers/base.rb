@@ -119,6 +119,8 @@ module Datadog
           end
 
           def content_fields_count
+            return @content_fields_count if defined?(@content_fields_count)
+
             res = 0
             content_fields.each do |field|
               res += if field.is_a?(Hash)
@@ -127,7 +129,7 @@ module Datadog
                 1
               end
             end
-            res
+            @content_fields_count = res
           end
         end
       end

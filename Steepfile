@@ -18,4 +18,5 @@ target :lib do
   library "open3"
   library "rspec"
   library "cucumber"
+  library "msgpack"
 end

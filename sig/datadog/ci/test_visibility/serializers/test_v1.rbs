@@ -1,0 +1,18 @@
+module Datadog
+  module CI
+    module TestVisibility
+      module Serializers
+        class TestV1 < Base
+          @content_fields: Array[String | Hash[String, String]]
+          def content_fields: () -> Array[String | Hash[String, String]]
+
+          def type: () -> "test"
+
+          def name: () -> ::String
+
+          def resource: () -> ::String
+        end
+      end
+    end
+  end
+end

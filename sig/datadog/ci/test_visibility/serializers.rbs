@@ -1,0 +1,10 @@
+module Datadog
+  module CI
+    module TestVisibility
+      module Serializers
+        def self?.convert_trace_to_serializable_events: (Datadog::Tracing::TraceSegment trace) -> untyped
+        def self?.convert_span_to_serializable_event: (Datadog::Tracing::TraceSegment trace, Datadog::Tracing::Span span) -> untyped
+      end
+    end
+  end
+end
