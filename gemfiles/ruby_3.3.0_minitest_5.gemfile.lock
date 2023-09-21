@@ -104,6 +104,7 @@ GEM
       lint_roller (~> 1.1)
       rubocop-performance (~> 1.19.0)
     thor (1.2.2)
+    timecop (0.9.8)
     unicode-display_width (2.4.2)
     webrick (1.8.1)
     yard (0.9.34)
@@ -127,6 +128,7 @@ DEPENDENCIES
   simplecov
   simplecov-cobertura (~> 2.1.0)
   standard (~> 1.31.0)
+  timecop
   webrick
   yard
 

@@ -48,7 +48,7 @@ module Datadog
 
           def write_field: (untyped packer, String field_name, ?String? method) -> untyped
           def time_nano: (Time time) -> Integer
-          def duration_nano: (Integer duration) -> Integer
+          def duration_nano: (Float duration) -> Integer
 
           def content_fields_count: () -> Integer
         end

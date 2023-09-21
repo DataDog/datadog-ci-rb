@@ -41,10 +41,6 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
         expect(metrics).to eq(
           {"_dd.measured" => 1.0, "_dd.top_level" => 1.0, "memory_allocations" => 16}
         )
-        # TODO: test start and duration with timecop
-        # expect(content["start"]).to eq(1)
-        # expect(content["duration"]).to eq(1)
-        #
       end
     end
 
@@ -58,6 +54,22 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
 
         expect(content).to include({"error" => 1})
         expect(meta).to include({"test.status" => "fail"})
+      end
+    end
+
+    context "with time and duration expectations" do
+      let(:start_time) { Time.now }
+      let(:duration_seconds) { 3 }
+
+      before do
+        produce_test_trace(start_time: start_time, duration_seconds: duration_seconds)
+      end
+
+      it "correctly serializes start and duration in nanoseconds" do
+        expect(content).to include({
+          "start" => start_time.to_i * 1_000_000_000 + start_time.nsec,
+          "duration" => 3 * 1_000_000_000
+        })
       end
     end
   end

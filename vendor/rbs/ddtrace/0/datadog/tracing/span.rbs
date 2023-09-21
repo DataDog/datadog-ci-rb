@@ -15,7 +15,7 @@ module Datadog
       def status: () -> Integer
       def start_time: () -> Time
       def end_time: () -> Time
-      def duration: () -> Integer
+      def duration: () -> Float
       def meta: () -> Hash[String, untyped]
       def metrics: () -> Hash[String, untyped]
     end

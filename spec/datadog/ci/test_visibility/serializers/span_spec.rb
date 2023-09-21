@@ -38,6 +38,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
             "resource" => "http-call"
           }
         )
+        expect(content).to include("start", "duration")
 
         expect(meta).to include(
           {
@@ -46,10 +47,6 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
           }
         )
         expect(metrics).to eq({"_dd.top_level" => 1.0, "custom_metric" => 42})
-        # TODO: test start and duration with timecop
-        # expect(content["start"]).to eq(1)
-        # expect(content["duration"]).to eq(1)
-        #
       end
     end
   end

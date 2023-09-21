@@ -154,6 +154,7 @@ GEM
       ffi (~> 1.1)
     thor (1.2.2)
     thread_safe (0.3.6)
+    timecop (0.9.8)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (2.4.2)
@@ -179,6 +180,7 @@ DEPENDENCIES
   simplecov
   simplecov-cobertura (~> 2.1.0)
   standard (~> 1.31.0)
+  timecop
   webrick
   yard
 

@@ -12,8 +12,16 @@ module TracerHelpers
     framework: "rspec", operation: "rspec.example",
     test_name: "test_add", test_suite: "calculator_tests",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
+    start_time: Time.now, duration_seconds: 2,
     with_http_span: false
   )
+    # each time monotonic clock is called it will return a number that is
+    # by `duration_seconds` bigger than the previous
+    allow(Process).to receive(:clock_gettime).and_return(
+      0, duration_seconds, 2 * duration_seconds, 3 * duration_seconds
+    )
+    Timecop.freeze(start_time)
+
     Datadog::CI::Recorder.trace(
       operation,
       {
@@ -31,7 +39,7 @@ module TracerHelpers
       if with_http_span
         Datadog::Tracing.trace("http-call", type: "http", service: "net-http") do |span, trace|
           span.set_tag("custom_tag", "custom_tag_value")
-          span.set_tag("custom_metric", 42)
+          span.set_metric("custom_metric", 42)
         end
       end
 
@@ -46,7 +54,11 @@ module TracerHelpers
       else
         Datadog::CI::Recorder.passed!(span)
       end
+
+      Timecop.travel(start_time + duration_seconds)
     end
+
+    Timecop.return
   end
 
   def first_test_span
