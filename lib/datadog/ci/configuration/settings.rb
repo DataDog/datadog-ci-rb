@@ -29,11 +29,6 @@ module Datadog
                 o.default false
               end
 
-              option :api_key do |o|
-                o.type :string, nilable: true
-                o.env CI::Ext::Settings::ENV_API_KEY
-              end
-
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

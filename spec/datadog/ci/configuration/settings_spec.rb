@@ -137,45 +137,6 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
-      describe "#api_key" do
-        subject(:api_key) { settings.ci.api_key }
-
-        context "when #{Datadog::CI::Ext::Settings::ENV_API_KEY}" do
-          around do |example|
-            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_API_KEY => api_key) do
-              example.run
-            end
-          end
-
-          context "is not defined" do
-            let(:api_key) { nil }
-
-            it { is_expected.to be nil }
-          end
-
-          context "is set to dd_api_key" do
-            let(:api_key) { "dd_api_key" }
-
-            it { is_expected.to eq("dd_api_key") }
-          end
-        end
-      end
-
-      describe "#api_key=" do
-        around do |example|
-          ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_API_KEY => nil) do
-            example.run
-          end
-        end
-
-        it "updates the #api_key setting" do
-          expect { settings.ci.api_key = "dd_api_key" }
-            .to change { settings.ci.api_key }
-            .from(nil)
-            .to("dd_api_key")
-        end
-      end
-
       describe "#instrument" do
         let(:integration_name) { :fake }
 

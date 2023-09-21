@@ -7,7 +7,6 @@ module Datadog
       module Settings
         ENV_MODE_ENABLED = "DD_TRACE_CI_ENABLED"
         ENV_AGENTLESS_MODE_ENABLED = "DD_CIVISIBILITY_AGENTLESS_ENABLED"
-        ENV_API_KEY = "DD_API_KEY"
       end
     end
   end
