@@ -17,6 +17,10 @@ module Datadog
         #   events = traces.flat_map { |trace| SomethingThatConvertsTraces.convert(trace) }
         #   payload = Payload.new(events)
         #   # @encoder.encode(payload)
+        #
+        #   url: https://citestcycle-intake.datadoghq.com
+        #   url: {ssl=true}citestcycle-intake.#{Datadog.configuration.site || "datadoghq.com"}
+        #   api_key: Datadog.configuration.api_key
         # end
 
         # private
