@@ -6,7 +6,9 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
     let(:integration_name) { :rspec }
   end
 
-  subject { described_class.new(trace, span) }
+  include_context "Test visibility event serialized" do
+    subject { described_class.new(trace, span) }
+  end
 
   describe "#to_msgpack" do
     context "traced a single test execution with Recorder" do
@@ -14,16 +16,9 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
         produce_test_trace
       end
 
-      let(:payload) { MessagePack.unpack(MessagePack.pack(subject)) }
-
       it "serializes test event to messagepack" do
-        expect(payload).to include(
-          {
-            "version" => 1,
-            "type" => "test"
-          }
-        )
-        content = payload["content"]
+        expect_event_header
+
         expect(content).to include(
           {
             "trace_id" => trace.id,
@@ -35,10 +30,10 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
           }
         )
 
-        tags = content["meta"]
-        expect(tags).to include(
+        expect(meta).to include(
           {
             "test.framework" => "rspec",
+            "test.status" => "pass",
             "_dd.origin" => "ciapp-test"
           }
         )
@@ -46,6 +41,19 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
         # expect(content["start"]).to eq(1)
         # expect(content["duration"]).to eq(1)
         #
+      end
+    end
+
+    context "trace a failed test" do
+      before do
+        produce_test_trace(result: "FAILED", exception: StandardError.new("1 + 2 are not equal to 5"))
+      end
+
+      it "has error" do
+        expect_event_header
+
+        expect(content).to include({"error" => 1})
+        expect(meta).to include({"test.status" => "fail"})
       end
     end
   end

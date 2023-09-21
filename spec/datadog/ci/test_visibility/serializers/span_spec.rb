@@ -6,6 +6,10 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
     let(:integration_name) { :rspec }
   end
 
+  include_context "Test visibility event serialized" do
+    subject { described_class.new(trace, tracer_span) }
+  end
+
   let(:test_span) do
     spans.find { |span| span.type == "test" }
   end
@@ -14,24 +18,14 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
     spans.find { |span| span.type != "test" }
   end
 
-  subject { described_class.new(trace, tracer_span) }
-
   describe "#to_msgpack" do
     context "traced a single test execution with Recorder" do
       before do
         produce_test_trace(with_http_span: true)
       end
 
-      let(:payload) { MessagePack.unpack(MessagePack.pack(subject)) }
-
       it "serializes test event to messagepack" do
-        expect(payload).to include(
-          {
-            "version" => 1,
-            "type" => "span"
-          }
-        )
-        content = payload["content"]
+        expect_event_header(type: "span")
         expect(content).to include(
           {
             "trace_id" => trace.id,
@@ -45,8 +39,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
           }
         )
 
-        tags = content["meta"]
-        expect(tags).to include(
+        expect(meta).to include(
           {
             "custom_tag" => "custom_tag_value",
             "_dd.origin" => "ciapp-test"

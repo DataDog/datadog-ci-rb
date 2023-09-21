@@ -14,8 +14,6 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers do
         produce_test_trace(with_http_span: true)
       end
 
-      let(:payload) { MessagePack.unpack(MessagePack.pack(subject)) }
-
       it "converts trace to an array of serializable events" do
         expect(subject.count).to eq(2)
       end

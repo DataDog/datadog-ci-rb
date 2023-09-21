@@ -16,6 +16,7 @@ require_relative "support/platform_helpers"
 require_relative "support/git_helpers"
 require_relative "support/provider_test_helpers"
 require_relative "support/ci_mode_helpers"
+require_relative "support/test_visibility_event_serialized"
 
 require "rspec/collection_matchers"
 require "climate_control"

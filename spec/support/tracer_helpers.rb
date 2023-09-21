@@ -11,7 +11,8 @@ module TracerHelpers
   def produce_test_trace(
     framework: "rspec", operation: "rspec.example",
     test_name: "test_add", test_suite: "calculator_tests",
-    service: "rspec-test-suite", with_http_span: false
+    service: "rspec-test-suite", result: "PASSED", exception: nil,
+    with_http_span: false
   )
     Datadog::CI::Recorder.trace(
       operation,
@@ -33,7 +34,14 @@ module TracerHelpers
         end
       end
 
-      Datadog::CI::Recorder.passed!(span)
+      case result
+      when "FAILED"
+        Datadog::CI::Recorder.failed!(span, exception)
+      when "SKIPPED"
+        Datadog::CI::Recorder.skipped!(span, exception)
+      else
+        Datadog::CI::Recorder.passed!(span)
+      end
     end
   end
 

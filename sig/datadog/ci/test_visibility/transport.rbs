@@ -1,0 +1,8 @@
+module Datadog
+  module CI
+    module TestVisibility
+      class Transport
+      end
+    end
+  end
+end
