@@ -31,8 +31,12 @@ module TracerHelpers
       if with_http_span
         Datadog::Tracing.trace("http-call", type: "http", service: "net-http") do |span, trace|
           span.set_tag("custom_tag", "custom_tag_value")
+          span.set_tag("custom_metric", 42)
         end
       end
+
+      Datadog::Tracing.active_span.set_tag("test_owner", "my_team")
+      Datadog::Tracing.active_span.set_metric("memory_allocations", 16)
 
       case result
       when "FAILED"

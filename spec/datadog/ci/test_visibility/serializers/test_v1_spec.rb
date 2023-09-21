@@ -34,8 +34,12 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
           {
             "test.framework" => "rspec",
             "test.status" => "pass",
-            "_dd.origin" => "ciapp-test"
+            "_dd.origin" => "ciapp-test",
+            "test_owner" => "my_team"
           }
+        )
+        expect(metrics).to eq(
+          {"_dd.measured" => 1.0, "_dd.top_level" => 1.0, "memory_allocations" => 16}
         )
         # TODO: test start and duration with timecop
         # expect(content["start"]).to eq(1)
