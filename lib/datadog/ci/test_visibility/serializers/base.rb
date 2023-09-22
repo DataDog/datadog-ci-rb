@@ -21,7 +21,7 @@ module Datadog
             write_field(packer, "version")
 
             packer.write("content")
-            packer.write_map_header(content_fields_count)
+            packer.write_map_header(content_map_size)
 
             content_fields.each do |field|
               if field.is_a?(Hash)
@@ -36,6 +36,10 @@ module Datadog
 
           def content_fields
             []
+          end
+
+          def content_map_size
+            0
           end
 
           def runtime_id
@@ -97,6 +101,16 @@ module Datadog
             @span.status
           end
 
+          def self.calculate_content_map_size(fields_list)
+            fields_list.reduce(0) do |size, field|
+              if field.is_a?(Hash)
+                size + field.size
+              else
+                size + 1
+              end
+            end
+          end
+
           private
 
           def write_field(packer, field_name, method = nil)
@@ -116,20 +130,6 @@ module Datadog
           # @return [Integer] in nanoseconds since Epoch
           def duration_nano(duration)
             (duration * 1e9).to_i
-          end
-
-          def content_fields_count
-            return @content_fields_count if defined?(@content_fields_count)
-
-            res = 0
-            content_fields.each do |field|
-              res += if field.is_a?(Hash)
-                field.size
-              else
-                1
-              end
-            end
-            @content_fields_count = res
           end
         end
       end

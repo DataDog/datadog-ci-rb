@@ -3,9 +3,11 @@ module Datadog
     module TestVisibility
       module Serializers
         class Span < Base
-          @content_fields: Array[String | Hash[String, String]]
-          def content_fields: () -> Array[String | Hash[String, String]]
+          CONTENT_FIELDS: Array[String | Hash[String, String]]
+          CONTENT_MAP_SIZE: Integer
 
+          def content_fields: () -> Array[String | Hash[String, String]]
+          def content_map_size: () -> Integer
           def type: () -> "span"
         end
       end

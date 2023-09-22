@@ -13,6 +13,7 @@ module Datadog
           def to_msgpack: (?untyped? packer) -> untyped
 
           def content_fields: () -> ::Array[String | Hash[String, String]]
+          def content_map_size: () -> Integer
 
           def runtime_id: () -> String
 
@@ -43,6 +44,8 @@ module Datadog
           def metrics: () -> Hash[String, untyped]
 
           def error: () -> Integer
+
+          def self.calculate_content_map_size: (Array[String | Hash[String, String]] fields_list) -> Integer
 
           private
 
