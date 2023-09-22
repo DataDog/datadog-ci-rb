@@ -2,7 +2,7 @@ module MessagePack
   class Packer
     def initialize: () -> void
 
-    def write: (String input) -> self
+    def write: (Object input) -> self
     def write_map_header: (Integer keys_number) -> self
     def write_array_header: (Integer keys_number) -> self
   end

@@ -2,6 +2,24 @@ module Datadog
   module CI
     module TestVisibility
       class Transport
+        @api_key: String
+        @http: Datadog::CI::Transport::HTTP
+        @serializer: singleton(Datadog::CI::TestVisibility::Serializers)
+
+        def initialize: (api_key: String, ?site: ::String, ?serializer: singleton(Datadog::CI::TestVisibility::Serializers)) -> void
+
+        def send_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[Datadog::CI::Transport::HTTP::Response]
+
+        private
+
+        def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
+
+        class Payload
+          @events: Array[Datadog::CI::TestVisibility::Serializers::Base]
+
+          def initialize: (Array[Datadog::CI::TestVisibility::Serializers::Base] events) -> void
+          def to_msgpack: (untyped packer) -> untyped
+        end
       end
     end
   end

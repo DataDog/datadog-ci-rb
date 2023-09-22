@@ -3,7 +3,7 @@
 module Datadog
   module CI
     module Ext
-      module Trasnport
+      module Transport
         HEADER_DD_API_KEY = "DD-API-KEY"
         HEADER_CONTENT_TYPE = "Content-Type"
 

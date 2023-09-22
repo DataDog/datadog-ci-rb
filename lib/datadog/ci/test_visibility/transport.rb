@@ -4,56 +4,83 @@ require "datadog/core/encoding"
 # use it to chunk payloads by size
 # require "datadog/core/chunker"
 
+require_relative "serializers"
+
 module Datadog
   module CI
     module TestVisibility
       class Transport
-        # def initialize
-        #   @encoder = Datadog::Core::Encoding::MsgpackEncoder
-        # end
+        # TODO: rename Serializers module
+        def initialize(api_key:, site: "datadoghq.com", serializer: Datadog::CI::TestVisibility::Serializers)
+          @serializer = serializer
+          @api_key = api_key
+          @http = Datadog::CI::Transport::HTTP.new(
+            host: "#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{site}"
+          )
+        end
 
-        # def send_traces(traces)
-        #   # convert traces to events and construct payload
-        #   events = traces.flat_map { |trace| SomethingThatConvertsTraces.convert(trace) }
-        #   payload = Payload.new(events)
-        #   # @encoder.encode(payload)
-        #
-        #   url: https://citestcycle-intake.datadoghq.com
-        #   url: {ssl=true}citestcycle-intake.#{Datadog.configuration.site || "datadoghq.com"}
-        #   api_key: Datadog.configuration.api_key
-        # end
+        def send_traces(traces)
+          # convert traces to events and construct payload
+          # TODO: encode events immediately?
+          # TODO: batch events in order not to load a lot of them in memory at once
+          events = traces.flat_map { |trace| @serializer.convert_trace_to_serializable_events(trace) }
 
-        # private
+          payload = Payload.new(events)
 
-        # # represents payload with some subset of serializable events to be sent to CI-APP intake
-        # class Payload
-        #   def initialize(events)
-        #     @events = events
-        #   end
+          encoded_payload = encoder.encode(payload)
 
-        #   def to_msgpack(packer)
-        #     packer ||= MessagePack::Packer.new
+          response = @http.request(
+            path: Datadog::CI::Ext::Transport::TEST_VISIBILITY_INTAKE_PATH,
+            payload: encoded_payload,
+            headers: {
+              Ext::Transport::HEADER_DD_API_KEY => @api_key,
+              Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_MESSAGEPACK
+            }
+          )
 
-        #     packer.write_map_header(3) # Set header with how many elements in the map
-        #     packer.write("version")
-        #     packer.write(1)
+          # Tracing writers expect an array of responses
+          [response]
+        end
 
-        #     packer.write("metadata")
-        #     packer.write_map_header(3)
+        private
 
-        #     packer.write("runtime-id")
-        #     packer.write(@events.first.runtime_id)
+        def encoder
+          Datadog::Core::Encoding::MsgpackEncoder
+        end
 
-        #     packer.write("language")
-        #     packer.write("ruby")
+        # represents payload with some subset of serializable events to be sent to CI-APP intake
+        class Payload
+          def initialize(events)
+            @events = events
+          end
 
-        #     packer.write("library_version")
-        #     packer.write(Datadog::CI::VERSION::STRING)
+          def to_msgpack(packer)
+            packer ||= MessagePack::Packer.new
 
-        #     packer.write_array_header(@events.size)
-        #     packer.write(@events)
-        #   end
-        # end
+            packer.write_map_header(3) # Set header with how many elements in the map
+            packer.write("version")
+            packer.write(1)
+
+            packer.write("metadata")
+            packer.write_map_header(3)
+
+            # TODO: implement our own identity?
+            first_event = @events.first
+            if first_event
+              packer.write("runtime-id")
+              packer.write(first_event.runtime_id)
+            end
+
+            packer.write("language")
+            packer.write("ruby")
+
+            packer.write("library_version")
+            packer.write(Datadog::CI::VERSION::STRING)
+
+            packer.write_array_header(@events.size)
+            packer.write(@events)
+          end
+        end
       end
     end
   end
