@@ -8,7 +8,7 @@ module Datadog
         HEADER_CONTENT_TYPE = "Content-Type"
 
         TEST_VISIBILITY_INTAKE_HOST_PREFIX = "citestcycle-intake"
-        TEST_VISIBILITY_INTAKE_PATH = "api/v2/citestcycle"
+        TEST_VISIBILITY_INTAKE_PATH = "/api/v2/citestcycle"
 
         CONTENT_TYPE_MESSAGEPACK = "application/msgpack"
       end

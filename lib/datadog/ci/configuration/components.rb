@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../flush"
+require_relative "../test_visibility/transport"
 
 module Datadog
   module CI
@@ -26,6 +27,7 @@ module Datadog
               # Tests are running without CI visibility enabled
 
               Datadog.logger.error(
+                "DATADOG CONFIGURATION - CI VISIBILITY - ATTENTION - " \
                 "Agentless mode was enabled but DD_API_KEY is not set: CI visibility is disabled. " \
                 "Please make sure to set valid api key in DD_API_KEY environment variable"
               )
@@ -56,7 +58,7 @@ module Datadog
                                              || CI::Flush::Finished.new
 
           # Pass through any other options
-          settings.tracing.test_mode.writer_options = settings.ci.writer_options
+          settings.tracing.test_mode.writer_options = writer_options
         end
       end
     end

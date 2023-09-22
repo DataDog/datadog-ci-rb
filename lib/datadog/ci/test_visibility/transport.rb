@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
+require "msgpack"
 require "datadog/core/encoding"
 # use it to chunk payloads by size
 # require "datadog/core/chunker"
 
 require_relative "serializers"
+require_relative "../ext/transport"
+require_relative "../transport/http"
 
 module Datadog
   module CI
@@ -15,7 +18,8 @@ module Datadog
           @serializer = serializer
           @api_key = api_key
           @http = Datadog::CI::Transport::HTTP.new(
-            host: "#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{site}"
+            host: "#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{site}",
+            port: 443
           )
         end
 
@@ -58,10 +62,14 @@ module Datadog
             packer ||= MessagePack::Packer.new
 
             packer.write_map_header(3) # Set header with how many elements in the map
+
             packer.write("version")
             packer.write(1)
 
             packer.write("metadata")
+            packer.write_map_header(1)
+
+            packer.write("*")
             packer.write_map_header(3)
 
             # TODO: implement our own identity?
@@ -77,7 +85,7 @@ module Datadog
             packer.write("library_version")
             packer.write(Datadog::CI::VERSION::STRING)
 
-            packer.write_array_header(@events.size)
+            packer.write("events")
             packer.write(@events)
           end
         end
