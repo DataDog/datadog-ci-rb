@@ -29,6 +29,9 @@ module Datadog
           # TODO: batch events in order not to load a lot of them in memory at once
           events = traces.flat_map { |trace| @serializer.convert_trace_to_serializable_events(trace) }
 
+          # move this to validation
+          events = events.filter { |event| event.start >= 946684800000000000 && event.duration > 0 }
+
           payload = Payload.new(events)
 
           encoded_payload = encoder.encode(payload)

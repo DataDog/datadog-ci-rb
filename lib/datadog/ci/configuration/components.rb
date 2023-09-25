@@ -17,7 +17,7 @@ module Datadog
         end
 
         def activate_ci!(settings)
-          agentless_writer = nil
+          @agentless_writer = nil
 
           if settings.ci.agentless_mode_enabled
             if settings.api_key.nil?
@@ -34,7 +34,7 @@ module Datadog
               settings.ci.enabled = false
               return
             else
-              agentless_writer = Datadog::CI::Writer.new(api_key: settings.api_key)
+              @gentless_writer = Datadog::CI::Writer.new(api_key: settings.api_key)
             end
           end
 
@@ -57,7 +57,13 @@ module Datadog
           # # Pass through any other options
           # settings.tracing.test_mode.writer_options = writer_options
           # Use agentless writer
-          settings.tracing.writer = agentless_writer if agentless_writer
+          settings.tracing.writer = @agentless_writer if @agentless_writer
+        end
+
+        def shutdown!(replacement = nil)
+          Datadog.logger.info("CI shutdown")
+          # @agentless_writer.stop if @agentless_writer
+          super(replacement)
         end
       end
     end

@@ -86,7 +86,6 @@ module Datadog
         # Block until executor shutdown is complete or until timeout seconds have passed.
         def join
           @worker.join(SHUTDOWN_TIMEOUT)
-          @transport.flush_sent_tests
         end
 
         # Enqueue an item in the trace internal buffer. This operation is thread-safe
