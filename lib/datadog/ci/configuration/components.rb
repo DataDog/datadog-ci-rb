@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../flush"
-require_relative "../test_visibility/transport"
+require_relative "../writer"
 
 module Datadog
   module CI
@@ -17,8 +17,7 @@ module Datadog
         end
 
         def activate_ci!(settings)
-          agentless_transport = nil
-          writer_options = settings.ci.writer_options
+          agentless_writer = nil
 
           if settings.ci.agentless_mode_enabled
             if settings.api_key.nil?
@@ -35,11 +34,9 @@ module Datadog
               settings.ci.enabled = false
               return
             else
-              agentless_transport = Datadog::CI::TestVisibility::Transport.new(api_key: settings.api_key)
+              agentless_writer = Datadog::CI::Writer.new(api_key: settings.api_key)
             end
           end
-
-          writer_options[:transport] = agentless_transport if agentless_transport
 
           # Deactivate telemetry
           settings.telemetry.enabled = false
@@ -57,8 +54,10 @@ module Datadog
           settings.tracing.test_mode.trace_flush = settings.ci.trace_flush \
                                              || CI::Flush::Finished.new
 
-          # Pass through any other options
-          settings.tracing.test_mode.writer_options = writer_options
+          # # Pass through any other options
+          # settings.tracing.test_mode.writer_options = writer_options
+          # Use agentless writer
+          settings.tracing.writer = agentless_writer if agentless_writer
         end
       end
     end
