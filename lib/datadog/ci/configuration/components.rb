@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../flush"
-require_relative "../writer"
+require_relative "../test_visibility/transport"
 
 module Datadog
   module CI
@@ -17,7 +17,7 @@ module Datadog
         end
 
         def activate_ci!(settings)
-          @agentless_writer = nil
+          agentless_transport = nil
 
           if settings.ci.agentless_mode_enabled
             if settings.api_key.nil?
@@ -34,7 +34,7 @@ module Datadog
               settings.ci.enabled = false
               return
             else
-              @gentless_writer = Datadog::CI::Writer.new(api_key: settings.api_key)
+              agentless_transport = Datadog::CI::TestVisibility::Transport.new(api_key: settings.api_key)
             end
           end
 
@@ -44,26 +44,21 @@ module Datadog
           # Deactivate remote configuration
           settings.remote.enabled = false
 
-          # enable tracing
-          settings.tracing.enabled = true
-
           # Activate underlying tracing test mode
           settings.tracing.test_mode.enabled = true
 
           # Choose user defined TraceFlush or default to CI TraceFlush
-          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush \
-                                             || CI::Flush::Finished.new
+          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::Flush::Finished.new
 
-          # # Pass through any other options
-          # settings.tracing.test_mode.writer_options = writer_options
-          # Use agentless writer
-          settings.tracing.writer = @agentless_writer if @agentless_writer
-        end
+          writer_options = settings.ci.writer_options
+          if agentless_transport
+            writer_options[:transport] = agentless_transport
+            writer_options[:shutdown_timeout] = 1000
 
-        def shutdown!(replacement = nil)
-          Datadog.logger.info("CI shutdown")
-          # @agentless_writer.stop if @agentless_writer
-          super(replacement)
+            settings.tracing.test_mode.async = true
+          end
+
+          settings.tracing.test_mode.writer_options = writer_options
         end
       end
     end

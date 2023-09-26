@@ -93,6 +93,10 @@ module Datadog
             false
           end
 
+          def trace_count
+            0
+          end
+
           def inspect
             "#{self.class} ok?:#{ok?} unsupported?:#{unsupported?}, " \
             "not_found?:#{not_found?}, client_error?:#{client_error?}, " \
