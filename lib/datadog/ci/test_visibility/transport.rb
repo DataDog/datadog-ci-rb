@@ -93,7 +93,12 @@ module Datadog
             packer.write(Datadog::CI::VERSION::STRING)
 
             packer.write("events")
-            packer.write(@events)
+            # this is required for jruby to pack array correctly
+            # on CRuby it is enough to call `packer.write(@events)`
+            packer.write_array_header(@events.size)
+            @events.each do |event|
+              packer.write(event)
+            end
           end
         end
       end

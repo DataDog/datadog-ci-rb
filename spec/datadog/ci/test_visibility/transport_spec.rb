@@ -84,6 +84,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
             events = payload["events"]
             expect(events.count).to eq(expected_events_count)
 
+            p events
             span_events = events.filter { |e| e["type"] == "span" }
             expect(span_events.count).to eq(1)
           end
