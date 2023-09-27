@@ -26,7 +26,6 @@ module Datadog
         def send_traces(traces)
           # convert traces to events and construct payload
           # TODO: encode events immediately?
-          # TODO: batch events in order not to load a lot of them in memory at once
           events = traces.flat_map { |trace| @serializer.convert_trace_to_serializable_events(trace) }
 
           # move this to validation
