@@ -40,7 +40,8 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
           expect(payload["version"]).to eq(1)
 
           metadata = payload["metadata"]["*"]
-          expect(metadata).to include("runtime-id", "language", "library_version")
+          expect(metadata).to include("runtime-id", "library_version")
+          expect(metadata["language"]).to eq("ruby")
 
           events = payload["events"]
           expect(events.count).to eq(1)
@@ -84,7 +85,6 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
             events = payload["events"]
             expect(events.count).to eq(expected_events_count)
 
-            p events
             span_events = events.filter { |e| e["type"] == "span" }
             expect(span_events.count).to eq(1)
           end
@@ -92,9 +92,15 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
     end
 
-    context "when there are no events" do
+    context "when all events are invalid" do
+      before do
+        produce_test_trace
+
+        span.start_time = Time.at(0)
+      end
+
       it "does not send anything" do
-        subject.send_traces([])
+        subject.send_traces(traces)
 
         expect(http).not_to have_received(:request)
       end

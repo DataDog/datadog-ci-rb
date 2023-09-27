@@ -73,4 +73,50 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
       end
     end
   end
+
+  describe "#valid?" do
+    context "duration" do
+      before do
+        produce_test_trace
+        span.duration = duration
+      end
+
+      context "when positive number" do
+        let(:duration) { 42 }
+
+        it { is_expected.to be_valid }
+      end
+
+      context "when negative number" do
+        let(:duration) { -1 }
+
+        it { is_expected.not_to be_valid }
+      end
+
+      context "when too big" do
+        let(:duration) { Datadog::CI::TestVisibility::Serializers::Base::MAXIMUM_DURATION_NANO + 1 }
+
+        it { is_expected.not_to be_valid }
+      end
+    end
+
+    context "start" do
+      before do
+        produce_test_trace
+        span.start_time = start_time
+      end
+
+      context "when now" do
+        let(:start_time) { Time.now }
+
+        it { is_expected.to be_valid }
+      end
+
+      context "when far in the past" do
+        let(:start_time) { Time.at(0) }
+
+        it { is_expected.not_to be_valid }
+      end
+    end
+  end
 end

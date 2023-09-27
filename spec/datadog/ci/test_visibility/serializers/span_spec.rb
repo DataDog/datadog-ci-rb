@@ -50,4 +50,18 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
       end
     end
   end
+
+  describe "valid?" do
+    context "required fields" do
+      context "when not present" do
+        before do
+          produce_test_trace(with_http_span: true)
+
+          tracer_span.name = nil
+        end
+
+        it { is_expected.not_to be_valid }
+      end
+    end
+  end
 end

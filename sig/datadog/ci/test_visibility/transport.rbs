@@ -12,6 +12,8 @@ module Datadog
 
         private
 
+        def serialize_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[Datadog::CI::TestVisibility::Serializers::Base]
+
         def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
 
         class Payload

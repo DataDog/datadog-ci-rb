@@ -2,6 +2,7 @@
 
 require "msgpack"
 require "datadog/core/encoding"
+require "datadog/core/environment/identity"
 # use it to chunk payloads by size
 # require "datadog/core/chunker"
 
@@ -24,12 +25,9 @@ module Datadog
         end
 
         def send_traces(traces)
-          # convert traces to events and construct payload
-          # TODO: encode events immediately?
-          events = traces.flat_map { |trace| @serializer.convert_trace_to_serializable_events(trace) }
+          return [] if traces.nil? || traces.empty?
 
-          # move this to validation
-          events = events.filter { |event| event.start >= 946684800000000000 && event.duration > 0 }
+          events = serialize_traces(traces)
 
           if events.empty?
             Datadog.logger.debug("[TestVisibility::Transport] empty events list, skipping send")
@@ -37,7 +35,6 @@ module Datadog
           end
 
           payload = Payload.new(events)
-
           encoded_payload = encoder.encode(payload)
 
           response = @http.request(
@@ -54,6 +51,22 @@ module Datadog
         end
 
         private
+
+        def serialize_traces(traces)
+          # TODO: replace map.filter with filter_map when 1.0 is released
+          traces.flat_map do |trace|
+            trace.spans.map do |span|
+              event = @serializer.convert_span_to_serializable_event(trace, span)
+
+              if event.valid?
+                event
+              else
+                Datadog.logger.debug { "Invalid span skipped: #{span}" }
+                nil
+              end
+            end.filter { |event| !event.nil? }
+          end
+        end
 
         def encoder
           Datadog::Core::Encoding::MsgpackEncoder
@@ -79,15 +92,11 @@ module Datadog
             packer.write("*")
             packer.write_map_header(3)
 
-            # TODO: implement our own identity?
-            first_event = @events.first
-            if first_event
-              packer.write("runtime-id")
-              packer.write(first_event.runtime_id)
-            end
+            packer.write("runtime-id")
+            packer.write(Datadog::Core::Environment::Identity.id)
 
             packer.write("language")
-            packer.write("ruby")
+            packer.write(Datadog::Core::Environment::Identity.lang)
 
             packer.write("library_version")
             packer.write(Datadog::CI::VERSION::STRING)

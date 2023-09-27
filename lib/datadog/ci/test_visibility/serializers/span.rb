@@ -17,6 +17,16 @@ module Datadog
 
           CONTENT_MAP_SIZE = calculate_content_map_size(CONTENT_FIELDS)
 
+          REQUIRED_FIELDS = [
+            "trace_id",
+            "span_id",
+            "error",
+            "name",
+            "resource",
+            "start",
+            "duration"
+          ].freeze
+
           def content_fields
             CONTENT_FIELDS
           end
@@ -27,6 +37,12 @@ module Datadog
 
           def type
             "span"
+          end
+
+          private
+
+          def required_fields
+            REQUIRED_FIELDS
           end
         end
       end

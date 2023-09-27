@@ -5,6 +5,10 @@ module Datadog
     module TestVisibility
       module Serializers
         class Base
+          MINIMUM_TIMESTAMP_NANO = 946684800000000000
+          MINIMUM_DURATION_NANO = 0
+          MAXIMUM_DURATION_NANO = 9223372036854775807
+
           attr_reader :trace, :span
 
           def initialize(trace, span)
@@ -32,6 +36,11 @@ module Datadog
                 write_field(packer, field)
               end
             end
+          end
+
+          # validates according to citestcycle json schema
+          def valid?
+            required_fields_present? && valid_start_time? && valid_duration?
           end
 
           def content_fields
@@ -82,11 +91,11 @@ module Datadog
           end
 
           def start
-            time_nano(@span.start_time)
+            @start ||= time_nano(@span.start_time)
           end
 
           def duration
-            duration_nano(@span.duration)
+            @duration ||= duration_nano(@span.duration)
           end
 
           def meta
@@ -113,6 +122,22 @@ module Datadog
 
           private
 
+          def valid_start_time?
+            !start.nil? && start >= MINIMUM_TIMESTAMP_NANO
+          end
+
+          def valid_duration?
+            !duration.nil? && duration >= MINIMUM_DURATION_NANO && duration <= MAXIMUM_DURATION_NANO
+          end
+
+          def required_fields_present?
+            required_fields.all? { |field| !send(field).nil? }
+          end
+
+          def required_fields
+            []
+          end
+
           def write_field(packer, field_name, method = nil)
             method ||= field_name
 
@@ -120,14 +145,12 @@ module Datadog
             packer.write(send(method))
           end
 
-          # Used for serialization
-          # @return [Integer] in nanoseconds since Epoch
+          # in nanoseconds since Epoch
           def time_nano(time)
             time.to_i * 1000000000 + time.nsec
           end
 
-          # Used for serialization
-          # @return [Integer] in nanoseconds since Epoch
+          # in nanoseconds
           def duration_nano(duration)
             (duration * 1e9).to_i
           end
