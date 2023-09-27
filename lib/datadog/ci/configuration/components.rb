@@ -53,7 +53,7 @@ module Datadog
           writer_options = settings.ci.writer_options
           if agentless_transport
             writer_options[:transport] = agentless_transport
-            writer_options[:shutdown_timeout] = 1000
+            writer_options[:shutdown_timeout] = 60
 
             settings.tracing.test_mode.async = true
           end

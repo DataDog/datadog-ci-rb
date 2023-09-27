@@ -38,6 +38,14 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .to receive(:enabled)
             .and_return(enabled)
 
+          allow(settings.ci)
+            .to receive(:agentless_mode_enabled)
+            .and_return(agentless_enabled)
+
+          allow(settings)
+            .to receive(:api_key)
+            .and_return(api_key)
+
           # Spy on test mode behavior
           allow(settings.tracing.test_mode)
             .to receive(:enabled=)
@@ -48,33 +56,79 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(settings.tracing.test_mode)
             .to receive(:writer_options=)
 
+          allow(settings.tracing.test_mode)
+            .to receive(:async=)
+
+          allow(settings.ci)
+            .to receive(:enabled=)
+
+          allow(Datadog.logger)
+            .to receive(:error)
+
           components
         end
+
+        let(:api_key) { nil }
 
         context "is enabled" do
           let(:enabled) { true }
 
-          it do
-            expect(settings.tracing.test_mode)
-              .to have_received(:enabled=)
-              .with(true)
-          end
+          context "and when #agentless_mode" do
+            context "is disabled" do
+              let(:agentless_enabled) { false }
 
-          it do
-            expect(settings.tracing.test_mode)
-              .to have_received(:trace_flush=)
-              .with(settings.ci.trace_flush || kind_of(Datadog::CI::Flush::Finished))
-          end
+              it do
+                expect(settings.tracing.test_mode)
+                  .to have_received(:enabled=)
+                  .with(true)
+              end
 
-          it do
-            expect(settings.tracing.test_mode)
-              .to have_received(:writer_options=)
-              .with(settings.ci.writer_options)
+              it do
+                expect(settings.tracing.test_mode)
+                  .to have_received(:trace_flush=)
+                  .with(settings.ci.trace_flush || kind_of(Datadog::CI::Flush::Finished))
+              end
+
+              it do
+                expect(settings.tracing.test_mode)
+                  .to have_received(:writer_options=)
+                  .with(settings.ci.writer_options)
+              end
+            end
+
+            context "is enabled" do
+              let(:agentless_enabled) { true }
+
+              context "when api key is set" do
+                let(:api_key) { "api_key" }
+
+                it "sets async for test mode and provides transport and shutdown timeout to the write" do
+                  expect(settings.tracing.test_mode)
+                    .to have_received(:async=)
+                    .with(true)
+
+                  expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
+                    expect(options[:transport]).to be_a(Datadog::CI::TestVisibility::Transport)
+                    expect(options[:shutdown_timeout]).to eq(60)
+                  end
+                end
+              end
+
+              context "when api key is not set" do
+                let(:api_key) { nil }
+
+                it "logs an error message and disables CI visibility" do
+                  expect(Datadog.logger).to have_received(:error)
+                  expect(settings.ci).to have_received(:enabled=).with(false)
+                end
+              end
+            end
           end
         end
 
         context "is disabled" do
           let(:enabled) { false }
+          let(:agentless_enabled) { false }
 
           it do
             expect(settings.tracing.test_mode)
