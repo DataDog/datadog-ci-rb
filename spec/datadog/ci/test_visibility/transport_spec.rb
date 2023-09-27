@@ -90,5 +90,13 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         end
       end
     end
+
+    context "when there are no events" do
+      it "does not send anything" do
+        subject.send_traces([])
+
+        expect(http).not_to have_received(:request)
+      end
+    end
   end
 end

@@ -31,6 +31,11 @@ module Datadog
           # move this to validation
           events = events.filter { |event| event.start >= 946684800000000000 && event.duration > 0 }
 
+          if events.empty?
+            Datadog.logger.debug("[TestVisibility::Transport] empty events list, skipping send")
+            return []
+          end
+
           payload = Payload.new(events)
 
           encoded_payload = encoder.encode(payload)
