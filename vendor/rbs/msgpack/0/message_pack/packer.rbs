@@ -1,9 +1,14 @@
 module MessagePack
+  class Buffer
+    def to_a: () -> Array[String]
+  end
+
   class Packer
     def initialize: () -> void
 
     def write: (Object input) -> self
     def write_map_header: (Integer keys_number) -> self
     def write_array_header: (Integer keys_number) -> self
+    def buffer: () -> Buffer
   end
 end

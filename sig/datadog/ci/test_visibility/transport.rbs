@@ -12,16 +12,9 @@ module Datadog
 
         private
 
-        def serialize_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[Datadog::CI::TestVisibility::Serializers::Base]
-
+        def pack_events: (Array[String] encoded_events) -> String
+        def encode_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[String]
         def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
-
-        class Payload
-          @events: Array[Datadog::CI::TestVisibility::Serializers::Base]
-
-          def initialize: (Array[Datadog::CI::TestVisibility::Serializers::Base] events) -> void
-          def to_msgpack: (untyped packer) -> untyped
-        end
       end
     end
   end

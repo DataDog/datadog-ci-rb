@@ -30,15 +30,13 @@ module Datadog
         def send_traces(traces)
           return [] if traces.nil? || traces.empty?
 
-          serializable_events = serialize_traces(traces)
-
-          if serializable_events.empty?
+          encoded_events = encode_traces(traces)
+          if encoded_events.empty?
             Datadog.logger.debug("[TestVisibility::Transport] empty serializable events list, skipping send")
             return []
           end
 
-          payload = Payload.new(serializable_events)
-          encoded_payload = encoder.encode(payload)
+          encoded_payload = pack_events(encoded_events)
 
           response = @http.request(
             path: Datadog::CI::Ext::Transport::TEST_VISIBILITY_INTAKE_PATH,
@@ -55,19 +53,19 @@ module Datadog
 
         private
 
-        def serialize_traces(traces)
+        def encode_traces(traces)
           # TODO: replace map.filter with filter_map when 1.0 is released
           traces.flat_map do |trace|
             trace.spans.map do |span|
               serializer = @serializers_factory.serializer(trace, span)
 
               if serializer.valid?
-                serializer
+                encoder.encode(serializer)
               else
                 Datadog.logger.debug { "Invalid span skipped: #{span}" }
                 nil
               end
-            end.filter { |serializer| !serializer.nil? }
+            end.filter { |encoded_event| !encoded_event.nil? }
           end
         end
 
@@ -75,43 +73,33 @@ module Datadog
           Datadog::Core::Encoding::MsgpackEncoder
         end
 
-        # represents payload with some subset of serializable events to be sent to CI-APP intake
-        class Payload
-          def initialize(events)
-            @events = events
-          end
+        def pack_events(encoded_events)
+          packer = MessagePack::Packer.new
 
-          def to_msgpack(packer)
-            packer ||= MessagePack::Packer.new
+          packer.write_map_header(3) # Set header with how many elements in the map
 
-            packer.write_map_header(3) # Set header with how many elements in the map
+          packer.write("version")
+          packer.write(1)
 
-            packer.write("version")
-            packer.write(1)
+          packer.write("metadata")
+          packer.write_map_header(1)
 
-            packer.write("metadata")
-            packer.write_map_header(1)
+          packer.write("*")
+          packer.write_map_header(3)
 
-            packer.write("*")
-            packer.write_map_header(3)
+          packer.write("runtime-id")
+          packer.write(Datadog::Core::Environment::Identity.id)
 
-            packer.write("runtime-id")
-            packer.write(Datadog::Core::Environment::Identity.id)
+          packer.write("language")
+          packer.write(Datadog::Core::Environment::Identity.lang)
 
-            packer.write("language")
-            packer.write(Datadog::Core::Environment::Identity.lang)
+          packer.write("library_version")
+          packer.write(Datadog::CI::VERSION::STRING)
 
-            packer.write("library_version")
-            packer.write(Datadog::CI::VERSION::STRING)
+          packer.write("events")
+          packer.write_array_header(encoded_events.size)
 
-            packer.write("events")
-            # this is required for jruby to pack array correctly
-            # on CRuby it is enough to call `packer.write(@events)`
-            packer.write_array_header(@events.size)
-            @events.each do |event|
-              packer.write(event)
-            end
-          end
+          (packer.buffer.to_a + encoded_events).join
         end
       end
     end
