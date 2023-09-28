@@ -4,9 +4,9 @@ module Datadog
       class Transport
         @api_key: String
         @http: Datadog::CI::Transport::HTTP
-        @serializer: singleton(Datadog::CI::TestVisibility::Serializers)
+        @serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)
 
-        def initialize: (api_key: String, ?site: ::String, ?serializer: singleton(Datadog::CI::TestVisibility::Serializers)) -> void
+        def initialize: (api_key: String, ?site: ::String, ?serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)) -> void
 
         def send_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[Datadog::CI::Transport::HTTP::Response]
 

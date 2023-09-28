@@ -5,11 +5,11 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
     let(:integration_name) { :rspec }
   end
 
-  subject { described_class.new(api_key: api_key, site: site, serializer: serializer) }
+  subject { described_class.new(api_key: api_key, site: site, serializers_factory: serializers_factory) }
 
   let(:api_key) { "api_key" }
   let(:site) { "datad0ghq.com" }
-  let(:serializer) { Datadog::CI::TestVisibility::Serializers }
+  let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestLevel }
 
   let(:http) { spy(:http) }
 
