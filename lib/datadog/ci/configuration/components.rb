@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../flush"
+require_relative "../test_visibility/flush"
 require_relative "../test_visibility/transport"
 
 module Datadog
@@ -48,7 +48,7 @@ module Datadog
           settings.tracing.test_mode.enabled = true
 
           # Choose user defined TraceFlush or default to CI TraceFlush
-          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::Flush::Finished.new
+          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Finished.new
 
           writer_options = settings.ci.writer_options
           if agentless_transport

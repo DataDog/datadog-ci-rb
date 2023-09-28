@@ -33,7 +33,7 @@ RSpec.shared_examples_for "a CI trace flusher" do
   end
 end
 
-RSpec.describe Datadog::CI::Flush::Finished do
+RSpec.describe Datadog::CI::TestVisibility::Flush::Finished do
   subject(:trace_flush) { described_class.new }
 
   describe "#consume" do
@@ -44,7 +44,7 @@ RSpec.describe Datadog::CI::Flush::Finished do
   end
 end
 
-RSpec.describe Datadog::CI::Flush::Partial do
+RSpec.describe Datadog::CI::TestVisibility::Flush::Partial do
   subject(:trace_flush) { described_class.new(min_spans_before_partial_flush: min_spans_for_partial) }
 
   let(:min_spans_for_partial) { 2 }

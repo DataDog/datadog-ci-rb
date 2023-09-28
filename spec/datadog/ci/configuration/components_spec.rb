@@ -86,7 +86,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
               it do
                 expect(settings.tracing.test_mode)
                   .to have_received(:trace_flush=)
-                  .with(settings.ci.trace_flush || kind_of(Datadog::CI::Flush::Finished))
+                  .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Finished))
               end
 
               it do
@@ -108,7 +108,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     .with(true)
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                    expect(options[:transport]).to be_a(Datadog::CI::TestVisibility::Transport)
+                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
                 end
