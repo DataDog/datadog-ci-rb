@@ -2,6 +2,9 @@
 
 require "net/http"
 
+require_relative "gzip"
+require_relative "../ext/transport"
+
 module Datadog
   module CI
     module Transport
@@ -10,19 +13,35 @@ module Datadog
           :host,
           :port,
           :ssl,
-          :timeout
+          :timeout,
+          :compress
 
         DEFAULT_TIMEOUT = 30
 
-        def initialize(host:, timeout: DEFAULT_TIMEOUT, port: nil, ssl: true)
+        def initialize(host:, timeout: DEFAULT_TIMEOUT, port: nil, ssl: true, compress: false)
           @host = host
           @port = port
           @timeout = timeout
           @ssl = ssl.nil? ? true : ssl
+          @compress = compress.nil? ? false : compress
         end
 
         def request(path:, payload:, headers:, method: "post")
           raise "Unknown method #{method}" unless respond_to?(method, true)
+
+          if compress
+            headers[Ext::Transport::HEADER_CONTENT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
+            payload = Gzip.compress(payload)
+          end
+
+          Datadog.logger.debug { "Sending #{method} request" }
+          Datadog.logger.debug { "host #{host}" }
+          Datadog.logger.debug { "port #{port}" }
+          Datadog.logger.debug { "ssl enabled #{ssl}" }
+          Datadog.logger.debug { "compression enabled #{compress}" }
+          Datadog.logger.debug { "path #{path}" }
+          Datadog.logger.debug { "headers #{headers}" }
+          Datadog.logger.debug { "payload size #{payload.size}" }
 
           send(method, path: path, payload: payload, headers: headers)
         end

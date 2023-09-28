@@ -6,10 +6,11 @@ module Datadog
         attr_reader port: Integer?
         attr_reader ssl: bool
         attr_reader timeout: Integer
+        attr_reader compress: bool
 
         DEFAULT_TIMEOUT: 30
 
-        def initialize: (host: String, ?port: Integer?, ?ssl: bool, ?timeout: Integer) -> void
+        def initialize: (host: String, ?port: Integer?, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
 
         def request: (?method: String, payload: String, headers: Hash[String, String], path: String) -> Response
 

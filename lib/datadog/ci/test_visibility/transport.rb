@@ -28,23 +28,36 @@ module Datadog
           @max_payload_size = max_payload_size
           @http = Datadog::CI::Transport::HTTP.new(
             host: "#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{site}",
-            port: 443
+            port: 443,
+            compress: true
           )
         end
 
         def send_traces(traces)
           return [] if traces.nil? || traces.empty?
 
+          Datadog.logger.debug { "Sending #{traces.count} traces..." }
+
           encoded_events = encode_traces(traces)
           if encoded_events.empty?
-            Datadog.logger.debug("[TestVisibility::Transport] empty serializable events list, skipping send")
+            Datadog.logger.debug("Empty encoded events list, skipping send")
             return []
           end
 
           responses = []
           Datadog::Core::Chunker.chunk_by_size(encoded_events, @max_payload_size).map do |chunk|
             encoded_payload = pack_events(chunk)
+            Datadog.logger.debug do
+              "Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
+            end
+            Datadog.logger.debug { encoded_payload }
+
             response = send_payload(encoded_payload)
+
+            Datadog.logger.debug do
+              "Received server response: #{response.inspect}"
+            end
+
             responses << response
           end
 

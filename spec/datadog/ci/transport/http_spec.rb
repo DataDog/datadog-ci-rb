@@ -68,6 +68,22 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         it { is_expected.to have_attributes(ssl: false) }
       end
     end
+
+    context "given a :compress option" do
+      let(:options) { {compress: compress} }
+
+      context "with nil" do
+        let(:compress) { nil }
+
+        it { is_expected.to have_attributes(compress: false) }
+      end
+
+      context "with false" do
+        let(:compress) { true }
+
+        it { is_expected.to have_attributes(compress: true) }
+      end
+    end
   end
 
   describe "#request" do
@@ -102,6 +118,21 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       let(:request_options) { {method: "delete"} }
 
       it { expect { request }.to raise_error("Unknown method delete") }
+    end
+
+    context "when compressing payload" do
+      let(:headers) { {"Content-Type" => "application/json"} }
+      let(:expected_headers) { {"Content-Type" => "application/json", "Content-Encoding" => "gzip"} }
+      let(:options) { {compress: true} }
+      let(:post_request) { double(:post_request) }
+
+      before do
+        expect(::Net::HTTP::Post).to receive(:new).with(path, expected_headers).and_return(post_request)
+        expect(post_request).to receive(:body=).with(Datadog::CI::Transport::Gzip.compress(payload))
+        expect(http_connection).to receive(:request).with(post_request).and_return(http_response)
+      end
+
+      it { expect(request.http_response).to be(http_response) }
     end
   end
 end

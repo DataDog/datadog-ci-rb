@@ -24,7 +24,8 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
   before do
     expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
       host: "citestcycle-intake.datad0ghq.com",
-      port: 443
+      port: 443,
+      compress: true
     ).and_return(http)
   end
 
