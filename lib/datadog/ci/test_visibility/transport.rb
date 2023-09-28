@@ -50,7 +50,6 @@ module Datadog
             Datadog.logger.debug do
               "Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
             end
-            Datadog.logger.debug { encoded_payload }
 
             response = send_payload(encoded_payload)
 

@@ -40,7 +40,6 @@ module Datadog
           Datadog.logger.debug { "ssl enabled #{ssl}" }
           Datadog.logger.debug { "compression enabled #{compress}" }
           Datadog.logger.debug { "path #{path}" }
-          Datadog.logger.debug { "headers #{headers}" }
           Datadog.logger.debug { "payload size #{payload.size}" }
 
           send(method, path: path, payload: payload, headers: headers)
