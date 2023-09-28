@@ -2,18 +2,28 @@ module Datadog
   module CI
     module TestVisibility
       class Transport
+        DEFAULT_MAX_PAYLOAD_SIZE: Integer
+
         @api_key: String
         @http: Datadog::CI::Transport::HTTP
         @serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)
+        @max_payload_size: Integer
 
-        def initialize: (api_key: String, ?site: ::String, ?serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)) -> void
+        def initialize: (
+          api_key: String,
+          ?site: ::String,
+          ?serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel),
+          ?max_payload_size: Integer
+        ) -> void
 
         def send_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[Datadog::CI::Transport::HTTP::Response]
 
         private
 
+        def send_payload: (String encoded_payload) -> Datadog::CI::Transport::HTTP::Response
         def pack_events: (Array[String] encoded_events) -> String
         def encode_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[String]
+        def encode_span: (Datadog::Tracing::TraceSegment trace, Datadog::Tracing::Span span) -> String?
         def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
       end
     end

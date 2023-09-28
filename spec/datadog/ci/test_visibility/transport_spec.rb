@@ -5,11 +5,19 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
     let(:integration_name) { :rspec }
   end
 
-  subject { described_class.new(api_key: api_key, site: site, serializers_factory: serializers_factory) }
+  subject do
+    described_class.new(
+      api_key: api_key,
+      site: site,
+      serializers_factory: serializers_factory,
+      max_payload_size: max_payload_size
+    )
+  end
 
   let(:api_key) { "api_key" }
   let(:site) { "datad0ghq.com" }
   let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestLevel }
+  let(:max_payload_size) { 4 * 1024 * 1024 }
 
   let(:http) { spy(:http) }
 
@@ -88,6 +96,19 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
             span_events = events.filter { |e| e["type"] == "span" }
             expect(span_events.count).to eq(1)
           end
+        end
+      end
+
+      context "when chunking is used" do
+        # one test event is approximately 1000 bytes currently
+        # ATTENTION: might break if more data is added to test spans in #produce_test_trace method
+        let(:max_payload_size) { 2000 }
+
+        it "filters out invalid events" do
+          responses = subject.send_traces(traces)
+
+          expect(http).to have_received(:request).twice
+          expect(responses.count).to eq(2)
         end
       end
     end

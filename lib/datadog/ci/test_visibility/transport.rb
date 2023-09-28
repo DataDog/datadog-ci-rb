@@ -3,8 +3,7 @@
 require "msgpack"
 require "datadog/core/encoding"
 require "datadog/core/environment/identity"
-# use it to chunk payloads by size
-# require "datadog/core/chunker"
+require "datadog/core/chunker"
 
 require_relative "serializers/factories/test_level"
 require_relative "../ext/transport"
@@ -14,13 +13,19 @@ module Datadog
   module CI
     module TestVisibility
       class Transport
+        # CI test cycle intake's limit is 5.1MB uncompressed
+        # We will use a bit more conservative value 4MB
+        DEFAULT_MAX_PAYLOAD_SIZE = 4 * 1024 * 1024
+
         def initialize(
           api_key:,
           site: "datadoghq.com",
-          serializers_factory: Datadog::CI::TestVisibility::Serializers::Factories::TestLevel
+          serializers_factory: Datadog::CI::TestVisibility::Serializers::Factories::TestLevel,
+          max_payload_size: DEFAULT_MAX_PAYLOAD_SIZE
         )
           @serializers_factory = serializers_factory
           @api_key = api_key
+          @max_payload_size = max_payload_size
           @http = Datadog::CI::Transport::HTTP.new(
             host: "#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{site}",
             port: 443
@@ -36,9 +41,20 @@ module Datadog
             return []
           end
 
-          encoded_payload = pack_events(encoded_events)
+          responses = []
+          Datadog::Core::Chunker.chunk_by_size(encoded_events, @max_payload_size).map do |chunk|
+            encoded_payload = pack_events(chunk)
+            response = send_payload(encoded_payload)
+            responses << response
+          end
 
-          response = @http.request(
+          responses
+        end
+
+        private
+
+        def send_payload(encoded_payload)
+          @http.request(
             path: Datadog::CI::Ext::Transport::TEST_VISIBILITY_INTAKE_PATH,
             payload: encoded_payload,
             headers: {
@@ -46,26 +62,28 @@ module Datadog
               Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_MESSAGEPACK
             }
           )
-
-          # Tracing writers expect an array of responses
-          [response]
         end
 
-        private
-
         def encode_traces(traces)
-          # TODO: replace map.filter with filter_map when 1.0 is released
           traces.flat_map do |trace|
-            trace.spans.map do |span|
-              serializer = @serializers_factory.serializer(trace, span)
+            spans = trace.spans
+            # TODO: remove condition when 1.0 is released
+            if spans.respond_to?(:filter_map)
+              spans.filter_map { |span| encode_span(trace, span) }
+            else
+              trace.spans.map { |span| encode_span(trace, span) }.reject(&:nil?)
+            end
+          end
+        end
 
-              if serializer.valid?
-                encoder.encode(serializer)
-              else
-                Datadog.logger.debug { "Invalid span skipped: #{span}" }
-                nil
-              end
-            end.filter { |encoded_event| !encoded_event.nil? }
+        def encode_span(trace, span)
+          serializer = @serializers_factory.serializer(trace, span)
+
+          if serializer.valid?
+            encoder.encode(serializer)
+          else
+            Datadog.logger.debug { "Invalid span skipped: #{span}" }
+            nil
           end
         end
 
