@@ -40,7 +40,7 @@ module Datadog
 
           encoded_events = encode_traces(traces)
           if encoded_events.empty?
-            Datadog.logger.debug("Empty encoded events list, skipping send")
+            Datadog.logger.debug { "Empty encoded events list, skipping send" }
             return []
           end
 
