@@ -112,6 +112,18 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
           expect(responses.count).to eq(2)
         end
       end
+
+      context "when max_payload-size is too small" do
+        # one test event is approximately 1000 bytes currently
+        # ATTENTION: might break if more data is added to test spans in #produce_test_trace method
+        let(:max_payload_size) { 1 }
+
+        it "does not send events that are larger than max size" do
+          subject.send_traces(traces)
+
+          expect(http).not_to have_received(:request)
+        end
+      end
     end
 
     context "when all events are invalid" do

@@ -14,8 +14,8 @@ module Datadog
     module TestVisibility
       class Transport
         # CI test cycle intake's limit is 5.1MB uncompressed
-        # We will use a bit more conservative value 4MB
-        DEFAULT_MAX_PAYLOAD_SIZE = 4 * 1024 * 1024
+        # We will use a bit more conservative value 5MB
+        DEFAULT_MAX_PAYLOAD_SIZE = 5 * 1024 * 1024
 
         def initialize(
           api_key:,
@@ -92,7 +92,16 @@ module Datadog
           serializer = @serializers_factory.serializer(trace, span)
 
           if serializer.valid?
-            encoder.encode(serializer)
+            encoded = encoder.encode(serializer)
+
+            if encoded.size > @max_payload_size
+              # This single event is too large, we can't flush it
+              Datadog.logger.debug { "Dropping test event. Payload too large: '#{span.inspect}'" }
+
+              return nil
+            end
+
+            encoded
           else
             Datadog.logger.debug { "Invalid span skipped: #{span}" }
             nil
