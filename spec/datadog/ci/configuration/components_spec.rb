@@ -42,6 +42,14 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .to receive(:agentless_mode_enabled)
             .and_return(agentless_enabled)
 
+          allow(settings.ci)
+            .to receive(:agentless_url)
+            .and_return(agentless_url)
+
+          allow(settings)
+            .to receive(:site)
+            .and_return(dd_site)
+
           allow(settings)
             .to receive(:api_key)
             .and_return(api_key)
@@ -69,6 +77,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
         end
 
         let(:api_key) { nil }
+        let(:agentless_url) { nil }
+        let(:dd_site) { nil }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -110,6 +120,37 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
                     expect(options[:shutdown_timeout]).to eq(60)
+
+                    http_client = options[:transport].http
+                    expect(http_client.host).to eq("citestcycle-intake.datadoghq.com")
+                    expect(http_client.port).to eq(443)
+                    expect(http_client.ssl).to eq(true)
+                  end
+                end
+
+                context "when agentless_url is provided" do
+                  let(:agentless_url) { "http://localhost:5555" }
+
+                  it "configures transport to use intake URL from settings" do
+                    expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
+                      http_client = options[:transport].http
+                      expect(http_client.host).to eq("localhost")
+                      expect(http_client.port).to eq(5555)
+                      expect(http_client.ssl).to eq(false)
+                    end
+                  end
+                end
+
+                context "when dd_site is provided" do
+                  let(:dd_site) { "eu.datadoghq.com" }
+
+                  it "construct intake url using provided host" do
+                    expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
+                      http_client = options[:transport].http
+                      expect(http_client.host).to eq("citestcycle-intake.eu.datadoghq.com")
+                      expect(http_client.port).to eq(443)
+                      expect(http_client.ssl).to eq(true)
+                    end
                   end
                 end
               end

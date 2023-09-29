@@ -8,14 +8,14 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
   subject do
     described_class.new(
       api_key: api_key,
-      site: site,
+      url: url,
       serializers_factory: serializers_factory,
       max_payload_size: max_payload_size
     )
   end
 
   let(:api_key) { "api_key" }
-  let(:site) { "datad0ghq.com" }
+  let(:url) { "https://citestcycle-intake.datad0ghq.com:443" }
   let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestLevel }
   let(:max_payload_size) { 4 * 1024 * 1024 }
 
@@ -25,6 +25,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
     expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
       host: "citestcycle-intake.datad0ghq.com",
       port: 443,
+      ssl: true,
       compress: true
     ).and_return(http)
   end

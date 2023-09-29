@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "msgpack"
+require "uri"
+
 require "datadog/core/encoding"
 require "datadog/core/environment/identity"
 require "datadog/core/chunker"
@@ -17,18 +19,29 @@ module Datadog
         # We will use a bit more conservative value 5MB
         DEFAULT_MAX_PAYLOAD_SIZE = 5 * 1024 * 1024
 
+        attr_reader :serializers_factory,
+          :api_key,
+          :max_payload_size,
+          :http
+
         def initialize(
           api_key:,
-          site: "datadoghq.com",
+          url:,
           serializers_factory: Datadog::CI::TestVisibility::Serializers::Factories::TestLevel,
           max_payload_size: DEFAULT_MAX_PAYLOAD_SIZE
         )
           @serializers_factory = serializers_factory
           @api_key = api_key
           @max_payload_size = max_payload_size
+
+          uri = URI.parse(url)
+
+          raise "Invalid agentless mode URL: #{url}" if uri.host.nil?
+
           @http = Datadog::CI::Transport::HTTP.new(
-            host: "#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{site}",
-            port: 443,
+            host: uri.host,
+            port: uri.port,
+            ssl: uri.scheme == "https" || uri.port == 443,
             compress: true
           )
         end
@@ -45,7 +58,7 @@ module Datadog
           end
 
           responses = []
-          Datadog::Core::Chunker.chunk_by_size(encoded_events, @max_payload_size).map do |chunk|
+          Datadog::Core::Chunker.chunk_by_size(encoded_events, max_payload_size).map do |chunk|
             encoded_payload = pack_events(chunk)
             Datadog.logger.debug do
               "Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
@@ -66,11 +79,11 @@ module Datadog
         private
 
         def send_payload(encoded_payload)
-          @http.request(
+          http.request(
             path: Datadog::CI::Ext::Transport::TEST_VISIBILITY_INTAKE_PATH,
             payload: encoded_payload,
             headers: {
-              Ext::Transport::HEADER_DD_API_KEY => @api_key,
+              Ext::Transport::HEADER_DD_API_KEY => api_key,
               Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_MESSAGEPACK
             }
           )
@@ -89,14 +102,15 @@ module Datadog
         end
 
         def encode_span(trace, span)
-          serializer = @serializers_factory.serializer(trace, span)
+          serializer = serializers_factory.serializer(trace, span)
 
           if serializer.valid?
             encoded = encoder.encode(serializer)
 
-            if encoded.size > @max_payload_size
+            if encoded.size > max_payload_size
               # This single event is too large, we can't flush it
               Datadog.logger.debug { "Dropping test event. Payload too large: '#{span.inspect}'" }
+              Datadog.logger.debug { encoded }
 
               return nil
             end

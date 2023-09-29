@@ -4,6 +4,11 @@ module Datadog
       class Transport
         DEFAULT_MAX_PAYLOAD_SIZE: Integer
 
+        attr_reader serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)
+        attr_reader api_key: String
+        attr_reader http: Datadog::CI::Transport::HTTP
+        attr_reader max_payload_size: Integer
+
         @api_key: String
         @http: Datadog::CI::Transport::HTTP
         @serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)
@@ -11,7 +16,7 @@ module Datadog
 
         def initialize: (
           api_key: String,
-          ?site: ::String,
+          url: ::String,
           ?serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel),
           ?max_payload_size: Integer
         ) -> void

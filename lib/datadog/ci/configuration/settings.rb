@@ -29,6 +29,11 @@ module Datadog
                 o.default false
               end
 
+              option :agentless_url do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Settings::ENV_AGENTLESS_URL
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

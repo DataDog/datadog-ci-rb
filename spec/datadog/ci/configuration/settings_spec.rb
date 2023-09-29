@@ -137,6 +137,41 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#agentless_url" do
+        subject(:agentless_url) { settings.ci.agentless_url }
+
+        it { is_expected.to be nil }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_AGENTLESS_URL}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_AGENTLESS_URL => agentless_url) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:agentless_url) { nil }
+
+            it { is_expected.to be nil }
+          end
+
+          context "is set to some value" do
+            let(:agentless_url) { "example.com" }
+
+            it { is_expected.to eq agentless_url }
+          end
+        end
+      end
+
+      describe "#agentless_url=" do
+        it "updates the #enabled setting" do
+          expect { settings.ci.agentless_url = "example.com" }
+            .to change { settings.ci.agentless_url }
+            .from(nil)
+            .to("example.com")
+        end
+      end
+
       describe "#instrument" do
         let(:integration_name) { :fake }
 

@@ -34,7 +34,14 @@ module Datadog
               settings.ci.enabled = false
               return
             else
-              agentless_transport = Datadog::CI::TestVisibility::Transport.new(api_key: settings.api_key)
+              dd_site = settings.site || "datadoghq.com"
+              agentless_url = settings.ci.agentless_url ||
+                "https://#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{dd_site}:443"
+
+              agentless_transport = Datadog::CI::TestVisibility::Transport.new(
+                api_key: settings.api_key,
+                url: agentless_url
+              )
             end
           end
 
