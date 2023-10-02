@@ -15,11 +15,11 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::LocalGit do
           "git.commit.author.date" => "2011-02-16T13:00:00+00:00",
           "git.commit.author.email" => "bot@friendly.test",
           "git.commit.author.name" => "Friendly bot",
-          "git.commit.committer.date" => "2021-06-17T18:35:10+00:00",
-          "git.commit.committer.email" => "marco.costa@datadoghq.com",
-          "git.commit.committer.name" => "Marco Costa",
-          "git.commit.message" => "First commit!",
-          "git.commit.sha" => "9322ca1d57975b49b8c00b449d21b06660ce8b5b",
+          "git.commit.committer.date" => "2023-10-02T13:52:56+00:00",
+          "git.commit.committer.email" => "andrey.marchenko@datadoghq.com",
+          "git.commit.committer.name" => "Andrey Marchenko",
+          "git.commit.message" => "First commit with ❤️",
+          "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
           "git.repository_url" => "https://datadoghq.com/git/test.git"
         }
       end
@@ -38,7 +38,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::LocalGit do
     end
 
     it "returns committer from the latest commit in the repository" do
-      is_expected.to eq("marco.costa@datadoghq.com")
+      is_expected.to eq("andrey.marchenko@datadoghq.com")
     end
 
     context "when git show -s returns nothing" do
