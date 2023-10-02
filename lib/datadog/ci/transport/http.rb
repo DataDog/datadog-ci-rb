@@ -34,13 +34,10 @@ module Datadog
             payload = Gzip.compress(payload)
           end
 
-          Datadog.logger.debug { "Sending #{method} request" }
-          Datadog.logger.debug { "host #{host}" }
-          Datadog.logger.debug { "port #{port}" }
-          Datadog.logger.debug { "ssl enabled #{ssl}" }
-          Datadog.logger.debug { "compression enabled #{compress}" }
-          Datadog.logger.debug { "path #{path}" }
-          Datadog.logger.debug { "payload size #{payload.size}" }
+          Datadog.logger.debug do
+            "Sending #{method} request: host=#{host}; port=#{port}; ssl_enabled=#{ssl}; " \
+              "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
+          end
 
           send(method, path: path, payload: payload, headers: headers)
         end

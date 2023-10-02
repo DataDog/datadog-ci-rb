@@ -125,7 +125,7 @@ If you are using a cloud CI provider without access to the underlying worker nod
 Additionally, configure which [Datadog site](https://docs.datadoghq.com/getting_started/site/) you want to send data to:
 `DD_SITE=your.datadoghq.com` (datadoghq.com by default).
 
-Agentless mode can be enabled via `Datadog.configure` (but don't forget to set DD_API_KEY environment variable):
+Agentless mode can also be enabled via `Datadog.configure` (but don't forget to set DD_API_KEY environment variable):
 
 ```ruby
 Datadog.configure { |c| c.ci.agentless_mode_enabled = true }
@@ -156,8 +156,8 @@ end
 require "ddtrace/auto_instrument"
 ```
 
-Note: in CI mode these traces are going to be submitted to CI visibility backend,
-they will **not** be submitted to Datadog APM.
+Note: in CI mode these traces are going to be submitted to CI Visibility,
+they will **not** show up in Datadog APM.
 
 For the full list of available instrumentations see [ddtrace documentation](https://github.com/DataDog/dd-trace-rb/blob/master/docs/GettingStarted.md)
 
@@ -175,13 +175,11 @@ Datadog.configure { |c| c.diagnostics.startup_logs.enabled = false }
 
 Switching the library into debug mode will produce verbose, detailed logs about tracing activity, including any suppressed errors. This output can be helpful in identifying errors, confirming trace output, or catching HTTP transport issues.
 
-You can enable this via `diagnostics.debug = true` or `DD_TRACE_DEBUG`.
+You can enable this via `diagnostics.debug = true` or `DD_TRACE_DEBUG=1`.
 
 ```ruby
 Datadog.configure { |c| c.diagnostics.debug = true }
 ```
-
-**We do NOT recommend use of this feature in production or other sensitive environments**, as it can be very verbose under load. It's best to use this in a controlled environment where you can control application load.
 
 ## Contributing
 

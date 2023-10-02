@@ -238,9 +238,6 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             end
 
             context "when not enabled" do
-              # before do
-              #   allow(integration.configuration).to receive(:enabled).and_return(false)
-              # end
               let(:enabled) { false }
 
               it "does not patch the integration" do
