@@ -22,17 +22,20 @@ module Datadog
         attr_reader :serializers_factory,
           :api_key,
           :max_payload_size,
-          :http
+          :http,
+          :env
 
         def initialize(
           api_key:,
           url:,
+          env: nil,
           serializers_factory: Datadog::CI::TestVisibility::Serializers::Factories::TestLevel,
           max_payload_size: DEFAULT_MAX_PAYLOAD_SIZE
         )
           @serializers_factory = serializers_factory
           @api_key = api_key
           @max_payload_size = max_payload_size
+          @env = env
 
           uri = URI.parse(url)
 
@@ -138,7 +141,13 @@ module Datadog
           packer.write_map_header(1)
 
           packer.write("*")
-          packer.write_map_header(3)
+          metadata_fields_count = env ? 4 : 3
+          packer.write_map_header(metadata_fields_count)
+
+          if env
+            packer.write("env")
+            packer.write(env)
+          end
 
           packer.write("runtime-id")
           packer.write(Datadog::Core::Environment::Identity.id)

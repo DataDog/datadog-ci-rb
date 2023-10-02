@@ -8,6 +8,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
   subject do
     described_class.new(
       api_key: api_key,
+      env: env,
       url: url,
       serializers_factory: serializers_factory,
       max_payload_size: max_payload_size
@@ -15,6 +16,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
   end
 
   let(:api_key) { "api_key" }
+  let(:env) { nil }
   let(:url) { "https://citestcycle-intake.datad0ghq.com:443" }
   let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestLevel }
   let(:max_payload_size) { 4 * 1024 * 1024 }
@@ -56,6 +58,24 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
           events = payload["events"]
           expect(events.count).to eq(1)
           expect(events.first["content"]["resource"]).to include("calculator_tests")
+        end
+      end
+    end
+
+    context "with env defined" do
+      let(:env) { "ci" }
+      before do
+        produce_test_trace
+      end
+
+      it "sends correct payload including env" do
+        subject.send_traces([trace])
+
+        expect(http).to have_received(:request) do |args|
+          payload = MessagePack.unpack(args[:payload])
+
+          metadata = payload["metadata"]["*"]
+          expect(metadata["env"]).to eq("ci")
         end
       end
     end
