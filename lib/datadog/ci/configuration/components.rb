@@ -34,15 +34,7 @@ module Datadog
               settings.ci.enabled = false
               return
             else
-              dd_site = settings.site || "datadoghq.com"
-              agentless_url = settings.ci.agentless_url ||
-                "https://#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{dd_site}:443"
-
-              agentless_transport = Datadog::CI::TestVisibility::Transport.new(
-                api_key: settings.api_key,
-                url: agentless_url,
-                env: settings.env
-              )
+              agentless_transport = build_agentless_transport(settings)
             end
           end
 
@@ -67,6 +59,18 @@ module Datadog
           end
 
           settings.tracing.test_mode.writer_options = writer_options
+        end
+
+        def build_agentless_transport(settings)
+          dd_site = settings.site || "datadoghq.com"
+          agentless_url = settings.ci.agentless_url ||
+            "https://#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{dd_site}:443"
+
+          Datadog::CI::TestVisibility::Transport.new(
+            api_key: settings.api_key,
+            url: agentless_url,
+            env: settings.env
+          )
         end
       end
     end
