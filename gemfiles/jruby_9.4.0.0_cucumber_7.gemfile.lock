@@ -2,6 +2,7 @@ PATH
   remote: ..
   specs:
     datadog-ci (0.1.1)
+      msgpack
 
 GEM
   remote: https://rubygems.org/
@@ -142,6 +143,7 @@ GEM
     sys-uname (1.2.3)
       ffi (~> 1.1)
     thor (1.2.2)
+    timecop (0.9.8)
     unicode-display_width (2.4.2)
     webrick (1.8.1)
     yard (0.9.34)
@@ -165,6 +167,7 @@ DEPENDENCIES
   simplecov
   simplecov-cobertura (~> 2.1.0)
   standard (~> 1.31.0)
+  timecop
   webrick
   yard
 

@@ -1,0 +1,9 @@
+module Datadog
+  module Core
+    module Encoding
+      module MsgpackEncoder
+        def self.encode: (untyped payload) -> String
+      end
+    end
+  end
+end

@@ -39,4 +39,6 @@ Gem::Specification.new do |spec|
     ]].select { |fn| File.file?(fn) } # We don't want directories, only files
 
   spec.require_paths = ["lib"]
+
+  spec.add_dependency "msgpack"
 end

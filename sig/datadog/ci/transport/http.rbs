@@ -1,0 +1,61 @@
+module Datadog
+  module CI
+    module Transport
+      class HTTP
+        attr_reader host: String
+        attr_reader port: Integer?
+        attr_reader ssl: bool
+        attr_reader timeout: Integer
+        attr_reader compress: bool
+
+        DEFAULT_TIMEOUT: 30
+
+        def initialize: (host: String, ?port: Integer?, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
+
+        def request: (?method: String, payload: String, headers: Hash[String, String], path: String) -> Response
+
+        private
+
+        def open: () { (::Net::HTTP) -> Net::HTTPResponse } -> Net::HTTPResponse
+
+        def post: (payload: String, headers: Hash[String, String], path: String) -> Response
+
+        class Response
+          attr_reader http_response: (Net::HTTPResponse | InternalErrorResponse::DummyNetHTTPResponse)
+
+          def initialize: ((Net::HTTPResponse | InternalErrorResponse::DummyNetHTTPResponse) http_response) -> void
+
+          def payload: () -> String
+
+          def code: () -> Integer
+
+          def ok?: () -> bool
+
+          def unsupported?: () -> bool
+
+          def not_found?: () -> bool
+
+          def client_error?: () -> bool
+
+          def server_error?: () -> bool
+
+          def internal_error?: () -> bool
+
+          def inspect: () -> ::String
+        end
+
+        class InternalErrorResponse < Response
+          class DummyNetHTTPResponse
+            def body: () -> ""
+            def code: () -> "-1"
+          end
+
+          attr_reader error: StandardError
+          @error: StandardError
+
+          def initialize: (StandardError error) -> void
+        end
+      end
+    end
+  end
+end

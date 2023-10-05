@@ -54,7 +54,7 @@ module Datadog
 
       def finished?: () -> untyped
 
-      def duration: () -> untyped
+      def duration: () -> Float
 
       def set_error: (untyped e) -> untyped
 

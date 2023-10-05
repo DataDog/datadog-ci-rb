@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/tracing/contrib"
-require "datadog/tracing/contrib/integration"
-
+require_relative "../integration"
 require_relative "configuration/settings"
 require_relative "patcher"
 
@@ -12,11 +10,11 @@ module Datadog
       module Minitest
         # Description of Minitest integration
         class Integration
-          include Datadog::Tracing::Contrib::Integration
+          include Datadog::CI::Contrib::Integration
 
           MINIMUM_VERSION = Gem::Version.new("5.0.0")
 
-          register_as :minitest, auto_patch: true
+          register_as :minitest
 
           def self.version
             Gem.loaded_specs["minitest"] && Gem.loaded_specs["minitest"].version

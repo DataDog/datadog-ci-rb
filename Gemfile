@@ -10,14 +10,16 @@ gem "ddtrace"
 
 gem "pry"
 gem "rake"
-gem "rspec"
 gem "os"
 
 gem "climate_control"
 
+gem "rspec"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "appraisal"
+gem "timecop"
+
 gem "standard", "~> 1.31.0"
 
 gem "yard"

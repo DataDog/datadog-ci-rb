@@ -117,6 +117,70 @@ end
 | `service_name` | Service name used for `cucumber` instrumentation. | `'cucumber'` |
 | `operation_name` | Operation name used for `cucumber` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'cucumber.test'` |
 
+## Agentless mode
+
+If you are using a cloud CI provider without access to the underlying worker nodes, such as GitHub Actions or CircleCI, configure the library to use the Agentless mode. For this, set the following environment variables:
+`DD_CIVISIBILITY_AGENTLESS_ENABLED=true (Required)` and `DD_API_KEY=your_secret_api_key (Required)`.
+
+Additionally, configure which [Datadog site](https://docs.datadoghq.com/getting_started/site/) you want to send data to:
+`DD_SITE=your.datadoghq.com` (datadoghq.com by default).
+
+Agentless mode can also be enabled via `Datadog.configure` (but don't forget to set DD_API_KEY environment variable):
+
+```ruby
+Datadog.configure { |c| c.ci.agentless_mode_enabled = true }
+```
+
+## Additional configuration
+
+### Add tracing instrumentations
+
+It can be useful to have rich tracing information about your tests that includes time spent performing database operations
+or other external calls like here:
+
+![Test trace with redis instrumented](./docs/screenshots/test-trace-with-redis.png)
+
+In order to achieve this you can configure ddtrace instrumentations in your configure block:
+
+```ruby
+Datadog.configure do |c|
+  #  ... ci configs and instrumentation here ...
+  c.instrument :redis
+  c.instrument :pg
+end
+```
+
+...or enable auto instrumentation in your test_helper/spec_helper:
+
+```ruby
+require "ddtrace/auto_instrument"
+```
+
+Note: in CI mode these traces are going to be submitted to CI Visibility,
+they will **not** show up in Datadog APM.
+
+For the full list of available instrumentations see [ddtrace documentation](https://github.com/DataDog/dd-trace-rb/blob/master/docs/GettingStarted.md)
+
+### Disabling startup logs
+
+Startup logs produce a report of tracing state when the application is initially configured.
+These logs are activated by default in test mode, if you don't want them you can disable this
+via `diagnostics.startup_logs.enabled = false` or `DD_TRACE_STARTUP_LOGS=0`.
+
+```ruby
+Datadog.configure { |c| c.diagnostics.startup_logs.enabled = false }
+```
+
+### Enabling debug mode
+
+Switching the library into debug mode will produce verbose, detailed logs about tracing activity, including any suppressed errors. This output can be helpful in identifying errors, confirming trace output, or catching HTTP transport issues.
+
+You can enable this via `diagnostics.debug = true` or `DD_TRACE_DEBUG=1`.
+
+```ruby
+Datadog.configure { |c| c.diagnostics.debug = true }
+```
+
 ## Contributing
 
 See [development guide](/docs/DevelopmentGuide.md), [static typing guide](docs/StaticTypingGuide.md) and [contributing guidelines](/CONTRIBUTING.md).

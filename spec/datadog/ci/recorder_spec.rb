@@ -1,4 +1,4 @@
-RSpec.describe Datadog::CI::Test do
+RSpec.describe Datadog::CI::Recorder do
   let(:trace_op) { instance_double(Datadog::Tracing::TraceOperation) }
   let(:span_name) { "span name" }
 

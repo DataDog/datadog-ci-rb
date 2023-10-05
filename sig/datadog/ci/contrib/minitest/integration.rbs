@@ -3,13 +3,14 @@ module Datadog
     module Contrib
       module Minitest
         class Integration
-          extend Datadog::Tracing::Contrib::Integration
+          extend Datadog::CI::Contrib::Integration::ClassMethods
+          include Datadog::CI::Contrib::Integration::InstanceMethods
 
-          MINIMUM_VERSION: untyped
+          MINIMUM_VERSION: Gem::Version
 
           def self.version: () -> untyped
 
-          def self.loaded?: () -> untyped
+          def self.loaded?: () -> bool
 
           def compatible?: () -> bool
 

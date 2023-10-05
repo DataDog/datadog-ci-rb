@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "../../recorder"
+require_relative "../../ext/test"
+require_relative "ext"
+
 module Datadog
   module CI
     module Contrib
@@ -15,7 +19,7 @@ module Datadog
             path, = method(name).source_location
             test_suite = Pathname.new(path.to_s).relative_path_from(Pathname.pwd).to_s
 
-            span = CI::Test.trace(
+            span = CI::Recorder.trace(
               configuration[:operation_name],
               {
                 span_options: {
@@ -41,11 +45,11 @@ module Datadog
 
             case result_code
             when "."
-              CI::Test.passed!(span)
+              CI::Recorder.passed!(span)
             when "E", "F"
-              CI::Test.failed!(span, failure)
+              CI::Recorder.failed!(span, failure)
             when "S"
-              CI::Test.skipped!(span)
+              CI::Recorder.skipped!(span)
               span.set_tag(CI::Ext::Test::TAG_SKIP_REASON, failure.message)
             end
 

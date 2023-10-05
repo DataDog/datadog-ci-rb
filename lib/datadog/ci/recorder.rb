@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "datadog/tracing"
 require "datadog/tracing/contrib/analytics"
 
 require_relative "ext/app_types"
@@ -11,7 +12,7 @@ require "rbconfig"
 module Datadog
   module CI
     # Common behavior for CI tests
-    module Test
+    module Recorder
       # Creates a new span for a CI test
       def self.trace(span_name, options = {})
         span_options = {
@@ -19,13 +20,13 @@ module Datadog
         }.merge(options[:span_options] || {})
 
         if block_given?
-          Tracing.trace(span_name, **span_options) do |span, trace|
+          ::Datadog::Tracing.trace(span_name, **span_options) do |span, trace|
             set_tags!(trace, span, options)
             yield(span, trace)
           end
         else
-          span = Tracing.trace(span_name, **span_options)
-          trace = Tracing.active_trace
+          span = ::Datadog::Tracing.trace(span_name, **span_options)
+          trace = ::Datadog::Tracing.active_trace
           set_tags!(trace, span, options)
           span
         end
@@ -37,7 +38,7 @@ module Datadog
 
         # Set default tags
         trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
-        Datadog::Tracing::Contrib::Analytics.set_measured(span)
+        ::Datadog::Tracing::Contrib::Analytics.set_measured(span)
         span.set_tag(Ext::Test::TAG_SPAN_KIND, Ext::AppTypes::TYPE_TEST)
 
         # Set environment tags

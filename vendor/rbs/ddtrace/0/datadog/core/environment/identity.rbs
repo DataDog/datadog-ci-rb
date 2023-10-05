@@ -1,0 +1,10 @@
+module Datadog
+  module Core
+    module Environment
+      module Identity
+        def self.lang: () -> "ruby"
+        def self.id: () -> String
+      end
+    end
+  end
+end

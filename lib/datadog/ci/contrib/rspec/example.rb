@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../../test"
-
-require_relative "../../ext/app_types"
-require_relative "../../ext/environment"
+require_relative "../../recorder"
 require_relative "../../ext/test"
 require_relative "ext"
 
@@ -28,7 +25,7 @@ module Datadog
                 test_name += " #{description}"
               end
 
-              CI::Test.trace(
+              CI::Recorder.trace(
                 configuration[:operation_name],
                 {
                   span_options: {
@@ -46,11 +43,11 @@ module Datadog
 
                 case execution_result.status
                 when :passed
-                  CI::Test.passed!(span)
+                  CI::Recorder.passed!(span)
                 when :failed
-                  CI::Test.failed!(span, execution_result.exception)
+                  CI::Recorder.failed!(span, execution_result.exception)
                 else
-                  CI::Test.skipped!(span, execution_result.exception) if execution_result.example_skipped?
+                  CI::Recorder.skipped!(span, execution_result.exception) if execution_result.example_skipped?
                 end
 
                 result
