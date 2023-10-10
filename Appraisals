@@ -29,8 +29,7 @@ def appraise(group, &block)
       REMOVED_GEMS.each do |group_name, gems|
         group(group_name) do
           gems.each do |gem_name|
-            # appraisal 2.2 doesn't have remove_gem, which applies to ruby 2.1 and 2.2
-            remove_gem gem_name if respond_to?(:remove_gem)
+            remove_gem gem_name
           end
         end
       end
@@ -50,6 +49,10 @@ def self.with_cucumber_gem(versions:)
   Array(versions).each do |v|
     appraise "cucumber-#{v}" do
       gem "cucumber", "~> #{v}"
+      # cucumber versions 3-6 are not compatible with activesupport 7.1
+      if v < 7
+        gem "activesupport", "< 7.1"
+      end
     end
   end
 end

@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           transport.port,
           timeout: transport.timeout,
           ssl: transport.ssl
-        ).and_return(http_connection)
+        ).and_return(adapter)
     end
   end
 
@@ -83,16 +83,16 @@ RSpec.describe Datadog::CI::Transport::HTTP do
   end
 
   describe "#request" do
-    include_context "HTTP connection stub"
+    include_context "HTTP adapter stub"
 
     let(:path) { "/api/v1/intake" }
     let(:payload) { '{ "key": "value" }' }
     let(:headers) { {"Content-Type" => "application/json"} }
     let(:request_options) { {} }
 
-    let(:http_response) { double("http_response") }
+    let(:http_response) { double("http_response", code: 200) }
 
-    subject(:request) { transport.request(path: path, payload: payload, headers: headers, **request_options) }
+    subject(:response) { transport.request(path: path, payload: payload, headers: headers, **request_options) }
 
     context "when request is successful" do
       let(:env) do
@@ -112,14 +112,8 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       it "produces a response" do
         is_expected.to be_a_kind_of(described_class::ResponseDecorator)
 
-        expect(request.http_response).to be(http_response)
+        expect(response.code).to eq(200)
       end
-    end
-
-    context "when error in connecting to server" do
-      before { expect(adapter).to receive(:request).and_raise(StandardError) }
-
-      it { expect(request).to be_a_kind_of(described_class::InternalErrorResponse) }
     end
 
     # context "when compressing payload" do

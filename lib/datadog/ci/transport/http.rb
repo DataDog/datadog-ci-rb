@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "delegate"
 require "net/http"
 require "datadog/core/transport/http/adapters/net"
 require "datadog/core/transport/http/env"
@@ -64,7 +65,7 @@ module Datadog
           @adapter ||= Datadog::Core::Transport::HTTP::Adapters::Net.new(host, port, timeout: timeout, ssl: ssl)
         end
 
-        class ResponseDecorator < SimpleDelegator
+        class ResponseDecorator < ::SimpleDelegator
           def trace_count
             0
           end
