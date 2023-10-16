@@ -31,8 +31,8 @@ gem "simplecov-cobertura", "~> 2.1.0"
 
 # type checking
 group :check do
-  if RUBY_PLATFORM != "java"
-    gem "rbs", "~> 3.1.0", require: false
+  if RUBY_VERSION >= "3.0.0" && RUBY_PLATFORM != "java"
+    gem "rbs", "~> 3.2.0", require: false
     gem "steep", "~> 1.4.0", require: false
   end
 end
