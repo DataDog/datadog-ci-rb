@@ -49,8 +49,8 @@ def self.with_cucumber_gem(versions:)
   Array(versions).each do |v|
     appraise "cucumber-#{v}" do
       gem "cucumber", "~> #{v}"
-      # cucumber versions 3-6 are not compatible with activesupport 7.1
-      if v < 7
+      # cucumber versions 4-6 are not compatible with activesupport 7.1
+      if (4..6).cover?(v)
         gem "activesupport", "< 7.1"
       end
     end
