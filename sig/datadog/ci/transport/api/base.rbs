@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module Transport
+      module Api
+        class Base
+          @headers: Hash[String, String]
+
+          def request: (path: String, payload: String, ?verb: ::String) -> untyped
+
+          private
+
+          def headers: () -> Hash[String, String]
+        end
+      end
+    end
+  end
+end

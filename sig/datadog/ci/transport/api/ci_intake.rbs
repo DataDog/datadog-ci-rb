@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Transport
+      module Api
+        class CIIntake < Base
+          attr_reader api_key: String
+          attr_reader http: Datadog::CI::Transport::HTTP
+
+          @api_key: String
+          @http: Datadog::CI::Transport::HTTP
+
+          def initialize: (api_key: String, url: String) -> void
+
+          def request: (path: String, payload: String, ?verb: ::String) -> Datadog::CI::Transport::HTTP::Response
+
+          private
+
+          def headers: () -> Hash[String, String]
+        end
+      end
+    end
+  end
+end

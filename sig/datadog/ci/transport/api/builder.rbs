@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Transport
+      module Api
+        module Builder
+          def self.build_ci_test_cycle_api: (untyped settings) -> Datadog::CI::Transport::Api::CIIntake
+        end
+      end
+    end
+  end
+end
