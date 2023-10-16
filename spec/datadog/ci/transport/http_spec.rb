@@ -105,6 +105,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         env.verb = "post"
         env
       end
+
       before do
         expect(adapter).to receive(:call).with(env).and_return(http_response)
       end
@@ -116,19 +117,32 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       end
     end
 
-    # context "when compressing payload" do
-    #   let(:headers) { {"Content-Type" => "application/json"} }
-    #   let(:expected_headers) { {"Content-Type" => "application/json", "Content-Encoding" => "gzip"} }
-    #   let(:options) { {compress: true} }
-    #   let(:post_request) { double(:post_request) }
+    context "when compressing payload" do
+      let(:headers) { {"Content-Type" => "application/json"} }
+      let(:expected_headers) { {"Content-Type" => "application/json", "Content-Encoding" => "gzip"} }
+      let(:options) { {compress: true} }
+      let(:post_request) { double(:post_request) }
 
-    #   before do
-    #     expect(::Net::HTTP::Post).to receive(:new).with(path, expected_headers).and_return(post_request)
-    #     expect(post_request).to receive(:body=).with(Datadog::CI::Transport::Gzip.compress(payload))
-    #     expect(http_connection).to receive(:request).with(post_request).and_return(http_response)
-    #   end
+      let(:env) do
+        env = Datadog::Core::Transport::HTTP::Env.new(
+          Datadog::Core::Transport::Request.new
+        )
+        env.body = Datadog::CI::Transport::Gzip.compress(payload)
+        env.path = path
+        env.headers = headers
+        env.verb = "post"
+        env
+      end
 
-    #   it { expect(request.http_response).to be(http_response) }
-    # end
+      before do
+        expect(adapter).to receive(:call).with(env).and_return(http_response)
+      end
+
+      it "produces a response" do
+        is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+
+        expect(response.code).to eq(200)
+      end
+    end
   end
 end
