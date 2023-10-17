@@ -4,7 +4,6 @@ target :lib do
   check "lib"
 
   ignore "lib/datadog/ci/configuration/settings.rb"
-  ignore "lib/datadog/ci/transport/gzip.rb"
 
   library "pathname"
   library "json"
@@ -12,6 +11,7 @@ target :lib do
   library "date"
   library "minitest"
   library "net-http"
+  library "zlib"
 
   repo_path "vendor/rbs"
   library "ddtrace"

@@ -24,11 +24,11 @@ module Datadog
           ?max_payload_size: Integer
         ) -> void
 
-        def send_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[Datadog::CI::Transport::HTTP::Response]
+        def send_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[Datadog::CI::Transport::HTTP::ResponseDecorator]
 
         private
 
-        def send_payload: (String encoded_payload) -> Datadog::CI::Transport::HTTP::Response
+        def send_payload: (String encoded_payload) -> Datadog::CI::Transport::HTTP::ResponseDecorator
         def pack_events: (Array[String] encoded_events) -> String
         def encode_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[String]
         def encode_span: (Datadog::Tracing::TraceSegment trace, Datadog::Tracing::Span span) -> String?

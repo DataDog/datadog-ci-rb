@@ -19,6 +19,7 @@ gem "pimpmychangelog", ">= 0.1.2"
 gem "simplecov"
 gem "simplecov-cobertura", "~> 2.1.0"
 gem "cucumber", "~> 6"
+gem "activesupport", "< 7.1"
 
 group :check do
 
