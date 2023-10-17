@@ -23,7 +23,6 @@ module Datadog
           :api,
           :api_key,
           :max_payload_size,
-          :http,
           :dd_env
 
         def initialize(
@@ -38,17 +37,6 @@ module Datadog
           @api_key = api_key
           @max_payload_size = max_payload_size
           @dd_env = dd_env
-
-          uri = URI.parse(url)
-
-          raise "Invalid agentless mode URL: #{url}" if uri.host.nil?
-
-          @http = Datadog::CI::Transport::HTTP.new(
-            host: uri.host,
-            port: uri.port,
-            ssl: uri.scheme == "https" || uri.port == 443,
-            compress: true
-          )
           @api = api
         end
 
@@ -85,13 +73,9 @@ module Datadog
         private
 
         def send_payload(encoded_payload)
-          http.request(
+          api.request(
             path: Datadog::CI::Ext::Transport::TEST_VISIBILITY_INTAKE_PATH,
-            payload: encoded_payload,
-            headers: {
-              Ext::Transport::HEADER_DD_API_KEY => api_key,
-              Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_MESSAGEPACK
-            }
+            payload: encoded_payload
           )
         end
 

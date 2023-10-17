@@ -121,7 +121,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
                     expect(options[:shutdown_timeout]).to eq(60)
 
-                    http_client = options[:transport].http
+                    api = options[:transport].api
+                    expect(api.api_key).to eq(api_key)
+
+                    http_client = api.http
                     expect(http_client.host).to eq("citestcycle-intake.datadoghq.com")
                     expect(http_client.port).to eq(443)
                     expect(http_client.ssl).to eq(true)
@@ -133,7 +136,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                   it "configures transport to use intake URL from settings" do
                     expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                      http_client = options[:transport].http
+                      api = options[:transport].api
+                      expect(api.api_key).to eq(api_key)
+
+                      http_client = api.http
                       expect(http_client.host).to eq("localhost")
                       expect(http_client.port).to eq(5555)
                       expect(http_client.ssl).to eq(false)
@@ -146,7 +152,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                   it "construct intake url using provided host" do
                     expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                      http_client = options[:transport].http
+                      api = options[:transport].api
+                      expect(api.api_key).to eq(api_key)
+
+                      http_client = api.http
                       expect(http_client.host).to eq("citestcycle-intake.eu.datadoghq.com")
                       expect(http_client.port).to eq(443)
                       expect(http_client.ssl).to eq(true)
