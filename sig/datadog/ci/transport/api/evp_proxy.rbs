@@ -9,7 +9,7 @@ module Datadog
 
           attr_reader http: Datadog::CI::Transport::HTTP
 
-          def initialize: (url: String) -> void
+          def initialize: (host: String, port: Integer, ssl: bool, timeout: Integer) -> void
 
           def request: (path: String, payload: String, ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 

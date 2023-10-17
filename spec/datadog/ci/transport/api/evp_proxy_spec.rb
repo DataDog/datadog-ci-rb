@@ -3,41 +3,31 @@ require_relative "../../../../../lib/datadog/ci/transport/api/evp_proxy"
 RSpec.describe Datadog::CI::Transport::Api::EVPProxy do
   subject do
     described_class.new(
-      url: url
+      host: host,
+      port: port,
+      ssl: ssl,
+      timeout: timeout
     )
   end
 
-  let(:url) { "http://localhost:5555" }
+  let(:host) { "localhost" }
+  let(:port) { 5555 }
+  let(:ssl) { false }
+  let(:timeout) { 42 }
 
   let(:http) { double(:http) }
 
   describe "#initialize" do
-    context "with https URL" do
-      let(:url) { "https://citestcycle-intake.datad0ghq.com:443" }
+    it "creates HTTP transport" do
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: host,
+        port: port,
+        ssl: ssl,
+        timeout: timeout,
+        compress: false
+      ).and_return(http)
 
-      it "creates SSL transport" do
-        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-          host: "citestcycle-intake.datad0ghq.com",
-          port: 443,
-          ssl: true,
-          compress: false
-        ).and_return(http)
-
-        subject
-      end
-    end
-
-    context "with http URL" do
-      it "creates http transport without SSL" do
-        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-          host: "localhost",
-          port: 5555,
-          ssl: false,
-          compress: false
-        ).and_return(http)
-
-        subject
-      end
+      subject
     end
   end
 

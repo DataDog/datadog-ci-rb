@@ -10,14 +10,12 @@ module Datadog
         class EVPProxy < Base
           attr_reader :http
 
-          def initialize(url:)
-            uri = URI.parse(url)
-            raise "Invalid evp proxy mode URL: #{url}" if uri.host.nil?
-
+          def initialize(host:, port:, ssl:, timeout:)
             @http = Datadog::CI::Transport::HTTP.new(
-              host: uri.host,
-              port: uri.port,
-              ssl: uri.scheme == "https" || uri.port == 443,
+              host: host,
+              port: port,
+              ssl: ssl,
+              timeout: timeout,
               compress: false
             )
           end
