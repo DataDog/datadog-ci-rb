@@ -28,7 +28,7 @@ module Datadog
             http.request(
               path: path,
               payload: payload,
-              method: verb,
+              verb: verb,
               headers: headers
             )
           end

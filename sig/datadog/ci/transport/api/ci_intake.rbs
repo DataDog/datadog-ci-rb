@@ -11,7 +11,7 @@ module Datadog
 
           def initialize: (api_key: String, url: String) -> void
 
-          def request: (path: String, payload: String, ?verb: ::String) -> Datadog::CI::Transport::HTTP::Response
+          def request: (path: String, payload: String, ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 
           private
 

@@ -52,7 +52,7 @@ RSpec.describe Datadog::CI::Transport::Api::CIIntake do
       expect(http).to receive(:request).with(
         path: "path",
         payload: "payload",
-        method: "post",
+        verb: "post",
         headers: {
           "DD-API-KEY" => "api_key",
           "Content-Type" => "application/msgpack"
