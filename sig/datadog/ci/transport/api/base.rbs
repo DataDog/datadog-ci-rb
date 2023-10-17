@@ -3,8 +3,6 @@ module Datadog
     module Transport
       module Api
         class Base
-          @headers: Hash[String, String]
-
           def request: (path: String, payload: String, ?verb: ::String) -> untyped
 
           private

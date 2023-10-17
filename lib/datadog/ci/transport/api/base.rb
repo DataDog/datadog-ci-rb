@@ -11,7 +11,7 @@ module Datadog
           private
 
           def headers
-            @headers ||= {
+            {
               Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_MESSAGEPACK
             }
           end
