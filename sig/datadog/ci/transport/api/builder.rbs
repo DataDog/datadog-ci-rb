@@ -4,6 +4,7 @@ module Datadog
       module Api
         module Builder
           def self.build_ci_test_cycle_api: (untyped settings) -> Datadog::CI::Transport::Api::CIIntake
+          def self.build_evp_proxy_api: (untyped agent_settings) -> Datadog::CI::Transport::Api::EVPProxy
         end
       end
     end
