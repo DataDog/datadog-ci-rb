@@ -40,7 +40,7 @@ RSpec.describe Datadog::CI::Transport::Api::EVPProxy do
     context "without container id" do
       let(:container_id) { nil }
 
-      it "produces correct headers and forwards request to HTTP layer" do
+      it "produces correct headers and forwards request to HTTP layer prepending path with evp_proxy" do
         expect(http).to receive(:request).with(
           path: "/evp_proxy/v2/path",
           payload: "payload",
@@ -58,7 +58,7 @@ RSpec.describe Datadog::CI::Transport::Api::EVPProxy do
     context "with container id" do
       let(:container_id) { "container-id" }
 
-      it "produces correct headers and forwards request to HTTP layer" do
+      it "adds an additional Datadog-Container-ID header" do
         expect(http).to receive(:request).with(
           path: "/evp_proxy/v2/path",
           payload: "payload",

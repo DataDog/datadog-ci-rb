@@ -63,4 +63,30 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       end
     end
   end
+
+  describe ".build_evp_proxy_api" do
+    subject { described_class.build_evp_proxy_api(agent_settings) }
+
+    let(:agent_settings) do
+      Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings.new(
+        adapter: nil,
+        ssl: false,
+        hostname: "localhost",
+        port: 5555,
+        uds_path: nil,
+        timeout_seconds: 42,
+        deprecated_for_removal_transport_configuration_proc: nil
+      )
+    end
+
+    it "creates EVPProxy" do
+      expect(Datadog::CI::Transport::Api::EVPProxy).to receive(:new).with(
+        host: "localhost",
+        port: 5555,
+        ssl: false,
+        timeout: 42
+      )
+      subject
+    end
+  end
 end
