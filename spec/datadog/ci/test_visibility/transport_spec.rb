@@ -7,6 +7,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
   subject do
     described_class.new(
+      api: api,
       api_key: api_key,
       dd_env: dd_env,
       url: url,
@@ -15,6 +16,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
     )
   end
 
+  let(:api) { double(:api) }
   let(:api_key) { "api_key" }
   let(:dd_env) { nil }
   let(:url) { "https://citestcycle-intake.datad0ghq.com:443" }

@@ -67,6 +67,7 @@ module Datadog
             "https://#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{dd_site}:443"
 
           Datadog::CI::TestVisibility::Transport.new(
+            api: Transport::Api::Builder.build_ci_test_cycle_api(settings),
             api_key: settings.api_key,
             url: agentless_url,
             dd_env: settings.env

@@ -8,6 +8,7 @@ module Datadog
         attr_reader api_key: String
         attr_reader dd_env: String?
         attr_reader http: Datadog::CI::Transport::HTTP
+        attr_reader api: Datadog::CI::Transport::Api::Base
         attr_reader max_payload_size: Integer
 
         @api_key: String
@@ -17,6 +18,7 @@ module Datadog
         @max_payload_size: Integer
 
         def initialize: (
+          api: Datadog::CI::Transport::Api::Base,
           api_key: String,
           url: ::String,
           ?dd_env: ::String?,
