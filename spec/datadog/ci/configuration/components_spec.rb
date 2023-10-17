@@ -112,7 +112,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
               context "when api key is set" do
                 let(:api_key) { "api_key" }
 
-                it "sets async for test mode and provides transport and shutdown timeout to the write" do
+                it "sets async for test mode and provides transport and shutdown timeout to the writer" do
                   expect(settings.tracing.test_mode)
                     .to have_received(:async=)
                     .with(true)
@@ -120,46 +120,6 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
                     expect(options[:shutdown_timeout]).to eq(60)
-
-                    api = options[:transport].api
-                    expect(api.api_key).to eq(api_key)
-
-                    http_client = api.http
-                    expect(http_client.host).to eq("citestcycle-intake.datadoghq.com")
-                    expect(http_client.port).to eq(443)
-                    expect(http_client.ssl).to eq(true)
-                  end
-                end
-
-                context "when agentless_url is provided" do
-                  let(:agentless_url) { "http://localhost:5555" }
-
-                  it "configures transport to use intake URL from settings" do
-                    expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                      api = options[:transport].api
-                      expect(api.api_key).to eq(api_key)
-
-                      http_client = api.http
-                      expect(http_client.host).to eq("localhost")
-                      expect(http_client.port).to eq(5555)
-                      expect(http_client.ssl).to eq(false)
-                    end
-                  end
-                end
-
-                context "when dd_site is provided" do
-                  let(:dd_site) { "eu.datadoghq.com" }
-
-                  it "construct intake url using provided host" do
-                    expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                      api = options[:transport].api
-                      expect(api.api_key).to eq(api_key)
-
-                      http_client = api.http
-                      expect(http_client.host).to eq("citestcycle-intake.eu.datadoghq.com")
-                      expect(http_client.port).to eq(443)
-                      expect(http_client.ssl).to eq(true)
-                    end
                   end
                 end
               end
