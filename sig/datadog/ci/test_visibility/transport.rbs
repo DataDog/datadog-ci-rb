@@ -5,20 +5,16 @@ module Datadog
         DEFAULT_MAX_PAYLOAD_SIZE: Integer
 
         attr_reader serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)
-        attr_reader api_key: String
         attr_reader dd_env: String?
         attr_reader api: Datadog::CI::Transport::Api::Base
         attr_reader max_payload_size: Integer
 
-        @api_key: String
         @dd_env: String?
         @serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)
         @max_payload_size: Integer
 
         def initialize: (
           api: Datadog::CI::Transport::Api::Base,
-          api_key: String,
-          url: ::String,
           ?dd_env: ::String?,
           ?serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel),
           ?max_payload_size: Integer

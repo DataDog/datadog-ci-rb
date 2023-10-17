@@ -6,7 +6,7 @@ module Datadog
 
         def activate_ci!: (untyped settings) -> untyped
 
-        def build_agentless_transport: (untyped settings) -> Datadog::CI::TestVisibility::Transport
+        def build_test_visibility_transport: (untyped settings) -> Datadog::CI::TestVisibility::Transport
       end
     end
   end

@@ -17,7 +17,7 @@ module Datadog
         end
 
         def activate_ci!(settings)
-          agentless_transport = nil
+          test_visibility_transport = nil
 
           if settings.ci.agentless_mode_enabled
             if settings.api_key.nil?
@@ -34,7 +34,7 @@ module Datadog
               settings.ci.enabled = false
               return
             else
-              agentless_transport = build_agentless_transport(settings)
+              test_visibility_transport = build_test_visibility_transport(settings)
             end
           end
 
@@ -51,8 +51,8 @@ module Datadog
           settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Finished.new
 
           writer_options = settings.ci.writer_options
-          if agentless_transport
-            writer_options[:transport] = agentless_transport
+          if test_visibility_transport
+            writer_options[:transport] = test_visibility_transport
             writer_options[:shutdown_timeout] = 60
 
             settings.tracing.test_mode.async = true
@@ -61,15 +61,9 @@ module Datadog
           settings.tracing.test_mode.writer_options = writer_options
         end
 
-        def build_agentless_transport(settings)
-          dd_site = settings.site || "datadoghq.com"
-          agentless_url = settings.ci.agentless_url ||
-            "https://#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{dd_site}:443"
-
+        def build_test_visibility_transport(settings)
           Datadog::CI::TestVisibility::Transport.new(
             api: Transport::Api::Builder.build_ci_test_cycle_api(settings),
-            api_key: settings.api_key,
-            url: agentless_url,
             dd_env: settings.env
           )
         end

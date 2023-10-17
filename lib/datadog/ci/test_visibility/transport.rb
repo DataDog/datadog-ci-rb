@@ -21,20 +21,16 @@ module Datadog
 
         attr_reader :serializers_factory,
           :api,
-          :api_key,
           :max_payload_size,
           :dd_env
 
         def initialize(
-          api_key:,
-          url:,
           api:,
           dd_env: nil,
           serializers_factory: Datadog::CI::TestVisibility::Serializers::Factories::TestLevel,
           max_payload_size: DEFAULT_MAX_PAYLOAD_SIZE
         )
           @serializers_factory = serializers_factory
-          @api_key = api_key
           @max_payload_size = max_payload_size
           @dd_env = dd_env
           @api = api
