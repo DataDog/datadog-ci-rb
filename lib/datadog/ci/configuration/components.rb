@@ -69,7 +69,7 @@ module Datadog
           Datadog::CI::TestVisibility::Transport.new(
             api_key: settings.api_key,
             url: agentless_url,
-            env: settings.env
+            dd_env: settings.env
           )
         end
       end
