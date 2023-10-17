@@ -8,7 +8,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
   subject do
     described_class.new(
       api_key: api_key,
-      env: env,
+      dd_env: dd_env,
       url: url,
       serializers_factory: serializers_factory,
       max_payload_size: max_payload_size
@@ -16,7 +16,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
   end
 
   let(:api_key) { "api_key" }
-  let(:env) { nil }
+  let(:dd_env) { nil }
   let(:url) { "https://citestcycle-intake.datad0ghq.com:443" }
   let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestLevel }
   let(:max_payload_size) { 4 * 1024 * 1024 }
@@ -62,8 +62,8 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
     end
 
-    context "with env defined" do
-      let(:env) { "ci" }
+    context "with dd_env defined" do
+      let(:dd_env) { "ci" }
       before do
         produce_test_trace
       end
