@@ -10,7 +10,7 @@ module Datadog
         HEADER_EVP_SUBDOMAIN = "X-Datadog-EVP-Subdomain"
         HEADER_CONTAINER_ID = "Datadog-Container-ID"
 
-        EVP_PROXY_PATH_PREFIX = "/evp_proxy/v2"
+        EVP_PROXY_PATH_PREFIX = "/evp_proxy/v2/"
         TEST_VISIBILITY_INTAKE_HOST_PREFIX = "citestcycle-intake"
         TEST_VISIBILITY_INTAKE_PATH = "/api/v2/citestcycle"
 

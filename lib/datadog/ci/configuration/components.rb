@@ -52,7 +52,7 @@ module Datadog
 
         def can_use_evp_proxy?(settings, agent_settings)
           Datadog::Core::Remote::Negotiation.new(settings, agent_settings).endpoint?(
-            "#{Ext::Transport::EVP_PROXY_PATH_PREFIX}/"
+            Ext::Transport::EVP_PROXY_PATH_PREFIX
           )
         end
 

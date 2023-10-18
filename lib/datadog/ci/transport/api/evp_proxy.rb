@@ -21,7 +21,7 @@ module Datadog
           end
 
           def request(path:, payload:, verb: "post")
-            path = "#{Ext::Transport::EVP_PROXY_PATH_PREFIX}#{path}"
+            path = "#{Ext::Transport::EVP_PROXY_PATH_PREFIX}#{path.sub(/^\//, "")}"
 
             http.request(
               path: path,

@@ -40,18 +40,36 @@ RSpec.describe Datadog::CI::Transport::Api::EVPProxy do
     context "without container id" do
       let(:container_id) { nil }
 
-      it "produces correct headers and forwards request to HTTP layer prepending path with evp_proxy" do
-        expect(http).to receive(:request).with(
-          path: "/evp_proxy/v2/path",
-          payload: "payload",
-          verb: "post",
-          headers: {
-            "Content-Type" => "application/msgpack",
-            "X-Datadog-EVP-Subdomain" => "citestcycle-intake"
-          }
-        )
+      context "with path starting from / character" do
+        it "produces correct headers and forwards request to HTTP layer prepending path with evp_proxy" do
+          expect(http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: {
+              "Content-Type" => "application/msgpack",
+              "X-Datadog-EVP-Subdomain" => "citestcycle-intake"
+            }
+          )
 
-        subject.request(path: "/path", payload: "payload")
+          subject.request(path: "/path", payload: "payload")
+        end
+      end
+
+      context "with path without / in the beginning" do
+        it "constructs evp proxy path correctly" do
+          expect(http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: {
+              "Content-Type" => "application/msgpack",
+              "X-Datadog-EVP-Subdomain" => "citestcycle-intake"
+            }
+          )
+
+          subject.request(path: "path", payload: "payload")
+        end
       end
     end
 
