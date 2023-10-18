@@ -41,8 +41,6 @@ module Datadog
               "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
           end
 
-          Datadog.logger.debug(headers)
-
           ResponseDecorator.new(
             adapter.call(
               build_env(path: path, payload: payload, headers: headers, verb: verb)

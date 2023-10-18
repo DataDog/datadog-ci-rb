@@ -54,6 +54,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .to receive(:api_key)
             .and_return(api_key)
 
+          negotiation = double(:negotiation)
+
+          allow(Datadog::Core::Remote::Negotiation)
+            .to receive(:new)
+            .and_return(negotiation)
+
+          allow(negotiation)
+            .to receive(:endpoint?).with("/evp_proxy/v2/")
+            .and_return(evp_proxy_supported)
+
           # Spy on test mode behavior
           allow(settings.tracing.test_mode)
             .to receive(:enabled=)
@@ -79,6 +89,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:api_key) { nil }
         let(:agentless_url) { nil }
         let(:dd_site) { nil }
+        let(:evp_proxy_supported) { false }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -87,22 +98,38 @@ RSpec.describe Datadog::CI::Configuration::Components do
             context "is disabled" do
               let(:agentless_enabled) { false }
 
-              it do
-                expect(settings.tracing.test_mode)
-                  .to have_received(:enabled=)
-                  .with(true)
+              context "and when agent supports EVP proxy" do
+                let(:evp_proxy_supported) { true }
+
+                it "sets async for test mode and constructs transport with EVP proxy API" do
+                  expect(settings.tracing.test_mode)
+                    .to have_received(:async=)
+                    .with(true)
+
+                  expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
+                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
+                    expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::EVPProxy)
+                    expect(options[:shutdown_timeout]).to eq(60)
+                  end
+                end
               end
 
-              it do
-                expect(settings.tracing.test_mode)
-                  .to have_received(:trace_flush=)
-                  .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Finished))
-              end
+              context "and when agent does not support EVP proxy" do
+                let(:evp_proxy_supported) { false }
 
-              it do
-                expect(settings.tracing.test_mode)
-                  .to have_received(:writer_options=)
-                  .with(settings.ci.writer_options)
+                it "falls back to default transport" do
+                  expect(settings.tracing.test_mode)
+                    .to have_received(:enabled=)
+                    .with(true)
+
+                  expect(settings.tracing.test_mode)
+                    .to have_received(:trace_flush=)
+                    .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Finished))
+
+                  expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
+                    expect(options[:transport]).to be_nil
+                  end
+                end
               end
             end
 
@@ -112,13 +139,14 @@ RSpec.describe Datadog::CI::Configuration::Components do
               context "when api key is set" do
                 let(:api_key) { "api_key" }
 
-                it "sets async for test mode and provides transport and shutdown timeout to the writer" do
+                it "sets async for test mode and constructs transport with CI intake API" do
                   expect(settings.tracing.test_mode)
                     .to have_received(:async=)
                     .with(true)
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
+                    expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::CIIntake)
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
                 end

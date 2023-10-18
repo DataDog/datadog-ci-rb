@@ -72,6 +72,8 @@ module Datadog
 
             nil
           else
+            Datadog.logger.debug("CI visibility configured to use agentless transport")
+
             Datadog::CI::TestVisibility::Transport.new(
               api: Transport::Api::Builder.build_ci_test_cycle_api(settings),
               dd_env: settings.env
@@ -80,6 +82,8 @@ module Datadog
         end
 
         def build_evp_proxy_transport(settings, agent_settings)
+          Datadog.logger.debug("CI visibility configured to use agent transport via EVP proxy")
+
           Datadog::CI::TestVisibility::Transport.new(
             api: Transport::Api::Builder.build_evp_proxy_api(agent_settings),
             dd_env: settings.env
