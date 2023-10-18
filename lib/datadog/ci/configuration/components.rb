@@ -2,6 +2,7 @@
 
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/transport"
+require_relative "../transport/api/builder"
 
 module Datadog
   module CI
