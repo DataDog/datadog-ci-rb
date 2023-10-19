@@ -45,7 +45,9 @@ namespace :test do
   task all: TEST_METADATA.map { |k, _| "test:#{k}" }
 
   ruby_version = RUBY_VERSION[0..2]
-  ruby_runtime = "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
+  major, minor, = Gem::Version.new(RUBY_ENGINE_VERSION).segments
+
+  ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
   TEST_METADATA.each do |key, spec_metadata|
     spec_task = "spec:#{key}"

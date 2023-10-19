@@ -4,8 +4,6 @@ services:
   datadog-ci-2.7:
     image: ghcr.io/datadog/dd-trace-rb/ruby:2.7.6-dd
     command: /bin/bash
-    depends_on:
-      - ddagent
     env_file: ./.env
     environment: &common-environment
       BUNDLE_GEMFILE: /app/Gemfile-2.7
@@ -22,8 +20,6 @@ services:
   datadog-ci-3.0:
     image: ghcr.io/datadog/dd-trace-rb/ruby:3.0.4-dd
     command: /bin/bash
-    depends_on:
-      - ddagent
     env_file: ./.env
     environment: &common-environment-3x
       BUNDLE_GEMFILE: /app/Gemfile-3.0
@@ -38,8 +34,6 @@ services:
   datadog-ci-3.1:
     image: ghcr.io/datadog/dd-trace-rb/ruby:3.1.2-dd
     command: /bin/bash
-    depends_on:
-      - ddagent
     env_file: ./.env
     environment:
       <<: *common-environment-3x
@@ -54,8 +48,6 @@ services:
   datadog-ci-3.2:
     image: ghcr.io/datadog/dd-trace-rb/ruby:3.2.0-dd
     command: /bin/bash
-    depends_on:
-      - ddagent
     env_file: ./.env
     environment:
       <<: *common-environment-3x
@@ -70,8 +62,6 @@ services:
   datadog-ci-3.3:
     image: ghcr.io/datadog/dd-trace-rb/ruby:3.3.0-dd
     command: /bin/bash
-    depends_on:
-      - ddagent
     env_file: ./.env
     environment:
       <<: *common-environment-3x
@@ -87,8 +77,6 @@ services:
   datadog-ci-jruby-9.4:
     image: ghcr.io/datadog/dd-trace-rb/jruby:9.4.0.0-dd
     command: /bin/bash
-    depends_on:
-      - ddagent
     env_file: ./.env
     environment:
       <<: *common-environment
@@ -120,11 +108,11 @@ volumes:
   bundle-3.0:
   bundle-3.1:
   bundle-3.2:
-  bundle-3.3:
-  # ADD NEW RUBIES HERE
+  bundle-3.3: # ADD NEW RUBIES HERE
+
   bundle-jruby-9.4:
-  ddagent_var_run:
-  # Temporary folder used while compiling the profiling native extension. We place this in a volume to avoid the
+  ddagent_var_run: # Temporary folder used while compiling the profiling native extension. We place this in a volume to avoid the
+
   # massive performance hit (seconds to minutes) that we get when the tmp folder is shared with the host on macOS.
   # Hopefully this will be fixed by
   # https://www.docker.com/blog/speed-boost-achievement-unlocked-on-docker-desktop-4-6-for-mac/
