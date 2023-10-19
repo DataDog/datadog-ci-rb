@@ -12,6 +12,10 @@ module Datadog
           # Codefresh: https://codefresh.io/
           # Environment variables docs: https://codefresh.io/docs/docs/pipelines/variables/#export-variables-to-all-steps-with-cf_export
           class Codefresh < Base
+            def self.handles?(env)
+              env.key?("CF_BUILD_ID")
+            end
+
             def provider_name
               "codefresh"
             end

@@ -8,6 +8,10 @@ module Datadog
           class Base
             attr_reader :env
 
+            def self.handles?(_env)
+              false
+            end
+
             def initialize(env)
               @env = env
             end

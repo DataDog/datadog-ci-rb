@@ -8,6 +8,8 @@ module Datadog
             @branch: String?
             @tag: String?
 
+            def self.handles?: (Hash[String, String?] env) -> bool
+
             def initialize: (Hash[String, String?] env) -> void
 
             def job_name: () -> nil

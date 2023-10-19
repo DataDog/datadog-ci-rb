@@ -3,7 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          PROVIDERS: ::Array[[String, untyped]]
+          PROVIDERS: ::Array[untyped]
 
           def self.for_environment: (Hash[String, String?] env) -> Providers::Base
         end

@@ -24,23 +24,23 @@ module Datadog
       module Environment
         module Providers
           PROVIDERS = [
-            ["APPVEYOR", Providers::Appveyor],
-            ["TF_BUILD", Providers::Azure],
-            ["BITBUCKET_COMMIT", Providers::Bitbucket],
-            ["BITRISE_BUILD_SLUG", Providers::Bitrise],
-            ["BUDDY", Providers::Buddy],
-            ["BUILDKITE", Providers::Buildkite],
-            ["CIRCLECI", Providers::Circleci],
-            ["CF_BUILD_ID", Providers::Codefresh],
-            ["GITHUB_SHA", Providers::GithubActions],
-            ["GITLAB_CI", Providers::Gitlab],
-            ["JENKINS_URL", Providers::Jenkins],
-            ["TEAMCITY_VERSION", Providers::Teamcity],
-            ["TRAVIS", Providers::Travis]
+            Providers::Appveyor,
+            Providers::Azure,
+            Providers::Bitbucket,
+            Providers::Bitrise,
+            Providers::Buddy,
+            Providers::Buildkite,
+            Providers::Circleci,
+            Providers::Codefresh,
+            Providers::GithubActions,
+            Providers::Gitlab,
+            Providers::Jenkins,
+            Providers::Teamcity,
+            Providers::Travis
           ]
 
           def self.for_environment(env)
-            _, provider_klass = PROVIDERS.find { |provider_env_var, _| env.key?(provider_env_var) }
+            provider_klass = PROVIDERS.find { |klass| klass.handles?(env) }
             provider_klass = Providers::Base if provider_klass.nil?
 
             provider_klass.new(env)

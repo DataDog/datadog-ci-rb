@@ -10,6 +10,10 @@ module Datadog
           # Buddy: https://buddy.works/
           # Environment variables docs: https://buddy.works/docs/pipelines/environment-variables
           class Buddy < Base
+            def self.handles?(env)
+              env.key?("BUDDY")
+            end
+
             def provider_name
               "buddy"
             end

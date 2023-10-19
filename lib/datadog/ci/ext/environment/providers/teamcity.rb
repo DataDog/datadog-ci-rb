@@ -10,6 +10,10 @@ module Datadog
           # Teamcity: https://www.jetbrains.com/teamcity/
           # Environment variables docs: https://www.jetbrains.com/help/teamcity/predefined-build-parameters.html
           class Teamcity < Base
+            def self.handles?(env)
+              env.key?("TEAMCITY_VERSION")
+            end
+
             def provider_name
               "teamcity"
             end

@@ -13,6 +13,10 @@ module Datadog
           # Jenkins: https://www.jenkins.io/
           # Environment variables docs: https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#using-environment-variables
           class Jenkins < Base
+            def self.handles?(env)
+              env.key?("JENKINS_URL")
+            end
+
             def provider_name
               "jenkins"
             end

@@ -12,6 +12,10 @@ module Datadog
           # Github Actions: https://github.com/features/actions
           # Environment variables docs: https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
           class GithubActions < Base
+            def self.handles?(env)
+              env.key?("GITHUB_SHA")
+            end
+
             def provider_name
               "github"
             end
