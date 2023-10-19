@@ -12,6 +12,10 @@ module Datadog
           # Circle CI: https://circleci.com/
           # Environment variables docs: https://circleci.com/docs/variables/#built-in-environment-variables
           class Circleci < Base
+            def self.handles?(env)
+              env.key?("CIRCLECI")
+            end
+
             def provider_name
               "circleci"
             end

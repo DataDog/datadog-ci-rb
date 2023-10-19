@@ -10,6 +10,10 @@ module Datadog
           # Bitbucket Pipelines: https://bitbucket.org/product/features/pipelines
           # Environment variables docs: https://support.atlassian.com/bitbucket-cloud/docs/variables-and-secrets/
           class Bitbucket < Base
+            def self.handles?(env)
+              env.key?("BITBUCKET_COMMIT")
+            end
+
             # overridden methods
             def provider_name
               "bitbucket"

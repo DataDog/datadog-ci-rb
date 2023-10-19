@@ -10,6 +10,10 @@ module Datadog
           # Bitrise: https://bitrise.io/
           # Environment variables docs: https://devcenter.bitrise.io/en/references/available-environment-variables.html
           class Bitrise < Base
+            def self.handles?(env)
+              env.key?("BITRISE_BUILD_SLUG")
+            end
+
             def provider_name
               "bitrise"
             end

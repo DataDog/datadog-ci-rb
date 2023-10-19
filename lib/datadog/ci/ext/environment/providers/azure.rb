@@ -12,6 +12,10 @@ module Datadog
           # Azure Pipelines: https://azure.microsoft.com/en-us/products/devops/pipelines
           # Environment variables docs: https://learn.microsoft.com/en-us/azure/devops/pipelines/build/variables?view=azure-devops&tabs=yaml
           class Azure < Base
+            def self.handles?(env)
+              env.key?("TF_BUILD")
+            end
+
             def provider_name
               "azurepipelines"
             end

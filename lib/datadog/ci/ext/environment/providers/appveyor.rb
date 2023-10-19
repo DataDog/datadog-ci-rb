@@ -10,6 +10,10 @@ module Datadog
           # Appveyor: https://www.appveyor.com/
           # Environment variables docs: https://www.appveyor.com/docs/environment-variables/
           class Appveyor < Base
+            def self.handles?(env)
+              env.key?("APPVEYOR")
+            end
+
             def provider_name
               "appveyor"
             end

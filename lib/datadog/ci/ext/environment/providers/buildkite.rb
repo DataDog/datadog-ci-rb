@@ -12,6 +12,10 @@ module Datadog
           # Buildkite: https://buildkite.com/
           # Environment variables docs: https://buildkite.com/docs/pipelines/environment-variables
           class Buildkite < Base
+            def self.handles?(env)
+              env.key?("BUILDKITE")
+            end
+
             def provider_name
               "buildkite"
             end

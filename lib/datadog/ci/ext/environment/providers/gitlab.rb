@@ -10,6 +10,10 @@ module Datadog
           # Gitlab CI: https://docs.gitlab.com/ee/ci/
           # Environment variables docs: https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
           class Gitlab < Base
+            def self.handles?(env)
+              env.key?("GITLAB_CI")
+            end
+
             def provider_name
               "gitlab"
             end
