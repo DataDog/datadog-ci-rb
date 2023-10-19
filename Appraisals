@@ -69,7 +69,9 @@ with_minitest_gem
 with_rspec_gem
 with_cucumber_gem(versions: 3..8)
 
-ruby_runtime = "#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}"
+major, minor, = Gem::Version.new(RUBY_ENGINE_VERSION).segments
+
+ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
 appraisals.each do |appraisal|
   appraisal.name.prepend("#{ruby_runtime}-")

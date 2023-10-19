@@ -42,15 +42,6 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
   end
 
   def lockfile_prefix(ruby_version)
-    ruby_version = {
-      "2.7" => "2.7.6",
-      "3.0" => "3.0.4",
-      "3.1" => "3.1.2",
-      "3.2" => "3.2.0",
-      "3.3" => "3.3.0",
-      "jruby-9.4" => "jruby-9.4.0.0"
-    }[ruby_version]
-
     return "ruby_#{ruby_version}" if /^\d/.match?(ruby_version)
 
     ruby_version.tr("-", "_")
