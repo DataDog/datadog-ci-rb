@@ -2,6 +2,7 @@
 
 require_relative "providers/base"
 require_relative "providers/appveyor"
+require_relative "providers/aws_code_pipeline"
 require_relative "providers/azure"
 require_relative "providers/bitbucket"
 require_relative "providers/bitrise"
@@ -25,6 +26,7 @@ module Datadog
         module Providers
           PROVIDERS = [
             Providers::Appveyor,
+            Providers::AwsCodePipeline,
             Providers::Azure,
             Providers::Bitbucket,
             Providers::Bitrise,
