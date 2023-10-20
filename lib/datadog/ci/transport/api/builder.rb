@@ -9,7 +9,7 @@ module Datadog
       module Api
         module Builder
           def self.build_ci_test_cycle_api(settings)
-            dd_site = settings.site || "datadoghq.com"
+            dd_site = settings.site || Ext::Transport::DEFAULT_DD_SITE
             url = settings.ci.agentless_url ||
               "https://#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{dd_site}:443"
 

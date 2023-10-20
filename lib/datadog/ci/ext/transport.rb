@@ -4,6 +4,8 @@ module Datadog
   module CI
     module Ext
       module Transport
+        DEFAULT_DD_SITE = "datadoghq.com"
+
         HEADER_DD_API_KEY = "DD-API-KEY"
         HEADER_CONTENT_TYPE = "Content-Type"
         HEADER_CONTENT_ENCODING = "Content-Encoding"
