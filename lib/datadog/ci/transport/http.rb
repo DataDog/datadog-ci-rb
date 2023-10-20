@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "delegate"
-require "net/http"
 require "datadog/core/transport/http/adapters/net"
 require "datadog/core/transport/http/env"
 require "datadog/core/transport/request"
