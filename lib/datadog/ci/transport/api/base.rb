@@ -7,6 +7,10 @@ module Datadog
         class Base
           attr_reader :http
 
+          def initialize(http:)
+            @http = http
+          end
+
           def request(path:, payload:, verb: "post")
             http.request(
               path: path,

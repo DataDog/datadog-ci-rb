@@ -9,12 +9,14 @@ module Datadog
       module Api
         class EvpProxy < Base
           def initialize(host:, port:, ssl:, timeout:)
-            @http = Datadog::CI::Transport::HTTP.new(
-              host: host,
-              port: port,
-              ssl: ssl,
-              timeout: timeout,
-              compress: false
+            super(
+              http: Datadog::CI::Transport::HTTP.new(
+                host: host,
+                port: port,
+                ssl: ssl,
+                timeout: timeout,
+                compress: false
+              )
             )
           end
 
