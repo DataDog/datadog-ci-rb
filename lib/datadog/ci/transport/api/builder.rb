@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "ci_intake"
+require_relative "ci_test_cycle"
 require_relative "evp_proxy"
 
 module Datadog
@@ -13,7 +13,7 @@ module Datadog
             url = settings.ci.agentless_url ||
               "https://#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{dd_site}:443"
 
-            CIIntake.new(api_key: settings.api_key, url: url)
+            CiTestCycle.new(api_key: settings.api_key, url: url)
           end
 
           def self.build_evp_proxy_api(agent_settings)

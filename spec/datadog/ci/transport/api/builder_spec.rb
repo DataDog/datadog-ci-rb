@@ -35,7 +35,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
     end
 
     it "creates CI Intake" do
-      expect(Datadog::CI::Transport::Api::CIIntake).to receive(:new).with(
+      expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
         api_key: "api_key", url: "https://citestcycle-intake.datadoghq.com:443"
       )
       subject
@@ -45,7 +45,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       let(:agentless_url) { "http://localhost:5555" }
 
       it "configures transport to use intake URL from settings" do
-        expect(Datadog::CI::Transport::Api::CIIntake).to receive(:new).with(
+        expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
           api_key: "api_key", url: "http://localhost:5555"
         )
         subject
@@ -56,7 +56,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       let(:dd_site) { "datadoghq.eu" }
 
       it "construct intake url using provided host" do
-        expect(Datadog::CI::Transport::Api::CIIntake).to receive(:new).with(
+        expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
           api_key: "api_key", url: "https://citestcycle-intake.datadoghq.eu:443"
         )
         subject

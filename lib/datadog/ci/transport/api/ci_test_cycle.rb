@@ -7,7 +7,7 @@ module Datadog
   module CI
     module Transport
       module Api
-        class CIIntake < Base
+        class CiTestCycle < Base
           attr_reader :api_key, :http
 
           def initialize(api_key:, url:)
