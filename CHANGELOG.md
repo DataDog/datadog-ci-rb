@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [0.3.0] - 2023-10-24
+
+### Added
+
+* Add AWS CodePipeline support for automatic CI tags extraction ([#54][])
+* Support test visibility protocol via Datadog Agent with EVP proxy ([#51][])
+
+### Changed
+
+* Migrate to Net::HTTP adapter from Core module of ddtrace gem ([#49][])
+
 ## [0.2.0] - 2023-10-05
 
 ### Added
@@ -36,7 +47,8 @@
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.2.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.3.0...main
+[0.3.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.1.0...v0.1.1
 
@@ -51,3 +63,6 @@
 [#31]: https://github.com/DataDog/datadog-ci-rb/issues/31
 [#33]: https://github.com/DataDog/datadog-ci-rb/issues/33
 [#40]: https://github.com/DataDog/datadog-ci-rb/issues/40
+[#49]: https://github.com/DataDog/datadog-ci-rb/issues/49
+[#51]: https://github.com/DataDog/datadog-ci-rb/issues/51
+[#54]: https://github.com/DataDog/datadog-ci-rb/issues/54
