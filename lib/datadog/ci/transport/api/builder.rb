@@ -2,6 +2,8 @@
 
 require_relative "ci_test_cycle"
 require_relative "evp_proxy"
+require_relative "../http"
+require_relative "../../ext/transport"
 
 module Datadog
   module CI

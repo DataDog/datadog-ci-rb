@@ -9,7 +9,6 @@ require "datadog/core/chunker"
 
 require_relative "serializers/factories/test_level"
 require_relative "../ext/transport"
-require_relative "../transport/http"
 
 module Datadog
   module CI

@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
+require "datadog/core/environment/container"
+
 require_relative "base"
-require_relative "../http"
+require_relative "../../ext/transport"
 
 module Datadog
   module CI

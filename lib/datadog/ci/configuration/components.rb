@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require "datadog/core/configuration/agent_settings_resolver"
+require "datadog/core/remote/negotiation"
+
+require_relative "../ext/transport"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
