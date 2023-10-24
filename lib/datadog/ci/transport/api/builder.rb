@@ -17,12 +17,15 @@ module Datadog
           end
 
           def self.build_evp_proxy_api(agent_settings)
-            EvpProxy.new(
+            http = Datadog::CI::Transport::HTTP.new(
               host: agent_settings.hostname,
               port: agent_settings.port,
               ssl: agent_settings.ssl,
-              timeout: agent_settings.timeout_seconds
+              timeout: agent_settings.timeout_seconds,
+              compress: false
             )
+
+            EvpProxy.new(http: http)
           end
         end
       end

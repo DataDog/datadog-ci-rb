@@ -5,6 +5,8 @@ module Datadog
         class Base
           attr_reader http: Datadog::CI::Transport::HTTP
 
+          @http: Datadog::CI::Transport::HTTP
+
           def initialize: (http: Datadog::CI::Transport::HTTP) -> void
 
           def request: (path: String, payload: String, ?verb: ::String) -> untyped

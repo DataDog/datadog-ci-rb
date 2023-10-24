@@ -8,18 +8,6 @@ module Datadog
     module Transport
       module Api
         class EvpProxy < Base
-          def initialize(host:, port:, ssl:, timeout:)
-            super(
-              http: Datadog::CI::Transport::HTTP.new(
-                host: host,
-                port: port,
-                ssl: ssl,
-                timeout: timeout,
-                compress: false
-              )
-            )
-          end
-
           def request(path:, payload:, verb: "post")
             path = "#{Ext::Transport::EVP_PROXY_PATH_PREFIX}#{path.sub(/^\//, "")}"
 

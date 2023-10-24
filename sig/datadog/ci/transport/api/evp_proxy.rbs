@@ -3,13 +3,7 @@ module Datadog
     module Transport
       module Api
         class EvpProxy < Base
-          @http: Datadog::CI::Transport::HTTP
-
           @container_id: String?
-
-          attr_reader http: Datadog::CI::Transport::HTTP
-
-          def initialize: (host: String, port: Integer, ssl: bool, timeout: Integer) -> void
 
           def request: (path: String, payload: String, ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 

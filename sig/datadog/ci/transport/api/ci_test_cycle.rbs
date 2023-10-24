@@ -4,10 +4,8 @@ module Datadog
       module Api
         class CiTestCycle < Base
           attr_reader api_key: String
-          attr_reader http: Datadog::CI::Transport::HTTP
 
           @api_key: String
-          @http: Datadog::CI::Transport::HTTP
 
           def initialize: (api_key: String, url: String) -> void
 

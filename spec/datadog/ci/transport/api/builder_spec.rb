@@ -67,6 +67,9 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
   describe ".build_evp_proxy_api" do
     subject { described_class.build_evp_proxy_api(agent_settings) }
 
+    let(:api) { double(:api) }
+    let(:http) { double(:http) }
+
     let(:agent_settings) do
       Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings.new(
         adapter: nil,
@@ -79,14 +82,18 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       )
     end
 
-    it "creates EvpProxy" do
-      expect(Datadog::CI::Transport::Api::EvpProxy).to receive(:new).with(
+    it "creates and configures http client and EvpProxy" do
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
         host: "localhost",
         port: 5555,
         ssl: false,
-        timeout: 42
-      )
-      subject
+        timeout: 42,
+        compress: false
+      ).and_return(http)
+
+      expect(Datadog::CI::Transport::Api::EvpProxy).to receive(:new).with(http: http).and_return(api)
+
+      expect(subject).to eq(api)
     end
   end
 end
