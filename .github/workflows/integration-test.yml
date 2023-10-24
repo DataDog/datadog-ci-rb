@@ -1,4 +1,4 @@
-name: "Integration test run"
+name: 'Integration test run'
 on:
   # Build each branch for testing
   push:
@@ -14,7 +14,7 @@ jobs:
           - ruby:3.2
     steps:
       - name: Checkout datadog-ci
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
