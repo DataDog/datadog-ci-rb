@@ -8,14 +8,14 @@ jobs:
     steps:
       - name: Get release version
         id: releaseVersion
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da # 6.1.0
+        uses: actions/github-script@v6
         with:
           result-encoding: string
           script: |
             return '${{ github.event.ref }}'.substring('bump_to_version_'.length);
       - name: Get milestone for version
         id: milestone
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da # 6.1.0
+        uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -35,7 +35,7 @@ jobs:
       - name: Generate release notes
         if: fromJSON(steps.milestone.outputs.result)
         id: generate
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da # 6.1.0
+        uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           result-encoding: string
@@ -79,7 +79,7 @@ jobs:
             return draftText
       - name: Create draft release
         if: fromJSON(steps.milestone.outputs.result)
-        uses: actions/github-script@7a5c598405937d486b0331594b5da2b14db670da # 6.1.0
+        uses: actions/github-script@v6
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
