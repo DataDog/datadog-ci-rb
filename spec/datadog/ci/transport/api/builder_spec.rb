@@ -15,6 +15,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
   describe ".build_ci_test_cycle_api" do
     subject { described_class.build_ci_test_cycle_api(settings) }
 
+    let(:api) { double(:api) }
+    let(:http) { double(:http) }
     let(:agentless_url) { nil }
     let(:dd_site) { nil }
     let(:api_key) { "api_key" }
@@ -34,21 +36,37 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
         .and_return(api_key)
     end
 
-    it "creates CI Intake" do
+    it "creates and configures http client and CiTestCycle" do
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: "citestcycle-intake.datadoghq.com",
+        port: 443,
+        ssl: true,
+        compress: true
+      ).and_return(http)
+
       expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
-        api_key: "api_key", url: "https://citestcycle-intake.datadoghq.com:443"
-      )
-      subject
+        api_key: "api_key", http: http
+      ).and_return(api)
+
+      expect(subject).to eq(api)
     end
 
     context "when agentless_url is provided" do
       let(:agentless_url) { "http://localhost:5555" }
 
       it "configures transport to use intake URL from settings" do
+        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+          host: "localhost",
+          port: 5555,
+          ssl: false,
+          compress: true
+        ).and_return(http)
+
         expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
-          api_key: "api_key", url: "http://localhost:5555"
-        )
-        subject
+          api_key: "api_key", http: http
+        ).and_return(api)
+
+        expect(subject).to eq(api)
       end
     end
 
@@ -56,10 +74,18 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       let(:dd_site) { "datadoghq.eu" }
 
       it "construct intake url using provided host" do
+        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+          host: "citestcycle-intake.datadoghq.eu",
+          port: 443,
+          ssl: true,
+          compress: true
+        ).and_return(http)
+
         expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
-          api_key: "api_key", url: "https://citestcycle-intake.datadoghq.eu:443"
-        )
-        subject
+          api_key: "api_key", http: http
+        ).and_return(api)
+
+        expect(subject).to eq(api)
       end
     end
   end

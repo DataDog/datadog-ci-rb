@@ -7,20 +7,6 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
 
   let(:http) { double(:http) }
 
-  # describe "#initialize" do
-  #   it "creates HTTP transport" do
-  #     expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-  #       host: host,
-  #       port: port,
-  #       ssl: ssl,
-  #       timeout: timeout,
-  #       compress: false
-  #     ).and_return(http)
-
-  #     subject
-  #   end
-  # end
-
   describe "#request" do
     before do
       allow(Datadog::CI::Transport::HTTP).to receive(:new).and_return(http)

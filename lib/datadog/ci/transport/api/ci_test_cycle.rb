@@ -10,20 +10,10 @@ module Datadog
         class CiTestCycle < Base
           attr_reader :api_key
 
-          def initialize(api_key:, url:)
+          def initialize(api_key:, http:)
             @api_key = api_key
 
-            uri = URI.parse(url)
-            raise "Invalid agentless mode URL: #{url}" if uri.host.nil?
-
-            super(
-              http: Datadog::CI::Transport::HTTP.new(
-                host: uri.host,
-                port: uri.port,
-                ssl: uri.scheme == "https" || uri.port == 443,
-                compress: true
-              )
-            )
+            super(http: http)
           end
 
           private

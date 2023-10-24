@@ -13,7 +13,17 @@ module Datadog
             url = settings.ci.agentless_url ||
               "https://#{Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX}.#{dd_site}:443"
 
-            CiTestCycle.new(api_key: settings.api_key, url: url)
+            uri = URI.parse(url)
+            raise "Invalid agentless mode URL: #{url}" if uri.host.nil?
+
+            http = Datadog::CI::Transport::HTTP.new(
+              host: uri.host,
+              port: uri.port,
+              ssl: uri.scheme == "https" || uri.port == 443,
+              compress: true
+            )
+
+            CiTestCycle.new(api_key: settings.api_key, http: http)
           end
 
           def self.build_evp_proxy_api(agent_settings)
