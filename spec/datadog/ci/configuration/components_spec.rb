@@ -108,7 +108,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
-                    expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::EVPProxy)
+                    expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::EvpProxy)
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
                 end

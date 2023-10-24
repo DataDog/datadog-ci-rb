@@ -17,7 +17,7 @@ module Datadog
           end
 
           def self.build_evp_proxy_api(agent_settings)
-            EVPProxy.new(
+            EvpProxy.new(
               host: agent_settings.hostname,
               port: agent_settings.port,
               ssl: agent_settings.ssl,

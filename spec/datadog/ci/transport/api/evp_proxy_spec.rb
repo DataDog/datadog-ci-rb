@@ -1,6 +1,6 @@
 require_relative "../../../../../lib/datadog/ci/transport/api/evp_proxy"
 
-RSpec.describe Datadog::CI::Transport::Api::EVPProxy do
+RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
   subject do
     described_class.new(
       host: host,

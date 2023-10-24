@@ -2,7 +2,7 @@ module Datadog
   module CI
     module Transport
       module Api
-        class EVPProxy < Base
+        class EvpProxy < Base
           @http: Datadog::CI::Transport::HTTP
 
           @container_id: String?

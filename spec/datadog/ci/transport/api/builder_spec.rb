@@ -79,8 +79,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       )
     end
 
-    it "creates EVPProxy" do
-      expect(Datadog::CI::Transport::Api::EVPProxy).to receive(:new).with(
+    it "creates EvpProxy" do
+      expect(Datadog::CI::Transport::Api::EvpProxy).to receive(:new).with(
         host: "localhost",
         port: 5555,
         ssl: false,

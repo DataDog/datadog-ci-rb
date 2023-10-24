@@ -7,7 +7,7 @@ module Datadog
   module CI
     module Transport
       module Api
-        class EVPProxy < Base
+        class EvpProxy < Base
           attr_reader :http
 
           def initialize(host:, port:, ssl:, timeout:)
