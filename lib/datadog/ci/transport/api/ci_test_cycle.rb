@@ -8,7 +8,7 @@ module Datadog
     module Transport
       module Api
         class CiTestCycle < Base
-          attr_reader :api_key, :http
+          attr_reader :api_key
 
           def initialize(api_key:, url:)
             @api_key = api_key
@@ -21,15 +21,6 @@ module Datadog
               port: uri.port,
               ssl: uri.scheme == "https" || uri.port == 443,
               compress: true
-            )
-          end
-
-          def request(path:, payload:, verb: "post")
-            http.request(
-              path: path,
-              payload: payload,
-              verb: verb,
-              headers: headers
             )
           end
 

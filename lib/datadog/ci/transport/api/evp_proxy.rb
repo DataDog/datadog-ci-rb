@@ -8,8 +8,6 @@ module Datadog
     module Transport
       module Api
         class EvpProxy < Base
-          attr_reader :http
-
           def initialize(host:, port:, ssl:, timeout:)
             @http = Datadog::CI::Transport::HTTP.new(
               host: host,
@@ -23,11 +21,10 @@ module Datadog
           def request(path:, payload:, verb: "post")
             path = "#{Ext::Transport::EVP_PROXY_PATH_PREFIX}#{path.sub(/^\//, "")}"
 
-            http.request(
+            super(
               path: path,
               payload: payload,
-              verb: verb,
-              headers: headers
+              verb: verb
             )
           end
 

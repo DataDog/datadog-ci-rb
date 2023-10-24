@@ -5,7 +5,15 @@ module Datadog
     module Transport
       module Api
         class Base
+          attr_reader :http
+
           def request(path:, payload:, verb: "post")
+            http.request(
+              path: path,
+              payload: payload,
+              verb: verb,
+              headers: headers
+            )
           end
 
           private

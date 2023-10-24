@@ -3,6 +3,8 @@ module Datadog
     module Transport
       module Api
         class Base
+          attr_reader http: Datadog::CI::Transport::HTTP
+
           def request: (path: String, payload: String, ?verb: ::String) -> untyped
 
           private
