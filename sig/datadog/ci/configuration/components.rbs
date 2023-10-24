@@ -6,7 +6,9 @@ module Datadog
 
         def activate_ci!: (untyped settings) -> untyped
 
-        def build_agentless_transport: (untyped settings) -> Datadog::CI::TestVisibility::Transport
+        def build_agentless_transport: (untyped settings) -> Datadog::CI::TestVisibility::Transport?
+        def build_evp_proxy_transport: (untyped settings, untyped agent_settings) -> Datadog::CI::TestVisibility::Transport
+        def can_use_evp_proxy?: (untyped settings, untyped agent_settings) -> bool
       end
     end
   end

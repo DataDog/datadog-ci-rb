@@ -9,7 +9,6 @@ require "datadog/core/chunker"
 
 require_relative "serializers/factories/test_level"
 require_relative "../ext/transport"
-require_relative "../transport/http"
 
 module Datadog
   module CI
@@ -20,33 +19,20 @@ module Datadog
         DEFAULT_MAX_PAYLOAD_SIZE = 5 * 1024 * 1024
 
         attr_reader :serializers_factory,
-          :api_key,
+          :api,
           :max_payload_size,
-          :http,
-          :env
+          :dd_env
 
         def initialize(
-          api_key:,
-          url:,
-          env: nil,
+          api:,
+          dd_env: nil,
           serializers_factory: Datadog::CI::TestVisibility::Serializers::Factories::TestLevel,
           max_payload_size: DEFAULT_MAX_PAYLOAD_SIZE
         )
           @serializers_factory = serializers_factory
-          @api_key = api_key
           @max_payload_size = max_payload_size
-          @env = env
-
-          uri = URI.parse(url)
-
-          raise "Invalid agentless mode URL: #{url}" if uri.host.nil?
-
-          @http = Datadog::CI::Transport::HTTP.new(
-            host: uri.host,
-            port: uri.port,
-            ssl: uri.scheme == "https" || uri.port == 443,
-            compress: true
-          )
+          @dd_env = dd_env
+          @api = api
         end
 
         def send_traces(traces)
@@ -82,13 +68,9 @@ module Datadog
         private
 
         def send_payload(encoded_payload)
-          http.request(
+          api.request(
             path: Datadog::CI::Ext::Transport::TEST_VISIBILITY_INTAKE_PATH,
-            payload: encoded_payload,
-            headers: {
-              Ext::Transport::HEADER_DD_API_KEY => api_key,
-              Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_MESSAGEPACK
-            }
+            payload: encoded_payload
           )
         end
 
@@ -141,12 +123,12 @@ module Datadog
           packer.write_map_header(1)
 
           packer.write("*")
-          metadata_fields_count = env ? 4 : 3
+          metadata_fields_count = dd_env ? 4 : 3
           packer.write_map_header(metadata_fields_count)
 
-          if env
+          if dd_env
             packer.write("env")
-            packer.write(env)
+            packer.write(dd_env)
           end
 
           packer.write("runtime-id")

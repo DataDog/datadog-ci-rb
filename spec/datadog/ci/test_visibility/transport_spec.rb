@@ -7,30 +7,18 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
   subject do
     described_class.new(
-      api_key: api_key,
-      env: env,
-      url: url,
+      api: api,
+      dd_env: dd_env,
       serializers_factory: serializers_factory,
       max_payload_size: max_payload_size
     )
   end
 
-  let(:api_key) { "api_key" }
-  let(:env) { nil }
-  let(:url) { "https://citestcycle-intake.datad0ghq.com:443" }
+  let(:dd_env) { nil }
   let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestLevel }
   let(:max_payload_size) { 4 * 1024 * 1024 }
 
-  let(:http) { spy(:http) }
-
-  before do
-    expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-      host: "citestcycle-intake.datad0ghq.com",
-      port: 443,
-      ssl: true,
-      compress: true
-    ).and_return(http)
-  end
+  let(:api) { spy(:api) }
 
   describe "#send_traces" do
     context "with a single trace and a single span" do
@@ -41,12 +29,8 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it "sends correct payload" do
         subject.send_traces([trace])
 
-        expect(http).to have_received(:request) do |args|
+        expect(api).to have_received(:request) do |args|
           expect(args[:path]).to eq("/api/v2/citestcycle")
-          expect(args[:headers]).to eq({
-            "DD-API-KEY" => "api_key",
-            "Content-Type" => "application/msgpack"
-          })
 
           payload = MessagePack.unpack(args[:payload])
           expect(payload["version"]).to eq(1)
@@ -62,8 +46,8 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
     end
 
-    context "with env defined" do
-      let(:env) { "ci" }
+    context "with dd_env defined" do
+      let(:dd_env) { "ci" }
       before do
         produce_test_trace
       end
@@ -71,7 +55,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it "sends correct payload including env" do
         subject.send_traces([trace])
 
-        expect(http).to have_received(:request) do |args|
+        expect(api).to have_received(:request) do |args|
           payload = MessagePack.unpack(args[:payload])
 
           metadata = payload["metadata"]["*"]
@@ -91,7 +75,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it "sends event for each of spans" do
         subject.send_traces(traces)
 
-        expect(http).to have_received(:request) do |args|
+        expect(api).to have_received(:request) do |args|
           payload = MessagePack.unpack(args[:payload])
           events = payload["events"]
           expect(events.count).to eq(expected_events_count)
@@ -109,7 +93,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it "filters out invalid events" do
           subject.send_traces(traces)
 
-          expect(http).to have_received(:request) do |args|
+          expect(api).to have_received(:request) do |args|
             payload = MessagePack.unpack(args[:payload])
 
             events = payload["events"]
@@ -129,7 +113,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it "filters out invalid events" do
           responses = subject.send_traces(traces)
 
-          expect(http).to have_received(:request).twice
+          expect(api).to have_received(:request).twice
           expect(responses.count).to eq(2)
         end
       end
@@ -142,7 +126,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it "does not send events that are larger than max size" do
           subject.send_traces(traces)
 
-          expect(http).not_to have_received(:request)
+          expect(api).not_to have_received(:request)
         end
       end
     end
@@ -157,7 +141,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it "does not send anything" do
         subject.send_traces(traces)
 
-        expect(http).not_to have_received(:request)
+        expect(api).not_to have_received(:request)
       end
     end
   end
