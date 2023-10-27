@@ -145,8 +145,8 @@ In order to achieve this you can configure ddtrace instrumentations in your conf
 ```ruby
 Datadog.configure do |c|
   #  ... ci configs and instrumentation here ...
-  c.instrument :redis
-  c.instrument :pg
+  c.tracing.instrument :redis
+  c.tracing.instrument :pg
 end
 ```
 
