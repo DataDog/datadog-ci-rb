@@ -3,13 +3,26 @@
 require_relative "ci/version"
 
 require "datadog/core"
+require "datadog/tracing"
 
 module Datadog
-  # Namespace for Datadog CI instrumentation:
-  # e.g. rspec, cucumber, etc...
+  # Public API for Datadog CI visibility
   module CI
-    class Error < StandardError; end
-    # Your code goes here...
+    module_function
+
+    def trace(span_type, span_name, span_options = {})
+      span_options[:resource] = span_name
+      span_options[:span_type] = span_type
+
+      if block_given?
+        Datadog::Tracing.trace(span_name, **span_options) do |tracer_span|
+          yield Span.new(tracer_span)
+        end
+      else
+        tracer_span = Datadog::Tracing.trace(span_name, **span_options)
+        Span.new(tracer_span)
+      end
+    end
   end
 end
 

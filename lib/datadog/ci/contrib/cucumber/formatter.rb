@@ -59,22 +59,18 @@ module Datadog
           end
 
           def on_test_step_started(event)
-            trace_options = {
-              resource: event.test_step.to_s,
-              span_type: Ext::STEP_SPAN_TYPE
-            }
-            @current_step_span = Tracing.trace(Ext::STEP_SPAN_TYPE, **trace_options)
+            @current_step_span = CI.trace(Ext::STEP_SPAN_TYPE, event.test_step.to_s)
           end
 
           def on_test_step_finished(event)
             return if @current_step_span.nil?
 
             if event.result.skipped?
-              CI::Recorder.skipped!(@current_step_span, event.result.exception)
+              @current_step_span.skipped!(@current_step_span)
             elsif event.result.ok?
-              CI::Recorder.passed!(@current_step_span)
+              @current_step_span.passed!
             elsif event.result.failed?
-              CI::Recorder.failed!(@current_step_span, event.result.exception)
+              @current_step_span.failed!(event.result.exception)
             end
 
             @current_step_span.finish
