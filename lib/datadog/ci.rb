@@ -25,11 +25,11 @@ module Datadog
       tags[:span_options] = span_options
 
       if block_given?
-        Recorder.trace(operation_name, tags) do |span|
+        Recorder.trace_test(operation_name, tags) do |span|
           yield Test.new(span)
         end
       else
-        tracer_span = Recorder.trace(operation_name, tags)
+        tracer_span = Recorder.trace_test(operation_name, tags)
         Test.new(tracer_span)
       end
     end
@@ -43,7 +43,7 @@ module Datadog
           yield Span.new(tracer_span)
         end
       else
-        tracer_span = ::Datadog::Tracing.trace(span_name, **span_options)
+        tracer_span = Datadog::Tracing.trace(span_name, **span_options)
         Span.new(tracer_span)
       end
     end

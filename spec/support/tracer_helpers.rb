@@ -22,20 +22,17 @@ module TracerHelpers
     )
     Timecop.freeze(start_time)
 
-    Datadog::CI::Recorder.trace(
+    Datadog::CI.trace_test(
+      test_name,
+      test_suite,
+      service,
       operation,
       {
-        span_options: {
-          resource: test_name,
-          service: service
-        },
         framework: framework,
         framework_version: "1.0.0",
-        test_name: test_name,
-        test_suite: test_suite,
         test_type: "test"
       }
-    ) do |span|
+    ) do |test|
       if with_http_span
         Datadog::Tracing.trace("http-call", type: "http", service: "net-http") do |span, trace|
           span.set_tag("custom_tag", "custom_tag_value")
@@ -48,11 +45,11 @@ module TracerHelpers
 
       case result
       when "FAILED"
-        Datadog::CI::Recorder.failed!(span, exception)
+        test.failed!(exception)
       when "SKIPPED"
-        Datadog::CI::Recorder.skipped!(span, exception)
+        test.skipped!(exception)
       else
-        Datadog::CI::Recorder.passed!(span)
+        test.passed!
       end
 
       Timecop.travel(start_time + duration_seconds)

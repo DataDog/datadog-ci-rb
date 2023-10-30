@@ -14,7 +14,7 @@ module Datadog
     # Common behavior for CI tests
     module Recorder
       # Creates a new span for a CI test
-      def self.trace(span_name, options = {})
+      def self.trace_test(span_name, options = {})
         span_options = {
           span_type: Ext::AppTypes::TYPE_TEST
         }.merge(options[:span_options] || {})

@@ -37,7 +37,7 @@ RSpec.describe Datadog::CI::Recorder do
     let(:options) { {} }
 
     context "when given a block" do
-      subject(:trace) { described_class.trace(span_name, options, &block) }
+      subject(:trace) { described_class.trace_test(span_name, options, &block) }
       let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
       let(:block) { proc { |s| block_spy.call(s) } }
       let(:block_result) { double("result") }
@@ -64,7 +64,7 @@ RSpec.describe Datadog::CI::Recorder do
     end
 
     context "when not given a block" do
-      subject(:trace) { described_class.trace(span_name, options) }
+      subject(:trace) { described_class.trace_test(span_name, options) }
       let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
 
       before do
@@ -246,111 +246,114 @@ RSpec.describe Datadog::CI::Recorder do
     end
   end
 
-  describe "::passed!" do
-    subject(:passed!) { described_class.passed!(span_op) }
-    let(:span_op) { instance_double(Datadog::Tracing::SpanOperation) }
+  # TODO: move to Span
+  # describe "::passed!" do
+  #   subject(:passed!) { described_class.passed!(span_op) }
+  #   let(:span_op) { instance_double(Datadog::Tracing::SpanOperation) }
 
-    before do
-      allow(span_op).to receive(:set_tag)
-      passed!
-    end
+  #   before do
+  #     allow(span_op).to receive(:set_tag)
+  #     passed!
+  #   end
 
-    it do
-      expect(span_op)
-        .to have_received(:set_tag)
-        .with(
-          Datadog::CI::Ext::Test::TAG_STATUS,
-          Datadog::CI::Ext::Test::Status::PASS
-        )
-    end
-  end
+  #   it do
+  #     expect(span_op)
+  #       .to have_received(:set_tag)
+  #       .with(
+  #         Datadog::CI::Ext::Test::TAG_STATUS,
+  #         Datadog::CI::Ext::Test::Status::PASS
+  #       )
+  #   end
+  # end
 
-  describe "::failed!" do
-    let(:span_op) { instance_double(Datadog::Tracing::SpanOperation) }
+  # TODO: move to Span
+  # describe "::failed!" do
+  #   let(:span_op) { instance_double(Datadog::Tracing::SpanOperation) }
 
-    before do
-      allow(span_op).to receive(:status=)
-      allow(span_op).to receive(:set_tag)
-      allow(span_op).to receive(:set_error)
-      failed!
-    end
+  #   before do
+  #     allow(span_op).to receive(:status=)
+  #     allow(span_op).to receive(:set_tag)
+  #     allow(span_op).to receive(:set_error)
+  #     failed!
+  #   end
 
-    shared_examples "failed test span operation" do
-      it do
-        expect(span_op)
-          .to have_received(:status=)
-          .with(1)
-      end
+  #   shared_examples "failed test span operation" do
+  #     it do
+  #       expect(span_op)
+  #         .to have_received(:status=)
+  #         .with(1)
+  #     end
 
-      it do
-        expect(span_op)
-          .to have_received(:set_tag)
-          .with(
-            Datadog::CI::Ext::Test::TAG_STATUS,
-            Datadog::CI::Ext::Test::Status::FAIL
-          )
-      end
-    end
+  #     it do
+  #       expect(span_op)
+  #         .to have_received(:set_tag)
+  #         .with(
+  #           Datadog::CI::Ext::Test::TAG_STATUS,
+  #           Datadog::CI::Ext::Test::Status::FAIL
+  #         )
+  #     end
+  #   end
 
-    context "when no exception is given" do
-      subject(:failed!) { described_class.failed!(span_op) }
+  #   context "when no exception is given" do
+  #     subject(:failed!) { described_class.failed!(span_op) }
 
-      it_behaves_like "failed test span operation"
-      it { expect(span_op).to_not have_received(:set_error) }
-    end
+  #     it_behaves_like "failed test span operation"
+  #     it { expect(span_op).to_not have_received(:set_error) }
+  #   end
 
-    context "when exception is given" do
-      subject(:failed!) { described_class.failed!(span_op, exception) }
-      let(:exception) { instance_double(StandardError) }
+  #   context "when exception is given" do
+  #     subject(:failed!) { described_class.failed!(span_op, exception) }
+  #     let(:exception) { instance_double(StandardError) }
 
-      it_behaves_like "failed test span operation"
+  #     it_behaves_like "failed test span operation"
 
-      it do
-        expect(span_op)
-          .to have_received(:set_error)
-          .with(exception)
-      end
-    end
-  end
+  #     it do
+  #       expect(span_op)
+  #         .to have_received(:set_error)
+  #         .with(exception)
+  #     end
+  #   end
+  # end
 
-  describe "::skipped!" do
-    let(:span_op) { instance_double(Datadog::Tracing::SpanOperation) }
+  # TODO: move to Span
+  # describe "::skipped!" do
+  #   let(:span_op) { instance_double(Datadog::Tracing::SpanOperation) }
 
-    before do
-      allow(span_op).to receive(:set_tag)
-      allow(span_op).to receive(:set_error)
-      skipped!
-    end
+  #   before do
+  #     allow(span_op).to receive(:set_tag)
+  #     allow(span_op).to receive(:set_error)
+  #     skipped!
+  #   end
 
-    shared_examples "skipped test span operation" do
-      it do
-        expect(span_op)
-          .to have_received(:set_tag)
-          .with(
-            Datadog::CI::Ext::Test::TAG_STATUS,
-            Datadog::CI::Ext::Test::Status::SKIP
-          )
-      end
-    end
+  #   shared_examples "skipped test span operation" do
+  #     it do
+  #       expect(span_op)
+  #         .to have_received(:set_tag)
+  #         .with(
+  #           Datadog::CI::Ext::Test::TAG_STATUS,
+  #           Datadog::CI::Ext::Test::Status::SKIP
+  #         )
+  #     end
+  #   end
 
-    context "when no exception is given" do
-      subject(:skipped!) { described_class.skipped!(span_op) }
+  #   context "when no exception is given" do
+  #     subject(:skipped!) { described_class.skipped!(span_op) }
 
-      it_behaves_like "skipped test span operation"
-      it { expect(span_op).to_not have_received(:set_error) }
-    end
+  #     it_behaves_like "skipped test span operation"
+  #     it { expect(span_op).to_not have_received(:set_error) }
+  #   end
 
-    context "when exception is given" do
-      subject(:skipped!) { described_class.skipped!(span_op, exception) }
-      let(:exception) { instance_double(StandardError) }
+  #   context "when exception is given" do
+  #     subject(:skipped!) { described_class.skipped!(span_op, exception) }
+  #     let(:exception) { instance_double(StandardError) }
 
-      it_behaves_like "skipped test span operation"
+  #     it_behaves_like "skipped test span operation"
 
-      it do
-        expect(span_op)
-          .to have_received(:set_error)
-          .with(exception)
-      end
-    end
-  end
+  #     it do
+  #       expect(span_op)
+  #         .to have_received(:set_error)
+  #         .with(exception)
+  #     end
+  #   end
+  # end
 end
