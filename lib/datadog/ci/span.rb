@@ -11,15 +11,19 @@ module Datadog
       end
 
       def passed!
-        CI::Recorder.passed!(@tracer_span)
+        tracer_span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::PASS)
       end
 
       def failed!(exception = nil)
-        CI::Recorder.failed!(@tracer_span, exception)
+        tracer_span.status = 1
+        tracer_span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::FAIL)
+        tracer_span.set_error(exception) unless exception.nil?
       end
 
       def skipped!(exception = nil, reason = nil)
-        CI::Recorder.skipped!(@tracer_span, exception, reason)
+        tracer_span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::SKIP)
+        tracer_span.set_error(exception) unless exception.nil?
+        tracer_span.set_tag(CI::Ext::Test::TAG_SKIP_REASON, reason) unless reason.nil?
       end
 
       def finish

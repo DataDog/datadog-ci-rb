@@ -39,11 +39,11 @@ module Datadog
       span_options[:span_type] = span_type
 
       if block_given?
-        Datadog::Tracing.trace(span_name, **span_options) do |tracer_span|
+        ::Datadog::Tracing.trace(span_name, **span_options) do |tracer_span|
           yield Span.new(tracer_span)
         end
       else
-        tracer_span = Datadog::Tracing.trace(span_name, **span_options)
+        tracer_span = ::Datadog::Tracing.trace(span_name, **span_options)
         Span.new(tracer_span)
       end
     end

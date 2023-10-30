@@ -57,22 +57,6 @@ module Datadog
         span
       end
 
-      def self.passed!(span)
-        span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::PASS)
-      end
-
-      def self.failed!(span, exception = nil)
-        span.status = 1
-        span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::FAIL)
-        span.set_error(exception) unless exception.nil?
-      end
-
-      def self.skipped!(span, exception = nil, reason = nil)
-        span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::SKIP)
-        span.set_error(exception) unless exception.nil?
-        span.set_tag(CI::Ext::Test::TAG_SKIP_REASON, reason) unless reason.nil?
-      end
-
       private_class_method def self.set_environment_runtime_tags!(span)
         span.set_tag(Ext::Test::TAG_OS_ARCHITECTURE, ::RbConfig::CONFIG["host_cpu"])
         span.set_tag(Ext::Test::TAG_OS_PLATFORM, ::RbConfig::CONFIG["host_os"])
