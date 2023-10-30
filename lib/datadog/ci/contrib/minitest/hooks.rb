@@ -19,41 +19,37 @@ module Datadog
             path, = method(name).source_location
             test_suite = Pathname.new(path.to_s).relative_path_from(Pathname.pwd).to_s
 
-            span = CI::Recorder.trace(
+            test_span = CI.trace_test(
+              test_name,
+              test_suite,
+              configuration[:service_name],
               configuration[:operation_name],
               {
-                span_options: {
-                  resource: test_name,
-                  service: configuration[:service_name]
-                },
                 framework: Ext::FRAMEWORK,
                 framework_version: CI::Contrib::Minitest::Integration.version.to_s,
-                test_name: test_name,
-                test_suite: test_suite,
                 test_type: Ext::TEST_TYPE
               }
             )
 
-            Thread.current[:_datadog_test_span] = span
+            @current_test_span = test_span
           end
 
           def after_teardown
-            span = Thread.current[:_datadog_test_span]
-            return super unless span
+            return super unless @current_test_span
 
             Thread.current[:_datadog_test_span] = nil
 
             case result_code
             when "."
-              CI::Recorder.passed!(span)
+              @current_test_span.passed!
             when "E", "F"
-              CI::Recorder.failed!(span, failure)
+              @current_test_span.failed!(failure)
             when "S"
-              CI::Recorder.skipped!(span)
-              span.set_tag(CI::Ext::Test::TAG_SKIP_REASON, failure.message)
+              @current_test_span.skipped!(nil, failure.message)
             end
 
-            span.finish
+            @current_test_span.finish
+            @current_test_span = nil
 
             super
           end

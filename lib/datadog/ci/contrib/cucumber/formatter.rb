@@ -28,17 +28,14 @@ module Datadog
           end
 
           def on_test_case_started(event)
-            @current_feature_span = CI::Recorder.trace(
+            @current_feature_span = CI.trace_test(
+              event.test_case.name,
+              event.test_case.location.file,
+              configuration[:service_name],
               configuration[:operation_name],
               {
-                span_options: {
-                  resource: event.test_case.name,
-                  service: configuration[:service_name]
-                },
                 framework: Ext::FRAMEWORK,
                 framework_version: CI::Contrib::Cucumber::Integration.version.to_s,
-                test_name: event.test_case.name,
-                test_suite: event.test_case.location.file,
                 test_type: Ext::TEST_TYPE
               }
             )
@@ -48,11 +45,11 @@ module Datadog
             return if @current_feature_span.nil?
 
             if event.result.skipped?
-              CI::Recorder.skipped!(@current_feature_span)
+              @current_feature_span.skipped!
             elsif event.result.ok?
-              CI::Recorder.passed!(@current_feature_span)
+              @current_feature_span.passed!
             elsif event.result.failed?
-              CI::Recorder.failed!(@current_feature_span)
+              @current_feature_span.failed!
             end
 
             @current_feature_span.finish

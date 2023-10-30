@@ -15,11 +15,15 @@ module Datadog
       end
 
       def failed!(exception = nil)
-        CI::Recorder.failed!(@current_step_span, exception)
+        CI::Recorder.failed!(@tracer_span, exception)
       end
 
-      def skipped!(exception = nil)
-        CI::Recorder.skipped!(@current_step_span, exception)
+      def skipped!(exception = nil, reason = nil)
+        CI::Recorder.skipped!(@tracer_span, exception, reason)
+      end
+
+      def finish
+        tracer_span.finish
       end
     end
   end

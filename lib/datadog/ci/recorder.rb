@@ -67,9 +67,10 @@ module Datadog
         span.set_error(exception) unless exception.nil?
       end
 
-      def self.skipped!(span, exception = nil)
+      def self.skipped!(span, exception = nil, reason = nil)
         span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::SKIP)
         span.set_error(exception) unless exception.nil?
+        span.set_tag(CI::Ext::Test::TAG_SKIP_REASON, reason) unless reason.nil?
       end
 
       private_class_method def self.set_environment_runtime_tags!(span)
