@@ -14,15 +14,8 @@ module Datadog
   module CI
     module_function
 
-    def trace_test(test_name, service_name: nil, operation_name: nil, tags: {})
-      if block_given?
-        Recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags) do |span|
-          yield Test.new(span)
-        end
-      else
-        tracer_span = Recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags)
-        Test.new(tracer_span)
-      end
+    def trace_test(test_name, service_name: nil, operation_name: nil, tags: {}, &block)
+      Recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
     end
 
     def trace(span_type, span_name, &block)

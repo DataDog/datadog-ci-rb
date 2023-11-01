@@ -26,13 +26,13 @@ module Datadog
         if block_given?
           ::Datadog::Tracing.trace(operation_name, **span_options) do |span, trace|
             set_tags!(trace, span, tags)
-            yield(span, trace)
+            yield(Test.new(span))
           end
         else
           span = ::Datadog::Tracing.trace(operation_name, **span_options)
           trace = ::Datadog::Tracing.active_trace
           set_tags!(trace, span, tags)
-          span
+          Test.new(span)
         end
       end
 

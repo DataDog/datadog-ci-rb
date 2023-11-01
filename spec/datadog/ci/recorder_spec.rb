@@ -50,6 +50,7 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
+      let(:ci_test) { instance_double(Datadog::CI::Test) }
       let(:block) { proc { |s| block_spy.call(s) } }
       let(:block_result) { double("result") }
       let(:block_spy) { spy("block") }
@@ -71,12 +72,13 @@ RSpec.describe Datadog::CI::Recorder do
           end
 
         allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
+        allow(Datadog::CI::Test).to receive(:new).with(span_op).and_return(ci_test)
 
         trace
       end
 
       it_behaves_like "default test span operation tags"
-      it { expect(block_spy).to have_received(:call).with(span_op) }
+      it { expect(block_spy).to have_received(:call).with(ci_test) }
       it { is_expected.to be(block_result) }
     end
 
@@ -90,6 +92,7 @@ RSpec.describe Datadog::CI::Recorder do
         )
       end
       let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
+      let(:ci_test) { instance_double(Datadog::CI::Test) }
 
       before do
         allow(Datadog::Tracing)
@@ -105,12 +108,13 @@ RSpec.describe Datadog::CI::Recorder do
           .and_return(span_op)
 
         allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
+        allow(Datadog::CI::Test).to receive(:new).with(span_op).and_return(ci_test)
 
         trace
       end
 
       it_behaves_like "default test span operation tags"
-      it { is_expected.to be(span_op) }
+      it { is_expected.to be(ci_test) }
     end
   end
 
