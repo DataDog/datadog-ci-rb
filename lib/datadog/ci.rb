@@ -6,8 +6,6 @@ require "datadog/core"
 require "datadog/tracing"
 
 require_relative "ci/recorder"
-require_relative "ci/span"
-require_relative "ci/test"
 
 module Datadog
   # Public API for Datadog CI visibility
@@ -16,8 +14,8 @@ module Datadog
       Recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
     end
 
-    def self.trace(span_type, span_name, &block)
-      Recorder.trace(span_type, span_name, &block)
+    def self.trace(span_type, span_name, tags: {}, &block)
+      Recorder.trace(span_type, span_name, tags: tags, &block)
     end
   end
 end

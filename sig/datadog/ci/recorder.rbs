@@ -3,13 +3,15 @@ module Datadog
     module Recorder
       self.@environment_tags: Hash[String, String]
 
-      def self.trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+      def self.trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-      def self.trace: (String span_type, String span_name) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
-
-      def self.set_tags!: (Datadog::Tracing::TraceOperation trace, Datadog::Tracing::SpanOperation span, ?::Hash[untyped, untyped] tags)  -> untyped
+      def self.trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
       def self.set_environment_runtime_tags!: (Datadog::Tracing::SpanOperation span) -> untyped
+
+      def self.set_internal_tracing_context!: (Datadog::Tracing::TraceOperation trace, Datadog::Tracing::SpanOperation span) -> untyped
+
+      def self.environment_tags: -> Hash[String, String]
     end
   end
 end

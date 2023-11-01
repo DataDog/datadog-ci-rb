@@ -1,7 +1,7 @@
 module Datadog
   module CI
-    def self.trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+    def self.trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-    def self.trace: (String span_type, String span_name) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+    def self.trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
   end
 end

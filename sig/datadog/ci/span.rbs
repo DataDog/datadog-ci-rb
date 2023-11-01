@@ -5,7 +5,7 @@ module Datadog
 
       attr_reader tracer_span: Datadog::Tracing::SpanOperation
 
-      def initialize: (Datadog::Tracing::SpanOperation tracer_span) -> void
+      def initialize: (Datadog::Tracing::SpanOperation tracer_span, ?Hash[untyped, untyped]? tags) -> void
 
       def passed!: () -> void
 
@@ -13,7 +13,17 @@ module Datadog
 
       def skipped!: (?untyped? exception, ?String? reason) -> void
 
+      def set_tag: (String key, untyped? value) -> untyped
+
+      def set_metric: (String key, untyped value) -> untyped
+
       def finish: () -> untyped
+
+      private
+
+      def set_tags!: (Hash[untyped, untyped] tags) -> void
+
+      def set_environment_runtime_tags!: () -> void
     end
   end
 end

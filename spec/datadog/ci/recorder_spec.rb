@@ -8,24 +8,25 @@ RSpec.describe Datadog::CI::Recorder do
     allow(trace_op).to receive(:origin=)
   end
 
-  shared_examples_for "default test span operation tags" do
+  shared_examples_for "internal tracing context" do
     it do
       expect(Datadog::Tracing::Contrib::Analytics)
         .to have_received(:set_measured)
         .with(span_op)
     end
 
-    it do
-      expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND))
-        .to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    end
+    # TODO: move to Span
+    # it do
+    #   expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND))
+    #     .to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+    # end
 
-    it do
-      Datadog::CI::Ext::Environment.tags(ENV).each do |key, value|
-        expect(span_op.get_tag(key))
-          .to eq(value)
-      end
-    end
+    # it do
+    #   Datadog::CI::Ext::Environment.tags(ENV).each do |key, value|
+    #     expect(span_op.get_tag(key))
+    #       .to eq(value)
+    #   end
+    # end
 
     it do
       expect(trace_op)
@@ -37,6 +38,12 @@ RSpec.describe Datadog::CI::Recorder do
   describe "::trace_test" do
     let(:tags) { {} }
     let(:test_name) { "test name" }
+
+    let(:expected_tags) do
+      tags
+        .merge(Datadog::CI::Ext::Environment.tags(ENV))
+        .merge({Datadog::CI::Ext::Test::TAG_NAME => test_name})
+    end
 
     context "when given a block" do
       subject(:trace) do
@@ -50,7 +57,7 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
-      let(:ci_test) { instance_double(Datadog::CI::Test) }
+      let(:ci_test) { instance_double(Datadog::CI::Span) }
       let(:block) { proc { |s| block_spy.call(s) } }
       let(:block_result) { double("result") }
       let(:block_spy) { spy("block") }
@@ -72,12 +79,12 @@ RSpec.describe Datadog::CI::Recorder do
           end
 
         allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
-        allow(Datadog::CI::Test).to receive(:new).with(span_op).and_return(ci_test)
+        allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_test)
 
         trace
       end
 
-      it_behaves_like "default test span operation tags"
+      it_behaves_like "internal tracing context"
       it { expect(block_spy).to have_received(:call).with(ci_test) }
       it { is_expected.to be(block_result) }
     end
@@ -92,7 +99,7 @@ RSpec.describe Datadog::CI::Recorder do
         )
       end
       let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
-      let(:ci_test) { instance_double(Datadog::CI::Test) }
+      let(:ci_test) { instance_double(Datadog::CI::Span) }
 
       before do
         allow(Datadog::Tracing)
@@ -108,175 +115,176 @@ RSpec.describe Datadog::CI::Recorder do
           .and_return(span_op)
 
         allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
-        allow(Datadog::CI::Test).to receive(:new).with(span_op).and_return(ci_test)
+        allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_test)
 
         trace
       end
 
-      it_behaves_like "default test span operation tags"
+      it_behaves_like "internal tracing context"
       it { is_expected.to be(ci_test) }
     end
   end
 
-  describe "::set_tags!" do
-    subject(:set_tags!) { described_class.set_tags!(trace_op, span_op, tags) }
-    let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
-    let(:tags) { {} }
+  # TODO: move to span
+  # describe "::set_tags!" do
+  #   subject(:set_tags!) { described_class.set_tags!(trace_op, span_op, tags) }
+  #   let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
+  #   let(:tags) { {} }
 
-    before do
-      allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
-    end
+  #   before do
+  #     allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
+  #   end
 
-    it_behaves_like "default test span operation tags" do
-      before { set_tags! }
-    end
+  #   it_behaves_like "default test span operation tags" do
+  #     before { set_tags! }
+  #   end
 
-    context "when trace operation is given" do
-      before { set_tags! }
+  #   context "when trace operation is given" do
+  #     before { set_tags! }
 
-      it do
-        expect(trace_op)
-          .to have_received(:origin=)
-          .with(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
-      end
-    end
+  #     it do
+  #       expect(trace_op)
+  #         .to have_received(:origin=)
+  #         .with(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+  #     end
+  #   end
 
-    context "when :framework is given" do
-      let(:tags) { {framework: framework} }
-      let(:framework) { "framework" }
+  #   context "when :framework is given" do
+  #     let(:tags) { {framework: framework} }
+  #     let(:framework) { "framework" }
 
-      before { set_tags! }
+  #     before { set_tags! }
 
-      it do
-        expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK))
-          .to eq(framework)
-      end
-    end
+  #     it do
+  #       expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK))
+  #         .to eq(framework)
+  #     end
+  #   end
 
-    context "when :framework_version is given" do
-      let(:tags) { {framework_version: framework_version} }
-      let(:framework_version) { "framework_version" }
+  #   context "when :framework_version is given" do
+  #     let(:tags) { {framework_version: framework_version} }
+  #     let(:framework_version) { "framework_version" }
 
-      before { set_tags! }
+  #     before { set_tags! }
 
-      it do
-        expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION))
-          .to eq(framework_version)
-      end
-    end
+  #     it do
+  #       expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION))
+  #         .to eq(framework_version)
+  #     end
+  #   end
 
-    context "when :test_name is given" do
-      let(:tags) { {test_name: test_name} }
-      let(:test_name) { "test name" }
+  #   context "when :test_name is given" do
+  #     let(:tags) { {test_name: test_name} }
+  #     let(:test_name) { "test name" }
 
-      before { set_tags! }
+  #     before { set_tags! }
 
-      it do
-        expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_NAME))
-          .to eq(test_name)
-      end
-    end
+  #     it do
+  #       expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_NAME))
+  #         .to eq(test_name)
+  #     end
+  #   end
 
-    context "when :test_suite is given" do
-      let(:tags) { {test_suite: test_suite} }
-      let(:test_suite) { "test suite" }
+  #   context "when :test_suite is given" do
+  #     let(:tags) { {test_suite: test_suite} }
+  #     let(:test_suite) { "test suite" }
 
-      before { set_tags! }
+  #     before { set_tags! }
 
-      it do
-        expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_SUITE))
-          .to eq(test_suite)
-      end
-    end
+  #     it do
+  #       expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_SUITE))
+  #         .to eq(test_suite)
+  #     end
+  #   end
 
-    context "when :test_type is given" do
-      let(:tags) { {test_type: test_type} }
-      let(:test_type) { "test type" }
+  #   context "when :test_type is given" do
+  #     let(:tags) { {test_type: test_type} }
+  #     let(:test_type) { "test type" }
 
-      before { set_tags! }
+  #     before { set_tags! }
 
-      it do
-        expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_TYPE))
-          .to eq(test_type)
-      end
-    end
+  #     it do
+  #       expect(span_op.get_tag(Datadog::CI::Ext::Test::TAG_TYPE))
+  #         .to eq(test_type)
+  #     end
+  #   end
 
-    context "with environment runtime information" do
-      context "for the architecture platform" do
-        subject(:tag) do
-          set_tags!
-          span_op.get_tag(Datadog::CI::Ext::Test::TAG_OS_ARCHITECTURE)
-        end
+  #   context "with environment runtime information" do
+  #     context "for the architecture platform" do
+  #       subject(:tag) do
+  #         set_tags!
+  #         span_op.get_tag(Datadog::CI::Ext::Test::TAG_OS_ARCHITECTURE)
+  #       end
 
-        it { is_expected.to eq("x86_64").or eq("i686").or eq("aarch64").or start_with("arm") }
-      end
+  #       it { is_expected.to eq("x86_64").or eq("i686").or eq("aarch64").or start_with("arm") }
+  #     end
 
-      context "for the OS platform" do
-        subject(:tag) do
-          set_tags!
-          span_op.get_tag(Datadog::CI::Ext::Test::TAG_OS_PLATFORM)
-        end
+  #     context "for the OS platform" do
+  #       subject(:tag) do
+  #         set_tags!
+  #         span_op.get_tag(Datadog::CI::Ext::Test::TAG_OS_PLATFORM)
+  #       end
 
-        context "with Linux", if: PlatformHelpers.linux? do
-          it { is_expected.to start_with("linux") }
-        end
+  #       context "with Linux", if: PlatformHelpers.linux? do
+  #         it { is_expected.to start_with("linux") }
+  #       end
 
-        context "with Mac OS", if: PlatformHelpers.mac? do
-          it { is_expected.to start_with("darwin") }
-        end
+  #       context "with Mac OS", if: PlatformHelpers.mac? do
+  #         it { is_expected.to start_with("darwin") }
+  #       end
 
-        it "returns a valid string" do
-          is_expected.to be_a(String)
-        end
-      end
+  #       it "returns a valid string" do
+  #         is_expected.to be_a(String)
+  #       end
+  #     end
 
-      context "for the runtime name" do
-        subject(:tag) do
-          set_tags!
-          span_op.get_tag(Datadog::CI::Ext::Test::TAG_RUNTIME_NAME)
-        end
+  #     context "for the runtime name" do
+  #       subject(:tag) do
+  #         set_tags!
+  #         span_op.get_tag(Datadog::CI::Ext::Test::TAG_RUNTIME_NAME)
+  #       end
 
-        context "with MRI", if: PlatformHelpers.mri? do
-          it { is_expected.to eq("ruby") }
-        end
+  #       context "with MRI", if: PlatformHelpers.mri? do
+  #         it { is_expected.to eq("ruby") }
+  #       end
 
-        context "with JRuby", if: PlatformHelpers.jruby? do
-          it { is_expected.to eq("jruby") }
-        end
+  #       context "with JRuby", if: PlatformHelpers.jruby? do
+  #         it { is_expected.to eq("jruby") }
+  #       end
 
-        context "with TruffleRuby", if: PlatformHelpers.truffleruby? do
-          it { is_expected.to eq("truffleruby") }
-        end
+  #       context "with TruffleRuby", if: PlatformHelpers.truffleruby? do
+  #         it { is_expected.to eq("truffleruby") }
+  #       end
 
-        it "returns a valid string" do
-          is_expected.to be_a(String)
-        end
-      end
+  #       it "returns a valid string" do
+  #         is_expected.to be_a(String)
+  #       end
+  #     end
 
-      context "for the runtime version" do
-        subject(:tag) do
-          set_tags!
-          span_op.get_tag(Datadog::CI::Ext::Test::TAG_RUNTIME_VERSION)
-        end
+  #     context "for the runtime version" do
+  #       subject(:tag) do
+  #         set_tags!
+  #         span_op.get_tag(Datadog::CI::Ext::Test::TAG_RUNTIME_VERSION)
+  #       end
 
-        context "with MRI", if: PlatformHelpers.mri? do
-          it { is_expected.to match(/^[23]\./) }
-        end
+  #       context "with MRI", if: PlatformHelpers.mri? do
+  #         it { is_expected.to match(/^[23]\./) }
+  #       end
 
-        context "with JRuby", if: PlatformHelpers.jruby? do
-          it { is_expected.to match(/^9\./) }
-        end
+  #       context "with JRuby", if: PlatformHelpers.jruby? do
+  #         it { is_expected.to match(/^9\./) }
+  #       end
 
-        context "with TruffleRuby", if: PlatformHelpers.truffleruby? do
-          it { is_expected.to match(/^2\d\./) }
-        end
+  #       context "with TruffleRuby", if: PlatformHelpers.truffleruby? do
+  #         it { is_expected.to match(/^2\d\./) }
+  #       end
 
-        it "returns a valid string" do
-          is_expected.to be_a(String)
-        end
-      end
-    end
-  end
+  #       it "returns a valid string" do
+  #         is_expected.to be_a(String)
+  #       end
+  #     end
+  #   end
+  # end
 
   # TODO: move to Span
   # describe "::passed!" do

@@ -25,10 +25,10 @@ module TracerHelpers
     Datadog::CI.trace_test(
       test_name,
       tags: {
-        framework: framework,
-        framework_version: "1.0.0",
-        test_type: "test",
-        test_suite: test_suite
+        Datadog::CI::Ext::Test::TAG_FRAMEWORK => framework,
+        Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
+        Datadog::CI::Ext::Test::TAG_TYPE => "test",
+        Datadog::CI::Ext::Test::TAG_SUITE => test_suite
       },
       service_name: service,
       operation_name: operation
