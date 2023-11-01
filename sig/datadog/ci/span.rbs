@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    class Span
+      @tracer_span: Datadog::Tracing::SpanOperation
+
+      attr_reader tracer_span: Datadog::Tracing::SpanOperation
+
+      def initialize: (Datadog::Tracing::SpanOperation tracer_span) -> void
+
+      def passed!: () -> void
+
+      def failed!: (?untyped? exception) -> void
+
+      def skipped!: (?untyped? exception, ?String? reason) -> void
+
+      def finish: () -> untyped
+    end
+  end
+end

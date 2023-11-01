@@ -12,13 +12,11 @@ require_relative "ci/test"
 module Datadog
   # Public API for Datadog CI visibility
   module CI
-    module_function
-
-    def trace_test(test_name, service_name: nil, operation_name: nil, tags: {}, &block)
+    def self.trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
       Recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
     end
 
-    def trace(span_type, span_name, &block)
+    def self.trace(span_type, span_name, &block)
       Recorder.trace(span_type, span_name, &block)
     end
   end

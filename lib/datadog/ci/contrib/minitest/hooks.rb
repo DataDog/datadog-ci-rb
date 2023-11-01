@@ -35,20 +35,19 @@ module Datadog
           end
 
           def after_teardown
-            return super unless @current_test_span
-
-            Thread.current[:_datadog_test_span] = nil
+            test_span = @current_test_span
+            return super unless test_span
 
             case result_code
             when "."
-              @current_test_span.passed!
+              test_span.passed!
             when "E", "F"
-              @current_test_span.failed!(failure)
+              test_span.failed!(failure)
             when "S"
-              @current_test_span.skipped!(nil, failure.message)
+              test_span.skipped!(nil, failure.message)
             end
 
-            @current_test_span.finish
+            test_span.finish
             @current_test_span = nil
 
             super
