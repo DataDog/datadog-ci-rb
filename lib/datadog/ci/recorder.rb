@@ -14,20 +14,24 @@ module Datadog
     # Common behavior for CI tests
     module Recorder
       # Creates a new span for a CI test
-      def self.trace_test(span_name, options = {})
+      def self.trace_test(test_name, service_name: nil, operation_name: nil, tags: {})
         span_options = {
+          resource: test_name,
+          service: service_name,
           span_type: Ext::AppTypes::TYPE_TEST
-        }.merge(options[:span_options] || {})
+        }
+
+        tags[:test_name] = test_name
 
         if block_given?
-          ::Datadog::Tracing.trace(span_name, **span_options) do |span, trace|
-            set_tags!(trace, span, options)
+          ::Datadog::Tracing.trace(operation_name, **span_options) do |span, trace|
+            set_tags!(trace, span, tags)
             yield(span, trace)
           end
         else
-          span = ::Datadog::Tracing.trace(span_name, **span_options)
+          span = ::Datadog::Tracing.trace(operation_name, **span_options)
           trace = ::Datadog::Tracing.active_trace
-          set_tags!(trace, span, options)
+          set_tags!(trace, span, tags)
           span
         end
       end

@@ -1,6 +1,7 @@
 RSpec.describe Datadog::CI::Recorder do
   let(:trace_op) { instance_double(Datadog::Tracing::TraceOperation) }
-  let(:span_name) { "span name" }
+  let(:service) { "service" }
+  let(:operation_name) { "span name" }
 
   before do
     allow(Datadog::Tracing).to receive(:active_trace).and_return(trace_op)
@@ -33,12 +34,22 @@ RSpec.describe Datadog::CI::Recorder do
     end
   end
 
-  describe "::trace" do
-    let(:options) { {} }
+  describe "::trace_test" do
+    let(:tags) { {} }
+    let(:test_name) { "test name" }
 
     context "when given a block" do
-      subject(:trace) { described_class.trace_test(span_name, options, &block) }
-      let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
+      subject(:trace) do
+        described_class.trace_test(
+          test_name,
+          service_name: service,
+          operation_name: operation_name,
+          tags: tags,
+          &block
+        )
+      end
+
+      let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
       let(:block) { proc { |s| block_spy.call(s) } }
       let(:block_result) { double("result") }
       let(:block_spy) { spy("block") }
@@ -48,8 +59,14 @@ RSpec.describe Datadog::CI::Recorder do
 
         allow(Datadog::Tracing)
           .to receive(:trace) do |trace_span_name, trace_span_options, &trace_block|
-            expect(trace_span_name).to be(span_name)
-            expect(trace_span_options).to eq({span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST})
+            expect(trace_span_name).to be(operation_name)
+            expect(trace_span_options).to eq(
+              {
+                span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
+                resource: test_name,
+                service: service
+              }
+            )
             trace_block.call(span_op, trace_op)
           end
 
@@ -64,15 +81,26 @@ RSpec.describe Datadog::CI::Recorder do
     end
 
     context "when not given a block" do
-      subject(:trace) { described_class.trace_test(span_name, options) }
-      let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
+      subject(:trace) do
+        described_class.trace_test(
+          test_name,
+          service_name: service,
+          operation_name: operation_name,
+          tags: tags
+        )
+      end
+      let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
 
       before do
         allow(Datadog::Tracing)
           .to receive(:trace)
           .with(
-            span_name,
-            {span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST}
+            operation_name,
+            {
+              span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
+              resource: test_name,
+              service: service
+            }
           )
           .and_return(span_op)
 
@@ -88,7 +116,7 @@ RSpec.describe Datadog::CI::Recorder do
 
   describe "::set_tags!" do
     subject(:set_tags!) { described_class.set_tags!(trace_op, span_op, tags) }
-    let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
+    let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
     let(:tags) { {} }
 
     before do

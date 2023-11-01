@@ -15,20 +15,12 @@ module Datadog
     module_function
 
     def trace_test(test_name, service_name: nil, operation_name: nil, tags: {})
-      span_options = {
-        resource: test_name,
-        service: service_name
-      }
-
-      tags[:test_name] = test_name
-      tags[:span_options] = span_options
-
       if block_given?
-        Recorder.trace_test(operation_name, tags) do |span|
+        Recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags) do |span|
           yield Test.new(span)
         end
       else
-        tracer_span = Recorder.trace_test(operation_name, tags)
+        tracer_span = Recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags)
         Test.new(tracer_span)
       end
     end
