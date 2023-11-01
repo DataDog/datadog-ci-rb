@@ -21,13 +21,13 @@ module Datadog
 
             test_span = CI.trace_test(
               test_name,
-              test_suite,
               configuration[:service_name],
               configuration[:operation_name],
               {
                 framework: Ext::FRAMEWORK,
                 framework_version: CI::Contrib::Minitest::Integration.version.to_s,
-                test_type: Ext::TEST_TYPE
+                test_type: Ext::TEST_TYPE,
+                test_suite: test_suite
               }
             )
 

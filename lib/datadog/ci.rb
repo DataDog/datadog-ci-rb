@@ -14,14 +14,13 @@ module Datadog
   module CI
     module_function
 
-    def trace_test(test_name, test_suite, service_name, operation_name, tags = {})
+    def trace_test(test_name, service_name, operation_name, tags = {})
       span_options = {
         resource: test_name,
         service: service_name
       }
 
       tags[:test_name] = test_name
-      tags[:test_suite] = test_suite
       tags[:span_options] = span_options
 
       if block_given?

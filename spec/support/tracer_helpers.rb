@@ -24,13 +24,13 @@ module TracerHelpers
 
     Datadog::CI.trace_test(
       test_name,
-      test_suite,
       service,
       operation,
       {
         framework: framework,
         framework_version: "1.0.0",
-        test_type: "test"
+        test_type: "test",
+        test_suite: test_suite
       }
     ) do |test|
       if with_http_span

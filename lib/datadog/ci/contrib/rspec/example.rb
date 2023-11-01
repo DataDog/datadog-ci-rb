@@ -27,13 +27,13 @@ module Datadog
 
               CI.trace_test(
                 test_name,
-                metadata[:example_group][:file_path],
                 configuration[:service_name],
                 configuration[:operation_name],
                 {
                   framework: Ext::FRAMEWORK,
                   framework_version: CI::Contrib::RSpec::Integration.version.to_s,
-                  test_type: Ext::TEST_TYPE
+                  test_type: Ext::TEST_TYPE,
+                  test_suite: metadata[:example_group][:file_path]
                 }
               ) do |test_span|
                 result = super
