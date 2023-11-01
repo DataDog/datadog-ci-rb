@@ -36,6 +36,22 @@ module Datadog
         end
       end
 
+      def self.trace(span_type, span_name)
+        span_options = {
+          resource: span_name,
+          span_type: span_type
+        }
+
+        if block_given?
+          ::Datadog::Tracing.trace(span_name, **span_options) do |tracer_span|
+            yield Span.new(tracer_span)
+          end
+        else
+          tracer_span = Datadog::Tracing.trace(span_name, **span_options)
+          Span.new(tracer_span)
+        end
+      end
+
       # Adds tags to a CI test span.
       def self.set_tags!(trace, span, tags = {})
         tags ||= {}

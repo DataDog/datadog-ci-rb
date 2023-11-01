@@ -25,18 +25,8 @@ module Datadog
       end
     end
 
-    def trace(span_type, span_name, span_options = {})
-      span_options[:resource] = span_name
-      span_options[:span_type] = span_type
-
-      if block_given?
-        ::Datadog::Tracing.trace(span_name, **span_options) do |tracer_span|
-          yield Span.new(tracer_span)
-        end
-      else
-        tracer_span = Datadog::Tracing.trace(span_name, **span_options)
-        Span.new(tracer_span)
-      end
+    def trace(span_type, span_name, &block)
+      Recorder.trace(span_type, span_name, &block)
     end
   end
 end
