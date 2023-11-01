@@ -24,14 +24,14 @@ module TracerHelpers
 
     Datadog::CI.trace_test(
       test_name,
-      service,
-      operation,
-      {
+      tags: {
         framework: framework,
         framework_version: "1.0.0",
         test_type: "test",
         test_suite: test_suite
-      }
+      },
+      service_name: service,
+      operation_name: operation
     ) do |test|
       if with_http_span
         Datadog::Tracing.trace("http-call", type: "http", service: "net-http") do |span, trace|

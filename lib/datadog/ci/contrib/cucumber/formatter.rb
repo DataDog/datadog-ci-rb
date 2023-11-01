@@ -30,14 +30,14 @@ module Datadog
           def on_test_case_started(event)
             @current_feature_span = CI.trace_test(
               event.test_case.name,
-              configuration[:service_name],
-              configuration[:operation_name],
-              {
+              tags: {
                 framework: Ext::FRAMEWORK,
                 framework_version: CI::Contrib::Cucumber::Integration.version.to_s,
                 test_type: Ext::TEST_TYPE,
                 test_suite: event.test_case.location.file
-              }
+              },
+              service_name: configuration[:service_name],
+              operation_name: configuration[:operation_name]
             )
           end
 

@@ -14,7 +14,7 @@ module Datadog
   module CI
     module_function
 
-    def trace_test(test_name, service_name, operation_name, tags = {})
+    def trace_test(test_name, service_name: nil, operation_name: nil, tags: {})
       span_options = {
         resource: test_name,
         service: service_name
