@@ -5,6 +5,10 @@ require_relative "ext/test"
 module Datadog
   # Public API for Datadog CI visibility
   module CI
+    # Represents a single part of a test run.
+    # Could be a session, suite, test, or any custom span.
+    #
+    # @public_api
     class Span
       attr_reader :tracer_span
 

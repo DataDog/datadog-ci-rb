@@ -15,7 +15,7 @@ RSpec.describe Datadog::CI::Span do
     context "when tags are provided" do
       let(:tags) { {"foo" => "bar"} }
 
-      it "sets provided tags as well as runtime tags" do
+      it "sets provided tags along with default tag and environment tag" do
         # default tags
         expect(tracer_span).to receive(:set_tag).with("span.kind", "test")
 

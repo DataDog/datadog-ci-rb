@@ -5,7 +5,9 @@ require_relative "ci/version"
 require "datadog/core"
 
 module Datadog
-  # Public API for Datadog CI visibility
+  # Datadog CI visibility public API.
+  #
+  # @public_api
   module CI
     class << self
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
