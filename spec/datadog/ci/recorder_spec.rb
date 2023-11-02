@@ -37,7 +37,7 @@ RSpec.describe Datadog::CI::Recorder do
     end
   end
 
-  describe "::trace_test" do
+  describe "#trace_test" do
     let(:tags) { {} }
     let(:test_name) { "test name" }
 
@@ -124,6 +124,90 @@ RSpec.describe Datadog::CI::Recorder do
 
       it_behaves_like "internal tracing context"
       it { is_expected.to be(ci_test) }
+    end
+  end
+
+  describe "#trace" do
+    let(:tags) { {"my_tag" => "my_value"} }
+    let(:span_type) { "step" }
+    let(:span_name) { "span name" }
+
+    let(:expected_tags) { tags }
+
+    context "when given a block" do
+      subject(:trace) do
+        recorder.trace(
+          span_type,
+          span_name,
+          tags: tags,
+          &block
+        )
+      end
+
+      let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
+      let(:ci_span) { instance_double(Datadog::CI::Span) }
+      let(:block) { proc { |s| block_spy.call(s) } }
+      let(:block_result) { double("result") }
+      let(:block_spy) { spy("block") }
+
+      before do
+        allow(block_spy).to receive(:call).and_return(block_result)
+
+        allow(Datadog::Tracing)
+          .to receive(:trace) do |trace_span_name, trace_span_options, &trace_block|
+            expect(trace_span_name).to be(span_name)
+            expect(trace_span_options).to eq(
+              {
+                span_type: span_type,
+                resource: span_name
+              }
+            )
+            trace_block.call(span_op, trace_op)
+          end
+
+        allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
+        allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_span)
+
+        trace
+      end
+
+      it_behaves_like "internal tracing context"
+      it { expect(block_spy).to have_received(:call).with(ci_span) }
+      it { is_expected.to be(block_result) }
+    end
+
+    context "when not given a block" do
+      subject(:trace) do
+        recorder.trace(
+          span_type,
+          span_name,
+          tags: tags
+        )
+      end
+
+      let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
+      let(:ci_span) { instance_double(Datadog::CI::Span) }
+
+      before do
+        allow(Datadog::Tracing)
+          .to receive(:trace)
+          .with(
+            span_name,
+            {
+              span_type: span_type,
+              resource: span_name
+            }
+          )
+          .and_return(span_op)
+
+        allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
+        allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_span)
+
+        trace
+      end
+
+      it_behaves_like "internal tracing context"
+      it { is_expected.to be(ci_span) }
     end
   end
 
