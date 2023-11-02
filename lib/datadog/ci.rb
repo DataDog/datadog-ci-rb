@@ -10,20 +10,24 @@ require_relative "ci/recorder"
 module Datadog
   # Public API for Datadog CI visibility
   module CI
-    def self.trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
-      recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
-    end
+    class << self
+      def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
+        recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
+      end
 
-    def self.trace(span_type, span_name, tags: {}, &block)
-      recorder.trace(span_type, span_name, tags: tags, &block)
-    end
+      def trace(span_type, span_name, tags: {}, &block)
+        recorder.trace(span_type, span_name, tags: tags, &block)
+      end
 
-    def self.components
-      Datadog.send(:components)
-    end
+      private
 
-    def self.recorder
-      components.ci_recorder
+      def components
+        Datadog.send(:components)
+      end
+
+      def recorder
+        components.ci_recorder
+      end
     end
   end
 end
