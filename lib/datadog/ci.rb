@@ -3,9 +3,6 @@
 require_relative "ci/version"
 
 require "datadog/core"
-require "datadog/tracing"
-
-require_relative "ci/recorder"
 
 module Datadog
   # Public API for Datadog CI visibility

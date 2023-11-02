@@ -3,13 +3,13 @@
 require "datadog/tracing"
 require "datadog/tracing/contrib/analytics"
 
+require "rbconfig"
+
 require_relative "ext/app_types"
 require_relative "ext/test"
 require_relative "ext/environment"
 
 require_relative "span"
-
-require "rbconfig"
 
 module Datadog
   module CI

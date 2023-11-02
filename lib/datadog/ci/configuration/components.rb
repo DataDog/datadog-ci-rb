@@ -7,6 +7,7 @@ require_relative "../ext/transport"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
+require_relative "../recorder"
 
 module Datadog
   module CI

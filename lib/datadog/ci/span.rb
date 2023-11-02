@@ -27,7 +27,7 @@ module Datadog
       def skipped!(exception: nil, reason: nil)
         tracer_span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::SKIP)
         tracer_span.set_error(exception) unless exception.nil?
-        tracer_span.set_tag(CI::Ext::Test::TAG_SKIP_REASON, reason) unless reason.nil?
+        tracer_span.set_tag(Ext::Test::TAG_SKIP_REASON, reason) unless reason.nil?
       end
 
       def set_tag(key, value)
