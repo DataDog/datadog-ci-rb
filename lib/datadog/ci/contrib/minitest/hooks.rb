@@ -42,7 +42,7 @@ module Datadog
             when "."
               test_span.passed!
             when "E", "F"
-              test_span.failed!(failure)
+              test_span.failed!(exception: failure)
             when "S"
               test_span.skipped!(nil, failure.message)
             end

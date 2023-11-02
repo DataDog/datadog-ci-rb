@@ -18,7 +18,7 @@ module Datadog
         tracer_span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::PASS)
       end
 
-      def failed!(exception = nil)
+      def failed!(exception: nil)
         tracer_span.status = 1
         tracer_span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::FAIL)
         tracer_span.set_error(exception) unless exception.nil?

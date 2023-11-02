@@ -67,7 +67,7 @@ module Datadog
             elsif event.result.ok?
               @current_step_span.passed!
             elsif event.result.failed?
-              @current_step_span.failed!(event.result.exception)
+              @current_step_span.failed!(exception: event.result.exception)
             end
 
             @current_step_span.finish

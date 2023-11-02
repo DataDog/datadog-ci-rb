@@ -45,7 +45,7 @@ module TracerHelpers
 
       case result
       when "FAILED"
-        test.failed!(exception)
+        test.failed!(exception: exception)
       when "SKIPPED"
         test.skipped!(exception)
       else
