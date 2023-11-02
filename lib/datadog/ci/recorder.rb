@@ -14,9 +14,15 @@ require "rbconfig"
 module Datadog
   module CI
     # Common behavior for CI tests
-    module Recorder
+    class Recorder
+      attr_reader :environment_tags
+
+      def initialize
+        @environment_tags = Ext::Environment.tags(ENV)
+      end
+
       # Creates a new span for a CI test
-      def self.trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
+      def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
         span_options = {
           resource: test_name,
           service: service_name,
@@ -29,7 +35,7 @@ module Datadog
         create_datadog_span(operation_name, span_options: span_options, tags: tags, &block)
       end
 
-      def self.trace(span_type, span_name, tags: {}, &block)
+      def trace(span_type, span_name, tags: {}, &block)
         span_options = {
           resource: span_name,
           span_type: span_type
@@ -38,7 +44,9 @@ module Datadog
         create_datadog_span(span_name, span_options: span_options, tags: tags, &block)
       end
 
-      def self.create_datadog_span(span_name, span_options: {}, tags: {}, &block)
+      private
+
+      def create_datadog_span(span_name, span_options: {}, tags: {}, &block)
         if block
           ::Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
             set_internal_tracing_context!(trace, tracer_span)
@@ -53,14 +61,10 @@ module Datadog
         end
       end
 
-      def self.set_internal_tracing_context!(trace, span)
+      def set_internal_tracing_context!(trace, span)
         # Set default tags
         trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
         ::Datadog::Tracing::Contrib::Analytics.set_measured(span)
-      end
-
-      def self.environment_tags
-        @environment_tags ||= Ext::Environment.tags(ENV)
       end
     end
   end

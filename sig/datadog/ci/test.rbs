@@ -1,6 +1,0 @@
-module Datadog
-  module CI
-    class Test < Span
-    end
-  end
-end

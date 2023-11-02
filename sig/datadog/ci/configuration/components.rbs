@@ -2,6 +2,10 @@ module Datadog
   module CI
     module Configuration
       module Components : Datadog::Core::Configuration::Components
+        @ci_recorder: Datadog::CI::Recorder
+
+        attr_reader ci_recorder: Datadog::CI::Recorder
+
         def initialize: (untyped settings) -> void
 
         def activate_ci!: (untyped settings) -> untyped

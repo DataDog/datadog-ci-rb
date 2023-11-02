@@ -3,6 +3,8 @@ RSpec.describe Datadog::CI::Recorder do
   let(:service) { "service" }
   let(:operation_name) { "span name" }
 
+  subject(:recorder) { described_class.new }
+
   before do
     allow(Datadog::Tracing).to receive(:active_trace).and_return(trace_op)
     allow(trace_op).to receive(:origin=)
@@ -47,7 +49,7 @@ RSpec.describe Datadog::CI::Recorder do
 
     context "when given a block" do
       subject(:trace) do
-        described_class.trace_test(
+        recorder.trace_test(
           test_name,
           service_name: service,
           operation_name: operation_name,
@@ -91,7 +93,7 @@ RSpec.describe Datadog::CI::Recorder do
 
     context "when not given a block" do
       subject(:trace) do
-        described_class.trace_test(
+        recorder.trace_test(
           test_name,
           service_name: service,
           operation_name: operation_name,

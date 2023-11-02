@@ -11,11 +11,19 @@ module Datadog
   # Public API for Datadog CI visibility
   module CI
     def self.trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
-      Recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
+      recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
     end
 
     def self.trace(span_type, span_name, tags: {}, &block)
-      Recorder.trace(span_type, span_name, tags: tags, &block)
+      recorder.trace(span_type, span_name, tags: tags, &block)
+    end
+
+    def self.components
+      Datadog.send(:components)
+    end
+
+    def self.recorder
+      components.ci_recorder
     end
   end
 end
