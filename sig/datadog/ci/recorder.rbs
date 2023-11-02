@@ -7,7 +7,7 @@ module Datadog
 
       def self.trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-      def self.set_environment_runtime_tags!: (Datadog::Tracing::SpanOperation span) -> untyped
+      def self.create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
       def self.set_internal_tracing_context!: (Datadog::Tracing::TraceOperation trace, Datadog::Tracing::SpanOperation span) -> untyped
 

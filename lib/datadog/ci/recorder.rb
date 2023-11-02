@@ -26,18 +26,7 @@ module Datadog
         tags[Ext::Test::TAG_NAME] = test_name
         tags.merge!(environment_tags)
 
-        if block
-          ::Datadog::Tracing.trace(operation_name, **span_options) do |tracer_span, trace|
-            set_internal_tracing_context!(trace, tracer_span)
-            block.call(Span.new(tracer_span, tags))
-          end
-        else
-          tracer_span = ::Datadog::Tracing.trace(operation_name, **span_options)
-          trace = ::Datadog::Tracing.active_trace
-
-          set_internal_tracing_context!(trace, tracer_span)
-          Span.new(tracer_span, tags)
-        end
+        create_datadog_span(operation_name, span_options: span_options, tags: tags, &block)
       end
 
       def self.trace(span_type, span_name, tags: {}, &block)
@@ -46,12 +35,20 @@ module Datadog
           span_type: span_type
         }
 
+        create_datadog_span(span_name, span_options: span_options, tags: tags, &block)
+      end
+
+      def self.create_datadog_span(span_name, span_options: {}, tags: {}, &block)
         if block
-          ::Datadog::Tracing.trace(span_name, **span_options) do |tracer_span|
+          ::Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
+            set_internal_tracing_context!(trace, tracer_span)
             block.call(Span.new(tracer_span, tags))
           end
         else
           tracer_span = Datadog::Tracing.trace(span_name, **span_options)
+          trace = ::Datadog::Tracing.active_trace
+
+          set_internal_tracing_context!(trace, tracer_span)
           Span.new(tracer_span, tags)
         end
       end
