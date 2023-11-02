@@ -44,7 +44,7 @@ module Datadog
             when "E", "F"
               test_span.failed!(exception: failure)
             when "S"
-              test_span.skipped!(nil, failure.message)
+              test_span.skipped!(reason: failure.message)
             end
 
             test_span.finish

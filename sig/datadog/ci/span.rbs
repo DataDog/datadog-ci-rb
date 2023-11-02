@@ -9,9 +9,9 @@ module Datadog
 
       def passed!: () -> void
 
-      def failed!: (?untyped? exception) -> void
+      def failed!: (?exception: untyped?) -> void
 
-      def skipped!: (?untyped? exception, ?String? reason) -> void
+      def skipped!: (?exception: untyped?, ?reason: String?) -> void
 
       def set_tag: (String key, untyped? value) -> untyped
 

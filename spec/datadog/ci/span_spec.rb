@@ -67,4 +67,80 @@ RSpec.describe Datadog::CI::Span do
       end
     end
   end
+
+  describe "#skipped!" do
+    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
+    let(:span) { described_class.new(tracer_span) }
+
+    context "when exception is nil" do
+      it "sets the status to SKIP" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
+        expect(tracer_span).not_to receive(:set_error)
+
+        span.skipped!
+      end
+    end
+
+    context "when exception is provided" do
+      it "sets the status to SKIP and sets error" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
+        expect(tracer_span).to receive(:set_error).with("error")
+
+        span.skipped!(exception: "error")
+      end
+    end
+
+    context "when reason is nil" do
+      it "doesn't set the skip reason tag" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
+        expect(tracer_span).not_to receive(:set_tag).with("test.skip_reason", "reason")
+
+        span
+
+        span.skipped!
+      end
+    end
+
+    context "when reason is provided" do
+      it "sets the skip reason tag" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
+        expect(tracer_span).to receive(:set_tag).with("test.skip_reason", "reason")
+
+        span.skipped!(reason: "reason")
+      end
+    end
+  end
+
+  describe "#set_tag" do
+    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
+    let(:span) { described_class.new(tracer_span) }
+
+    it "sets the tag" do
+      expect(tracer_span).to receive(:set_tag).with("foo", "bar")
+
+      span.set_tag("foo", "bar")
+    end
+  end
+
+  describe "#set_metric" do
+    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
+    let(:span) { described_class.new(tracer_span) }
+
+    it "sets the metric" do
+      expect(tracer_span).to receive(:set_metric).with("foo", "bar")
+
+      span.set_metric("foo", "bar")
+    end
+  end
+
+  describe "#finish" do
+    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
+    let(:span) { described_class.new(tracer_span) }
+
+    it "finishes the span" do
+      expect(tracer_span).to receive(:finish)
+
+      span.finish
+    end
+  end
 end

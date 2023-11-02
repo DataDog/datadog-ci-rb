@@ -63,7 +63,7 @@ module Datadog
             return if @current_step_span.nil?
 
             if event.result.skipped?
-              @current_step_span.skipped!(@current_step_span)
+              @current_step_span.skipped!
             elsif event.result.ok?
               @current_step_span.passed!
             elsif event.result.failed?

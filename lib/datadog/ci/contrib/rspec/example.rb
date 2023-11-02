@@ -44,7 +44,7 @@ module Datadog
                 when :failed
                   test_span.failed!(exception: execution_result.exception)
                 else
-                  test_span.skipped!(execution_result.exception) if execution_result.example_skipped?
+                  test_span.skipped!(exception: execution_result.exception) if execution_result.example_skipped?
                 end
 
                 result

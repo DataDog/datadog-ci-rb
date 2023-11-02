@@ -12,7 +12,7 @@ module TracerHelpers
     framework: "rspec", operation: "rspec.example",
     test_name: "test_add", test_suite: "calculator_tests",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
-    start_time: Time.now, duration_seconds: 2,
+    skip_reason: nil, start_time: Time.now, duration_seconds: 2,
     with_http_span: false
   )
     # each time monotonic clock is called it will return a number that is
@@ -47,7 +47,7 @@ module TracerHelpers
       when "FAILED"
         test.failed!(exception: exception)
       when "SKIPPED"
-        test.skipped!(exception)
+        test.skipped!(exception: exception, reason: skip_reason)
       else
         test.passed!
       end
