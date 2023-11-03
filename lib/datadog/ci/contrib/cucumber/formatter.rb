@@ -28,7 +28,7 @@ module Datadog
           end
 
           def on_test_case_started(event)
-            @current_feature_span = CI.trace_test(
+            @current_feature_span = CI.start_test(
               event.test_case.name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,

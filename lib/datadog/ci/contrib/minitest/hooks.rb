@@ -19,7 +19,7 @@ module Datadog
             path, = method(name).source_location
             test_suite = Pathname.new(path.to_s).relative_path_from(Pathname.pwd).to_s
 
-            test_span = CI.trace_test(
+            test_span = CI.start_test(
               test_name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,

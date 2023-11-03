@@ -24,6 +24,30 @@ RSpec.describe Datadog::CI do
     it { is_expected.to be(ci_test) }
   end
 
+  describe "#start_test" do
+    subject(:start_test) { described_class.start_test(test_name, **options) }
+
+    let(:test_name) { "test name" }
+    let(:options) do
+      {
+        service_name: "my-serivce",
+        operation_name: "rspec.example",
+        tags: {"foo" => "bar"}
+      }
+    end
+
+    let(:recorder) { instance_double(Datadog::CI::Recorder) }
+    let(:ci_test) { instance_double(Datadog::CI::Span) }
+
+    before do
+      allow(Datadog::CI).to receive(:recorder).and_return(recorder)
+
+      allow(recorder).to receive(:trace_test).with(test_name, **options).and_return(ci_test)
+    end
+
+    it { is_expected.to be(ci_test) }
+  end
+
   describe "::trace" do
     subject(:trace) { described_class.trace(span_type, span_name, **options, &block) }
 
