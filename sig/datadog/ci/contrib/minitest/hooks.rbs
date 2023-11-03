@@ -5,8 +5,6 @@ module Datadog
         module Hooks : ::Minitest::Test
           include ::Minitest::Test::LifecycleHooks
 
-          @current_test_span: Datadog::CI::Span?
-
           def before_setup: () -> (nil | untyped)
 
           def after_teardown: () -> untyped

@@ -31,12 +31,14 @@ module Datadog
               operation_name: configuration[:operation_name]
             )
 
-            @current_test_span = test_span
+            Thread.current[:_datadog_test_span] = test_span
           end
 
           def after_teardown
-            test_span = @current_test_span
+            test_span = Thread.current[:_datadog_test_span]
             return super unless test_span
+
+            Thread.current[:_datadog_test_span] = nil
 
             case result_code
             when "."
@@ -48,7 +50,6 @@ module Datadog
             end
 
             test_span.finish
-            @current_test_span = nil
 
             super
           end
