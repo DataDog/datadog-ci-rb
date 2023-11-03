@@ -1,0 +1,14 @@
+module Datadog
+  module CI
+    class Context
+      @active_test: untyped
+
+      include Core::Utils::Forking
+
+      attr_reader active_test: untyped
+
+      def initialize: (?test: untyped?) -> void
+      def fork_clone: () -> untyped
+    end
+  end
+end
