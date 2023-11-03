@@ -22,6 +22,8 @@ module Datadog
         recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags)
       end
 
+      # Trace any custom span
+      # @public_api
       def trace(span_type, span_name, tags: {}, &block)
         recorder.trace(span_type, span_name, tags: tags, &block)
       end

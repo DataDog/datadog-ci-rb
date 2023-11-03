@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../recorder"
 require_relative "../../ext/test"
 require_relative "ext"
 
