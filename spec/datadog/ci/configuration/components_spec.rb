@@ -89,10 +89,15 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:api_key) { nil }
         let(:agentless_url) { nil }
         let(:dd_site) { nil }
+        let(:agentless_enabled) { false }
         let(:evp_proxy_supported) { false }
 
         context "is enabled" do
           let(:enabled) { true }
+
+          it "creates a CI recorder" do
+            expect(components.ci_recorder).to be_kind_of(Datadog::CI::Recorder)
+          end
 
           context "and when #agentless_mode" do
             context "is disabled" do

@@ -1,6 +1,6 @@
 module Datadog
   module Tracing
-    def self.active_trace: () -> Datadog::Tracing::TraceSegment
+    def self.active_trace: () -> Datadog::Tracing::TraceOperation
     def self.trace: (String span_name, Hash[untyped, untyped] options) ?{ (untyped span, untyped trace) -> untyped } -> Datadog::Tracing::SpanOperation
   end
 end

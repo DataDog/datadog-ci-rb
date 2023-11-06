@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../recorder"
 require_relative "../../ext/test"
 require_relative "ext"
 
@@ -25,29 +24,26 @@ module Datadog
                 test_name += " #{description}"
               end
 
-              CI::Recorder.trace(
-                configuration[:operation_name],
-                {
-                  span_options: {
-                    resource: test_name,
-                    service: configuration[:service_name]
-                  },
-                  framework: Ext::FRAMEWORK,
-                  framework_version: CI::Contrib::RSpec::Integration.version.to_s,
-                  test_name: test_name,
-                  test_suite: metadata[:example_group][:file_path],
-                  test_type: Ext::TEST_TYPE
-                }
-              ) do |span|
+              CI.trace_test(
+                test_name,
+                tags: {
+                  CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
+                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
+                  CI::Ext::Test::TAG_TYPE => Ext::TEST_TYPE,
+                  CI::Ext::Test::TAG_SUITE => metadata[:example_group][:file_path]
+                },
+                service_name: configuration[:service_name],
+                operation_name: configuration[:operation_name]
+              ) do |test_span|
                 result = super
 
                 case execution_result.status
                 when :passed
-                  CI::Recorder.passed!(span)
+                  test_span.passed!
                 when :failed
-                  CI::Recorder.failed!(span, execution_result.exception)
+                  test_span.failed!(exception: execution_result.exception)
                 else
-                  CI::Recorder.skipped!(span, execution_result.exception) if execution_result.example_skipped?
+                  test_span.skipped!(exception: execution_result.exception) if execution_result.example_skipped?
                 end
 
                 result

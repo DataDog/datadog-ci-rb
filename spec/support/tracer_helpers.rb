@@ -12,7 +12,7 @@ module TracerHelpers
     framework: "rspec", operation: "rspec.example",
     test_name: "test_add", test_suite: "calculator_tests",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
-    start_time: Time.now, duration_seconds: 2,
+    skip_reason: nil, start_time: Time.now, duration_seconds: 2,
     with_http_span: false
   )
     # each time monotonic clock is called it will return a number that is
@@ -22,20 +22,17 @@ module TracerHelpers
     )
     Timecop.freeze(start_time)
 
-    Datadog::CI::Recorder.trace(
-      operation,
-      {
-        span_options: {
-          resource: test_name,
-          service: service
-        },
-        framework: framework,
-        framework_version: "1.0.0",
-        test_name: test_name,
-        test_suite: test_suite,
-        test_type: "test"
-      }
-    ) do |span|
+    Datadog::CI.trace_test(
+      test_name,
+      tags: {
+        Datadog::CI::Ext::Test::TAG_FRAMEWORK => framework,
+        Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
+        Datadog::CI::Ext::Test::TAG_TYPE => "test",
+        Datadog::CI::Ext::Test::TAG_SUITE => test_suite
+      },
+      service_name: service,
+      operation_name: operation
+    ) do |test|
       if with_http_span
         Datadog::Tracing.trace("http-call", type: "http", service: "net-http") do |span, trace|
           span.set_tag("custom_tag", "custom_tag_value")
@@ -48,11 +45,11 @@ module TracerHelpers
 
       case result
       when "FAILED"
-        Datadog::CI::Recorder.failed!(span, exception)
+        test.failed!(exception: exception)
       when "SKIPPED"
-        Datadog::CI::Recorder.skipped!(span, exception)
+        test.skipped!(exception: exception, reason: skip_reason)
       else
-        Datadog::CI::Recorder.passed!(span)
+        test.passed!
       end
 
       Timecop.travel(start_time + duration_seconds)

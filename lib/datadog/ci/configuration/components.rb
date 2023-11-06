@@ -7,12 +7,15 @@ require_relative "../ext/transport"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
+require_relative "../recorder"
 
 module Datadog
   module CI
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
+        attr_reader :ci_recorder
+
         def initialize(settings)
           # Activate CI mode if enabled
           activate_ci!(settings) if settings.ci.enabled
@@ -52,6 +55,8 @@ module Datadog
           end
 
           settings.tracing.test_mode.writer_options = writer_options
+
+          @ci_recorder = Recorder.new
         end
 
         def can_use_evp_proxy?(settings, agent_settings)

@@ -1,0 +1,29 @@
+module Datadog
+  module CI
+    class Span
+      @tracer_span: Datadog::Tracing::SpanOperation
+
+      attr_reader tracer_span: Datadog::Tracing::SpanOperation
+
+      def initialize: (Datadog::Tracing::SpanOperation tracer_span, ?Hash[untyped, untyped]? tags) -> void
+
+      def passed!: () -> void
+
+      def failed!: (?exception: untyped?) -> void
+
+      def skipped!: (?exception: untyped?, ?reason: String?) -> void
+
+      def set_tag: (String key, untyped? value) -> untyped
+
+      def set_metric: (String key, untyped value) -> untyped
+
+      def finish: () -> untyped
+
+      private
+
+      def set_tags!: (Hash[untyped, untyped] tags) -> void
+
+      def set_environment_runtime_tags!: () -> void
+    end
+  end
+end

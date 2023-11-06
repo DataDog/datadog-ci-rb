@@ -5,11 +5,39 @@ require_relative "ci/version"
 require "datadog/core"
 
 module Datadog
-  # Namespace for Datadog CI instrumentation:
-  # e.g. rspec, cucumber, etc...
+  # Datadog CI visibility public API.
+  #
+  # @public_api
   module CI
-    class Error < StandardError; end
-    # Your code goes here...
+    class << self
+      # Trace a test run
+      # @public_api
+      def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
+        recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
+      end
+
+      # Start a test run trace.
+      # @public_api
+      def start_test(test_name, service_name: nil, operation_name: "test", tags: {})
+        recorder.trace_test(test_name, service_name: service_name, operation_name: operation_name, tags: tags)
+      end
+
+      # Trace any custom span
+      # @public_api
+      def trace(span_type, span_name, tags: {}, &block)
+        recorder.trace(span_type, span_name, tags: tags, &block)
+      end
+
+      private
+
+      def components
+        Datadog.send(:components)
+      end
+
+      def recorder
+        components.ci_recorder
+      end
+    end
   end
 end
 
