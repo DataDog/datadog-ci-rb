@@ -12,12 +12,6 @@ RSpec.describe Datadog::CI::Recorder do
 
   shared_examples_for "internal tracing context" do
     it do
-      expect(Datadog::Tracing::Contrib::Analytics)
-        .to have_received(:set_measured)
-        .with(span_op)
-    end
-
-    it do
       expect(trace_op)
         .to have_received(:origin=)
         .with(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
@@ -67,7 +61,6 @@ RSpec.describe Datadog::CI::Recorder do
             trace_block.call(span_op, trace_op)
           end
 
-        allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
         allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_test)
 
         trace
@@ -103,7 +96,6 @@ RSpec.describe Datadog::CI::Recorder do
           )
           .and_return(span_op)
 
-        allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
         allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_test)
 
         trace
@@ -152,7 +144,6 @@ RSpec.describe Datadog::CI::Recorder do
             trace_block.call(span_op, trace_op)
           end
 
-        allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
         allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_span)
 
         trace
@@ -187,7 +178,6 @@ RSpec.describe Datadog::CI::Recorder do
           )
           .and_return(span_op)
 
-        allow(Datadog::Tracing::Contrib::Analytics).to receive(:set_measured)
         allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_span)
 
         trace

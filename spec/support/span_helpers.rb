@@ -65,18 +65,6 @@ module SpanHelpers
     end
   end
 
-  # Span with the metric '_dd.measured' set to 1.0.
-  RSpec::Matchers.define :be_measured do
-    match do |span|
-      value = span.get_metric("_dd.measured")
-      values_match? 1.0, value
-    end
-
-    def description_of(actual)
-      "#{actual} with metrics #{actual.instance_variable_get(:@metrics)}"
-    end
-  end
-
   # Does this span have no parent span?
   RSpec::Matchers.define :be_root_span do
     match do |span|

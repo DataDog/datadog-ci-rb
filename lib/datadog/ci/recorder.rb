@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "datadog/tracing"
-require "datadog/tracing/contrib/analytics"
 
 require "rbconfig"
 
@@ -48,13 +47,13 @@ module Datadog
 
       def create_datadog_span(span_name, span_options: {}, tags: {}, &block)
         if block
-          ::Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
+          Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
             set_internal_tracing_context!(trace, tracer_span)
             block.call(Span.new(tracer_span, tags))
           end
         else
           tracer_span = Datadog::Tracing.trace(span_name, **span_options)
-          trace = ::Datadog::Tracing.active_trace
+          trace = Datadog::Tracing.active_trace
 
           set_internal_tracing_context!(trace, tracer_span)
           Span.new(tracer_span, tags)
@@ -62,9 +61,8 @@ module Datadog
       end
 
       def set_internal_tracing_context!(trace, span)
-        # Set default tags
+        # Sets trace's origin to ciapp-test
         trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
-        ::Datadog::Tracing::Contrib::Analytics.set_measured(span)
       end
     end
   end

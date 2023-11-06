@@ -39,7 +39,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
           }
         )
         expect(metrics).to eq(
-          {"_dd.measured" => 1.0, "_dd.top_level" => 1.0, "memory_allocations" => 16}
+          {"_dd.top_level" => 1.0, "memory_allocations" => 16}
         )
       end
     end
