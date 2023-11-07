@@ -2,12 +2,19 @@ module Datadog
   module CI
     class Recorder
       @environment_tags: Hash[String, String]
+      @local_context: Datadog::CI::Context::Local
 
       attr_reader environment_tags: Hash[String, String]
 
-      def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+      def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
       def trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+
+      def active_test: () -> Datadog::CI::Test?
+
+      def active_span: () -> Datadog::CI::Span?
+
+      def deactivate_test: (Datadog::CI::Test test) -> void
 
       def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 

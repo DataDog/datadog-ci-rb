@@ -143,4 +143,13 @@ RSpec.describe Datadog::CI::Span do
       span.finish
     end
   end
+
+  describe "#span_type" do
+    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, type: "test") }
+    let(:span) { described_class.new(tracer_span) }
+
+    it "returns 'test'" do
+      expect(span.span_type).to eq("test")
+    end
+  end
 end

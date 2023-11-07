@@ -8,7 +8,10 @@ require_relative "ext/app_types"
 require_relative "ext/test"
 require_relative "ext/environment"
 
+require_relative "context/local"
+
 require_relative "span"
+require_relative "test"
 
 module Datadog
   module CI
@@ -18,6 +21,7 @@ module Datadog
 
       def initialize
         @environment_tags = Ext::Environment.tags(ENV)
+        @local_context = Context::Local.new
       end
 
       # Creates a new span for a CI test
@@ -31,7 +35,32 @@ module Datadog
         tags[Ext::Test::TAG_NAME] = test_name
         tags.merge!(environment_tags)
 
-        create_datadog_span(operation_name, span_options: span_options, tags: tags, &block)
+        if block
+          Datadog::Tracing.trace(operation_name, **span_options) do |tracer_span, trace|
+            set_internal_tracing_context!(trace, tracer_span)
+
+            test = Test.new(tracer_span, tags)
+            # test.set_default_tags!
+            # test.set_tags!(environment_tags)
+            # test.set_tags!(tags)
+
+            @local_context.activate_test!(test) do
+              block.call(test)
+            end
+          end
+        else
+          tracer_span = Datadog::Tracing.trace(operation_name, **span_options)
+          trace = Datadog::Tracing.active_trace
+
+          set_internal_tracing_context!(trace, tracer_span)
+          test = Test.new(tracer_span, tags)
+          # test.set_default_tags!
+          # test.set_tags!(environment_tags)
+          # test.set_tags!(tags)
+
+          @local_context.activate_test!(test)
+          test
+        end
       end
 
       def trace(span_type, span_name, tags: {}, &block)
@@ -40,25 +69,32 @@ module Datadog
           span_type: span_type
         }
 
-        create_datadog_span(span_name, span_options: span_options, tags: tags, &block)
-      end
-
-      private
-
-      def create_datadog_span(span_name, span_options: {}, tags: {}, &block)
+        # create_datadog_span(span_name, span_options: span_options, tags: tags, &block)
         if block
           Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
-            set_internal_tracing_context!(trace, tracer_span)
             block.call(Span.new(tracer_span, tags))
           end
         else
           tracer_span = Datadog::Tracing.trace(span_name, **span_options)
-          trace = Datadog::Tracing.active_trace
 
-          set_internal_tracing_context!(trace, tracer_span)
           Span.new(tracer_span, tags)
         end
       end
+
+      def active_test
+        @local_context.active_test
+      end
+
+      def deactivate_test(test)
+        @local_context.deactivate_test!(test)
+      end
+
+      def active_span
+        tracer_span = Datadog::Tracing.active_span
+        Span.new(tracer_span) if tracer_span
+      end
+
+      private
 
       def set_internal_tracing_context!(trace, span)
         # Sets trace's origin to ciapp-test

@@ -40,8 +40,8 @@ module TracerHelpers
         end
       end
 
-      Datadog::Tracing.active_span.set_tag("test_owner", "my_team")
-      Datadog::Tracing.active_span.set_metric("memory_allocations", 16)
+      Datadog::CI.active_test.set_tag("test_owner", "my_team")
+      Datadog::CI.active_test.set_metric("memory_allocations", 16)
 
       case result
       when "FAILED"

@@ -46,6 +46,10 @@ module Datadog
         tracer_span.finish
       end
 
+      def span_type
+        tracer_span.type
+      end
+
       private
 
       def set_tags!(tags)

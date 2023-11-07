@@ -28,6 +28,19 @@ module Datadog
         recorder.trace(span_type, span_name, tags: tags, &block)
       end
 
+      def active_span(span_type)
+        span = recorder.active_span
+        span if span && span.span_type == span_type
+      end
+
+      def active_test
+        recorder.active_test
+      end
+
+      def deactivate_test(test)
+        recorder.deactivate_test(test)
+      end
+
       private
 
       def components

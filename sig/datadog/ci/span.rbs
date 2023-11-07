@@ -13,11 +13,13 @@ module Datadog
 
       def skipped!: (?exception: untyped?, ?reason: String?) -> void
 
-      def set_tag: (String key, untyped? value) -> untyped
+      def set_tag: (String key, untyped? value) -> void
 
-      def set_metric: (String key, untyped value) -> untyped
+      def set_metric: (String key, untyped value) -> void
 
-      def finish: () -> untyped
+      def finish: () -> void
+
+      def span_type: () -> String
 
       private
 

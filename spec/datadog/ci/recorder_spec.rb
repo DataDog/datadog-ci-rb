@@ -2,6 +2,8 @@ RSpec.describe Datadog::CI::Recorder do
   let(:trace_op) { instance_double(Datadog::Tracing::TraceOperation) }
   let(:service) { "service" }
   let(:operation_name) { "span name" }
+  let(:test_name) { "test name" }
+  let(:tags) { {} }
 
   subject(:recorder) { described_class.new }
 
@@ -19,9 +21,6 @@ RSpec.describe Datadog::CI::Recorder do
   end
 
   describe "#trace_test" do
-    let(:tags) { {} }
-    let(:test_name) { "test name" }
-
     let(:expected_tags) do
       tags
         .merge(Datadog::CI::Ext::Environment.tags(ENV))
@@ -149,7 +148,6 @@ RSpec.describe Datadog::CI::Recorder do
         trace
       end
 
-      it_behaves_like "internal tracing context"
       it { expect(block_spy).to have_received(:call).with(ci_span) }
       it { is_expected.to be(block_result) }
     end
@@ -183,8 +181,63 @@ RSpec.describe Datadog::CI::Recorder do
         trace
       end
 
-      it_behaves_like "internal tracing context"
       it { is_expected.to be(ci_span) }
+    end
+  end
+
+  describe "#active_test" do
+    subject(:active_test) { recorder.active_test }
+
+    let(:ci_test) do
+      recorder.trace_test(
+        test_name,
+        service_name: service,
+        operation_name: operation_name,
+        tags: tags
+      )
+    end
+
+    before { ci_test }
+
+    it { is_expected.to be(ci_test) }
+  end
+
+  describe "#deactivate_test" do
+    subject(:deactivate_test) { recorder.deactivate_test(ci_test) }
+
+    let(:ci_test) do
+      recorder.trace_test(
+        test_name,
+        service_name: service,
+        operation_name: operation_name,
+        tags: tags
+      )
+    end
+
+    before { deactivate_test }
+
+    it { expect(recorder.active_test).to be_nil }
+  end
+
+  describe "#active_span" do
+    subject(:active_span) { recorder.active_span }
+
+    context "when there is active span in tracing context" do
+      let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
+      let(:ci_span) { instance_double(Datadog::CI::Span) }
+
+      before do
+        allow(Datadog::Tracing).to receive(:active_span).and_return(span_op)
+        allow(Datadog::CI::Span).to receive(:new).with(span_op).and_return(ci_span)
+      end
+
+      it { is_expected.to be(ci_span) }
+    end
+
+    context "when there is no active span in tracing context" do
+      before { allow(Datadog::Tracing).to receive(:active_span).and_return(nil) }
+
+      it { is_expected.to be_nil }
     end
   end
 end

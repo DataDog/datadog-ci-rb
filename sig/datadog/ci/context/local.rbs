@@ -1,0 +1,26 @@
+module Datadog
+  module CI
+    module Context
+      class Local
+        @key: String
+
+        def initialize: () -> void
+
+        def activate_test!: (Datadog::CI::Test test) ?{ () -> untyped } -> void
+
+        def deactivate_test!: (Datadog::CI::Test test) -> void
+
+        def active_test: () -> Datadog::CI::Test?
+
+        UNIQUE_INSTANCE_MUTEX: untyped
+        UNIQUE_INSTANCE_GENERATOR: untyped
+
+        def self.next_instance_id: () -> untyped
+
+        private
+
+        def active_test=: (Datadog::CI::Test? test) -> untyped
+      end
+    end
+  end
+end

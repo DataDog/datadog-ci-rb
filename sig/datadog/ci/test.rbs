@@ -1,0 +1,7 @@
+module Datadog
+  module CI
+    class Test < Span
+      def finish: () -> void
+    end
+  end
+end
