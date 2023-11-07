@@ -12,10 +12,8 @@ module Datadog
     class Span
       attr_reader :tracer_span
 
-      def initialize(tracer_span, tags = nil)
+      def initialize(tracer_span)
         @tracer_span = tracer_span
-
-        init_span!(tags) unless tags.nil?
       end
 
       def name
@@ -73,14 +71,6 @@ module Datadog
 
       def set_default_tags
         tracer_span.set_tag(Ext::Test::TAG_SPAN_KIND, Ext::AppTypes::TYPE_TEST)
-      end
-
-      private
-
-      def init_span!(tags)
-        set_tags(tags)
-        set_default_tags
-        set_environment_runtime_tags
       end
     end
   end

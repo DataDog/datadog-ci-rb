@@ -5,7 +5,7 @@ module Datadog
 
       attr_reader tracer_span: Datadog::Tracing::SpanOperation
 
-      def initialize: (Datadog::Tracing::SpanOperation tracer_span, ?Hash[untyped, untyped]? tags) -> void
+      def initialize: (Datadog::Tracing::SpanOperation tracer_span) -> void
 
       def name: () -> String
 
@@ -30,10 +30,6 @@ module Datadog
       def set_environment_runtime_tags: () -> void
 
       def set_default_tags: () -> void
-
-      private
-
-      def init_span!: (Hash[untyped, untyped] tags) -> void
     end
   end
 end

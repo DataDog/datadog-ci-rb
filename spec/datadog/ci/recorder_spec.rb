@@ -110,6 +110,13 @@ RSpec.describe Datadog::CI::Recorder do
   end
 
   describe "#trace" do
+    def expect_initialized_span
+      allow(Datadog::CI::Span).to receive(:new).with(span_op).and_return(ci_span)
+      expect(ci_span).to receive(:set_default_tags)
+      expect(ci_span).to receive(:set_environment_runtime_tags)
+      expect(ci_span).to receive(:set_tags).with(tags)
+    end
+
     let(:tags) { {"my_tag" => "my_value"} }
     let(:span_type) { "step" }
     let(:span_name) { "span name" }
@@ -147,7 +154,7 @@ RSpec.describe Datadog::CI::Recorder do
             trace_block.call(span_op, trace_op)
           end
 
-        allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_span)
+        expect_initialized_span
 
         trace
       end
@@ -180,7 +187,7 @@ RSpec.describe Datadog::CI::Recorder do
           )
           .and_return(span_op)
 
-        allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_span)
+        expect_initialized_span
 
         trace
       end

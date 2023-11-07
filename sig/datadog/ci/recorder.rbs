@@ -23,6 +23,8 @@ module Datadog
       private
 
       def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
+
+      def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
     end
   end
 end

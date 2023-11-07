@@ -65,12 +65,12 @@ module Datadog
         # create_datadog_span(span_name, span_options: span_options, tags: tags, &block)
         if block
           Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
-            block.call(Span.new(tracer_span, tags))
+            block.call(build_span(tracer_span, tags))
           end
         else
           tracer_span = Datadog::Tracing.trace(span_name, **span_options)
 
-          Span.new(tracer_span, tags)
+          build_span(tracer_span, tags)
         end
       end
 
@@ -104,6 +104,16 @@ module Datadog
         test.set_tags(environment_tags)
 
         test
+      end
+
+      def build_span(tracer_span, tags)
+        span = Span.new(tracer_span)
+
+        span.set_default_tags
+        span.set_environment_runtime_tags
+        span.set_tags(tags)
+
+        span
       end
     end
   end
