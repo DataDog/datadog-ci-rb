@@ -56,6 +56,8 @@ RSpec.describe "RSpec hooks" do
   end
 
   it "creates spans for several examples" do
+    expect(Datadog::CI::Ext::Environment).to receive(:tags).never
+
     num_examples = 20
     with_new_rspec_environment do
       RSpec.describe "many tests" do

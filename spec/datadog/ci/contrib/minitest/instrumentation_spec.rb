@@ -43,6 +43,8 @@ RSpec.describe "Minitest hooks" do
   end
 
   it "creates spans for several tests" do
+    expect(Datadog::CI::Ext::Environment).to receive(:tags).never
+
     num_tests = 20
 
     klass = Class.new(Minitest::Test) do
