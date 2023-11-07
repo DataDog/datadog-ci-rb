@@ -72,6 +72,10 @@ module Datadog
       def set_default_tags
         tracer_span.set_tag(Ext::Test::TAG_SPAN_KIND, Ext::AppTypes::TYPE_TEST)
       end
+
+      def to_s
+        "#{self.class}(name:#{name},tracer_span:#{@tracer_span})"
+      end
     end
   end
 end

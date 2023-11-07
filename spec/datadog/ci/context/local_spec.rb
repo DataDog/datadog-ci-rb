@@ -1,7 +1,7 @@
 RSpec.describe Datadog::CI::Context::Local do
   subject { described_class.new }
 
-  let(:tracer_span) { double(Datadog::Tracing::SpanOperation) }
+  let(:tracer_span) { double(Datadog::Tracing::SpanOperation, get_tag: "my test") }
   let(:ci_test) { Datadog::CI::Test.new(tracer_span) }
   let(:ci_test2) { Datadog::CI::Test.new(tracer_span) }
 
@@ -14,7 +14,13 @@ RSpec.describe Datadog::CI::Context::Local do
       it "raises an error" do
         subject.activate_test!(Datadog::CI::Test.new(tracer_span))
 
-        expect { subject.activate_test!(ci_test) }.to raise_error(RuntimeError, /Nested tests are not supported/)
+        expect { subject.activate_test!(ci_test) }.to(
+          raise_error(
+            RuntimeError,
+            "Nested tests are not supported. Currently active test: " \
+            "Datadog::CI::Test(name:my test,tracer_span:#[Double Datadog::Tracing::SpanOperation])"
+          )
+        )
       end
     end
 
