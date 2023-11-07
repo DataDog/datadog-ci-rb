@@ -10,6 +10,10 @@ module Datadog
 
         CI.deactivate_test(self)
       end
+
+      def name
+        get_tag(Ext::Test::TAG_NAME)
+      end
     end
   end
 end

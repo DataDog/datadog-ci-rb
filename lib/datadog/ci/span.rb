@@ -15,7 +15,11 @@ module Datadog
       def initialize(tracer_span, tags = nil)
         @tracer_span = tracer_span
 
-        set_tags!(tags) unless tags.nil?
+        init_span!(tags) unless tags.nil?
+      end
+
+      def name
+        tracer_span.name
       end
 
       def passed!
@@ -34,6 +38,10 @@ module Datadog
         tracer_span.set_tag(Ext::Test::TAG_SKIP_REASON, reason) unless reason.nil?
       end
 
+      def get_tag(key)
+        tracer_span.get_tag(key)
+      end
+
       def set_tag(key, value)
         tracer_span.set_tag(key, value)
       end
@@ -50,24 +58,29 @@ module Datadog
         tracer_span.type
       end
 
-      private
-
-      def set_tags!(tags)
-        # set default tags
-        tracer_span.set_tag(Ext::Test::TAG_SPAN_KIND, Ext::AppTypes::TYPE_TEST)
-
+      def set_tags(tags)
         tags.each do |key, value|
           tracer_span.set_tag(key, value)
         end
-
-        set_environment_runtime_tags!
       end
 
-      def set_environment_runtime_tags!
+      def set_environment_runtime_tags
         tracer_span.set_tag(Ext::Test::TAG_OS_ARCHITECTURE, ::RbConfig::CONFIG["host_cpu"])
         tracer_span.set_tag(Ext::Test::TAG_OS_PLATFORM, ::RbConfig::CONFIG["host_os"])
         tracer_span.set_tag(Ext::Test::TAG_RUNTIME_NAME, Core::Environment::Ext::LANG_ENGINE)
         tracer_span.set_tag(Ext::Test::TAG_RUNTIME_VERSION, Core::Environment::Ext::ENGINE_VERSION)
+      end
+
+      def set_default_tags
+        tracer_span.set_tag(Ext::Test::TAG_SPAN_KIND, Ext::AppTypes::TYPE_TEST)
+      end
+
+      private
+
+      def init_span!(tags)
+        set_tags(tags)
+        set_default_tags
+        set_environment_runtime_tags
       end
     end
   end

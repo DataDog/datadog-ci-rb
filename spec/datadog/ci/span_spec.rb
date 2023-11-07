@@ -33,6 +33,15 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
+  describe "#name" do
+    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, name: "span_name") }
+    let(:span) { described_class.new(tracer_span) }
+
+    it "returns the span name" do
+      expect(span.name).to eq("span_name")
+    end
+  end
+
   describe "#passed!" do
     let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
     let(:span) { described_class.new(tracer_span) }

@@ -33,16 +33,12 @@ module Datadog
         }
 
         tags[Ext::Test::TAG_NAME] = test_name
-        tags.merge!(environment_tags)
 
         if block
           Datadog::Tracing.trace(operation_name, **span_options) do |tracer_span, trace|
             set_internal_tracing_context!(trace, tracer_span)
 
-            test = Test.new(tracer_span, tags)
-            # test.set_default_tags!
-            # test.set_tags!(environment_tags)
-            # test.set_tags!(tags)
+            test = build_test(tracer_span, tags)
 
             @local_context.activate_test!(test) do
               block.call(test)
@@ -53,11 +49,8 @@ module Datadog
           trace = Datadog::Tracing.active_trace
 
           set_internal_tracing_context!(trace, tracer_span)
-          test = Test.new(tracer_span, tags)
-          # test.set_default_tags!
-          # test.set_tags!(environment_tags)
-          # test.set_tags!(tags)
 
+          test = build_test(tracer_span, tags)
           @local_context.activate_test!(test)
           test
         end
@@ -99,6 +92,18 @@ module Datadog
       def set_internal_tracing_context!(trace, span)
         # Sets trace's origin to ciapp-test
         trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
+      end
+
+      def build_test(tracer_span, tags)
+        test = Test.new(tracer_span)
+
+        test.set_default_tags
+        test.set_environment_runtime_tags
+
+        test.set_tags(tags)
+        test.set_tags(environment_tags)
+
+        test
       end
     end
   end

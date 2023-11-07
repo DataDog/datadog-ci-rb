@@ -4,6 +4,7 @@ RSpec.describe Datadog::CI::Recorder do
   let(:operation_name) { "span name" }
   let(:test_name) { "test name" }
   let(:tags) { {} }
+  let(:environment_tags) { Datadog::CI::Ext::Environment.tags(ENV) }
 
   subject(:recorder) { described_class.new }
 
@@ -21,10 +22,12 @@ RSpec.describe Datadog::CI::Recorder do
   end
 
   describe "#trace_test" do
-    let(:expected_tags) do
-      tags
-        .merge(Datadog::CI::Ext::Environment.tags(ENV))
-        .merge({Datadog::CI::Ext::Test::TAG_NAME => test_name})
+    def expect_initialized_test
+      allow(Datadog::CI::Test).to receive(:new).with(span_op).and_return(ci_test)
+      expect(ci_test).to receive(:set_default_tags)
+      expect(ci_test).to receive(:set_environment_runtime_tags)
+      expect(ci_test).to receive(:set_tags).with(tags)
+      expect(ci_test).to receive(:set_tags).with(environment_tags)
     end
 
     context "when given a block" do
@@ -39,7 +42,7 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
-      let(:ci_test) { instance_double(Datadog::CI::Span) }
+      let(:ci_test) { instance_double(Datadog::CI::Test) }
       let(:block) { proc { |s| block_spy.call(s) } }
       let(:block_result) { double("result") }
       let(:block_spy) { spy("block") }
@@ -57,10 +60,11 @@ RSpec.describe Datadog::CI::Recorder do
                 service: service
               }
             )
+
+            expect_initialized_test
+
             trace_block.call(span_op, trace_op)
           end
-
-        allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_test)
 
         trace
       end
@@ -80,7 +84,7 @@ RSpec.describe Datadog::CI::Recorder do
         )
       end
       let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
-      let(:ci_test) { instance_double(Datadog::CI::Span) }
+      let(:ci_test) { instance_double(Datadog::CI::Test) }
 
       before do
         allow(Datadog::Tracing)
@@ -95,7 +99,7 @@ RSpec.describe Datadog::CI::Recorder do
           )
           .and_return(span_op)
 
-        allow(Datadog::CI::Span).to receive(:new).with(span_op, expected_tags).and_return(ci_test)
+        expect_initialized_test
 
         trace
       end

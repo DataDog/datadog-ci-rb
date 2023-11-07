@@ -7,25 +7,33 @@ module Datadog
 
       def initialize: (Datadog::Tracing::SpanOperation tracer_span, ?Hash[untyped, untyped]? tags) -> void
 
+      def name: () -> String
+
       def passed!: () -> void
 
       def failed!: (?exception: untyped?) -> void
 
       def skipped!: (?exception: untyped?, ?reason: String?) -> void
 
+      def get_tag: (String key) -> untyped?
+
       def set_tag: (String key, untyped? value) -> void
 
       def set_metric: (String key, untyped value) -> void
+
+      def set_tags: (Hash[untyped, untyped] tags) -> void
 
       def finish: () -> void
 
       def span_type: () -> String
 
+      def set_environment_runtime_tags: () -> void
+
+      def set_default_tags: () -> void
+
       private
 
-      def set_tags!: (Hash[untyped, untyped] tags) -> void
-
-      def set_environment_runtime_tags!: () -> void
+      def init_span!: (Hash[untyped, untyped] tags) -> void
     end
   end
 end
