@@ -30,18 +30,18 @@ To activate `RSpec` integration, add this to the `spec_helper.rb` file:
 require 'rspec'
 require 'datadog/ci'
 
-Datadog.configure do |c|
-  # Only activates test instrumentation on CI
-  c.tracing.enabled = (ENV["DD_ENV"] == "ci")
+# Only activates test instrumentation on CI
+if ENV["DD_ENV"] == "ci"
+  Datadog.configure do |c|
+    # Configures the tracer to ensure results delivery
+    c.ci.enabled = true
 
-  # Configures the tracer to ensure results delivery
-  c.ci.enabled = true
+    # The name of the service or library under test
+    c.service = 'my-ruby-app'
 
-  # The name of the service or library under test
-  c.service = 'my-ruby-app'
-
-  # Enables the RSpec instrumentation
-  c.ci.instrument :rspec, **options
+    # Enables the RSpec instrumentation
+    c.ci.instrument :rspec, **options
+  end
 end
 ```
 
@@ -63,18 +63,18 @@ To activate your integration, use the `Datadog.configure` method:
 require 'minitest'
 require 'datadog/ci'
 
+# Only activates test instrumentation on CI
+if ENV["DD_ENV"] == "ci"
 # Configure default Minitest integration
-Datadog.configure do |c|
-  # Only activates test instrumentation on CI
-  c.tracing.enabled = (ENV["DD_ENV"] == "ci")
+  Datadog.configure do |c|
+    # Configures the tracer to ensure results delivery
+    c.ci.enabled = true
 
-  # Configures the tracer to ensure results delivery
-  c.ci.enabled = true
+    # The name of the service or library under test
+    c.service = 'my-ruby-app'
 
-  # The name of the service or library under test
-  c.service = 'my-ruby-app'
-
-  c.ci.instrument :minitest, **options
+    c.ci.instrument :minitest, **options
+  end
 end
 ```
 
@@ -94,18 +94,18 @@ Activate `Cucumber` integration with configuration
 require 'cucumber'
 require 'datadog/ci'
 
-Datadog.configure do |c|
-  # Only activates test instrumentation on CI
-  c.tracing.enabled = (ENV["DD_ENV"] == "ci")
+# Only activates test instrumentation on CI
+if ENV["DD_ENV"] == "ci"
+  Datadog.configure do |c|
+    # Configures the tracer to ensure results delivery
+    c.ci.enabled = true
 
-  # Configures the tracer to ensure results delivery
-  c.ci.enabled = true
+    # The name of the service or library under test
+    c.service = 'my-ruby-app'
 
-  # The name of the service or library under test
-  c.service = 'my-ruby-app'
-
-  # Enables the Cucumber instrumentation
-  c.ci.instrument :cucumber, **options
+    # Enables the Cucumber instrumentation
+    c.ci.instrument :cucumber, **options
+  end
 end
 ```
 
