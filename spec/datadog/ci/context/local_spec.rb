@@ -5,10 +5,6 @@ RSpec.describe Datadog::CI::Context::Local do
   let(:ci_test) { Datadog::CI::Test.new(tracer_span) }
   let(:ci_test2) { Datadog::CI::Test.new(tracer_span) }
 
-  def fiber_active_tests
-    Thread.current.keys.select { |k| k.to_s.start_with?("datadog_ci_active_test_") }
-  end
-
   describe "#activate_test!" do
     context "when a test is already active" do
       it "raises an error" do
@@ -43,26 +39,14 @@ RSpec.describe Datadog::CI::Context::Local do
       end
     end
 
-    context "with multiple local contexts" do
-      let(:local_context_1) { described_class.new }
-      let(:local_context_2) { described_class.new }
-
-      it "does not share the active test" do
-        local_context_1.activate_test!(ci_test)
-        local_context_2.activate_test!(ci_test2)
-
-        expect(local_context_1.active_test).to be(ci_test)
-        expect(local_context_2.active_test).to be(ci_test2)
-      end
-    end
-
     context "with multiple fibers" do
       it "create one fiber-local variable per fiber" do
         subject.activate_test!(ci_test)
 
         Fiber.new do
-          expect { subject.activate_test!(ci_test2) }
-            .to change { fiber_active_tests.size }.from(0).to(1)
+          subject.activate_test!(ci_test2)
+
+          expect(subject.active_test).to be(ci_test2)
         end.resume
 
         expect(subject.active_test).to be(ci_test)
@@ -74,8 +58,9 @@ RSpec.describe Datadog::CI::Context::Local do
         subject.activate_test!(ci_test)
 
         Thread.new do
-          expect { subject.activate_test!(ci_test2) }
-            .to change { fiber_active_tests.size }.from(0).to(1)
+          subject.activate_test!(ci_test2)
+
+          expect(subject.active_test).to be(ci_test2)
         end.join
 
         expect(subject.active_test).to be(ci_test)
@@ -121,19 +106,6 @@ RSpec.describe Datadog::CI::Context::Local do
 
       it "returns the active test" do
         expect(subject.active_test).to be(ci_test)
-      end
-    end
-
-    context "with multiple local contexts" do
-      let(:local_context_1) { described_class.new }
-      let(:local_context_2) { described_class.new }
-
-      it "does not share the active test" do
-        local_context_1.activate_test!(ci_test)
-        local_context_2.activate_test!(ci_test2)
-
-        expect(local_context_1.active_test).to be(ci_test)
-        expect(local_context_2.active_test).to be(ci_test2)
       end
     end
   end

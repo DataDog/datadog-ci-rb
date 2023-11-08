@@ -7,7 +7,9 @@ module Datadog
     module Context
       class Local
         def initialize
-          @key = "datadog_ci_active_test_#{Local.next_instance_id}"
+          @key = :datadog_ci_active_test
+
+          self.active_test = nil
         end
 
         def activate_test!(test)
@@ -37,15 +39,6 @@ module Datadog
 
         def active_test
           Thread.current[@key]
-        end
-
-        UNIQUE_INSTANCE_MUTEX = Mutex.new
-        UNIQUE_INSTANCE_GENERATOR = Datadog::Core::Utils::Sequence.new
-
-        private_constant :UNIQUE_INSTANCE_MUTEX, :UNIQUE_INSTANCE_GENERATOR
-
-        def self.next_instance_id
-          UNIQUE_INSTANCE_MUTEX.synchronize { UNIQUE_INSTANCE_GENERATOR.next }
         end
 
         private
