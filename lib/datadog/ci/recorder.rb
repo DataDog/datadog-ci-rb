@@ -20,7 +20,7 @@ module Datadog
       attr_reader :environment_tags
 
       def initialize
-        @environment_tags = Ext::Environment.tags(ENV)
+        @environment_tags = Ext::Environment.tags(ENV).freeze
         @local_context = Context::Local.new
       end
 
