@@ -51,7 +51,7 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether RSpec tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `rspec` instrumentation. | `'rspec'` |
-| `operation_name` | Operation name used for `rspec` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'rspec.example'` |
+| `operation_name` | Operation name used for `rspec` instrumentation. | `'rspec.example'` |
 
 ### Minitest
 
@@ -84,7 +84,7 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether Minitest tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `minitest` instrumentation. | `'minitest'` |
-| `operation_name` | Operation name used for `minitest` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'minitest.test'` |
+| `operation_name` | Operation name used for `minitest` instrumentation. | `'minitest.test'` |
 
 ### Cucumber
 
@@ -115,7 +115,7 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether Cucumber tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `cucumber` instrumentation. | `'cucumber'` |
-| `operation_name` | Operation name used for `cucumber` instrumentation. Useful if you want rename automatic trace metrics e.g. `trace.#{operation_name}.errors`. | `'cucumber.test'` |
+| `operation_name` | Operation name used for `cucumber` instrumentation. | `'cucumber.test'` |
 
 ## Agentless mode
 
