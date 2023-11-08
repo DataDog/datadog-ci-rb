@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "datadog/core/utils/sequence"
-
 module Datadog
   module CI
     module Context
