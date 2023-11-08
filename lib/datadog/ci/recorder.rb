@@ -36,7 +36,7 @@ module Datadog
 
         if block
           Datadog::Tracing.trace(operation_name, **span_options) do |tracer_span, trace|
-            set_internal_tracing_context!(trace, tracer_span)
+            set_trace_origin(trace)
 
             test = build_test(tracer_span, tags)
 
@@ -48,7 +48,7 @@ module Datadog
           tracer_span = Datadog::Tracing.trace(operation_name, **span_options)
           trace = Datadog::Tracing.active_trace
 
-          set_internal_tracing_context!(trace, tracer_span)
+          set_trace_origin(trace)
 
           test = build_test(tracer_span, tags)
           @local_context.activate_test!(test)
@@ -89,8 +89,8 @@ module Datadog
 
       private
 
-      def set_internal_tracing_context!(trace, span)
-        # Sets trace's origin to ciapp-test
+      # Sets trace's origin to ciapp-test
+      def set_trace_origin(trace)
         trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
       end
 

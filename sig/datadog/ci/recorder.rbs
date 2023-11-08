@@ -18,7 +18,7 @@ module Datadog
 
       def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-      def set_internal_tracing_context!: (Datadog::Tracing::TraceOperation trace, Datadog::Tracing::SpanOperation span) -> untyped
+      def set_trace_origin: (Datadog::Tracing::TraceOperation trace) -> untyped
 
       private
 
