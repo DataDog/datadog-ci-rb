@@ -11,6 +11,7 @@ module Datadog
   module CI
     class << self
       # Return a {Datadog::CI::Test ci_test} that will trace a test called `test_name`.
+      # Raises an error if a test is already active.
       #
       # You could trace your test using a <tt>do-block</tt> like:
       #
@@ -61,6 +62,7 @@ module Datadog
       end
 
       # Same as {#trace_test} but it does not accept a block.
+      # Raises an error if a test is already active.
       #
       # Usage:
       #
