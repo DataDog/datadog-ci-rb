@@ -62,7 +62,6 @@ module Datadog
           span_type: span_type
         }
 
-        # create_datadog_span(span_name, span_options: span_options, tags: tags, &block)
         if block
           Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
             block.call(build_span(tracer_span, tags))
