@@ -5,6 +5,7 @@ module Datadog
         module Providers
           class GithubActions < Extractor
             @ref: String
+            @github_server_url: String?
 
             def provider_name: () -> "github"
 
@@ -29,6 +30,10 @@ module Datadog
             def git_branch_or_tag: () -> String?
 
             def ci_env_vars: () -> String?
+
+            private
+
+            def github_server_url: () -> String?
           end
         end
       end
