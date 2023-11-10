@@ -18,8 +18,6 @@ module Datadog
           def normalize_git!: () -> void
 
           def expand_workspace!: () -> void
-
-          def filter_sensitive_info: (String? url) -> String?
         end
       end
     end

@@ -3,6 +3,7 @@
 require "json"
 
 require_relative "base"
+require_relative "../../../utils/url"
 
 module Datadog
   module CI
@@ -25,7 +26,7 @@ module Datadog
             end
 
             def job_url
-              "#{env["GITHUB_SERVER_URL"]}/#{env["GITHUB_REPOSITORY"]}/commit/#{env["GITHUB_SHA"]}/checks"
+              "#{github_server_url}/#{env["GITHUB_REPOSITORY"]}/commit/#{env["GITHUB_SHA"]}/checks"
             end
 
             def pipeline_id
@@ -41,7 +42,7 @@ module Datadog
             end
 
             def pipeline_url
-              res = "#{env["GITHUB_SERVER_URL"]}/#{env["GITHUB_REPOSITORY"]}/actions/runs/#{env["GITHUB_RUN_ID"]}"
+              res = "#{github_server_url}/#{env["GITHUB_REPOSITORY"]}/actions/runs/#{env["GITHUB_RUN_ID"]}"
               res = "#{res}/attempts/#{env["GITHUB_RUN_ATTEMPT"]}" if env["GITHUB_RUN_ATTEMPT"]
               res
             end
@@ -51,7 +52,7 @@ module Datadog
             end
 
             def git_repository_url
-              "#{env["GITHUB_SERVER_URL"]}/#{env["GITHUB_REPOSITORY"]}.git"
+              "#{github_server_url}/#{env["GITHUB_REPOSITORY"]}.git"
             end
 
             def git_commit_sha
@@ -66,11 +67,19 @@ module Datadog
 
             def ci_env_vars
               {
-                "GITHUB_SERVER_URL" => env["GITHUB_SERVER_URL"],
+                "GITHUB_SERVER_URL" => github_server_url,
                 "GITHUB_REPOSITORY" => env["GITHUB_REPOSITORY"],
                 "GITHUB_RUN_ID" => env["GITHUB_RUN_ID"],
                 "GITHUB_RUN_ATTEMPT" => env["GITHUB_RUN_ATTEMPT"]
               }.reject { |_, v| v.nil? }.to_json
+            end
+
+            private
+
+            def github_server_url
+              return @github_server_url if defined?(@github_server_url)
+
+              @github_server_url ||= Utils::Url.filter_sensitive_info(env["GITHUB_SERVER_URL"])
             end
           end
         end

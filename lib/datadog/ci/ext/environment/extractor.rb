@@ -2,6 +2,7 @@
 
 require_relative "../git"
 require_relative "../../utils/git"
+require_relative "../../utils/url"
 require_relative "providers"
 
 module Datadog
@@ -68,14 +69,14 @@ module Datadog
 
           def normalize_git!
             branch_ref = @tags[Git::TAG_BRANCH]
-            if Datadog::CI::Utils::Git.is_git_tag?(branch_ref)
+            if Utils::Git.is_git_tag?(branch_ref)
               @tags[Git::TAG_TAG] = branch_ref
               @tags.delete(Git::TAG_BRANCH)
             end
 
-            @tags[Git::TAG_TAG] = Datadog::CI::Utils::Git.normalize_ref(@tags[Git::TAG_TAG])
-            @tags[Git::TAG_BRANCH] = Datadog::CI::Utils::Git.normalize_ref(@tags[Git::TAG_BRANCH])
-            @tags[Git::TAG_REPOSITORY_URL] = filter_sensitive_info(
+            @tags[Git::TAG_TAG] = Utils::Git.normalize_ref(@tags[Git::TAG_TAG])
+            @tags[Git::TAG_BRANCH] = Utils::Git.normalize_ref(@tags[Git::TAG_BRANCH])
+            @tags[Git::TAG_REPOSITORY_URL] = Utils::Url.filter_sensitive_info(
               @tags[Git::TAG_REPOSITORY_URL]
             )
           end
@@ -86,12 +87,6 @@ module Datadog
             if !workspace_path.nil? && (workspace_path == "~" || workspace_path.start_with?("~/"))
               @tags[TAG_WORKSPACE_PATH] = File.expand_path(workspace_path)
             end
-          end
-
-          def filter_sensitive_info(url)
-            return nil if url.nil?
-
-            url.gsub(%r{(https?://)[^/]*@}, '\1')
           end
         end
       end
