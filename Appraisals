@@ -17,6 +17,11 @@ REMOVED_GEMS = {
   check: [
     "rbs",
     "steep"
+  ],
+  development: [
+    "ruby-lsp",
+    "ruby-lsp-rspec",
+    "debug"
   ]
 }
 
