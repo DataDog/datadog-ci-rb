@@ -36,3 +36,13 @@ group :check do
     gem "steep", "~> 1.4.0", require: false
   end
 end
+
+# development dependencies for vscode integration and debugging
+group :development do
+  if RUBY_VERSION >= "3.0.0" && RUBY_PLATFORM != "java"
+    gem "ruby-lsp"
+    gem "ruby-lsp-rspec"
+
+    gem "debug"
+  end
+end
