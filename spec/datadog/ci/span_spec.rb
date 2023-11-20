@@ -1,42 +1,14 @@
 RSpec.describe Datadog::CI::Span do
-  describe "#initialize" do
-    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
-    let(:span) { described_class.new(tracer_span, tags) }
+  let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, name: "span_name", type: "test") }
+  subject(:span) { described_class.new(tracer_span) }
 
-    context "when tags are nil" do
-      let(:tags) { nil }
-
-      it "doesn't set any tags" do
-        expect(tracer_span).to_not receive(:set_tag)
-        span
-      end
-    end
-
-    context "when tags are provided" do
-      let(:tags) { {"foo" => "bar"} }
-
-      it "sets provided tags along with default tag and environment tag" do
-        # default tags
-        expect(tracer_span).to receive(:set_tag).with("span.kind", "test")
-
-        # runtime tags
-        expect(tracer_span).to receive(:set_tag).with("os.architecture", ::RbConfig::CONFIG["host_cpu"])
-        expect(tracer_span).to receive(:set_tag).with("os.platform", ::RbConfig::CONFIG["host_os"])
-        expect(tracer_span).to receive(:set_tag).with("runtime.name", Datadog::Core::Environment::Ext::LANG_ENGINE)
-        expect(tracer_span).to receive(:set_tag).with("runtime.version", Datadog::Core::Environment::Ext::ENGINE_VERSION)
-
-        # client-supplied tags
-        expect(tracer_span).to receive(:set_tag).with("foo", "bar")
-
-        span
-      end
+  describe "#name" do
+    it "returns the span name" do
+      expect(span.name).to eq("span_name")
     end
   end
 
   describe "#passed!" do
-    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
-    let(:span) { described_class.new(tracer_span) }
-
     it "sets the status to PASS" do
       expect(tracer_span).to receive(:set_tag).with("test.status", "pass")
 
@@ -45,9 +17,6 @@ RSpec.describe Datadog::CI::Span do
   end
 
   describe "#failed!" do
-    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
-    let(:span) { described_class.new(tracer_span) }
-
     context "when exception is nil" do
       it "sets the status to FAIL" do
         expect(tracer_span).to receive(:status=).with(1)
@@ -69,9 +38,6 @@ RSpec.describe Datadog::CI::Span do
   end
 
   describe "#skipped!" do
-    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
-    let(:span) { described_class.new(tracer_span) }
-
     context "when exception is nil" do
       it "sets the status to SKIP" do
         expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
@@ -112,9 +78,6 @@ RSpec.describe Datadog::CI::Span do
   end
 
   describe "#set_tag" do
-    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
-    let(:span) { described_class.new(tracer_span) }
-
     it "sets the tag" do
       expect(tracer_span).to receive(:set_tag).with("foo", "bar")
 
@@ -122,10 +85,16 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
-  describe "#set_metric" do
-    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
-    let(:span) { described_class.new(tracer_span) }
+  describe "#set_tags" do
+    it "sets the tags" do
+      expect(tracer_span).to receive(:set_tag).with("foo", "bar")
+      expect(tracer_span).to receive(:set_tag).with("baz", "qux")
 
+      span.set_tags("foo" => "bar", "baz" => "qux")
+    end
+  end
+
+  describe "#set_metric" do
     it "sets the metric" do
       expect(tracer_span).to receive(:set_metric).with("foo", "bar")
 
@@ -133,14 +102,36 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
-  describe "#finish" do
-    let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
-    let(:span) { described_class.new(tracer_span) }
+  describe "#set_default_tags" do
+    it "sets the default tags" do
+      expect(tracer_span).to receive(:set_tag).with("span.kind", "test")
 
+      span.set_default_tags
+    end
+  end
+
+  describe "#set_environment_runtime_tags" do
+    it "sets the environment runtime tags" do
+      expect(tracer_span).to receive(:set_tag).with("os.architecture", ::RbConfig::CONFIG["host_cpu"])
+      expect(tracer_span).to receive(:set_tag).with("os.platform", ::RbConfig::CONFIG["host_os"])
+      expect(tracer_span).to receive(:set_tag).with("runtime.name", Datadog::Core::Environment::Ext::LANG_ENGINE)
+      expect(tracer_span).to receive(:set_tag).with("runtime.version", Datadog::Core::Environment::Ext::ENGINE_VERSION)
+
+      span.set_environment_runtime_tags
+    end
+  end
+
+  describe "#finish" do
     it "finishes the span" do
       expect(tracer_span).to receive(:finish)
 
       span.finish
+    end
+  end
+
+  describe "#span_type" do
+    it "returns 'test'" do
+      expect(span.span_type).to eq("test")
     end
   end
 end

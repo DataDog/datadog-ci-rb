@@ -36,6 +36,8 @@ RSpec.describe "Cucumber formatter" do
     end
 
     it "creates spans for each scenario and step" do
+      expect(Datadog::CI::Ext::Environment).to receive(:tags).never
+
       expect(kernel).to receive(:exit).with(0)
 
       do_execute

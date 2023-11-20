@@ -2,16 +2,29 @@ module Datadog
   module CI
     class Recorder
       @environment_tags: Hash[String, String]
+      @local_context: Datadog::CI::Context::Local
 
       attr_reader environment_tags: Hash[String, String]
 
-      def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+      def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
       def trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
+      def active_test: () -> Datadog::CI::Test?
+
+      def active_span: () -> Datadog::CI::Span?
+
+      def deactivate_test: (Datadog::CI::Test test) -> void
+
       def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-      def set_internal_tracing_context!: (Datadog::Tracing::TraceOperation trace, Datadog::Tracing::SpanOperation span) -> untyped
+      def set_trace_origin: (Datadog::Tracing::TraceOperation trace) -> untyped
+
+      private
+
+      def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
+
+      def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
     end
   end
 end

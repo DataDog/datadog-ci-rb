@@ -18,7 +18,7 @@ module Datadog
             path, = method(name).source_location
             test_suite = Pathname.new(path.to_s).relative_path_from(Pathname.pwd).to_s
 
-            test_span = CI.start_test(
+            CI.start_test(
               test_name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
@@ -29,15 +29,11 @@ module Datadog
               service_name: configuration[:service_name],
               operation_name: configuration[:operation_name]
             )
-
-            Thread.current[:_datadog_test_span] = test_span
           end
 
           def after_teardown
-            test_span = Thread.current[:_datadog_test_span]
+            test_span = CI.active_test
             return super unless test_span
-
-            Thread.current[:_datadog_test_span] = nil
 
             case result_code
             when "."

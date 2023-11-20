@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module Context
+      class Local
+        @key: Symbol
+
+        def initialize: () -> void
+
+        def activate_test!: (Datadog::CI::Test test) ?{ () -> untyped } -> void
+
+        def deactivate_test!: (Datadog::CI::Test test) -> void
+
+        def active_test: () -> Datadog::CI::Test?
+
+        private
+
+        def active_test=: (Datadog::CI::Test? test) -> untyped
+      end
+    end
+  end
+end

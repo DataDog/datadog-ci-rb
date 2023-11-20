@@ -27,7 +27,7 @@ module Datadog
           end
 
           def on_test_case_started(event)
-            @current_feature_span = CI.start_test(
+            CI.start_test(
               event.test_case.name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
@@ -41,35 +41,37 @@ module Datadog
           end
 
           def on_test_case_finished(event)
-            return if @current_feature_span.nil?
+            test_span = CI.active_test
+            return if test_span.nil?
 
             if event.result.skipped?
-              @current_feature_span.skipped!
+              test_span.skipped!
             elsif event.result.ok?
-              @current_feature_span.passed!
+              test_span.passed!
             elsif event.result.failed?
-              @current_feature_span.failed!
+              test_span.failed!
             end
 
-            @current_feature_span.finish
+            test_span.finish
           end
 
           def on_test_step_started(event)
-            @current_step_span = CI.trace(Ext::STEP_SPAN_TYPE, event.test_step.to_s)
+            CI.trace(Ext::STEP_SPAN_TYPE, event.test_step.to_s)
           end
 
           def on_test_step_finished(event)
-            return if @current_step_span.nil?
+            current_step_span = CI.active_span(Ext::STEP_SPAN_TYPE)
+            return if current_step_span.nil?
 
             if event.result.skipped?
-              @current_step_span.skipped!
+              current_step_span.skipped!
             elsif event.result.ok?
-              @current_step_span.passed!
+              current_step_span.passed!
             elsif event.result.failed?
-              @current_step_span.failed!(exception: event.result.exception)
+              current_step_span.failed!(exception: event.result.exception)
             end
 
-            @current_step_span.finish
+            current_step_span.finish
           end
 
           private

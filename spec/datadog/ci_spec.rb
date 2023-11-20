@@ -1,4 +1,10 @@
 RSpec.describe Datadog::CI do
+  let(:recorder) { instance_double(Datadog::CI::Recorder) }
+
+  before do
+    allow(Datadog::CI).to receive(:recorder).and_return(recorder)
+  end
+
   describe "::trace_test" do
     subject(:trace_test) { described_class.trace_test(test_name, **options, &block) }
 
@@ -12,19 +18,16 @@ RSpec.describe Datadog::CI do
     end
     let(:block) { proc {} }
 
-    let(:recorder) { instance_double(Datadog::CI::Recorder) }
-    let(:ci_test) { instance_double(Datadog::CI::Span) }
+    let(:ci_test) { instance_double(Datadog::CI::Test) }
 
     before do
-      allow(Datadog::CI).to receive(:recorder).and_return(recorder)
-
       allow(recorder).to receive(:trace_test).with(test_name, **options, &block).and_return(ci_test)
     end
 
     it { is_expected.to be(ci_test) }
   end
 
-  describe "#start_test" do
+  describe "::start_test" do
     subject(:start_test) { described_class.start_test(test_name, **options) }
 
     let(:test_name) { "test name" }
@@ -36,12 +39,9 @@ RSpec.describe Datadog::CI do
       }
     end
 
-    let(:recorder) { instance_double(Datadog::CI::Recorder) }
-    let(:ci_test) { instance_double(Datadog::CI::Span) }
+    let(:ci_test) { instance_double(Datadog::CI::Test) }
 
     before do
-      allow(Datadog::CI).to receive(:recorder).and_return(recorder)
-
       allow(recorder).to receive(:trace_test).with(test_name, **options).and_return(ci_test)
     end
 
@@ -56,15 +56,46 @@ RSpec.describe Datadog::CI do
     let(:options) { {tags: {"foo" => "bar"}} }
     let(:block) { proc {} }
 
-    let(:recorder) { instance_double(Datadog::CI::Recorder) }
     let(:ci_span) { instance_double(Datadog::CI::Span) }
 
     before do
-      allow(Datadog::CI).to receive(:recorder).and_return(recorder)
-
       allow(recorder).to receive(:trace).with(span_type, span_name, **options, &block).and_return(ci_span)
     end
 
     it { is_expected.to be(ci_span) }
+  end
+
+  describe "::active_span" do
+    subject(:active_span) { described_class.active_span(span_type) }
+
+    let(:span_type) { "span type" }
+
+    context "when span type matches current active span" do
+      let(:ci_span) { instance_double(Datadog::CI::Span, span_type: span_type) }
+
+      before do
+        allow(recorder).to receive(:active_span).and_return(ci_span)
+      end
+
+      it { is_expected.to be(ci_span) }
+    end
+
+    context "when span type does not match current active span" do
+      let(:ci_span) { instance_double(Datadog::CI::Span, span_type: "other span type") }
+
+      before do
+        allow(recorder).to receive(:active_span).and_return(ci_span)
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "when no active span" do
+      before do
+        allow(recorder).to receive(:active_span).and_return(nil)
+      end
+
+      it { is_expected.to be_nil }
+    end
   end
 end
