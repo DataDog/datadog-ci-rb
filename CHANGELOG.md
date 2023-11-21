@@ -1,5 +1,23 @@
 ## [Unreleased]
 
+## [0.4.0] - 2023-11-21
+
+### Added
+
+* Public API for manual test instrumentation ([#64][]) ([#61][])
+
+### Changed
+
+* fix tracing instrumentation example in readme ([#60][])
+
+### Fixed
+
+* Remove user credentials from ssh URLs and from GITHUB_REPO_URL environment variable ([#66][])
+
+### Removed
+
+* Remove _dd.measured tag from spans ([#65][])
+
 ## [0.3.0] - 2023-10-25
 
 ### Added
@@ -47,7 +65,8 @@
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.3.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.0...main
+[0.4.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.1.0...v0.1.1
@@ -66,3 +85,8 @@
 [#49]: https://github.com/DataDog/datadog-ci-rb/issues/49
 [#51]: https://github.com/DataDog/datadog-ci-rb/issues/51
 [#54]: https://github.com/DataDog/datadog-ci-rb/issues/54
+[#60]: https://github.com/DataDog/datadog-ci-rb/issues/60
+[#61]: https://github.com/DataDog/datadog-ci-rb/issues/61
+[#64]: https://github.com/DataDog/datadog-ci-rb/issues/64
+[#65]: https://github.com/DataDog/datadog-ci-rb/issues/65
+[#66]: https://github.com/DataDog/datadog-ci-rb/issues/66
