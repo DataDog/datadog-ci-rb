@@ -37,7 +37,7 @@ module Datadog
           end
 
           def type
-            "test"
+            Ext::AppTypes::TYPE_TEST
           end
 
           def name

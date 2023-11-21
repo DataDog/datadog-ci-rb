@@ -10,6 +10,54 @@ module Datadog
   # @public_api
   module CI
     class << self
+      # Return a {Datadog::CI::TestSesstion ci_test_session} that represents the whole test session run.
+      # Raises an error if a session is already active.
+      #
+      #
+      # The {#start_test_session} method is used to mark the start :
+      # ```
+      # Datadog::CI.start_test_session(
+      #   service: "my-web-site-tests",
+      #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
+      # )
+      #
+      # # Somewhere else after test run has ended
+      # Datadog::CI.active_test_session.finish
+      # ```
+      #
+      # Remember that calling {Datadog::CI::TestSession#finish} is mandatory.
+      #
+      # @param [String] service_name the service name for this session
+      # @param [Hash<String,String>] tags extra tags which should be added to the test.
+      # @return [Datadog::CI::TestSession] returns the active, running {Datadog::CI::TestSession}.
+      #
+      # @public_api
+      def start_test_session(service_name: nil, tags: {})
+        recorder.start_test_session(service_name: service_name, tags: tags)
+      end
+
+      # The active, unfinished test session span.
+      #
+      # Usage:
+      #
+      # ```
+      # # start a test session
+      # Datadog::CI.start_test_session(
+      #   service: "my-web-site-tests",
+      #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
+      # )
+      #
+      # # somewhere else, access the session
+      # test_session = Datadog::CI.active_test_session
+      # test_session.finish
+      # ```
+      #
+      # @return [Datadog::CI::TestSession] the active test session
+      # @return [nil] if no test session is active
+      def active_test_session
+        recorder.active_test_session
+      end
+
       # Return a {Datadog::CI::Test ci_test} that will trace a test called `test_name`.
       # Raises an error if a test is already active.
       #
@@ -187,6 +235,11 @@ module Datadog
       # Internal only, to finish a test use Datadog::CI::Test#finish
       def deactivate_test(test)
         recorder.deactivate_test(test)
+      end
+
+      # Internal only, to finish a test session use Datadog::CI::TestSession#finish
+      def deactivate_test_session
+        recorder.deactivate_test_session
       end
 
       private

@@ -11,7 +11,7 @@ module Datadog
           def content_fields: () -> Array[String | Hash[String, String]]
           def content_map_size: () -> Integer
 
-          def type: () -> "test"
+          def type: () -> ::String
 
           def name: () -> ::String
 

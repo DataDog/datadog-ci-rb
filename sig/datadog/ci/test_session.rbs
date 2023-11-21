@@ -1,0 +1,7 @@
+module Datadog
+  module CI
+    class TestSession < Span
+      @mutex: Thread::Mutex
+    end
+  end
+end

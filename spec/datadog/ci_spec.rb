@@ -98,4 +98,38 @@ RSpec.describe Datadog::CI do
       it { is_expected.to be_nil }
     end
   end
+
+  describe "::start_test_session" do
+    subject(:start_test_session) { described_class.start_test_session }
+
+    let(:ci_test_session) { instance_double(Datadog::CI::TestSession) }
+
+    before do
+      allow(recorder).to receive(:start_test_session).and_return(ci_test_session)
+    end
+
+    it { is_expected.to be(ci_test_session) }
+  end
+
+  describe "::active_test_session" do
+    subject(:active_test_session) { described_class.active_test_session }
+
+    let(:ci_test_session) { instance_double(Datadog::CI::TestSession) }
+
+    before do
+      allow(recorder).to receive(:active_test_session).and_return(ci_test_session)
+    end
+
+    it { is_expected.to be(ci_test_session) }
+  end
+
+  describe "::deactivate_test_session" do
+    subject(:deactivate_test_session) { described_class.deactivate_test_session }
+
+    before do
+      allow(recorder).to receive(:deactivate_test_session)
+    end
+
+    it { is_expected.to be_nil }
+  end
 end

@@ -6,6 +6,10 @@ RSpec.describe Datadog::CI::Recorder do
   let(:tags) { {} }
   let(:environment_tags) { Datadog::CI::Ext::Environment.tags(ENV) }
 
+  let(:ci_span) do
+    spy("CI object spy")
+  end
+
   subject(:recorder) { described_class.new }
 
   before do
@@ -21,15 +25,16 @@ RSpec.describe Datadog::CI::Recorder do
     end
   end
 
-  describe "#trace_test" do
-    def expect_initialized_test
-      allow(Datadog::CI::Test).to receive(:new).with(span_op).and_return(ci_test)
-      expect(ci_test).to receive(:set_default_tags)
-      expect(ci_test).to receive(:set_environment_runtime_tags)
-      expect(ci_test).to receive(:set_tags).with(tags)
-      expect(ci_test).to receive(:set_tags).with(environment_tags)
+  shared_examples_for "initialize ci span with tags" do
+    it do
+      expect(ci_span).to have_received(:set_default_tags)
+      expect(ci_span).to have_received(:set_environment_runtime_tags)
+      expect(ci_span).to have_received(:set_tags).with(tags)
+      expect(ci_span).to have_received(:set_tags).with(environment_tags)
     end
+  end
 
+  describe "#trace_test" do
     context "when given a block" do
       subject(:trace) do
         recorder.trace_test(
@@ -42,7 +47,6 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
-      let(:ci_test) { instance_double(Datadog::CI::Test) }
       let(:block) { proc { |s| block_spy.call(s) } }
       let(:block_result) { double("result") }
       let(:block_spy) { spy("block") }
@@ -61,7 +65,7 @@ RSpec.describe Datadog::CI::Recorder do
               }
             )
 
-            expect_initialized_test
+            allow(Datadog::CI::Test).to receive(:new).with(span_op).and_return(ci_span)
 
             trace_block.call(span_op, trace_op)
           end
@@ -70,7 +74,9 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       it_behaves_like "internal tracing context"
-      it { expect(block_spy).to have_received(:call).with(ci_test) }
+      it_behaves_like "initialize ci span with tags"
+
+      it { expect(block_spy).to have_received(:call).with(ci_span) }
       it { is_expected.to be(block_result) }
     end
 
@@ -84,7 +90,6 @@ RSpec.describe Datadog::CI::Recorder do
         )
       end
       let(:span_op) { Datadog::Tracing::SpanOperation.new(operation_name) }
-      let(:ci_test) { instance_double(Datadog::CI::Test) }
 
       before do
         allow(Datadog::Tracing)
@@ -99,24 +104,18 @@ RSpec.describe Datadog::CI::Recorder do
           )
           .and_return(span_op)
 
-        expect_initialized_test
+        allow(Datadog::CI::Test).to receive(:new).with(span_op).and_return(ci_span)
 
         trace
       end
 
       it_behaves_like "internal tracing context"
-      it { is_expected.to be(ci_test) }
+      it_behaves_like "initialize ci span with tags"
+      it { is_expected.to be(ci_span) }
     end
   end
 
   describe "#trace" do
-    def expect_initialized_span
-      allow(Datadog::CI::Span).to receive(:new).with(span_op).and_return(ci_span)
-      expect(ci_span).to receive(:set_default_tags)
-      expect(ci_span).to receive(:set_environment_runtime_tags)
-      expect(ci_span).to receive(:set_tags).with(tags)
-    end
-
     let(:tags) { {"my_tag" => "my_value"} }
     let(:span_type) { "step" }
     let(:span_name) { "span name" }
@@ -134,7 +133,6 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
-      let(:ci_span) { instance_double(Datadog::CI::Span) }
       let(:block) { proc { |s| block_spy.call(s) } }
       let(:block_result) { double("result") }
       let(:block_spy) { spy("block") }
@@ -154,11 +152,12 @@ RSpec.describe Datadog::CI::Recorder do
             trace_block.call(span_op, trace_op)
           end
 
-        expect_initialized_span
+        allow(Datadog::CI::Span).to receive(:new).with(span_op).and_return(ci_span)
 
         trace
       end
 
+      it_behaves_like "initialize ci span with tags"
       it { expect(block_spy).to have_received(:call).with(ci_span) }
       it { is_expected.to be(block_result) }
     end
@@ -173,7 +172,6 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       let(:span_op) { Datadog::Tracing::SpanOperation.new(span_name) }
-      let(:ci_span) { instance_double(Datadog::CI::Span) }
 
       before do
         allow(Datadog::Tracing)
@@ -187,11 +185,12 @@ RSpec.describe Datadog::CI::Recorder do
           )
           .and_return(span_op)
 
-        expect_initialized_span
+        allow(Datadog::CI::Span).to receive(:new).with(span_op).and_return(ci_span)
 
         trace
       end
 
+      it_behaves_like "initialize ci span with tags"
       it { is_expected.to be(ci_span) }
     end
   end
@@ -250,5 +249,59 @@ RSpec.describe Datadog::CI::Recorder do
 
       it { is_expected.to be_nil }
     end
+  end
+
+  describe "#start_test_session" do
+    subject(:start_test_session) { recorder.start_test_session(service_name: service) }
+
+    let(:session_operation_name) { "test.session" }
+
+    let(:span_op) { Datadog::Tracing::SpanOperation.new(session_operation_name) }
+
+    before do
+      allow(Datadog::Tracing)
+        .to receive(:trace)
+        .with(
+          session_operation_name,
+          {
+            span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION,
+            service: service
+          }
+        )
+        .and_return(span_op)
+
+      allow(Datadog::CI::TestSession).to receive(:new).with(span_op).and_return(ci_span)
+
+      start_test_session
+    end
+
+    it_behaves_like "internal tracing context"
+    it_behaves_like "initialize ci span with tags"
+
+    it { is_expected.to be(ci_span) }
+  end
+
+  describe "#active_test_session" do
+    subject(:active_test_session) { recorder.active_test_session }
+
+    let(:ci_session) do
+      recorder.start_test_session(service_name: service)
+    end
+
+    before { ci_session }
+
+    it { is_expected.to be(ci_session) }
+  end
+
+  describe "#deactivate_test_session" do
+    subject(:deactivate_test_session) { recorder.deactivate_test_session }
+
+    let(:ci_session) do
+      recorder.start_test_session(service_name: service)
+    end
+
+    before { deactivate_test_session }
+
+    it { expect(recorder.active_test_session).to be_nil }
   end
 end
