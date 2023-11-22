@@ -19,6 +19,8 @@ module Datadog
       end
 
       def inheritable_tags
+        # this method is not synchronized because it does not iterate over the tags, but rather
+        # uses synchronized method to get each tag value
         res = {}
         Ext::Test::INHERITABLE_TAGS.each do |tag|
           res[tag] = get_tag(tag)
