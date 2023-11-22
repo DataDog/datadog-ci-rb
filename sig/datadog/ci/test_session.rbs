@@ -1,6 +1,8 @@
 module Datadog
   module CI
     class TestSession < ConcurrentSpan
+      @inheritable_tags: Hash[untyped, untyped]
+
       def inheritable_tags: () -> Hash[untyped, untyped]
     end
   end
