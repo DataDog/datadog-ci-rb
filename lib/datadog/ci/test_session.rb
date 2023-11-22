@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "concurrent_span"
+require_relative "ext/test"
 
 module Datadog
   module CI
@@ -15,6 +16,14 @@ module Datadog
         super
 
         CI.deactivate_test_session
+      end
+
+      def inheritable_tags
+        res = {}
+        Ext::Test::INHERITABLE_TAGS.each do |tag|
+          res[tag] = get_tag(tag)
+        end
+        res
       end
     end
   end

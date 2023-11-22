@@ -4,7 +4,7 @@ RSpec.describe Datadog::CI::Recorder do
   let(:operation_name) { "span name" }
   let(:test_name) { "test name" }
   let(:tags) { {} }
-  let(:expected_tags) { tags }
+  let(:expected_tags) { {} }
   let(:environment_tags) { Datadog::CI::Ext::Environment.tags(ENV) }
 
   let(:ci_span) do
@@ -36,6 +36,8 @@ RSpec.describe Datadog::CI::Recorder do
   end
 
   describe "#trace_test" do
+    let(:expected_tags) { {"test.name" => test_name} }
+
     context "when given a block" do
       subject(:trace) do
         recorder.trace_test(
@@ -118,13 +120,19 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       context "when test session is active" do
+        let(:inheritable_tags) { {"test.framework" => "my framework"} }
         let(:test_session_service) { "my-test-service" }
-        let(:test_session) { instance_double(Datadog::CI::TestSession, service: test_session_service) }
+        let(:test_session) do
+          instance_double(Datadog::CI::TestSession, service: test_session_service, inheritable_tags: inheritable_tags)
+        end
+
         before do
           allow(recorder).to receive(:active_test_session).and_return(test_session)
         end
 
-        context "when service name is not given" do
+        context "when service name and tags are not given" do
+          let(:expected_tags) { {"test.framework" => "my framework", "test.name" => test_name} }
+
           subject(:trace) do
             recorder.trace_test(
               test_name,
@@ -151,10 +159,14 @@ RSpec.describe Datadog::CI::Recorder do
             trace
           end
 
+          it_behaves_like "initialize ci span with tags"
           it { is_expected.to be(ci_span) }
         end
 
-        context "when service name is given" do
+        context "when service name and tags are given" do
+          let(:tags) { {"test.framework" => "special test framework"} }
+          let(:expected_tags) { {"test.framework" => "special test framework", "test.name" => test_name} }
+
           subject(:trace) do
             recorder.trace_test(
               test_name,
@@ -182,6 +194,7 @@ RSpec.describe Datadog::CI::Recorder do
             trace
           end
 
+          it_behaves_like "initialize ci span with tags"
           it { is_expected.to be(ci_span) }
         end
       end
@@ -190,6 +203,7 @@ RSpec.describe Datadog::CI::Recorder do
 
   describe "#trace" do
     let(:tags) { {"my_tag" => "my_value"} }
+    let(:expected_tags) { {"my_tag" => "my_value"} }
     let(:span_type) { "step" }
     let(:span_name) { "span name" }
 

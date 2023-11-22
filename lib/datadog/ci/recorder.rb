@@ -49,6 +49,8 @@ module Datadog
         test_session = active_test_session
         if test_session
           service_name ||= test_session.service
+
+          tags = test_session.inheritable_tags.merge(tags)
         end
 
         span_options = {
