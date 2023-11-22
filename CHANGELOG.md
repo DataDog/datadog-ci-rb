@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.4.1] - 2023-11-22
+
+### Fixed
+
+* disable 128-bit trace id generation in CI mode ([#70][])
+
 ## [0.4.0] - 2023-11-21
 
 ### Added
@@ -65,7 +71,8 @@
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.1...main
+[0.4.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.1.1...v0.2.0
@@ -90,3 +97,4 @@
 [#64]: https://github.com/DataDog/datadog-ci-rb/issues/64
 [#65]: https://github.com/DataDog/datadog-ci-rb/issues/65
 [#66]: https://github.com/DataDog/datadog-ci-rb/issues/66
+[#70]: https://github.com/DataDog/datadog-ci-rb/issues/70
