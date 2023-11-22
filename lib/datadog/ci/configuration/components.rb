@@ -40,6 +40,10 @@ module Datadog
           # Deactivate remote configuration
           settings.remote.enabled = false
 
+          # do not use 128-bit trace ids for CI visibility
+          # they are used for OTEL compatibility in Datadog tracer
+          settings.tracing.trace_id_128_bit_generation_enabled = false
+
           # Activate underlying tracing test mode
           settings.tracing.test_mode.enabled = true
 
