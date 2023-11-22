@@ -21,6 +21,9 @@ module Datadog
         TAG_TRAITS: String
 
         TAG_TYPE: String
+
+        INHERITED_TAGS: Array[String]
+
         TAG_OS_ARCHITECTURE: String
 
         TAG_OS_PLATFORM: String

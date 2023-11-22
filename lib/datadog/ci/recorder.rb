@@ -46,6 +46,11 @@ module Datadog
 
       # Creates a new span for a CI test
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
+        test_session = active_test_session
+        if test_session
+          service_name ||= test_session.service
+        end
+
         span_options = {
           resource: test_name,
           service: service_name,

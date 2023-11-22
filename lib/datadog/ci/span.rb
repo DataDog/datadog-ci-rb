@@ -20,6 +20,11 @@ module Datadog
         tracer_span.name
       end
 
+      # @return [String] the service name of the span.
+      def service
+        tracer_span.service
+      end
+
       # @return [String] the type of the span (for example "test" or type that was provided to [Datadog::CI.trace]).
       def span_type
         tracer_span.type

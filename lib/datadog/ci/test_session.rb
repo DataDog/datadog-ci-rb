@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "span"
+require_relative "concurrent_span"
 
 module Datadog
   module CI
@@ -8,13 +8,7 @@ module Datadog
     # This object can be shared between multiple threads.
     #
     # @public_api
-    class TestSession < Span
-      def initialize(tracer_span)
-        super
-
-        @mutex = Mutex.new
-      end
-
+    class TestSession < ConcurrentSpan
       # Finishes the current test session.
       # @return [void]
       def finish

@@ -14,7 +14,7 @@ module Datadog
       # Raises an error if a session is already active.
       #
       #
-      # The {#start_test_session} method is used to mark the start :
+      # The {#start_test_session} method is used to mark the start of the test session:
       # ```
       # Datadog::CI.start_test_session(
       #   service: "my-web-site-tests",
@@ -59,7 +59,9 @@ module Datadog
       end
 
       # Return a {Datadog::CI::Test ci_test} that will trace a test called `test_name`.
-      # Raises an error if a test is already active.
+      # Raises an error if a test is already active. If there is an active test session,
+      # the new test will be connected to the session. The test will inherit service name and tags from
+      # the running test session if none provided.
       #
       # You could trace your test using a <tt>do-block</tt> like:
       #

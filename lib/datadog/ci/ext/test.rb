@@ -17,6 +17,9 @@ module Datadog
         TAG_TRAITS = "test.traits"
         TAG_TYPE = "test.type"
 
+        # tags that are inherited from the test session
+        INHERITED_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION, TAG_TYPE].freeze
+
         # Environment runtime tags
         TAG_OS_ARCHITECTURE = "os.architecture"
         TAG_OS_PLATFORM = "os.platform"
