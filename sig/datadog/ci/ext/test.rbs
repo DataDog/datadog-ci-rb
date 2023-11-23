@@ -22,7 +22,11 @@ module Datadog
 
         TAG_TYPE: String
 
+        TAG_COMMAND: String
+
         TAG_TEST_SESSION_ID: String
+
+        SPECIAL_TAGS: Array[String]
 
         INHERITABLE_TAGS: Array[String]
 

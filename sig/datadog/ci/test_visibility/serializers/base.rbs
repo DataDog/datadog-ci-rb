@@ -10,6 +10,7 @@ module Datadog
           @content_fields_count: Integer
           @start: Integer
           @duration: Integer
+          @meta: Hash[untyped, untyped]
 
           attr_reader trace: Datadog::Tracing::TraceSegment
           attr_reader span: Datadog::Tracing::Span

@@ -38,6 +38,8 @@ module Datadog
 
         set_trace_origin(trace)
 
+        tags[Ext::Test::TAG_TEST_SESSION_ID] = tracer_span.id
+
         test_session = build_test_session(tracer_span, tags)
         @global_context.activate_test_session!(test_session)
 

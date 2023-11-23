@@ -351,8 +351,8 @@ RSpec.describe Datadog::CI::Recorder do
     subject(:start_test_session) { recorder.start_test_session(service_name: service) }
 
     let(:session_operation_name) { "test.session" }
-
     let(:span_op) { Datadog::Tracing::SpanOperation.new(session_operation_name) }
+    let(:expected_tags) { {"_test.session_id" => span_op.id} }
 
     before do
       allow(Datadog::Tracing)

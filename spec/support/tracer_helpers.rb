@@ -43,19 +43,44 @@ module TracerHelpers
       Datadog::CI.active_test.set_tag("test_owner", "my_team")
       Datadog::CI.active_test.set_metric("memory_allocations", 16)
 
-      case result
-      when "FAILED"
-        test.failed!(exception: exception)
-      when "SKIPPED"
-        test.skipped!(exception: exception, reason: skip_reason)
-      else
-        test.passed!
-      end
+      set_result(test, result: result, exception: exception, skip_reason: skip_reason)
 
       Timecop.travel(start_time + duration_seconds)
     end
 
     Timecop.return
+  end
+
+  def produce_test_session_trace(
+    framework: "rspec", operation: "rspec.example",
+    test_name: "test_add", test_suite: "calculator_tests",
+    service: "rspec-test-suite", result: "PASSED", exception: nil,
+    skip_reason: nil, start_time: Time.now, duration_seconds: 2,
+    with_http_span: false
+  )
+    test_session = Datadog::CI.start_test_session(
+      service_name: service,
+      tags: {
+        Datadog::CI::Ext::Test::TAG_FRAMEWORK => framework,
+        Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
+        Datadog::CI::Ext::Test::TAG_TYPE => "test"
+      }
+    )
+
+    produce_test_trace(
+      framework: framework, operation: operation,
+      test_name: test_name, test_suite: test_suite,
+      service: service, result: result, exception: exception, skip_reason: skip_reason,
+      start_time: start_time, duration_seconds: duration_seconds,
+      with_http_span: with_http_span
+    )
+
+    set_result(test_session, result: result, exception: exception, skip_reason: skip_reason)
+    test_session.finish
+  end
+
+  def test_session_span
+    spans.find { |span| span.type == "test_session_end" }
   end
 
   def first_test_span
@@ -124,6 +149,17 @@ module TracerHelpers
       else
         a.name <=> b.name
       end
+    end
+  end
+
+  def set_result(span, result: "PASSED", exception: nil, skip_reason: nil)
+    case result
+    when "FAILED"
+      span.failed!(exception: exception)
+    when "SKIPPED"
+      span.skipped!(exception: exception, reason: skip_reason)
+    else
+      span.passed!
     end
   end
 
