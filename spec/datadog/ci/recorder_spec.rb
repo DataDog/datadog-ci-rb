@@ -120,10 +120,17 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       context "when test session is active" do
+        let(:test_session_id) { 42 }
         let(:inheritable_tags) { {"test.framework" => "my framework"} }
+
         let(:test_session_service) { "my-test-service" }
         let(:test_session) do
-          instance_double(Datadog::CI::TestSession, service: test_session_service, inheritable_tags: inheritable_tags)
+          instance_double(
+            Datadog::CI::TestSession,
+            service: test_session_service,
+            inheritable_tags: inheritable_tags,
+            id: test_session_id
+          )
         end
 
         before do
@@ -131,7 +138,9 @@ RSpec.describe Datadog::CI::Recorder do
         end
 
         context "when service name and tags are not given" do
-          let(:expected_tags) { {"test.framework" => "my framework", "test.name" => test_name} }
+          let(:expected_tags) do
+            {"test.framework" => "my framework", "test.name" => test_name, "_test.session_id" => test_session_id}
+          end
 
           subject(:trace) do
             recorder.trace_test(
@@ -165,7 +174,9 @@ RSpec.describe Datadog::CI::Recorder do
 
         context "when service name and tags are given" do
           let(:tags) { {"test.framework" => "special test framework"} }
-          let(:expected_tags) { {"test.framework" => "special test framework", "test.name" => test_name} }
+          let(:expected_tags) do
+            {"test.framework" => "special test framework", "test.name" => test_name, "_test.session_id" => test_session_id}
+          end
 
           subject(:trace) do
             recorder.trace_test(

@@ -60,6 +60,7 @@ module Datadog
         }
 
         tags[Ext::Test::TAG_NAME] = test_name
+        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id if test_session
 
         if block
           Datadog::Tracing.trace(operation_name, **span_options) do |tracer_span, trace|

@@ -15,6 +15,11 @@ module Datadog
         @tracer_span = tracer_span
       end
 
+      # @return [Integer] the ID of the span.
+      def id
+        tracer_span.id
+      end
+
       # @return [String] the name of the span.
       def name
         tracer_span.name

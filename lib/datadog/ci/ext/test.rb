@@ -17,6 +17,9 @@ module Datadog
         TAG_TRAITS = "test.traits"
         TAG_TYPE = "test.type"
 
+        # those tags are special and they are used to conrrelate tests with the test sessions, suites, and modules
+        TAG_TEST_SESSION_ID = "_test.session_id"
+
         # tags that can be inherited from the test session
         INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION, TAG_TYPE].freeze
 

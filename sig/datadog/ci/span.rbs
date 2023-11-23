@@ -7,6 +7,8 @@ module Datadog
 
       def initialize: (Datadog::Tracing::SpanOperation tracer_span) -> void
 
+      def id: () -> Integer
+
       def name: () -> String
 
       def service: () -> String
