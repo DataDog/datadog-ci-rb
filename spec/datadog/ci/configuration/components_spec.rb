@@ -148,7 +148,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                   expect(settings.tracing.test_mode)
                     .to have_received(:trace_flush=)
-                    .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Finished))
+                    .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Partial))
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_nil
