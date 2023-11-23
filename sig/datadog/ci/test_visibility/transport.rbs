@@ -4,19 +4,19 @@ module Datadog
       class Transport
         DEFAULT_MAX_PAYLOAD_SIZE: Integer
 
-        attr_reader serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)
+        attr_reader serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel)
         attr_reader dd_env: String?
         attr_reader api: Datadog::CI::Transport::Api::Base
         attr_reader max_payload_size: Integer
 
         @dd_env: String?
-        @serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel)
+        @serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel)
         @max_payload_size: Integer
 
         def initialize: (
           api: Datadog::CI::Transport::Api::Base,
           ?dd_env: ::String?,
-          ?serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel),
+          ?serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel),
           ?max_payload_size: Integer
         ) -> void
 

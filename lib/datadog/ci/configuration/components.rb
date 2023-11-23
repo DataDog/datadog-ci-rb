@@ -6,6 +6,8 @@ require "datadog/core/remote/negotiation"
 require_relative "../ext/transport"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/transport"
+require_relative "../test_visibility/serializers/factories/test_level"
+require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../transport/api/builder"
 require_relative "../recorder"
 
@@ -91,6 +93,7 @@ module Datadog
 
             Datadog::CI::TestVisibility::Transport.new(
               api: Transport::Api::Builder.build_ci_test_cycle_api(settings),
+              serializers_factory: serializers_factory(settings),
               dd_env: settings.env
             )
           end
@@ -101,8 +104,17 @@ module Datadog
 
           Datadog::CI::TestVisibility::Transport.new(
             api: Transport::Api::Builder.build_evp_proxy_api(agent_settings),
+            serializers_factory: serializers_factory(settings),
             dd_env: settings.env
           )
+        end
+
+        def serializers_factory(settings)
+          if settings.ci.experimental_test_suite_level_visibility_enabled
+            Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel
+          else
+            Datadog::CI::TestVisibility::Serializers::Factories::TestLevel
+          end
         end
       end
     end
