@@ -26,12 +26,13 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
             "name" => "rspec.test_session",
             "service" => "rspec-test-suite",
             "type" => Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION,
-            "resource" => "rspec.test_session."
+            "resource" => "rspec.test_session.#{test_command}"
           }
         )
 
         expect(meta).to include(
           {
+            "test.command" => test_command,
             "test.framework" => "rspec",
             "test.status" => "pass",
             "_dd.origin" => "ciapp-test"

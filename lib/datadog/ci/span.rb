@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "ext/test"
+require_relative "utils/test_run"
 
 module Datadog
   module CI
@@ -103,6 +104,7 @@ module Datadog
         tracer_span.set_tag(Ext::Test::TAG_OS_PLATFORM, ::RbConfig::CONFIG["host_os"])
         tracer_span.set_tag(Ext::Test::TAG_RUNTIME_NAME, Core::Environment::Ext::LANG_ENGINE)
         tracer_span.set_tag(Ext::Test::TAG_RUNTIME_VERSION, Core::Environment::Ext::ENGINE_VERSION)
+        tracer_span.set_tag(Ext::Test::TAG_COMMAND, Utils::TestRun.command)
       end
 
       def set_default_tags
