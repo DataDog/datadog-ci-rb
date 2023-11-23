@@ -19,15 +19,19 @@ module Datadog
   module CI
     # Common behavior for CI tests
     class Recorder
-      attr_reader :environment_tags
+      attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
-      def initialize
+      def initialize(test_suite_level_visibility_enabled: false)
+        @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
+
         @environment_tags = Ext::Environment.tags(ENV).freeze
         @local_context = Context::Local.new
         @global_context = Context::Global.new
       end
 
       def start_test_session(service_name: nil, tags: {})
+        return nil unless @test_suite_level_visibility_enabled
+
         span_options = {
           service: service_name,
           span_type: Ext::AppTypes::TYPE_TEST_SESSION

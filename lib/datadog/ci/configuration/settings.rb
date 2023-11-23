@@ -34,6 +34,12 @@ module Datadog
                 o.env CI::Ext::Settings::ENV_AGENTLESS_URL
               end
 
+              option :experimental_test_suite_level_visibility_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_EXPERIMENTAL_TEST_SUITE_LEVEL_VISIBILITY_ENABLED
+                o.default false
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

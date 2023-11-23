@@ -6,12 +6,13 @@ RSpec.describe Datadog::CI::Recorder do
   let(:tags) { {} }
   let(:expected_tags) { {} }
   let(:environment_tags) { Datadog::CI::Ext::Environment.tags(ENV) }
+  let(:test_suite_level_visibility_enabled) { true }
 
   let(:ci_span) do
     spy("CI object spy")
   end
 
-  subject(:recorder) { described_class.new }
+  subject(:recorder) { described_class.new(test_suite_level_visibility_enabled: test_suite_level_visibility_enabled) }
 
   before do
     allow(Datadog::Tracing).to receive(:active_trace).and_return(trace_op)
@@ -348,33 +349,45 @@ RSpec.describe Datadog::CI::Recorder do
   end
 
   describe "#start_test_session" do
-    subject(:start_test_session) { recorder.start_test_session(service_name: service) }
+    context "when test suite level visibility is enabled" do
+      subject(:start_test_session) { recorder.start_test_session(service_name: service) }
 
-    let(:session_operation_name) { "test.session" }
-    let(:span_op) { Datadog::Tracing::SpanOperation.new(session_operation_name) }
-    let(:expected_tags) { {"_test.session_id" => span_op.id} }
+      let(:session_operation_name) { "test.session" }
+      let(:span_op) { Datadog::Tracing::SpanOperation.new(session_operation_name) }
+      let(:expected_tags) { {"_test.session_id" => span_op.id} }
 
-    before do
-      allow(Datadog::Tracing)
-        .to receive(:trace)
-        .with(
-          session_operation_name,
-          {
-            span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION,
-            service: service
-          }
-        )
-        .and_return(span_op)
+      before do
+        allow(Datadog::Tracing)
+          .to receive(:trace)
+          .with(
+            session_operation_name,
+            {
+              span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION,
+              service: service
+            }
+          )
+          .and_return(span_op)
 
-      allow(Datadog::CI::TestSession).to receive(:new).with(span_op).and_return(ci_span)
+        allow(Datadog::CI::TestSession).to receive(:new).with(span_op).and_return(ci_span)
 
-      start_test_session
+        start_test_session
+      end
+
+      it_behaves_like "internal tracing context"
+      it_behaves_like "initialize ci span with tags"
+
+      it { is_expected.to be(ci_span) }
     end
 
-    it_behaves_like "internal tracing context"
-    it_behaves_like "initialize ci span with tags"
+    context "when test suite level visibility is disabled" do
+      subject(:start_test_session) { recorder.start_test_session(service_name: service) }
 
-    it { is_expected.to be(ci_span) }
+      let(:test_suite_level_visibility_enabled) { false }
+
+      before { start_test_session }
+
+      it { is_expected.to be_nil }
+    end
   end
 
   describe "#active_test_session" do

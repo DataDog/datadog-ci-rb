@@ -1,17 +1,20 @@
 module Datadog
   module CI
     class Recorder
+      @test_suite_level_visibility_enabled: bool
       @environment_tags: Hash[String, String]
       @local_context: Datadog::CI::Context::Local
       @global_context: Datadog::CI::Context::Global
 
       attr_reader environment_tags: Hash[String, String]
 
+      def initialize: (?test_suite_level_visibility_enabled: bool) -> void
+
       def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
       def trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-      def start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession
+      def start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession?
 
       def active_test_session: () -> Datadog::CI::TestSession?
 

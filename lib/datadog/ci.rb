@@ -13,7 +13,6 @@ module Datadog
       # Return a {Datadog::CI::TestSesstion ci_test_session} that represents the whole test session run.
       # Raises an error if a session is already active.
       #
-      #
       # The {#start_test_session} method is used to mark the start of the test session:
       # ```
       # Datadog::CI.start_test_session(
@@ -30,6 +29,7 @@ module Datadog
       # @param [String] service_name the service name for this session
       # @param [Hash<String,String>] tags extra tags which should be added to the test.
       # @return [Datadog::CI::TestSession] returns the active, running {Datadog::CI::TestSession}.
+      # @return [nil] if test suite level visibility is disabled (old Datadog agent detected)
       #
       # @public_api
       def start_test_session(service_name: nil, tags: {})

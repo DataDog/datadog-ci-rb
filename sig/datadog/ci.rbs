@@ -4,7 +4,7 @@ module Datadog
 
     def self.start_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Test
 
-    def self.start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession
+    def self.start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession?
 
     def self.trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
