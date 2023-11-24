@@ -70,7 +70,9 @@ module TracerHelpers
     produce_test_trace(
       framework: framework, operation: operation,
       test_name: test_name, test_suite: test_suite,
-      service: service, result: result, exception: exception, skip_reason: skip_reason,
+      # service is inherited from test_session
+      service: nil,
+      result: result, exception: exception, skip_reason: skip_reason,
       start_time: start_time, duration_seconds: duration_seconds,
       with_http_span: with_http_span
     )
