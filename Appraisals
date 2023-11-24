@@ -21,7 +21,8 @@ REMOVED_GEMS = {
   development: [
     "ruby-lsp",
     "ruby-lsp-rspec",
-    "debug"
+    "debug",
+    "irb"
   ]
 }
 
