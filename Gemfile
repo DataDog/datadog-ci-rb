@@ -20,7 +20,7 @@ gem "rspec_junit_formatter"
 gem "appraisal"
 gem "timecop"
 
-gem "standard", "~> 1.31.0"
+gem "standard", "~> 1.31"
 
 gem "yard"
 gem "webrick"
@@ -33,7 +33,7 @@ gem "simplecov-cobertura", "~> 2.1.0"
 group :check do
   if RUBY_VERSION >= "3.0.0" && RUBY_PLATFORM != "java"
     gem "rbs", "~> 3.2.0", require: false
-    gem "steep", "~> 1.4.0", require: false
+    gem "steep", "~> 1.6.0", require: false
   end
 end
 
@@ -44,5 +44,7 @@ group :development do
     gem "ruby-lsp-rspec"
 
     gem "debug"
+
+    gem "irb"
   end
 end
