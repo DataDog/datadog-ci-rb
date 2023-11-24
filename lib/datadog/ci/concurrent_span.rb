@@ -72,14 +72,6 @@ module Datadog
         synchronize { super }
       end
 
-      def set_environment_runtime_tags
-        synchronize { super }
-      end
-
-      def set_default_tags
-        synchronize { super }
-      end
-
       def synchronize
         @mutex.synchronize { yield }
       end

@@ -94,9 +94,7 @@ module Datadog
       # @param [Hash[String, String]] tags the tags to set.
       # @return [void]
       def set_tags(tags)
-        tags.each do |key, value|
-          tracer_span.set_tag(key, value)
-        end
+        tracer_span.set_tags(tags)
       end
 
       def set_environment_runtime_tags

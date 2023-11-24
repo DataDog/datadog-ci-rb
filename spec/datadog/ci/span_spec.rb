@@ -87,8 +87,7 @@ RSpec.describe Datadog::CI::Span do
 
   describe "#set_tags" do
     it "sets the tags" do
-      expect(tracer_span).to receive(:set_tag).with("foo", "bar")
-      expect(tracer_span).to receive(:set_tag).with("baz", "qux")
+      expect(tracer_span).to receive(:set_tags).with({"foo" => "bar", "baz" => "qux"})
 
       span.set_tags("foo" => "bar", "baz" => "qux")
     end
