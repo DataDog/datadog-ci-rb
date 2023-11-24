@@ -74,4 +74,28 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
       end
     end
   end
+
+  describe "#valid?" do
+    context "test_session_id" do
+      before do
+        produce_test_session_trace
+      end
+
+      context "when test_session_id is not nil" do
+        it "returns true" do
+          expect(subject.valid?).to eq(true)
+        end
+      end
+
+      context "when test_session_id is nil" do
+        before do
+          first_test_span.clear_tag("_test.session_id")
+        end
+
+        it "returns false" do
+          expect(subject.valid?).to eq(false)
+        end
+      end
+    end
+  end
 end

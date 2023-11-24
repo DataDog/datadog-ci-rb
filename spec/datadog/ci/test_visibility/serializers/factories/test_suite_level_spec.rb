@@ -9,7 +9,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLev
   end
 
   before do
-    produce_test_session_trace
+    produce_test_session_trace(with_http_span: true)
   end
 
   subject { described_class.serializer(trace, ci_span) }
@@ -23,6 +23,11 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLev
     context "with a test span" do
       let(:ci_span) { first_test_span }
       it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestV2) }
+    end
+
+    context "with a http request span" do
+      let(:ci_span) { first_other_span }
+      it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::Span) }
     end
   end
 end

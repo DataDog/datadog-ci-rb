@@ -409,7 +409,11 @@ RSpec.describe Datadog::CI::Recorder do
       recorder.start_test_session(service_name: service)
     end
 
-    before { deactivate_test_session }
+    before do
+      ci_session
+
+      deactivate_test_session
+    end
 
     it { expect(recorder.active_test_session).to be_nil }
   end

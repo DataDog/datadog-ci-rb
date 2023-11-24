@@ -58,6 +58,10 @@ module TracerHelpers
     skip_reason: nil, start_time: Time.now, duration_seconds: 2,
     with_http_span: false
   )
+    allow(Process).to receive(:clock_gettime).and_return(
+      0, duration_seconds, 2 * duration_seconds, 3 * duration_seconds
+    )
+
     test_session = Datadog::CI.start_test_session(
       service_name: service,
       tags: {
@@ -90,7 +94,7 @@ module TracerHelpers
   end
 
   def first_other_span
-    spans.find { |span| span.type != "test" }
+    spans.find { |span| !Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span.type) }
   end
 
   # Returns spans and caches it (similar to +let(:spans)+).
