@@ -15,27 +15,6 @@ module Datadog
         @mutex = Mutex.new
       end
 
-      # Sets the status of the span to "pass". This method is thread-safe.
-      # @return [void]
-      def passed!
-        synchronize { super }
-      end
-
-      # Sets the status of the span to "fail". This method is thread-safe.
-      # @param [Exception] exception the exception that caused the test to fail.
-      # @return [void]
-      def failed!(exception: nil)
-        synchronize { super }
-      end
-
-      # Sets the status of the span to "skip". This method is thread-safe.
-      # @param [Exception] exception the exception that caused the test to fail.
-      # @param [String] reason the reason why the test was skipped.
-      # @return [void]
-      def skipped!(exception: nil, reason: nil)
-        synchronize { super }
-      end
-
       # Gets tag value by key. This method is thread-safe.
       # @param [String] key the key of the tag.
       # @return [String] the value of the tag.
