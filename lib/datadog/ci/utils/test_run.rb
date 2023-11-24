@@ -7,7 +7,7 @@ module Datadog
         def self.command
           return @command if defined?(@command)
 
-          @command = "#{Process.argv0} #{ARGV.join(" ")}"
+          @command = "#{$0} #{ARGV.join(" ")}"
         end
       end
     end

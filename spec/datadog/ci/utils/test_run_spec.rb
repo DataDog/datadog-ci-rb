@@ -4,6 +4,6 @@ RSpec.describe ::Datadog::CI::Utils::TestRun do
   describe ".command" do
     subject { described_class.command }
 
-    it { is_expected.to eq("#{Process.argv0} #{ARGV.join(" ")}") }
+    it { is_expected.to eq("#{$0} #{ARGV.join(" ")}") }
   end
 end
