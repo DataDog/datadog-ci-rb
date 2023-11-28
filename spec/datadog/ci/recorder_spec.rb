@@ -19,8 +19,7 @@ RSpec.describe Datadog::CI::Recorder do
 
   before do
     allow(Datadog::Tracing).to receive(:active_trace).and_return(trace_op)
-    allow(Datadog::Tracing::Utils).to receive(:next_id).and_return(trace_id)
-    allow(Datadog::Tracing::TraceDigest).to receive(:new).with(trace_id: trace_id).and_return(fake_trace_digest)
+    allow(Datadog::Tracing::TraceDigest).to receive(:new).and_return(fake_trace_digest)
     allow(trace_op).to receive(:origin=)
   end
 
