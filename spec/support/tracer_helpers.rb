@@ -52,6 +52,7 @@ module TracerHelpers
   end
 
   def produce_test_session_trace(
+    tests_count: 1,
     framework: "rspec", operation: "rspec.example",
     test_name: "test_add", test_suite: "calculator_tests",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
@@ -71,15 +72,17 @@ module TracerHelpers
       }
     )
 
-    produce_test_trace(
-      framework: framework, operation: operation,
-      test_name: test_name, test_suite: test_suite,
-      # service is inherited from test_session
-      service: nil,
-      result: result, exception: exception, skip_reason: skip_reason,
-      start_time: start_time, duration_seconds: duration_seconds,
-      with_http_span: with_http_span
-    )
+    tests_count.times do |num|
+      produce_test_trace(
+        framework: framework, operation: operation,
+        test_name: "#{test_name}.run.#{num}", test_suite: test_suite,
+        # service is inherited from test_session
+        service: nil,
+        result: result, exception: exception, skip_reason: skip_reason,
+        start_time: start_time, duration_seconds: duration_seconds,
+        with_http_span: with_http_span
+      )
+    end
 
     set_result(test_session, result: result, exception: exception, skip_reason: skip_reason)
     test_session.finish
@@ -97,7 +100,7 @@ module TracerHelpers
     spans.find { |span| !Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span.type) }
   end
 
-  # Returns spans and caches it (similar to +let(:spans)+).
+  # Returns traces and caches it (similar to +let(:traces)+).
   def traces
     @traces ||= fetch_traces
   end
@@ -117,6 +120,11 @@ module TracerHelpers
       expect(traces).to have(1).item, "Requested the only trace, but #{traces.size} traces are available"
       traces.first
     end
+  end
+
+  # returns trace associated with given span
+  def trace_for_span(span)
+    traces.find { |trace| trace.id == span.trace_id }
   end
 
   # Returns the only span in the current tracer writer.
