@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Context
+      class Global
+        @mutex: Thread::Mutex
+
+        @test_session: Datadog::CI::TestSession?
+
+        def initialize: () -> void
+
+        def active_test_session: () -> Datadog::CI::TestSession?
+
+        def activate_test_session!: (Datadog::CI::TestSession test_session) -> void
+
+        def deactivate_test_session!: () -> void
+      end
+    end
+  end
+end

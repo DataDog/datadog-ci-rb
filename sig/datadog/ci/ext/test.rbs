@@ -21,6 +21,15 @@ module Datadog
         TAG_TRAITS: String
 
         TAG_TYPE: String
+
+        TAG_COMMAND: String
+
+        TAG_TEST_SESSION_ID: String
+
+        SPECIAL_TAGS: Array[String]
+
+        INHERITABLE_TAGS: Array[String]
+
         TAG_OS_ARCHITECTURE: String
 
         TAG_OS_PLATFORM: String

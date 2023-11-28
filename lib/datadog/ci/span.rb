@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "ext/test"
+require_relative "utils/test_run"
 
 module Datadog
   module CI
@@ -15,9 +16,19 @@ module Datadog
         @tracer_span = tracer_span
       end
 
+      # @return [Integer] the ID of the span.
+      def id
+        tracer_span.id
+      end
+
       # @return [String] the name of the span.
       def name
         tracer_span.name
+      end
+
+      # @return [String] the service name of the span.
+      def service
+        tracer_span.service
       end
 
       # @return [String] the type of the span (for example "test" or type that was provided to [Datadog::CI.trace]).
@@ -83,9 +94,7 @@ module Datadog
       # @param [Hash[String, String]] tags the tags to set.
       # @return [void]
       def set_tags(tags)
-        tags.each do |key, value|
-          tracer_span.set_tag(key, value)
-        end
+        tracer_span.set_tags(tags)
       end
 
       def set_environment_runtime_tags
@@ -93,6 +102,7 @@ module Datadog
         tracer_span.set_tag(Ext::Test::TAG_OS_PLATFORM, ::RbConfig::CONFIG["host_os"])
         tracer_span.set_tag(Ext::Test::TAG_RUNTIME_NAME, Core::Environment::Ext::LANG_ENGINE)
         tracer_span.set_tag(Ext::Test::TAG_RUNTIME_VERSION, Core::Environment::Ext::ENGINE_VERSION)
+        tracer_span.set_tag(Ext::Test::TAG_COMMAND, Utils::TestRun.command)
       end
 
       def set_default_tags

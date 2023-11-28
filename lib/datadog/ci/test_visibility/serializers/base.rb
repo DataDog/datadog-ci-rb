@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../../ext/test"
+
 module Datadog
   module CI
     module TestVisibility
@@ -9,11 +11,13 @@ module Datadog
           MINIMUM_DURATION_NANO = 0
           MAXIMUM_DURATION_NANO = 9223372036854775807
 
-          attr_reader :trace, :span
+          attr_reader :trace, :span, :meta
 
           def initialize(trace, span)
             @trace = trace
             @span = span
+
+            @meta = @span.meta.reject { |key, _| Ext::Test::SPECIAL_TAGS.include?(key) }
           end
 
           def to_msgpack(packer = nil)
@@ -67,6 +71,10 @@ module Datadog
             @span.parent_id
           end
 
+          def test_session_id
+            @span.get_tag(Ext::Test::TAG_TEST_SESSION_ID)
+          end
+
           def type
           end
 
@@ -96,10 +104,6 @@ module Datadog
 
           def duration
             @duration ||= duration_nano(@span.duration)
-          end
-
-          def meta
-            @span.meta
           end
 
           def metrics

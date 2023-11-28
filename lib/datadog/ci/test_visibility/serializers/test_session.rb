@@ -7,9 +7,9 @@ module Datadog
   module CI
     module TestVisibility
       module Serializers
-        class TestV1 < Base
+        class TestSession < Base
           CONTENT_FIELDS = [
-            "trace_id", "span_id",
+            "test_session_id",
             "name", "resource", "service",
             "error", "start", "duration",
             "meta", "metrics",
@@ -19,8 +19,7 @@ module Datadog
           CONTENT_MAP_SIZE = calculate_content_map_size(CONTENT_FIELDS)
 
           REQUIRED_FIELDS = [
-            "trace_id",
-            "span_id",
+            "test_session_id",
             "error",
             "name",
             "resource",
@@ -37,15 +36,15 @@ module Datadog
           end
 
           def type
-            Ext::AppTypes::TYPE_TEST
+            Ext::AppTypes::TYPE_TEST_SESSION
           end
 
           def name
-            "#{@span.get_tag(Ext::Test::TAG_FRAMEWORK)}.test"
+            "#{@span.get_tag(Ext::Test::TAG_FRAMEWORK)}.test_session"
           end
 
           def resource
-            "#{@span.get_tag(Ext::Test::TAG_SUITE)}.#{@span.get_tag(Ext::Test::TAG_NAME)}"
+            "#{@span.get_tag(Ext::Test::TAG_FRAMEWORK)}.test_session.#{@span.get_tag(Ext::Test::TAG_COMMAND)}"
           end
 
           private

@@ -1,12 +1,27 @@
-RSpec.describe Datadog::CI::Span do
-  let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, name: "span_name", type: "test") }
-  subject(:span) { described_class.new(tracer_span) }
+THREADS_COUNT = 10
+REPEAT_COUNT = 20
 
-  describe "#name" do
-    it "returns the span name" do
-      expect(span.name).to eq("span_name")
+RSpec.describe Datadog::CI::ConcurrentSpan do
+  describe "#finish" do
+    it "calls SpanOperation#stop once" do
+      REPEAT_COUNT.times do
+        tracer_span = Datadog::Tracing::SpanOperation.new("operation")
+        ci_span = described_class.new(tracer_span)
+
+        expect(tracer_span).to receive(:stop).once
+
+        (1..THREADS_COUNT).map do
+          Thread.new do
+            ci_span.finish
+          end
+        end.map(&:join)
+      end
     end
   end
+
+  # the following tests make sure that ConcurrentSpan works exactly like Span
+  let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, name: "span_name", type: "test") }
+  subject(:span) { described_class.new(tracer_span) }
 
   describe "#passed!" do
     it "sets the status to PASS" do
@@ -98,46 +113,6 @@ RSpec.describe Datadog::CI::Span do
       expect(tracer_span).to receive(:set_metric).with("foo", "bar")
 
       span.set_metric("foo", "bar")
-    end
-  end
-
-  describe "#set_default_tags" do
-    it "sets the default tags" do
-      expect(tracer_span).to receive(:set_tag).with("span.kind", "test")
-
-      span.set_default_tags
-    end
-  end
-
-  describe "#set_environment_runtime_tags" do
-    let(:test_command) { "command" }
-
-    before do
-      allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return(test_command)
-    end
-
-    it "sets the environment runtime tags" do
-      expect(tracer_span).to receive(:set_tag).with("os.architecture", ::RbConfig::CONFIG["host_cpu"])
-      expect(tracer_span).to receive(:set_tag).with("os.platform", ::RbConfig::CONFIG["host_os"])
-      expect(tracer_span).to receive(:set_tag).with("runtime.name", Datadog::Core::Environment::Ext::LANG_ENGINE)
-      expect(tracer_span).to receive(:set_tag).with("runtime.version", Datadog::Core::Environment::Ext::ENGINE_VERSION)
-      expect(tracer_span).to receive(:set_tag).with("test.command", test_command)
-
-      span.set_environment_runtime_tags
-    end
-  end
-
-  describe "#finish" do
-    it "finishes the span" do
-      expect(tracer_span).to receive(:finish)
-
-      span.finish
-    end
-  end
-
-  describe "#span_type" do
-    it "returns 'test'" do
-      expect(span.span_type).to eq("test")
     end
   end
 end

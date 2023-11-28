@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Utils
+      module TestRun
+        self.@command: String
+
+        def self.command: () -> String
+      end
+    end
+  end
+end

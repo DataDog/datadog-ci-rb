@@ -1,24 +1,25 @@
 # frozen_string_literal: true
 
-require_relative "base"
+require_relative "test_v1"
 require_relative "../../ext/test"
 
 module Datadog
   module CI
     module TestVisibility
       module Serializers
-        class TestV1 < Base
+        class TestV2 < TestV1
           CONTENT_FIELDS = [
             "trace_id", "span_id",
             "name", "resource", "service",
             "error", "start", "duration",
-            "meta", "metrics",
+            "meta", "metrics", "test_session_id",
             "type" => "span_type"
           ].freeze
 
           CONTENT_MAP_SIZE = calculate_content_map_size(CONTENT_FIELDS)
 
           REQUIRED_FIELDS = [
+            "test_session_id",
             "trace_id",
             "span_id",
             "error",
@@ -36,16 +37,8 @@ module Datadog
             CONTENT_MAP_SIZE
           end
 
-          def type
-            Ext::AppTypes::TYPE_TEST
-          end
-
-          def name
-            "#{@span.get_tag(Ext::Test::TAG_FRAMEWORK)}.test"
-          end
-
-          def resource
-            "#{@span.get_tag(Ext::Test::TAG_SUITE)}.#{@span.get_tag(Ext::Test::TAG_NAME)}"
+          def version
+            2
           end
 
           private
