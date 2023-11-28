@@ -21,7 +21,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
 
         expect(content).to include(
           {
-            "trace_id" => trace.id,
+            "trace_id" => span.trace_id,
             "span_id" => span.id,
             "name" => "rspec.test",
             "service" => "rspec-test-suite",

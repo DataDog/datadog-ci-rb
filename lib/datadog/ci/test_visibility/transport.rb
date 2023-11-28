@@ -81,7 +81,7 @@ module Datadog
             if spans.respond_to?(:filter_map)
               spans.filter_map { |span| encode_span(trace, span) }
             else
-              trace.spans.map { |span| encode_span(trace, span) }.reject(&:nil?)
+              spans.map { |span| encode_span(trace, span) }.reject(&:nil?)
             end
           end
         end

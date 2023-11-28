@@ -8,6 +8,9 @@ RSpec.describe Datadog::CI::Recorder do
   let(:environment_tags) { Datadog::CI::Ext::Environment.tags(ENV) }
   let(:test_suite_level_visibility_enabled) { true }
 
+  let(:trace_id) { 422 }
+  let(:fake_trace_digest) { Datadog::Tracing::TraceDigest.new(trace_id: trace_id) }
+
   let(:ci_span) do
     spy("CI object spy")
   end
@@ -16,6 +19,8 @@ RSpec.describe Datadog::CI::Recorder do
 
   before do
     allow(Datadog::Tracing).to receive(:active_trace).and_return(trace_op)
+    allow(Datadog::Tracing::Utils).to receive(:next_id).and_return(trace_id)
+    allow(Datadog::Tracing::TraceDigest).to receive(:new).with(trace_id: trace_id).and_return(fake_trace_digest)
     allow(trace_op).to receive(:origin=)
   end
 
@@ -65,7 +70,8 @@ RSpec.describe Datadog::CI::Recorder do
               {
                 span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
                 resource: test_name,
-                service: service
+                service: service,
+                continue_from: fake_trace_digest
               }
             )
 
@@ -105,7 +111,8 @@ RSpec.describe Datadog::CI::Recorder do
               {
                 span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
                 resource: test_name,
-                service: service
+                service: service,
+                continue_from: fake_trace_digest
               }
             )
             .and_return(span_op)
@@ -140,7 +147,11 @@ RSpec.describe Datadog::CI::Recorder do
 
         context "when service name and tags are not given" do
           let(:expected_tags) do
-            {"test.framework" => "my framework", "test.name" => test_name, "_test.session_id" => test_session_id}
+            {
+              "test.framework" => "my framework",
+              "test.name" => test_name,
+              "_test.session_id" => test_session_id
+            }
           end
 
           subject(:trace) do
@@ -159,7 +170,8 @@ RSpec.describe Datadog::CI::Recorder do
                 {
                   span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
                   resource: test_name,
-                  service: test_session_service
+                  service: test_session_service,
+                  continue_from: fake_trace_digest
                 }
               )
               .and_return(span_op)
@@ -176,7 +188,11 @@ RSpec.describe Datadog::CI::Recorder do
         context "when service name and tags are given" do
           let(:tags) { {"test.framework" => "special test framework"} }
           let(:expected_tags) do
-            {"test.framework" => "special test framework", "test.name" => test_name, "_test.session_id" => test_session_id}
+            {
+              "test.framework" => "special test framework",
+              "test.name" => test_name,
+              "_test.session_id" => test_session_id
+            }
           end
 
           subject(:trace) do
@@ -196,7 +212,8 @@ RSpec.describe Datadog::CI::Recorder do
                 {
                   span_type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
                   resource: test_name,
-                  service: service
+                  service: service,
+                  continue_from: fake_trace_digest
                 }
               )
               .and_return(span_op)

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "datadog/tracing"
+require "datadog/tracing/utils"
 
 require "rbconfig"
 
@@ -64,6 +65,8 @@ module Datadog
           service: service_name,
           span_type: Ext::AppTypes::TYPE_TEST
         }
+        # in order to
+        force_new_trace!(span_options)
 
         tags[Ext::Test::TAG_NAME] = test_name
         tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id if test_session
@@ -134,6 +137,19 @@ module Datadog
       # Sets trace's origin to ciapp-test
       def set_trace_origin(trace)
         trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
+      end
+
+      def force_new_trace!(span_options)
+        # if there is an active trace already (from session/module/suite)
+        # force creation of a new trace for the test by providing a new trace_id
+        # via continue_from parameter
+        current_trace = Datadog::Tracing.active_trace
+        if current_trace
+          digest = Datadog::Tracing::TraceDigest.new(
+            trace_id: Datadog::Tracing::Utils.next_id
+          )
+          span_options[:continue_from] = digest
+        end
       end
 
       def build_test_session(tracer_span, tags)

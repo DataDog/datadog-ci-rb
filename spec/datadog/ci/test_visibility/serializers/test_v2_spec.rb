@@ -21,7 +21,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
 
         expect(content).to include(
           {
-            "trace_id" => trace.id,
+            "trace_id" => first_test_span.trace_id,
             "span_id" => first_test_span.id,
             "name" => "rspec.test",
             "service" => "rspec-test-suite",
@@ -42,7 +42,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
         )
         expect(meta["_test.session_id"]).to be_nil
 
-        expect(metrics).to eq({"memory_allocations" => 16})
+        expect(metrics).to eq({"_dd.top_level" => 1, "memory_allocations" => 16})
       end
     end
 
@@ -70,9 +70,9 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
         end
       end
 
-      it "all tests have the same trace_id" do
+      it "all tests have different trace ids" do
         unique_trace_ids = msgpack_jsons.map { |msgpack_json| msgpack_json["content"]["trace_id"] }.uniq
-        expect(unique_trace_ids.size).to eq(1)
+        expect(unique_trace_ids.size).to eq(2)
       end
     end
 

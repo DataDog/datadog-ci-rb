@@ -39,6 +39,8 @@ module Datadog
       def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
 
       def set_initial_tags: (Datadog::CI::Span ci_span, Hash[untyped, untyped] tags) -> void
+
+      def force_new_trace!: (Hash[untyped, untyped] span_options) -> void
     end
   end
 end
