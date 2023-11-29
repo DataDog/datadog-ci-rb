@@ -44,6 +44,33 @@ RSpec.describe Datadog::CI::Recorder do
     end
   end
 
+  context "when CI mode is disabled" do
+    include_context "CI mode activated" do
+      let(:experimental_test_suite_level_visibility_enabled) { false }
+      let(:ci_enabled) { false }
+    end
+
+    describe "#trace_test" do
+      context "when given a block" do
+        before do
+          recorder.trace_test("my test") do |test_span|
+            sleep(0.1)
+          end
+        end
+
+        it "does not create spans" do
+          expect(spans.count).to eq(0)
+        end
+      end
+
+      context "without a block" do
+        subject { recorder.trace_test("my test") }
+
+        it { is_expected.to be_nil }
+      end
+    end
+  end
+
   context "when test suite level visibility is disabled" do
     include_context "CI mode activated" do
       let(:experimental_test_suite_level_visibility_enabled) { false }

@@ -2,13 +2,17 @@ module Datadog
   module CI
     class Recorder
       @test_suite_level_visibility_enabled: bool
+      @enabled: bool
+
       @environment_tags: Hash[String, String]
       @local_context: Datadog::CI::Context::Local
       @global_context: Datadog::CI::Context::Global
 
       attr_reader environment_tags: Hash[String, String]
+      attr_reader test_suite_level_visibility_enabled: bool
+      attr_reader enabled: bool
 
-      def initialize: (?test_suite_level_visibility_enabled: bool) -> void
+      def initialize: (?enabled: bool, ?test_suite_level_visibility_enabled: bool) -> void
 
       def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 

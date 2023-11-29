@@ -20,9 +20,10 @@ module Datadog
   module CI
     # Common behavior for CI tests
     class Recorder
-      attr_reader :environment_tags, :test_suite_level_visibility_enabled
+      attr_reader :environment_tags, :test_suite_level_visibility_enabled, :enabled
 
-      def initialize(test_suite_level_visibility_enabled: false)
+      def initialize(enabled: true, test_suite_level_visibility_enabled: false)
+        @enabled = enabled
         @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
         @environment_tags = Ext::Environment.tags(ENV).freeze
@@ -31,7 +32,7 @@ module Datadog
       end
 
       def start_test_session(service_name: nil, tags: {})
-        return nil unless @test_suite_level_visibility_enabled
+        return nil unless test_suite_level_visibility_enabled
 
         span_options = {
           service: service_name,
@@ -53,6 +54,8 @@ module Datadog
 
       # Creates a new span for a CI test
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
+        return nil unless enabled
+
         test_session = active_test_session
         if test_session
           service_name ||= test_session.service
@@ -94,6 +97,8 @@ module Datadog
       end
 
       def trace(span_type, span_name, tags: {}, &block)
+        return nil unless enabled
+
         span_options = {
           resource: span_name,
           span_type: span_type

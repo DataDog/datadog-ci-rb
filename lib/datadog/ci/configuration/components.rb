@@ -22,6 +22,11 @@ module Datadog
           # Activate CI mode if enabled
           activate_ci!(settings) if settings.ci.enabled
 
+          @ci_recorder = Recorder.new(
+            enabled: settings.ci.enabled,
+            test_suite_level_visibility_enabled: settings.ci.experimental_test_suite_level_visibility_enabled
+          )
+
           # Initialize normally
           super
         end
@@ -61,10 +66,6 @@ module Datadog
           end
 
           settings.tracing.test_mode.writer_options = writer_options
-
-          @ci_recorder = Recorder.new(
-            test_suite_level_visibility_enabled: settings.ci.experimental_test_suite_level_visibility_enabled
-          )
         end
 
         def can_use_evp_proxy?(settings, agent_settings)
