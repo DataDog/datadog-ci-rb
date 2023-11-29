@@ -54,6 +54,36 @@ module Datadog
         test_session
       end
 
+      def start_test_module(test_module_name, service_name: nil, tags: {})
+        return skip_tracing unless test_suite_level_visibility_enabled
+
+        test_session = active_test_session
+        if test_session
+          service_name ||= test_session.service
+
+          tags = test_session.inheritable_tags.merge(tags)
+        end
+
+        span_options = {
+          service: service_name,
+          span_type: Ext::AppTypes::TYPE_TEST_MODULE
+        }
+
+        tracer_span = Datadog::Tracing.trace(test_module_name, **span_options)
+        trace = Datadog::Tracing.active_trace
+
+        set_trace_origin(trace)
+
+        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id if test_session
+        tags[Ext::Test::TAG_TEST_MODULE_ID] = tracer_span.id
+        tags[Ext::Test::TAG_MODULE] = test_module_name
+
+        test_module = build_test_module(tracer_span, tags)
+        @global_context.activate_test_module!(test_module)
+
+        test_module
+      end
+
       # Creates a new span for a CI test
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
         return skip_tracing(block) unless enabled
@@ -130,6 +160,10 @@ module Datadog
         @global_context.active_test_session
       end
 
+      def active_test_module
+        @global_context.active_test_module
+      end
+
       # TODO: does it make sense to have a parameter here?
       def deactivate_test(test)
         @local_context.deactivate_test!(test)
@@ -137,6 +171,10 @@ module Datadog
 
       def deactivate_test_session
         @global_context.deactivate_test_session!
+      end
+
+      def deactivate_test_module
+        @global_context.deactivate_test_module!
       end
 
       private
@@ -158,6 +196,12 @@ module Datadog
         test_session = TestSession.new(tracer_span)
         set_initial_tags(test_session, tags)
         test_session
+      end
+
+      def build_test_module(tracer_span, tags)
+        test_module = TestModule.new(tracer_span)
+        set_initial_tags(test_module, tags)
+        test_module
       end
 
       def build_test(tracer_span, tags)

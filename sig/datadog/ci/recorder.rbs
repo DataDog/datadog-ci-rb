@@ -20,7 +20,11 @@ module Datadog
 
       def start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
+      def start_test_module: (String test_module_name, ?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+
       def active_test_session: () -> Datadog::CI::TestSession?
+
+      def active_test_module: () -> Datadog::CI::TestModule?
 
       def active_test: () -> Datadog::CI::Test?
 
@@ -29,6 +33,8 @@ module Datadog
       def deactivate_test: (Datadog::CI::Test test) -> void
 
       def deactivate_test_session: () -> void
+
+      def deactivate_test_module: () -> void
 
       def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
@@ -39,6 +45,8 @@ module Datadog
       def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
 
       def build_test_session: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSession
+
+      def build_test_module: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestModule
 
       def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
 

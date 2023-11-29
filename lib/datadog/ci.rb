@@ -61,6 +61,14 @@ module Datadog
         recorder.active_test_session
       end
 
+      def start_test_module(test_module_name, service_name: nil, tags: {})
+        recorder.start_test_module(test_module_name, service_name: service_name, tags: tags)
+      end
+
+      def active_test_module
+        recorder.active_test_module
+      end
+
       # Return a {Datadog::CI::Test ci_test} that will trace a test called `test_name`.
       # Raises an error if a test is already active.
       # If there is an active test session, the new test will be connected to the session.
@@ -251,6 +259,11 @@ module Datadog
       # Internal only, to finish a test session use Datadog::CI::TestSession#finish
       def deactivate_test_session
         recorder.deactivate_test_session
+      end
+
+      # Internal only, to finish a test module use Datadog::CI::TestModule#finish
+      def deactivate_test_module
+        recorder.deactivate_test_module
       end
 
       private

@@ -14,13 +14,15 @@ module Datadog
         TAG_SKIP_REASON = "test.skip_reason" # DEV: Not populated yet
         TAG_STATUS = "test.status"
         TAG_SUITE = "test.suite"
+        TAG_MODULE = "test.module"
         TAG_TRAITS = "test.traits"
         TAG_TYPE = "test.type"
         TAG_COMMAND = "test.command"
 
-        # those tags are special and they are used to conrrelate tests with the test sessions, suites, and modules
+        # those tags are special and they are used to correlate tests with the test sessions, suites, and modules
         TAG_TEST_SESSION_ID = "_test.session_id"
-        SPECIAL_TAGS = [TAG_TEST_SESSION_ID].freeze
+        TAG_TEST_MODULE_ID = "_test.module_id"
+        SPECIAL_TAGS = [TAG_TEST_SESSION_ID, TAG_TEST_MODULE_ID].freeze
 
         # tags that can be inherited from the test session
         INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION, TAG_TYPE].freeze
