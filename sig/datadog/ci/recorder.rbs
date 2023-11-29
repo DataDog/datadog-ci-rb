@@ -14,11 +14,11 @@ module Datadog
 
       def initialize: (?enabled: bool, ?test_suite_level_visibility_enabled: bool) -> void
 
-      def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+      def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
       def trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-      def start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession?
+      def start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
       def active_test_session: () -> Datadog::CI::TestSession?
 
@@ -43,6 +43,10 @@ module Datadog
       def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
 
       def set_initial_tags: (Datadog::CI::Span ci_span, Hash[untyped, untyped] tags) -> void
+
+      def null_span: () -> Datadog::CI::Span
+
+      def skip_tracing: (?untyped block) -> untyped
     end
   end
 end

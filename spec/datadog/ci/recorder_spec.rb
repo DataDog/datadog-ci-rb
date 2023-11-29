@@ -52,21 +52,57 @@ RSpec.describe Datadog::CI::Recorder do
 
     describe "#trace_test" do
       context "when given a block" do
+        let(:spy_under_test) { spy("spy") }
+
         before do
           recorder.trace_test("my test") do |test_span|
-            sleep(0.1)
+            spy_under_test.call
+
+            test_span.passed!
           end
         end
 
         it "does not create spans" do
           expect(spans.count).to eq(0)
         end
+
+        it "executes the test code" do
+          expect(spy_under_test).to have_received(:call)
+        end
       end
 
       context "without a block" do
         subject { recorder.trace_test("my test") }
 
-        it { is_expected.to be_nil }
+        it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+      end
+    end
+
+    describe "#trace" do
+      context "when given a block" do
+        let(:spy_under_test) { spy("spy") }
+
+        before do
+          recorder.trace("step", "my step") do |span|
+            spy_under_test.call
+
+            span.set_metric("my.metric", 42)
+          end
+        end
+
+        it "does not create spans" do
+          expect(spans.count).to eq(0)
+        end
+
+        it "executes the test code" do
+          expect(spy_under_test).to have_received(:call)
+        end
+      end
+
+      context "without a block" do
+        subject { recorder.trace("step", "my step") }
+
+        it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
       end
     end
   end
@@ -82,7 +118,7 @@ RSpec.describe Datadog::CI::Recorder do
 
       subject { recorder.start_test_session(service_name: service_name, tags: tags) }
 
-      it { is_expected.to be_nil }
+      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
 
       it "does not activate session" do
         expect(recorder.active_test_session).to be_nil
@@ -101,9 +137,7 @@ RSpec.describe Datadog::CI::Recorder do
       context "when given a block" do
         before do
           recorder.trace(span_type, span_name, tags: tags) do |span|
-            # simulate some work
             span.set_metric("my.metric", 42)
-            sleep(0.1)
           end
         end
         subject { span }
@@ -247,9 +281,7 @@ RSpec.describe Datadog::CI::Recorder do
             operation_name: operation_name,
             tags: tags
           ) do |test_span|
-            # simulate some work
             test_span.set_metric("my.metric", 42)
-            sleep(0.1)
           end
         end
         subject { span }
