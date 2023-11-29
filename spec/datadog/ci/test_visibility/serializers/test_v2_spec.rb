@@ -7,7 +7,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
   end
 
   include_context "Test visibility event serialized" do
-    subject { described_class.new(trace, first_test_span) }
+    subject { described_class.new(trace_for_span(first_test_span), first_test_span) }
   end
 
   describe "#to_msgpack" do
@@ -21,18 +21,19 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
 
         expect(content).to include(
           {
-            "trace_id" => trace.id,
+            "trace_id" => first_test_span.trace_id,
             "span_id" => first_test_span.id,
             "name" => "rspec.test",
             "service" => "rspec-test-suite",
             "type" => "test",
-            "resource" => "calculator_tests.test_add",
+            "resource" => "calculator_tests.test_add.run.0",
             "test_session_id" => test_session_span.id.to_s
           }
         )
 
         expect(meta).to include(
           {
+            "test.name" => "test_add.run.0",
             "test.framework" => "rspec",
             "test.status" => "pass",
             "_dd.origin" => "ciapp-test",
@@ -41,7 +42,37 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
         )
         expect(meta["_test.session_id"]).to be_nil
 
-        expect(metrics).to eq({"memory_allocations" => 16})
+        expect(metrics).to eq({"_dd.top_level" => 1, "memory_allocations" => 16})
+      end
+    end
+
+    context "trace several tests executions with Recorder" do
+      let(:test_spans) { spans.select { |span| span.type == "test" } }
+      subject { test_spans.map { |span| described_class.new(trace_for_span(span), span) } }
+
+      before do
+        produce_test_session_trace(tests_count: 2)
+      end
+
+      it "serializes both tests to msgpack" do
+        msgpack_jsons.each_with_index do |msgpack_json, index|
+          expect(msgpack_json["content"]).to include(
+            {
+              "trace_id" => test_spans[index].trace_id,
+              "span_id" => test_spans[index].id,
+              "name" => "rspec.test",
+              "service" => "rspec-test-suite",
+              "type" => "test",
+              "resource" => "calculator_tests.test_add.run.#{index}",
+              "test_session_id" => test_session_span.id.to_s
+            }
+          )
+        end
+      end
+
+      it "all tests have different trace ids" do
+        unique_trace_ids = msgpack_jsons.map { |msgpack_json| msgpack_json["content"]["trace_id"] }.uniq
+        expect(unique_trace_ids.size).to eq(2)
       end
     end
 

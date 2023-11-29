@@ -12,7 +12,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLev
     produce_test_session_trace(with_http_span: true)
   end
 
-  subject { described_class.serializer(trace, ci_span) }
+  subject { described_class.serializer(trace_for_span(ci_span), ci_span) }
 
   describe ".convert_trace_to_serializable_events" do
     context "with a session span" do

@@ -7,15 +7,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
   end
 
   include_context "Test visibility event serialized" do
-    subject { described_class.new(trace, tracer_span) }
-  end
-
-  let(:test_span) do
-    spans.find { |span| span.type == "test" }
-  end
-
-  let(:tracer_span) do
-    spans.find { |span| span.type != "test" }
+    subject { described_class.new(trace_for_span(first_other_span), first_other_span) }
   end
 
   describe "#to_msgpack" do
@@ -26,9 +18,10 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
 
       it "serializes test event to messagepack" do
         expect_event_header(type: "span")
+
         expect(content).to include(
           {
-            "trace_id" => trace.id,
+            "trace_id" => first_test_span.trace_id,
             "span_id" => first_other_span.id,
             "parent_id" => first_test_span.id,
             "name" => "http-call",
@@ -57,7 +50,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
         before do
           produce_test_trace(with_http_span: true)
 
-          tracer_span.name = nil
+          first_other_span.name = nil
         end
 
         it { is_expected.not_to be_valid }

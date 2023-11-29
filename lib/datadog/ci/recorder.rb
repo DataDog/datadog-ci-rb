@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "datadog/tracing"
+require "datadog/tracing/trace_digest"
 
 require "rbconfig"
 
@@ -62,7 +63,9 @@ module Datadog
         span_options = {
           resource: test_name,
           service: service_name,
-          span_type: Ext::AppTypes::TYPE_TEST
+          span_type: Ext::AppTypes::TYPE_TEST,
+          # this option is needed to force a new trace to be created
+          continue_from: Datadog::Tracing::TraceDigest.new
         }
 
         tags[Ext::Test::TAG_NAME] = test_name
@@ -120,7 +123,7 @@ module Datadog
         @global_context.active_test_session
       end
 
-      # TODO: does it make sense to have a paramter here?
+      # TODO: does it make sense to have a parameter here?
       def deactivate_test(test)
         @local_context.deactivate_test!(test)
       end

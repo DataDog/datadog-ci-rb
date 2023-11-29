@@ -7,7 +7,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestLevel do
     let(:integration_name) { :rspec }
   end
 
-  subject { described_class.serializer(trace, span) }
+  subject { described_class.serializer(trace_for_span(span), span) }
 
   describe ".convert_trace_to_serializable_events" do
     context "traced a single test execution with Recorder" do

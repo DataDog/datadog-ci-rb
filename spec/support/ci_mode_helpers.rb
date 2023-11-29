@@ -1,7 +1,9 @@
 RSpec.shared_context "CI mode activated" do
   let(:test_command) { "command" }
-  let(:integration_name) { :override_me }
+  let(:integration_name) { :no_instrument }
   let(:integration_options) { {} }
+  let(:experimental_test_suite_level_visibility_enabled) { true }
+  let(:recorder) { Datadog.send(:components).ci_recorder }
 
   before do
     allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
@@ -12,8 +14,10 @@ RSpec.shared_context "CI mode activated" do
 
     Datadog.configure do |c|
       c.ci.enabled = true
-      c.ci.experimental_test_suite_level_visibility_enabled = true
-      c.ci.instrument integration_name, integration_options
+      c.ci.experimental_test_suite_level_visibility_enabled = experimental_test_suite_level_visibility_enabled
+      unless integration_name == :no_instrument
+        c.ci.instrument integration_name, integration_options
+      end
     end
   end
 
