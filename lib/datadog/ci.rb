@@ -148,7 +148,7 @@ module Datadog
       # - database query
       # - any custom operation you want to see in your trace view
       #
-      # You can use thi method with a <tt>do-block</tt> like:
+      # You can use this method with a <tt>do-block</tt> like:
       #
       # ```
       # Datadog::CI.trace(
