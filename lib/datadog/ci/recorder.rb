@@ -13,6 +13,7 @@ require_relative "context/global"
 require_relative "context/local"
 
 require_relative "span"
+require_relative "null_span"
 require_relative "test"
 require_relative "test_session"
 
@@ -20,9 +21,10 @@ module Datadog
   module CI
     # Common behavior for CI tests
     class Recorder
-      attr_reader :environment_tags, :test_suite_level_visibility_enabled
+      attr_reader :environment_tags, :test_suite_level_visibility_enabled, :enabled
 
-      def initialize(test_suite_level_visibility_enabled: false)
+      def initialize(enabled: true, test_suite_level_visibility_enabled: false)
+        @enabled = enabled
         @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
         @environment_tags = Ext::Environment.tags(ENV).freeze
@@ -31,7 +33,7 @@ module Datadog
       end
 
       def start_test_session(service_name: nil, tags: {})
-        return nil unless @test_suite_level_visibility_enabled
+        return skip_tracing unless test_suite_level_visibility_enabled
 
         span_options = {
           service: service_name,
@@ -53,6 +55,8 @@ module Datadog
 
       # Creates a new span for a CI test
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
+        return skip_tracing(block) unless enabled
+
         test_session = active_test_session
         if test_session
           service_name ||= test_session.service
@@ -94,6 +98,8 @@ module Datadog
       end
 
       def trace(span_type, span_name, tags: {}, &block)
+        return skip_tracing(block) unless enabled
+
         span_options = {
           resource: span_name,
           span_type: span_type
@@ -134,6 +140,14 @@ module Datadog
 
       private
 
+      def skip_tracing(block = nil)
+        if block
+          block.call(null_span)
+        else
+          null_span
+        end
+      end
+
       # Sets trace's origin to ciapp-test
       def set_trace_origin(trace)
         trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
@@ -163,6 +177,10 @@ module Datadog
 
         ci_span.set_tags(tags)
         ci_span.set_tags(environment_tags)
+      end
+
+      def null_span
+        @null_span ||= NullSpan.new
       end
     end
   end

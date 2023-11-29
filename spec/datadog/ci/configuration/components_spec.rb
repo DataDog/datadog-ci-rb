@@ -84,6 +84,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(settings.ci)
             .to receive(:enabled=)
 
+          allow(settings.ci)
+            .to receive(:experimental_test_suite_level_visibility_enabled=)
+
           allow(Datadog.logger)
             .to receive(:error)
 
@@ -141,7 +144,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
               context "and when agent does not support EVP proxy" do
                 let(:evp_proxy_supported) { false }
 
-                it "falls back to default transport" do
+                it "falls back to default transport and disables test suite level visibility" do
                   expect(settings.tracing.test_mode)
                     .to have_received(:enabled=)
                     .with(true)
@@ -149,6 +152,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   expect(settings.tracing.test_mode)
                     .to have_received(:trace_flush=)
                     .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Partial))
+
+                  expect(settings.ci)
+                    .to have_received(:experimental_test_suite_level_visibility_enabled=)
+                    .with(false)
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_nil

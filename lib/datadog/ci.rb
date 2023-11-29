@@ -29,7 +29,8 @@ module Datadog
       # @param [String] service_name the service name for this session
       # @param [Hash<String,String>] tags extra tags which should be added to the test.
       # @return [Datadog::CI::TestSession] returns the active, running {Datadog::CI::TestSession}.
-      # @return [nil] if test suite level visibility is disabled (old Datadog agent detected)
+      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
+      #         detected and test suite level visibility cannot be supported.
       #
       # @public_api
       def start_test_session(service_name: nil, tags: {})
@@ -104,8 +105,10 @@ module Datadog
       # @return [Object] If a block is provided, returns the result of the block execution.
       # @return [Datadog::CI::Test] If no block is provided, returns the active,
       #         unfinished {Datadog::CI::Test}.
+      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
       # @yield Optional block where new newly created {Datadog::CI::Test} captures the execution.
       # @yieldparam [Datadog::CI::Test] ci_test the newly created and active [Datadog::CI::Test]
+      # @yieldparam [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
       #
       # @public_api
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
@@ -133,6 +136,7 @@ module Datadog
       # @param [String] service_name the service name for this span.
       # @param [Hash<String,String>] tags extra tags which should be added to the test.
       # @return [Datadog::CI::Test] Returns the active, unfinished {Datadog::CI::Test}.
+      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
       #
       # @public_api
       def start_test(test_name, service_name: nil, operation_name: "test", tags: {})
@@ -144,7 +148,7 @@ module Datadog
       # - database query
       # - any custom operation you want to see in your trace view
       #
-      # You can use thi method with a <tt>do-block</tt> like:
+      # You can use this method with a <tt>do-block</tt> like:
       #
       # ```
       # Datadog::CI.trace(
@@ -174,8 +178,10 @@ module Datadog
       # @return [Object] If a block is provided, returns the result of the block execution.
       # @return [Datadog::CI::Span] If no block is provided, returns the active,
       #         unfinished {Datadog::CI::Span}.
+      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
       # @yield Optional block where new newly created {Datadog::CI::Span} captures the execution.
       # @yieldparam [Datadog::CI::Span] ci_span the newly created and active [Datadog::CI::Span]
+      # @yieldparam [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
       #
       # @public_api
       def trace(span_type, span_name, tags: {}, &block)
