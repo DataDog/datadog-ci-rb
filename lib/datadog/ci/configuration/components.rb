@@ -39,6 +39,8 @@ module Datadog
             test_visibility_transport = build_agentless_transport(settings)
           elsif can_use_evp_proxy?(settings, agent_settings)
             test_visibility_transport = build_evp_proxy_transport(settings, agent_settings)
+          else
+            settings.ci.experimental_test_suite_level_visibility_enabled = false
           end
 
           # Deactivate telemetry
