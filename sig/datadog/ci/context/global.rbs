@@ -5,14 +5,21 @@ module Datadog
         @mutex: Thread::Mutex
 
         @test_session: Datadog::CI::TestSession?
+        @test_module: Datadog::CI::TestModule?
 
         def initialize: () -> void
 
         def active_test_session: () -> Datadog::CI::TestSession?
 
+        def active_test_module: () -> Datadog::CI::TestModule?
+
         def activate_test_session!: (Datadog::CI::TestSession test_session) -> void
 
+        def activate_test_module!: (Datadog::CI::TestModule test_module) -> void
+
         def deactivate_test_session!: () -> void
+
+        def deactivate_test_module!: () -> void
       end
     end
   end

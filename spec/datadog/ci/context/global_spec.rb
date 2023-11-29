@@ -3,6 +3,7 @@ RSpec.describe Datadog::CI::Context::Global do
 
   let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: "test.session") }
   let(:session) { Datadog::CI::TestSession.new(tracer_span) }
+  let(:test_module) { Datadog::CI::TestModule.new(tracer_span) }
 
   describe "#activate_test_session!" do
     context "when a test session is already active" do
@@ -29,6 +30,24 @@ RSpec.describe Datadog::CI::Context::Global do
     end
   end
 
+  describe "active_test_session" do
+    context "when a test session is active" do
+      before do
+        subject.activate_test_session!(session)
+      end
+
+      it "returns the active test session" do
+        expect(subject.active_test_session).to be(session)
+      end
+    end
+
+    context "when no test session is active" do
+      it "returns nil" do
+        expect(subject.active_test_session).to be_nil
+      end
+    end
+  end
+
   describe "#deactivate_test_session!" do
     context "when a test session is active" do
       before do
@@ -45,6 +64,69 @@ RSpec.describe Datadog::CI::Context::Global do
       it "does nothing" do
         subject.deactivate_test_session!
         expect(subject.active_test_session).to be_nil
+      end
+    end
+  end
+
+  describe "#activate_test_module!" do
+    context "when a test module is already active" do
+      before do
+        subject.activate_test_module!(Datadog::CI::TestModule.new(tracer_span))
+      end
+
+      it "raises an error" do
+        expect { subject.activate_test_module!(test_module) }.to(
+          raise_error(
+            RuntimeError,
+            "Nested test modules are not supported. Currently active test module: " \
+            "#{test_module}"
+          )
+        )
+      end
+    end
+
+    context "when no test module is active" do
+      it "activates the test module" do
+        subject.activate_test_module!(test_module)
+        expect(subject.active_test_module).to be(test_module)
+      end
+    end
+  end
+
+  describe "active_test_module" do
+    context "when a test module is active" do
+      before do
+        subject.activate_test_module!(test_module)
+      end
+
+      it "returns the active test module" do
+        expect(subject.active_test_module).to be(test_module)
+      end
+    end
+
+    context "when no test module is active" do
+      it "returns nil" do
+        expect(subject.active_test_module).to be_nil
+      end
+    end
+  end
+
+  describe "#deactivate_test_module!" do
+    context "when a test module is active" do
+      before do
+        subject.activate_test_module!(test_module)
+      end
+
+      it "deactivates the test module" do
+        subject.deactivate_test_module!
+        expect(subject.active_test_module).to be_nil
+      end
+    end
+
+    context "when no test module is active" do
+      it "does nothing" do
+        subject.deactivate_test_module!
+        expect(subject.active_test_module).to be_nil
       end
     end
   end
