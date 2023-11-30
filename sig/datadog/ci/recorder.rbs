@@ -57,6 +57,8 @@ module Datadog
       def null_span: () -> Datadog::CI::Span
 
       def skip_tracing: (?untyped block) -> untyped
+
+      def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
     end
   end
 end

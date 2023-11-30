@@ -41,10 +41,7 @@ module Datadog
           span_type: Ext::AppTypes::TYPE_TEST_SESSION
         }
 
-        tracer_span = Datadog::Tracing.trace("test.session", **span_options)
-        trace = Datadog::Tracing.active_trace
-
-        set_trace_origin(trace)
+        tracer_span = start_datadog_tracer_span("test.session", span_options)
 
         tags[Ext::Test::TAG_TEST_SESSION_ID] = tracer_span.id
 
@@ -71,10 +68,7 @@ module Datadog
           span_type: Ext::AppTypes::TYPE_TEST_MODULE
         }
 
-        tracer_span = Datadog::Tracing.trace(test_module_name, **span_options)
-        trace = Datadog::Tracing.active_trace
-
-        set_trace_origin(trace)
+        tracer_span = start_datadog_tracer_span(test_module_name, span_options)
 
         tags[Ext::Test::TAG_TEST_MODULE_ID] = tracer_span.id
         tags[Ext::Test::TAG_MODULE] = tracer_span.name
@@ -115,9 +109,7 @@ module Datadog
         }
 
         if block
-          Datadog::Tracing.trace(operation_name, **span_options) do |tracer_span, trace|
-            set_trace_origin(trace)
-
+          start_datadog_tracer_span(operation_name, span_options) do |tracer_span|
             test = build_test(tracer_span, tags)
 
             @local_context.activate_test!(test) do
@@ -125,10 +117,7 @@ module Datadog
             end
           end
         else
-          tracer_span = Datadog::Tracing.trace(operation_name, **span_options)
-          trace = Datadog::Tracing.active_trace
-
-          set_trace_origin(trace)
+          tracer_span = start_datadog_tracer_span(operation_name, span_options)
 
           test = build_test(tracer_span, tags)
           @local_context.activate_test!(test)
@@ -145,11 +134,11 @@ module Datadog
         }
 
         if block
-          Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
+          start_datadog_tracer_span(span_name, span_options) do |tracer_span|
             block.call(build_span(tracer_span, tags))
           end
         else
-          tracer_span = Datadog::Tracing.trace(span_name, **span_options)
+          tracer_span = start_datadog_tracer_span(span_name, span_options)
 
           build_span(tracer_span, tags)
         end
@@ -230,6 +219,22 @@ module Datadog
 
         ci_span.set_tags(tags)
         ci_span.set_tags(environment_tags)
+      end
+
+      def start_datadog_tracer_span(span_name, span_options, &block)
+        if block
+          Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
+            set_trace_origin(trace)
+
+            yield tracer_span
+          end
+        else
+          tracer_span = Datadog::Tracing.trace(span_name, **span_options)
+          trace = Datadog::Tracing.active_trace
+          set_trace_origin(trace)
+
+          tracer_span
+        end
       end
 
       def null_span
