@@ -8,6 +8,8 @@ module Datadog
       @local_context: Datadog::CI::Context::Local
       @global_context: Datadog::CI::Context::Global
 
+      @null_span: Datadog::CI::NullSpan
+
       attr_reader environment_tags: Hash[String, String]
       attr_reader test_suite_level_visibility_enabled: bool
       attr_reader enabled: bool

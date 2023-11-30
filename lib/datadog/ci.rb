@@ -10,7 +10,7 @@ module Datadog
   # @public_api
   module CI
     class << self
-      # Return a {Datadog::CI::TestSesstion ci_test_session} that represents the whole test session run.
+      # Starts a {Datadog::CI::TestSesstion ci_test_session} that represents the whole test session run.
       # Read Datadog documentation on test sessions
       # [here](https://docs.datadoghq.com/continuous_integration/explorer/?tab=testruns#sessions).
       # Raises an error if a session is already active.
@@ -29,7 +29,7 @@ module Datadog
       # Remember that calling {Datadog::CI::TestSession#finish} is mandatory.
       #
       # @param [String] service_name the service name for this session
-      # @param [Hash<String,String>] tags extra tags which should be added to the test.
+      # @param [Hash<String,String>] tags extra tags which should be added to the test session.
       # @return [Datadog::CI::TestSession] returns the active, running {Datadog::CI::TestSession}.
       # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
@@ -39,7 +39,7 @@ module Datadog
         recorder.start_test_session(service_name: service_name, tags: tags)
       end
 
-      # The active, unfinished test session span.
+      # The active, unfinished test session.
       #
       # Usage:
       #
@@ -61,10 +61,60 @@ module Datadog
         recorder.active_test_session
       end
 
+      # Starts a {Datadog::CI::TestModule ci_test_module} that represents a single test module (for most Ruby test frameworks
+      # module will correspond 1-1 to the test session).
+      #
+      # Read Datadog documentation on test modules:
+      # [here](https://docs.datadoghq.com/continuous_integration/explorer/?tab=testruns#module).
+      #
+      # Raises an error if a module is already active. There is at most a single test module per process
+      # active at any given time.
+      #
+      # The {#start_test_module} method is used to mark the start of the test session:
+      # ```
+      # Datadog::CI.start_test_module(
+      #   "my-module",
+      #   service: "my-web-site-tests",
+      #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
+      # )
+      #
+      # # Somewhere else after the module has ended
+      # Datadog::CI.active_test_module.finish
+      # ```
+      #
+      # Remember that calling {Datadog::CI::TestModule#finish} is mandatory.
+      #
+      # @param [String] test_module_name the name for this module
+      # @param [String] service_name the service name for this session
+      # @param [Hash<String,String>] tags extra tags which should be added to the test module.
+      # @return [Datadog::CI::TestModule] returns the active, running {Datadog::CI::TestModule}.
+      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
+      #         detected and test suite level visibility cannot be supported.
+      #
+      # @public_api
       def start_test_module(test_module_name, service_name: nil, tags: {})
         recorder.start_test_module(test_module_name, service_name: service_name, tags: tags)
       end
 
+      # The active, unfinished test module.
+      #
+      # Usage:
+      #
+      # ```
+      # # start a test module
+      # Datadog::CI.start_test_module(
+      #   "my-module",
+      #   service: "my-web-site-tests",
+      #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
+      # )
+      #
+      # # somewhere else, access the current module
+      # test_module = Datadog::CI.active_test_module
+      # test_module.finish
+      # ```
+      #
+      # @return [Datadog::CI::TestModule] the active test module
+      # @return [nil] if no test module is active
       def active_test_module
         recorder.active_test_module
       end

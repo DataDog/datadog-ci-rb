@@ -62,6 +62,8 @@ module Datadog
           service_name ||= test_session.service
 
           tags = test_session.inheritable_tags.merge(tags)
+
+          tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id
         end
 
         span_options = {
@@ -74,9 +76,8 @@ module Datadog
 
         set_trace_origin(trace)
 
-        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id if test_session
         tags[Ext::Test::TAG_TEST_MODULE_ID] = tracer_span.id
-        tags[Ext::Test::TAG_MODULE] = test_module_name
+        tags[Ext::Test::TAG_MODULE] = tracer_span.name
 
         test_module = build_test_module(tracer_span, tags)
         @global_context.activate_test_module!(test_module)
