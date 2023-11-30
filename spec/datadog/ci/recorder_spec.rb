@@ -250,36 +250,66 @@ RSpec.describe Datadog::CI::Recorder do
             test_session
           end
 
-          it "returns a new CI test span using service from the test session" do
-            expect(subject).to be_kind_of(Datadog::CI::Test)
-            expect(subject.name).to eq(test_name)
-            expect(subject.service).to eq(session_service_name)
+          context "when there is no active test module" do
+            it "returns a new CI test span using service from the test session" do
+              expect(subject).to be_kind_of(Datadog::CI::Test)
+              expect(subject.name).to eq(test_name)
+              expect(subject.service).to eq(session_service_name)
+            end
+
+            it "sets the provided tags correctly while inheriting some tags from the session" do
+              expect(subject.get_tag("test.framework")).to eq("my-framework")
+              expect(subject.get_tag("test.framework_version")).to eq("1.0")
+              expect(subject.get_tag("my.tag")).to eq("my_value")
+              expect(subject.get_tag("my.session.tag")).to be_nil
+            end
+
+            it "connects the test span to the test session" do
+              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session.id.to_s)
+            end
+
+            it "starts a new trace" do
+              expect(subject.tracer_span.trace_id).not_to eq(test_session.tracer_span.trace_id)
+            end
+
+            it_behaves_like "span with environment tags"
+            it_behaves_like "span with default tags"
+            it_behaves_like "span with runtime tags"
+
+            it_behaves_like "trace with ciapp-test origin" do
+              let(:trace_under_test) do
+                subject.finish
+
+                trace
+              end
+            end
           end
 
-          it "sets the provided tags correctly while inheriting some tags from the session" do
-            expect(subject.get_tag("test.framework")).to eq("my-framework")
-            expect(subject.get_tag("test.framework_version")).to eq("1.0")
-            expect(subject.get_tag("my.tag")).to eq("my_value")
-            expect(subject.get_tag("my.session.tag")).to be_nil
-          end
+          context "when there is an active test module" do
+            let(:module_name) { "my-module" }
 
-          it "connects the test span to the test session" do
-            expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session.id.to_s)
-          end
+            let(:test_module) do
+              recorder.start_test_module(module_name)
+            end
 
-          it "starts a new trace" do
-            expect(subject.tracer_span.trace_id).not_to eq(test_session.tracer_span.trace_id)
-          end
+            before do
+              test_module
+            end
 
-          it_behaves_like "span with environment tags"
-          it_behaves_like "span with default tags"
-          it_behaves_like "span with runtime tags"
+            it "returns a new CI test span" do
+              expect(subject).to be_kind_of(Datadog::CI::Test)
+              expect(subject.name).to eq(test_name)
+            end
 
-          it_behaves_like "trace with ciapp-test origin" do
-            let(:trace_under_test) do
-              subject.finish
+            it "sets the provided tags correctly while inheriting some tags from the session" do
+              expect(subject.get_tag("test.framework")).to eq("my-framework")
+              expect(subject.get_tag("test.framework_version")).to eq("1.0")
+              expect(subject.get_tag("my.tag")).to eq("my_value")
+            end
 
-              trace
+            it "connects the test span to the test module" do
+              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module.id.to_s)
+              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
             end
           end
         end

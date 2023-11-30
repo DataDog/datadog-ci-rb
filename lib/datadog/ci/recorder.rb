@@ -93,7 +93,17 @@ module Datadog
           service_name ||= test_session.service
 
           tags = test_session.inheritable_tags.merge(tags)
+
+          tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id
         end
+
+        test_module = active_test_module
+        if test_module
+          tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id
+          tags[Ext::Test::TAG_MODULE] = test_module.name
+        end
+
+        tags[Ext::Test::TAG_NAME] = test_name
 
         span_options = {
           resource: test_name,
@@ -102,9 +112,6 @@ module Datadog
           # this option is needed to force a new trace to be created
           continue_from: Datadog::Tracing::TraceDigest.new
         }
-
-        tags[Ext::Test::TAG_NAME] = test_name
-        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id if test_session
 
         if block
           Datadog::Tracing.trace(operation_name, **span_options) do |tracer_span, trace|
