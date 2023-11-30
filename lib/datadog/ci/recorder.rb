@@ -51,10 +51,10 @@ module Datadog
       def start_test_module(test_module_name, service_name: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
+        tags = tags_with_inherited_globals(tags)
+
         test_session = active_test_session
         if test_session
-          tags = test_session.inheritable_tags.merge(tags)
-
           tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id
         end
 
@@ -75,10 +75,10 @@ module Datadog
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
         return skip_tracing(block) unless enabled
 
+        tags = tags_with_inherited_globals(tags)
+
         test_session = active_test_session
         if test_session
-          tags = test_session.inheritable_tags.merge(tags)
-
           tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id
         end
 
@@ -207,6 +207,10 @@ module Datadog
         other_options[:span_type] = span_type
 
         other_options
+      end
+
+      def tags_with_inherited_globals(tags)
+        @global_context.inheritable_session_tags.merge(tags)
       end
 
       def set_initial_tags(ci_span, tags)
