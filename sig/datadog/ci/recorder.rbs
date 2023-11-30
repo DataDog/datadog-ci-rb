@@ -56,6 +56,11 @@ module Datadog
 
       def set_initial_tags: (Datadog::CI::Span ci_span, Hash[untyped, untyped] tags) -> void
 
+      # the type (Datadog::CI::TestSession | Datadog::Tracing::SpanOperation) screams of wrong/mising abstraction
+      def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::Tracing::SpanOperation? test_session) -> void
+
+      def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
+
       def null_span: () -> Datadog::CI::Span
 
       def skip_tracing: (?untyped block) -> untyped

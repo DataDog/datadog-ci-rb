@@ -21,6 +21,7 @@ require_relative "test_module"
 module Datadog
   module CI
     # Common behavior for CI tests
+    # Note: this class has too many responsibilities and should be split into multiple classes
     class Recorder
       attr_reader :environment_tags, :test_suite_level_visibility_enabled, :enabled
 
@@ -39,8 +40,7 @@ module Datadog
         tracer_span = start_datadog_tracer_span(
           "test.session", build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SESSION)
         )
-
-        tags[Ext::Test::TAG_TEST_SESSION_ID] = tracer_span.id
+        set_session_context(tags, tracer_span)
 
         test_session = build_test_session(tracer_span, tags)
         @global_context.activate_test_session!(test_session)
@@ -52,18 +52,12 @@ module Datadog
         return skip_tracing unless test_suite_level_visibility_enabled
 
         tags = tags_with_inherited_globals(tags)
-
-        test_session = active_test_session
-        if test_session
-          tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id
-        end
+        set_session_context(tags)
 
         tracer_span = start_datadog_tracer_span(
           test_module_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_MODULE)
         )
-
-        tags[Ext::Test::TAG_TEST_MODULE_ID] = tracer_span.id
-        tags[Ext::Test::TAG_MODULE] = tracer_span.name
+        set_module_context(tags, tracer_span)
 
         test_module = build_test_module(tracer_span, tags)
         @global_context.activate_test_module!(test_module)
@@ -76,17 +70,8 @@ module Datadog
         return skip_tracing(block) unless enabled
 
         tags = tags_with_inherited_globals(tags)
-
-        test_session = active_test_session
-        if test_session
-          tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id
-        end
-
-        test_module = active_test_module
-        if test_module
-          tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id
-          tags[Ext::Test::TAG_MODULE] = test_module.name
-        end
+        set_session_context(tags)
+        set_module_context(tags)
 
         tags[Ext::Test::TAG_NAME] = test_name
 
@@ -219,6 +204,19 @@ module Datadog
 
         ci_span.set_tags(tags)
         ci_span.set_tags(environment_tags)
+      end
+
+      def set_session_context(tags, test_session = nil)
+        test_session ||= active_test_session
+        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id if test_session
+      end
+
+      def set_module_context(tags, test_module = nil)
+        test_module ||= active_test_module
+        if test_module
+          tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id
+          tags[Ext::Test::TAG_MODULE] = test_module.name
+        end
       end
 
       def start_datadog_tracer_span(span_name, span_options, &block)
