@@ -19,6 +19,25 @@ module Datadog
           @test_session
         end
 
+        def service
+          @mutex.synchronize do
+            # thank you RBS for this weirdness
+            test_session = @test_session
+            test_session.service if test_session
+          end
+        end
+
+        def inheritable_session_tags
+          @mutex.synchronize do
+            test_session = @test_session
+            if test_session
+              test_session.inheritable_tags
+            else
+              {}
+            end
+          end
+        end
+
         def activate_test_session!(test_session)
           @mutex.synchronize do
             raise "Nested test sessions are not supported. Currently active test session: #{@test_session}" unless @test_session.nil?

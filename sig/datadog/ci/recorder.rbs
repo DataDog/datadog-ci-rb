@@ -52,6 +52,8 @@ module Datadog
 
       def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
 
+      def build_span_options: (String? service_name, String span_type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
+
       def set_initial_tags: (Datadog::CI::Span ci_span, Hash[untyped, untyped] tags) -> void
 
       def null_span: () -> Datadog::CI::Span

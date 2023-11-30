@@ -11,6 +11,10 @@ module Datadog
 
         def active_test_session: () -> Datadog::CI::TestSession?
 
+        def service: () -> String?
+
+        def inheritable_session_tags: () -> Hash[untyped, untyped]
+
         def active_test_module: () -> Datadog::CI::TestModule?
 
         def activate_test_session!: (Datadog::CI::TestSession test_session) -> void

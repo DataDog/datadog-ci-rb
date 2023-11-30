@@ -36,12 +36,9 @@ module Datadog
       def start_test_session(service_name: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
-        span_options = {
-          service: service_name,
-          span_type: Ext::AppTypes::TYPE_TEST_SESSION
-        }
-
-        tracer_span = start_datadog_tracer_span("test.session", span_options)
+        tracer_span = start_datadog_tracer_span(
+          "test.session", build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SESSION)
+        )
 
         tags[Ext::Test::TAG_TEST_SESSION_ID] = tracer_span.id
 
@@ -56,19 +53,14 @@ module Datadog
 
         test_session = active_test_session
         if test_session
-          service_name ||= test_session.service
-
           tags = test_session.inheritable_tags.merge(tags)
 
           tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id
         end
 
-        span_options = {
-          service: service_name,
-          span_type: Ext::AppTypes::TYPE_TEST_MODULE
-        }
-
-        tracer_span = start_datadog_tracer_span(test_module_name, span_options)
+        tracer_span = start_datadog_tracer_span(
+          test_module_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_MODULE)
+        )
 
         tags[Ext::Test::TAG_TEST_MODULE_ID] = tracer_span.id
         tags[Ext::Test::TAG_MODULE] = tracer_span.name
@@ -85,8 +77,6 @@ module Datadog
 
         test_session = active_test_session
         if test_session
-          service_name ||= test_session.service
-
           tags = test_session.inheritable_tags.merge(tags)
 
           tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id
@@ -100,13 +90,11 @@ module Datadog
 
         tags[Ext::Test::TAG_NAME] = test_name
 
-        span_options = {
-          resource: test_name,
-          service: service_name,
-          span_type: Ext::AppTypes::TYPE_TEST,
-          # this option is needed to force a new trace to be created
-          continue_from: Datadog::Tracing::TraceDigest.new
-        }
+        span_options = build_span_options(
+          service_name,
+          Ext::AppTypes::TYPE_TEST,
+          {resource: test_name, continue_from: Datadog::Tracing::TraceDigest.new}
+        )
 
         if block
           start_datadog_tracer_span(operation_name, span_options) do |tracer_span|
@@ -128,10 +116,11 @@ module Datadog
       def trace(span_type, span_name, tags: {}, &block)
         return skip_tracing(block) unless enabled
 
-        span_options = {
-          resource: span_name,
-          span_type: span_type
-        }
+        span_options = build_span_options(
+          nil, # service name is completely optional for custom spans
+          span_type,
+          {resource: span_name}
+        )
 
         if block
           start_datadog_tracer_span(span_name, span_options) do |tracer_span|
@@ -211,6 +200,13 @@ module Datadog
         span = Span.new(tracer_span)
         set_initial_tags(span, tags)
         span
+      end
+
+      def build_span_options(service_name, span_type, other_options = {})
+        other_options[:service] = service_name || @global_context.service
+        other_options[:span_type] = span_type
+
+        other_options
       end
 
       def set_initial_tags(ci_span, tags)
