@@ -26,7 +26,7 @@ module Datadog
 
       def initialize(enabled: true, test_suite_level_visibility_enabled: false)
         @enabled = enabled
-        @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
+        @test_suite_level_visibility_enabled = enabled && test_suite_level_visibility_enabled
 
         @environment_tags = Ext::Environment.tags(ENV).freeze
         @local_context = Context::Local.new

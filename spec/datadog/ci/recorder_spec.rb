@@ -108,20 +108,32 @@ RSpec.describe Datadog::CI::Recorder do
   end
 
   context "when test suite level visibility is disabled" do
+    let(:service_name) { "my-service" }
+    let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
+
     include_context "CI mode activated" do
       let(:experimental_test_suite_level_visibility_enabled) { false }
     end
 
     describe "#trace_test_session" do
-      let(:service_name) { "my-service" }
-      let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
-
       subject { recorder.start_test_session(service_name: service_name, tags: tags) }
 
       it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
 
       it "does not activate session" do
         expect(recorder.active_test_session).to be_nil
+      end
+    end
+
+    describe "#trace_test_module" do
+      let(:module_name) { "my-module" }
+
+      subject { recorder.start_test_module(module_name, service_name: service_name, tags: tags) }
+
+      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+
+      it "does not activate module" do
+        expect(recorder.active_test_module).to be_nil
       end
     end
   end
@@ -343,6 +355,83 @@ RSpec.describe Datadog::CI::Recorder do
       end
     end
 
+    describe "#start_test_module" do
+      let(:module_name) { "my-module" }
+      let(:service_name) { "my-service" }
+      let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
+
+      subject { recorder.start_test_module(module_name, service_name: service_name, tags: tags) }
+
+      context "when there is no active test session" do
+        it "returns a new CI test_module span" do
+          expect(subject).to be_kind_of(Datadog::CI::TestModule)
+          expect(subject.name).to eq(module_name)
+          expect(subject.service).to eq(service_name)
+          expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+        end
+
+        it "sets the test module id" do
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(subject.id.to_s)
+        end
+
+        it "sets the test module tag" do
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
+        end
+
+        it "doesn't connect the test module span to the test session" do
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to be_nil
+        end
+
+        it "sets the provided tags correctly" do
+          expect(subject.get_tag("test.framework")).to eq("my-framework")
+          expect(subject.get_tag("my.tag")).to eq("my_value")
+        end
+
+        it_behaves_like "span with environment tags"
+        it_behaves_like "span with default tags"
+        it_behaves_like "span with runtime tags"
+        it_behaves_like "trace with ciapp-test origin" do
+          let(:trace_under_test) do
+            subject.finish
+
+            trace
+          end
+        end
+      end
+
+      context "when there is an active test session" do
+        let(:service_name) { nil }
+        let(:session_service_name) { "session_service_name" }
+        let(:session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
+        let(:test_session) { recorder.start_test_session(service_name: session_service_name, tags: session_tags) }
+
+        before do
+          test_session
+        end
+
+        it "returns a new CI module span using service from the test session" do
+          expect(subject).to be_kind_of(Datadog::CI::TestModule)
+          expect(subject.name).to eq(module_name)
+          expect(subject.service).to eq(session_service_name)
+        end
+
+        it "sets the provided tags correctly while inheriting some tags from the session" do
+          expect(subject.get_tag("test.framework")).to eq("my-framework")
+          expect(subject.get_tag("test.framework_version")).to eq("1.0")
+          expect(subject.get_tag("my.tag")).to eq("my_value")
+          expect(subject.get_tag("my.session.tag")).to be_nil
+        end
+
+        it "connects the test module span to the test session" do
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session.id.to_s)
+        end
+
+        it "does not start a new trace" do
+          expect(subject.tracer_span.trace_id).to eq(test_session.tracer_span.trace_id)
+        end
+      end
+    end
+
     describe "#active_test_session" do
       subject { recorder.active_test_session }
       context "when there is no active test session" do
@@ -357,6 +446,24 @@ RSpec.describe Datadog::CI::Recorder do
 
         it "returns the active test session" do
           expect(subject).to be(test_session)
+        end
+      end
+    end
+
+    describe "#active_test_module" do
+      subject { recorder.active_test_module }
+      context "when there is no active test module" do
+        it { is_expected.to be_nil }
+      end
+
+      context "when test module is started" do
+        let(:test_module) { recorder.start_test_module("my module") }
+        before do
+          test_module
+        end
+
+        it "returns the active test module" do
+          expect(subject).to be(test_module)
         end
       end
     end
@@ -451,6 +558,26 @@ RSpec.describe Datadog::CI::Recorder do
           subject
 
           expect(recorder.active_test_session).to be_nil
+        end
+      end
+    end
+
+    describe "#deactivate_test_module" do
+      subject { recorder.deactivate_test_module }
+
+      context "when there is no active test module" do
+        it { is_expected.to be_nil }
+      end
+
+      context "when deactivating the currently active test module" do
+        before do
+          recorder.start_test_module("my module")
+        end
+
+        it "deactivates the test module" do
+          subject
+
+          expect(recorder.active_test_module).to be_nil
         end
       end
     end
