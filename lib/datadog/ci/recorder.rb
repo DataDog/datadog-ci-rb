@@ -65,7 +65,6 @@ module Datadog
         test_module
       end
 
-      # Creates a new span for a CI test
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
         return skip_tracing(block) unless enabled
 
@@ -78,6 +77,8 @@ module Datadog
         span_options = build_span_options(
           service_name,
           Ext::AppTypes::TYPE_TEST,
+          # :resource is needed for the agent APM protocol to work correctly (for older agent versions)
+          # :continue_from is required to start a new trace for each test
           {resource: test_name, continue_from: Datadog::Tracing::TraceDigest.new}
         )
 

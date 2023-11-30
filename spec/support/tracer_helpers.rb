@@ -1,4 +1,5 @@
-require "datadog/tracing"
+require "datadog/ci"
+require "datadog/ci/recorder"
 
 # For contrib, we only allow one tracer to be active:
 # the global tracer in +Datadog::Tracing+.
@@ -52,15 +53,14 @@ module TracerHelpers
   end
 
   def produce_test_session_trace(
-    tests_count: 1,
-    framework: "rspec", operation: "rspec.example",
-    test_name: "test_add", test_suite: "calculator_tests",
+    tests_count: 1, framework: "rspec", operation: "rspec.example",
+    test_name: "test_add", test_suite: "calculator_tests", test_module_name: "arithmetic",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
     skip_reason: nil, start_time: Time.now, duration_seconds: 2,
     with_http_span: false
   )
     allow(Process).to receive(:clock_gettime).and_return(
-      0, duration_seconds, 2 * duration_seconds, 3 * duration_seconds
+      0, duration_seconds, 2 * duration_seconds, 3 * duration_seconds, 4 * duration_seconds, 5 * duration_seconds
     )
 
     test_session = Datadog::CI.start_test_session(
@@ -71,6 +71,8 @@ module TracerHelpers
         Datadog::CI::Ext::Test::TAG_TYPE => "test"
       }
     )
+
+    test_module = Datadog::CI.start_test_module(test_module_name)
 
     tests_count.times do |num|
       produce_test_trace(
@@ -84,12 +86,19 @@ module TracerHelpers
       )
     end
 
+    set_result(test_module, result: result, exception: exception, skip_reason: skip_reason)
     set_result(test_session, result: result, exception: exception, skip_reason: skip_reason)
+
+    test_module.finish
     test_session.finish
   end
 
   def test_session_span
     spans.find { |span| span.type == "test_session_end" }
+  end
+
+  def test_module_span
+    spans.find { |span| span.type == "test_module_end" }
   end
 
   def first_test_span
