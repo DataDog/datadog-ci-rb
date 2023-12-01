@@ -1,8 +1,8 @@
 module Datadog
   module CI
-    def self.trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span test) -> untyped } -> untyped
+    def self.trace_test: (String test_name, String test_suite_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span test) -> untyped } -> untyped
 
-    def self.start_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test: (String test_name, String test_suite_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
     def self.start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 

@@ -83,12 +83,13 @@ module Datadog
         end
       end
 
-      def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
+      def trace_test(test_name, test_suite_name, service_name: nil, operation_name: "test", tags: {}, &block)
         return skip_tracing(block) unless enabled
 
         tags = tags_with_inherited_globals(tags)
         set_session_context(tags)
         set_module_context(tags)
+        set_suite_context(tags, name: test_suite_name)
 
         tags[Ext::Test::TAG_NAME] = test_name
 

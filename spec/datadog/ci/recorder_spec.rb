@@ -55,7 +55,7 @@ RSpec.describe Datadog::CI::Recorder do
         let(:spy_under_test) { spy("spy") }
 
         before do
-          recorder.trace_test("my test") do |test_span|
+          recorder.trace_test("my test", "my suite") do |test_span|
             spy_under_test.call
 
             test_span.passed!
@@ -72,7 +72,7 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       context "without a block" do
-        subject { recorder.trace_test("my test") }
+        subject { recorder.trace_test("my test", "my suite") }
 
         it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
       end
@@ -232,13 +232,20 @@ RSpec.describe Datadog::CI::Recorder do
 
     describe "#trace_test" do
       let(:test_name) { "my test" }
+      let(:test_suite_name) { "my suite" }
       let(:test_service_name) { "my-service" }
       let(:operation_name) { "my-operation" }
       let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
       context "without a block" do
         subject do
-          recorder.trace_test(test_name, service_name: test_service_name, operation_name: operation_name, tags: tags)
+          recorder.trace_test(
+            test_name,
+            test_suite_name,
+            service_name: test_service_name,
+            operation_name: operation_name,
+            tags: tags
+          )
         end
 
         context "when there is no active test session" do
@@ -257,6 +264,11 @@ RSpec.describe Datadog::CI::Recorder do
 
           it "does not connect the test span to the test session" do
             expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to be_nil
+          end
+
+          it "sets the test suite name as one of the tags" do
+            expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_name)
+            expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to be_nil
           end
 
           it_behaves_like "span with environment tags"
@@ -343,6 +355,21 @@ RSpec.describe Datadog::CI::Recorder do
               expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module.id.to_s)
               expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
             end
+
+            context "when there is an active test suite" do
+              let(:test_suite) do
+                recorder.start_test_suite(test_suite_name)
+              end
+
+              before do
+                test_suite
+              end
+
+              it "connects the test span to the test suite" do
+                expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite.id.to_s)
+                expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_name)
+              end
+            end
           end
         end
       end
@@ -351,6 +378,7 @@ RSpec.describe Datadog::CI::Recorder do
         before do
           recorder.trace_test(
             test_name,
+            test_suite_name,
             service_name: test_service_name,
             operation_name: operation_name,
             tags: tags
@@ -370,6 +398,10 @@ RSpec.describe Datadog::CI::Recorder do
         it "sets the provided tags correctly" do
           expect(subject.get_tag("test.framework")).to eq("my-framework")
           expect(subject.get_tag("my.tag")).to eq("my_value")
+        end
+
+        it "sets the suite name in tags" do
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_name)
         end
 
         it_behaves_like "span with environment tags"
@@ -604,7 +636,7 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       context "when test is started" do
-        let(:ci_test) { recorder.trace_test("my test") }
+        let(:ci_test) { recorder.trace_test("my test", "my suite") }
 
         before do
           ci_test
@@ -647,7 +679,7 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       context "when deactivating the currently active test" do
-        let(:ci_test) { recorder.trace_test("my test") }
+        let(:ci_test) { recorder.trace_test("my test", "my suite") }
 
         it "deactivates the test" do
           subject
@@ -660,7 +692,7 @@ RSpec.describe Datadog::CI::Recorder do
         let(:ci_test) { Datadog::CI::Test.new(double("tracer span", get_tag: "wrong test")) }
 
         before do
-          recorder.trace_test("my test")
+          recorder.trace_test("my test", "my suite")
         end
 
         it "raises an error" do

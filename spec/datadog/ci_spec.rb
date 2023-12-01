@@ -6,9 +6,10 @@ RSpec.describe Datadog::CI do
   end
 
   describe "::trace_test" do
-    subject(:trace_test) { described_class.trace_test(test_name, **options, &block) }
+    subject(:trace_test) { described_class.trace_test(test_name, test_suite_name, **options, &block) }
 
     let(:test_name) { "test name" }
+    let(:test_suite_name) { "test suite name" }
     let(:options) do
       {
         service_name: "my-serivce",
@@ -21,16 +22,17 @@ RSpec.describe Datadog::CI do
     let(:ci_test) { instance_double(Datadog::CI::Test) }
 
     before do
-      allow(recorder).to receive(:trace_test).with(test_name, **options, &block).and_return(ci_test)
+      allow(recorder).to receive(:trace_test).with(test_name, test_suite_name, **options, &block).and_return(ci_test)
     end
 
     it { is_expected.to be(ci_test) }
   end
 
   describe "::start_test" do
-    subject(:start_test) { described_class.start_test(test_name, **options) }
+    subject(:start_test) { described_class.start_test(test_name, test_suite_name, **options) }
 
     let(:test_name) { "test name" }
+    let(:test_suite_name) { "test suite name" }
     let(:options) do
       {
         service_name: "my-serivce",
@@ -42,7 +44,7 @@ RSpec.describe Datadog::CI do
     let(:ci_test) { instance_double(Datadog::CI::Test) }
 
     before do
-      allow(recorder).to receive(:trace_test).with(test_name, **options).and_return(ci_test)
+      allow(recorder).to receive(:trace_test).with(test_name, test_suite_name, **options).and_return(ci_test)
     end
 
     it { is_expected.to be(ci_test) }
