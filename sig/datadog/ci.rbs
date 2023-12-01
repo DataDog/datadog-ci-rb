@@ -6,9 +6,13 @@ module Datadog
 
     def self.start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
+    def self.start_test_module: (String test_module_name, ?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+
     def self.trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
     def self.active_test_session: () -> Datadog::CI::TestSession?
+
+    def self.active_test_module: () -> Datadog::CI::TestModule?
 
     def self.active_test: () -> Datadog::CI::Test?
 
@@ -17,6 +21,8 @@ module Datadog
     def self.deactivate_test: (Datadog::CI::Test test) -> void
 
     def self.deactivate_test_session: () -> void
+
+    def self.deactivate_test_module: () -> void
 
     def self.components: () -> Datadog::CI::Configuration::Components
 

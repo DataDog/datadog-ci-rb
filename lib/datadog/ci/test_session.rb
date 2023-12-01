@@ -6,6 +6,8 @@ require_relative "ext/test"
 module Datadog
   module CI
     # Represents the whole test session process.
+    # Documentation on test sessions is here:
+    # https://docs.datadoghq.com/continuous_integration/explorer/?tab=testruns#sessions
     # This object can be shared between multiple threads.
     #
     # @public_api

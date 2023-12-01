@@ -18,6 +18,8 @@ module Datadog
 
         TAG_SUITE: String
 
+        TAG_MODULE: String
+
         TAG_TRAITS: String
 
         TAG_TYPE: String
@@ -25,6 +27,8 @@ module Datadog
         TAG_COMMAND: String
 
         TAG_TEST_SESSION_ID: String
+
+        TAG_TEST_MODULE_ID: String
 
         SPECIAL_TAGS: Array[String]
 

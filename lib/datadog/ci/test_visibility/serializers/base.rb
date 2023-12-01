@@ -75,6 +75,10 @@ module Datadog
             @span.get_tag(Ext::Test::TAG_TEST_SESSION_ID)
           end
 
+          def test_module_id
+            @span.get_tag(Ext::Test::TAG_TEST_MODULE_ID)
+          end
+
           def type
           end
 
