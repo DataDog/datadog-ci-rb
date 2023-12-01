@@ -11,6 +11,21 @@ module Datadog
           MINIMUM_DURATION_NANO = 0
           MAXIMUM_DURATION_NANO = 9223372036854775807
 
+          CONTENT_FIELDS = [
+            "name", "resource", "service",
+            "error", "start", "duration",
+            "meta", "metrics",
+            "type" => "span_type"
+          ].freeze
+
+          REQUIRED_FIELDS = [
+            "error",
+            "name",
+            "resource",
+            "start",
+            "duration"
+          ].freeze
+
           attr_reader :trace, :span, :meta
 
           def initialize(trace, span)

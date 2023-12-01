@@ -7,6 +7,9 @@ module Datadog
           MINIMUM_DURATION_NANO: 0
           MAXIMUM_DURATION_NANO: 9223372036854775807
 
+          CONTENT_FIELDS: Array[String | Hash[String, String]]
+          REQUIRED_FIELDS: Array[String]
+
           @content_fields_count: Integer
           @start: Integer
           @duration: Integer
