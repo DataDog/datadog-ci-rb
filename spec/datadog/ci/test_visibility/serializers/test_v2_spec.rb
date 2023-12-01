@@ -28,7 +28,8 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
             "type" => "test",
             "resource" => "calculator_tests.test_add.run.0",
             "test_session_id" => test_session_span.id.to_s,
-            "test_module_id" => test_module_span.id.to_s
+            "test_module_id" => test_module_span.id.to_s,
+            "test_suite_id" => test_suite_span.id.to_s
           }
         )
 
@@ -148,6 +149,28 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
       context "when test_module_id is nil" do
         before do
           first_test_span.clear_tag("_test.module_id")
+        end
+
+        it "returns false" do
+          expect(subject.valid?).to eq(false)
+        end
+      end
+    end
+
+    context "test_suite_id" do
+      before do
+        produce_test_session_trace
+      end
+
+      context "when test_suite_id is not nil" do
+        it "returns true" do
+          expect(subject.valid?).to eq(true)
+        end
+      end
+
+      context "when test_suite_id is nil" do
+        before do
+          first_test_span.clear_tag("_test.suite_id")
         end
 
         it "returns false" do
