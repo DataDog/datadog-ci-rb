@@ -1,20 +1,17 @@
-THREADS_COUNT = 10
-REPEAT_COUNT = 20
-
 RSpec.describe Datadog::CI::ConcurrentSpan do
   describe "#finish" do
+    include_context "Concurrency test"
+
     it "calls SpanOperation#stop once" do
-      REPEAT_COUNT.times do
+      repeat do
         tracer_span = Datadog::Tracing::SpanOperation.new("operation")
         ci_span = described_class.new(tracer_span)
 
         expect(tracer_span).to receive(:stop).once
 
-        (1..THREADS_COUNT).map do
-          Thread.new do
-            ci_span.finish
-          end
-        end.map(&:join)
+        run_concurrently do
+          ci_span.finish
+        end
       end
     end
   end

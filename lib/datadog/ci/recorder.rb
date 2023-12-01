@@ -17,6 +17,7 @@ require_relative "null_span"
 require_relative "test"
 require_relative "test_session"
 require_relative "test_module"
+require_relative "test_suite"
 
 module Datadog
   module CI

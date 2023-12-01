@@ -9,6 +9,13 @@ module Datadog
           @mutex = Mutex.new
           @test_session = nil
           @test_module = nil
+          @test_suites = {}
+        end
+
+        def fetch_or_activate_test_suite(test_suite_name, &block)
+          @mutex.synchronize do
+            @test_suites[test_suite_name] ||= block.call
+          end
         end
 
         def active_test_module
@@ -17,6 +24,10 @@ module Datadog
 
         def active_test_session
           @test_session
+        end
+
+        def active_test_suite(test_suite_name)
+          @mutex.synchronize { @test_suites[test_suite_name] }
         end
 
         def service
@@ -60,6 +71,10 @@ module Datadog
 
         def deactivate_test_module!
           @mutex.synchronize { @test_module = nil }
+        end
+
+        def deactivate_test_suite!(test_suite_name)
+          @mutex.synchronize { @test_suites.delete(test_suite_name) }
         end
       end
     end
