@@ -85,8 +85,8 @@ module Datadog
       # Remember that calling {Datadog::CI::TestModule#finish} is mandatory.
       #
       # @param [String] test_module_name the name for this module
-      # @param [String] service_name the service name for this session
-      # @param [Hash<String,String>] tags extra tags which should be added to the test module.
+      # @param [String] service_name the service name for this session (optional, inherited from test session if not provided)
+      # @param [Hash<String,String>] tags extra tags which should be added to the test module (optional, some tags are inherited from test session).
       # @return [Datadog::CI::TestModule] returns the active, running {Datadog::CI::TestModule}.
       # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
@@ -117,6 +117,61 @@ module Datadog
       # @return [nil] if no test module is active
       def active_test_module
         recorder.active_test_module
+      end
+
+      # Starts a {Datadog::CI::TestSuite ci_test_suite} that represents a single test suite.
+      # If a test suite with given name is running, returns the existing test suite.
+      #
+      # Read Datadog documentation on test suites:
+      # [here](https://docs.datadoghq.com/continuous_integration/explorer/?tab=testruns#module).
+      #
+      # The {#start_test_suite} method is used to mark the start of a test suite:
+      # ```
+      # Datadog::CI.start_test_suite(
+      #   "calculator_tests",
+      #   service: "my-web-site-tests",
+      #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
+      # )
+      #
+      # # Somewhere else after the suite has ended
+      # Datadog::CI.active_test_suite("calculator_tests").finish
+      # ```
+      #
+      # Remember that calling {Datadog::CI::TestSuite#finish} is mandatory.
+      #
+      # @param [String] test_suite_name the name of the test suite
+      # @param [String] service_name the service name for this test suite (optional, inherited from test session if not provided)
+      # @param [Hash<String,String>] tags extra tags which should be added to the test module (optional, some tags are inherited from test session)
+      # @return [Datadog::CI::TestSuite] returns the active, running {Datadog::CI::TestSuite}.
+      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
+      #         detected and test suite level visibility cannot be supported.
+      #
+      # @public_api
+      def start_test_suite(test_suite_name, service_name: nil, tags: {})
+        recorder.start_test_suite(test_suite_name, service_name: service_name, tags: tags)
+      end
+
+      # The active, unfinished test suite.
+      #
+      # Usage:
+      #
+      # ```
+      # # start a test suite
+      # Datadog::CI.start_test_suite(
+      #   "calculator_tests",
+      #   service: "my-web-site-tests",
+      #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
+      # )
+      #
+      # # Somewhere else after the suite has ended
+      # test_suite = Datadog::CI.active_test_suite("calculator_tests")
+      # test_suite.finish
+      # ```
+      #
+      # @return [Datadog::CI::TestSuite] the active test suite
+      # @return [nil] if no test suite with given name is active
+      def active_test_suite(test_suite_name)
+        recorder.active_test_suite(test_suite_name)
       end
 
       # Return a {Datadog::CI::Test ci_test} that will trace a test called `test_name`.
@@ -314,6 +369,11 @@ module Datadog
       # Internal only, to finish a test module use Datadog::CI::TestModule#finish
       def deactivate_test_module
         recorder.deactivate_test_module
+      end
+
+      # Internal only, to finish a test suite use Datadog::CI::TestSuite#finish
+      def deactivate_test_suite(test_suite_name)
+        recorder.deactivate_test_suite(test_suite_name)
       end
 
       private

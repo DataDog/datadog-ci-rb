@@ -24,9 +24,13 @@ module Datadog
 
       def start_test_module: (String test_module_name, ?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
+      def start_test_suite: (String test_suite_name, ?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+
       def active_test_session: () -> Datadog::CI::TestSession?
 
       def active_test_module: () -> Datadog::CI::TestModule?
+
+      def active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
 
       def active_test: () -> Datadog::CI::Test?
 
@@ -37,6 +41,8 @@ module Datadog
       def deactivate_test_session: () -> void
 
       def deactivate_test_module: () -> void
+
+      def deactivate_test_suite: (String test_suite_name) -> void
 
       def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
@@ -50,6 +56,8 @@ module Datadog
 
       def build_test_module: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestModule
 
+      def build_test_suite: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSuite
+
       def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
 
       def build_span_options: (String? service_name, String span_type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
@@ -58,6 +66,8 @@ module Datadog
 
       # the type (Datadog::CI::TestSession | Datadog::Tracing::SpanOperation) screams of wrong/mising abstraction
       def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::Tracing::SpanOperation? test_session) -> void
+
+      def set_suite_context: (Hash[untyped, untyped] tags, ?span: Datadog::Tracing::SpanOperation, ?name: String) -> void
 
       def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
 

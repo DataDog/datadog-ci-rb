@@ -13,6 +13,13 @@ module Datadog
     #
     # @public_api
     class TestSuite < ConcurrentSpan
+      # Finishes this test suite.
+      # @return [void]
+      def finish
+        super
+
+        CI.deactivate_test_suite(name)
+      end
     end
   end
 end

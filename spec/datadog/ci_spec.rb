@@ -168,4 +168,42 @@ RSpec.describe Datadog::CI do
 
     it { is_expected.to be_nil }
   end
+
+  describe "::start_test_suite" do
+    subject(:start_test_suite) { described_class.start_test_suite("my-suite") }
+
+    let(:ci_test_suite) { instance_double(Datadog::CI::TestSuite) }
+
+    before do
+      allow(recorder).to(
+        receive(:start_test_suite).with("my-suite", service_name: nil, tags: {}).and_return(ci_test_suite)
+      )
+    end
+
+    it { is_expected.to be(ci_test_suite) }
+  end
+
+  describe "::active_test_suite" do
+    let(:test_suite_name) { "my-suite" }
+    subject(:active_test_suite) { described_class.active_test_suite(test_suite_name) }
+
+    let(:ci_test_suite) { instance_double(Datadog::CI::TestSuite) }
+
+    before do
+      allow(recorder).to receive(:active_test_suite).with(test_suite_name).and_return(ci_test_suite)
+    end
+
+    it { is_expected.to be(ci_test_suite) }
+  end
+
+  describe "::deactivate_test_suite" do
+    let(:test_suite_name) { "my-suite" }
+    subject(:deactivate_test_suite) { described_class.deactivate_test_suite(test_suite_name) }
+
+    before do
+      allow(recorder).to receive(:deactivate_test_suite).with(test_suite_name)
+    end
+
+    it { is_expected.to be_nil }
+  end
 end

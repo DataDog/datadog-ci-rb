@@ -6,7 +6,9 @@ module Datadog
       # This context is shared between threads and represents the current test session and test module.
       class Global
         def initialize
-          @mutex = Mutex.new
+          # we are using Monitor instead of Mutex because it is reentrant
+          @mutex = Monitor.new
+
           @test_session = nil
           @test_module = nil
           @test_suites = {}

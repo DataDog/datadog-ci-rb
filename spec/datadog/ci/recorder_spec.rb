@@ -136,6 +136,38 @@ RSpec.describe Datadog::CI::Recorder do
         expect(recorder.active_test_module).to be_nil
       end
     end
+
+    describe "#trace_test_suite" do
+      let(:suite_name) { "my-module" }
+
+      subject { recorder.start_test_suite(suite_name, service_name: service_name, tags: tags) }
+
+      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+
+      it "does not activate test suite" do
+        expect(recorder.active_test_suite(suite_name)).to be_nil
+      end
+    end
+
+    describe "#trace" do
+      let(:span_type) { "step" }
+      let(:span_name) { "my test step" }
+      let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
+
+      context "when given a block" do
+        before do
+          recorder.trace(span_type, span_name, tags: tags) do |span|
+            span.set_metric("my.metric", 42)
+          end
+        end
+        subject { span }
+
+        it "traces the block" do
+          expect(subject.resource).to eq(span_name)
+          expect(subject.span_type).to eq(span_type)
+        end
+      end
+    end
   end
 
   context "when test suite level visibility is enabled" do
@@ -458,6 +490,72 @@ RSpec.describe Datadog::CI::Recorder do
 
         it "does not start a new trace" do
           expect(subject.tracer_span.trace_id).to eq(test_session.tracer_span.trace_id)
+        end
+      end
+    end
+
+    describe "start_test_suite" do
+      let(:module_name) { "my-module" }
+      let(:session_service_name) { "session_service_name" }
+      let(:session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
+
+      let(:test_session) { recorder.start_test_session(service_name: session_service_name, tags: session_tags) }
+      let(:test_module) { recorder.start_test_module(module_name) }
+
+      before do
+        test_session
+        test_module
+      end
+
+      context "when test suite with given name is not started yet" do
+        let(:suite_name) { "my-suite" }
+        let(:tags) { {"my.tag" => "my_value"} }
+
+        subject { recorder.start_test_suite(suite_name, tags: tags) }
+
+        it "returns a new CI test_suite span" do
+          expect(subject).to be_kind_of(Datadog::CI::TestSuite)
+          expect(subject.name).to eq(suite_name)
+          expect(subject.service).to eq(session_service_name)
+          expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
+        end
+
+        it "sets the provided tags correctly while inheriting some tags from the session" do
+          expect(subject.get_tag("test.framework_version")).to eq("1.0")
+          expect(subject.get_tag("my.tag")).to eq("my_value")
+          expect(subject.get_tag("my.session.tag")).to be_nil
+        end
+
+        it "sets the test suite context" do
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(subject.id.to_s)
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(suite_name)
+        end
+
+        it "sets test session and test module contexts" do
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session.id.to_s)
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module.id.to_s)
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
+        end
+
+        it_behaves_like "span with environment tags"
+        it_behaves_like "span with default tags"
+        it_behaves_like "span with runtime tags"
+      end
+
+      context "when test suite with given name is already started" do
+        let(:suite_name) { "my-suite" }
+        let(:tags) { {"my.tag" => "my_value"} }
+        let(:already_running_test_suite) { recorder.start_test_suite(suite_name, tags: tags) }
+
+        before do
+          already_running_test_suite
+        end
+
+        subject { recorder.start_test_suite(suite_name) }
+
+        it "returns the already running test suite" do
+          expect(subject.id).to eq(already_running_test_suite.id)
+          expect(subject.get_tag("my.tag")).to eq("my_value")
         end
       end
     end

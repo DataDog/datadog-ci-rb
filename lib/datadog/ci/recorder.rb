@@ -66,6 +66,23 @@ module Datadog
         test_module
       end
 
+      def start_test_suite(test_suite_name, service_name: nil, tags: {})
+        return skip_tracing unless test_suite_level_visibility_enabled
+
+        @global_context.fetch_or_activate_test_suite(test_suite_name) do
+          tags = tags_with_inherited_globals(tags)
+          set_session_context(tags)
+          set_module_context(tags)
+
+          tracer_span = start_datadog_tracer_span(
+            test_suite_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SUITE)
+          )
+          set_suite_context(tags, span: tracer_span)
+
+          build_test_suite(tracer_span, tags)
+        end
+      end
+
       def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
         return skip_tracing(block) unless enabled
 
@@ -137,6 +154,10 @@ module Datadog
         @global_context.active_test_module
       end
 
+      def active_test_suite(test_suite_name)
+        @global_context.active_test_suite(test_suite_name)
+      end
+
       # TODO: does it make sense to have a parameter here?
       def deactivate_test(test)
         @local_context.deactivate_test!(test)
@@ -147,6 +168,10 @@ module Datadog
       end
 
       def deactivate_test_module
+        @global_context.deactivate_test_module!
+      end
+
+      def deactivate_test_suite(test_suite_name)
         @global_context.deactivate_test_module!
       end
 
@@ -175,6 +200,12 @@ module Datadog
         test_module = TestModule.new(tracer_span)
         set_initial_tags(test_module, tags)
         test_module
+      end
+
+      def build_test_suite(tracer_span, tags)
+        test_suite = TestSuite.new(tracer_span)
+        set_initial_tags(test_suite, tags)
+        test_suite
       end
 
       def build_test(tracer_span, tags)
@@ -218,6 +249,19 @@ module Datadog
         if test_module
           tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id
           tags[Ext::Test::TAG_MODULE] = test_module.name
+        end
+      end
+
+      def set_suite_context(tags, span: nil, name: nil)
+        return if span.nil? && name.nil?
+
+        test_suite = span || active_test_suite(name)
+
+        if test_suite
+          tags[Ext::Test::TAG_TEST_SUITE_ID] = test_suite.id
+          tags[Ext::Test::TAG_SUITE] = test_suite.name
+        else
+          tags[Ext::Test::TAG_SUITE] = name
         end
       end
 
