@@ -11,8 +11,10 @@ module Datadog
   module CI
     class << self
       # Starts a {Datadog::CI::TestSesstion ci_test_session} that represents the whole test session run.
+      #
       # Read Datadog documentation on test sessions
       # [here](https://docs.datadoghq.com/continuous_integration/explorer/?tab=testruns#sessions).
+      #
       # Raises an error if a session is already active.
       #
       # The {#start_test_session} method is used to mark the start of the test session:

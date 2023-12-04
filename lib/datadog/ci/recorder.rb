@@ -242,13 +242,13 @@ module Datadog
 
       def set_session_context(tags, test_session = nil)
         test_session ||= active_test_session
-        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id if test_session
+        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id.to_s if test_session
       end
 
       def set_module_context(tags, test_module = nil)
         test_module ||= active_test_module
         if test_module
-          tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id
+          tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id.to_s
           tags[Ext::Test::TAG_MODULE] = test_module.name
         end
       end
@@ -259,7 +259,7 @@ module Datadog
         test_suite = span || active_test_suite(name)
 
         if test_suite
-          tags[Ext::Test::TAG_TEST_SUITE_ID] = test_suite.id
+          tags[Ext::Test::TAG_TEST_SUITE_ID] = test_suite.id.to_s
           tags[Ext::Test::TAG_SUITE] = test_suite.name
         else
           tags[Ext::Test::TAG_SUITE] = name
