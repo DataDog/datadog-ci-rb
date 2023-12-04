@@ -20,6 +20,18 @@ module Datadog
           end
         end
 
+        def fetch_or_activate_test_module(&block)
+          @mutex.synchronize do
+            @test_module ||= block.call
+          end
+        end
+
+        def fetch_or_activate_test_session(&block)
+          @mutex.synchronize do
+            @test_session ||= block.call
+          end
+        end
+
         def active_test_module
           @test_module
         end

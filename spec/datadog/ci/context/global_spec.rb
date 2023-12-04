@@ -233,6 +233,119 @@ RSpec.describe Datadog::CI::Context::Global do
     end
   end
 
+  describe "#fetch_or_activate_test_module" do
+    let(:test_module_name) { "my.module" }
+    let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: test_module_name) }
+    let(:test_module) { Datadog::CI::TestModule.new(tracer_span) }
+
+    context "when a test module is already active" do
+      before do
+        subject.fetch_or_activate_test_module { test_module }
+      end
+
+      it "returns the active test module without calling the block" do
+        block_spy = spy("block")
+        result = subject.fetch_or_activate_test_module do
+          block_spy.call
+          Datadog::CI::TestModule.new(tracer_span)
+        end
+
+        expect(result).to be(test_module)
+        expect(block_spy).not_to have_received(:call)
+      end
+    end
+
+    context "when a test module is not active" do
+      it "activates this test module and returns it" do
+        block_spy = spy("block")
+        result = subject.fetch_or_activate_test_module do
+          block_spy.call
+          test_module
+        end
+
+        expect(result).to be(test_module)
+        expect(block_spy).to have_received(:call)
+      end
+    end
+
+    context "concurrently trying to start test module" do
+      include_context "Concurrency test"
+
+      it "activates the test module only once" do
+        repeat do
+          subject.deactivate_test_module!
+
+          block_spy = spy("block")
+
+          run_concurrently do
+            subject.fetch_or_activate_test_module do
+              block_spy.call
+              test_module
+            end
+          end
+
+          expect(block_spy).to have_received(:call).once
+        end
+      end
+    end
+  end
+
+  describe "#fetch_or_activate_test_session" do
+    let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: "test.session") }
+    let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
+
+    context "when a test session is already active" do
+      before do
+        subject.fetch_or_activate_test_session { test_session }
+      end
+
+      it "returns the active test module without calling the block" do
+        block_spy = spy("block")
+        result = subject.fetch_or_activate_test_session do
+          block_spy.call
+          Datadog::CI::TestSession.new(tracer_span)
+        end
+
+        expect(result).to be(test_session)
+        expect(block_spy).not_to have_received(:call)
+      end
+    end
+
+    context "when a test session is not active" do
+      it "activates this test session and returns it" do
+        block_spy = spy("block")
+        result = subject.fetch_or_activate_test_session do
+          block_spy.call
+          test_session
+        end
+
+        expect(result).to be(test_session)
+        expect(block_spy).to have_received(:call)
+      end
+    end
+
+    context "concurrently trying to start test session" do
+      include_context "Concurrency test"
+
+      it "activates the test session only once" do
+        repeat do
+          subject.deactivate_test_session!
+
+          block_spy = spy("block")
+
+          run_concurrently do
+            subject.fetch_or_activate_test_session do
+              block_spy.call
+              test_session
+            end
+          end
+
+          expect(block_spy).to have_received(:call).once
+        end
+      end
+    end
+  end
+
   describe "#active_test_suite" do
     let(:test_suite_name) { "my.suite" }
     let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: test_suite_name) }

@@ -12,6 +12,10 @@ module Datadog
 
         def fetch_or_activate_test_suite: (String test_suite_name) {() -> Datadog::CI::TestSuite} -> Datadog::CI::TestSuite
 
+        def fetch_or_activate_test_module: () {() -> Datadog::CI::TestModule} -> Datadog::CI::TestModule
+
+        def fetch_or_activate_test_session: () {() -> Datadog::CI::TestSession} -> Datadog::CI::TestSession
+
         def active_test_session: () -> Datadog::CI::TestSession?
 
         def active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
