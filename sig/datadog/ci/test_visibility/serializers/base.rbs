@@ -34,11 +34,11 @@ module Datadog
 
           def parent_id: () -> String
 
-          def test_session_id: () -> String?
+          def test_session_id: () -> Integer?
 
-          def test_module_id: () -> String?
+          def test_module_id: () -> Integer?
 
-          def test_suite_id: () -> String?
+          def test_suite_id: () -> Integer?
 
           def type: () -> nil
 
@@ -74,6 +74,8 @@ module Datadog
           def write_field: (untyped packer, String field_name, ?String? method) -> untyped
           def time_nano: (Time time) -> Integer
           def duration_nano: (Float duration) -> Integer
+
+          def to_integer: (String? value) -> Integer?
 
           def content_fields_count: () -> Integer
         end

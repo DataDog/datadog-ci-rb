@@ -87,15 +87,15 @@ module Datadog
           end
 
           def test_session_id
-            @span.get_tag(Ext::Test::TAG_TEST_SESSION_ID)
+            to_integer(@span.get_tag(Ext::Test::TAG_TEST_SESSION_ID))
           end
 
           def test_module_id
-            @span.get_tag(Ext::Test::TAG_TEST_MODULE_ID)
+            to_integer(@span.get_tag(Ext::Test::TAG_TEST_MODULE_ID))
           end
 
           def test_suite_id
-            @span.get_tag(Ext::Test::TAG_TEST_SUITE_ID)
+            to_integer(@span.get_tag(Ext::Test::TAG_TEST_SUITE_ID))
           end
 
           def type
@@ -180,6 +180,10 @@ module Datadog
           # in nanoseconds
           def duration_nano(duration)
             (duration * 1e9).to_i
+          end
+
+          def to_integer(value)
+            value.to_i if value
           end
         end
       end

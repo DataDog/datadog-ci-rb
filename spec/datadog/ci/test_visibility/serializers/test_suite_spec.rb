@@ -18,9 +18,9 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSuite do
 
         expect(content).to include(
           {
-            "test_session_id" => test_session_span.id.to_s,
-            "test_module_id" => test_module_span.id.to_s,
-            "test_suite_id" => test_suite_span.id.to_s,
+            "test_session_id" => test_session_span.id,
+            "test_module_id" => test_module_span.id,
+            "test_suite_id" => test_suite_span.id,
             "name" => "rspec.test_suite",
             "error" => 0,
             "service" => "rspec-test-suite",

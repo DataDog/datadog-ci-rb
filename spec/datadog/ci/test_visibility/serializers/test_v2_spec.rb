@@ -27,9 +27,9 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
             "service" => "rspec-test-suite",
             "type" => "test",
             "resource" => "calculator_tests.test_add.run.0",
-            "test_session_id" => test_session_span.id.to_s,
-            "test_module_id" => test_module_span.id.to_s,
-            "test_suite_id" => test_suite_span.id.to_s
+            "test_session_id" => test_session_span.id,
+            "test_module_id" => test_module_span.id,
+            "test_suite_id" => test_suite_span.id
           }
         )
 
@@ -70,7 +70,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
               "service" => "rspec-test-suite",
               "type" => "test",
               "resource" => "calculator_tests.test_add.run.#{index}",
-              "test_session_id" => test_session_span.id.to_s
+              "test_session_id" => test_session_span.id
             }
           )
         end
