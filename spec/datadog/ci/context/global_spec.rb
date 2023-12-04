@@ -5,35 +5,10 @@ RSpec.describe Datadog::CI::Context::Global do
   let(:session) { Datadog::CI::TestSession.new(tracer_span) }
   let(:test_module) { Datadog::CI::TestModule.new(tracer_span) }
 
-  describe "#activate_test_session!" do
-    context "when a test session is already active" do
-      before do
-        subject.activate_test_session!(Datadog::CI::TestSession.new(tracer_span))
-      end
-
-      it "raises an error" do
-        expect { subject.activate_test_session!(session) }.to(
-          raise_error(
-            RuntimeError,
-            "Nested test sessions are not supported. Currently active test session: " \
-            "#{session}"
-          )
-        )
-      end
-    end
-
-    context "when no test session is active" do
-      it "activates the test session" do
-        subject.activate_test_session!(session)
-        expect(subject.active_test_session).to be(session)
-      end
-    end
-  end
-
   describe "#service" do
     context "when a test session is active" do
       before do
-        subject.activate_test_session!(session)
+        subject.fetch_or_activate_test_session { session }
       end
 
       it "returns the service name" do
@@ -54,7 +29,7 @@ RSpec.describe Datadog::CI::Context::Global do
       before do
         expect(session).to receive(:inheritable_tags).and_return(inheritable_tags)
 
-        subject.activate_test_session!(session)
+        subject.fetch_or_activate_test_session { session }
       end
 
       it "returns the inheritable session tags" do
@@ -72,7 +47,7 @@ RSpec.describe Datadog::CI::Context::Global do
   describe "active_test_session" do
     context "when a test session is active" do
       before do
-        subject.activate_test_session!(session)
+        subject.fetch_or_activate_test_session { session }
       end
 
       it "returns the active test session" do
@@ -90,7 +65,7 @@ RSpec.describe Datadog::CI::Context::Global do
   describe "#deactivate_test_session!" do
     context "when a test session is active" do
       before do
-        subject.activate_test_session!(session)
+        subject.fetch_or_activate_test_session { session }
       end
 
       it "deactivates the test session" do
@@ -107,35 +82,10 @@ RSpec.describe Datadog::CI::Context::Global do
     end
   end
 
-  describe "#activate_test_module!" do
-    context "when a test module is already active" do
-      before do
-        subject.activate_test_module!(Datadog::CI::TestModule.new(tracer_span))
-      end
-
-      it "raises an error" do
-        expect { subject.activate_test_module!(test_module) }.to(
-          raise_error(
-            RuntimeError,
-            "Nested test modules are not supported. Currently active test module: " \
-            "#{test_module}"
-          )
-        )
-      end
-    end
-
-    context "when no test module is active" do
-      it "activates the test module" do
-        subject.activate_test_module!(test_module)
-        expect(subject.active_test_module).to be(test_module)
-      end
-    end
-  end
-
   describe "active_test_module" do
     context "when a test module is active" do
       before do
-        subject.activate_test_module!(test_module)
+        subject.fetch_or_activate_test_module { test_module }
       end
 
       it "returns the active test module" do
@@ -153,7 +103,7 @@ RSpec.describe Datadog::CI::Context::Global do
   describe "#deactivate_test_module!" do
     context "when a test module is active" do
       before do
-        subject.activate_test_module!(test_module)
+        subject.fetch_or_activate_test_module { test_module }
       end
 
       it "deactivates the test module" do

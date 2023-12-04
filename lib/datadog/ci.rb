@@ -15,12 +15,12 @@ module Datadog
       # Read Datadog documentation on test sessions
       # [here](https://docs.datadoghq.com/continuous_integration/explorer/?tab=testruns#sessions).
       #
-      # Raises an error if a session is already active.
+      # Returns the existing test session if one is already active. There is at most a single test session per process.
       #
       # The {#start_test_session} method is used to mark the start of the test session:
       # ```
       # Datadog::CI.start_test_session(
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -49,7 +49,7 @@ module Datadog
       # ```
       # # start a test session
       # Datadog::CI.start_test_session(
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -70,14 +70,14 @@ module Datadog
       # Read Datadog documentation on test modules:
       # [here](https://docs.datadoghq.com/continuous_integration/explorer/?tab=testruns#module).
       #
-      # Raises an error if a module is already active. There is at most a single test module per process
+      # Returns the existing test session if one is already active. There is at most a single test module per process
       # active at any given time.
       #
       # The {#start_test_module} method is used to mark the start of the test session:
       # ```
       # Datadog::CI.start_test_module(
       #   "my-module",
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -107,7 +107,7 @@ module Datadog
       # # start a test module
       # Datadog::CI.start_test_module(
       #   "my-module",
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -132,7 +132,7 @@ module Datadog
       # ```
       # Datadog::CI.start_test_suite(
       #   "calculator_tests",
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -162,7 +162,7 @@ module Datadog
       # # start a test suite
       # Datadog::CI.start_test_suite(
       #   "calculator_tests",
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -206,7 +206,7 @@ module Datadog
       # ```
       # ci_test = Datadog::CI.trace_test(
       #   "test_add_two_numbers',
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   operation_name: "test",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
@@ -242,7 +242,7 @@ module Datadog
       # ```
       # ci_test = Datadog::CI.start_test(
       #   "test_add_two_numbers',
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   operation_name: "test",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
@@ -344,7 +344,7 @@ module Datadog
       # # start a test
       # Datadog::CI.start_test(
       #   "test_add_two_numbers',
-      #   service: "my-web-site-tests",
+      #   service_name: "my-web-site-tests",
       #   operation_name: "test",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )

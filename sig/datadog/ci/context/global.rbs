@@ -26,10 +26,6 @@ module Datadog
 
         def active_test_module: () -> Datadog::CI::TestModule?
 
-        def activate_test_session!: (Datadog::CI::TestSession test_session) -> void
-
-        def activate_test_module!: (Datadog::CI::TestModule test_module) -> void
-
         def deactivate_test_session!: () -> void
 
         def deactivate_test_module!: () -> void

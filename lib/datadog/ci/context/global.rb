@@ -63,22 +63,6 @@ module Datadog
           end
         end
 
-        def activate_test_session!(test_session)
-          @mutex.synchronize do
-            raise "Nested test sessions are not supported. Currently active test session: #{@test_session}" unless @test_session.nil?
-
-            @test_session = test_session
-          end
-        end
-
-        def activate_test_module!(test_module)
-          @mutex.synchronize do
-            raise "Nested test modules are not supported. Currently active test module: #{@test_module}" unless @test_module.nil?
-
-            @test_module = test_module
-          end
-        end
-
         def deactivate_test_session!
           @mutex.synchronize { @test_session = nil }
         end

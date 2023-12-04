@@ -38,32 +38,30 @@ module Datadog
       def start_test_session(service_name: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
-        tracer_span = start_datadog_tracer_span(
-          "test.session", build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SESSION)
-        )
-        set_session_context(tags, tracer_span)
+        @global_context.fetch_or_activate_test_session do
+          tracer_span = start_datadog_tracer_span(
+            "test.session", build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SESSION)
+          )
+          set_session_context(tags, tracer_span)
 
-        test_session = build_test_session(tracer_span, tags)
-        @global_context.activate_test_session!(test_session)
-
-        test_session
+          build_test_session(tracer_span, tags)
+        end
       end
 
       def start_test_module(test_module_name, service_name: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
-        tags = tags_with_inherited_globals(tags)
-        set_session_context(tags)
+        @global_context.fetch_or_activate_test_module do
+          tags = tags_with_inherited_globals(tags)
+          set_session_context(tags)
 
-        tracer_span = start_datadog_tracer_span(
-          test_module_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_MODULE)
-        )
-        set_module_context(tags, tracer_span)
+          tracer_span = start_datadog_tracer_span(
+            test_module_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_MODULE)
+          )
+          set_module_context(tags, tracer_span)
 
-        test_module = build_test_module(tracer_span, tags)
-        @global_context.activate_test_module!(test_module)
-
-        test_module
+          build_test_module(tracer_span, tags)
+        end
       end
 
       def start_test_suite(test_suite_name, service_name: nil, tags: {})
