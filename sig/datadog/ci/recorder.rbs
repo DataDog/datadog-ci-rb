@@ -77,7 +77,7 @@ module Datadog
 
       def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
 
-      def tags_with_inherited_globals: (Hash[untyped, untyped] tags) -> Hash[untyped, untyped]
+      def set_inherited_globals: (Hash[untyped, untyped] tags) -> void
     end
   end
 end

@@ -52,7 +52,7 @@ module Datadog
         return skip_tracing unless test_suite_level_visibility_enabled
 
         @global_context.fetch_or_activate_test_module do
-          tags = tags_with_inherited_globals(tags)
+          set_inherited_globals(tags)
           set_session_context(tags)
 
           tracer_span = start_datadog_tracer_span(
@@ -68,7 +68,7 @@ module Datadog
         return skip_tracing unless test_suite_level_visibility_enabled
 
         @global_context.fetch_or_activate_test_suite(test_suite_name) do
-          tags = tags_with_inherited_globals(tags)
+          set_inherited_globals(tags)
           set_session_context(tags)
           set_module_context(tags)
 
@@ -84,7 +84,7 @@ module Datadog
       def trace_test(test_name, test_suite_name, service_name: nil, operation_name: "test", tags: {}, &block)
         return skip_tracing(block) unless enabled
 
-        tags = tags_with_inherited_globals(tags)
+        set_inherited_globals(tags)
         set_session_context(tags)
         set_module_context(tags)
         set_suite_context(tags, name: test_suite_name)
@@ -225,8 +225,12 @@ module Datadog
         other_options
       end
 
-      def tags_with_inherited_globals(tags)
-        @global_context.inheritable_session_tags.merge(tags)
+      def set_inherited_globals(tags)
+        # this code achieves the same as @global_context.inheritable_session_tags.merge(tags)
+        # but without allocating a new hash
+        @global_context.inheritable_session_tags.each do |key, value|
+          tags[key] = value unless tags.key?(key)
+        end
       end
 
       def set_initial_tags(ci_span, tags)
