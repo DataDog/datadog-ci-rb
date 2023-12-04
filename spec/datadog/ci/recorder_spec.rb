@@ -309,7 +309,7 @@ RSpec.describe Datadog::CI::Recorder do
             end
 
             it "connects the test span to the test session" do
-              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session.id.to_s)
+              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID).to_s).to eq(test_session.id.to_s)
             end
 
             it "starts a new trace" do
@@ -352,7 +352,7 @@ RSpec.describe Datadog::CI::Recorder do
             end
 
             it "connects the test span to the test module" do
-              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module.id.to_s)
+              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID).to_s).to eq(test_module.id.to_s)
               expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
             end
 
@@ -366,7 +366,7 @@ RSpec.describe Datadog::CI::Recorder do
               end
 
               it "connects the test span to the test suite" do
-                expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite.id.to_s)
+                expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID).to_s).to eq(test_suite.id.to_s)
                 expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_name)
               end
             end
@@ -429,7 +429,7 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       it "sets the test session id" do
-        expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(subject.id.to_s)
+        expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID).to_s).to eq(subject.id.to_s)
       end
 
       it "sets the provided tags correctly" do
@@ -465,7 +465,7 @@ RSpec.describe Datadog::CI::Recorder do
         end
 
         it "sets the test module id" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(subject.id.to_s)
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID).to_s).to eq(subject.id.to_s)
         end
 
         it "sets the test module tag" do
@@ -517,7 +517,7 @@ RSpec.describe Datadog::CI::Recorder do
         end
 
         it "connects the test module span to the test session" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session.id.to_s)
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID).to_s).to eq(test_session.id.to_s)
         end
 
         it "does not start a new trace" do
@@ -559,13 +559,13 @@ RSpec.describe Datadog::CI::Recorder do
         end
 
         it "sets the test suite context" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(subject.id.to_s)
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID).to_s).to eq(subject.id.to_s)
           expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(suite_name)
         end
 
         it "sets test session and test module contexts" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session.id.to_s)
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module.id.to_s)
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID).to_s).to eq(test_session.id.to_s)
+          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID).to_s).to eq(test_module.id.to_s)
           expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
         end
 
