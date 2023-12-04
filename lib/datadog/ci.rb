@@ -28,7 +28,7 @@ module Datadog
       #
       # Remember that calling {Datadog::CI::TestSession#finish} is mandatory.
       #
-      # @param [String] service_name the service name for this session
+      # @param [String] service_name the service name for this session (optional, defaults to DD_SERVICE)
       # @param [Hash<String,String>] tags extra tags which should be added to the test session.
       # @return [Datadog::CI::TestSession] returns the active, running {Datadog::CI::TestSession}.
       # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
@@ -36,6 +36,7 @@ module Datadog
       #
       # @public_api
       def start_test_session(service_name: nil, tags: {})
+        service_name ||= Datadog.configuration.service
         recorder.start_test_session(service_name: service_name, tags: tags)
       end
 
