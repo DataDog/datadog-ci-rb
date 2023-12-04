@@ -173,7 +173,7 @@ module Datadog
       end
 
       def deactivate_test_suite(test_suite_name)
-        @global_context.deactivate_test_module!
+        @global_context.deactivate_test_suite!(test_suite_name)
       end
 
       private

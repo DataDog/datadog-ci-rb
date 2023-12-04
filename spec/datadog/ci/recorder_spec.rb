@@ -741,5 +741,25 @@ RSpec.describe Datadog::CI::Recorder do
         end
       end
     end
+
+    describe "#deactivate_test_suite" do
+      subject { recorder.deactivate_test_suite("my suite") }
+
+      context "when there is no active test suite" do
+        it { is_expected.to be_nil }
+      end
+
+      context "when deactivating the currently active test suite" do
+        before do
+          recorder.start_test_suite("my suite")
+        end
+
+        it "deactivates the test suite" do
+          subject
+
+          expect(recorder.active_test_suite("my suite")).to be_nil
+        end
+      end
+    end
   end
 end

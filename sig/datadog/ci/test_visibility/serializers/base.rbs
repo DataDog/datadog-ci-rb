@@ -34,6 +34,12 @@ module Datadog
 
           def parent_id: () -> String
 
+          def test_session_id: () -> String?
+
+          def test_module_id: () -> String?
+
+          def test_suite_id: () -> String?
+
           def type: () -> nil
 
           def version: () -> 1
