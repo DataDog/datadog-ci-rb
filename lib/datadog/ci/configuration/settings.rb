@@ -62,9 +62,6 @@ module Datadog
                 fetch_integration(integration_name).configuration
               end
 
-              # TODO: Deprecate in the next major version, as `instrument` better describes this method's purpose
-              alias_method :use, :instrument
-
               option :trace_flush
 
               option :writer_options do |o|

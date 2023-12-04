@@ -157,7 +157,6 @@ module Datadog
         @global_context.active_test_suite(test_suite_name)
       end
 
-      # TODO: does it make sense to have a parameter here?
       def deactivate_test(test)
         @local_context.deactivate_test!(test)
       end

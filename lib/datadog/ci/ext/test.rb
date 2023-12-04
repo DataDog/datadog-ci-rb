@@ -34,7 +34,6 @@ module Datadog
         TAG_RUNTIME_NAME = "runtime.name"
         TAG_RUNTIME_VERSION = "runtime.version"
 
-        # TODO: is there a better place for SPAN_KIND?
         TAG_SPAN_KIND = "span.kind"
 
         module Status
