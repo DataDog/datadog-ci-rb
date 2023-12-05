@@ -13,7 +13,6 @@ RSpec.describe Datadog::CI do
     let(:options) do
       {
         service_name: "my-serivce",
-        operation_name: "rspec.example",
         tags: {"foo" => "bar"}
       }
     end
@@ -36,7 +35,6 @@ RSpec.describe Datadog::CI do
     let(:options) do
       {
         service_name: "my-serivce",
-        operation_name: "rspec.example",
         tags: {"foo" => "bar"}
       }
     end

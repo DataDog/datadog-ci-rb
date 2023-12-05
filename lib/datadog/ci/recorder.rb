@@ -81,7 +81,7 @@ module Datadog
         end
       end
 
-      def trace_test(test_name, test_suite_name, service_name: nil, operation_name: "test", tags: {}, &block)
+      def trace_test(test_name, test_suite_name, service_name: nil, tags: {}, &block)
         return skip_tracing(block) unless enabled
 
         set_inherited_globals(tags)
