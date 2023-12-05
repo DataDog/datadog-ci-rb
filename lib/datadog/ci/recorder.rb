@@ -100,7 +100,7 @@ module Datadog
         )
 
         if block
-          start_datadog_tracer_span(operation_name, span_options) do |tracer_span|
+          start_datadog_tracer_span(test_name, span_options) do |tracer_span|
             test = build_test(tracer_span, tags)
 
             @local_context.activate_test!(test) do
@@ -108,7 +108,7 @@ module Datadog
             end
           end
         else
-          tracer_span = start_datadog_tracer_span(operation_name, span_options)
+          tracer_span = start_datadog_tracer_span(test_name, span_options)
 
           test = build_test(tracer_span, tags)
           @local_context.activate_test!(test)

@@ -30,7 +30,7 @@ RSpec.describe "RSpec hooks" do
     end
 
     expect(span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    expect(span.name).to eq(Datadog::CI::Contrib::RSpec::Ext::OPERATION_NAME)
+    expect(span.name).to eq("some test foo")
     expect(span.resource).to eq("some test foo")
     expect(span.service).to eq("lspec")
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("some test foo")

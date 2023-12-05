@@ -234,7 +234,6 @@ RSpec.describe Datadog::CI::Recorder do
       let(:test_name) { "my test" }
       let(:test_suite_name) { "my suite" }
       let(:test_service_name) { "my-service" }
-      let(:operation_name) { "my-operation" }
       let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
       context "without a block" do
@@ -243,7 +242,6 @@ RSpec.describe Datadog::CI::Recorder do
             test_name,
             test_suite_name,
             service_name: test_service_name,
-            operation_name: operation_name,
             tags: tags
           )
         end
@@ -253,7 +251,7 @@ RSpec.describe Datadog::CI::Recorder do
             expect(subject).to be_kind_of(Datadog::CI::Test)
             expect(subject.name).to eq(test_name)
             expect(subject.service).to eq(test_service_name)
-            expect(subject.tracer_span.name).to eq(operation_name)
+            expect(subject.tracer_span.name).to eq(test_name)
             expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
           end
 
@@ -380,7 +378,6 @@ RSpec.describe Datadog::CI::Recorder do
             test_name,
             test_suite_name,
             service_name: test_service_name,
-            operation_name: operation_name,
             tags: tags
           ) do |test_span|
             test_span.set_metric("my.metric", 42)
@@ -391,7 +388,7 @@ RSpec.describe Datadog::CI::Recorder do
         it "traces and finishes a test" do
           expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(test_name)
           expect(subject.service).to eq(test_service_name)
-          expect(subject.name).to eq(operation_name)
+          expect(subject.name).to eq(test_name)
           expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
         end
 
