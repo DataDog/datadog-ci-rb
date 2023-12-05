@@ -31,7 +31,7 @@ module TracerHelpers
         Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
         Datadog::CI::Ext::Test::TAG_TYPE => "test"
       },
-      service_name: service
+      service: service
     ) do |test|
       if with_http_span
         Datadog::Tracing.trace("http-call", type: "http", service: "net-http") do |span, trace|
@@ -63,7 +63,7 @@ module TracerHelpers
     )
 
     test_session = Datadog::CI.start_test_session(
-      service_name: service,
+      service: service,
       tags: {
         Datadog::CI::Ext::Test::TAG_FRAMEWORK => framework,
         Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
