@@ -161,9 +161,9 @@ they will **not** show up in Datadog APM.
 
 For the full list of available instrumentations see [ddtrace documentation](https://github.com/DataDog/dd-trace-rb/blob/master/docs/GettingStarted.md)
 
-### Webmock
+### WebMock
 
-[Webmock](https://github.com/bblimke/webmock)
+[WebMock](https://github.com/bblimke/webmock)
 is a popular Ruby library that stubs HTTP requests when running tests.
 By default it fails when used together with datadog-ci as traces are being sent
 to Datadog via HTTP calls.
