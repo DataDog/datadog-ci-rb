@@ -28,7 +28,7 @@ module Datadog
               o.default Ext::OPERATION_NAME
 
               o.after_set do |value|
-                if value
+                if value && value != Ext::OPERATION_NAME
                   Datadog::Core.log_deprecation do
                     "The operation_name setting has no effect and will be removed in 1.0"
                   end
