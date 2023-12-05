@@ -62,6 +62,9 @@ module Datadog
                 fetch_integration(integration_name).configuration
               end
 
+              # @deprecated Will be removed on datadog-ci-rb 1.0.
+              alias_method :use, :instrument
+
               option :trace_flush
 
               option :writer_options do |o|
