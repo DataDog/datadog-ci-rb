@@ -88,6 +88,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .to receive(:experimental_test_suite_level_visibility_enabled=)
 
           allow(Datadog.logger)
+            .to receive(:warn)
+
+          allow(Datadog.logger)
             .to receive(:error)
 
           components
@@ -171,6 +174,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
                 let(:api_key) { "api_key" }
 
                 it "sets async for test mode and constructs transport with CI intake API" do
+                  expect(Datadog.logger).not_to have_received(:warn)
+                  expect(Datadog.logger).not_to have_received(:error)
+
                   expect(settings.tracing.test_mode)
                     .to have_received(:async=)
                     .with(true)
@@ -180,6 +186,24 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::CiTestCycle)
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
+                end
+              end
+
+              context "when DD_SITE is set to a wrong value" do
+                let(:dd_site) { "wrong" }
+
+                it "logs a warning" do
+                  expect(Datadog.logger).to have_received(:warn).with(
+                    /CI VISIBILITY CONFIGURATION Agentless mode was enabled but DD_SITE is not set to one of the following/
+                  )
+                end
+              end
+
+              context "when DD_SITE is set to a correct value" do
+                let(:dd_site) { "datadoghq.eu" }
+
+                it "logs a warning" do
+                  expect(Datadog.logger).not_to have_received(:warn)
                 end
               end
 

@@ -4,6 +4,7 @@ require "datadog/core/configuration/agent_settings_resolver"
 require "datadog/core/remote/negotiation"
 
 require_relative "../ext/transport"
+require_relative "../ext/settings"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/transport"
 require_relative "../test_visibility/serializers/factories/test_level"
@@ -36,6 +37,7 @@ module Datadog
           agent_settings = Datadog::Core::Configuration::AgentSettingsResolver.call(settings)
 
           if settings.ci.agentless_mode_enabled
+            check_dd_site(settings)
             test_visibility_transport = build_agentless_transport(settings)
           elsif can_use_evp_proxy?(settings, agent_settings)
             test_visibility_transport = build_evp_proxy_transport(settings, agent_settings)
@@ -118,6 +120,17 @@ module Datadog
           else
             Datadog::CI::TestVisibility::Serializers::Factories::TestLevel
           end
+        end
+
+        def check_dd_site(settings)
+          return if settings.site.nil?
+          return if Ext::Settings::DD_SITE_ALLOWLIST.include?(settings.site)
+
+          Datadog.logger.warn(
+            "CI VISIBILITY CONFIGURATION " \
+            "Agentless mode was enabled but DD_SITE is not set to one of the following: #{Ext::Settings::DD_SITE_ALLOWLIST.join(", ")}. " \
+            "Please make sure to set valid site in DD_SITE environment variable"
+          )
         end
       end
     end
