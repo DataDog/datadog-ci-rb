@@ -16,7 +16,7 @@ module Datadog
 
       def initialize: (?enabled: bool, ?test_suite_level_visibility_enabled: bool) -> void
 
-      def trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+      def trace_test: (String span_name, String test_suite_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
       def trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
@@ -24,9 +24,13 @@ module Datadog
 
       def start_test_module: (String test_module_name, ?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
+      def start_test_suite: (String test_suite_name, ?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+
       def active_test_session: () -> Datadog::CI::TestSession?
 
       def active_test_module: () -> Datadog::CI::TestModule?
+
+      def active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
 
       def active_test: () -> Datadog::CI::Test?
 
@@ -37,6 +41,8 @@ module Datadog
       def deactivate_test_session: () -> void
 
       def deactivate_test_module: () -> void
+
+      def deactivate_test_suite: (String test_suite_name) -> void
 
       def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
@@ -50,6 +56,8 @@ module Datadog
 
       def build_test_module: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestModule
 
+      def build_test_suite: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSuite
+
       def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
 
       def build_span_options: (String? service_name, String span_type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
@@ -59,6 +67,8 @@ module Datadog
       # the type (Datadog::CI::TestSession | Datadog::Tracing::SpanOperation) screams of wrong/mising abstraction
       def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::Tracing::SpanOperation? test_session) -> void
 
+      def set_suite_context: (Hash[untyped, untyped] tags, ?span: Datadog::Tracing::SpanOperation, ?name: String) -> void
+
       def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
 
       def null_span: () -> Datadog::CI::Span
@@ -67,7 +77,7 @@ module Datadog
 
       def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
 
-      def tags_with_inherited_globals: (Hash[untyped, untyped] tags) -> Hash[untyped, untyped]
+      def set_inherited_globals: (Hash[untyped, untyped] tags) -> void
     end
   end
 end

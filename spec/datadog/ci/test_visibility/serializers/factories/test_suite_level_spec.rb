@@ -20,6 +20,16 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLev
       it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestSession) }
     end
 
+    context "with a module span" do
+      let(:ci_span) { test_module_span }
+      it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestModule) }
+    end
+
+    context "with a suite span" do
+      let(:ci_span) { test_suite_span }
+      it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestSuite) }
+    end
+
     context "with a test span" do
       let(:ci_span) { first_test_span }
       it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestV2) }

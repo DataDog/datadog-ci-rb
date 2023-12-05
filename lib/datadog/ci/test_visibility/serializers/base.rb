@@ -11,6 +11,21 @@ module Datadog
           MINIMUM_DURATION_NANO = 0
           MAXIMUM_DURATION_NANO = 9223372036854775807
 
+          CONTENT_FIELDS = [
+            "name", "resource", "service",
+            "error", "start", "duration",
+            "meta", "metrics",
+            "type" => "span_type"
+          ].freeze
+
+          REQUIRED_FIELDS = [
+            "error",
+            "name",
+            "resource",
+            "start",
+            "duration"
+          ].freeze
+
           attr_reader :trace, :span, :meta
 
           def initialize(trace, span)
@@ -72,11 +87,15 @@ module Datadog
           end
 
           def test_session_id
-            @span.get_tag(Ext::Test::TAG_TEST_SESSION_ID)
+            to_integer(@span.get_tag(Ext::Test::TAG_TEST_SESSION_ID))
           end
 
           def test_module_id
-            @span.get_tag(Ext::Test::TAG_TEST_MODULE_ID)
+            to_integer(@span.get_tag(Ext::Test::TAG_TEST_MODULE_ID))
+          end
+
+          def test_suite_id
+            to_integer(@span.get_tag(Ext::Test::TAG_TEST_SUITE_ID))
           end
 
           def type
@@ -161,6 +180,10 @@ module Datadog
           # in nanoseconds
           def duration_nano(duration)
             (duration * 1e9).to_i
+          end
+
+          def to_integer(value)
+            value.to_i if value
           end
         end
       end

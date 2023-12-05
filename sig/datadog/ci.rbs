@@ -1,12 +1,14 @@
 module Datadog
   module CI
-    def self.trace_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span test) -> untyped } -> untyped
+    def self.trace_test: (String test_name, String test_suite_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span test) -> untyped } -> untyped
 
-    def self.start_test: (String span_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test: (String test_name, String test_suite_name, ?service_name: String?, ?operation_name: String, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
     def self.start_test_session: (?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
     def self.start_test_module: (String test_module_name, ?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+
+    def self.start_test_suite: (String test_suite_name, ?service_name: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
     def self.trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
@@ -23,6 +25,8 @@ module Datadog
     def self.deactivate_test_session: () -> void
 
     def self.deactivate_test_module: () -> void
+
+    def self.deactivate_test_suite: (String test_suite_name) -> void
 
     def self.components: () -> Datadog::CI::Configuration::Components
 

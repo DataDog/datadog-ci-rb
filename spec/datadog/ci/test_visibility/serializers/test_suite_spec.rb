@@ -1,10 +1,10 @@
-RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
+RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSuite do
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
   end
 
   include_context "Test visibility event serialized" do
-    subject { described_class.new(trace_for_span(test_module_span), test_module_span) }
+    subject { described_class.new(trace_for_span(test_suite_span), test_suite_span) }
   end
 
   describe "#to_msgpack" do
@@ -13,17 +13,19 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
         produce_test_session_trace
       end
 
-      it "serializes test module event to messagepack" do
-        expect_event_header(type: Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+      it "serializes test suite event to messagepack" do
+        expect_event_header(type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
 
         expect(content).to include(
           {
             "test_session_id" => test_session_span.id,
             "test_module_id" => test_module_span.id,
-            "name" => "rspec.test_module",
+            "test_suite_id" => test_suite_span.id,
+            "name" => "rspec.test_suite",
+            "error" => 0,
             "service" => "rspec-test-suite",
-            "type" => Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE,
-            "resource" => "rspec.test_module.arithmetic"
+            "type" => Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE,
+            "resource" => "rspec.test_suite.calculator_tests"
           }
         )
 
@@ -31,6 +33,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
           {
             "test.command" => test_command,
             "test.module" => "arithmetic",
+            "test.suite" => "calculator_tests",
             "test.framework" => "rspec",
             "test.framework_version" => "1.0.0",
             "test.type" => "test",
@@ -41,6 +44,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
 
         expect(meta["_test.session_id"]).to be_nil
         expect(meta["_test.module_id"]).to be_nil
+        expect(meta["_test.suite_id"]).to be_nil
       end
     end
 
@@ -50,7 +54,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
       end
 
       it "has error" do
-        expect_event_header(type: Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+        expect_event_header(type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
 
         expect(content).to include({"error" => 1})
         expect(meta).to include({"test.status" => "fail"})
@@ -72,7 +76,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
 
       context "when test_session_id is nil" do
         before do
-          test_module_span.clear_tag("_test.session_id")
+          test_suite_span.clear_tag("_test.session_id")
         end
 
         it "returns false" do
@@ -94,7 +98,29 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
 
       context "when test_module_id is nil" do
         before do
-          test_module_span.clear_tag("_test.module_id")
+          test_suite_span.clear_tag("_test.module_id")
+        end
+
+        it "returns false" do
+          expect(subject.valid?).to eq(false)
+        end
+      end
+    end
+
+    context "test_suite_id" do
+      before do
+        produce_test_session_trace
+      end
+
+      context "when test_suite_id is not nil" do
+        it "returns true" do
+          expect(subject.valid?).to eq(true)
+        end
+      end
+
+      context "when test_suite_id is nil" do
+        before do
+          test_suite_span.clear_tag("_test.suite_id")
         end
 
         it "returns false" do

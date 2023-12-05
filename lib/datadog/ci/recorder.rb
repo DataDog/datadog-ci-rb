@@ -17,6 +17,7 @@ require_relative "null_span"
 require_relative "test"
 require_relative "test_session"
 require_relative "test_module"
+require_relative "test_suite"
 
 module Datadog
   module CI
@@ -37,40 +38,56 @@ module Datadog
       def start_test_session(service_name: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
-        tracer_span = start_datadog_tracer_span(
-          "test.session", build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SESSION)
-        )
-        set_session_context(tags, tracer_span)
+        @global_context.fetch_or_activate_test_session do
+          tracer_span = start_datadog_tracer_span(
+            "test.session", build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SESSION)
+          )
+          set_session_context(tags, tracer_span)
 
-        test_session = build_test_session(tracer_span, tags)
-        @global_context.activate_test_session!(test_session)
-
-        test_session
+          build_test_session(tracer_span, tags)
+        end
       end
 
       def start_test_module(test_module_name, service_name: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
-        tags = tags_with_inherited_globals(tags)
-        set_session_context(tags)
+        @global_context.fetch_or_activate_test_module do
+          set_inherited_globals(tags)
+          set_session_context(tags)
 
-        tracer_span = start_datadog_tracer_span(
-          test_module_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_MODULE)
-        )
-        set_module_context(tags, tracer_span)
+          tracer_span = start_datadog_tracer_span(
+            test_module_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_MODULE)
+          )
+          set_module_context(tags, tracer_span)
 
-        test_module = build_test_module(tracer_span, tags)
-        @global_context.activate_test_module!(test_module)
-
-        test_module
+          build_test_module(tracer_span, tags)
+        end
       end
 
-      def trace_test(test_name, service_name: nil, operation_name: "test", tags: {}, &block)
+      def start_test_suite(test_suite_name, service_name: nil, tags: {})
+        return skip_tracing unless test_suite_level_visibility_enabled
+
+        @global_context.fetch_or_activate_test_suite(test_suite_name) do
+          set_inherited_globals(tags)
+          set_session_context(tags)
+          set_module_context(tags)
+
+          tracer_span = start_datadog_tracer_span(
+            test_suite_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SUITE)
+          )
+          set_suite_context(tags, span: tracer_span)
+
+          build_test_suite(tracer_span, tags)
+        end
+      end
+
+      def trace_test(test_name, test_suite_name, service_name: nil, operation_name: "test", tags: {}, &block)
         return skip_tracing(block) unless enabled
 
-        tags = tags_with_inherited_globals(tags)
+        set_inherited_globals(tags)
         set_session_context(tags)
         set_module_context(tags)
+        set_suite_context(tags, name: test_suite_name)
 
         tags[Ext::Test::TAG_NAME] = test_name
 
@@ -136,7 +153,10 @@ module Datadog
         @global_context.active_test_module
       end
 
-      # TODO: does it make sense to have a parameter here?
+      def active_test_suite(test_suite_name)
+        @global_context.active_test_suite(test_suite_name)
+      end
+
       def deactivate_test(test)
         @local_context.deactivate_test!(test)
       end
@@ -147,6 +167,10 @@ module Datadog
 
       def deactivate_test_module
         @global_context.deactivate_test_module!
+      end
+
+      def deactivate_test_suite(test_suite_name)
+        @global_context.deactivate_test_suite!(test_suite_name)
       end
 
       private
@@ -176,6 +200,12 @@ module Datadog
         test_module
       end
 
+      def build_test_suite(tracer_span, tags)
+        test_suite = TestSuite.new(tracer_span)
+        set_initial_tags(test_suite, tags)
+        test_suite
+      end
+
       def build_test(tracer_span, tags)
         test = Test.new(tracer_span)
         set_initial_tags(test, tags)
@@ -195,8 +225,12 @@ module Datadog
         other_options
       end
 
-      def tags_with_inherited_globals(tags)
-        @global_context.inheritable_session_tags.merge(tags)
+      def set_inherited_globals(tags)
+        # this code achieves the same as @global_context.inheritable_session_tags.merge(tags)
+        # but without allocating a new hash
+        @global_context.inheritable_session_tags.each do |key, value|
+          tags[key] = value unless tags.key?(key)
+        end
       end
 
       def set_initial_tags(ci_span, tags)
@@ -209,14 +243,27 @@ module Datadog
 
       def set_session_context(tags, test_session = nil)
         test_session ||= active_test_session
-        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id if test_session
+        tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id.to_s if test_session
       end
 
       def set_module_context(tags, test_module = nil)
         test_module ||= active_test_module
         if test_module
-          tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id
+          tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id.to_s
           tags[Ext::Test::TAG_MODULE] = test_module.name
+        end
+      end
+
+      def set_suite_context(tags, span: nil, name: nil)
+        return if span.nil? && name.nil?
+
+        test_suite = span || active_test_suite(name)
+
+        if test_suite
+          tags[Ext::Test::TAG_TEST_SUITE_ID] = test_suite.id.to_s
+          tags[Ext::Test::TAG_SUITE] = test_suite.name
+        else
+          tags[Ext::Test::TAG_SUITE] = name
         end
       end
 

@@ -22,7 +22,8 @@ module Datadog
         # those tags are special and they are used to correlate tests with the test sessions, suites, and modules
         TAG_TEST_SESSION_ID = "_test.session_id"
         TAG_TEST_MODULE_ID = "_test.module_id"
-        SPECIAL_TAGS = [TAG_TEST_SESSION_ID, TAG_TEST_MODULE_ID].freeze
+        TAG_TEST_SUITE_ID = "_test.suite_id"
+        SPECIAL_TAGS = [TAG_TEST_SESSION_ID, TAG_TEST_MODULE_ID, TAG_TEST_SUITE_ID].freeze
 
         # tags that can be inherited from the test session
         INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION, TAG_TYPE].freeze
@@ -33,7 +34,6 @@ module Datadog
         TAG_RUNTIME_NAME = "runtime.name"
         TAG_RUNTIME_VERSION = "runtime.version"
 
-        # TODO: is there a better place for SPAN_KIND?
         TAG_SPAN_KIND = "span.kind"
 
         module Status

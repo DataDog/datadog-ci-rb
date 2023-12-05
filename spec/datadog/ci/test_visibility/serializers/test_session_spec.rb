@@ -18,7 +18,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
 
         expect(content).to include(
           {
-            "test_session_id" => test_session_span.id.to_s,
+            "test_session_id" => test_session_span.id,
             "name" => "rspec.test_session",
             "service" => "rspec-test-suite",
             "type" => Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION,

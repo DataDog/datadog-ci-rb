@@ -25,11 +25,11 @@ module TracerHelpers
 
     Datadog::CI.trace_test(
       test_name,
+      test_suite,
       tags: {
         Datadog::CI::Ext::Test::TAG_FRAMEWORK => framework,
         Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
-        Datadog::CI::Ext::Test::TAG_TYPE => "test",
-        Datadog::CI::Ext::Test::TAG_SUITE => test_suite
+        Datadog::CI::Ext::Test::TAG_TYPE => "test"
       },
       service_name: service,
       operation_name: operation
@@ -74,6 +74,8 @@ module TracerHelpers
 
     test_module = Datadog::CI.start_test_module(test_module_name)
 
+    test_suite_span = Datadog::CI.start_test_suite(test_suite)
+
     tests_count.times do |num|
       produce_test_trace(
         framework: framework, operation: operation,
@@ -86,9 +88,11 @@ module TracerHelpers
       )
     end
 
+    set_result(test_suite_span, result: result, exception: exception, skip_reason: skip_reason)
     set_result(test_module, result: result, exception: exception, skip_reason: skip_reason)
     set_result(test_session, result: result, exception: exception, skip_reason: skip_reason)
 
+    test_suite_span.finish
     test_module.finish
     test_session.finish
   end
@@ -99,6 +103,10 @@ module TracerHelpers
 
   def test_module_span
     spans.find { |span| span.type == "test_module_end" }
+  end
+
+  def test_suite_span
+    spans.find { |span| span.type == "test_suite_end" }
   end
 
   def first_test_span

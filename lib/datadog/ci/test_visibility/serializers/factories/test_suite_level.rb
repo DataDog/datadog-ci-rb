@@ -3,6 +3,7 @@
 require_relative "../test_v2"
 require_relative "../test_session"
 require_relative "../test_module"
+require_relative "../test_suite"
 require_relative "../span"
 
 module Datadog
@@ -22,6 +23,8 @@ module Datadog
                 Serializers::TestSession.new(trace, span)
               when Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE
                 Serializers::TestModule.new(trace, span)
+              when Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE
+                Serializers::TestSuite.new(trace, span)
               else
                 Serializers::Span.new(trace, span)
               end

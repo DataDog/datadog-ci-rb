@@ -7,6 +7,9 @@ module Datadog
           MINIMUM_DURATION_NANO: 0
           MAXIMUM_DURATION_NANO: 9223372036854775807
 
+          CONTENT_FIELDS: Array[String | Hash[String, String]]
+          REQUIRED_FIELDS: Array[String]
+
           @content_fields_count: Integer
           @start: Integer
           @duration: Integer
@@ -30,6 +33,12 @@ module Datadog
           def span_id: () -> String
 
           def parent_id: () -> String
+
+          def test_session_id: () -> Integer?
+
+          def test_module_id: () -> Integer?
+
+          def test_suite_id: () -> Integer?
 
           def type: () -> nil
 
@@ -65,6 +74,8 @@ module Datadog
           def write_field: (untyped packer, String field_name, ?String? method) -> untyped
           def time_nano: (Time time) -> Integer
           def duration_nano: (Float duration) -> Integer
+
+          def to_integer: (String? value) -> Integer?
 
           def content_fields_count: () -> Integer
         end

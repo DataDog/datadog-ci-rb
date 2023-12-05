@@ -26,11 +26,11 @@ module Datadog
 
               CI.trace_test(
                 test_name,
+                metadata[:example_group][:file_path],
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
-                  CI::Ext::Test::TAG_TYPE => Ext::TEST_TYPE,
-                  CI::Ext::Test::TAG_SUITE => metadata[:example_group][:file_path]
+                  CI::Ext::Test::TAG_TYPE => Ext::TEST_TYPE
                 },
                 service_name: configuration[:service_name],
                 operation_name: configuration[:operation_name]
