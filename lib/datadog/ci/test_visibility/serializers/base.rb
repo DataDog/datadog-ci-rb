@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 require_relative "../../ext/test"
 
 module Datadog
@@ -33,6 +35,9 @@ module Datadog
             @span = span
 
             @meta = @span.meta.reject { |key, _| Ext::Test::SPECIAL_TAGS.include?(key) }
+
+            @errors = {}
+            @validated = false
           end
 
           def to_msgpack(packer = nil)
@@ -59,7 +64,23 @@ module Datadog
 
           # validates according to citestcycle json schema
           def valid?
-            required_fields_present? && valid_start_time? && valid_duration?
+            validate! unless @validated
+
+            @errors.empty?
+          end
+
+          def validate!
+            @errors.clear
+
+            validate_required_fields!
+            validate_start_time!
+            validate_duration!
+
+            @validated = true
+          end
+
+          def validation_errors
+            @errors
           end
 
           def content_fields
@@ -149,16 +170,48 @@ module Datadog
 
           private
 
-          def valid_start_time?
-            !start.nil? && start >= MINIMUM_TIMESTAMP_NANO
+          def validate_start_time!
+            validate_required!("start")
+            validate_greater_than_or_equal!("start", MINIMUM_TIMESTAMP_NANO)
           end
 
-          def valid_duration?
-            !duration.nil? && duration >= MINIMUM_DURATION_NANO && duration <= MAXIMUM_DURATION_NANO
+          def validate_duration!
+            validate_required!("duration")
+            validate_greater_than_or_equal!("duration", MINIMUM_DURATION_NANO)
+            validate_less_than_or_equal!("duration", MAXIMUM_DURATION_NANO)
           end
 
-          def required_fields_present?
-            required_fields.all? { |field| !send(field).nil? }
+          def validate_required_fields!
+            required_fields.each do |field|
+              validate_required!(field)
+            end
+          end
+
+          def validate_required!(field)
+            if send(field).nil?
+              add_error(field, "is required")
+            end
+          end
+
+          def validate_greater_than_or_equal!(field, value)
+            return if send(field).nil?
+
+            if send(field) < value
+              add_error(field, "must be greater than or equal to #{value}")
+            end
+          end
+
+          def validate_less_than_or_equal!(field, value)
+            return if send(field).nil?
+
+            if send(field) > value
+              add_error(field, "must be less than or equal to #{value}")
+            end
+          end
+
+          def add_error(field, message)
+            @errors[field] ||= Set.new
+            @errors[field] << message
           end
 
           def required_fields

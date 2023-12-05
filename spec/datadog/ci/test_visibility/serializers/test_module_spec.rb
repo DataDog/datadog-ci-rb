@@ -77,6 +77,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
 
         it "returns false" do
           expect(subject.valid?).to eq(false)
+          expect(subject.validation_errors["test_session_id"]).to include("is required")
         end
       end
     end
@@ -99,6 +100,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
 
         it "returns false" do
           expect(subject.valid?).to eq(false)
+          expect(subject.validation_errors["test_module_id"]).to include("is required")
         end
       end
     end

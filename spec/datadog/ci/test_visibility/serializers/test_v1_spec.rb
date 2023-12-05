@@ -91,12 +91,22 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
         let(:duration) { -1 }
 
         it { is_expected.not_to be_valid }
+
+        it "includes validation error" do
+          subject.valid?
+          expect(subject.validation_errors["duration"]).to include("must be greater than or equal to 0")
+        end
       end
 
       context "when too big" do
         let(:duration) { Datadog::CI::TestVisibility::Serializers::Base::MAXIMUM_DURATION_NANO + 1 }
 
         it { is_expected.not_to be_valid }
+
+        it "includes validation error" do
+          subject.valid?
+          expect(subject.validation_errors["duration"]).to include("must be less than or equal to 9223372036854775807")
+        end
       end
     end
 
@@ -116,6 +126,11 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV1 do
         let(:start_time) { Time.at(0) }
 
         it { is_expected.not_to be_valid }
+
+        it "has validation error" do
+          subject.valid?
+          expect(subject.validation_errors["start"]).to include("must be greater than or equal to 946684800000000000")
+        end
       end
     end
   end

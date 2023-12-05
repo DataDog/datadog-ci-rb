@@ -112,7 +112,9 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
           subject.send_traces(traces)
 
           expect(Datadog.logger).to have_received(:warn).with(
-            "Invalid event skipped: Datadog::CI::TestVisibility::Serializers::Span(id:#{http_span.id},name:#{http_span.name})"
+            "Invalid event skipped: " \
+            "Datadog::CI::TestVisibility::Serializers::Span(id:#{http_span.id},name:#{http_span.name}) " \
+            "Errors: {\"start\"=>#<Set: {\"must be greater than or equal to 946684800000000000\"}>}"
           )
         end
       end
