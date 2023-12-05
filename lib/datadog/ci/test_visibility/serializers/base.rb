@@ -182,6 +182,10 @@ module Datadog
             (duration * 1e9).to_i
           end
 
+          def to_s
+            "#{self.class.name}(id:#{span_id},name:#{name})"
+          end
+
           def to_integer(value)
             value.to_i if value
           end

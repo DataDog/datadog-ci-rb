@@ -14,6 +14,10 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
     )
   end
 
+  before do
+    allow(Datadog.logger).to receive(:warn)
+  end
+
   let(:dd_env) { nil }
   let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestLevel }
   let(:max_payload_size) { 4 * 1024 * 1024 }
@@ -84,9 +88,9 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
       context "when some spans are broken" do
         let(:expected_events_count) { 3 }
+        let(:http_span) { spans.find { |span| span.type == "http" } }
 
         before do
-          http_span = spans.find { |span| span.type == "http" }
           http_span.start_time = Time.at(0)
         end
 
@@ -102,6 +106,14 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
             span_events = events.filter { |e| e["type"] == "span" }
             expect(span_events.count).to eq(1)
           end
+        end
+
+        it "logs warning that events were filtered out" do
+          subject.send_traces(traces)
+
+          expect(Datadog.logger).to have_received(:warn).with(
+            "Invalid event skipped: Datadog::CI::TestVisibility::Serializers::Span(id:#{http_span.id},name:#{http_span.name})"
+          )
         end
       end
 

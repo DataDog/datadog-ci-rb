@@ -102,7 +102,7 @@ module Datadog
 
             encoded
           else
-            Datadog.logger.debug { "Invalid span skipped: #{span}" }
+            Datadog.logger.warn("Invalid event skipped: #{serializer}")
             nil
           end
         end
