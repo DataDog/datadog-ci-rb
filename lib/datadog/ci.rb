@@ -20,7 +20,7 @@ module Datadog
       # The {#start_test_session} method is used to mark the start of the test session:
       # ```
       # Datadog::CI.start_test_session(
-      #   service_name: "my-web-site-tests",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -30,16 +30,16 @@ module Datadog
       #
       # Remember that calling {Datadog::CI::TestSession#finish} is mandatory.
       #
-      # @param [String] service_name the service name for this session (optional, defaults to DD_SERVICE)
+      # @param [String] service the service name for this session (optional, defaults to DD_SERVICE)
       # @param [Hash<String,String>] tags extra tags which should be added to the test session.
       # @return [Datadog::CI::TestSession] returns the active, running {Datadog::CI::TestSession}.
       # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
       #
       # @public_api
-      def start_test_session(service_name: nil, tags: {})
-        service_name ||= Datadog.configuration.service
-        recorder.start_test_session(service_name: service_name, tags: tags)
+      def start_test_session(service: nil, tags: {})
+        service ||= Datadog.configuration.service
+        recorder.start_test_session(service: service, tags: tags)
       end
 
       # The active, unfinished test session.
@@ -49,7 +49,7 @@ module Datadog
       # ```
       # # start a test session
       # Datadog::CI.start_test_session(
-      #   service_name: "my-web-site-tests",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -77,7 +77,7 @@ module Datadog
       # ```
       # Datadog::CI.start_test_module(
       #   "my-module",
-      #   service_name: "my-web-site-tests",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -88,15 +88,15 @@ module Datadog
       # Remember that calling {Datadog::CI::TestModule#finish} is mandatory.
       #
       # @param [String] test_module_name the name for this module
-      # @param [String] service_name the service name for this session (optional, inherited from test session if not provided)
+      # @param [String] service the service name for this session (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test module (optional, some tags are inherited from test session).
       # @return [Datadog::CI::TestModule] returns the active, running {Datadog::CI::TestModule}.
       # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
       #
       # @public_api
-      def start_test_module(test_module_name, service_name: nil, tags: {})
-        recorder.start_test_module(test_module_name, service_name: service_name, tags: tags)
+      def start_test_module(test_module_name, service: nil, tags: {})
+        recorder.start_test_module(test_module_name, service: service, tags: tags)
       end
 
       # The active, unfinished test module.
@@ -107,7 +107,7 @@ module Datadog
       # # start a test module
       # Datadog::CI.start_test_module(
       #   "my-module",
-      #   service_name: "my-web-site-tests",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -132,7 +132,7 @@ module Datadog
       # ```
       # Datadog::CI.start_test_suite(
       #   "calculator_tests",
-      #   service_name: "my-web-site-tests",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -143,15 +143,15 @@ module Datadog
       # Remember that calling {Datadog::CI::TestSuite#finish} is mandatory.
       #
       # @param [String] test_suite_name the name of the test suite
-      # @param [String] service_name the service name for this test suite (optional, inherited from test session if not provided)
+      # @param [String] service the service name for this test suite (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test module (optional, some tags are inherited from test session)
       # @return [Datadog::CI::TestSuite] returns the active, running {Datadog::CI::TestSuite}.
       # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
       #
       # @public_api
-      def start_test_suite(test_suite_name, service_name: nil, tags: {})
-        recorder.start_test_suite(test_suite_name, service_name: service_name, tags: tags)
+      def start_test_suite(test_suite_name, service: nil, tags: {})
+        recorder.start_test_suite(test_suite_name, service: service, tags: tags)
       end
 
       # The active, unfinished test suite.
@@ -162,7 +162,7 @@ module Datadog
       # # start a test suite
       # Datadog::CI.start_test_suite(
       #   "calculator_tests",
-      #   service_name: "my-web-site-tests",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #
@@ -188,8 +188,7 @@ module Datadog
       # ```
       # Datadog::CI.trace_test(
       #   "test_add_two_numbers",
-      #   service_name: "my-web-site-tests",
-      #   operation_name: "test",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # ) do |ci_test|
       #   result = run_test
@@ -206,8 +205,7 @@ module Datadog
       # ```
       # ci_test = Datadog::CI.trace_test(
       #   "test_add_two_numbers',
-      #   service_name: "my-web-site-tests",
-      #   operation_name: "test",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       # run_test
@@ -218,8 +216,7 @@ module Datadog
       #
       # @param [String] test_name {Datadog::CI::Test} name (example: "test_add_two_numbers").
       # @param [String] test_suite_name name of test suite this test belongs to (example: "CalculatorTest").
-      # @param [String] operation_name defines label for a test span in trace view ("test" if it's missing)
-      # @param [String] service_name the service name for this test
+      # @param [String] service the service name for this test
       # @param [Hash<String,String>] tags extra tags which should be added to the test.
       # @return [Object] If a block is provided, returns the result of the block execution.
       # @return [Datadog::CI::Test] If no block is provided, returns the active,
@@ -230,8 +227,8 @@ module Datadog
       # @yieldparam [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
       #
       # @public_api
-      def trace_test(test_name, test_suite_name, service_name: nil, operation_name: "test", tags: {}, &block)
-        recorder.trace_test(test_name, test_suite_name, service_name: service_name, operation_name: operation_name, tags: tags, &block)
+      def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
+        recorder.trace_test(test_name, test_suite_name, service: service, tags: tags, &block)
       end
 
       # Same as {#trace_test} but it does not accept a block.
@@ -242,8 +239,7 @@ module Datadog
       # ```
       # ci_test = Datadog::CI.start_test(
       #   "test_add_two_numbers',
-      #   service_name: "my-web-site-tests",
-      #   operation_name: "test",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       # run_test
@@ -252,15 +248,14 @@ module Datadog
       #
       # @param [String] test_name {Datadog::CI::Test} name (example: "test_add_two_numbers").
       # @param [String] test_suite_name name of test suite this test belongs to (example: "CalculatorTest").
-      # @param [String] operation_name the resource this span refers, or `test` if it's missing
-      # @param [String] service_name the service name for this span.
+      # @param [String] service the service name for this span.
       # @param [Hash<String,String>] tags extra tags which should be added to the test.
       # @return [Datadog::CI::Test] Returns the active, unfinished {Datadog::CI::Test}.
       # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
       #
       # @public_api
-      def start_test(test_name, test_suite_name, service_name: nil, operation_name: "test", tags: {})
-        recorder.trace_test(test_name, test_suite_name, service_name: service_name, operation_name: operation_name, tags: tags)
+      def start_test(test_name, test_suite_name, service: nil, tags: {})
+        recorder.trace_test(test_name, test_suite_name, service: service, tags: tags)
       end
 
       # Trace any custom span inside a test. For example, you could trace:
@@ -344,8 +339,7 @@ module Datadog
       # # start a test
       # Datadog::CI.start_test(
       #   "test_add_two_numbers',
-      #   service_name: "my-web-site-tests",
-      #   operation_name: "test",
+      #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
       # )
       #

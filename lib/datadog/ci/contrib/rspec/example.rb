@@ -32,8 +32,7 @@ module Datadog
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
                   CI::Ext::Test::TAG_TYPE => Ext::TEST_TYPE
                 },
-                service_name: configuration[:service_name],
-                operation_name: configuration[:operation_name]
+                service: configuration[:service_name]
               ) do |test_span|
                 result = super
 

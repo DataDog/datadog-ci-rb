@@ -12,8 +12,7 @@ RSpec.describe Datadog::CI do
     let(:test_suite_name) { "test suite name" }
     let(:options) do
       {
-        service_name: "my-serivce",
-        operation_name: "rspec.example",
+        service: "my-serivce",
         tags: {"foo" => "bar"}
       }
     end
@@ -35,8 +34,7 @@ RSpec.describe Datadog::CI do
     let(:test_suite_name) { "test suite name" }
     let(:options) do
       {
-        service_name: "my-serivce",
-        operation_name: "rspec.example",
+        service: "my-serivce",
         tags: {"foo" => "bar"}
       }
     end
@@ -103,7 +101,7 @@ RSpec.describe Datadog::CI do
 
   describe "::start_test_session" do
     let(:service) { nil }
-    subject(:start_test_session) { described_class.start_test_session(service_name: service) }
+    subject(:start_test_session) { described_class.start_test_session(service: service) }
 
     let(:ci_test_session) { instance_double(Datadog::CI::TestSession) }
 
@@ -111,7 +109,7 @@ RSpec.describe Datadog::CI do
       let(:service) { "my-service" }
 
       before do
-        allow(recorder).to receive(:start_test_session).with(service_name: service, tags: {}).and_return(ci_test_session)
+        allow(recorder).to receive(:start_test_session).with(service: service, tags: {}).and_return(ci_test_session)
       end
 
       it { is_expected.to be(ci_test_session) }
@@ -122,7 +120,7 @@ RSpec.describe Datadog::CI do
         before do
           allow(Datadog.configuration).to receive(:service).and_return("configured-service")
           allow(recorder).to receive(:start_test_session).with(
-            service_name: "configured-service", tags: {}
+            service: "configured-service", tags: {}
           ).and_return(ci_test_session)
         end
 
@@ -160,7 +158,7 @@ RSpec.describe Datadog::CI do
 
     before do
       allow(recorder).to(
-        receive(:start_test_module).with("my-module", service_name: nil, tags: {}).and_return(ci_test_module)
+        receive(:start_test_module).with("my-module", service: nil, tags: {}).and_return(ci_test_module)
       )
     end
 
@@ -196,7 +194,7 @@ RSpec.describe Datadog::CI do
 
     before do
       allow(recorder).to(
-        receive(:start_test_suite).with("my-suite", service_name: nil, tags: {}).and_return(ci_test_suite)
+        receive(:start_test_suite).with("my-suite", service: nil, tags: {}).and_return(ci_test_suite)
       )
     end
 

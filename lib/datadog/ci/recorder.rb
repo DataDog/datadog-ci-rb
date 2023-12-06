@@ -35,12 +35,12 @@ module Datadog
         @global_context = Context::Global.new
       end
 
-      def start_test_session(service_name: nil, tags: {})
+      def start_test_session(service: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
         @global_context.fetch_or_activate_test_session do
           tracer_span = start_datadog_tracer_span(
-            "test.session", build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SESSION)
+            "test.session", build_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
           )
           set_session_context(tags, tracer_span)
 
@@ -48,7 +48,7 @@ module Datadog
         end
       end
 
-      def start_test_module(test_module_name, service_name: nil, tags: {})
+      def start_test_module(test_module_name, service: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
         @global_context.fetch_or_activate_test_module do
@@ -56,7 +56,7 @@ module Datadog
           set_session_context(tags)
 
           tracer_span = start_datadog_tracer_span(
-            test_module_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_MODULE)
+            test_module_name, build_span_options(service, Ext::AppTypes::TYPE_TEST_MODULE)
           )
           set_module_context(tags, tracer_span)
 
@@ -64,7 +64,7 @@ module Datadog
         end
       end
 
-      def start_test_suite(test_suite_name, service_name: nil, tags: {})
+      def start_test_suite(test_suite_name, service: nil, tags: {})
         return skip_tracing unless test_suite_level_visibility_enabled
 
         @global_context.fetch_or_activate_test_suite(test_suite_name) do
@@ -73,7 +73,7 @@ module Datadog
           set_module_context(tags)
 
           tracer_span = start_datadog_tracer_span(
-            test_suite_name, build_span_options(service_name, Ext::AppTypes::TYPE_TEST_SUITE)
+            test_suite_name, build_span_options(service, Ext::AppTypes::TYPE_TEST_SUITE)
           )
           set_suite_context(tags, span: tracer_span)
 
@@ -81,7 +81,7 @@ module Datadog
         end
       end
 
-      def trace_test(test_name, test_suite_name, service_name: nil, operation_name: "test", tags: {}, &block)
+      def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
         return skip_tracing(block) unless enabled
 
         set_inherited_globals(tags)
@@ -92,7 +92,7 @@ module Datadog
         tags[Ext::Test::TAG_NAME] = test_name
 
         span_options = build_span_options(
-          service_name,
+          service,
           Ext::AppTypes::TYPE_TEST,
           # :resource is needed for the agent APM protocol to work correctly (for older agent versions)
           # :continue_from is required to start a new trace for each test
@@ -100,7 +100,7 @@ module Datadog
         )
 
         if block
-          start_datadog_tracer_span(operation_name, span_options) do |tracer_span|
+          start_datadog_tracer_span(test_name, span_options) do |tracer_span|
             test = build_test(tracer_span, tags)
 
             @local_context.activate_test!(test) do
@@ -108,7 +108,7 @@ module Datadog
             end
           end
         else
-          tracer_span = start_datadog_tracer_span(operation_name, span_options)
+          tracer_span = start_datadog_tracer_span(test_name, span_options)
 
           test = build_test(tracer_span, tags)
           @local_context.activate_test!(test)
@@ -218,8 +218,8 @@ module Datadog
         span
       end
 
-      def build_span_options(service_name, span_type, other_options = {})
-        other_options[:service] = service_name || @global_context.service
+      def build_span_options(service, span_type, other_options = {})
+        other_options[:service] = service || @global_context.service
         other_options[:span_type] = span_type
 
         other_options

@@ -10,7 +10,7 @@ module TracerHelpers
   end
 
   def produce_test_trace(
-    framework: "rspec", operation: "rspec.example",
+    framework: "rspec",
     test_name: "test_add", test_suite: "calculator_tests",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
     skip_reason: nil, start_time: Time.now, duration_seconds: 2,
@@ -31,8 +31,7 @@ module TracerHelpers
         Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
         Datadog::CI::Ext::Test::TAG_TYPE => "test"
       },
-      service_name: service,
-      operation_name: operation
+      service: service
     ) do |test|
       if with_http_span
         Datadog::Tracing.trace("http-call", type: "http", service: "net-http") do |span, trace|
@@ -53,7 +52,7 @@ module TracerHelpers
   end
 
   def produce_test_session_trace(
-    tests_count: 1, framework: "rspec", operation: "rspec.example",
+    tests_count: 1, framework: "rspec",
     test_name: "test_add", test_suite: "calculator_tests", test_module_name: "arithmetic",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
     skip_reason: nil, start_time: Time.now, duration_seconds: 2,
@@ -64,7 +63,7 @@ module TracerHelpers
     )
 
     test_session = Datadog::CI.start_test_session(
-      service_name: service,
+      service: service,
       tags: {
         Datadog::CI::Ext::Test::TAG_FRAMEWORK => framework,
         Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
@@ -78,7 +77,7 @@ module TracerHelpers
 
     tests_count.times do |num|
       produce_test_trace(
-        framework: framework, operation: operation,
+        framework: framework,
         test_name: "#{test_name}.run.#{num}", test_suite: test_suite,
         # service is inherited from test_session
         service: nil,

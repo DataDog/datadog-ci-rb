@@ -26,7 +26,7 @@ RSpec.describe "Minitest hooks" do
     klass.new(:test_foo).run
 
     expect(span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    expect(span.name).to eq(Datadog::CI::Contrib::Minitest::Ext::OPERATION_NAME)
+    expect(span.name).to eq("SomeTest#test_foo")
     expect(span.resource).to eq("SomeTest#test_foo")
     expect(span.service).to eq("ltest")
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeTest#test_foo")

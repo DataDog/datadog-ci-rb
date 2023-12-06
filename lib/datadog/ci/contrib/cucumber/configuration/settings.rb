@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "datadog/core"
+
 require_relative "../ext"
 require_relative "../../settings"
 
@@ -26,6 +28,14 @@ module Datadog
               o.type :string
               o.env Ext::ENV_OPERATION_NAME
               o.default Ext::OPERATION_NAME
+
+              o.after_set do |value|
+                if value && value != Ext::OPERATION_NAME
+                  Datadog::Core.log_deprecation do
+                    "The operation_name setting has no effect and will be removed in 1.0"
+                  end
+                end
+              end
             end
           end
         end

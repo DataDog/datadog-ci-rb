@@ -108,7 +108,7 @@ RSpec.describe Datadog::CI::Recorder do
   end
 
   context "when test suite level visibility is disabled" do
-    let(:service_name) { "my-service" }
+    let(:service) { "my-service" }
     let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
     include_context "CI mode activated" do
@@ -116,7 +116,7 @@ RSpec.describe Datadog::CI::Recorder do
     end
 
     describe "#trace_test_session" do
-      subject { recorder.start_test_session(service_name: service_name, tags: tags) }
+      subject { recorder.start_test_session(service: service, tags: tags) }
 
       it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
 
@@ -128,7 +128,7 @@ RSpec.describe Datadog::CI::Recorder do
     describe "#trace_test_module" do
       let(:module_name) { "my-module" }
 
-      subject { recorder.start_test_module(module_name, service_name: service_name, tags: tags) }
+      subject { recorder.start_test_module(module_name, service: service, tags: tags) }
 
       it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
 
@@ -140,7 +140,7 @@ RSpec.describe Datadog::CI::Recorder do
     describe "#trace_test_suite" do
       let(:suite_name) { "my-module" }
 
-      subject { recorder.start_test_suite(suite_name, service_name: service_name, tags: tags) }
+      subject { recorder.start_test_suite(suite_name, service: service, tags: tags) }
 
       it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
 
@@ -233,8 +233,7 @@ RSpec.describe Datadog::CI::Recorder do
     describe "#trace_test" do
       let(:test_name) { "my test" }
       let(:test_suite_name) { "my suite" }
-      let(:test_service_name) { "my-service" }
-      let(:operation_name) { "my-operation" }
+      let(:test_service) { "my-service" }
       let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
       context "without a block" do
@@ -242,8 +241,7 @@ RSpec.describe Datadog::CI::Recorder do
           recorder.trace_test(
             test_name,
             test_suite_name,
-            service_name: test_service_name,
-            operation_name: operation_name,
+            service: test_service,
             tags: tags
           )
         end
@@ -252,8 +250,8 @@ RSpec.describe Datadog::CI::Recorder do
           it "returns a new CI test span" do
             expect(subject).to be_kind_of(Datadog::CI::Test)
             expect(subject.name).to eq(test_name)
-            expect(subject.service).to eq(test_service_name)
-            expect(subject.tracer_span.name).to eq(operation_name)
+            expect(subject.service).to eq(test_service)
+            expect(subject.tracer_span.name).to eq(test_name)
             expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
           end
 
@@ -285,10 +283,10 @@ RSpec.describe Datadog::CI::Recorder do
 
         context "when there is an active test session" do
           let(:test_session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
-          let(:session_service_name) { "my-session-service" }
-          let(:test_service_name) { nil }
+          let(:session_service) { "my-session-service" }
+          let(:test_service) { nil }
 
-          let(:test_session) { recorder.start_test_session(service_name: session_service_name, tags: test_session_tags) }
+          let(:test_session) { recorder.start_test_session(service: session_service, tags: test_session_tags) }
 
           before do
             test_session
@@ -298,7 +296,7 @@ RSpec.describe Datadog::CI::Recorder do
             it "returns a new CI test span using service from the test session" do
               expect(subject).to be_kind_of(Datadog::CI::Test)
               expect(subject.name).to eq(test_name)
-              expect(subject.service).to eq(session_service_name)
+              expect(subject.service).to eq(session_service)
             end
 
             it "sets the provided tags correctly while inheriting some tags from the session" do
@@ -379,8 +377,7 @@ RSpec.describe Datadog::CI::Recorder do
           recorder.trace_test(
             test_name,
             test_suite_name,
-            service_name: test_service_name,
-            operation_name: operation_name,
+            service: test_service,
             tags: tags
           ) do |test_span|
             test_span.set_metric("my.metric", 42)
@@ -390,8 +387,8 @@ RSpec.describe Datadog::CI::Recorder do
 
         it "traces and finishes a test" do
           expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(test_name)
-          expect(subject.service).to eq(test_service_name)
-          expect(subject.name).to eq(operation_name)
+          expect(subject.service).to eq(test_service)
+          expect(subject.name).to eq(test_name)
           expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
         end
 
@@ -416,15 +413,15 @@ RSpec.describe Datadog::CI::Recorder do
     end
 
     describe "#start_test_session" do
-      let(:service_name) { "my-service" }
+      let(:service) { "my-service" }
       let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
-      subject { recorder.start_test_session(service_name: service_name, tags: tags) }
+      subject { recorder.start_test_session(service: service, tags: tags) }
 
       it "returns a new CI test_session span" do
         expect(subject).to be_kind_of(Datadog::CI::TestSession)
         expect(subject.name).to eq("test.session")
-        expect(subject.service).to eq(service_name)
+        expect(subject.service).to eq(service)
         expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
       end
 
@@ -451,16 +448,16 @@ RSpec.describe Datadog::CI::Recorder do
 
     describe "#start_test_module" do
       let(:module_name) { "my-module" }
-      let(:service_name) { "my-service" }
+      let(:service) { "my-service" }
       let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
-      subject { recorder.start_test_module(module_name, service_name: service_name, tags: tags) }
+      subject { recorder.start_test_module(module_name, service: service, tags: tags) }
 
       context "when there is no active test session" do
         it "returns a new CI test_module span" do
           expect(subject).to be_kind_of(Datadog::CI::TestModule)
           expect(subject.name).to eq(module_name)
-          expect(subject.service).to eq(service_name)
+          expect(subject.service).to eq(service)
           expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
         end
 
@@ -494,10 +491,10 @@ RSpec.describe Datadog::CI::Recorder do
       end
 
       context "when there is an active test session" do
-        let(:service_name) { nil }
-        let(:session_service_name) { "session_service_name" }
+        let(:service) { nil }
+        let(:session_service) { "session_service" }
         let(:session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
-        let(:test_session) { recorder.start_test_session(service_name: session_service_name, tags: session_tags) }
+        let(:test_session) { recorder.start_test_session(service: session_service, tags: session_tags) }
 
         before do
           test_session
@@ -506,7 +503,7 @@ RSpec.describe Datadog::CI::Recorder do
         it "returns a new CI module span using service from the test session" do
           expect(subject).to be_kind_of(Datadog::CI::TestModule)
           expect(subject.name).to eq(module_name)
-          expect(subject.service).to eq(session_service_name)
+          expect(subject.service).to eq(session_service)
         end
 
         it "sets the provided tags correctly while inheriting some tags from the session" do
@@ -528,10 +525,10 @@ RSpec.describe Datadog::CI::Recorder do
 
     describe "start_test_suite" do
       let(:module_name) { "my-module" }
-      let(:session_service_name) { "session_service_name" }
+      let(:session_service) { "session_service" }
       let(:session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
 
-      let(:test_session) { recorder.start_test_session(service_name: session_service_name, tags: session_tags) }
+      let(:test_session) { recorder.start_test_session(service: session_service, tags: session_tags) }
       let(:test_module) { recorder.start_test_module(module_name) }
 
       before do
@@ -548,7 +545,7 @@ RSpec.describe Datadog::CI::Recorder do
         it "returns a new CI test_suite span" do
           expect(subject).to be_kind_of(Datadog::CI::TestSuite)
           expect(subject.name).to eq(suite_name)
-          expect(subject.service).to eq(session_service_name)
+          expect(subject.service).to eq(session_service)
           expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
         end
 

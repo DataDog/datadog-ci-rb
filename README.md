@@ -51,7 +51,7 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether RSpec tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `rspec` instrumentation. | `'rspec'` |
-| `operation_name` | Operation name used for `rspec` instrumentation. | `'rspec.example'` |
+| `operation_name` | *DEPRECATED, to be removed in 1.0* Operation name used for `rspec` instrumentation (has no effect in agentless mode or when using newer agent versions). | `'rspec.example'` |
 
 ### Minitest
 
@@ -84,7 +84,7 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether Minitest tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `minitest` instrumentation. | `'minitest'` |
-| `operation_name` | Operation name used for `minitest` instrumentation. | `'minitest.test'` |
+| `operation_name` | *DEPRECATED, to be removed in 1.0* Operation name used for `minitest` instrumentation (has no effect in agentless mode or when using newer agent versions). | `'minitest.test'` |
 
 ### Cucumber
 
@@ -115,7 +115,7 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether Cucumber tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `cucumber` instrumentation. | `'cucumber'` |
-| `operation_name` | Operation name used for `cucumber` instrumentation. | `'cucumber.test'` |
+| `operation_name` | *DEPRECATED, to be removed in 1.0* Operation name used for `cucumber` instrumentation (has no effect in agentless mode or when using newer agent versions). | `'cucumber.test'` |
 
 ## Agentless mode
 
