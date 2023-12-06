@@ -199,7 +199,7 @@ module Datadog
       # The {.trace_test} method can also be used without a block in this way:
       # ```
       # ci_test = Datadog::CI.trace_test(
-      #   "test_add_two_numbers',
+      #   "test_add_two_numbers",
       #   "calculator_tests",
       #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
@@ -232,7 +232,7 @@ module Datadog
       #
       # ```
       # ci_test = Datadog::CI.start_test(
-      #   "test_add_two_numbers',
+      #   "test_add_two_numbers",
       #   "calculator_tests",
       #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
@@ -329,7 +329,7 @@ module Datadog
       # ```
       # # start a test
       # Datadog::CI.start_test(
-      #   "test_add_two_numbers',
+      #   "test_add_two_numbers",
       #   "calculator_tests",
       #   service: "my-web-site-tests",
       #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
