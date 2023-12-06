@@ -94,15 +94,15 @@ module Datadog
 
             if encoded.size > max_payload_size
               # This single event is too large, we can't flush it
-              Datadog.logger.debug { "Dropping test event. Payload too large: '#{span.inspect}'" }
-              Datadog.logger.debug { encoded }
+              Datadog.logger.warn("Dropping test event. Payload too large: '#{span.inspect}'")
+              Datadog.logger.warn(encoded)
 
               return nil
             end
 
             encoded
           else
-            Datadog.logger.debug { "Invalid span skipped: #{span}" }
+            Datadog.logger.warn("Invalid event skipped: #{serializer} Errors: #{serializer.validation_errors}")
             nil
           end
         end

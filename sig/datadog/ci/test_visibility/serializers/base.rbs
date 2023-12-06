@@ -14,15 +14,21 @@ module Datadog
           @start: Integer
           @duration: Integer
           @meta: Hash[untyped, untyped]
+          @errors: Hash[String, Set[String]]
+          @validated: bool
 
           attr_reader trace: Datadog::Tracing::TraceSegment
           attr_reader span: Datadog::Tracing::Span
+          attr_reader meta: Hash[untyped, untyped]
 
           def initialize: (Datadog::Tracing::TraceSegment trace, Datadog::Tracing::Span span) -> void
 
           def to_msgpack: (?untyped? packer) -> untyped
 
           def valid?: () -> bool
+          def validate!: () -> void
+          def validation_errors: () -> Hash[String, Set[String]]
+
           def content_fields: () -> ::Array[String | Hash[String, String]]
           def content_map_size: () -> Integer
 
@@ -56,8 +62,6 @@ module Datadog
 
           def duration: () -> Integer
 
-          def meta: () -> Hash[String, untyped]
-
           def metrics: () -> Hash[String, untyped]
 
           def error: () -> Integer
@@ -66,9 +70,14 @@ module Datadog
 
           private
 
-          def valid_start_time?: () -> bool
-          def valid_duration?: () -> bool
-          def required_fields_present?: () -> bool
+          def validate_start_time!: () -> void
+          def validate_duration!: () -> void
+          def validate_required_fields!: () -> void
+          def validate_required!: (String field) -> void
+          def validate_greater_than_or_equal!: (String field, Integer value) -> void
+          def validate_less_than_or_equal!: (String field, Integer value) -> void
+          def add_error: (String field, String message) -> void
+
           def required_fields: () -> Array[String]
 
           def write_field: (untyped packer, String field_name, ?String? method) -> untyped
