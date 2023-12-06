@@ -23,6 +23,7 @@ gem "timecop"
 gem "standard", "~> 1.31"
 
 gem "yard"
+gem "redcarpet" if RUBY_PLATFORM != "java"
 gem "webrick"
 gem "pimpmychangelog", ">= 0.1.2"
 

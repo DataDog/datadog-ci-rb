@@ -9,7 +9,7 @@ module Datadog
       module Minitest
         module Configuration
           # Custom settings for the Minitest integration
-          # TODO: mark as `@public_api` when GA
+          # @public_api
           class Settings < Datadog::CI::Contrib::Settings
             option :enabled do |o|
               o.type :bool
@@ -22,6 +22,7 @@ module Datadog
               o.default { Datadog.configuration.service_without_fallback || Ext::SERVICE_NAME }
             end
 
+            # @deprecated Will be removed in 1.0
             option :operation_name do |o|
               o.type :string
               o.env Ext::ENV_OPERATION_NAME

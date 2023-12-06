@@ -10,6 +10,8 @@ module Datadog
 
         option :enabled, default: true
         option :service_name
+
+        # @deprecated Will be removed in 1.0
         option :operation_name
 
         def configure(options = {})
