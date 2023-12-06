@@ -1,5 +1,35 @@
 ## [Unreleased]
 
+## [0.5.0] - 2023-12-06
+
+### Test suite level visibility
+
+This release includes experimental manual API for [test suite level visibility](https://docs.datadoghq.com/continuous_integration/explorer/?tab=testruns#sessions) in Ruby.
+
+Currently test suite level visibility is not used by our instrumentation: it will be released in v0.6.
+
+### Added
+
+* Test suite level visibility: add test session public API ([#72][])
+* Test suite level visibility: test module support ([#76][])
+* Test suite level visibility: test suites support ([#77][])
+* add YARD documentation ([#82][])
+* support validation errors for CI spans ([#78][])
+
+### Changed
+
+* Validate DD_SITE variable ([#79][])
+* Document how to use WebMock with datadog-ci ([#80][])
+
+### Fixed
+
+* Datadog::CI.trace_test always starts a new trace ([#74][])
+* Skip tracing when CI mode disabled and manual API is used ([#75][])
+
+### Removed
+
+* Deprecate operation name setting, change service_name to service in public API ([#81][])
+
 ## [0.4.1] - 2023-11-22
 
 ### Fixed
@@ -71,7 +101,8 @@
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.0...main
+[0.5.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.2.0...v0.3.0
@@ -98,3 +129,13 @@
 [#65]: https://github.com/DataDog/datadog-ci-rb/issues/65
 [#66]: https://github.com/DataDog/datadog-ci-rb/issues/66
 [#70]: https://github.com/DataDog/datadog-ci-rb/issues/70
+[#72]: https://github.com/DataDog/datadog-ci-rb/issues/72
+[#74]: https://github.com/DataDog/datadog-ci-rb/issues/74
+[#75]: https://github.com/DataDog/datadog-ci-rb/issues/75
+[#76]: https://github.com/DataDog/datadog-ci-rb/issues/76
+[#77]: https://github.com/DataDog/datadog-ci-rb/issues/77
+[#78]: https://github.com/DataDog/datadog-ci-rb/issues/78
+[#79]: https://github.com/DataDog/datadog-ci-rb/issues/79
+[#80]: https://github.com/DataDog/datadog-ci-rb/issues/80
+[#81]: https://github.com/DataDog/datadog-ci-rb/issues/81
+[#82]: https://github.com/DataDog/datadog-ci-rb/issues/82
