@@ -4,6 +4,7 @@ module Datadog
   module CI
     module Ext
       # Defines constants for test tags
+      # @public_api
       module Test
         CONTEXT_ORIGIN = "ciapp-test"
 
