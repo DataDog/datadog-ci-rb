@@ -1,4 +1,4 @@
-RSpec.describe Datadog::CI::Context::Global do
+RSpec.describe Datadog::CI::TestVisibility::Context::Global do
   subject(:context) { described_class.new }
 
   let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: "test.session", service: "my-service") }

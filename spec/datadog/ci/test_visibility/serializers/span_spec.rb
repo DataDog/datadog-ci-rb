@@ -1,5 +1,5 @@
 require_relative "../../../../../lib/datadog/ci/test_visibility/serializers/span"
-require_relative "../../../../../lib/datadog/ci/recorder"
+require_relative "../../../../../lib/datadog/ci/test_visibility/recorder"
 
 RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
   include_context "CI mode activated" do

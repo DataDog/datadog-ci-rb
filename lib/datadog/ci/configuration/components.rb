@@ -6,11 +6,11 @@ require "datadog/core/remote/negotiation"
 require_relative "../ext/transport"
 require_relative "../ext/settings"
 require_relative "../test_visibility/flush"
-require_relative "../test_visibility/transport"
+require_relative "../test_visibility/recorder"
 require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
+require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
-require_relative "../recorder"
 
 module Datadog
   module CI
@@ -23,7 +23,7 @@ module Datadog
           # Activate CI mode if enabled
           activate_ci!(settings) if settings.ci.enabled
 
-          @ci_recorder = Recorder.new(
+          @ci_recorder = TestVisibility::Recorder.new(
             enabled: settings.ci.enabled,
             test_suite_level_visibility_enabled: settings.ci.experimental_test_suite_level_visibility_enabled
           )

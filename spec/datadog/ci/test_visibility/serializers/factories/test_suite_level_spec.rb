@@ -1,7 +1,7 @@
 require_relative "../../../../../../lib/datadog/ci/test_visibility/serializers/factories/test_suite_level"
 require_relative "../../../../../../lib/datadog/ci/test_visibility/serializers/test_v2"
 require_relative "../../../../../../lib/datadog/ci/test_visibility/serializers/test_session"
-require_relative "../../../../../../lib/datadog/ci/recorder"
+require_relative "../../../../../../lib/datadog/ci/test_visibility/recorder"
 
 RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel do
   include_context "CI mode activated" do
