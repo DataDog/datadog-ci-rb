@@ -207,4 +207,68 @@ RSpec.describe "RSpec hooks" do
       expect_failure
     end
   end
+
+  context "with rspec runner" do
+    def devnull
+      File.new("/dev/null", "w")
+    end
+
+    it "creates test session span" do
+      with_new_rspec_environment do
+        RSpec.describe "SomeTest" do
+          it "foo" do
+            # DO NOTHING
+          end
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+        ::RSpec::Core::Runner.new(options).run(devnull, devnull)
+      end
+
+      expect(test_session_span).not_to be_nil
+
+      expect(test_session_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
+        Datadog::CI::Ext::AppTypes::TYPE_TEST
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+        Datadog::CI::Contrib::RSpec::Ext::TEST_TYPE
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+        Datadog::CI::Contrib::RSpec::Integration.version.to_s
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::PASS
+      )
+    end
+
+    context "with failures" do
+      it "creates test session span with failed state" do
+        with_new_rspec_environment do
+          RSpec.describe "SomeTest" do
+            it "foo" do
+              # DO NOTHING
+            end
+          end
+
+          RSpec.describe "SomeTestThatFailed" do
+            it "fails" do
+              expect(1).to eq(2)
+            end
+          end
+
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+          ::RSpec::Core::Runner.new(options).run(devnull, devnull)
+        end
+
+        expect(test_session_span).not_to be_nil
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::FAIL
+        )
+      end
+    end
+  end
 end

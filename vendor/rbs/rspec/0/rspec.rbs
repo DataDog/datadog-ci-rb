@@ -11,3 +11,7 @@ module RSpec::Core::Example
   def description: () -> String
   def full_description: () -> String
 end
+
+module RSpec::Core::Runner
+  def run: (untyped err, untyped out) -> untyped
+end

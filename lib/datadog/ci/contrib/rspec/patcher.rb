@@ -2,6 +2,7 @@
 
 require "datadog/tracing/contrib/patcher"
 require_relative "example"
+require_relative "runner"
 
 module Datadog
   module CI
@@ -19,6 +20,7 @@ module Datadog
 
           def patch
             ::RSpec::Core::Example.include(Example)
+            ::RSpec::Core::Runner.include(Runner)
           end
         end
       end
