@@ -1,5 +1,4 @@
 require "datadog/ci"
-require "datadog/ci/recorder"
 
 # For contrib, we only allow one tracer to be active:
 # the global tracer in +Datadog::Tracing+.

@@ -1,4 +1,4 @@
-RSpec.describe Datadog::CI::Recorder do
+RSpec.describe Datadog::CI::TestVisibility::Recorder do
   shared_examples_for "trace with ciapp-test origin" do
     let(:trace_under_test) { subject }
 

@@ -1,5 +1,5 @@
 RSpec.describe Datadog::CI do
-  let(:recorder) { instance_double(Datadog::CI::Recorder) }
+  let(:recorder) { instance_double(Datadog::CI::TestVisibility::Recorder) }
 
   before do
     allow(Datadog::CI).to receive(:recorder).and_return(recorder)

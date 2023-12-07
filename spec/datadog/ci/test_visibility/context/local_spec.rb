@@ -1,4 +1,4 @@
-RSpec.describe Datadog::CI::Context::Local do
+RSpec.describe Datadog::CI::TestVisibility::Context::Local do
   subject { described_class.new }
 
   let(:tracer_span) { double(Datadog::Tracing::SpanOperation, get_tag: "my test") }

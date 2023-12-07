@@ -109,7 +109,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           context "when #experimental_test_suite_level_visibility_enabled" do
             context "is false" do
               it "creates a CI recorder with test_suite_level_visibility_enabled=false" do
-                expect(components.ci_recorder).to be_kind_of(Datadog::CI::Recorder)
+                expect(components.ci_recorder).to be_kind_of(Datadog::CI::TestVisibility::Recorder)
                 expect(components.ci_recorder.test_suite_level_visibility_enabled).to eq(false)
               end
             end
@@ -118,7 +118,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
               let(:experimental_test_suite_level_visibility_enabled) { true }
 
               it "creates a CI recorder with test_suite_level_visibility_enabled=false" do
-                expect(components.ci_recorder).to be_kind_of(Datadog::CI::Recorder)
+                expect(components.ci_recorder).to be_kind_of(Datadog::CI::TestVisibility::Recorder)
                 expect(components.ci_recorder.test_suite_level_visibility_enabled).to eq(true)
               end
             end
