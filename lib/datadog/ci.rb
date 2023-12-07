@@ -389,6 +389,6 @@ require_relative "ci/contrib/cucumber/integration"
 require_relative "ci/contrib/rspec/integration"
 require_relative "ci/contrib/minitest/integration"
 
-# Extensions
-require_relative "ci/extensions"
-Datadog::CI::Extensions.activate!
+# Configuration extensions
+require_relative "ci/configuration/extensions"
+Datadog::CI::Configuration::Extensions.activate!
