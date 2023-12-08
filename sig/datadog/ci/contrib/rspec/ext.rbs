@@ -3,19 +3,17 @@ module Datadog
     module Contrib
       module RSpec
         module Ext
-          APP: String
-
           ENV_ENABLED: String
 
-          ENV_OPERATION_NAME: String
-
           FRAMEWORK: String
+          DEFAULT_SERVICE_NAME: String
 
           OPERATION_NAME: String
+          ENV_OPERATION_NAME: String
 
           SERVICE_NAME: String
 
-          TEST_TYPE: String
+          TEST_MODULE_NAME: String
         end
       end
     end

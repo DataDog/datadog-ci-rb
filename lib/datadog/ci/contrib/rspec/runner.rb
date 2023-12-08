@@ -21,18 +21,24 @@ module Datadog
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
-                  CI::Ext::Test::TAG_TYPE => Ext::TEST_TYPE
+                  CI::Ext::Test::TAG_TYPE => CI::Ext::Test::TEST_TYPE
                 },
                 service: configuration[:service_name]
               )
 
+              test_module = CI.start_test_module(Ext::TEST_MODULE_NAME)
+
               result = super
 
               if result != 0
+                # TODO: repeating this twice feels clunky, we need to remove test_module API before GA
+                test_module.failed!
                 test_session.failed!
               else
+                test_module.passed!
                 test_session.passed!
               end
+              test_module.finish
               test_session.finish
 
               result
