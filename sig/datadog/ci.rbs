@@ -18,6 +18,8 @@ module Datadog
 
     def self.active_test: () -> Datadog::CI::Test?
 
+    def self.active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
+
     def self.active_span: (String span_type) -> Datadog::CI::Span?
 
     def self.deactivate_test: (Datadog::CI::Test test) -> void

@@ -29,19 +29,19 @@ RSpec.describe "RSpec hooks" do
       end.tap(&:run)
     end
 
-    expect(span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    expect(span.name).to eq("some test foo")
-    expect(span.resource).to eq("some test foo")
-    expect(span.service).to eq("lspec")
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("some test foo")
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK)
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+    expect(first_test_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+    expect(first_test_span.name).to eq("some test foo")
+    expect(first_test_span.resource).to eq("some test foo")
+    expect(first_test_span.service).to eq("lspec")
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("some test foo")
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
       Datadog::CI::Contrib::RSpec::Integration.version.to_s
     )
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
   end
 
   it "creates correct span on shared examples" do
@@ -52,7 +52,7 @@ RSpec.describe "RSpec hooks" do
       end.tap(&:run)
     end
 
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
   end
 
   it "creates spans for several examples" do
@@ -69,7 +69,7 @@ RSpec.describe "RSpec hooks" do
       end.run
     end
 
-    expect(spans).to have(num_examples).items
+    expect(test_spans).to have(num_examples).items
   end
 
   it "creates span for unnamed examples" do
@@ -79,7 +79,7 @@ RSpec.describe "RSpec hooks" do
       end.run
     end
 
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to match(/some unnamed test example at .+/)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to match(/some unnamed test example at .+/)
   end
 
   it "creates span for deeply nested examples" do
@@ -111,9 +111,9 @@ RSpec.describe "RSpec hooks" do
       end.tap(&:run)
     end
 
-    expect(span.resource).to eq("some nested test 1 2 3 4 5 6 7 8 9 10 foo")
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("some nested test 1 2 3 4 5 6 7 8 9 10 foo")
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+    expect(first_test_span.resource).to eq("some nested test 1 2 3 4 5 6 7 8 9 10 foo")
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("some nested test 1 2 3 4 5 6 7 8 9 10 foo")
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
   end
 
   it "creates spans for example with instrumentation" do
@@ -127,9 +127,10 @@ RSpec.describe "RSpec hooks" do
       end.tap(&:run)
     end
 
-    expect(spans).to have(2).items
+    expect(test_spans).to have(1).items
+    expect(tracer_spans).to have(1).items
 
-    spans.each do |span|
+    tracer_spans.each do |span|
       expect(span.get_tag(Datadog::Tracing::Metadata::Ext::Distributed::TAG_ORIGIN))
         .to eq(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
@@ -137,11 +138,11 @@ RSpec.describe "RSpec hooks" do
 
   context "catches failures" do
     def expect_failure
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
-      expect(span).to have_error
-      expect(span).to have_error_type
-      expect(span).to have_error_message
-      expect(span).to have_error_stack
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
+      expect(first_test_span).to have_error
+      expect(first_test_span).to have_error_type
+      expect(first_test_span).to have_error_message
+      expect(first_test_span).to have_error_stack
     end
 
     it "within let" do
@@ -215,7 +216,7 @@ RSpec.describe "RSpec hooks" do
 
     def rspec_session_run(with_failed_test: false)
       with_new_rspec_environment do
-        RSpec.describe "SomeTest" do
+        spec = RSpec.describe "SomeTest" do
           it "foo" do
             # DO NOTHING
           end
@@ -229,6 +230,8 @@ RSpec.describe "RSpec hooks" do
 
         options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
         ::RSpec::Core::Runner.new(options).run(devnull, devnull)
+
+        spec
       end
     end
 
@@ -280,6 +283,39 @@ RSpec.describe "RSpec hooks" do
       )
     end
 
+    it "creates test suite span" do
+      spec = rspec_session_run
+
+      expect(test_suite_span).not_to be_nil
+
+      expect(test_suite_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
+      expect(test_suite_span.name).to eq(spec.file_path)
+
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
+        Datadog::CI::Ext::AppTypes::TYPE_TEST
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+        Datadog::CI::Ext::Test::TEST_TYPE
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+        Datadog::CI::Contrib::RSpec::Integration.version.to_s
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::PASS
+      )
+    end
+
+    it "connects test to the session, module, and suite" do
+      rspec_session_run
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
+    end
+
     context "with failures" do
       it "creates test session span with failed state" do
         rspec_session_run(with_failed_test: true)
@@ -295,6 +331,15 @@ RSpec.describe "RSpec hooks" do
 
         expect(test_module_span).not_to be_nil
         expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::FAIL
+        )
+      end
+
+      it "creates test suite span with failed state" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(test_suite_span).not_to be_nil
+        expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
           Datadog::CI::Ext::Test::Status::FAIL
         )
       end

@@ -15,3 +15,7 @@ end
 module RSpec::Core::Runner
   def run: (untyped err, untyped out) -> untyped
 end
+
+module RSpec::Core::ExampleGroup
+  def self.run: () -> bool
+end
