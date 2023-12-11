@@ -14,7 +14,7 @@ module Datadog
           end
 
           module InstanceMethods
-            def run(err, out)
+            def run_specs(example_groups)
               return super unless configuration[:enabled]
 
               test_session = CI.start_test_session(

@@ -13,7 +13,7 @@ module RSpec::Core::Example
 end
 
 module RSpec::Core::Runner
-  def run: (untyped err, untyped out) -> untyped
+  def run_specs: (untyped example_groups) -> untyped
 end
 
 module RSpec::Core::ExampleGroup

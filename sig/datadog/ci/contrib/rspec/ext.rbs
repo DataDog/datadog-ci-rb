@@ -11,8 +11,6 @@ module Datadog
           OPERATION_NAME: String
           ENV_OPERATION_NAME: String
 
-          SERVICE_NAME: String
-
           TEST_MODULE_NAME: String
         end
       end
