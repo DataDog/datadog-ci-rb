@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [0.5.1] - 2023-12-11
+
+### Fixed
+
+* do not collect environment tags when CI is not enabled ([#87][])
+
+### Changed
+
+* Move private classes and modules deeper in module hierarchy ([#85][])
+* update appraisal dependencies ([#84][])
+
 ## [0.5.0] - 2023-12-06
 
 ### Test suite level visibility
@@ -101,7 +112,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.1...main
+[0.5.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.3.0...v0.4.0
@@ -139,3 +151,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#80]: https://github.com/DataDog/datadog-ci-rb/issues/80
 [#81]: https://github.com/DataDog/datadog-ci-rb/issues/81
 [#82]: https://github.com/DataDog/datadog-ci-rb/issues/82
+[#84]: https://github.com/DataDog/datadog-ci-rb/issues/84
+[#85]: https://github.com/DataDog/datadog-ci-rb/issues/85
+[#87]: https://github.com/DataDog/datadog-ci-rb/issues/87
