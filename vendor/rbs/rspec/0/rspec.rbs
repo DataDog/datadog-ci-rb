@@ -17,5 +17,12 @@ module RSpec::Core::Runner
 end
 
 module RSpec::Core::ExampleGroup
-  def self.run: () -> bool
+  module ClassMethods
+    def run: () -> bool
+    def top_level?: () -> bool
+    def file_path: () -> String
+  end
+end
+
+class RSpec::Core::NullReporter
 end
