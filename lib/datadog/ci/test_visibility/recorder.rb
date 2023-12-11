@@ -31,7 +31,7 @@ module Datadog
           @enabled = enabled
           @test_suite_level_visibility_enabled = enabled && test_suite_level_visibility_enabled
 
-          @environment_tags = Ext::Environment.tags(ENV).freeze
+          @environment_tags = @enabled ? Ext::Environment.tags(ENV).freeze : {}
           @local_context = Context::Local.new
           @global_context = Context::Global.new
         end
