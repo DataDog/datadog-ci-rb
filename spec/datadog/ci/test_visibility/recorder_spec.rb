@@ -50,6 +50,21 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       let(:ci_enabled) { false }
     end
 
+    describe "#initialize" do
+      subject do
+        described_class.new(
+          enabled: ci_enabled,
+          test_suite_level_visibility_enabled: experimental_test_suite_level_visibility_enabled
+        )
+      end
+
+      it "doesn't collect environment tags" do
+        expect(Datadog::CI::Ext::Environment).not_to receive(:tags)
+
+        subject
+      end
+    end
+
     describe "#trace_test" do
       context "when given a block" do
         let(:spy_under_test) { spy("spy") }
