@@ -1,4 +1,8 @@
+require_relative "shared_examples"
+
 RSpec.describe "Let's do some math" do
+  include_examples "Testing shared examples"
+
   it "add" do
     expect(1 + 1).to eq(2)
   end
