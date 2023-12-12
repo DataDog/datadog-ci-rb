@@ -44,17 +44,6 @@ RSpec.describe "RSpec hooks" do
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
   end
 
-  it "creates correct span on shared examples" do
-    spec = with_new_rspec_environment do
-      require_relative "some_shared_examples"
-      spec = RSpec.describe "some test" do
-        include_examples "Testing shared examples"
-      end.tap(&:run)
-    end
-
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
-  end
-
   it "creates spans for several examples" do
     expect(Datadog::CI::Ext::Environment).to receive(:tags).never
 
@@ -214,7 +203,7 @@ RSpec.describe "RSpec hooks" do
       File.new("/dev/null", "w")
     end
 
-    def rspec_session_run(with_failed_test: false)
+    def rspec_session_run(with_failed_test: false, with_shared_test: false)
       with_new_rspec_environment do
         spec = RSpec.describe "SomeTest" do
           it "foo" do
@@ -225,6 +214,11 @@ RSpec.describe "RSpec hooks" do
             it "fails" do
               expect(1).to eq(2)
             end
+          end
+
+          if with_shared_test
+            require_relative "some_shared_examples"
+            include_examples "Testing shared examples"
           end
         end
 
@@ -342,6 +336,19 @@ RSpec.describe "RSpec hooks" do
         expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
           Datadog::CI::Ext::Test::Status::FAIL
         )
+      end
+    end
+
+    context "with shared examples" do
+      let!(:spec) { rspec_session_run(with_shared_test: true) }
+
+      it "creates correct test spans connects all tests to a single test suite" do
+        shared_test_span = test_spans.find { |test_span| test_span.name == "SomeTest shared examples adds 1 and 1" }
+        expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+
+        test_spans.each do |test_span|
+          expect(test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
+        end
       end
     end
   end

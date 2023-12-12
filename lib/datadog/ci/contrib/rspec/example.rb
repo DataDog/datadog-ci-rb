@@ -26,7 +26,7 @@ module Datadog
 
               CI.trace_test(
                 test_name,
-                metadata[:example_group][:file_path],
+                metadata[:example_group][:rerun_file_path],
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
