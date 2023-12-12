@@ -6,11 +6,7 @@ module Datadog
   module CI
     module TestVisibility
       # Special recorder that does not record anything
-      #
-      class NullRecorder < Recorder
-        def initialize(*)
-        end
-
+      class NullRecorder
         def start_test_session(service: nil, tags: {})
           skip_tracing
         end
@@ -56,6 +52,20 @@ module Datadog
         end
 
         def deactivate_test_suite(test_suite_name)
+        end
+
+        private
+
+        def skip_tracing(block = nil)
+          if block
+            block.call(null_span)
+          else
+            null_span
+          end
+        end
+
+        def null_span
+          @null_span ||= NullSpan.new
         end
       end
     end
