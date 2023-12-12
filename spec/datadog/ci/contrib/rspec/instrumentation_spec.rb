@@ -258,7 +258,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_module_span).not_to be_nil
 
       expect(test_module_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
-      expect(test_module_span.name).to eq(Datadog::CI::Contrib::RSpec::Ext::TEST_MODULE_NAME)
+      expect(test_module_span.name).to eq(test_command)
 
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
         Datadog::CI::Ext::AppTypes::TYPE_TEST

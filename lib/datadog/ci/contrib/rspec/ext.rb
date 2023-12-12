@@ -12,9 +12,6 @@ module Datadog
 
           ENV_ENABLED = "DD_TRACE_RSPEC_ENABLED"
 
-          # the resource for rspec module is "rspec.test_module.run"
-          TEST_MODULE_NAME = "run"
-
           # TODO: remove in 1.0
           ENV_OPERATION_NAME = "DD_TRACE_RSPEC_OPERATION_NAME"
           OPERATION_NAME = "rspec.example"

@@ -20,6 +20,14 @@ module Datadog
         CI.deactivate_test_session
       end
 
+      # Return the test session's name which is equal to test command used
+      # @return [String] the command for this test session.
+      def name
+        get_tag(Ext::Test::TAG_COMMAND)
+      end
+
+      # Return the test session tags that could be inherited by sub-spans
+      # @return [Hash] the tags to be inherited by sub-spans.
       def inheritable_tags
         return @inheritable_tags if defined?(@inheritable_tags)
 

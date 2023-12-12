@@ -26,7 +26,7 @@ module Datadog
                 service: configuration[:service_name]
               )
 
-              test_module = CI.start_test_module(Ext::TEST_MODULE_NAME)
+              test_module = CI.start_test_module(test_session.name)
 
               result = super
 
