@@ -39,8 +39,8 @@ module TracerHelpers
         end
       end
 
-      Datadog::CI.active_test.set_tag("test_owner", "my_team")
-      Datadog::CI.active_test.set_metric("memory_allocations", 16)
+      Datadog::CI.active_test.set_tag("test_owner", "my_team") if Datadog::CI.active_test
+      Datadog::CI.active_test.set_metric("memory_allocations", 16) if Datadog::CI.active_test
 
       set_result(test, result: result, exception: exception, skip_reason: skip_reason)
 

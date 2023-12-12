@@ -1,0 +1,37 @@
+module Datadog
+  module CI
+    module TestVisibility
+      class NullRecorder < Recorder
+        def initialize: (?untyped args) -> void
+
+        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+
+        def trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+
+        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+
+        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+
+        def active_test_session: () -> Datadog::CI::TestSession?
+
+        def active_test_module: () -> Datadog::CI::TestModule?
+
+        def active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
+
+        def active_test: () -> Datadog::CI::Test?
+
+        def active_span: () -> Datadog::CI::Span?
+
+        def deactivate_test: (Datadog::CI::Test test) -> void
+
+        def deactivate_test_session: () -> void
+
+        def deactivate_test_module: () -> void
+
+        def deactivate_test_suite: (String test_suite_name) -> void
+      end
+    end
+  end
+end
