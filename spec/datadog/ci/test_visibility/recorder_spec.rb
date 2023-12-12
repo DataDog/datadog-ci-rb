@@ -435,7 +435,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       it "returns a new CI test_session span" do
         expect(subject).to be_kind_of(Datadog::CI::TestSession)
-        expect(subject.name).to eq("test.session")
+        expect(subject.name).to eq(test_command)
         expect(subject.service).to eq(service)
         expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
       end
