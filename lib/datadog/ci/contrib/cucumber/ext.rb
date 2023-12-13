@@ -9,12 +9,14 @@ module Datadog
         module Ext
           APP = "cucumber"
           ENV_ENABLED = "DD_TRACE_CUCUMBER_ENABLED"
-          ENV_OPERATION_NAME = "DD_TRACE_CUCUMBER_OPERATION_NAME"
           FRAMEWORK = "cucumber"
           OPERATION_NAME = "cucumber.test"
           SERVICE_NAME = "cucumber"
-          STEP_SPAN_TYPE = "step"
           TEST_TYPE = "test"
+          STEP_SPAN_TYPE = "step"
+
+          # TODO: remove in 1.0
+          ENV_OPERATION_NAME = "DD_TRACE_CUCUMBER_OPERATION_NAME"
         end
       end
     end

@@ -9,9 +9,8 @@ module Datadog
       module Cucumber
         # Defines collection of instrumented Cucumber events
         class Formatter
-          attr_reader :config, :current_feature_span, :current_step_span
+          attr_reader :config
           private :config
-          private :current_feature_span, :current_step_span
 
           def initialize(config)
             @config = config
@@ -20,10 +19,48 @@ module Datadog
           end
 
           def bind_events(config)
+            config.on_event :test_run_started, &method(:on_test_run_started)
+            config.on_event :test_run_finished, &method(:on_test_run_finished)
             config.on_event :test_case_started, &method(:on_test_case_started)
             config.on_event :test_case_finished, &method(:on_test_case_finished)
             config.on_event :test_step_started, &method(:on_test_step_started)
             config.on_event :test_step_finished, &method(:on_test_step_finished)
+          end
+
+          def on_test_run_started(event)
+            p "TEST RUN!"
+            test_session = CI.start_test_session(
+              tags: {
+                CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
+                CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
+                CI::Ext::Test::TAG_TYPE => Ext::TEST_TYPE
+              },
+              service: configuration[:service_name]
+            )
+            CI.start_test_module(test_session.name)
+          end
+
+          def on_test_run_finished(event)
+            test_session = CI.active_test_session
+            test_module = CI.active_test_module
+
+            if test_session && test_module
+              if event.respond_to?(:success)
+                if event.success
+                  test_module.passed!
+                  test_session.passed!
+                else
+                  test_module.failed!
+                  test_session.failed!
+                end
+              else
+                # we need to track results manually if we are using cucumber < 8.0
+                test_module.passed!
+                test_session.passed!
+              end
+              test_module.finish
+              test_session.finish
+            end
           end
 
           def on_test_case_started(event)

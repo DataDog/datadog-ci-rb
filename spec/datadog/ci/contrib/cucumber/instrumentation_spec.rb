@@ -48,13 +48,64 @@ RSpec.describe "Cucumber formatter" do
       expect(scenario_span.resource).to eq("cucumber scenario")
       expect(scenario_span.service).to eq("jalapenos")
       expect(scenario_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+      expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
+      )
       expect(scenario_span.name).to eq("cucumber scenario")
+
       expect(step_span.resource).to eq("datadog")
 
       spans.each do |span|
         expect(span.get_tag(Datadog::Tracing::Metadata::Ext::Distributed::TAG_ORIGIN))
           .to eq(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
       end
+    end
+
+    it "creates test sesion span" do
+      expect(kernel).to receive(:exit).with(0)
+
+      do_execute
+
+      expect(test_session_span).not_to be_nil
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+        Datadog::CI::Contrib::Cucumber::Integration.version.to_s
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+        Datadog::CI::Contrib::Cucumber::Ext::TEST_TYPE
+      )
+      expect(test_session_span.service).to eq("jalapenos")
+    end
+
+    it "creates test module span" do
+      expect(kernel).to receive(:exit).with(0)
+
+      do_execute
+
+      expect(test_module_span).not_to be_nil
+      expect(test_module_span.name).to eq(test_session_span.name)
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+        Datadog::CI::Contrib::Cucumber::Integration.version.to_s
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+        Datadog::CI::Contrib::Cucumber::Ext::TEST_TYPE
+      )
+      expect(test_module_span.service).to eq("jalapenos")
+    end
+
+    it "connects scenario span to test session and test module" do
+      expect(kernel).to receive(:exit).with(0)
+
+      do_execute
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(test_module_span.name)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
     end
   end
 end
