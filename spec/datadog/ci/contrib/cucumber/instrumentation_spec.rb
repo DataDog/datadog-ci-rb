@@ -1,12 +1,33 @@
 require "stringio"
+require "fileutils"
 require "cucumber"
 
 RSpec.describe "Cucumber formatter" do
   extend ConfigurationHelpers
 
+  def do_execute
+    cli.execute!(existing_runtime)
+  end
+
   include_context "CI mode activated" do
     let(:integration_name) { :cucumber }
     let(:integration_options) { {service_name: "jalapenos"} }
+  end
+
+  let(:steps_file_id) { rand(1..2**64 - 1) }
+
+  before do
+    # Ruby loads any file at most once per process, but we need to load
+    # the cucumber step definitions multiple times for every Cucumber::Runtime we create
+    # So we add a random number to the file path to force Ruby to load it again
+    FileUtils.cp(
+      "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps.rb",
+      "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb"
+    )
+  end
+
+  after do
+    FileUtils.rm("spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb")
   end
 
   # Cucumber runtime setup
@@ -32,13 +53,9 @@ RSpec.describe "Cucumber formatter" do
     let(:args) do
       [
         "-r",
-        "spec/datadog/ci/contrib/cucumber/features/step_definitions",
+        "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb",
         "spec/datadog/ci/contrib/cucumber/features/passing.feature"
       ]
-    end
-
-    def do_execute
-      cli.execute!(existing_runtime)
     end
 
     it "creates spans for each scenario and step" do
@@ -132,5 +149,37 @@ RSpec.describe "Cucumber formatter" do
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(test_command)
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
     end
+  end
+
+  context "executing a failing test suite" do
+    let(:args) do
+      [
+        "-r",
+        "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb",
+        "spec/datadog/ci/contrib/cucumber/features/failing.feature"
+      ]
+    end
+
+    it "creates scenario span with failed state" do
+      expect(kernel).to receive(:exit).with(2)
+
+      do_execute
+
+      expect(first_test_span.name).to eq("cucumber failing scenario")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::FAIL
+      )
+    end
+
+    # it "creates test span with failed state" do
+    #   expect(kernel).to receive(:exit).with(2)
+
+    #   do_execute
+
+    #   expect(first_test_span.name).to eq("cucumber scenario")
+    #   expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+    #     Datadog::CI::Ext::Test::Status::FAIL
+    #   )
+    # end
   end
 end

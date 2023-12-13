@@ -1,4 +1,5 @@
-Given "datadog" do
+Then "datadog" do
+  true
 end
 
 Then "failure" do

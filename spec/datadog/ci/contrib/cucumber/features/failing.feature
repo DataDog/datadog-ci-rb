@@ -1,6 +1,5 @@
 Feature: Datadog integration
-
-  Scenario: cucumber scenario
+  Scenario: cucumber failing scenario
     Given datadog
     And datadog
-    Then datadog
+    Then failure
