@@ -32,6 +32,8 @@ module Datadog
 
         TAG_TEST_SUITE_ID: String
 
+        TEST_TYPE: String
+
         SPECIAL_TAGS: Array[String]
 
         INHERITABLE_TAGS: Array[String]

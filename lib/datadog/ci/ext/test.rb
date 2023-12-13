@@ -20,6 +20,8 @@ module Datadog
         TAG_TYPE = "test.type"
         TAG_COMMAND = "test.command"
 
+        TEST_TYPE = "test"
+
         # those tags are special and they are used to correlate tests with the test sessions, suites, and modules
         TAG_TEST_SESSION_ID = "_test.session_id"
         TAG_TEST_MODULE_ID = "_test.module_id"

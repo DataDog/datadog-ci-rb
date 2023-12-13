@@ -34,4 +34,16 @@ RSpec.describe Datadog::CI::TestSession do
       )
     end
   end
+
+  describe "#name" do
+    subject(:name) { ci_test_session.name }
+
+    let(:ci_test_session) { described_class.new(tracer_span) }
+
+    before do
+      allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_COMMAND).and_return("test command")
+    end
+
+    it { is_expected.to eq("test command") }
+  end
 end

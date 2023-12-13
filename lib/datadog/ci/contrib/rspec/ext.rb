@@ -7,13 +7,14 @@ module Datadog
         # RSpec integration constants
         # TODO: mark as `@public_api` when GA, to protect from resource and tag name changes.
         module Ext
-          APP = "rspec"
-          ENV_ENABLED = "DD_TRACE_RSPEC_ENABLED"
-          ENV_OPERATION_NAME = "DD_TRACE_RSPEC_OPERATION_NAME"
           FRAMEWORK = "rspec"
+          DEFAULT_SERVICE_NAME = "rspec"
+
+          ENV_ENABLED = "DD_TRACE_RSPEC_ENABLED"
+
+          # TODO: remove in 1.0
+          ENV_OPERATION_NAME = "DD_TRACE_RSPEC_OPERATION_NAME"
           OPERATION_NAME = "rspec.example"
-          SERVICE_NAME = "rspec"
-          TEST_TYPE = "test"
         end
       end
     end

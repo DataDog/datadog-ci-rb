@@ -108,11 +108,19 @@ module TracerHelpers
   end
 
   def first_test_span
-    spans.find { |span| span.type == "test" }
+    test_spans.first
   end
 
   def first_other_span
-    spans.find { |span| !Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span.type) }
+    tracer_spans.first
+  end
+
+  def test_spans
+    spans.filter { |span| span.type == "test" }
+  end
+
+  def tracer_spans
+    spans.filter { |span| !Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span.type) }
   end
 
   # Returns traces and caches it (similar to +let(:traces)+).

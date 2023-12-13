@@ -210,6 +210,7 @@ module Datadog
         def build_test(tracer_span, tags)
           test = Test.new(tracer_span)
           set_initial_tags(test, tags)
+          validate_test_suite_level_visibility_correctness(test)
           test
         end
 
@@ -286,6 +287,31 @@ module Datadog
 
         def null_span
           @null_span ||= NullSpan.new
+        end
+
+        def validate_test_suite_level_visibility_correctness(test)
+          return unless test_suite_level_visibility_enabled
+
+          if test.test_suite_id.nil?
+            Datadog.logger.debug do
+              "Test [#{test.name}] does not have a test suite associated with it. " \
+              "Expected test suite [#{test.test_suite_name}] to be running."
+            end
+          end
+
+          if test.test_module_id.nil?
+            Datadog.logger.debug do
+              "Test [#{test.name}] does not have a test module associated with it. " \
+              "Make sure that there is a test module running within a session."
+            end
+          end
+
+          if test.test_session_id.nil?
+            Datadog.logger.debug do
+              "Test [#{test.name}] does not have a test session associated with it. " \
+              "Make sure that there is a test session running."
+            end
+          end
         end
       end
     end

@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module Contrib
+      module RSpec
+        module Runner
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods
+            include ::RSpec::Core::Runner
+
+            def run_specs: (untyped example_groups) -> untyped
+
+            private
+
+            def configuration: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end

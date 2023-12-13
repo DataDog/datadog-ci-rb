@@ -11,3 +11,18 @@ module RSpec::Core::Example
   def description: () -> String
   def full_description: () -> String
 end
+
+module RSpec::Core::Runner
+  def run_specs: (untyped example_groups) -> untyped
+end
+
+module RSpec::Core::ExampleGroup
+  module ClassMethods
+    def run: () -> bool
+    def top_level?: () -> bool
+    def file_path: () -> String
+  end
+end
+
+class RSpec::Core::NullReporter
+end
