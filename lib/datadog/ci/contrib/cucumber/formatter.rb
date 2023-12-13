@@ -28,7 +28,6 @@ module Datadog
           end
 
           def on_test_run_started(event)
-            p "TEST RUN!"
             test_session = CI.start_test_session(
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,

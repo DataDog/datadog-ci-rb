@@ -28,8 +28,14 @@ RSpec.describe "Cucumber formatter" do
     end
   end
 
-  context "executing a test suite" do
-    let(:args) { ["spec/datadog/ci/contrib/cucumber/cucumber.features"] }
+  context "executing a passing test suite" do
+    let(:args) do
+      [
+        "-r",
+        "spec/datadog/ci/contrib/cucumber/features/step_definitions",
+        "spec/datadog/ci/contrib/cucumber/features/passing.feature"
+      ]
+    end
 
     def do_execute
       cli.execute!(existing_runtime)
@@ -52,6 +58,7 @@ RSpec.describe "Cucumber formatter" do
         Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
       )
       expect(scenario_span.name).to eq("cucumber scenario")
+      # expect(scenario_span)
 
       expect(step_span.resource).to eq("datadog")
 
