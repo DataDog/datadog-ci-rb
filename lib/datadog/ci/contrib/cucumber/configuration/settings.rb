@@ -21,7 +21,7 @@ module Datadog
 
             option :service_name do |o|
               o.type :string
-              o.default { Datadog.configuration.service_without_fallback || Ext::SERVICE_NAME }
+              o.default { Datadog.configuration.service_without_fallback || Ext::DEFAULT_SERVICE_NAME }
             end
 
             # @deprecated Will be removed in 1.0
