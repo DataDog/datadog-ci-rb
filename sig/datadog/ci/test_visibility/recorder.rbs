@@ -3,7 +3,6 @@ module Datadog
     module TestVisibility
       class Recorder
         @test_suite_level_visibility_enabled: bool
-        @enabled: bool
 
         @environment_tags: Hash[String, String]
         @local_context: Datadog::CI::TestVisibility::Context::Local
@@ -13,9 +12,8 @@ module Datadog
 
         attr_reader environment_tags: Hash[String, String]
         attr_reader test_suite_level_visibility_enabled: bool
-        attr_reader enabled: bool
 
-        def initialize: (?enabled: bool, ?test_suite_level_visibility_enabled: bool) -> void
+        def initialize: (?test_suite_level_visibility_enabled: bool) -> void
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
@@ -45,11 +43,11 @@ module Datadog
 
         def deactivate_test_suite: (String test_suite_name) -> void
 
+        private
+
         def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
         def set_trace_origin: (Datadog::Tracing::TraceOperation trace) -> untyped
-
-        private
 
         def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
 

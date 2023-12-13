@@ -7,6 +7,7 @@ require_relative "../ext/transport"
 require_relative "../ext/settings"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/recorder"
+require_relative "../test_visibility/null_recorder"
 require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
@@ -21,14 +22,12 @@ module Datadog
 
         def initialize(settings)
           # Activate CI mode if enabled
-          activate_ci!(settings) if settings.ci.enabled
+          if settings.ci.enabled
+            activate_ci!(settings)
+          else
+            @ci_recorder = TestVisibility::NullRecorder.new
+          end
 
-          @ci_recorder = TestVisibility::Recorder.new(
-            enabled: settings.ci.enabled,
-            test_suite_level_visibility_enabled: settings.ci.experimental_test_suite_level_visibility_enabled
-          )
-
-          # Initialize normally
           super
         end
 
@@ -70,6 +69,10 @@ module Datadog
           end
 
           settings.tracing.test_mode.writer_options = writer_options
+
+          @ci_recorder = TestVisibility::Recorder.new(
+            test_suite_level_visibility_enabled: settings.ci.experimental_test_suite_level_visibility_enabled
+          )
         end
 
         def can_use_evp_proxy?(settings, agent_settings)

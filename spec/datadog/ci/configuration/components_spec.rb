@@ -93,6 +93,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(Datadog.logger)
             .to receive(:error)
 
+          allow(Datadog::CI::Ext::Environment)
+            .to receive(:tags).and_return({})
+
           components
         end
 
@@ -105,6 +108,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
         context "is enabled" do
           let(:enabled) { true }
+
+          it "collects environment tags" do
+            expect(Datadog::CI::Ext::Environment).to have_received(:tags).with(ENV)
+          end
 
           context "when #experimental_test_suite_level_visibility_enabled" do
             context "is false" do
@@ -236,6 +243,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
           it do
             expect(settings.tracing.test_mode)
               .to_not have_received(:writer_options=)
+          end
+
+          it "does not collect tags" do
+            expect(Datadog::CI::Ext::Environment).not_to have_received(:tags)
           end
         end
       end

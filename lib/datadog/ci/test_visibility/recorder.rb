@@ -25,13 +25,12 @@ module Datadog
       # Common behavior for CI tests
       # Note: this class has too many responsibilities and should be split into multiple classes
       class Recorder
-        attr_reader :environment_tags, :test_suite_level_visibility_enabled, :enabled
+        attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
-        def initialize(enabled: true, test_suite_level_visibility_enabled: false)
-          @enabled = enabled
-          @test_suite_level_visibility_enabled = enabled && test_suite_level_visibility_enabled
+        def initialize(test_suite_level_visibility_enabled: false)
+          @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
-          @environment_tags = @enabled ? Ext::Environment.tags(ENV).freeze : {}
+          @environment_tags = Ext::Environment.tags(ENV).freeze
           @local_context = Context::Local.new
           @global_context = Context::Global.new
         end
@@ -83,8 +82,6 @@ module Datadog
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
-          return skip_tracing(block) unless enabled
-
           set_inherited_globals(tags)
           set_session_context(tags)
           set_module_context(tags)
@@ -118,8 +115,6 @@ module Datadog
         end
 
         def trace(span_type, span_name, tags: {}, &block)
-          return skip_tracing(block) unless enabled
-
           span_options = build_span_options(
             nil, # service name is completely optional for custom spans
             span_type,
