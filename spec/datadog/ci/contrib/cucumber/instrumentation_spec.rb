@@ -44,10 +44,6 @@ RSpec.describe "Cucumber formatter" do
     end
   end
 
-  def run_cucumber_tests
-    cli.execute!(existing_runtime)
-  end
-
   let(:expected_test_run_code) { 0 }
 
   before do
@@ -61,7 +57,8 @@ RSpec.describe "Cucumber formatter" do
 
     expect(Datadog::CI::Ext::Environment).to receive(:tags).never
     expect(kernel).to receive(:exit).with(expected_test_run_code)
-    run_cucumber_tests
+
+    cli.execute!(existing_runtime)
   end
 
   after do
