@@ -10,10 +10,10 @@ RSpec.describe "Cucumber formatter" do
     let(:integration_options) { {service_name: "jalapenos"} }
   end
 
-  let(:steps_file_id) { rand(1..2**64 - 1) }
+  let(:run_id) { rand(1..2**64 - 1) }
   let(:steps_file_definition_path) { "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps.rb" }
   let(:steps_file_for_run_path) do
-    "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb"
+    "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{run_id}.rb"
   end
 
   # Cucumber runtime setup
