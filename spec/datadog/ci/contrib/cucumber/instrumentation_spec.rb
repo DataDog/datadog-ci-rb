@@ -15,30 +15,43 @@ RSpec.describe "Cucumber formatter" do
   end
 
   let(:steps_file_id) { rand(1..2**64 - 1) }
+  let(:steps_file_definition_path) { "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps.rb" }
+  let(:steps_file_for_run_path) do
+    "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb"
+  end
 
   before do
     # Ruby loads any file at most once per process, but we need to load
     # the cucumber step definitions multiple times for every Cucumber::Runtime we create
     # So we add a random number to the file path to force Ruby to load it again
     FileUtils.cp(
-      "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps.rb",
-      "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb"
+      steps_file_definition_path,
+      steps_file_for_run_path
     )
   end
 
   after do
-    FileUtils.rm("spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb")
+    FileUtils.rm(steps_file_for_run_path)
   end
 
   # Cucumber runtime setup
   let(:existing_runtime) { Cucumber::Runtime.new(runtime_options) }
   let(:runtime_options) { {} }
   # CLI configuration
-  let(:args) { [] }
+  let(:feature_file_to_run) {}
+  let(:features_path) { "spec/datadog/ci/contrib/cucumber/features/#{feature_file_to_run}" }
+  let(:args) do
+    [
+      "-r",
+      steps_file_for_run_path,
+      features_path
+    ]
+  end
   let(:stdin) { StringIO.new }
   let(:stdout) { StringIO.new }
   let(:stderr) { StringIO.new }
   let(:kernel) { double(:kernel) }
+
   let(:cli) do
     cucumber_8 = Gem::Version.new("8.0.0")
 
@@ -50,13 +63,7 @@ RSpec.describe "Cucumber formatter" do
   end
 
   context "executing a passing test suite" do
-    let(:args) do
-      [
-        "-r",
-        "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb",
-        "spec/datadog/ci/contrib/cucumber/features/passing.feature"
-      ]
-    end
+    let(:feature_file_to_run) { "passing.feature" }
 
     it "creates spans for each scenario and step" do
       expect(Datadog::CI::Ext::Environment).to receive(:tags).never
@@ -152,13 +159,7 @@ RSpec.describe "Cucumber formatter" do
   end
 
   context "executing a failing test suite" do
-    let(:args) do
-      [
-        "-r",
-        "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{steps_file_id}.rb",
-        "spec/datadog/ci/contrib/cucumber/features/failing.feature"
-      ]
-    end
+    let(:feature_file_to_run) { "failing.feature" }
 
     it "creates scenario span with failed state" do
       expect(kernel).to receive(:exit).with(2)
