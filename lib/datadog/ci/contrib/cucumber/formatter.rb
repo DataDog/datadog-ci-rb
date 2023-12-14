@@ -14,6 +14,7 @@ module Datadog
 
           def initialize(config)
             @config = config
+            @failed_tests_count = 0
 
             bind_events(config)
           end
@@ -40,25 +41,10 @@ module Datadog
           end
 
           def on_test_run_finished(event)
-            test_session = CI.active_test_session
-            test_module = CI.active_test_module
-
-            if test_session && test_module
-              if event.respond_to?(:success)
-                if event.success
-                  test_module.passed!
-                  test_session.passed!
-                else
-                  test_module.failed!
-                  test_session.failed!
-                end
-              else
-                # we need to track results manually if we are using cucumber < 8.0
-                test_module.passed!
-                test_session.passed!
-              end
-              test_module.finish
-              test_session.finish
+            if event.respond_to?(:success)
+              finish_session(event.success)
+            else
+              finish_session(@failed_tests_count.zero?)
             end
           end
 
@@ -79,15 +65,11 @@ module Datadog
             test_span = CI.active_test
             return if test_span.nil?
 
-            if event.result.skipped?
-              test_span.skipped!
-            elsif event.result.ok?
-              test_span.passed!
-            elsif event.result.failed?
-              test_span.failed!
-            end
+            # we need to track test results manually if we are using cucumber < 8.0 because
+            # TestRunFinished event does not have a success attribute before 8.0
+            @failed_tests_count += 1 if event.result.failed?
 
-            test_span.finish
+            finish_test(test_span, event.result)
           end
 
           def on_test_step_started(event)
@@ -98,18 +80,39 @@ module Datadog
             current_step_span = CI.active_span(Ext::STEP_SPAN_TYPE)
             return if current_step_span.nil?
 
-            if event.result.skipped?
-              current_step_span.skipped!
-            elsif event.result.ok?
-              current_step_span.passed!
-            elsif event.result.failed?
-              current_step_span.failed!(exception: event.result.exception)
-            end
-
-            current_step_span.finish
+            finish_test(current_step_span, event.result)
           end
 
           private
+
+          def finish_test(span, result)
+            if result.skipped?
+              span.skipped!
+            elsif result.ok?
+              span.passed!
+            elsif result.failed?
+              span.failed!(exception: result.exception)
+            end
+            span.finish
+          end
+
+          def finish_session(result)
+            test_session = CI.active_test_session
+            test_module = CI.active_test_module
+
+            return unless test_session && test_module
+
+            if result
+              test_module.passed!
+              test_session.passed!
+            else
+              test_module.failed!
+              test_session.failed!
+            end
+
+            test_module.finish
+            test_session.finish
+          end
 
           def configuration
             Datadog.configuration.ci[:cucumber]

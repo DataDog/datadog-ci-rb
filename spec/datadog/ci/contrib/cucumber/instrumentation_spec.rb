@@ -172,15 +172,28 @@ RSpec.describe "Cucumber formatter" do
       )
     end
 
-    # it "creates test span with failed state" do
-    #   expect(kernel).to receive(:exit).with(2)
+    it "creates step span with failed state" do
+      expect(kernel).to receive(:exit).with(2)
 
-    #   do_execute
+      do_execute
 
-    #   expect(first_test_span.name).to eq("cucumber scenario")
-    #   expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-    #     Datadog::CI::Ext::Test::Status::FAIL
-    #   )
-    # end
+      step_span = spans.find { |s| s.resource == "failure" }
+      expect(step_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::FAIL
+      )
+    end
+
+    it "creates test session and test module spans with failed state" do
+      expect(kernel).to receive(:exit).with(2)
+
+      do_execute
+
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::FAIL
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::FAIL
+      )
+    end
   end
 end

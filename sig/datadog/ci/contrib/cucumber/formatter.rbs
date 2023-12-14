@@ -4,6 +4,7 @@ module Datadog
       module Cucumber
         class Formatter
           private
+          @failed_tests_count: Integer
 
           attr_reader config: untyped
 
@@ -26,6 +27,10 @@ module Datadog
           def on_test_step_finished: (untyped event) -> (nil | untyped)
 
           private
+
+          def finish_session: (bool result) -> void
+
+          def finish_test: (Datadog::CI::Span test, Cucumber::Core::Test::Result result) -> void
 
           def configuration: () -> untyped
         end
