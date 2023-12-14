@@ -5,6 +5,8 @@ module Datadog
         class Formatter
           private
           @failed_tests_count: Integer
+          @current_test_suite: Datadog::CI::Span?
+          @failed_tests_per_test_suite: Hash[String, Integer]
 
           attr_reader config: untyped
 
@@ -27,6 +29,12 @@ module Datadog
           def on_test_step_finished: (untyped event) -> (nil | untyped)
 
           private
+
+          def start_test_suite: (String test_suite_name) -> void
+
+          def finish_current_test_suite: () -> void
+
+          def same_test_suite_as_current?: (String test_suite_name) -> bool
 
           def finish_session: (bool result) -> void
 

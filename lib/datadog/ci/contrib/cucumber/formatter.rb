@@ -16,6 +16,9 @@ module Datadog
             @config = config
             @failed_tests_count = 0
 
+            @current_test_suite = nil
+            @failed_tests_per_test_suite = Hash.new(0)
+
             bind_events(config)
           end
 
@@ -49,9 +52,13 @@ module Datadog
           end
 
           def on_test_case_started(event)
+            test_suite_name = event.test_case.location.file
+
+            start_test_suite(test_suite_name) unless same_test_suite_as_current?(test_suite_name)
+
             CI.start_test(
               event.test_case.name,
-              event.test_case.location.file,
+              test_suite_name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                 CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
@@ -65,9 +72,15 @@ module Datadog
             test_span = CI.active_test
             return if test_span.nil?
 
-            # we need to track test results manually if we are using cucumber < 8.0 because
+            # we need to track overall test failures manually if we are using cucumber < 8.0 because
             # TestRunFinished event does not have a success attribute before 8.0
-            @failed_tests_count += 1 if event.result.failed?
+            # In order to keep information about whether test suite failed or passed we need to
+            # track the number of failed tests per test suite.
+            if event.result.failed?
+              @failed_tests_count += 1
+              test_suite = @current_test_suite
+              @failed_tests_per_test_suite[test_suite.name] += 1 if test_suite
+            end
 
             finish_test(test_span, event.result)
           end
@@ -97,6 +110,8 @@ module Datadog
           end
 
           def finish_session(result)
+            finish_current_test_suite
+
             test_session = CI.active_test_session
             test_module = CI.active_test_module
 
@@ -112,6 +127,31 @@ module Datadog
 
             test_module.finish
             test_session.finish
+          end
+
+          def start_test_suite(test_suite_name)
+            finish_current_test_suite
+
+            @current_test_suite = CI.start_test_suite(test_suite_name)
+          end
+
+          def finish_current_test_suite
+            test_suite = @current_test_suite
+            return unless test_suite
+
+            if @failed_tests_per_test_suite[test_suite.name].zero?
+              test_suite.passed!
+            else
+              test_suite.failed!
+            end
+            test_suite.finish
+          end
+
+          def same_test_suite_as_current?(test_suite_name)
+            test_suite = @current_test_suite
+            return false unless test_suite
+
+            test_suite.name == test_suite_name
           end
 
           def configuration

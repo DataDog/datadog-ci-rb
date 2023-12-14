@@ -147,6 +147,29 @@ RSpec.describe "Cucumber formatter" do
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
     end
 
+    it "creates test suite span" do
+      expect(kernel).to receive(:exit).with(0)
+
+      do_execute
+
+      expect(test_suite_span).not_to be_nil
+      expect(test_suite_span.name).to eq(features_path)
+      expect(test_suite_span.service).to eq("jalapenos")
+      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
+        Datadog::CI::Ext::AppTypes::TYPE_TEST
+      )
+      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
+      )
+      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+        Datadog::CI::Contrib::Cucumber::Integration.version.to_s
+      )
+      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+        Datadog::CI::Ext::Test::TEST_TYPE
+      )
+      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+    end
+
     it "connects scenario span to test session and test module" do
       expect(kernel).to receive(:exit).with(0)
 
@@ -155,13 +178,15 @@ RSpec.describe "Cucumber formatter" do
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(test_command)
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_span.name)
     end
   end
 
   context "executing a failing test suite" do
     let(:feature_file_to_run) { "failing.feature" }
 
-    it "creates scenario span with failed state" do
+    it "creates all CI spans with failed state" do
       expect(kernel).to receive(:exit).with(2)
 
       do_execute
@@ -170,23 +195,17 @@ RSpec.describe "Cucumber formatter" do
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::FAIL
       )
-    end
-
-    it "creates step span with failed state" do
-      expect(kernel).to receive(:exit).with(2)
-
-      do_execute
 
       step_span = spans.find { |s| s.resource == "failure" }
+      expect(step_span.name).to eq("failure")
       expect(step_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::FAIL
       )
-    end
 
-    it "creates test session and test module spans with failed state" do
-      expect(kernel).to receive(:exit).with(2)
-
-      do_execute
+      expect(test_suite_span.name).to eq(features_path)
+      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::FAIL
+      )
 
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::FAIL
