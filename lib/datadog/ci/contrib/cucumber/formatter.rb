@@ -72,9 +72,10 @@ module Datadog
             test_span = CI.active_test
             return if test_span.nil?
 
-            # we need to track overall test failures manually if we are using cucumber < 8.0 because
-            # TestRunFinished event does not have a success attribute before 8.0
-            # In order to keep information about whether test suite failed or passed we need to
+            # We need to track overall test failures manually if we are using cucumber < 8.0 because
+            # TestRunFinished event does not have a success attribute before 8.0.
+            #
+            # To track whether test suite failed or passed we need to
             # track the number of failed tests per test suite.
             if event.result.failed?
               @failed_tests_count += 1

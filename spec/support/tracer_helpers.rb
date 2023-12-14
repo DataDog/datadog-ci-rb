@@ -104,7 +104,7 @@ module TracerHelpers
   end
 
   def test_suite_span
-    spans.find { |span| span.type == "test_suite_end" }
+    test_suite_spans.first
   end
 
   def first_test_span
@@ -117,6 +117,10 @@ module TracerHelpers
 
   def test_spans
     spans.filter { |span| span.type == "test" }
+  end
+
+  def test_suite_spans
+    spans.filter { |span| span.type == "test_suite_end" }
   end
 
   def tracer_spans
