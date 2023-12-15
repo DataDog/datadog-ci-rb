@@ -4,18 +4,21 @@ module Datadog
       module Cucumber
         class Formatter
           private
+          @failed_tests_count: Integer
+          @current_test_suite: Datadog::CI::Span?
+          @failed_tests_in_current_test_suite: Integer
 
           attr_reader config: untyped
-
-          attr_reader current_feature_span: untyped
-
-          attr_reader current_step_span: untyped
 
           public
 
           def initialize: (untyped config) -> void
 
           def bind_events: (untyped config) -> untyped
+
+          def on_test_run_started: (untyped event) -> untyped
+
+          def on_test_run_finished: (untyped event) -> untyped
 
           def on_test_case_started: (untyped event) -> untyped
 
@@ -26,6 +29,16 @@ module Datadog
           def on_test_step_finished: (untyped event) -> (nil | untyped)
 
           private
+
+          def start_test_suite: (String test_suite_name) -> void
+
+          def finish_current_test_suite: () -> void
+
+          def same_test_suite_as_current?: (String test_suite_name) -> bool
+
+          def finish_session: (bool result) -> void
+
+          def finish_test: (Datadog::CI::Span test, Cucumber::Core::Test::Result result) -> void
 
           def configuration: () -> untyped
         end

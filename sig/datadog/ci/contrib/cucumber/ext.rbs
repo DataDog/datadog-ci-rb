@@ -3,8 +3,6 @@ module Datadog
     module Contrib
       module Cucumber
         module Ext
-          APP: String
-
           ENV_ENABLED: String
 
           ENV_OPERATION_NAME: String
@@ -13,11 +11,9 @@ module Datadog
 
           OPERATION_NAME: String
 
-          SERVICE_NAME: String
+          DEFAULT_SERVICE_NAME: String
 
           STEP_SPAN_TYPE: String
-
-          TEST_TYPE: String
         end
       end
     end

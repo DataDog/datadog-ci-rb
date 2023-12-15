@@ -1,6 +1,19 @@
 module Cucumber
 end
 
+module Cucumber::Core
+end
+
+module Cucumber::Core::Test
+end
+
 class Cucumber::Runtime
   def formatters: () -> untyped
+end
+
+class Cucumber::Core::Test::Result
+  def failed?: () -> bool
+  def ok?: () -> bool
+  def skipped?: () -> bool
+  def exception: () -> untyped
 end
