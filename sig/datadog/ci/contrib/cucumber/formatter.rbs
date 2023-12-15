@@ -6,7 +6,7 @@ module Datadog
           private
           @failed_tests_count: Integer
           @current_test_suite: Datadog::CI::Span?
-          @failed_tests_per_test_suite: Hash[String, Integer]
+          @failed_tests_in_current_test_suite: Integer
 
           attr_reader config: untyped
 
