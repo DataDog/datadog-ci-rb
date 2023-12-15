@@ -40,5 +40,7 @@ Gem::Specification.new do |spec|
 
   spec.require_paths = ["lib"]
 
+  # IMPORTANT: UNCOMMENT BEFORE MERGE WHEN ddtrace 2.0 is released
+  # spec.add_dependency "ddtrace", "~> 2.0"
   spec.add_dependency "msgpack"
 end

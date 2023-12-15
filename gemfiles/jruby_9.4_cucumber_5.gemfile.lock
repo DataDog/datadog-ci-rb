@@ -1,3 +1,15 @@
+GIT
+  remote: https://github.com/DataDog/dd-trace-rb.git
+  revision: 4dbbdb9fe816b228d6ca5b3f8123471a7fef5bec
+  branch: 2.0
+  specs:
+    ddtrace (1.18.0)
+      datadog-ci (~> 0.5.0)
+      debase-ruby_core_source (= 3.2.3)
+      libdatadog (~> 5.0.0.1.0)
+      libddwaf (~> 1.14.0.0.0)
+      msgpack
+
 PATH
   remote: ..
   specs:
@@ -52,12 +64,6 @@ GEM
       cucumber-core (~> 8.0, >= 8.0.1)
       cucumber-cucumber-expressions (~> 10.3, >= 10.3.0)
       cucumber-messages (~> 13.0, >= 13.0.1)
-    ddtrace (1.18.0)
-      datadog-ci (~> 0.5.0)
-      debase-ruby_core_source (= 3.2.3)
-      libdatadog (~> 5.0.0.1.0)
-      libddwaf (~> 1.14.0.0.0)
-      msgpack
     debase-ruby_core_source (3.2.3)
     diff-lcs (1.5.0)
     docile (1.4.0)
@@ -172,7 +178,7 @@ DEPENDENCIES
   climate_control
   cucumber (~> 5)
   datadog-ci!
-  ddtrace
+  ddtrace!
   os
   pimpmychangelog (>= 0.1.2)
   pry

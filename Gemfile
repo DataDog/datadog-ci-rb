@@ -5,8 +5,8 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in datadog-ci.gemspec
 gemspec
 
-# needed to run tests, always present at runtime
-gem "ddtrace"
+# test compatibility with 2.0 branch of dd-trace-rb
+gem "ddtrace", github: "DataDog/dd-trace-rb", branch: "2.0"
 
 gem "pry"
 gem "rake"
