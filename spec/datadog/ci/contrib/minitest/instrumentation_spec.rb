@@ -2,7 +2,7 @@ require "time"
 require "minitest"
 require "minitest/spec"
 
-RSpec.describe "Minitest hooks" do
+RSpec.describe "Minitest instrumentation" do
   include_context "CI mode activated" do
     let(:integration_name) { :minitest }
     let(:integration_options) { {service_name: "ltest"} }
@@ -34,7 +34,7 @@ RSpec.describe "Minitest hooks" do
       "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
     )
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Contrib::Minitest::Ext::TEST_TYPE)
+    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK)
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
       Datadog::CI::Contrib::Minitest::Integration.version.to_s
@@ -350,6 +350,82 @@ RSpec.describe "Minitest hooks" do
       klass.new(:test_foo).run
 
       expect_skip
+    end
+  end
+
+  context "run minitest suite" do
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class SomeTest < Minitest::Test
+        def test_pass
+          assert true
+        end
+      end
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    it "creates a test session span" do
+      expect(test_session_span).not_to be_nil
+      expect(test_session_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
+        Datadog::CI::Ext::AppTypes::TYPE_TEST
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+        Datadog::CI::Ext::Test::TEST_TYPE
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+        Datadog::CI::Contrib::Minitest::Integration.version.to_s
+      )
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::PASS
+      )
+    end
+
+    it "creates a test module span" do
+      expect(test_module_span).not_to be_nil
+
+      expect(test_module_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+      expect(test_module_span.name).to eq(test_command)
+
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
+        Datadog::CI::Ext::AppTypes::TYPE_TEST
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+        Datadog::CI::Ext::Test::TEST_TYPE
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+        Datadog::CI::Contrib::Minitest::Integration.version.to_s
+      )
+      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::PASS
+      )
+    end
+
+    it "creates test span and connects it to the session and module" do
+      expect(test_spans.count).to eq(1)
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+        Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
+      )
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+        Datadog::CI::Contrib::Minitest::Integration.version.to_s
+      )
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::PASS
+      )
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
     end
   end
 end

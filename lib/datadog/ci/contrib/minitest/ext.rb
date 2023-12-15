@@ -7,13 +7,15 @@ module Datadog
         # Minitest integration constants
         # TODO: mark as `@public_api` when GA, to protect from resource and tag name changes.
         module Ext
-          APP = "minitest"
           ENV_ENABLED = "DD_TRACE_MINITEST_ENABLED"
-          ENV_OPERATION_NAME = "DD_TRACE_MINITEST_OPERATION_NAME"
+
           FRAMEWORK = "minitest"
+
+          DEFAULT_SERVICE_NAME = "minitest"
+
+          # TODO: remove in 1.0
+          ENV_OPERATION_NAME = "DD_TRACE_MINITEST_OPERATION_NAME"
           OPERATION_NAME = "minitest.test"
-          SERVICE_NAME = "minitest"
-          TEST_TYPE = "test"
         end
       end
     end

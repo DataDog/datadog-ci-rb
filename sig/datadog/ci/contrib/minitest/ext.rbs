@@ -3,8 +3,6 @@ module Datadog
     module Contrib
       module Minitest
         module Ext
-          APP: String
-
           ENV_ENABLED: String
 
           ENV_OPERATION_NAME: String
@@ -13,9 +11,7 @@ module Datadog
 
           OPERATION_NAME: String
 
-          SERVICE_NAME: String
-
-          TEST_TYPE: String
+          DEFAULT_SERVICE_NAME: String
         end
       end
     end

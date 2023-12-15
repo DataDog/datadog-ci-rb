@@ -1,0 +1,6 @@
+# as rbs misses delegator support, we make WeakRef a subclass of CompositeReporter
+# for our current use case
+class WeakRef < Minitest::CompositeReporter
+  def initialize: (untyped obj) -> untyped
+  def weakref_alive?: () -> bool
+end
