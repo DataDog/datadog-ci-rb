@@ -4,7 +4,6 @@ target :lib do
   check "lib"
 
   ignore "lib/datadog/ci/configuration/settings.rb"
-  ignore "lib/datadog/ci/contrib/minitest/plugin.rb"
 
   library "pathname"
   library "json"

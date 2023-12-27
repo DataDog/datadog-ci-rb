@@ -14,6 +14,35 @@ module Datadog
             base.extend(ClassMethods)
           end
 
+          class DatadogReporter < ::Minitest::AbstractReporter
+            def initialize(minitest_reporter)
+              # This creates circular reference as minitest_reporter also holds reference to DatadogReporter.
+              # To make sure that minitest_reporter can be garbage collected, we use WeakRef.
+              @reporter = WeakRef.new(minitest_reporter)
+            end
+
+            def report
+              active_test_session = CI.active_test_session
+              active_test_module = CI.active_test_module
+
+              return unless @reporter.weakref_alive?
+              return if active_test_session.nil? || active_test_module.nil?
+
+              if @reporter.passed?
+                active_test_module.passed!
+                active_test_session.passed!
+              else
+                active_test_module.failed!
+                active_test_session.failed!
+              end
+
+              active_test_module.finish
+              active_test_session.finish
+
+              nil
+            end
+          end
+
           module ClassMethods
             def plugin_datadog_ci_init(*)
               return unless datadog_configuration[:enabled]
@@ -28,36 +57,7 @@ module Datadog
               )
               CI.start_test_module(test_session.name)
 
-              # we create dynamic class here to avoid referencing ::Minitest constant
-              # in datadog-ci class definitions because Minitest is not always available
-              datadog_reporter_klass = Class.new(::Minitest::AbstractReporter) do
-                def initialize(reporter)
-                  # This creates circular reference as reporter holds reference to this reporter.
-                  # To make sure that reporter can be garbage collected, we use WeakRef.
-                  @reporter = WeakRef.new(reporter)
-                end
-
-                def report
-                  active_test_session = CI.active_test_session
-                  active_test_module = CI.active_test_module
-
-                  return unless @reporter.weakref_alive?
-                  return if active_test_session.nil? || active_test_module.nil?
-
-                  if @reporter.passed?
-                    active_test_module.passed!
-                    active_test_session.passed!
-                  else
-                    active_test_module.failed!
-                    active_test_session.failed!
-                  end
-
-                  active_test_module.finish
-                  active_test_session.finish
-                end
-              end
-
-              reporter.reporters << datadog_reporter_klass.new(reporter)
+              reporter.reporters << DatadogReporter.new(reporter)
             end
 
             private

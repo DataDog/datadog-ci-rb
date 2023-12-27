@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "hooks"
-require_relative "plugin"
 
 module Datadog
   module CI
@@ -18,6 +17,8 @@ module Datadog
           end
 
           def patch
+            require_relative "plugin"
+
             ::Minitest::Test.include(Hooks)
             ::Minitest.include(Plugin)
 

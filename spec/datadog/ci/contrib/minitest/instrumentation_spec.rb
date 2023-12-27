@@ -53,7 +53,7 @@ RSpec.describe "Minitest instrumentation" do
       end
 
       num_tests.times do |i|
-        define_method("test_#{i}") {}
+        define_method(:"test_#{i}") {}
       end
     end
 
