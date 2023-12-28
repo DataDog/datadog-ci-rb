@@ -516,5 +516,83 @@ RSpec.describe "Minitest instrumentation" do
         expect(test_session_ids.first).to eq(test_session_span.id.to_s)
       end
     end
+
+    context "using parallel executor" do
+      before(:context) do
+        require "minitest/hell"
+
+        Minitest::Runnable.reset
+
+        class ParallelTest < Minitest::Test
+          parallelize_me!
+        end
+
+        class TestA < ParallelTest
+          def test_a_1
+            Datadog::CI.active_test.set_tag("minitest_thread", Thread.current.object_id)
+            sleep 0.1
+          end
+
+          def test_a_2
+            Datadog::CI.active_test.set_tag("minitest_thread", Thread.current.object_id)
+            sleep 0.1
+          end
+        end
+
+        class TestB < ParallelTest
+          def test_b_1
+            Datadog::CI.active_test.set_tag("minitest_thread", Thread.current.object_id)
+            sleep 0.1
+          end
+
+          def test_b_2
+            Datadog::CI.active_test.set_tag("minitest_thread", Thread.current.object_id)
+            sleep 0.1
+          end
+        end
+      end
+
+      it "traces all tests correctly" do
+        test_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_NAME) }.sort
+        test_threads = test_spans.map { |span| span.get_tag("minitest_thread") }.uniq
+
+        expect(test_names).to eq(
+          [
+            "TestA#test_a_1",
+            "TestA#test_a_2",
+            "TestB#test_b_1",
+            "TestB#test_b_2"
+          ]
+        )
+
+        # make sure that tests were executed concurrently
+        # note that this test could be flaky
+        expect(test_threads.count).to be > 1
+      end
+
+      it "connects tests to a single test session and a single test module" do
+        test_session_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID) }.uniq
+        test_module_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID) }.uniq
+
+        expect(test_session_ids.count).to eq(1)
+        expect(test_session_ids.first).to eq(test_session_span.id.to_s)
+
+        expect(test_module_ids.count).to eq(1)
+        expect(test_module_ids.first).to eq(test_module_span.id.to_s)
+      end
+
+      it "correctly tracks test and session durations" do
+        test_session_duration = test_session_span.duration
+
+        test_durations_sum = test_spans.map { |span| span.duration }.sum
+        # with parallel execution test durations sum should be greater than test session duration
+        expect(test_durations_sum).to be > test_session_duration
+
+        # but each individual test duration should be less than test session duration
+        test_spans.each do |span|
+          expect(span.duration).to be < test_session_duration
+        end
+      end
+    end
   end
 end
