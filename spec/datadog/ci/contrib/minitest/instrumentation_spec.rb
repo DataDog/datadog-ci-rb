@@ -1,6 +1,13 @@
 require "time"
+
 require "minitest"
 require "minitest/spec"
+
+# minitest adds `describe` method to Kernel, which conflicts with RSpec.
+# here we define `minitest_describe` method to avoid this conflict.
+module Kernel
+  alias_method :minitest_describe, :describe
+end
 
 RSpec.describe "Minitest instrumentation" do
   include_context "CI mode activated" do
@@ -354,78 +361,160 @@ RSpec.describe "Minitest instrumentation" do
   end
 
   context "run minitest suite" do
-    before(:context) do
-      Minitest::Runnable.reset
-
-      class SomeTest < Minitest::Test
-        def test_pass
-          assert true
-        end
-      end
-    end
-
     before do
       Minitest.run([])
     end
 
-    it "creates a test session span" do
-      expect(test_session_span).not_to be_nil
-      expect(test_session_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::AppTypes::TYPE_TEST
-      )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-        Datadog::CI::Ext::Test::TEST_TYPE
-      )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-        Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
-      )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
-        Datadog::CI::Contrib::Minitest::Integration.version.to_s
-      )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-        Datadog::CI::Ext::Test::Status::PASS
-      )
+    context "single test passed" do
+      before(:context) do
+        Minitest::Runnable.reset
+
+        class SomeTest < Minitest::Test
+          def test_pass
+            assert true
+          end
+        end
+      end
+
+      it "creates a test session span" do
+        expect(test_session_span).not_to be_nil
+        expect(test_session_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
+          Datadog::CI::Ext::AppTypes::TYPE_TEST
+        )
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+          Datadog::CI::Ext::Test::TEST_TYPE
+        )
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+          Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
+        )
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+          Datadog::CI::Contrib::Minitest::Integration.version.to_s
+        )
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::PASS
+        )
+      end
+
+      it "creates a test module span" do
+        expect(test_module_span).not_to be_nil
+
+        expect(test_module_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+        expect(test_module_span.name).to eq(test_command)
+
+        expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
+          Datadog::CI::Ext::AppTypes::TYPE_TEST
+        )
+        expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
+          Datadog::CI::Ext::Test::TEST_TYPE
+        )
+        expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+          Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
+        )
+        expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+          Datadog::CI::Contrib::Minitest::Integration.version.to_s
+        )
+        expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::PASS
+        )
+      end
+
+      it "creates test span and connects it to the session and module" do
+        expect(test_spans.count).to eq(1)
+
+        expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+          Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
+        )
+        expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+          Datadog::CI::Contrib::Minitest::Integration.version.to_s
+        )
+        expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::PASS
+        )
+
+        expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
+        expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
+      end
     end
 
-    it "creates a test module span" do
-      expect(test_module_span).not_to be_nil
+    context "single test failed" do
+      before(:context) do
+        Minitest::Runnable.reset
 
-      expect(test_module_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
-      expect(test_module_span.name).to eq(test_command)
+        class SomeFailedTest < Minitest::Test
+          def test_fail
+            assert false
+          end
+        end
+      end
 
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::AppTypes::TYPE_TEST
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-        Datadog::CI::Ext::Test::TEST_TYPE
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-        Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
-        Datadog::CI::Contrib::Minitest::Integration.version.to_s
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-        Datadog::CI::Ext::Test::Status::PASS
-      )
+      it "traces test, test session, test module with failed status" do
+        expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeFailedTest#test_fail")
+        expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::FAIL
+        )
+
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::FAIL
+        )
+        expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::FAIL
+        )
+      end
     end
 
-    it "creates test span and connects it to the session and module" do
-      expect(test_spans.count).to eq(1)
+    context "using Minitest::Spec" do
+      before(:context) do
+        Minitest::Runnable.reset
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-        Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
-      )
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
-        Datadog::CI::Contrib::Minitest::Integration.version.to_s
-      )
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-        Datadog::CI::Ext::Test::Status::PASS
-      )
+        class SomeSpec < Minitest::Spec
+          it "does not fail" do
+          end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
+          minitest_describe "in context" do
+            it "does not fail" do
+            end
+
+            minitest_describe "deeper context" do
+              it "does not fail" do
+              end
+            end
+          end
+
+          minitest_describe "in other context" do
+            it "does not fail" do
+            end
+          end
+        end
+      end
+
+      it "traces tests with unique names" do
+        test_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_NAME) }.sort
+
+        expect(test_names).to eq(
+          [
+            "SomeSpec#test_0001_does not fail",
+            "in context#test_0001_does not fail",
+            "in context::deeper context#test_0001_does not fail",
+            "in other context#test_0001_does not fail"
+          ]
+        )
+      end
+
+      it "connects tests to different test suites" do
+        skip("pending fix for minitest/spec")
+
+        test_suite_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE) }.uniq
+
+        expect(test_suite_names.count).to eq(4)
+      end
+
+      it "connects tests to a single test session" do
+        test_session_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID) }.uniq
+
+        expect(test_session_ids.count).to eq(1)
+        expect(test_session_ids.first).to eq(test_session_span.id.to_s)
+      end
     end
   end
 end
