@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "hooks"
+require_relative "runnable"
 
 module Datadog
   module CI
@@ -21,6 +22,7 @@ module Datadog
 
             ::Minitest::Test.include(Hooks)
             ::Minitest.include(Plugin)
+            ::Minitest::Runnable.include(Runnable)
 
             ::Minitest.extensions << "datadog_ci"
           end

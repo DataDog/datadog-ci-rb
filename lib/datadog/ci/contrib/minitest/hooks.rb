@@ -2,6 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "ext"
+require_relative "suite"
 
 module Datadog
   module CI
@@ -15,10 +16,7 @@ module Datadog
 
             test_name = "#{class_name}##{name}"
 
-            source_location, = method(name).source_location
-            source_file_path = Pathname.new(source_location.to_s).relative_path_from(Pathname.pwd).to_s
-
-            test_suite_name = "#{class_name} at #{source_file_path}"
+            test_suite_name = Suite.name(self.class, name)
             if parallel?
               test_suite_name = "#{test_suite_name} (parallel execution of #{test_name})"
             end
@@ -43,6 +41,10 @@ module Datadog
             when "."
               test_span.passed!
             when "E", "F"
+              test_suite_name = test_span.test_suite_name
+              test_suite = CI.active_test_suite(test_suite_name) if test_suite_name
+              test_suite.failed! if test_suite
+
               test_span.failed!(exception: failure)
             when "S"
               test_span.skipped!(reason: failure.message)
