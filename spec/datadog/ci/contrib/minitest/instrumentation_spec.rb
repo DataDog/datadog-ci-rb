@@ -38,7 +38,7 @@ RSpec.describe "Minitest instrumentation" do
     expect(span.service).to eq("ltest")
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeTest#test_foo")
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
-      "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+      "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
     )
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
@@ -89,7 +89,7 @@ RSpec.describe "Minitest instrumentation" do
     expect(span.service).to eq("ltest")
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeSpec##{method_name}")
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
-      "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+      "SomeSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
     )
   end
 
@@ -502,8 +502,6 @@ RSpec.describe "Minitest instrumentation" do
       end
 
       it "connects tests to different test suites" do
-        skip("pending fix for minitest/spec")
-
         test_suite_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE) }.uniq
 
         expect(test_suite_names.count).to eq(4)
@@ -554,6 +552,7 @@ RSpec.describe "Minitest instrumentation" do
 
       it "traces all tests correctly" do
         test_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_NAME) }.sort
+        test_suite_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE) }.sort
         test_threads = test_spans.map { |span| span.get_tag("minitest_thread") }.uniq
 
         expect(test_names).to eq(
@@ -562,6 +561,15 @@ RSpec.describe "Minitest instrumentation" do
             "TestA#test_a_2",
             "TestB#test_b_1",
             "TestB#test_b_2"
+          ]
+        )
+
+        expect(test_suite_names).to eq(
+          [
+            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestA#test_a_1)",
+            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestA#test_a_2)",
+            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestB#test_b_1)",
+            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestB#test_b_2)"
           ]
         )
 

@@ -11,22 +11,27 @@ module Datadog
         module Hooks
           def before_setup
             super
-            return unless configuration[:enabled]
+            return unless datadog_configuration[:enabled]
 
             test_name = "#{class_name}##{name}"
 
-            path, = method(name).source_location
-            test_suite = Pathname.new(path.to_s).relative_path_from(Pathname.pwd).to_s
+            source_location, = method(name).source_location
+            source_file_path = Pathname.new(source_location.to_s).relative_path_from(Pathname.pwd).to_s
+
+            test_suite_name = "#{class_name} at #{source_file_path}"
+            if parallel?
+              test_suite_name = "#{test_suite_name} (parallel execution of #{test_name})"
+            end
 
             CI.start_test(
               test_name,
-              test_suite,
+              test_suite_name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                 CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Minitest::Integration.version.to_s,
                 CI::Ext::Test::TAG_TYPE => CI::Ext::Test::TEST_TYPE
               },
-              service: configuration[:service_name]
+              service: datadog_configuration[:service_name]
             )
           end
 
@@ -50,7 +55,11 @@ module Datadog
 
           private
 
-          def configuration
+          def parallel?
+            self.class.test_order == :parallel
+          end
+
+          def datadog_configuration
             Datadog.configuration.ci[:minitest]
           end
         end
