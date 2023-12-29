@@ -13,9 +13,10 @@ module Datadog
             def run(*)
               return super unless datadog_configuration[:enabled]
               return super if parallel?
-              return super if runnable_methods.empty?
 
               method = runnable_methods.first
+              return super if method.nil?
+
               test_suite_name = Suite.name(self, method)
 
               test_suite = Datadog::CI.start_test_suite(test_suite_name)

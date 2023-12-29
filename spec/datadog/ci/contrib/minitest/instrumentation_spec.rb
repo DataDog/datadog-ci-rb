@@ -569,8 +569,6 @@ RSpec.describe "Minitest instrumentation" do
 
     context "using parallel executor" do
       before(:context) do
-        require "minitest/hell"
-
         Minitest::Runnable.reset
 
         class ParallelTest < Minitest::Test
@@ -602,11 +600,14 @@ RSpec.describe "Minitest instrumentation" do
         end
       end
 
-      it "traces all tests correctly" do
-        test_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_NAME) }.sort
-        test_suite_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE) }.sort
+      it "traces all tests correctly, assigning a separate test suite to each of them" do
         test_threads = test_spans.map { |span| span.get_tag("minitest_thread") }.uniq
 
+        # make sure that tests were executed concurrently
+        # note that this test could be flaky
+        expect(test_threads.count).to be > 1
+
+        test_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_NAME) }.sort
         expect(test_names).to eq(
           [
             "TestA#test_a_1",
@@ -616,18 +617,8 @@ RSpec.describe "Minitest instrumentation" do
           ]
         )
 
-        expect(test_suite_names).to eq(
-          [
-            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestA#test_a_1)",
-            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestA#test_a_2)",
-            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestB#test_b_1)",
-            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestB#test_b_2)"
-          ]
-        )
-
-        # make sure that tests were executed concurrently
-        # note that this test could be flaky
-        expect(test_threads.count).to be > 1
+        test_suite_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID) }.uniq
+        expect(test_suite_ids).to have(4).items
       end
 
       it "connects tests to a single test session and a single test module" do
@@ -648,16 +639,24 @@ RSpec.describe "Minitest instrumentation" do
         # with parallel execution test durations sum should be greater than test session duration
         expect(test_durations_sum).to be > test_session_duration
 
-        # but each individual test duration should be less than test session duration
+        # each individual test duration should be less than test session duration
         test_spans.each do |span|
           expect(span.duration).to be < test_session_duration
         end
       end
 
       it "creates test suite spans" do
-        skip("test suite spans for parallel execution pending")
-
         expect(test_suite_spans).to have(4).items
+
+        test_suite_names = test_suite_spans.map { |span| span.name }.sort
+        expect(test_suite_names).to eq(
+          [
+            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestA#test_a_1)",
+            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestA#test_a_2)",
+            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestB#test_b_1)",
+            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestB#test_b_2)"
+          ]
+        )
       end
     end
   end

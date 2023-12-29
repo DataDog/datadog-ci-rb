@@ -19,6 +19,9 @@ module Datadog
             test_suite_name = Suite.name(self.class, name)
             if parallel?
               test_suite_name = "#{test_suite_name} (parallel execution of #{test_name})"
+
+              # for parallel execution we need to start a new test suite for each test
+              CI.start_test_suite(test_suite_name)
             end
 
             CI.start_test(
@@ -37,25 +40,43 @@ module Datadog
             test_span = CI.active_test
             return super unless test_span
 
-            case result_code
-            when "."
-              test_span.passed!
-            when "E", "F"
-              test_suite_name = test_span.test_suite_name
-              test_suite = CI.active_test_suite(test_suite_name) if test_suite_name
-              test_suite.failed! if test_suite
-
-              test_span.failed!(exception: failure)
-            when "S"
-              test_span.skipped!(reason: failure.message)
+            finish_test(test_span, result_code)
+            if parallel?
+              finish_test_suite(test_span.test_suite, result_code)
             end
-
-            test_span.finish
 
             super
           end
 
           private
+
+          def finish_test(test_span, result_code)
+            finish_with_result(test_span, result_code)
+
+            # mark test suite as failed if any test failed
+            if test_span.failed?
+              test_suite = test_span.test_suite
+              test_suite.failed! if test_suite
+            end
+          end
+
+          def finish_test_suite(test_suite, result_code)
+            return unless test_suite
+
+            finish_with_result(test_suite, result_code)
+          end
+
+          def finish_with_result(span, result_code)
+            case result_code
+            when "."
+              span.passed!
+            when "E", "F"
+              span.failed!(exception: failure)
+            when "S"
+              span.skipped!(reason: failure.message)
+            end
+            span.finish
+          end
 
           def parallel?
             self.class.test_order == :parallel

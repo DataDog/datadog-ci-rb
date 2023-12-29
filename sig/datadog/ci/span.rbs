@@ -13,6 +13,14 @@ module Datadog
 
       def service: () -> String
 
+      def undefined?: () -> bool
+
+      def passed?: () -> bool
+
+      def failed?: () -> bool
+
+      def skipped?: () -> bool
+
       def passed!: () -> void
 
       def failed!: (?exception: untyped?) -> void

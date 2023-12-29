@@ -15,6 +15,12 @@ module Datadog
 
           def datadog_configuration: () -> untyped
 
+          def finish_test: (Datadog::CI::Test test_span, String result_code) -> void
+
+          def finish_test_suite: (Datadog::CI::TestSuite? test_suite, String result_code) -> void
+
+          def finish_with_result: (Datadog::CI::Span span, String result_code) -> void
+
           def self.test_order: () -> (nil | :parallel | :sorted | :random | :alpha)
         end
       end
