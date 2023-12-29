@@ -63,7 +63,8 @@ module Datadog
           writer_options = settings.ci.writer_options
           if test_visibility_transport
             writer_options[:transport] = test_visibility_transport
-            writer_options[:shutdown_timeout] = 60
+            writer_options[:shutdown_timeout] = 300
+            writer_options[:buffer_size] = 10_000
 
             settings.tracing.test_mode.async = true
           end
