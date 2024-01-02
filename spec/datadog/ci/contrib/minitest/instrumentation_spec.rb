@@ -651,10 +651,10 @@ RSpec.describe "Minitest instrumentation" do
         test_suite_names = test_suite_spans.map { |span| span.name }.sort
         expect(test_suite_names).to eq(
           [
-            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestA#test_a_1)",
-            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestA#test_a_2)",
-            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestB#test_b_1)",
-            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (parallel execution of TestB#test_b_2)"
+            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_1 concurrently)",
+            "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_2 concurrently)",
+            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_1 concurrently)",
+            "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_2 concurrently)"
           ]
         )
       end

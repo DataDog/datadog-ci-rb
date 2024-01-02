@@ -18,7 +18,7 @@ module Datadog
 
             test_suite_name = Suite.name(self.class, name)
             if parallel?
-              test_suite_name = "#{test_suite_name} (parallel execution of #{test_name})"
+              test_suite_name = "#{test_suite_name} (#{name} concurrently)"
 
               # for parallel execution we need to start a new test suite for each test
               CI.start_test_suite(test_suite_name)
