@@ -27,7 +27,7 @@ module Datadog
         end
 
         def []=(name, value)
-          respond_to?("#{name}=") ? send("#{name}=", value) : set_option(name, value)
+          respond_to?(:"#{name}=") ? send(:"#{name}=", value) : set_option(name, value)
         end
       end
     end

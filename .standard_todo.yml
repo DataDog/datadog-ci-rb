@@ -16,3 +16,5 @@ ignore:
       - Performance/UnfreezeString
   - Appraisals:
       - Style/Alias
+  - spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:
+      - Lint/ConstantDefinitionInBlock

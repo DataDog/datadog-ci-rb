@@ -1,0 +1,24 @@
+module Datadog
+  module CI
+    module Contrib
+      module Minitest
+        module Runnable
+          def self.included: (untyped base) -> untyped
+
+          module ClassMethods : ::Minitest::Runnable
+
+            def run: (*untyped) -> untyped
+
+            private
+
+            def datadog_configuration: () -> untyped
+
+            def test_order: () -> (nil | :parallel | :random | :sorted | :alpha)
+
+            def runnable_methods: () -> Array[String]
+          end
+        end
+      end
+    end
+  end
+end

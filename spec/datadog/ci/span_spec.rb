@@ -8,6 +8,94 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
+  describe "#passed?" do
+    context "when status is PASS" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
+      end
+
+      it "returns true" do
+        expect(span.passed?).to eq(true)
+      end
+    end
+
+    context "when status is not PASS" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("fail")
+      end
+
+      it "returns false" do
+        expect(span.passed?).to eq(false)
+      end
+    end
+  end
+
+  describe "#failed?" do
+    context "when status is FAIL" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("fail")
+      end
+
+      it "returns true" do
+        expect(span.failed?).to eq(true)
+      end
+    end
+
+    context "when status is not FAIL" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
+      end
+
+      it "returns false" do
+        expect(span.failed?).to eq(false)
+      end
+    end
+  end
+
+  describe "#skipped?" do
+    context "when status is SKIP" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("skip")
+      end
+
+      it "returns true" do
+        expect(span.skipped?).to eq(true)
+      end
+    end
+
+    context "when status is not SKIP" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
+      end
+
+      it "returns false" do
+        expect(span.skipped?).to eq(false)
+      end
+    end
+  end
+
+  describe "#undefined?" do
+    context "when status is nil" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return(nil)
+      end
+
+      it "returns true" do
+        expect(span.undefined?).to eq(true)
+      end
+    end
+
+    context "when status is not nil" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
+      end
+
+      it "returns false" do
+        expect(span.undefined?).to eq(false)
+      end
+    end
+  end
+
   describe "#passed!" do
     it "sets the status to PASS" do
       expect(tracer_span).to receive(:set_tag).with("test.status", "pass")

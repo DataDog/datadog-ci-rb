@@ -47,6 +47,26 @@ RSpec.describe Datadog::CI::Test do
     it { is_expected.to eq("test suite name") }
   end
 
+  describe "#test_suite" do
+    subject(:test_suite) { ci_test.test_suite }
+    let(:ci_test) { described_class.new(tracer_span) }
+
+    context "when test suite name is set" do
+      before do
+        allow(ci_test).to receive(:test_suite_name).and_return("test suite name")
+        allow(Datadog::CI).to receive(:active_test_suite).with("test suite name").and_return("test suite")
+      end
+
+      it { is_expected.to eq("test suite") }
+    end
+
+    context "when test suite name is not set" do
+      before { allow(ci_test).to receive(:test_suite_name).and_return(nil) }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
   describe "#test_module_id" do
     subject(:test_module_id) { ci_test.test_module_id }
     let(:ci_test) { described_class.new(tracer_span) }

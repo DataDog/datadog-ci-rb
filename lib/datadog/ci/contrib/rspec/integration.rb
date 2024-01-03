@@ -22,7 +22,7 @@ module Datadog
           end
 
           def self.loaded?
-            !defined?(::RSpec).nil? && !defined?(::RSpec::Core).nil? && \
+            !defined?(::RSpec).nil? && !defined?(::RSpec::Core).nil? &&
               !defined?(::RSpec::Core::Example).nil?
           end
 

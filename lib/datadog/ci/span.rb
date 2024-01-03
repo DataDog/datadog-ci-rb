@@ -36,6 +36,30 @@ module Datadog
         tracer_span.type
       end
 
+      # Checks whether span status is not set yet.
+      # @return [bool] true if span does not have status
+      def undefined?
+        tracer_span.get_tag(Ext::Test::TAG_STATUS).nil?
+      end
+
+      # Checks whether span status is PASS.
+      # @return [bool] true if span status is PASS
+      def passed?
+        tracer_span.get_tag(Ext::Test::TAG_STATUS) == Ext::Test::Status::PASS
+      end
+
+      # Checks whether span status is FAIL.
+      # @return [bool] true if span status is FAIL
+      def failed?
+        tracer_span.get_tag(Ext::Test::TAG_STATUS) == Ext::Test::Status::FAIL
+      end
+
+      # Checks whether span status is SKIP.
+      # @return [bool] true if span status is SKIP
+      def skipped?
+        tracer_span.get_tag(Ext::Test::TAG_STATUS) == Ext::Test::Status::SKIP
+      end
+
       # Sets the status of the span to "pass".
       # @return [void]
       def passed!

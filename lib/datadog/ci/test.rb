@@ -21,6 +21,14 @@ module Datadog
         CI.deactivate_test(self)
       end
 
+      # Running test suite that this test is part of (if any).
+      # @return [Datadog::CI::TestSuite] the test suite this test belongs to
+      # @return [nil] if the test suite is not found
+      def test_suite
+        suite_name = test_suite_name
+        CI.active_test_suite(suite_name) if suite_name
+      end
+
       # Span id of the running test suite this test belongs to.
       # @return [String] the span id of the test suite.
       def test_suite_id
