@@ -17,7 +17,6 @@ module Datadog
             @failed_tests_count = 0
 
             @current_test_suite = nil
-            @failed_tests_in_current_test_suite = 0
 
             bind_events(config)
           end
@@ -75,11 +74,11 @@ module Datadog
             # We need to track overall test failures manually if we are using cucumber < 8.0 because
             # TestRunFinished event does not have a success attribute before 8.0.
             #
-            # To track whether test suite failed or passed we need to
-            # track the number of failed tests in the current test suite.
             if event.result.failed?
               @failed_tests_count += 1
-              @failed_tests_in_current_test_suite += 1
+
+              test_suite = @current_test_suite
+              test_suite.failed! if test_suite
             end
 
             finish_test(test_span, event.result)
@@ -132,19 +131,17 @@ module Datadog
           def start_test_suite(test_suite_name)
             finish_current_test_suite
 
-            @current_test_suite = CI.start_test_suite(test_suite_name)
+            test_suite = CI.start_test_suite(test_suite_name)
+            # will be overridden if any test fails
+            test_suite.passed!
+
+            @current_test_suite = test_suite
           end
 
           def finish_current_test_suite
             test_suite = @current_test_suite
             return unless test_suite
 
-            if @failed_tests_in_current_test_suite.zero?
-              test_suite.passed!
-            else
-              test_suite.failed!
-            end
-            @failed_tests_in_current_test_suite = 0
             test_suite.finish
           end
 
