@@ -11,8 +11,6 @@ module Datadog
 
             private
 
-            def parallel?: () -> bool
-
             def datadog_configuration: () -> untyped
 
             def test_order: () -> (nil | :parallel | :random | :sorted | :alpha)

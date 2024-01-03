@@ -2,7 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "ext"
-require_relative "suite"
+require_relative "helpers"
 
 module Datadog
   module CI
@@ -16,8 +16,8 @@ module Datadog
 
             test_name = "#{class_name}##{name}"
 
-            test_suite_name = Suite.name(self.class, name)
-            if parallel?
+            test_suite_name = Helpers.test_suite_name(self.class, name)
+            if Helpers.parallel?(self.class)
               test_suite_name = "#{test_suite_name} (#{name} concurrently)"
 
               # for parallel execution we need to start a new test suite for each test
@@ -41,7 +41,7 @@ module Datadog
             return super unless test_span
 
             finish_test(test_span, result_code)
-            if parallel?
+            if Helpers.parallel?(self.class)
               finish_test_suite(test_span.test_suite, result_code)
             end
 
@@ -76,10 +76,6 @@ module Datadog
               span.skipped!(reason: failure.message)
             end
             span.finish
-          end
-
-          def parallel?
-            self.class.test_order == :parallel
           end
 
           def datadog_configuration

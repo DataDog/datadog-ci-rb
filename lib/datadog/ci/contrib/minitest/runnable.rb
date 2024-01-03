@@ -1,4 +1,4 @@
-require_relative "suite"
+require_relative "helpers"
 
 module Datadog
   module CI
@@ -12,12 +12,12 @@ module Datadog
           module ClassMethods
             def run(*)
               return super unless datadog_configuration[:enabled]
-              return super if parallel?
+              return super if Helpers.parallel?(self)
 
               method = runnable_methods.first
               return super if method.nil?
 
-              test_suite_name = Suite.name(self, method)
+              test_suite_name = Helpers.test_suite_name(self, method)
 
               test_suite = Datadog::CI.start_test_suite(test_suite_name)
               test_suite.passed! # will be overridden if any test fails
@@ -30,10 +30,6 @@ module Datadog
             end
 
             private
-
-            def parallel?
-              test_order == :parallel
-            end
 
             def datadog_configuration
               Datadog.configuration.ci[:minitest]
