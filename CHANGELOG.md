@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [0.6.0] - 2024-01-03
+
+### Added
+
+* Test suite level visibility instrumentation for RSpec ([#86][])
+* Test suite level visibility instrumentation for Cucumber ([#90][])
+* Test suite level visibility instrumentation for Minitest framework ([#92][])
+
+### Fixed
+
+* Do not instantiate TestVisibility::Recorder unless CI visibility is enabled ([#89][])
+
 ## [0.5.1] - 2023-12-11
 
 ### Fixed
@@ -153,4 +165,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#82]: https://github.com/DataDog/datadog-ci-rb/issues/82
 [#84]: https://github.com/DataDog/datadog-ci-rb/issues/84
 [#85]: https://github.com/DataDog/datadog-ci-rb/issues/85
+[#86]: https://github.com/DataDog/datadog-ci-rb/issues/86
 [#87]: https://github.com/DataDog/datadog-ci-rb/issues/87
+[#89]: https://github.com/DataDog/datadog-ci-rb/issues/89
+[#90]: https://github.com/DataDog/datadog-ci-rb/issues/90
+[#92]: https://github.com/DataDog/datadog-ci-rb/issues/92
