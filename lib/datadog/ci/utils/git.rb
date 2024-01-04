@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
+require "pathname"
 
 module Datadog
   module CI
@@ -23,6 +24,18 @@ module Datadog
           return @@root if defined?(@@root)
 
           @@root = exec_git_command("git rev-parse --show-toplevel")
+        end
+
+        def self.relative_to_root(path)
+          return nil if path.nil?
+
+          git_root = root
+          return path if git_root.nil?
+
+          path = Pathname.new(File.expand_path(path))
+          git_root = Pathname.new(git_root)
+
+          path.relative_path_from(git_root).to_s
         end
 
         def self.exec_git_command(cmd)
