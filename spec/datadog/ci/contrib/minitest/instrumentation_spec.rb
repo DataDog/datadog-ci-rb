@@ -47,6 +47,10 @@ RSpec.describe "Minitest instrumentation" do
       Datadog::CI::Contrib::Minitest::Integration.version.to_s
     )
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_FILE)).to eq(
+      "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+    )
+    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_START)).to eq("29")
   end
 
   it "creates spans for several tests" do

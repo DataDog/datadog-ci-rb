@@ -24,13 +24,17 @@ module Datadog
               CI.start_test_suite(test_suite_name)
             end
 
+            source_file, line_number = method(name).source_location
+
             CI.start_test(
               test_name,
               test_suite_name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                 CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Minitest::Integration.version.to_s,
-                CI::Ext::Test::TAG_TYPE => CI::Ext::Test::TEST_TYPE
+                CI::Ext::Test::TAG_TYPE => CI::Ext::Test::TEST_TYPE,
+                CI::Ext::Test::TAG_SOURCE_FILE => Utils::Git.relative_to_root(source_file),
+                CI::Ext::Test::TAG_SOURCE_START => line_number.to_s
               },
               service: datadog_configuration[:service_name]
             )
