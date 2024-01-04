@@ -5,6 +5,8 @@ module Datadog
         def self?.normalize_ref: (untyped name) -> (nil | untyped)
 
         def self?.is_git_tag?: (untyped ref) -> untyped
+
+        def self.exec_git_command: (String ref) -> String?
       end
     end
   end

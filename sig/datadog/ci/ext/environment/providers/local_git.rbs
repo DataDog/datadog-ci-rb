@@ -51,8 +51,6 @@ module Datadog
 
             def workspace_path: () -> String?
 
-            def exec_git_command: (String cmd) -> String?
-
             def author: () -> GitUser
 
             def committer: () -> GitUser
