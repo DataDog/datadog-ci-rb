@@ -24,6 +24,11 @@ module Datadog
           return @@root if defined?(@@root)
 
           @@root = exec_git_command("git rev-parse --show-toplevel")
+        rescue => e
+          Datadog.logger.debug(
+            "Unable to read git root: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
+          )
+          @@root = nil
         end
 
         def self.relative_to_root(path)
