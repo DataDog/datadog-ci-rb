@@ -19,6 +19,12 @@ module Datadog
           !ref.nil? && ref.include?("tags/")
         end
 
+        def self.root
+          return @@root if defined?(@@root)
+
+          @@root = exec_git_command("git rev-parse --show-toplevel")
+        end
+
         def self.exec_git_command(cmd)
           out, status = Open3.capture2e(cmd)
 

@@ -46,4 +46,22 @@ RSpec.describe ::Datadog::CI::Utils::Git do
       it { is_expected.to be_truthy }
     end
   end
+
+  describe ".root" do
+    subject { described_class.root }
+
+    it { is_expected.to eq(Dir.pwd) }
+
+    context "caches the result" do
+      before do
+        expect(Open3).to receive(:capture2e).never
+      end
+
+      it "returns the same result" do
+        2.times do
+          expect(described_class.root).to eq(Dir.pwd)
+        end
+      end
+    end
+  end
 end
