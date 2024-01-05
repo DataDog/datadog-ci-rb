@@ -20,7 +20,7 @@ module Datadog
             return rule.owners if rule.match?(file_path)
           end
 
-          []
+          nil
         end
 
         private

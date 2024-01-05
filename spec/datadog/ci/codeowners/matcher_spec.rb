@@ -17,7 +17,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
       let(:codeowners_content) { "" }
 
       it "returns an empty array" do
-        expect(matcher.list_owners("file.rb")).to eq([])
+        expect(matcher.list_owners("file.rb")).to be_nil
       end
     end
 
@@ -44,7 +44,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
       end
 
       it "returns an empty array" do
-        expect(matcher.list_owners("/path/to/another_file.rb")).to eq([])
+        expect(matcher.list_owners("/path/to/another_file.rb")).to be_nil
       end
     end
 

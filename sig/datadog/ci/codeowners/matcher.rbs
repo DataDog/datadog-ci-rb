@@ -6,7 +6,7 @@ module Datadog
 
         def initialize: (String codeowners_file_path) -> void
 
-        def list_owners: (String file_path) -> Array[String]
+        def list_owners: (String file_path) -> Array[String]?
 
         private
 

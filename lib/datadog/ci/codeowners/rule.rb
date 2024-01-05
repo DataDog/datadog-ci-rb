@@ -11,8 +11,8 @@ module Datadog
 
         def match?(file_path)
           res = false
-          if !pattern.end_with?(::File::SEPARATOR, "*") && !pattern.include?(".")
-            # could be a directory
+          # if pattern does not end with a separator or a wildcard, it could be either a directory or a file
+          if !pattern.end_with?(::File::SEPARATOR, "*")
             directory_pattern = pattern + "#{::File::SEPARATOR}*"
             res ||= File.fnmatch?(directory_pattern, file_path, flags)
           end
