@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module Codeowners
+      class Matcher
+        @rules: Array[Rule]
+
+        def initialize: (String codeowners_file_path) -> void
+
+        def list_owners: (String file_path) -> Array[String]
+
+        private
+
+        def parse: (String file_path) -> Array[Rule]
+
+        def comment?: (String line) -> bool
+
+        def section?: (String line) -> bool
+      end
+    end
+  end
+end
