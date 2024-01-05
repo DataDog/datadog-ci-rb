@@ -15,6 +15,8 @@ module Datadog
         def comment?: (String line) -> bool
 
         def section?: (String line) -> bool
+
+        def expand_pattern: (String pattern) -> String
       end
     end
   end

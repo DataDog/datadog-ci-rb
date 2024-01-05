@@ -10,7 +10,22 @@ module Datadog
         end
 
         def match?(file_path)
-          File.fnmatch?(pattern, file_path)
+          res = false
+          if !pattern.end_with?(::File::SEPARATOR, "*") && !pattern.include?(".")
+            # could be a directory
+            directory_pattern = pattern + "#{::File::SEPARATOR}*"
+            res ||= File.fnmatch?(directory_pattern, file_path, flags)
+          end
+
+          res ||= File.fnmatch?(pattern, file_path, flags)
+          res
+        end
+
+        private
+
+        def flags
+          return ::File::FNM_PATHNAME if pattern.end_with?("#{::File::SEPARATOR}*")
+          0
         end
       end
     end

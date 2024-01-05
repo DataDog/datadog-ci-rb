@@ -13,6 +13,10 @@ module Datadog
         def initialize: (String pattern, Array[String] owners) -> void
 
         def match?: (String file_path) -> untyped
+
+        private
+
+        def flags: () -> Integer
       end
     end
   end
