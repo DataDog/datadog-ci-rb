@@ -25,12 +25,12 @@ module Datadog
 
         private
 
-        def parse(file_path)
-          return [] unless File.exist?(file_path)
+        def parse(codeowners_file_path)
+          return [] unless File.exist?(codeowners_file_path)
 
           result = []
 
-          File.open(file_path, "r") do |f|
+          File.open(codeowners_file_path, "r") do |f|
             f.each_line do |line|
               line.strip!
 
@@ -49,6 +49,12 @@ module Datadog
           end
 
           result
+        rescue => e
+          Datadog.logger.warn(
+            "Failed to parse codeowners file at #{codeowners_file_path}: " \
+              "#{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
+          )
+          []
         end
 
         def comment?(line)
