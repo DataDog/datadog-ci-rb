@@ -147,7 +147,8 @@ end
 ```
 
 This will enable visibility into how your test suites and test sessions behave, providing
-insights about performance and reliability on test suite/session level.
+insights about performance and reliability on test suite/session level. Please submit your feedback
+and any issues encountered via Github issues.
 
 Example test suite trace for Ruby project:
 
