@@ -19,6 +19,8 @@ module Datadog
         TAG_TRAITS = "test.traits"
         TAG_TYPE = "test.type"
         TAG_COMMAND = "test.command"
+        TAG_SOURCE_FILE = "test.source.file"
+        TAG_SOURCE_START = "test.source.start"
 
         TEST_TYPE = "test"
 

@@ -2,9 +2,17 @@ module Datadog
   module CI
     module Utils
       module Git
-        def self?.normalize_ref: (untyped name) -> (nil | untyped)
+        @@root: String?
 
-        def self?.is_git_tag?: (untyped ref) -> untyped
+        def self.normalize_ref: (String? name) -> String?
+
+        def self.is_git_tag?: (String? ref) -> bool
+
+        def self.exec_git_command: (String ref) -> String?
+
+        def self.root: -> String?
+
+        def self.relative_to_root: (String? path) -> String?
       end
     end
   end

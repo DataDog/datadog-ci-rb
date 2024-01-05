@@ -26,6 +26,10 @@ module Datadog
 
         TAG_COMMAND: String
 
+        TAG_SOURCE_FILE: String
+
+        TAG_SOURCE_START: String
+
         TAG_TEST_SESSION_ID: String
 
         TAG_TEST_MODULE_ID: String

@@ -42,6 +42,11 @@ RSpec.describe "RSpec hooks" do
       Datadog::CI::Contrib::RSpec::Integration.version.to_s
     )
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_FILE)).to eq(
+      "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
+    )
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_START)).to eq("26")
   end
 
   it "creates spans for several examples" do
@@ -195,6 +200,26 @@ RSpec.describe "RSpec hooks" do
       end
 
       expect_failure
+    end
+  end
+
+  context "with git root changed" do
+    before do
+      expect(Datadog::CI::Utils::Git).to receive(:root).and_return("#{Dir.pwd}/spec")
+    end
+
+    it "provides source file path relative to git root" do
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          it "foo" do
+            # DO NOTHING
+          end
+        end.tap(&:run)
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_FILE)).to eq(
+        "datadog/ci/contrib/rspec/instrumentation_spec.rb"
+      )
     end
   end
 
