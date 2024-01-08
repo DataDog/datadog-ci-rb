@@ -92,4 +92,17 @@ RSpec.describe Datadog::CI::Test do
 
     it { is_expected.to eq("test session id") }
   end
+
+  describe "#source_file" do
+    subject(:source_file) { ci_test.source_file }
+    let(:ci_test) { described_class.new(tracer_span) }
+
+    before do
+      allow(tracer_span).to(
+        receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_SOURCE_FILE).and_return("foo/bar.rb")
+      )
+    end
+
+    it { is_expected.to eq("foo/bar.rb") }
+  end
 end
