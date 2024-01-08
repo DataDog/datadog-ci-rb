@@ -7,6 +7,10 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
   let(:codeowners_file_path) { "/path/to/codeowners" }
   let(:matcher) { described_class.new(codeowners_file_path) }
 
+  before do
+    allow(File).to receive(:exist?).and_return(false)
+  end
+
   describe "#list_owners" do
     context "provided codeowners path does not exist" do
       before do

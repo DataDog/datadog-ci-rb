@@ -16,17 +16,24 @@ module Datadog
           # treat all file paths that we check as absolute from the repository root
           file_path = "/#{file_path}" unless file_path.start_with?("/")
 
+          Datadog.logger.debug { "Matching file path #{file_path} to CODEOWNERS rules" }
+
           @rules.each do |rule|
+            Datadog.logger.debug { "Matched rule [#{rule.pattern}] with owners #{rule.owners}" }
             return rule.owners if rule.match?(file_path)
           end
 
+          Datadog.logger.debug { "CODEOWNERS rule not matched" }
           nil
         end
 
         private
 
         def parse(codeowners_file_path)
-          return [] unless File.exist?(codeowners_file_path)
+          unless File.exist?(codeowners_file_path)
+            Datadog.logger.debug { "CODEOWNERS file not found at #{codeowners_file_path}" }
+            return []
+          end
 
           result = []
           section_default_owners = []

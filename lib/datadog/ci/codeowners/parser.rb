@@ -32,6 +32,8 @@ module Datadog
             File.exist?(path)
           end || default_path
 
+          ::Datadog.logger.debug { "Using CODEOWNERS file from: #{codeowners_file_path}" }
+
           Matcher.new(codeowners_file_path)
         end
       end

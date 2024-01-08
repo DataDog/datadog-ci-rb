@@ -20,6 +20,7 @@ RSpec.describe "gem release process" do
            |Appraisals
            |CODE_OF_CONDUCT.md
            |CONTRIBUTING.md
+           |CODEOWNERS
            |Gemfile
            |Gemfile-.*
            |Rakefile
