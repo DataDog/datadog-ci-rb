@@ -8,9 +8,11 @@ require "rbconfig"
 require_relative "context/global"
 require_relative "context/local"
 
+require_relative "../codeowners/parser"
 require_relative "../ext/app_types"
 require_relative "../ext/test"
 require_relative "../ext/environment"
+require_relative "../utils/git"
 
 require_relative "../span"
 require_relative "../null_span"
@@ -27,12 +29,16 @@ module Datadog
       class Recorder
         attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
-        def initialize(test_suite_level_visibility_enabled: false)
+        def initialize(
+          test_suite_level_visibility_enabled: false,
+          codeowners: Codeowners::Parser.new(Utils::Git.root).parse
+        )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
           @environment_tags = Ext::Environment.tags(ENV).freeze
           @local_context = Context::Local.new
           @global_context = Context::Global.new
+          @codeowners = codeowners
         end
 
         def start_test_session(service: nil, tags: {})
