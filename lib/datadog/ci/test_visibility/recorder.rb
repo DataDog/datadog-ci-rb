@@ -212,6 +212,8 @@ module Datadog
           test = Test.new(tracer_span)
           set_initial_tags(test, tags)
           validate_test_suite_level_visibility_correctness(test)
+          set_codeowners(test)
+
           test
         end
 
@@ -255,6 +257,12 @@ module Datadog
             tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id.to_s
             tags[Ext::Test::TAG_MODULE] = test_module.name
           end
+        end
+
+        def set_codeowners(test)
+          source = test.source_file
+          owners = @codeowners.list_owners(source) if source
+          test.set_tag(Ext::Test::TAG_CODEOWNERS, owners) unless owners.nil?
         end
 
         def set_suite_context(tags, span: nil, name: nil)

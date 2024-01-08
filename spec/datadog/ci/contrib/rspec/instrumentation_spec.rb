@@ -47,6 +47,9 @@ RSpec.describe "RSpec hooks" do
       "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
     )
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_START)).to eq("26")
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_CODEOWNERS)).to eq(
+      "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
+    )
   end
 
   it "creates spans for several examples" do

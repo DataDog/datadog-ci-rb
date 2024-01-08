@@ -71,6 +71,8 @@ module Datadog
 
         def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
 
+        def set_codeowners: (Datadog::CI::Test test) -> void
+
         def null_span: () -> Datadog::CI::Span
 
         def skip_tracing: (?untyped block) -> untyped

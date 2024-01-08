@@ -94,6 +94,9 @@ RSpec.describe "Cucumber formatter" do
         "spec/datadog/ci/contrib/cucumber/features/passing.feature"
       )
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_START)).to eq("3")
+      expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_CODEOWNERS)).to eq(
+        "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
+      )
 
       step_span = spans.find { |s| s.resource == "datadog" }
       expect(step_span.resource).to eq("datadog")
