@@ -136,7 +136,7 @@ Datadog.configure { |c| c.ci.agentless_mode_enabled = true }
 
 ### Experimental test suite level visibility support
 
-Test suite level visibility (TSLV) is available for `datadog-ci`` gem versions 0.6 and above.
+Test suite level visibility (TSLV) is available in experimental mode and disabled by default (yet).
 To enable it add the following line to Datadog configuration:
 
 ```ruby
