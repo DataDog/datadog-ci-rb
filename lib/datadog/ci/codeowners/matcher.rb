@@ -19,8 +19,10 @@ module Datadog
           Datadog.logger.debug { "Matching file path #{file_path} to CODEOWNERS rules" }
 
           @rules.each do |rule|
-            Datadog.logger.debug { "Matched rule [#{rule.pattern}] with owners #{rule.owners}" }
-            return rule.owners if rule.match?(file_path)
+            if rule.match?(file_path)
+              Datadog.logger.debug { "Matched rule [#{rule.pattern}] with owners #{rule.owners}" }
+              return rule.owners
+            end
           end
 
           Datadog.logger.debug { "CODEOWNERS rule not matched" }
