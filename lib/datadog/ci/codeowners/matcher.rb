@@ -29,20 +29,29 @@ module Datadog
           return [] unless File.exist?(codeowners_file_path)
 
           result = []
+          section_default_owners = []
 
           File.open(codeowners_file_path, "r") do |f|
             f.each_line do |line|
               line.strip!
 
-              # Skip comments, empty lines, and section lines
               next if line.empty?
               next if comment?(line)
-              next if section?(line)
 
               pattern, *line_owners = line.strip.split(/\s+/)
               next if pattern.nil? || pattern.empty?
 
+              # if the current line starts with section record the default owners for this section
+              if section?(pattern)
+                section_default_owners = line_owners
+                next
+              end
+
               pattern = expand_pattern(pattern)
+              # if the current line doesn't have any owners then use the default owners for this section
+              if line_owners.empty? && !section_default_owners.empty?
+                line_owners = section_default_owners
+              end
 
               result << Rule.new(pattern, line_owners)
             end

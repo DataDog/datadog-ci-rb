@@ -41,7 +41,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("/path/to/file.rb")).to eq(["@owner1", "@owner2"])
           expect(matcher.list_owners("/path/to/another_file.rb")).to eq(["@owner3"])
         end
@@ -70,7 +70,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("/path/to/file.rb")).to eq(["@owner1"])
           expect(matcher.list_owners("/path/to/another_file.rb")).to eq(["@owner2"])
         end
@@ -87,7 +87,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("/path/to/file.rb")).to eq(["@owner1"])
           expect(matcher.list_owners("/path/to/another_file.rb")).to eq(["@owner2"])
         end
@@ -112,12 +112,16 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           <<-CODEOWNERS
             *.js @jsowner
             *.go @Datadog/goowner
+            *.java
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("/path/to/file.js")).to eq(["@jsowner"])
           expect(matcher.list_owners("main.go")).to eq(["@Datadog/goowner"])
+          expect(matcher.list_owners("/main.go")).to eq(["@Datadog/goowner"])
+          expect(matcher.list_owners("file.rb")).to be_nil
+          expect(matcher.list_owners("AbstractFactory.java")).to eq([])
         end
       end
 
@@ -133,7 +137,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("/build/logs/logs.txt")).to eq(["@buildlogsowner"])
           expect(matcher.list_owners("build/logs/2022/logs.txt")).to eq(["@buildlogsowner"])
           expect(matcher.list_owners("/build/logs/2022/12/logs.txt")).to eq(["@buildlogsowner"])
@@ -156,7 +160,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("docs/getting-started.md")).to eq(["docs@example.com"])
           expect(matcher.list_owners("docs/build-app/troubleshooting.md")).to eq(["@owner"])
 
@@ -179,7 +183,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("/apps/file.txt")).to eq(["@octocat"])
           expect(matcher.list_owners("/some/folder/apps/file.txt")).to eq(["@octocat"])
           expect(matcher.list_owners("some/folder/apps/1/file.txt")).to eq(["@octocat"])
@@ -203,7 +207,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("/build/logs/logs.txt")).to eq(["@octocat"])
           expect(matcher.list_owners("/scripts/logs/logs.txt")).to eq(["@octocat"])
           expect(matcher.list_owners("/deeply/nested/logs/logs.txt")).to eq(["@octocat"])
@@ -228,7 +232,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           CODEOWNERS
         end
 
-        it "returns the list of owners for the matching pattern" do
+        it "returns the list of owners" do
           expect(matcher.list_owners("/apps/logs.txt")).to eq(["@octocat"])
           expect(matcher.list_owners("/apps/1/logs.txt")).to eq(["@octocat"])
           expect(matcher.list_owners("/apps/deeply/nested/logs/logs.txt")).to eq(["@octocat"])
@@ -237,6 +241,35 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           expect(matcher.list_owners("apps/github/codeowners")).to eq([])
 
           expect(matcher.list_owners("other/file.txt")).to eq(["@owner"])
+        end
+      end
+
+      context "when using Gitlab format with default owner per section" do
+        let(:codeowners_content) do
+          <<-CODEOWNERS
+            # Use of default owners for a section. In this case, all files (*) are owned by
+            # the dev team except the README.md and data-models which are owned by other teams.
+            [Development] @dev-team
+            *
+            README.md @docs-team
+            data-models/ @data-science-team
+
+            [Testing]
+            *_spec.rb @qa-team
+          CODEOWNERS
+        end
+
+        it "returns the list of owners" do
+          expect(matcher.list_owners("data-models/model")).to eq(["@data-science-team"])
+          expect(matcher.list_owners("data-models/search/model")).to eq(["@data-science-team"])
+
+          expect(matcher.list_owners("README.md")).to eq(["@docs-team"])
+          expect(matcher.list_owners("/README.md")).to eq(["@docs-team"])
+
+          expect(matcher.list_owners("apps/main.go")).to eq(["@dev-team"])
+          expect(matcher.list_owners(".gitignore")).to eq(["@dev-team"])
+
+          expect(matcher.list_owners("spec/helpers_spec.rb")).to eq(["@qa-team"])
         end
       end
     end
