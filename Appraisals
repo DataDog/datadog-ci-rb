@@ -73,7 +73,7 @@ end
 
 with_minitest_gem
 with_rspec_gem
-with_cucumber_gem(versions: 3..8)
+with_cucumber_gem(versions: 3..9)
 
 major, minor, = Gem::Version.new(RUBY_ENGINE_VERSION).segments
 
