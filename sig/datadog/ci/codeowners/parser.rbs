@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module Codeowners
+      class Parser
+        @root_file_path: String
+
+        DEFAULT_LOCATION: "CODEOWNERS"
+
+        POSSIBLE_CODEOWNERS_LOCATIONS: ::Array["CODEOWNERS" | ".github/CODEOWNERS" | ".gitlab/CODEOWNERS" | "docs/CODEOWNERS"]
+
+        def initialize: (String? root_file_path) -> void
+
+        def parse: () -> Datadog::CI::Codeowners::Matcher
+      end
+    end
+  end
+end

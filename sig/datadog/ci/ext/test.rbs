@@ -30,6 +30,8 @@ module Datadog
 
         TAG_SOURCE_START: String
 
+        TAG_CODEOWNERS: String
+
         TAG_TEST_SESSION_ID: String
 
         TAG_TEST_MODULE_ID: String

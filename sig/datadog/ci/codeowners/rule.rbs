@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Codeowners
+      class Rule
+        @pattern: String
+
+        @owners: Array[String]
+
+        attr_reader pattern: String
+
+        attr_reader owners: Array[String]
+
+        def initialize: (String pattern, Array[String] owners) -> void
+
+        def match?: (String file_path) -> untyped
+
+        private
+
+        def flags: () -> Integer
+      end
+    end
+  end
+end

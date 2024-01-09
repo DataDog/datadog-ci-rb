@@ -50,6 +50,13 @@ module Datadog
       def test_session_id
         get_tag(Ext::Test::TAG_TEST_SESSION_ID)
       end
+
+      # Source file path of the test relative to git repository root.
+      # @return [String] the source file path of the test
+      # @return [nil] if the source file path is not found
+      def source_file
+        get_tag(Ext::Test::TAG_SOURCE_FILE)
+      end
     end
   end
 end

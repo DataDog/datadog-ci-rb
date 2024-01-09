@@ -51,6 +51,9 @@ RSpec.describe "Minitest instrumentation" do
       "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
     )
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_START)).to eq("29")
+    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_CODEOWNERS)).to eq(
+      "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
+    )
   end
 
   it "creates spans for several tests" do
