@@ -32,6 +32,8 @@ module Datadog
 
         TAG_CODEOWNERS: String
 
+        TAG_PARAMETERS: String
+
         TAG_TEST_SESSION_ID: String
 
         TAG_TEST_MODULE_ID: String

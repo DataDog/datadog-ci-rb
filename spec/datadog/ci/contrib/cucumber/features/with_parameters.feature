@@ -7,6 +7,6 @@ Feature: Datadog integration for parametrized tests
 
   Examples:
     | num1 | num2 | total |
-    | -1   | 1    | 0     |
-    | 1    | 1    | 2     |
-    | 0    | 0    | 0     |
+    | 0    | 1    | 1     |
+    | 1    | 2    | 3     |
+    | 2    | 3    | 5     |

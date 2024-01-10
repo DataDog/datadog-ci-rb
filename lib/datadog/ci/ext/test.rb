@@ -22,6 +22,7 @@ module Datadog
         TAG_SOURCE_FILE = "test.source.file"
         TAG_SOURCE_START = "test.source.start"
         TAG_CODEOWNERS = "test.codeowners"
+        TAG_PARAMETERS = "test.parameters"
 
         TEST_TYPE = "test"
 
