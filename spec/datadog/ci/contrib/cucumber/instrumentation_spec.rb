@@ -206,14 +206,18 @@ RSpec.describe "Cucumber formatter" do
   context "executing a scenario with examples" do
     let(:feature_file_to_run) { "with_parameters.feature" }
 
-    it "a single test suite with a test span for each example" do
+    it "a single test suite, and a test span for each example with parameters JSON" do
       expect(test_spans.count).to eq(3)
       expect(test_suite_spans.count).to eq(1)
 
       test_spans.each_with_index do |span, index|
-        # naming for scenarios changed since cucumber 4
+        # test parameters are available since cucumber 4
         if cucumber_4_or_above
           expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("scenario with examples")
+
+          expect(span.get_tag(Datadog::CI::Ext::Test::TAG_PARAMETERS)).to eq(
+            "{\"num1\":\"#{index}\",\"num2\":\"#{index + 1}\",\"total\":\"#{index + index + 1}\"}"
+          )
         else
           expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(
             "scenario with examples, Examples (##{index + 1})"

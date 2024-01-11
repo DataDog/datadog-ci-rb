@@ -6,6 +6,7 @@ module Datadog
           private
           @failed_tests_count: Integer
           @current_test_suite: Datadog::CI::Span?
+          @ast_lookup: ::Cucumber::Formatter::AstLookup
 
           attr_reader config: untyped
 
@@ -38,6 +39,8 @@ module Datadog
           def finish_session: (bool result) -> void
 
           def finish_test: (Datadog::CI::Span test, Cucumber::Core::Test::Result result) -> void
+
+          def extract_parameters_hash: (untyped test_case) -> Hash[String, String]?
 
           def configuration: () -> untyped
         end

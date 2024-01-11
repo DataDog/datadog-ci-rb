@@ -20,8 +20,6 @@ module Datadog
 
         TAG_MODULE: String
 
-        TAG_TRAITS: String
-
         TAG_TYPE: String
 
         TAG_COMMAND: String

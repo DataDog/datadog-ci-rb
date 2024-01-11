@@ -12,11 +12,10 @@ module Datadog
         TAG_FRAMEWORK = "test.framework"
         TAG_FRAMEWORK_VERSION = "test.framework_version"
         TAG_NAME = "test.name"
-        TAG_SKIP_REASON = "test.skip_reason" # DEV: Not populated yet
+        TAG_SKIP_REASON = "test.skip_reason"
         TAG_STATUS = "test.status"
         TAG_SUITE = "test.suite"
         TAG_MODULE = "test.module"
-        TAG_TRAITS = "test.traits"
         TAG_TYPE = "test.type"
         TAG_COMMAND = "test.command"
         TAG_SOURCE_FILE = "test.source.file"
