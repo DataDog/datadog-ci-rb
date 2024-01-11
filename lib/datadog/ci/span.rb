@@ -133,6 +133,25 @@ module Datadog
         tracer_span.set_tag(Ext::Test::TAG_SPAN_KIND, Ext::AppTypes::TYPE_TEST)
       end
 
+      # Sets the parameters for this span for parametrized tests (e.g. Cucumber examples or RSpec shared specs).
+      # Parameters are needed to compute test fingerprint to distinguish between different tests having same names.
+      # @param [Hash] arguments the arguments that test accepts as key-value hash
+      # @param [Hash] metadata optional metadata
+      # @return [void]
+      def set_parameters(arguments, metadata = {})
+        return if arguments.nil? || arguments.empty?
+
+        set_tag(
+          Ext::Test::TAG_PARAMETERS,
+          JSON.generate(
+            {
+              arguments: arguments,
+              metadata: metadata
+            }
+          )
+        )
+      end
+
       def to_s
         "#{self.class}(name:#{name},tracer_span:#{@tracer_span})"
       end

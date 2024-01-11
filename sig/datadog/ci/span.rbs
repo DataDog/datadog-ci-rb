@@ -42,6 +42,8 @@ module Datadog
       def set_environment_runtime_tags: () -> void
 
       def set_default_tags: () -> void
+
+      def set_parameters: (Hash[String, Object] arguments, ?Hash[String, Object] metadata) -> void
     end
   end
 end

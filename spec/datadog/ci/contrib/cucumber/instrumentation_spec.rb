@@ -216,7 +216,7 @@ RSpec.describe "Cucumber formatter" do
           expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("scenario with examples")
 
           expect(span.get_tag(Datadog::CI::Ext::Test::TAG_PARAMETERS)).to eq(
-            "{\"num1\":\"#{index}\",\"num2\":\"#{index + 1}\",\"total\":\"#{index + index + 1}\"}"
+            "{\"arguments\":{\"num1\":\"#{index}\",\"num2\":\"#{index + 1}\",\"total\":\"#{index + index + 1}\"},\"metadata\":{}}"
           )
         else
           expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(

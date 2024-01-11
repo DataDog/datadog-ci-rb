@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "json"
-
 require_relative "../../ext/test"
 require_relative "../../utils/git"
 require_relative "ext"
@@ -66,18 +64,18 @@ module Datadog
               CI::Ext::Test::TAG_SOURCE_START => event.test_case.location.line.to_s
             }
 
-            if (parameters = extract_parameters_hash(event.test_case))
-              tags[CI::Ext::Test::TAG_PARAMETERS] = JSON.generate(parameters)
-            end
-
             start_test_suite(test_suite_name) unless same_test_suite_as_current?(test_suite_name)
 
-            CI.start_test(
+            test_span = CI.start_test(
               event.test_case.name,
               test_suite_name,
               tags: tags,
               service: configuration[:service_name]
             )
+
+            if (parameters = extract_parameters_hash(event.test_case))
+              test_span.set_parameters(parameters)
+            end
           end
 
           def on_test_case_finished(event)
