@@ -55,6 +55,9 @@ module Datadog
       def set_default_tags
       end
 
+      def set_parameters(arguments, metadata = {})
+      end
+
       def to_s
         self.class.to_s
       end

@@ -10,6 +10,9 @@ RSpec.describe "Cucumber formatter" do
     let(:integration_options) { {service_name: "jalapenos"} }
   end
 
+  let(:cucumber_8_or_above) { Gem::Version.new("8.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
+  let(:cucumber_4_or_above) { Gem::Version.new("4.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
+
   let(:run_id) { rand(1..2**64 - 1) }
   let(:steps_file_definition_path) { "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps.rb" }
   let(:steps_file_for_run_path) do
@@ -35,12 +38,10 @@ RSpec.describe "Cucumber formatter" do
   let(:kernel) { double(:kernel) }
 
   let(:cli) do
-    cucumber_8 = Gem::Version.new("8.0.0")
-
-    if Datadog::CI::Contrib::Cucumber::Integration.version < cucumber_8
-      Cucumber::Cli::Main.new(args, stdin, stdout, stderr, kernel)
-    else
+    if cucumber_8_or_above
       Cucumber::Cli::Main.new(args, stdout, stderr, kernel)
+    else
+      Cucumber::Cli::Main.new(args, stdin, stdout, stderr, kernel)
     end
   end
 
@@ -202,6 +203,37 @@ RSpec.describe "Cucumber formatter" do
     end
   end
 
+  context "executing a scenario with examples" do
+    let(:feature_file_to_run) { "with_parameters.feature" }
+
+    it "a single test suite, and a test span for each example with parameters JSON" do
+      expect(test_spans.count).to eq(3)
+      expect(test_suite_spans.count).to eq(1)
+
+      test_spans.each_with_index do |span, index|
+        # test parameters are available since cucumber 4
+        if cucumber_4_or_above
+          expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("scenario with examples")
+
+          expect(span.get_tag(Datadog::CI::Ext::Test::TAG_PARAMETERS)).to eq(
+            "{\"arguments\":{\"num1\":\"#{index}\",\"num2\":\"#{index + 1}\",\"total\":\"#{index + index + 1}\"},\"metadata\":{}}"
+          )
+        else
+          expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(
+            "scenario with examples, Examples (##{index + 1})"
+          )
+        end
+        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
+          "spec/datadog/ci/contrib/cucumber/features/with_parameters.feature"
+        )
+        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
+        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+          Datadog::CI::Ext::Test::Status::PASS
+        )
+      end
+    end
+  end
+
   context "executing several features at once" do
     let(:expected_test_run_code) { 2 }
 
@@ -209,7 +241,7 @@ RSpec.describe "Cucumber formatter" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans.count).to eq(2)
+      expect(test_suite_spans.count).to eq(3)
       expect(passing_test_suite.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::PASS
       )

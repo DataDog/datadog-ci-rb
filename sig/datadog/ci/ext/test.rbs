@@ -20,8 +20,6 @@ module Datadog
 
         TAG_MODULE: String
 
-        TAG_TRAITS: String
-
         TAG_TYPE: String
 
         TAG_COMMAND: String
@@ -31,6 +29,8 @@ module Datadog
         TAG_SOURCE_START: String
 
         TAG_CODEOWNERS: String
+
+        TAG_PARAMETERS: String
 
         TAG_TEST_SESSION_ID: String
 

@@ -14,6 +14,8 @@ module Datadog
           private :config
 
           def initialize(config)
+            @ast_lookup = ::Cucumber::Formatter::AstLookup.new(config) if defined?(::Cucumber::Formatter::AstLookup)
+
             @config = config
             @failed_tests_count = 0
 
@@ -54,20 +56,26 @@ module Datadog
           def on_test_case_started(event)
             test_suite_name = event.test_case.location.file
 
+            tags = {
+              CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
+              CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
+              CI::Ext::Test::TAG_TYPE => CI::Ext::Test::TEST_TYPE,
+              CI::Ext::Test::TAG_SOURCE_FILE => Utils::Git.relative_to_root(event.test_case.location.file),
+              CI::Ext::Test::TAG_SOURCE_START => event.test_case.location.line.to_s
+            }
+
             start_test_suite(test_suite_name) unless same_test_suite_as_current?(test_suite_name)
 
-            CI.start_test(
+            test_span = CI.start_test(
               event.test_case.name,
               test_suite_name,
-              tags: {
-                CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
-                CI::Ext::Test::TAG_TYPE => CI::Ext::Test::TEST_TYPE,
-                CI::Ext::Test::TAG_SOURCE_FILE => Utils::Git.relative_to_root(event.test_case.location.file),
-                CI::Ext::Test::TAG_SOURCE_START => event.test_case.location.line.to_s
-              },
+              tags: tags,
               service: configuration[:service_name]
             )
+
+            if (parameters = extract_parameters_hash(event.test_case))
+              test_span.set_parameters(parameters)
+            end
           end
 
           def on_test_case_finished(event)
@@ -153,6 +161,27 @@ module Datadog
             return false unless test_suite
 
             test_suite.name == test_suite_name
+          end
+
+          def extract_parameters_hash(test_case)
+            # not supported in cucumber < 4.0
+            return nil unless @ast_lookup
+
+            scenario_source = @ast_lookup.scenario_source(test_case)
+
+            # cucumber examples are only supported for scenario outlines
+            return nil unless scenario_source.type == :ScenarioOutline
+
+            scenario_source.examples.table_header.cells.map(&:value).zip(
+              scenario_source.row.cells.map(&:value)
+            ).to_h
+          rescue => e
+            Datadog.logger.warn do
+              "Unable to extract parameters from test case #{test_case.name}: " \
+                "#{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
+            end
+
+            nil
           end
 
           def configuration

@@ -17,8 +17,9 @@ module Datadog
             attr_reader :datadog_formatter
 
             def formatters
+              existing_formatters = super
               @datadog_formatter ||= CI::Contrib::Cucumber::Formatter.new(@configuration)
-              [@datadog_formatter] + super
+              [@datadog_formatter] + existing_formatters
             end
           end
         end

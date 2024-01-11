@@ -228,4 +228,16 @@ RSpec.describe Datadog::CI::Span do
       expect(span.span_type).to eq("test")
     end
   end
+
+  describe "#set_parameters" do
+    let(:parameters) { {"foo" => "bar", "baz" => "qux"} }
+
+    it "sets the parameters" do
+      expect(tracer_span).to receive(:set_tag).with(
+        "test.parameters", JSON.generate({arguments: parameters, metadata: {}})
+      )
+
+      span.set_parameters(parameters)
+    end
+  end
 end
