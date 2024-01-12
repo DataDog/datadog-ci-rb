@@ -37,6 +37,8 @@ module Datadog
                 },
                 service: configuration[:service_name]
               ) do |test_span|
+                test_span.set_parameters({}, {"scoped_id" => metadata[:scoped_id]})
+
                 result = super
 
                 case execution_result.status

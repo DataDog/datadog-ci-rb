@@ -375,8 +375,12 @@ RSpec.describe "RSpec hooks" do
         shared_test_spans = test_spans.filter { |test_span| test_span.name == "SomeTest shared examples adds 1 and 1" }
         expect(shared_test_spans).to have(2).items
 
-        shared_test_spans.each do |shared_test_span|
+        shared_test_spans.each_with_index do |shared_test_span, index|
           expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+
+          expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_PARAMETERS)).to eq(
+            "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:#{2 + index}:1\"}}"
+          )
         end
 
         test_spans.each do |test_span|
