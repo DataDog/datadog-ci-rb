@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2b837a1b31e404fff31b9db1a8d8329679514d74
+  revision: 5872b4e5c40ee96752d0b83d5abb98a50b63d67d
   branch: 2.0
   specs:
     ddtrace (1.18.0)
@@ -39,7 +39,7 @@ GEM
     msgpack (1.7.2)
     os (1.1.4)
     parallel (1.24.0)
-    parser (3.2.2.4)
+    parser (3.3.0.3)
       ast (~> 2.4.1)
       racc
     pimpmychangelog (0.1.3)
@@ -50,7 +50,7 @@ GEM
     rainbow (3.1.1)
     rake (13.1.0)
     redcarpet (3.6.0)
-    regexp_parser (2.8.3)
+    regexp_parser (2.9.0)
     rexml (3.2.6)
     rspec (3.12.0)
       rspec-core (~> 3.12.0)
@@ -82,7 +82,7 @@ GEM
       unicode-display_width (>= 2.4.0, < 3.0)
     rubocop-ast (1.30.0)
       parser (>= 3.2.1.0)
-    rubocop-performance (1.20.1)
+    rubocop-performance (1.20.2)
       rubocop (>= 1.48.1, < 2.0)
       rubocop-ast (>= 1.30.0, < 2.0)
     ruby-progressbar (1.13.0)
@@ -104,9 +104,9 @@ GEM
     standard-custom (1.0.2)
       lint_roller (~> 1.0)
       rubocop (~> 1.50)
-    standard-performance (1.3.0)
+    standard-performance (1.3.1)
       lint_roller (~> 1.1)
-      rubocop-performance (~> 1.20.1)
+      rubocop-performance (~> 1.20.2)
     thor (1.3.0)
     timecop (0.9.8)
     unicode-display_width (2.5.0)
