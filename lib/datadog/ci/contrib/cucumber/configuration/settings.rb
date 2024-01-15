@@ -4,6 +4,7 @@ require "datadog/core"
 
 require_relative "../ext"
 require_relative "../../settings"
+require_relative "../../../utils/git"
 
 module Datadog
   module CI
@@ -21,7 +22,9 @@ module Datadog
 
             option :service_name do |o|
               o.type :string
-              o.default { Datadog.configuration.service_without_fallback || Ext::DEFAULT_SERVICE_NAME }
+              o.default do
+                Datadog.configuration.service_without_fallback || Utils::Git.repository_name || Ext::DEFAULT_SERVICE_NAME
+              end
             end
 
             # @deprecated Will be removed in 1.0
