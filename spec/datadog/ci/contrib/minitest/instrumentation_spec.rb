@@ -50,7 +50,7 @@ RSpec.describe "Minitest instrumentation" do
 
       klass.new(:test_foo).run
 
-      expect(span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+      expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
       expect(span.name).to eq("SomeTest#test_foo")
       expect(span.resource).to eq("SomeTest#test_foo")
       expect(span.service).to eq("ltest")
@@ -102,52 +102,14 @@ RSpec.describe "Minitest instrumentation" do
           "SomeSpec"
         end
 
-<<<<<<< HEAD
-    expect(spans).to have(num_tests).items
-  end
-
-  it "creates span for spec" do
-    klass = Class.new(Minitest::Spec) do
-      def self.name
-        "SomeSpec"
-      end
-
-      it "does not fail" do
-      end
-    end
-
-    method_name = klass.runnable_methods.first
-    klass.new(method_name).run
-
-    expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    expect(span.resource).to eq("SomeSpec##{method_name}")
-    expect(span.service).to eq("ltest")
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeSpec##{method_name}")
-    expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
-      "SomeSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
-    )
-  end
-
-  it "creates spans for several specs" do
-    num_specs = 20
-
-    klass = Class.new(Minitest::Spec) do
-      def self.name
-        "SomeSpec"
-      end
-
-      num_specs.times do |i|
-        it "does not fail #{i}" do
-=======
         it "does not fail" do
->>>>>>> 357ca28 (use repository name as default service name for contribs)
         end
       end
 
       method_name = klass.runnable_methods.first
       klass.new(method_name).run
 
-      expect(span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+      expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
       expect(span.resource).to eq("SomeSpec##{method_name}")
       expect(span.service).to eq("ltest")
       expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeSpec##{method_name}")
@@ -170,44 +132,18 @@ RSpec.describe "Minitest instrumentation" do
         end
       end
 
-<<<<<<< HEAD
-      it "creates a test session span" do
-        expect(test_session_span).not_to be_nil
-        expect(test_session_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
-        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-          Datadog::CI::Ext::AppTypes::TYPE_TEST
-        )
-        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-          Datadog::CI::Ext::Test::TEST_TYPE
-        )
-        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-          Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
-        )
-        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
-          Datadog::CI::Contrib::Minitest::Integration.version.to_s
-        )
-        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-          Datadog::CI::Ext::Test::Status::PASS
-        )
-=======
       klass.runnable_methods.each do |method_name|
         klass.new(method_name).run
->>>>>>> 357ca28 (use repository name as default service name for contribs)
       end
 
       expect(spans).to have(num_specs).items
     end
 
-<<<<<<< HEAD
-        expect(test_module_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
-        expect(test_module_span.name).to eq(test_command)
-=======
     it "creates spans for example with instrumentation" do
       klass = Class.new(Minitest::Test) do
         def self.name
           "SomeTest"
         end
->>>>>>> 357ca28 (use repository name as default service name for contribs)
 
         def test_foo
           Datadog::Tracing.trace("get_time") do
@@ -218,12 +154,7 @@ RSpec.describe "Minitest instrumentation" do
 
       klass.new(:test_foo).run
 
-<<<<<<< HEAD
-        expect(test_suite_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
-        expect(test_suite_span.name).to eq("SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb")
-=======
       expect(spans).to have(2).items
->>>>>>> 357ca28 (use repository name as default service name for contribs)
 
       spans.each do |span|
         expect(span.get_tag(Datadog::Tracing::Metadata::Ext::Distributed::TAG_ORIGIN))
@@ -476,7 +407,7 @@ RSpec.describe "Minitest instrumentation" do
 
         it "creates a test session span" do
           expect(test_session_span).not_to be_nil
-          expect(test_session_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
+          expect(test_session_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
           expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
             Datadog::CI::Ext::AppTypes::TYPE_TEST
           )
@@ -497,7 +428,7 @@ RSpec.describe "Minitest instrumentation" do
         it "creates a test module span" do
           expect(test_module_span).not_to be_nil
 
-          expect(test_module_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+          expect(test_module_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
           expect(test_module_span.name).to eq(test_command)
 
           expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
@@ -520,7 +451,7 @@ RSpec.describe "Minitest instrumentation" do
         it "creates a test suite span" do
           expect(test_suite_span).not_to be_nil
 
-          expect(test_suite_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
+          expect(test_suite_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
           expect(test_suite_span.name).to eq("SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb")
 
           expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
