@@ -44,7 +44,7 @@ module Datadog
         end
 
         def self.repository_name
-          @@repository_name if defined?(@@repository_name)
+          return @@repository_name if defined?(@@repository_name)
 
           git_remote_url = exec_git_command("git ls-remote --get-url origin")
 

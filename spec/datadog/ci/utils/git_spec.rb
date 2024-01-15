@@ -131,34 +131,18 @@ RSpec.describe ::Datadog::CI::Utils::Git do
   describe ".repository_name" do
     subject { described_class.repository_name }
 
-    context "when git remote is nil" do
+    it { is_expected.to eq("datadog-ci-rb") }
+
+    context "caches the result" do
       before do
-        allow(described_class).to receive(:exec_git_command).and_return(nil)
+        expect(Open3).to receive(:capture2e).never
       end
 
-      it "returns current folder name" do
-        expect(described_class.repository_name).to eq(described_class.current_folder_name)
+      it "returns the same result" do
+        2.times do
+          expect(described_class.root).to eq(Dir.pwd)
+        end
       end
-    end
-
-    context "when git remote fetching fails" do
-      before do
-        allow(described_class).to receive(:exec_git_command).and_raise(StandardError)
-      end
-
-      it "returns current folder name" do
-        expect(described_class.repository_name).to eq(described_class.current_folder_name)
-      end
-    end
-
-    context "when git remote is not nil" do
-      before do
-        allow(described_class).to receive(:exec_git_command).and_return(
-          "git://github.com/foo/bar.git"
-        )
-      end
-
-      it { is_expected.to eq("bar") }
     end
   end
 end
