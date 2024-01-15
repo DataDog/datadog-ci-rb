@@ -105,4 +105,60 @@ RSpec.describe ::Datadog::CI::Utils::Git do
       end
     end
   end
+
+  describe ".current_folder_name" do
+    subject { described_class.current_folder_name }
+    let(:path) { "/foo/bar" }
+
+    context "when git root is nil" do
+      before do
+        allow(described_class).to receive(:root).and_return(nil)
+        allow(Dir).to receive(:pwd).and_return(path)
+      end
+
+      it { is_expected.to eq("bar") }
+    end
+
+    context "when git root is not nil" do
+      before do
+        allow(described_class).to receive(:root).and_return(path)
+      end
+
+      it { is_expected.to eq("bar") }
+    end
+  end
+
+  describe ".repository_name" do
+    subject { described_class.repository_name }
+
+    context "when git remote is nil" do
+      before do
+        allow(described_class).to receive(:exec_git_command).and_return(nil)
+      end
+
+      it "returns current folder name" do
+        expect(described_class.repository_name).to eq(described_class.current_folder_name)
+      end
+    end
+
+    context "when git remote fetching fails" do
+      before do
+        allow(described_class).to receive(:exec_git_command).and_raise(StandardError)
+      end
+
+      it "returns current folder name" do
+        expect(described_class.repository_name).to eq(described_class.current_folder_name)
+      end
+    end
+
+    context "when git remote is not nil" do
+      before do
+        allow(described_class).to receive(:exec_git_command).and_return(
+          "git://github.com/foo/bar.git"
+        )
+      end
+
+      it { is_expected.to eq("bar") }
+    end
+  end
 end
