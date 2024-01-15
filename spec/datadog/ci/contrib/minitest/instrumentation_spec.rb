@@ -32,7 +32,7 @@ RSpec.describe "Minitest instrumentation" do
 
     klass.new(:test_foo).run
 
-    expect(span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+    expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
     expect(span.name).to eq("SomeTest#test_foo")
     expect(span.resource).to eq("SomeTest#test_foo")
     expect(span.service).to eq("ltest")
@@ -91,7 +91,7 @@ RSpec.describe "Minitest instrumentation" do
     method_name = klass.runnable_methods.first
     klass.new(method_name).run
 
-    expect(span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+    expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
     expect(span.resource).to eq("SomeSpec##{method_name}")
     expect(span.service).to eq("ltest")
     expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeSpec##{method_name}")
@@ -389,7 +389,7 @@ RSpec.describe "Minitest instrumentation" do
 
       it "creates a test session span" do
         expect(test_session_span).not_to be_nil
-        expect(test_session_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
+        expect(test_session_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
         expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
           Datadog::CI::Ext::AppTypes::TYPE_TEST
         )
@@ -410,7 +410,7 @@ RSpec.describe "Minitest instrumentation" do
       it "creates a test module span" do
         expect(test_module_span).not_to be_nil
 
-        expect(test_module_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+        expect(test_module_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
         expect(test_module_span.name).to eq(test_command)
 
         expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
@@ -433,7 +433,7 @@ RSpec.describe "Minitest instrumentation" do
       it "creates a test suite span" do
         expect(test_suite_span).not_to be_nil
 
-        expect(test_suite_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
+        expect(test_suite_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
         expect(test_suite_span.name).to eq("SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb")
 
         expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(

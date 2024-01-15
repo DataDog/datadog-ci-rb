@@ -72,7 +72,7 @@ RSpec.describe "Cucumber formatter" do
     it "creates spans for each scenario and step" do
       scenario_span = spans.find { |s| s.resource == "cucumber scenario" }
 
-      expect(scenario_span.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+      expect(scenario_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
       expect(scenario_span.name).to eq("cucumber scenario")
       expect(scenario_span.resource).to eq("cucumber scenario")
       expect(scenario_span.service).to eq("jalapenos")
