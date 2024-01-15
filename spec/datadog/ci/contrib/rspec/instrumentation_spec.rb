@@ -246,7 +246,8 @@ RSpec.describe "RSpec hooks" do
 
           if with_shared_test
             require_relative "some_shared_examples"
-            include_examples "Testing shared examples"
+            include_examples "Testing shared examples", 2
+            include_examples "Testing shared examples", 1
           end
         end
 
@@ -371,8 +372,16 @@ RSpec.describe "RSpec hooks" do
       let!(:spec) { rspec_session_run(with_shared_test: true) }
 
       it "creates correct test spans connects all tests to a single test suite" do
-        shared_test_span = test_spans.find { |test_span| test_span.name == "SomeTest shared examples adds 1 and 1" }
-        expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+        shared_test_spans = test_spans.filter { |test_span| test_span.name == "SomeTest shared examples adds 1 and 1" }
+        expect(shared_test_spans).to have(2).items
+
+        shared_test_spans.each_with_index do |shared_test_span, index|
+          expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+
+          expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_PARAMETERS)).to eq(
+            "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:#{2 + index}:1\"}}"
+          )
+        end
 
         test_spans.each do |test_span|
           expect(test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)

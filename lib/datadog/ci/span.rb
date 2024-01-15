@@ -139,7 +139,7 @@ module Datadog
       # @param [Hash] metadata optional metadata
       # @return [void]
       def set_parameters(arguments, metadata = {})
-        return if arguments.nil? || arguments.empty?
+        return if arguments.nil?
 
         set_tag(
           Ext::Test::TAG_PARAMETERS,
