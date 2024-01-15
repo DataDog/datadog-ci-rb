@@ -101,7 +101,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         it "traces the block" do
           expect(subject.resource).to eq(span_name)
-          expect(subject.span_type).to eq(span_type)
+          expect(subject.type).to eq(span_type)
         end
       end
     end
@@ -125,7 +125,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         it "traces the block" do
           expect(subject.resource).to eq(span_name)
-          expect(subject.span_type).to eq(span_type)
+          expect(subject.type).to eq(span_type)
         end
 
         it "sets the custom metric correctly" do
@@ -158,7 +158,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           subject.finish
 
           expect(span.resource).to eq(span_name)
-          expect(span.span_type).to eq(span_type)
+          expect(span.type).to eq(span_type)
         end
 
         it_behaves_like "span with environment tags"
@@ -326,7 +326,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(test_name)
           expect(subject.service).to eq(test_service)
           expect(subject.name).to eq(test_name)
-          expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+          expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
         end
 
         it "sets the provided tags correctly" do
