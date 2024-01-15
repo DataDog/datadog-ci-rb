@@ -225,7 +225,7 @@ module Datadog
 
         def build_span_options(service, span_type, other_options = {})
           other_options[:service] = service || @global_context.service
-          other_options[:span_type] = span_type
+          other_options[:type] = span_type
 
           other_options
         end
