@@ -28,7 +28,7 @@ module Datadog
               suite_name = "#{test_suite_description} at #{metadata[:example_group][:rerun_file_path]}"
 
               # remove suite name from test name to avoid duplication
-              test_name = test_name.sub("#{test_suite_description} ", "").strip
+              test_name = test_name.sub(test_suite_description, "").strip
 
               CI.trace_test(
                 test_name,
