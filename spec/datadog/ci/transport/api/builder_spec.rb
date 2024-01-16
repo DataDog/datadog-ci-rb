@@ -103,8 +103,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
         hostname: "localhost",
         port: 5555,
         uds_path: nil,
-        timeout_seconds: 42,
-        deprecated_for_removal_transport_configuration_proc: nil
+        timeout_seconds: 42
       )
     end
 
