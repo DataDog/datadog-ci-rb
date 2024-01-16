@@ -51,10 +51,10 @@ RSpec.describe "Minitest instrumentation" do
       klass.new(:test_foo).run
 
       expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-      expect(span.name).to eq("SomeTest#test_foo")
-      expect(span.resource).to eq("SomeTest#test_foo")
+      expect(span.name).to eq("test_foo")
+      expect(span.resource).to eq("test_foo")
       expect(span.service).to eq("ltest")
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeTest#test_foo")
+      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("test_foo")
       expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
         "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
@@ -110,9 +110,9 @@ RSpec.describe "Minitest instrumentation" do
       klass.new(method_name).run
 
       expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-      expect(span.resource).to eq("SomeSpec##{method_name}")
+      expect(span.resource).to eq(method_name)
       expect(span.service).to eq("ltest")
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeSpec##{method_name}")
+      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(method_name)
       expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
         "SomeSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
@@ -514,7 +514,7 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "traces test, test session, test module with failed status" do
-          expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("SomeFailedTest#test_fail")
+          expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("test_fail")
           expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
             Datadog::CI::Ext::Test::Status::FAIL
           )
@@ -561,10 +561,10 @@ RSpec.describe "Minitest instrumentation" do
 
           expect(test_names).to eq(
             [
-              "SomeSpec#test_0001_does not fail",
-              "in context#test_0001_does not fail",
-              "in context::deeper context#test_0001_does not fail",
-              "in other context#test_0001_does not fail"
+              "test_0001_does not fail",
+              "test_0001_does not fail",
+              "test_0001_does not fail",
+              "test_0001_does not fail"
             ]
           )
         end
@@ -635,10 +635,10 @@ RSpec.describe "Minitest instrumentation" do
           test_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_NAME) }.sort
           expect(test_names).to eq(
             [
-              "TestA#test_a_1",
-              "TestA#test_a_2",
-              "TestB#test_b_1",
-              "TestB#test_b_2"
+              "test_a_1",
+              "test_a_2",
+              "test_b_1",
+              "test_b_2"
             ]
           )
 
