@@ -43,6 +43,31 @@ module Datadog
           path.relative_path_from(git_root).to_s
         end
 
+        def self.repository_name
+          return @@repository_name if defined?(@@repository_name)
+
+          git_remote_url = exec_git_command("git ls-remote --get-url origin")
+
+          # return git repository name from remote url without .git extension
+          last_path_segment = git_remote_url.split("/").last if git_remote_url
+          @@repository_name = last_path_segment.gsub(".git", "") if last_path_segment
+          @@repository_name ||= current_folder_name
+        rescue => e
+          Datadog.logger.debug(
+            "Unable to get git remote: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
+          )
+          @@repository_name = current_folder_name
+        end
+
+        def self.current_folder_name
+          root_folder = root
+          if root_folder.nil?
+            File.basename(Dir.pwd)
+          else
+            File.basename(root_folder)
+          end
+        end
+
         def self.exec_git_command(cmd)
           out, status = Open3.capture2e(cmd)
 

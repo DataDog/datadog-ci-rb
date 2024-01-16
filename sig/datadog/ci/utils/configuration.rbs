@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Utils
+      module Configuration
+        def self.fetch_service_name: (String default) -> String
+      end
+    end
+  end
+end

@@ -105,4 +105,44 @@ RSpec.describe ::Datadog::CI::Utils::Git do
       end
     end
   end
+
+  describe ".current_folder_name" do
+    subject { described_class.current_folder_name }
+    let(:path) { "/foo/bar" }
+
+    context "when git root is nil" do
+      before do
+        allow(described_class).to receive(:root).and_return(nil)
+        allow(Dir).to receive(:pwd).and_return(path)
+      end
+
+      it { is_expected.to eq("bar") }
+    end
+
+    context "when git root is not nil" do
+      before do
+        allow(described_class).to receive(:root).and_return(path)
+      end
+
+      it { is_expected.to eq("bar") }
+    end
+  end
+
+  describe ".repository_name" do
+    subject { described_class.repository_name }
+
+    it { is_expected.to eq("datadog-ci-rb") }
+
+    context "caches the result" do
+      before do
+        expect(Open3).to receive(:capture2e).never
+      end
+
+      it "returns the same result" do
+        2.times do
+          expect(described_class.root).to eq(Dir.pwd)
+        end
+      end
+    end
+  end
 end
