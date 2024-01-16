@@ -30,11 +30,13 @@ RSpec.describe "RSpec hooks" do
     end
 
     expect(first_test_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    expect(first_test_span.name).to eq("some test foo")
-    expect(first_test_span.resource).to eq("some test foo")
     expect(first_test_span.service).to eq("lspec")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("some test foo")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+
+    expect(first_test_span.name).to eq("foo")
+    expect(first_test_span.resource).to eq("foo")
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq("some test at #{spec.file_path}")
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK)
@@ -76,7 +78,7 @@ RSpec.describe "RSpec hooks" do
       end.run
     end
 
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to match(/some unnamed test example at .+/)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to match(/example at .+/)
   end
 
   it "creates span for deeply nested examples" do
@@ -108,9 +110,9 @@ RSpec.describe "RSpec hooks" do
       end.tap(&:run)
     end
 
-    expect(first_test_span.resource).to eq("some nested test 1 2 3 4 5 6 7 8 9 10 foo")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("some nested test 1 2 3 4 5 6 7 8 9 10 foo")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+    expect(first_test_span.resource).to eq("1 2 3 4 5 6 7 8 9 10 foo")
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("1 2 3 4 5 6 7 8 9 10 foo")
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq("some nested test at #{spec.file_path}")
   end
 
   it "creates spans for example with instrumentation" do
@@ -234,20 +236,22 @@ RSpec.describe "RSpec hooks" do
     def rspec_session_run(with_failed_test: false, with_shared_test: false)
       with_new_rspec_environment do
         spec = RSpec.describe "SomeTest" do
-          it "foo" do
-            # DO NOTHING
-          end
-
-          if with_failed_test
-            it "fails" do
-              expect(1).to eq(2)
+          context "nested" do
+            it "foo" do
+              # DO NOTHING
             end
-          end
 
-          if with_shared_test
-            require_relative "some_shared_examples"
-            include_examples "Testing shared examples", 2
-            include_examples "Testing shared examples", 1
+            if with_failed_test
+              it "fails" do
+                expect(1).to eq(2)
+              end
+            end
+
+            if with_shared_test
+              require_relative "some_shared_examples"
+              include_examples "Testing shared examples", 2
+              include_examples "Testing shared examples", 1
+            end
           end
         end
 
@@ -312,7 +316,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_suite_span).not_to be_nil
 
       expect(test_suite_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
-      expect(test_suite_span.name).to eq(spec.file_path)
+      expect(test_suite_span.name).to eq("SomeTest at #{spec.file_path}")
 
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
         Datadog::CI::Ext::AppTypes::TYPE_TEST
@@ -372,14 +376,14 @@ RSpec.describe "RSpec hooks" do
       let!(:spec) { rspec_session_run(with_shared_test: true) }
 
       it "creates correct test spans connects all tests to a single test suite" do
-        shared_test_spans = test_spans.filter { |test_span| test_span.name == "SomeTest shared examples adds 1 and 1" }
+        shared_test_spans = test_spans.filter { |test_span| test_span.name == "nested shared examples adds 1 and 1" }
         expect(shared_test_spans).to have(2).items
 
         shared_test_spans.each_with_index do |shared_test_span, index|
-          expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(spec.file_path)
+          expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq("SomeTest at #{spec.file_path}")
 
           expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_PARAMETERS)).to eq(
-            "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:#{2 + index}:1\"}}"
+            "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:#{2 + index}:1\"}}"
           )
         end
 

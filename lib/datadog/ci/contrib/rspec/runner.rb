@@ -14,8 +14,8 @@ module Datadog
           end
 
           module InstanceMethods
-            def run_specs(example_groups)
-              return super unless configuration[:enabled]
+            def run_specs(*)
+              return super unless datadog_configuration[:enabled]
 
               test_session = CI.start_test_session(
                 tags: {
@@ -23,7 +23,7 @@ module Datadog
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
                   CI::Ext::Test::TAG_TYPE => CI::Ext::Test::TEST_TYPE
                 },
-                service: configuration[:service_name]
+                service: datadog_configuration[:service_name]
               )
 
               test_module = CI.start_test_module(test_session.name)
@@ -46,7 +46,7 @@ module Datadog
 
             private
 
-            def configuration
+            def datadog_configuration
               Datadog.configuration.ci[:rspec]
             end
           end

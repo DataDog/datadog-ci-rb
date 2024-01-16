@@ -14,7 +14,6 @@ end
 module Cucumber::Formatter
 end
 
-
 class Cucumber::Core::Test::Result
   def failed?: () -> bool
   def ok?: () -> bool
@@ -26,4 +25,16 @@ class Cucumber::Formatter::AstLookup
   def initialize: (untyped config) -> void
 
   def scenario_source: (untyped test_case) -> untyped
+  def gherkin_document: (String uri) -> Cucumber::Messages::GherkinDocument?
+end
+
+module Cucumber::Messages
+end
+
+class Cucumber::Messages::GherkinDocument
+  def feature: () -> Cucumber::Messages::Feature
+end
+
+class Cucumber::Messages::Feature
+  def name: () -> String
 end

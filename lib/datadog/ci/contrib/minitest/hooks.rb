@@ -14,8 +14,6 @@ module Datadog
             super
             return unless datadog_configuration[:enabled]
 
-            test_name = "#{class_name}##{name}"
-
             test_suite_name = Helpers.test_suite_name(self.class, name)
             if Helpers.parallel?(self.class)
               test_suite_name = "#{test_suite_name} (#{name} concurrently)"
@@ -27,7 +25,7 @@ module Datadog
             source_file, line_number = method(name).source_location
 
             CI.start_test(
-              test_name,
+              name,
               test_suite_name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,

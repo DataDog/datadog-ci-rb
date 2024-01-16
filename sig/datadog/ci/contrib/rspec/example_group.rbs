@@ -12,7 +12,7 @@ module Datadog
 
             private
 
-            def configuration: () -> untyped
+            def datadog_configuration: () -> untyped
           end
         end
       end

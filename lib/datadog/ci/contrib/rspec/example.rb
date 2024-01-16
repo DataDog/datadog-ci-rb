@@ -14,10 +14,9 @@ module Datadog
             base.prepend(InstanceMethods)
           end
 
-          # Instance methods for configuration
           module InstanceMethods
-            def run(example_group_instance, reporter)
-              return super unless configuration[:enabled]
+            def run(*)
+              return super unless datadog_configuration[:enabled]
 
               test_name = full_description.strip
               if metadata[:description].empty?
@@ -25,9 +24,15 @@ module Datadog
                 test_name += " #{description}"
               end
 
+              test_suite_description = fetch_top_level_example_group[:description]
+              suite_name = "#{test_suite_description} at #{metadata[:example_group][:rerun_file_path]}"
+
+              # remove suite name from test name to avoid duplication
+              test_name = test_name.sub(test_suite_description, "").strip
+
               CI.trace_test(
                 test_name,
-                metadata[:example_group][:rerun_file_path],
+                suite_name,
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
@@ -35,7 +40,7 @@ module Datadog
                   CI::Ext::Test::TAG_SOURCE_FILE => Utils::Git.relative_to_root(metadata[:file_path]),
                   CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
                 },
-                service: configuration[:service_name]
+                service: datadog_configuration[:service_name]
               ) do |test_span|
                 test_span.set_parameters({}, {"scoped_id" => metadata[:scoped_id]})
 
@@ -56,7 +61,17 @@ module Datadog
 
             private
 
-            def configuration
+            def fetch_top_level_example_group
+              return metadata[:example_group] unless metadata[:example_group][:parent_example_group]
+
+              res = metadata[:example_group][:parent_example_group]
+              while (parent = res[:parent_example_group])
+                res = parent
+              end
+              res
+            end
+
+            def datadog_configuration
               Datadog.configuration.ci[:rspec]
             end
           end

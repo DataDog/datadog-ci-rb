@@ -54,7 +54,7 @@ module Datadog
           end
 
           def on_test_case_started(event)
-            test_suite_name = event.test_case.location.file
+            test_suite_name = test_suite_name(event.test_case)
 
             tags = {
               CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
@@ -107,6 +107,21 @@ module Datadog
           end
 
           private
+
+          def test_suite_name(test_case)
+            feature = if test_case.respond_to?(:feature)
+              test_case.feature
+            elsif @ast_lookup
+              gherkin_doc = @ast_lookup.gherkin_document(test_case.location.file)
+              gherkin_doc.feature if gherkin_doc
+            end
+
+            if feature
+              "#{feature.name} at #{test_case.location.file}"
+            else
+              test_case.location.file
+            end
+          end
 
           def finish_test(span, result)
             if result.skipped?

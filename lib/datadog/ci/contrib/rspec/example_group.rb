@@ -7,7 +7,7 @@ module Datadog
   module CI
     module Contrib
       module RSpec
-        # Instrument RSpec::Core::Example
+        # Instrument RSpec::Core::ExampleGroup
         module ExampleGroup
           def self.included(base)
             base.singleton_class.prepend(ClassMethods)
@@ -15,11 +15,12 @@ module Datadog
 
           # Instance methods for configuration
           module ClassMethods
-            def run(reporter = ::RSpec::Core::NullReporter)
-              return super unless configuration[:enabled]
+            def run(*)
+              return super unless datadog_configuration[:enabled]
               return super unless top_level?
 
-              test_suite = Datadog::CI.start_test_suite(file_path)
+              suite_name = "#{description} at #{file_path}"
+              test_suite = Datadog::CI.start_test_suite(suite_name)
 
               result = super
 
@@ -35,7 +36,7 @@ module Datadog
 
             private
 
-            def configuration
+            def datadog_configuration
               Datadog.configuration.ci[:rspec]
             end
           end
