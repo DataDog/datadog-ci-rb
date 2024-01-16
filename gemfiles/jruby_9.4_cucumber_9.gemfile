@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-gem "ddtrace"
+gem "ddtrace", github: "DataDog/dd-trace-rb", branch: "2.0"
 gem "pry"
 gem "rake"
 gem "os"
