@@ -4,7 +4,7 @@ require "datadog/core"
 
 require_relative "../ext"
 require_relative "../../settings"
-require_relative "../../../utils/git"
+require_relative "../../../utils/configuration"
 
 module Datadog
   module CI
@@ -23,7 +23,7 @@ module Datadog
             option :service_name do |o|
               o.type :string
               o.default do
-                Datadog.configuration.service_without_fallback || Utils::Git.repository_name || Ext::DEFAULT_SERVICE_NAME
+                Utils::Configuration.fetch_service_name(Ext::DEFAULT_SERVICE_NAME)
               end
             end
 
