@@ -30,6 +30,8 @@ module Datadog
 
           private
 
+          def test_suite_name: (untyped test_case) -> String
+
           def start_test_suite: (String test_suite_name) -> void
 
           def finish_current_test_suite: () -> void

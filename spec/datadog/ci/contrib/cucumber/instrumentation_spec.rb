@@ -80,7 +80,7 @@ RSpec.describe "Cucumber formatter" do
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("cucumber scenario")
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
-        "spec/datadog/ci/contrib/cucumber/features/passing.feature"
+        "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature"
       )
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
@@ -147,7 +147,7 @@ RSpec.describe "Cucumber formatter" do
 
     it "creates test suite span" do
       expect(test_suite_span).not_to be_nil
-      expect(test_suite_span.name).to eq(features_path)
+      expect(test_suite_span.name).to eq("Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature")
       expect(test_suite_span.service).to eq("jalapenos")
       expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
         Datadog::CI::Ext::AppTypes::TYPE_TEST
@@ -189,7 +189,9 @@ RSpec.describe "Cucumber formatter" do
         Datadog::CI::Ext::Test::Status::FAIL
       )
 
-      expect(test_suite_span.name).to eq(features_path)
+      expect(test_suite_span.name).to eq(
+        "Datadog integration - test failing features at spec/datadog/ci/contrib/cucumber/features/failing.feature"
+      )
       expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::FAIL
       )
@@ -224,7 +226,7 @@ RSpec.describe "Cucumber formatter" do
           )
         end
         expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
-          "spec/datadog/ci/contrib/cucumber/features/with_parameters.feature"
+          "Datadog integration for parametrized tests at spec/datadog/ci/contrib/cucumber/features/with_parameters.feature"
         )
         expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
         expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
