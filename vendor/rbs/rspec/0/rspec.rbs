@@ -21,6 +21,7 @@ module RSpec::Core::ExampleGroup
     def run: () -> bool
     def top_level?: () -> bool
     def file_path: () -> String
+    def description: () -> String
   end
 end
 

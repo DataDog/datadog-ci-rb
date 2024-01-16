@@ -11,7 +11,8 @@ module Datadog
 
             private
 
-            def configuration: () -> untyped
+            def fetch_top_level_example_group: () -> Hash[Symbol, untyped]
+            def datadog_configuration: () -> untyped
           end
         end
       end
