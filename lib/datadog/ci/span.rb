@@ -32,7 +32,7 @@ module Datadog
       end
 
       # @return [String] the type of the span (for example "test" or type that was provided to [Datadog::CI.trace]).
-      def span_type
+      def type
         tracer_span.type
       end
 

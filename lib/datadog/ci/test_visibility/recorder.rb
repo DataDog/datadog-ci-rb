@@ -121,10 +121,10 @@ module Datadog
           end
         end
 
-        def trace(span_type, span_name, tags: {}, &block)
+        def trace(type, span_name, tags: {}, &block)
           span_options = build_span_options(
             nil, # service name is completely optional for custom spans
-            span_type,
+            type,
             {resource: span_name}
           )
 
@@ -224,9 +224,9 @@ module Datadog
           span
         end
 
-        def build_span_options(service, span_type, other_options = {})
+        def build_span_options(service, type, other_options = {})
           other_options[:service] = service || @global_context.service
-          other_options[:type] = span_type
+          other_options[:type] = type
 
           other_options
         end

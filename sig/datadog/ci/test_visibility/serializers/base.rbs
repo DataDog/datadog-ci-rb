@@ -46,11 +46,11 @@ module Datadog
 
           def test_suite_id: () -> Integer?
 
-          def type: () -> nil
-
           def version: () -> 1
 
-          def span_type: () -> String
+          def type: () -> String
+
+          def event_type: () -> String
 
           def name: () -> String
 

@@ -45,7 +45,7 @@ module Datadog
 
             packer.write_map_header(3)
 
-            write_field(packer, "type")
+            write_field(packer, "type", "event_type")
             write_field(packer, "version")
 
             packer.write("content")
@@ -119,15 +119,16 @@ module Datadog
             to_integer(@span.get_tag(Ext::Test::TAG_TEST_SUITE_ID))
           end
 
-          def type
-          end
-
           def version
             1
           end
 
           def span_type
             @span.type
+          end
+
+          def event_type
+            "span"
           end
 
           def name

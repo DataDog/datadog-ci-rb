@@ -21,7 +21,7 @@ module Datadog
             CONTENT_MAP_SIZE
           end
 
-          def type
+          def event_type
             "span"
           end
 

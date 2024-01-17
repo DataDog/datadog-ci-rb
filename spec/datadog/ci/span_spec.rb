@@ -223,9 +223,9 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
-  describe "#span_type" do
+  describe "#type" do
     it "returns 'test'" do
-      expect(span.span_type).to eq("test")
+      expect(span.type).to eq("test")
     end
   end
 
