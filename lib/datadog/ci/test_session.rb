@@ -17,7 +17,7 @@ module Datadog
       def finish
         super
 
-        CI.deactivate_test_session
+        recorder.deactivate_test_session
       end
 
       # Return the test session's name which is equal to test command used

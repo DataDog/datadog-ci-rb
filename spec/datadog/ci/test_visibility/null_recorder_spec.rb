@@ -115,9 +115,7 @@ RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
   end
 
   describe "#deactivate_test" do
-    let(:ci_test) { double }
-
-    subject { recorder.deactivate_test(ci_test) }
+    subject { recorder.deactivate_test }
 
     it { is_expected.to be_nil }
   end

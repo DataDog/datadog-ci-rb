@@ -42,7 +42,7 @@ module Datadog
         def active_test_suite(test_suite_name)
         end
 
-        def deactivate_test(test)
+        def deactivate_test
         end
 
         def deactivate_test_session

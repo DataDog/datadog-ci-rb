@@ -25,13 +25,7 @@ module Datadog
 
     def self.active_span: () -> Datadog::CI::Span?
 
-    def self.deactivate_test: () -> void
-
-    def self.deactivate_test_session: () -> void
-
-    def self.deactivate_test_module: () -> void
-
-    def self.deactivate_test_suite: (String test_suite_name) -> void
+    private
 
     def self.components: () -> Datadog::CI::Configuration::Components
 

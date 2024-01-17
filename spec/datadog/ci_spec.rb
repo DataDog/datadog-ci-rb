@@ -150,16 +150,6 @@ RSpec.describe Datadog::CI do
       it { is_expected.to be(ci_test_session) }
     end
 
-    describe "::deactivate_test_session" do
-      subject(:deactivate_test_session) { described_class.deactivate_test_session }
-
-      before do
-        allow(recorder).to receive(:deactivate_test_session)
-      end
-
-      it { is_expected.to be_nil }
-    end
-
     describe "::start_test_module" do
       subject(:start_test_module) { described_class.start_test_module("my-module") }
 
@@ -184,16 +174,6 @@ RSpec.describe Datadog::CI do
       end
 
       it { is_expected.to be(ci_test_module) }
-    end
-
-    describe "::deactivate_test_module" do
-      subject(:deactivate_test_module) { described_class.deactivate_test_module }
-
-      before do
-        allow(recorder).to receive(:deactivate_test_module)
-      end
-
-      it { is_expected.to be_nil }
     end
 
     describe "::start_test_suite" do
@@ -221,17 +201,6 @@ RSpec.describe Datadog::CI do
       end
 
       it { is_expected.to be(ci_test_suite) }
-    end
-
-    describe "::deactivate_test_suite" do
-      let(:test_suite_name) { "my-suite" }
-      subject(:deactivate_test_suite) { described_class.deactivate_test_suite(test_suite_name) }
-
-      before do
-        allow(recorder).to receive(:deactivate_test_suite).with(test_suite_name)
-      end
-
-      it { is_expected.to be_nil }
     end
   end
 

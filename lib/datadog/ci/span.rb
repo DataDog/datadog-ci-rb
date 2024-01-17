@@ -155,6 +155,13 @@ module Datadog
       def to_s
         "#{self.class}(name:#{name},tracer_span:#{@tracer_span})"
       end
+
+      private
+
+      # provides access to global CI recorder for CI models to deactivate themselves
+      def recorder
+        Datadog.send(:components).ci_recorder
+      end
     end
   end
 end

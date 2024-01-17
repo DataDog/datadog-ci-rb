@@ -18,7 +18,7 @@ module Datadog
       def finish
         super
 
-        CI.deactivate_test_suite(name)
+        recorder.deactivate_test_suite(name)
       end
     end
   end

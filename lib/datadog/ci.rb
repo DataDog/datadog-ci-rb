@@ -358,30 +358,6 @@ module Datadog
         recorder.active_test
       end
 
-      # Internal only, to finish a test use {Datadog::CI::Test#finish}
-      # @private
-      def deactivate_test
-        recorder.deactivate_test
-      end
-
-      # Internal only, to finish a test session use {Datadog::CI::TestSession#finish}
-      # @private
-      def deactivate_test_session
-        recorder.deactivate_test_session
-      end
-
-      # Internal only, to finish a test module use {Datadog::CI::TestModule#finish}
-      # @private
-      def deactivate_test_module
-        recorder.deactivate_test_module
-      end
-
-      # Internal only, to finish a test suite use {Datadog::CI::TestSuite#finish}
-      # @private
-      def deactivate_test_suite(test_suite_name)
-        recorder.deactivate_test_suite(test_suite_name)
-      end
-
       private
 
       def components
