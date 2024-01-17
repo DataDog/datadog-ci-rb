@@ -59,7 +59,7 @@ RSpec.describe "Minitest instrumentation" do
         "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
       expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
+      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::Type::TEST)
       expect(span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK)
       expect(span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
         Datadog::CI::Contrib::Minitest::Integration.version.to_s

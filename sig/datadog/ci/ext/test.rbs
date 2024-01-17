@@ -2,63 +2,68 @@ module Datadog
   module CI
     module Ext
       module Test
-        CONTEXT_ORIGIN: String
+        CONTEXT_ORIGIN: "ciapp-test"
 
-        TAG_ARGUMENTS: String
+        TAG_ARGUMENTS: "test.arguments"
 
-        TAG_FRAMEWORK: String
+        TAG_FRAMEWORK: "test.framework"
 
-        TAG_FRAMEWORK_VERSION: String
+        TAG_FRAMEWORK_VERSION: "test.framework_version"
 
-        TAG_NAME: String
+        TAG_NAME: "test.name"
 
-        TAG_SKIP_REASON: String
+        TAG_SKIP_REASON: "test.skip_reason"
 
-        TAG_STATUS: String
+        TAG_STATUS: "test.status"
 
-        TAG_SUITE: String
+        TAG_SUITE: "test.suite"
 
-        TAG_MODULE: String
+        TAG_MODULE: "test.module"
 
-        TAG_TYPE: String
+        TAG_TYPE: "test.type"
 
-        TAG_COMMAND: String
+        TAG_COMMAND: "test.command"
 
-        TAG_SOURCE_FILE: String
+        TAG_SOURCE_FILE: "test.source.file"
 
-        TAG_SOURCE_START: String
+        TAG_SOURCE_START: "test.source.start"
 
-        TAG_CODEOWNERS: String
+        TAG_CODEOWNERS: "test.codeowners"
 
-        TAG_PARAMETERS: String
+        TAG_PARAMETERS: "test.parameters"
 
-        TAG_TEST_SESSION_ID: String
+        TAG_TEST_SESSION_ID: "_test.session_id"
 
-        TAG_TEST_MODULE_ID: String
+        TAG_TEST_MODULE_ID: "_test.module_id"
 
-        TAG_TEST_SUITE_ID: String
-
-        TEST_TYPE: String
+        TAG_TEST_SUITE_ID: "_test.suite_id"
 
         SPECIAL_TAGS: Array[String]
 
         INHERITABLE_TAGS: Array[String]
 
-        TAG_OS_ARCHITECTURE: String
+        TAG_OS_ARCHITECTURE: "os.architecture"
 
-        TAG_OS_PLATFORM: String
+        TAG_OS_PLATFORM: "os.platform"
 
-        TAG_RUNTIME_NAME: String
+        TAG_RUNTIME_NAME: "runtime.name"
 
-        TAG_RUNTIME_VERSION: String
-        TAG_SPAN_KIND: String
+        TAG_RUNTIME_VERSION: "runtime.version"
+
+        TAG_SPAN_KIND: "span.kind"
 
         module Status
-          PASS: String
+          PASS: "pass"
 
-          FAIL: String
+          FAIL: "fail"
 
-          SKIP: String
+          SKIP: "skip"
+        end
+
+        module Type
+          TEST: "test"
+
+          BENCHMARK: "benchmark"
         end
       end
     end

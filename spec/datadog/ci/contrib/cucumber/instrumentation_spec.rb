@@ -82,7 +82,7 @@ RSpec.describe "Cucumber formatter" do
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
         "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature"
       )
-      expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
+      expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::Type::TEST)
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
       )

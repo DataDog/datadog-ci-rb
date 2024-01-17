@@ -38,7 +38,7 @@ RSpec.describe "RSpec hooks" do
 
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq("some test at #{spec.file_path}")
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::Type::TEST)
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK)
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
       Datadog::CI::Contrib::RSpec::Integration.version.to_s
