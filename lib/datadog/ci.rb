@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "ci/version"
+require_relative "ci/utils/configuration"
 
 require "datadog/core"
 
@@ -30,13 +31,12 @@ module Datadog
       #
       # Remember that calling {Datadog::CI::TestSession#finish} is mandatory.
       #
-      # @param [String] service the service name for this session (optional, defaults to DD_SERVICE)
+      # @param [String] service the service name for this session (optional, defaults to DD_SERVICE or repository name)
       # @param [Hash<String,String>] tags extra tags which should be added to the test session.
       # @return [Datadog::CI::TestSession] the active, running {Datadog::CI::TestSession}.
       # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
-      def start_test_session(service: nil, tags: {})
-        service ||= Datadog.configuration.service
+      def start_test_session(service: Utils::Configuration.fetch_service_name("test"), tags: {})
         recorder.start_test_session(service: service, tags: tags)
       end
 

@@ -101,13 +101,11 @@ RSpec.describe Datadog::CI do
     end
 
     describe "::start_test_session" do
-      let(:service) { nil }
-      subject(:start_test_session) { described_class.start_test_session(service: service) }
-
       let(:ci_test_session) { instance_double(Datadog::CI::TestSession) }
 
       context "when service is provided" do
         let(:service) { "my-service" }
+        subject(:start_test_session) { described_class.start_test_session(service: service) }
 
         before do
           allow(recorder).to receive(:start_test_session).with(service: service, tags: {}).and_return(ci_test_session)
@@ -117,9 +115,11 @@ RSpec.describe Datadog::CI do
       end
 
       context "when service is not provided" do
+        subject(:start_test_session) { described_class.start_test_session }
+
         context "when service is configured on library level" do
           before do
-            allow(Datadog.configuration).to receive(:service).and_return("configured-service")
+            allow(Datadog.configuration).to receive(:service_without_fallback).and_return("configured-service")
             allow(recorder).to receive(:start_test_session).with(
               service: "configured-service", tags: {}
             ).and_return(ci_test_session)
