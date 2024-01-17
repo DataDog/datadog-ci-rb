@@ -64,6 +64,14 @@ RSpec.describe Datadog::CI do
       end
 
       it { is_expected.to be(ci_span) }
+
+      context "when using reserved type" do
+        let(:type) { Datadog::CI::Ext::AppTypes::TYPE_TEST }
+
+        it "raises error" do
+          expect { trace }.to raise_error(Datadog::CI::ReservedTypeError)
+        end
+      end
     end
 
     describe "::active_span" do

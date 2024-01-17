@@ -11,6 +11,8 @@ module Datadog
   #
   # @public_api
   module CI
+    class ReservedTypeError < StandardError; end
+
     class << self
       # Starts a {Datadog::CI::TestSession ci_test_session} that represents the whole test session run.
       #
@@ -288,10 +290,19 @@ module Datadog
       # @return [Datadog::CI::Span] If no block is provided, returns the active,
       #         unfinished {Datadog::CI::Span}.
       # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
+      # @raise [ReservedTypeError] if provided type is reserved for Datadog CI visibility
       # @yield Optional block where newly created {Datadog::CI::Span} captures the execution.
       # @yieldparam [Datadog::CI::Span] ci_span the newly created and active [Datadog::CI::Span]
       # @yieldparam [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
       def trace(span_name, type: "span", tags: {}, &block)
+        if Ext::AppTypes::CI_SPAN_TYPES.include?(type)
+          raise(
+            ReservedTypeError,
+            "Span type #{type} is reserved for Datadog CI visibility. " \
+              "Reserved types are: #{Ext::AppTypes::CI_SPAN_TYPES}"
+          )
+        end
+
         recorder.trace(span_name, type: type, tags: tags, &block)
       end
 
