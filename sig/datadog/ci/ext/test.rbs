@@ -52,6 +52,8 @@ module Datadog
 
         TAG_SPAN_KIND: "span.kind"
 
+        SPAN_KIND_TEST: "test"
+
         module Status
           PASS: "pass"
 

@@ -24,7 +24,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     it "span.kind is equal to test" do
       expect(
         span_under_test.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)
-      ).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+      ).to eq(Datadog::CI::Ext::Test::SPAN_KIND_TEST)
     end
   end
 

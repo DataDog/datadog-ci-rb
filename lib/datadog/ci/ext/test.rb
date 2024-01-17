@@ -41,6 +41,7 @@ module Datadog
 
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
+        SPAN_KIND_TEST = "test"
 
         # test status as recognized by Datadog
         module Status

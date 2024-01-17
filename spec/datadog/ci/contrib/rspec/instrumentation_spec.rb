@@ -37,7 +37,7 @@ RSpec.describe "RSpec hooks" do
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
 
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq("some test at #{spec.file_path}")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::Test::SPAN_KIND_TEST)
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::Type::TEST)
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK)
     expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
@@ -269,7 +269,7 @@ RSpec.describe "RSpec hooks" do
 
       expect(test_session_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::AppTypes::TYPE_TEST
+        Datadog::CI::Ext::Test::SPAN_KIND_TEST
       )
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK
@@ -291,7 +291,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_module_span.name).to eq(test_command)
 
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::AppTypes::TYPE_TEST
+        Datadog::CI::Ext::Test::SPAN_KIND_TEST
       )
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK
@@ -313,7 +313,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_suite_span.name).to eq("SomeTest at #{spec.file_path}")
 
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::AppTypes::TYPE_TEST
+        Datadog::CI::Ext::Test::SPAN_KIND_TEST
       )
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK

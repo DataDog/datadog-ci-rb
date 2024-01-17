@@ -130,7 +130,7 @@ module Datadog
       end
 
       def set_default_tags
-        tracer_span.set_tag(Ext::Test::TAG_SPAN_KIND, Ext::AppTypes::TYPE_TEST)
+        tracer_span.set_tag(Ext::Test::TAG_SPAN_KIND, Ext::Test::SPAN_KIND_TEST)
       end
 
       # Sets the parameters for this span for parametrized tests (e.g. Cucumber examples or RSpec shared specs).
