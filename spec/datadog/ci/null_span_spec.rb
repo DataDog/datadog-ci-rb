@@ -61,9 +61,9 @@ RSpec.describe Datadog::CI::NullSpan do
     end
   end
 
-  describe "#span_type" do
+  describe "#type" do
     it "returns nil" do
-      expect(span.span_type).to be_nil
+      expect(span.type).to be_nil
     end
   end
 end

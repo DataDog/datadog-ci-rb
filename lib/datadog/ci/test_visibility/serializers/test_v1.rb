@@ -22,7 +22,7 @@ module Datadog
             CONTENT_MAP_SIZE
           end
 
-          def type
+          def event_type
             Ext::AppTypes::TYPE_TEST
           end
 

@@ -50,9 +50,9 @@ RSpec.describe Datadog::CI do
     end
 
     describe "::trace" do
-      subject(:trace) { described_class.trace(span_type, span_name, **options, &block) }
+      subject(:trace) { described_class.trace(type, span_name, **options, &block) }
 
-      let(:span_type) { "span type" }
+      let(:type) { "span type" }
       let(:span_name) { "span name" }
       let(:options) { {tags: {"foo" => "bar"}} }
       let(:block) { proc {} }
@@ -60,19 +60,19 @@ RSpec.describe Datadog::CI do
       let(:ci_span) { instance_double(Datadog::CI::Span) }
 
       before do
-        allow(recorder).to receive(:trace).with(span_type, span_name, **options, &block).and_return(ci_span)
+        allow(recorder).to receive(:trace).with(type, span_name, **options, &block).and_return(ci_span)
       end
 
       it { is_expected.to be(ci_span) }
     end
 
     describe "::active_span" do
-      subject(:active_span) { described_class.active_span(span_type) }
+      subject(:active_span) { described_class.active_span(type) }
 
-      let(:span_type) { "span type" }
+      let(:type) { "span type" }
 
       context "when span type matches current active span" do
-        let(:ci_span) { instance_double(Datadog::CI::Span, span_type: span_type) }
+        let(:ci_span) { instance_double(Datadog::CI::Span, type: type) }
 
         before do
           allow(recorder).to receive(:active_span).and_return(ci_span)
@@ -82,7 +82,7 @@ RSpec.describe Datadog::CI do
       end
 
       context "when span type does not match current active span" do
-        let(:ci_span) { instance_double(Datadog::CI::Span, span_type: "other span type") }
+        let(:ci_span) { instance_double(Datadog::CI::Span, type: "other span type") }
 
         before do
           allow(recorder).to receive(:active_span).and_return(ci_span)

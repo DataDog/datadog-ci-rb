@@ -87,13 +87,13 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     end
 
     describe "#trace" do
-      let(:span_type) { "step" }
+      let(:type) { "step" }
       let(:span_name) { "my test step" }
       let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
       context "when given a block" do
         before do
-          recorder.trace(span_type, span_name, tags: tags) do |span|
+          recorder.trace(type, span_name, tags: tags) do |span|
             span.set_metric("my.metric", 42)
           end
         end
@@ -101,7 +101,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         it "traces the block" do
           expect(subject.resource).to eq(span_name)
-          expect(subject.type).to eq(span_type)
+          expect(subject.type).to eq(type)
         end
       end
     end
@@ -111,13 +111,13 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     include_context "CI mode activated"
 
     describe "#trace" do
-      let(:span_type) { "step" }
+      let(:type) { "step" }
       let(:span_name) { "my test step" }
       let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
       context "when given a block" do
         before do
-          recorder.trace(span_type, span_name, tags: tags) do |span|
+          recorder.trace(type, span_name, tags: tags) do |span|
             span.set_metric("my.metric", 42)
           end
         end
@@ -125,7 +125,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         it "traces the block" do
           expect(subject.resource).to eq(span_name)
-          expect(subject.type).to eq(span_type)
+          expect(subject.type).to eq(type)
         end
 
         it "sets the custom metric correctly" do
@@ -158,7 +158,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           subject.finish
 
           expect(span.resource).to eq(span_name)
-          expect(span.type).to eq(span_type)
+          expect(span.type).to eq(type)
         end
 
         it_behaves_like "span with environment tags"
@@ -189,7 +189,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
             expect(subject.name).to eq(test_name)
             expect(subject.service).to eq(test_service)
             expect(subject.tracer_span.name).to eq(test_name)
-            expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+            expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
           end
 
           it "sets the provided tags correctly" do
@@ -359,7 +359,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         expect(subject).to be_kind_of(Datadog::CI::TestSession)
         expect(subject.name).to eq(test_command)
         expect(subject.service).to eq(service)
-        expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
+        expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
       end
 
       it "sets the test session id" do
@@ -395,7 +395,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           expect(subject).to be_kind_of(Datadog::CI::TestModule)
           expect(subject.name).to eq(module_name)
           expect(subject.service).to eq(service)
-          expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+          expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
         end
 
         it "sets the test module id" do
@@ -483,7 +483,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           expect(subject).to be_kind_of(Datadog::CI::TestSuite)
           expect(subject.name).to eq(suite_name)
           expect(subject.service).to eq(session_service)
-          expect(subject.span_type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
+          expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
         end
 
         it "sets the provided tags correctly while inheriting some tags from the session" do

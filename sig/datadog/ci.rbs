@@ -10,7 +10,7 @@ module Datadog
 
     def self.start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
 
-    def self.trace: (String span_type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+    def self.trace: (String type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
     def self.active_test_session: () -> Datadog::CI::TestSession?
 
@@ -20,7 +20,7 @@ module Datadog
 
     def self.active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
 
-    def self.active_span: (String span_type) -> Datadog::CI::Span?
+    def self.active_span: (String type) -> Datadog::CI::Span?
 
     def self.deactivate_test: (Datadog::CI::Test test) -> void
 

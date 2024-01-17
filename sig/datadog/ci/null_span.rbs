@@ -9,7 +9,7 @@ module Datadog
 
       def service: () -> nil
 
-      def span_type: () -> nil
+      def type: () -> nil
 
       def passed!: () -> nil
 

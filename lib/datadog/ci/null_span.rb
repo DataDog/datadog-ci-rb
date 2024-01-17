@@ -22,7 +22,7 @@ module Datadog
       def service
       end
 
-      def span_type
+      def type
       end
 
       def passed!

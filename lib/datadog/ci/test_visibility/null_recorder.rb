@@ -23,7 +23,7 @@ module Datadog
           skip_tracing(block)
         end
 
-        def trace(span_type, span_name, tags: {}, &block)
+        def trace(type, span_name, tags: {}, &block)
           skip_tracing(block)
         end
 

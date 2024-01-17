@@ -280,7 +280,7 @@ module Datadog
       # ```
       # Remember that in this case, calling {Datadog::CI::Span#finish} is mandatory.
       #
-      # @param [String] span_type custom, user-defined span type (for example "step" or "query").
+      # @param [String] type custom, user-defined span type (for example "step" or "query").
       # @param [String] span_name the resource this span refers, or `test` if it's missing
       # @param [Hash<String,String>] tags extra tags which should be added to the span.
       # @return [Object] If a block is provided, returns the result of the block execution.
@@ -290,8 +290,8 @@ module Datadog
       # @yield Optional block where newly created {Datadog::CI::Span} captures the execution.
       # @yieldparam [Datadog::CI::Span] ci_span the newly created and active [Datadog::CI::Span]
       # @yieldparam [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
-      def trace(span_type, span_name, tags: {}, &block)
-        recorder.trace(span_type, span_name, tags: tags, &block)
+      def trace(type, span_name, tags: {}, &block)
+        recorder.trace(type, span_name, tags: tags, &block)
       end
 
       # The active, unfinished custom span if it matches given type.
@@ -314,12 +314,12 @@ module Datadog
       # step_span.finish()
       # ```
       #
-      # @param [String] span_type type of the span to retrieve (for example "step" or "query") that was provided to {.trace}
+      # @param [String] type type of the span to retrieve (for example "step" or "query") that was provided to {.trace}
       # @return [Datadog::CI::Span] the active span
       # @return [nil] if no span is active, or if the active span is not a custom span with given type
-      def active_span(span_type)
+      def active_span(type)
         span = recorder.active_span
-        span if span && span.span_type == span_type
+        span if span && span.type == type
       end
 
       # The active, unfinished test span.
