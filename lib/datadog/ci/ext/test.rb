@@ -23,6 +23,7 @@ module Datadog
         TAG_CODEOWNERS = "test.codeowners"
         TAG_PARAMETERS = "test.parameters"
 
+        # test types (e.g. test, benchmark, browser)
         TEST_TYPE = "test"
 
         # those tags are special and they are used to correlate tests with the test sessions, suites, and modules
@@ -31,8 +32,8 @@ module Datadog
         TAG_TEST_SUITE_ID = "_test.suite_id"
         SPECIAL_TAGS = [TAG_TEST_SESSION_ID, TAG_TEST_MODULE_ID, TAG_TEST_SUITE_ID].freeze
 
-        # tags that can be inherited from the test session
-        INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION, TAG_TYPE].freeze
+        # tags that are common for the whole session and can be inherited from the test session
+        INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION].freeze
 
         # Environment runtime tags
         TAG_OS_ARCHITECTURE = "os.architecture"

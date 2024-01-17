@@ -37,8 +37,7 @@ module Datadog
             test_session = CI.start_test_session(
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
-                CI::Ext::Test::TAG_TYPE => CI::Ext::Test::TEST_TYPE
+                CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s
               },
               service: configuration[:service_name]
             )

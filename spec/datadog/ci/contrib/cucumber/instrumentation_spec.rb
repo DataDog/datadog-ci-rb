@@ -120,9 +120,6 @@ RSpec.describe "Cucumber formatter" do
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
       )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-        Datadog::CI::Ext::Test::TEST_TYPE
-      )
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
     end
 
@@ -139,9 +136,6 @@ RSpec.describe "Cucumber formatter" do
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
       )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-        Datadog::CI::Ext::Test::TEST_TYPE
-      )
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
     end
 
@@ -157,9 +151,6 @@ RSpec.describe "Cucumber formatter" do
       )
       expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
-      )
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-        Datadog::CI::Ext::Test::TEST_TYPE
       )
       expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
     end

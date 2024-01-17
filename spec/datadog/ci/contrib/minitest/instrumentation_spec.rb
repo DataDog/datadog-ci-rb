@@ -411,9 +411,6 @@ RSpec.describe "Minitest instrumentation" do
           expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
             Datadog::CI::Ext::AppTypes::TYPE_TEST
           )
-          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-            Datadog::CI::Ext::Test::TEST_TYPE
-          )
           expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
             Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
           )
@@ -434,9 +431,6 @@ RSpec.describe "Minitest instrumentation" do
           expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
             Datadog::CI::Ext::AppTypes::TYPE_TEST
           )
-          expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-            Datadog::CI::Ext::Test::TEST_TYPE
-          )
           expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
             Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
           )
@@ -456,9 +450,6 @@ RSpec.describe "Minitest instrumentation" do
 
           expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
             Datadog::CI::Ext::AppTypes::TYPE_TEST
-          )
-          expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-            Datadog::CI::Ext::Test::TEST_TYPE
           )
           expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
             Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
