@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::Test do
 
     it "deactivates the test" do
       ci_test.finish
-      expect(Datadog::CI).to have_received(:deactivate_test).with(ci_test)
+      expect(Datadog::CI).to have_received(:deactivate_test)
     end
   end
 

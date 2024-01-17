@@ -36,7 +36,7 @@ module Datadog
 
         def active_span: () -> Datadog::CI::Span?
 
-        def deactivate_test: (Datadog::CI::Test test) -> void
+        def deactivate_test: () -> void
 
         def deactivate_test_session: () -> void
 

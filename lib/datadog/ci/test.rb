@@ -20,7 +20,7 @@ module Datadog
       def finish
         super
 
-        CI.deactivate_test(self)
+        CI.deactivate_test
       end
 
       # Running test suite that this test is part of (if any).

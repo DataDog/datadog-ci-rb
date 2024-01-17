@@ -360,8 +360,8 @@ module Datadog
 
       # Internal only, to finish a test use {Datadog::CI::Test#finish}
       # @private
-      def deactivate_test(test)
-        recorder.deactivate_test(test)
+      def deactivate_test
+        recorder.deactivate_test
       end
 
       # Internal only, to finish a test session use {Datadog::CI::TestSession#finish}

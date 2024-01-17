@@ -604,7 +604,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     end
 
     describe "#deactivate_test" do
-      subject { recorder.deactivate_test(ci_test) }
+      subject { recorder.deactivate_test }
 
       context "when there is no active test" do
         let(:ci_test) { Datadog::CI::Test.new(double("tracer span")) }
@@ -619,19 +619,6 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           subject
 
           expect(recorder.active_test).to be_nil
-        end
-      end
-
-      context "when deactivating a different test from the one that is running right now" do
-        let(:ci_test) { Datadog::CI::Test.new(double("tracer span", get_tag: "wrong test")) }
-
-        before do
-          recorder.trace_test("my test", "my suite")
-        end
-
-        it "raises an error" do
-          expect { subject }.to raise_error(/Trying to deactivate test Datadog::CI::Test\(name:wrong test/)
-          expect(recorder.active_test).not_to be_nil
         end
       end
     end

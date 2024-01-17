@@ -7,9 +7,9 @@ module Datadog
 
           def initialize: () -> void
 
-          def activate_test!: (Datadog::CI::Test test) ?{ () -> untyped } -> void
+          def activate_test: (Datadog::CI::Test test) ?{ () -> untyped } -> void
 
-          def deactivate_test!: (Datadog::CI::Test test) -> void
+          def deactivate_test: () -> void
 
           def active_test: () -> Datadog::CI::Test?
 

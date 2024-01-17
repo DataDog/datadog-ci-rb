@@ -108,7 +108,7 @@ module Datadog
             start_datadog_tracer_span(test_name, span_options) do |tracer_span|
               test = build_test(tracer_span, tags)
 
-              @local_context.activate_test!(test) do
+              @local_context.activate_test(test) do
                 block.call(test)
               end
             end
@@ -116,7 +116,7 @@ module Datadog
             tracer_span = start_datadog_tracer_span(test_name, span_options)
 
             test = build_test(tracer_span, tags)
-            @local_context.activate_test!(test)
+            @local_context.activate_test(test)
             test
           end
         end
@@ -160,8 +160,8 @@ module Datadog
           @global_context.active_test_suite(test_suite_name)
         end
 
-        def deactivate_test(test)
-          @local_context.deactivate_test!(test)
+        def deactivate_test
+          @local_context.deactivate_test
         end
 
         def deactivate_test_session

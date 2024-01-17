@@ -25,7 +25,7 @@ module Datadog
 
     def self.active_span: () -> Datadog::CI::Span?
 
-    def self.deactivate_test: (Datadog::CI::Test test) -> void
+    def self.deactivate_test: () -> void
 
     def self.deactivate_test_session: () -> void
 
