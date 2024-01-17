@@ -77,12 +77,12 @@ RSpec.describe "Cucumber formatter" do
       expect(scenario_span.resource).to eq("cucumber scenario")
       expect(scenario_span.service).to eq("jalapenos")
 
-      expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+      expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::Test::SPAN_KIND_TEST)
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("cucumber scenario")
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
         "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature"
       )
-      expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::TEST_TYPE)
+      expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::Type::TEST)
       expect(scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
       )
@@ -112,16 +112,13 @@ RSpec.describe "Cucumber formatter" do
       expect(test_session_span).not_to be_nil
       expect(test_session_span.service).to eq("jalapenos")
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::AppTypes::TYPE_TEST
+        Datadog::CI::Ext::Test::SPAN_KIND_TEST
       )
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
       )
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
-      )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-        Datadog::CI::Ext::Test::TEST_TYPE
       )
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
     end
@@ -131,16 +128,13 @@ RSpec.describe "Cucumber formatter" do
       expect(test_module_span.name).to eq(test_command)
       expect(test_module_span.service).to eq("jalapenos")
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::AppTypes::TYPE_TEST
+        Datadog::CI::Ext::Test::SPAN_KIND_TEST
       )
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
       )
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-        Datadog::CI::Ext::Test::TEST_TYPE
       )
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
     end
@@ -150,16 +144,13 @@ RSpec.describe "Cucumber formatter" do
       expect(test_suite_span.name).to eq("Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature")
       expect(test_suite_span.service).to eq("jalapenos")
       expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::AppTypes::TYPE_TEST
+        Datadog::CI::Ext::Test::SPAN_KIND_TEST
       )
       expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
       )
       expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
-      )
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(
-        Datadog::CI::Ext::Test::TEST_TYPE
       )
       expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
     end

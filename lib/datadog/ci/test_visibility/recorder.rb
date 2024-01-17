@@ -94,6 +94,7 @@ module Datadog
           set_suite_context(tags, name: test_suite_name)
 
           tags[Ext::Test::TAG_NAME] = test_name
+          tags[Ext::Test::TAG_TYPE] ||= Ext::Test::Type::TEST
 
           span_options = build_span_options(
             service,

@@ -33,7 +33,6 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
             "test.module" => "arithmetic",
             "test.framework" => "rspec",
             "test.framework_version" => "1.0.0",
-            "test.type" => "test",
             "test.status" => "pass",
             "_dd.origin" => "ciapp-test"
           }

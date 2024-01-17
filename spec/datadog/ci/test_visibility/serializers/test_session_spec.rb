@@ -32,7 +32,6 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
             "test.framework" => "rspec",
             "test.framework_version" => "1.0.0",
             "test.status" => "pass",
-            "test.type" => "test",
             "_dd.origin" => "ciapp-test"
           }
         )

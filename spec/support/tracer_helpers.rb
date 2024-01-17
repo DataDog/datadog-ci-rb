@@ -27,8 +27,7 @@ module TracerHelpers
       test_suite,
       tags: {
         Datadog::CI::Ext::Test::TAG_FRAMEWORK => framework,
-        Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
-        Datadog::CI::Ext::Test::TAG_TYPE => "test"
+        Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0"
       },
       service: service
     ) do |test|
@@ -65,8 +64,7 @@ module TracerHelpers
       service: service,
       tags: {
         Datadog::CI::Ext::Test::TAG_FRAMEWORK => framework,
-        Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0",
-        Datadog::CI::Ext::Test::TAG_TYPE => "test"
+        Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "1.0.0"
       }
     )
 

@@ -23,16 +23,15 @@ module Datadog
         TAG_CODEOWNERS = "test.codeowners"
         TAG_PARAMETERS = "test.parameters"
 
-        TEST_TYPE = "test"
-
-        # those tags are special and they are used to correlate tests with the test sessions, suites, and modules
+        # those tags are special and used to correlate tests with the test sessions, suites, and modules
+        # they are transient and not sent to the backend
         TAG_TEST_SESSION_ID = "_test.session_id"
         TAG_TEST_MODULE_ID = "_test.module_id"
         TAG_TEST_SUITE_ID = "_test.suite_id"
-        SPECIAL_TAGS = [TAG_TEST_SESSION_ID, TAG_TEST_MODULE_ID, TAG_TEST_SUITE_ID].freeze
+        TRANSIENT_TAGS = [TAG_TEST_SESSION_ID, TAG_TEST_MODULE_ID, TAG_TEST_SUITE_ID].freeze
 
-        # tags that can be inherited from the test session
-        INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION, TAG_TYPE].freeze
+        # tags that are common for the whole session and can be inherited from the test session
+        INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION].freeze
 
         # Environment runtime tags
         TAG_OS_ARCHITECTURE = "os.architecture"
@@ -40,12 +39,21 @@ module Datadog
         TAG_RUNTIME_NAME = "runtime.name"
         TAG_RUNTIME_VERSION = "runtime.version"
 
+        # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
+        SPAN_KIND_TEST = "test"
 
+        # test status as recognized by Datadog
         module Status
           PASS = "pass"
           FAIL = "fail"
           SKIP = "skip"
+        end
+
+        # test types (e.g. test, benchmark, browser)
+        module Type
+          TEST = "test"
+          BENCHMARK = "benchmark" # DEV: not used yet, will be used when benchmarks are supported
         end
       end
     end

@@ -34,7 +34,7 @@ module Datadog
             @trace = trace
             @span = span
 
-            @meta = @span.meta.reject { |key, _| Ext::Test::SPECIAL_TAGS.include?(key) }
+            @meta = @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
 
             @errors = {}
             @validated = false
