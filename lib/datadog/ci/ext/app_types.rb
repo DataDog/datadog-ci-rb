@@ -3,6 +3,8 @@
 module Datadog
   module CI
     module Ext
+      # Defines span types for CI visibility
+      # @public_api
       module AppTypes
         TYPE_TEST = "test"
         TYPE_TEST_SESSION = "test_session_end"
