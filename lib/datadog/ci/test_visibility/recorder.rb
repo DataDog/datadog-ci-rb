@@ -121,7 +121,7 @@ module Datadog
           end
         end
 
-        def trace(type, span_name, tags: {}, &block)
+        def trace(span_name, type: "span", tags: {}, &block)
           span_options = build_span_options(
             nil, # service name is completely optional for custom spans
             type,

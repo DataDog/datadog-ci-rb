@@ -93,7 +93,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       context "when given a block" do
         before do
-          recorder.trace(type, span_name, tags: tags) do |span|
+          recorder.trace(span_name, type: type, tags: tags) do |span|
             span.set_metric("my.metric", 42)
           end
         end
@@ -117,7 +117,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       context "when given a block" do
         before do
-          recorder.trace(type, span_name, tags: tags) do |span|
+          recorder.trace(span_name, type: type, tags: tags) do |span|
             span.set_metric("my.metric", 42)
           end
         end
@@ -143,7 +143,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       context "without a block" do
-        subject { recorder.trace("step", "my test step", tags: tags) }
+        subject { recorder.trace("my test step", type: type, tags: tags) }
 
         it "returns a new CI span" do
           expect(subject).to be_kind_of(Datadog::CI::Span)
@@ -590,7 +590,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       context "when span is started" do
-        let(:ci_span) { recorder.trace("step", "my test step") }
+        let(:ci_span) { recorder.trace("my test step", type: "step") }
 
         before do
           ci_span

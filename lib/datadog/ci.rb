@@ -32,8 +32,8 @@ module Datadog
       #
       # @param [String] service the service name for this session (optional, defaults to DD_SERVICE)
       # @param [Hash<String,String>] tags extra tags which should be added to the test session.
-      # @return [Datadog::CI::TestSession] returns the active, running {Datadog::CI::TestSession}.
-      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
+      # @return [Datadog::CI::TestSession] the active, running {Datadog::CI::TestSession}.
+      # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
       def start_test_session(service: nil, tags: {})
         service ||= Datadog.configuration.service
@@ -88,8 +88,8 @@ module Datadog
       # @param [String] test_module_name the name for this module
       # @param [String] service the service name for this session (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test module (optional, some tags are inherited from test session).
-      # @return [Datadog::CI::TestModule] returns the active, running {Datadog::CI::TestModule}.
-      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
+      # @return [Datadog::CI::TestModule] the active, running {Datadog::CI::TestModule}.
+      # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
       def start_test_module(test_module_name, service: nil, tags: {})
         recorder.start_test_module(test_module_name, service: service, tags: tags)
@@ -141,8 +141,8 @@ module Datadog
       # @param [String] test_suite_name the name of the test suite
       # @param [String] service the service name for this test suite (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test module (optional, some tags are inherited from test session)
-      # @return [Datadog::CI::TestSuite] returns the active, running {Datadog::CI::TestSuite}.
-      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled or if old Datadog agent is
+      # @return [Datadog::CI::TestSuite] the active, running {Datadog::CI::TestSuite}.
+      # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled or if old Datadog agent is
       #         detected and test suite level visibility cannot be supported.
       def start_test_suite(test_suite_name, service: nil, tags: {})
         recorder.start_test_suite(test_suite_name, service: service, tags: tags)
@@ -245,8 +245,8 @@ module Datadog
       # @param [String] test_suite_name name of test suite this test belongs to (example: "CalculatorTest").
       # @param [String] service the service name for this span (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test.
-      # @return [Datadog::CI::Test] Returns the active, unfinished {Datadog::CI::Test}.
-      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
+      # @return [Datadog::CI::Test] the active, unfinished {Datadog::CI::Test}.
+      # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled
       def start_test(test_name, test_suite_name, service: nil, tags: {})
         recorder.trace_test(test_name, test_suite_name, service: service, tags: tags)
       end
@@ -260,8 +260,8 @@ module Datadog
       #
       # ```
       # Datadog::CI.trace(
-      #   "step",
       #   "Given I have 42 cucumbers",
+      #   type: "step",
       #   tags: {}
       # ) do
       #   run_operation
@@ -271,8 +271,8 @@ module Datadog
       # The {.trace} method can also be used without a block in this way:
       # ```
       # ci_span = Datadog::CI.trace(
-      #   "step",
       #   "Given I have 42 cucumbers",
+      #   type: "step",
       #   tags: {}
       # )
       # # ... run test here ...
@@ -280,8 +280,8 @@ module Datadog
       # ```
       # Remember that in this case, calling {Datadog::CI::Span#finish} is mandatory.
       #
-      # @param [String] type custom, user-defined span type (for example "step" or "query").
       # @param [String] span_name the resource this span refers, or `test` if it's missing
+      # @param [String] type custom, user-defined span type (for example "step" or "query").
       # @param [Hash<String,String>] tags extra tags which should be added to the span.
       # @return [Object] If a block is provided, returns the result of the block execution.
       # @return [Datadog::CI::Span] If no block is provided, returns the active,
@@ -290,8 +290,8 @@ module Datadog
       # @yield Optional block where newly created {Datadog::CI::Span} captures the execution.
       # @yieldparam [Datadog::CI::Span] ci_span the newly created and active [Datadog::CI::Span]
       # @yieldparam [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
-      def trace(type, span_name, tags: {}, &block)
-        recorder.trace(type, span_name, tags: tags, &block)
+      def trace(span_name, type: "span", tags: {}, &block)
+        recorder.trace(span_name, type: type, tags: tags, &block)
       end
 
       # The active, unfinished custom span if it matches given type.

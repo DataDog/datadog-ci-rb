@@ -50,7 +50,7 @@ RSpec.describe Datadog::CI do
     end
 
     describe "::trace" do
-      subject(:trace) { described_class.trace(type, span_name, **options, &block) }
+      subject(:trace) { described_class.trace(span_name, type: type, **options, &block) }
 
       let(:type) { "span type" }
       let(:span_name) { "span name" }
@@ -60,7 +60,7 @@ RSpec.describe Datadog::CI do
       let(:ci_span) { instance_double(Datadog::CI::Span) }
 
       before do
-        allow(recorder).to receive(:trace).with(type, span_name, **options, &block).and_return(ci_span)
+        allow(recorder).to receive(:trace).with(span_name, type: type, **options, &block).and_return(ci_span)
       end
 
       it { is_expected.to be(ci_span) }

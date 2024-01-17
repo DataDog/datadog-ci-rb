@@ -94,7 +94,7 @@ module Datadog
           end
 
           def on_test_step_started(event)
-            CI.trace(Ext::STEP_SPAN_TYPE, event.test_step.to_s)
+            CI.trace(event.test_step.to_s, type: Ext::STEP_SPAN_TYPE)
           end
 
           def on_test_step_finished(event)
