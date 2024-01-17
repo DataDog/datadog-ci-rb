@@ -58,7 +58,6 @@ module Datadog
             tags = {
               CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
               CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
-              CI::Ext::Test::TAG_TYPE => CI::Ext::Test::Type::TEST,
               CI::Ext::Test::TAG_SOURCE_FILE => Utils::Git.relative_to_root(event.test_case.location.file),
               CI::Ext::Test::TAG_SOURCE_START => event.test_case.location.line.to_s
             }
