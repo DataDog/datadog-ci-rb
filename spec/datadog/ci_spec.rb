@@ -67,11 +67,11 @@ RSpec.describe Datadog::CI do
     end
 
     describe "::active_span" do
-      subject(:active_span) { described_class.active_span(type) }
+      subject(:active_span) { described_class.active_span }
 
       let(:type) { "span type" }
 
-      context "when span type matches current active span" do
+      context "when current active span has custom type" do
         let(:ci_span) { instance_double(Datadog::CI::Span, type: type) }
 
         before do
@@ -81,8 +81,8 @@ RSpec.describe Datadog::CI do
         it { is_expected.to be(ci_span) }
       end
 
-      context "when span type does not match current active span" do
-        let(:ci_span) { instance_double(Datadog::CI::Span, type: "other span type") }
+      context "when current active span is a test" do
+        let(:ci_span) { instance_double(Datadog::CI::Span, type: "test") }
 
         before do
           allow(recorder).to receive(:active_span).and_return(ci_span)

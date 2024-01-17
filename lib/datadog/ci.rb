@@ -2,6 +2,7 @@
 
 require_relative "ci/version"
 require_relative "ci/utils/configuration"
+require_relative "ci/ext/app_types"
 
 require "datadog/core"
 
@@ -294,8 +295,8 @@ module Datadog
         recorder.trace(span_name, type: type, tags: tags, &block)
       end
 
-      # The active, unfinished custom span if it matches given type.
-      # If no span is active, or if the active span is not a custom span with given type, returns nil.
+      # The active, unfinished custom (i.e. not test/suite/module/session) span.
+      # If no span is active, or if the active span is not a custom span, returns nil.
       #
       # The active span belongs to an {.active_test}.
       #
@@ -314,12 +315,11 @@ module Datadog
       # step_span.finish()
       # ```
       #
-      # @param [String] type type of the span to retrieve (for example "step" or "query") that was provided to {.trace}
       # @return [Datadog::CI::Span] the active span
       # @return [nil] if no span is active, or if the active span is not a custom span with given type
-      def active_span(type)
+      def active_span
         span = recorder.active_span
-        span if span && span.type == type
+        span if span && !Ext::AppTypes::CI_SPAN_TYPES.include?(span.type)
       end
 
       # The active, unfinished test span.

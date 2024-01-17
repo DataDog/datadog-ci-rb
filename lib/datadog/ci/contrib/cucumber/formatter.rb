@@ -98,7 +98,7 @@ module Datadog
           end
 
           def on_test_step_finished(event)
-            current_step_span = CI.active_span(Ext::STEP_SPAN_TYPE)
+            current_step_span = CI.active_span
             return if current_step_span.nil?
 
             finish_test(current_step_span, event.result)
