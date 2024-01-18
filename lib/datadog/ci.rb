@@ -318,8 +318,8 @@ module Datadog
       #   tags: {}
       # )
       #
-      # # somewhere else, access the active "step" span
-      # step_span = Datadog::CI.active_span("step")
+      # # somewhere else, access the active step span
+      # step_span = Datadog::CI.active_span
       # step_span.finish()
       # ```
       #
