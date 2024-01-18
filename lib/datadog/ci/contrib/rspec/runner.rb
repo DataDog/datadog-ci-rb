@@ -25,9 +25,10 @@ module Datadog
                 service: datadog_configuration[:service_name]
               )
 
-              test_module = CI.start_test_module(test_session.name)
+              test_module = CI.start_test_module(test_session.name) if test_session
 
               result = super
+              return result unless test_module && test_session
 
               if result != 0
                 # TODO: repeating this twice feels clunky, we need to remove test_module API before GA

@@ -5,12 +5,12 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Local do
   let(:ci_test) { Datadog::CI::Test.new(tracer_span) }
   let(:ci_test2) { Datadog::CI::Test.new(tracer_span) }
 
-  describe "#activate_test!" do
+  describe "#activate_test" do
     context "when a test is already active" do
       it "raises an error" do
-        subject.activate_test!(Datadog::CI::Test.new(tracer_span))
+        subject.activate_test(Datadog::CI::Test.new(tracer_span))
 
-        expect { subject.activate_test!(ci_test) }.to(
+        expect { subject.activate_test(ci_test) }.to(
           raise_error(
             RuntimeError,
             "Nested tests are not supported. Currently active test: " \
@@ -23,7 +23,7 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Local do
     context "when no test is active" do
       context "when a block is given" do
         it "activates the test for the duration of the block" do
-          subject.activate_test!(ci_test) do
+          subject.activate_test(ci_test) do
             expect(subject.active_test).to be(ci_test)
           end
 
@@ -33,7 +33,7 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Local do
 
       context "when no block is given" do
         it "activates the test" do
-          subject.activate_test!(ci_test)
+          subject.activate_test(ci_test)
           expect(subject.active_test).to be(ci_test)
         end
       end
@@ -41,10 +41,10 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Local do
 
     context "with multiple fibers" do
       it "create one fiber-local variable per fiber" do
-        subject.activate_test!(ci_test)
+        subject.activate_test(ci_test)
 
         Fiber.new do
-          subject.activate_test!(ci_test2)
+          subject.activate_test(ci_test2)
 
           expect(subject.active_test).to be(ci_test2)
         end.resume
@@ -55,10 +55,10 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Local do
 
     context "with multiple threads" do
       it "create one thread-local variable per thread" do
-        subject.activate_test!(ci_test)
+        subject.activate_test(ci_test)
 
         Thread.new do
-          subject.activate_test!(ci_test2)
+          subject.activate_test(ci_test2)
 
           expect(subject.active_test).to be(ci_test2)
         end.join
@@ -68,28 +68,19 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Local do
     end
   end
 
-  describe "#deactivate_test!" do
+  describe "#deactivate_test" do
     context "when no test is active" do
       it "does nothing" do
-        expect { subject.deactivate_test!(ci_test) }.not_to raise_error
+        expect { subject.deactivate_test }.not_to raise_error
       end
     end
 
     context "when a test is active" do
-      before { subject.activate_test!(ci_test) }
+      before { subject.activate_test(ci_test) }
 
-      context "when the test is the active test" do
-        it "deactivates the test" do
-          subject.deactivate_test!(ci_test)
-          expect(subject.active_test).to be_nil
-        end
-      end
-
-      context "when the test is not the active test" do
-        it "raises an error" do
-          expect { subject.deactivate_test!(Datadog::CI::Test.new(tracer_span)) }
-            .to raise_error(RuntimeError, /Trying to deactivate test/)
-        end
+      it "deactivates the test" do
+        subject.deactivate_test
+        expect(subject.active_test).to be_nil
       end
     end
   end
@@ -102,7 +93,7 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Local do
     end
 
     context "when a test is active" do
-      before { subject.activate_test!(ci_test) }
+      before { subject.activate_test(ci_test) }
 
       it "returns the active test" do
         expect(subject.active_test).to be(ci_test)

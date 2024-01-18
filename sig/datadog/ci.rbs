@@ -1,16 +1,19 @@
 module Datadog
   module CI
-    def self.trace_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span test) -> untyped } -> untyped
+    class ReservedTypeError < StandardError
+    end
 
-    def self.start_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.trace_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test? test) -> untyped } -> untyped
 
-    def self.start_test_session: (?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Test?
 
-    def self.start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test_session: (?service: String, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession?
 
-    def self.start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestModule?
 
-    def self.trace: (String type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+    def self.start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSuite?
+
+    def self.trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
     def self.active_test_session: () -> Datadog::CI::TestSession?
 
@@ -20,15 +23,9 @@ module Datadog
 
     def self.active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
 
-    def self.active_span: (String type) -> Datadog::CI::Span?
+    def self.active_span: () -> Datadog::CI::Span?
 
-    def self.deactivate_test: (Datadog::CI::Test test) -> void
-
-    def self.deactivate_test_session: () -> void
-
-    def self.deactivate_test_module: () -> void
-
-    def self.deactivate_test_suite: (String test_suite_name) -> void
+    private
 
     def self.components: () -> Datadog::CI::Configuration::Components
 

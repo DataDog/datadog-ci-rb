@@ -55,7 +55,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     describe "#trace_test_session" do
       subject { recorder.start_test_session(service: service, tags: tags) }
 
-      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+      it { is_expected.to be_nil }
 
       it "does not activate session" do
         expect(recorder.active_test_session).to be_nil
@@ -67,7 +67,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       subject { recorder.start_test_module(module_name, service: service, tags: tags) }
 
-      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+      it { is_expected.to be_nil }
 
       it "does not activate module" do
         expect(recorder.active_test_module).to be_nil
@@ -79,7 +79,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       subject { recorder.start_test_suite(suite_name, service: service, tags: tags) }
 
-      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+      it { is_expected.to be_nil }
 
       it "does not activate test suite" do
         expect(recorder.active_test_suite(suite_name)).to be_nil
@@ -93,7 +93,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       context "when given a block" do
         before do
-          recorder.trace(type, span_name, tags: tags) do |span|
+          recorder.trace(span_name, type: type, tags: tags) do |span|
             span.set_metric("my.metric", 42)
           end
         end
@@ -117,7 +117,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       context "when given a block" do
         before do
-          recorder.trace(type, span_name, tags: tags) do |span|
+          recorder.trace(span_name, type: type, tags: tags) do |span|
             span.set_metric("my.metric", 42)
           end
         end
@@ -143,7 +143,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       context "without a block" do
-        subject { recorder.trace("step", "my test step", tags: tags) }
+        subject { recorder.trace("my test step", type: type, tags: tags) }
 
         it "returns a new CI span" do
           expect(subject).to be_kind_of(Datadog::CI::Span)
@@ -590,7 +590,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       context "when span is started" do
-        let(:ci_span) { recorder.trace("step", "my test step") }
+        let(:ci_span) { recorder.trace("my test step", type: "step") }
 
         before do
           ci_span
@@ -604,7 +604,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     end
 
     describe "#deactivate_test" do
-      subject { recorder.deactivate_test(ci_test) }
+      subject { recorder.deactivate_test }
 
       context "when there is no active test" do
         let(:ci_test) { Datadog::CI::Test.new(double("tracer span")) }
@@ -619,19 +619,6 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           subject
 
           expect(recorder.active_test).to be_nil
-        end
-      end
-
-      context "when deactivating a different test from the one that is running right now" do
-        let(:ci_test) { Datadog::CI::Test.new(double("tracer span", get_tag: "wrong test")) }
-
-        before do
-          recorder.trace_test("my test", "my suite")
-        end
-
-        it "raises an error" do
-          expect { subject }.to raise_error(/Trying to deactivate test Datadog::CI::Test\(name:wrong test/)
-          expect(recorder.active_test).not_to be_nil
         end
       end
     end

@@ -21,14 +21,14 @@ module Datadog
         end
 
         def self.root
-          return @@root if defined?(@@root)
+          return @root if defined?(@root)
 
-          @@root = exec_git_command("git rev-parse --show-toplevel")
+          @root = exec_git_command("git rev-parse --show-toplevel")
         rescue => e
           Datadog.logger.debug(
             "Unable to read git root: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
           )
-          @@root = nil
+          @root = nil
         end
 
         def self.relative_to_root(path)
@@ -44,19 +44,19 @@ module Datadog
         end
 
         def self.repository_name
-          return @@repository_name if defined?(@@repository_name)
+          return @repository_name if defined?(@repository_name)
 
           git_remote_url = exec_git_command("git ls-remote --get-url origin")
 
           # return git repository name from remote url without .git extension
           last_path_segment = git_remote_url.split("/").last if git_remote_url
-          @@repository_name = last_path_segment.gsub(".git", "") if last_path_segment
-          @@repository_name ||= current_folder_name
+          @repository_name = last_path_segment.gsub(".git", "") if last_path_segment
+          @repository_name ||= current_folder_name
         rescue => e
           Datadog.logger.debug(
             "Unable to get git remote: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
           )
-          @@repository_name = current_folder_name
+          @repository_name = current_folder_name
         end
 
         def self.current_folder_name

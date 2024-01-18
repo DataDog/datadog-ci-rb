@@ -2,10 +2,13 @@
 
 RSpec.describe Datadog::CI::Test do
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true) }
+  let(:recorder) { spy("recorder") }
+  subject(:ci_test) { described_class.new(tracer_span) }
+
+  before { allow_any_instance_of(described_class).to receive(:recorder).and_return(recorder) }
 
   describe "#name" do
     subject(:name) { ci_test.name }
-    let(:ci_test) { described_class.new(tracer_span) }
 
     before { allow(ci_test).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_NAME).and_return("test name") }
 
@@ -13,19 +16,14 @@ RSpec.describe Datadog::CI::Test do
   end
 
   describe "#finish" do
-    subject(:ci_test) { described_class.new(tracer_span) }
-
-    before { allow(Datadog::CI).to receive(:deactivate_test) }
-
     it "deactivates the test" do
       ci_test.finish
-      expect(Datadog::CI).to have_received(:deactivate_test).with(ci_test)
+      expect(recorder).to have_received(:deactivate_test)
     end
   end
 
   describe "#test_suite_id" do
     subject(:test_suite_id) { ci_test.test_suite_id }
-    let(:ci_test) { described_class.new(tracer_span) }
 
     before do
       allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID).and_return("test suite id")
@@ -36,7 +34,6 @@ RSpec.describe Datadog::CI::Test do
 
   describe "#test_suite_name" do
     subject(:test_suite_name) { ci_test.test_suite_name }
-    let(:ci_test) { described_class.new(tracer_span) }
 
     before do
       allow(tracer_span).to(
@@ -49,7 +46,6 @@ RSpec.describe Datadog::CI::Test do
 
   describe "#test_suite" do
     subject(:test_suite) { ci_test.test_suite }
-    let(:ci_test) { described_class.new(tracer_span) }
 
     context "when test suite name is set" do
       before do
@@ -69,7 +65,6 @@ RSpec.describe Datadog::CI::Test do
 
   describe "#test_module_id" do
     subject(:test_module_id) { ci_test.test_module_id }
-    let(:ci_test) { described_class.new(tracer_span) }
 
     before do
       allow(tracer_span).to(
@@ -82,7 +77,6 @@ RSpec.describe Datadog::CI::Test do
 
   describe "#test_session_id" do
     subject(:test_session_id) { ci_test.test_session_id }
-    let(:ci_test) { described_class.new(tracer_span) }
 
     before do
       allow(tracer_span).to(
@@ -95,7 +89,6 @@ RSpec.describe Datadog::CI::Test do
 
   describe "#source_file" do
     subject(:source_file) { ci_test.source_file }
-    let(:ci_test) { described_class.new(tracer_span) }
 
     before do
       allow(tracer_span).to(
@@ -104,5 +97,17 @@ RSpec.describe Datadog::CI::Test do
     end
 
     it { is_expected.to eq("foo/bar.rb") }
+  end
+
+  describe "#set_parameters" do
+    let(:parameters) { {"foo" => "bar", "baz" => "qux"} }
+
+    it "sets the parameters" do
+      expect(tracer_span).to receive(:set_tag).with(
+        "test.parameters", JSON.generate({arguments: parameters, metadata: {}})
+      )
+
+      ci_test.set_parameters(parameters)
+    end
   end
 end

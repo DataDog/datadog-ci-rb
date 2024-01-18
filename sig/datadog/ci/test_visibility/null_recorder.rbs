@@ -2,43 +2,31 @@ module Datadog
   module CI
     module TestVisibility
       class NullRecorder
-        @null_span: Datadog::CI::NullSpan
-
         def initialize: (?untyped args) -> void
 
-        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (nil span) -> untyped } -> untyped
 
-        def trace: (String type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+        def trace: (String type, String span_name, ?tags: Hash[untyped, untyped]) ?{ (nil) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped]) -> nil
 
-        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> nil
 
-        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> nil
 
-        def active_test_session: () -> Datadog::CI::TestSession?
+        def active_test_session: () -> nil
 
-        def active_test_module: () -> Datadog::CI::TestModule?
+        def active_test_module: () -> nil
 
-        def active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
+        def active_test_suite: (String test_suite_name) -> nil
 
-        def active_test: () -> Datadog::CI::Test?
+        def active_test: () -> nil
 
-        def active_span: () -> Datadog::CI::Span?
-
-        def deactivate_test: (Datadog::CI::Test test) -> void
-
-        def deactivate_test_session: () -> void
-
-        def deactivate_test_module: () -> void
-
-        def deactivate_test_suite: (String test_suite_name) -> void
+        def active_span: () -> nil
 
         private
 
-        def null_span: () -> Datadog::CI::Span
-
-        def skip_tracing: (?untyped block) -> untyped
+        def skip_tracing: (?untyped block) -> nil
       end
     end
   end

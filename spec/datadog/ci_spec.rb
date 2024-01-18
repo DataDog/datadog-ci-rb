@@ -50,7 +50,7 @@ RSpec.describe Datadog::CI do
     end
 
     describe "::trace" do
-      subject(:trace) { described_class.trace(type, span_name, **options, &block) }
+      subject(:trace) { described_class.trace(span_name, type: type, **options, &block) }
 
       let(:type) { "span type" }
       let(:span_name) { "span name" }
@@ -60,18 +60,26 @@ RSpec.describe Datadog::CI do
       let(:ci_span) { instance_double(Datadog::CI::Span) }
 
       before do
-        allow(recorder).to receive(:trace).with(type, span_name, **options, &block).and_return(ci_span)
+        allow(recorder).to receive(:trace).with(span_name, type: type, **options, &block).and_return(ci_span)
       end
 
       it { is_expected.to be(ci_span) }
+
+      context "when using reserved type" do
+        let(:type) { Datadog::CI::Ext::AppTypes::TYPE_TEST }
+
+        it "raises error" do
+          expect { trace }.to raise_error(Datadog::CI::ReservedTypeError)
+        end
+      end
     end
 
     describe "::active_span" do
-      subject(:active_span) { described_class.active_span(type) }
+      subject(:active_span) { described_class.active_span }
 
       let(:type) { "span type" }
 
-      context "when span type matches current active span" do
+      context "when current active span has custom type" do
         let(:ci_span) { instance_double(Datadog::CI::Span, type: type) }
 
         before do
@@ -81,8 +89,8 @@ RSpec.describe Datadog::CI do
         it { is_expected.to be(ci_span) }
       end
 
-      context "when span type does not match current active span" do
-        let(:ci_span) { instance_double(Datadog::CI::Span, type: "other span type") }
+      context "when current active span is a test" do
+        let(:ci_span) { instance_double(Datadog::CI::Span, type: "test") }
 
         before do
           allow(recorder).to receive(:active_span).and_return(ci_span)
@@ -101,13 +109,11 @@ RSpec.describe Datadog::CI do
     end
 
     describe "::start_test_session" do
-      let(:service) { nil }
-      subject(:start_test_session) { described_class.start_test_session(service: service) }
-
       let(:ci_test_session) { instance_double(Datadog::CI::TestSession) }
 
       context "when service is provided" do
         let(:service) { "my-service" }
+        subject(:start_test_session) { described_class.start_test_session(service: service) }
 
         before do
           allow(recorder).to receive(:start_test_session).with(service: service, tags: {}).and_return(ci_test_session)
@@ -117,9 +123,11 @@ RSpec.describe Datadog::CI do
       end
 
       context "when service is not provided" do
+        subject(:start_test_session) { described_class.start_test_session }
+
         context "when service is configured on library level" do
           before do
-            allow(Datadog.configuration).to receive(:service).and_return("configured-service")
+            allow(Datadog.configuration).to receive(:service_without_fallback).and_return("configured-service")
             allow(recorder).to receive(:start_test_session).with(
               service: "configured-service", tags: {}
             ).and_return(ci_test_session)
@@ -140,16 +148,6 @@ RSpec.describe Datadog::CI do
       end
 
       it { is_expected.to be(ci_test_session) }
-    end
-
-    describe "::deactivate_test_session" do
-      subject(:deactivate_test_session) { described_class.deactivate_test_session }
-
-      before do
-        allow(recorder).to receive(:deactivate_test_session)
-      end
-
-      it { is_expected.to be_nil }
     end
 
     describe "::start_test_module" do
@@ -178,16 +176,6 @@ RSpec.describe Datadog::CI do
       it { is_expected.to be(ci_test_module) }
     end
 
-    describe "::deactivate_test_module" do
-      subject(:deactivate_test_module) { described_class.deactivate_test_module }
-
-      before do
-        allow(recorder).to receive(:deactivate_test_module)
-      end
-
-      it { is_expected.to be_nil }
-    end
-
     describe "::start_test_suite" do
       subject(:start_test_suite) { described_class.start_test_suite("my-suite") }
 
@@ -214,17 +202,6 @@ RSpec.describe Datadog::CI do
 
       it { is_expected.to be(ci_test_suite) }
     end
-
-    describe "::deactivate_test_suite" do
-      let(:test_suite_name) { "my-suite" }
-      subject(:deactivate_test_suite) { described_class.deactivate_test_suite(test_suite_name) }
-
-      before do
-        allow(recorder).to receive(:deactivate_test_suite).with(test_suite_name)
-      end
-
-      it { is_expected.to be_nil }
-    end
   end
 
   context "integration testing the manual API" do
@@ -239,7 +216,7 @@ RSpec.describe Datadog::CI do
       end
 
       it "doesn't record spans via Datadog::CI interface" do
-        expect(spans.count).to eq(1) # http span only
+        expect(spans).to have(1).item # http span only
       end
     end
 
@@ -255,7 +232,7 @@ RSpec.describe Datadog::CI do
         end
 
         it "records test suite level spans" do
-          expect(spans.count).to eq(5) # session + module + suite + test + http span
+          expect(spans).to have(5).items # session + module + suite + test + http span
           expect(test_session_span).not_to be_nil
         end
       end
@@ -271,7 +248,7 @@ RSpec.describe Datadog::CI do
         end
 
         it "does not record test suite level spans" do
-          expect(spans.count).to eq(2) # test + http span
+          expect(spans).to have(2).items # test + http span
           expect(test_session_span).to be_nil
         end
       end

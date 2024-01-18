@@ -11,7 +11,7 @@ module Datadog
             self.active_test = nil
           end
 
-          def activate_test!(test)
+          def activate_test(test)
             raise "Nested tests are not supported. Currently active test: #{active_test}" unless active_test.nil?
 
             if block_given?
@@ -26,14 +26,8 @@ module Datadog
             end
           end
 
-          def deactivate_test!(test)
-            return if active_test.nil?
-
-            if active_test == test
-              self.active_test = nil
-            else
-              raise "Trying to deactivate test #{test}, but currently active test is #{active_test}"
-            end
+          def deactivate_test
+            self.active_test = nil
           end
 
           def active_test

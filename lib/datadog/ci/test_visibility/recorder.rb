@@ -15,7 +15,6 @@ require_relative "../ext/environment"
 require_relative "../utils/git"
 
 require_relative "../span"
-require_relative "../null_span"
 require_relative "../test"
 require_relative "../test_session"
 require_relative "../test_module"
@@ -108,7 +107,7 @@ module Datadog
             start_datadog_tracer_span(test_name, span_options) do |tracer_span|
               test = build_test(tracer_span, tags)
 
-              @local_context.activate_test!(test) do
+              @local_context.activate_test(test) do
                 block.call(test)
               end
             end
@@ -116,12 +115,12 @@ module Datadog
             tracer_span = start_datadog_tracer_span(test_name, span_options)
 
             test = build_test(tracer_span, tags)
-            @local_context.activate_test!(test)
+            @local_context.activate_test(test)
             test
           end
         end
 
-        def trace(type, span_name, tags: {}, &block)
+        def trace(span_name, type: "span", tags: {}, &block)
           span_options = build_span_options(
             nil, # service name is completely optional for custom spans
             type,
@@ -160,8 +159,8 @@ module Datadog
           @global_context.active_test_suite(test_suite_name)
         end
 
-        def deactivate_test(test)
-          @local_context.deactivate_test!(test)
+        def deactivate_test
+          @local_context.deactivate_test
         end
 
         def deactivate_test_session
@@ -179,11 +178,7 @@ module Datadog
         private
 
         def skip_tracing(block = nil)
-          if block
-            block.call(null_span)
-          else
-            null_span
-          end
+          block.call(nil) if block
         end
 
         # Sets trace's origin to ciapp-test
@@ -293,10 +288,6 @@ module Datadog
 
             tracer_span
           end
-        end
-
-        def null_span
-          @null_span ||= NullSpan.new
         end
 
         def validate_test_suite_level_visibility_correctness(test)
