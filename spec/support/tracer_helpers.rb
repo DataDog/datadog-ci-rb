@@ -41,7 +41,7 @@ module TracerHelpers
       Datadog::CI.active_test.set_tag("test_owner", "my_team") if Datadog::CI.active_test
       Datadog::CI.active_test.set_metric("memory_allocations", 16) if Datadog::CI.active_test
 
-      set_result(test, result: result, exception: exception, skip_reason: skip_reason)
+      set_result(test, result: result, exception: exception, skip_reason: skip_reason) if test
 
       Timecop.travel(start_time + duration_seconds)
     end
@@ -70,7 +70,7 @@ module TracerHelpers
 
     test_module = Datadog::CI.start_test_module(test_module_name)
 
-    test_suite_span = Datadog::CI.start_test_suite(test_suite)
+    tracked_test_suite = Datadog::CI.start_test_suite(test_suite)
 
     tests_count.times do |num|
       produce_test_trace(
@@ -84,13 +84,20 @@ module TracerHelpers
       )
     end
 
-    set_result(test_suite_span, result: result, exception: exception, skip_reason: skip_reason)
-    set_result(test_module, result: result, exception: exception, skip_reason: skip_reason)
-    set_result(test_session, result: result, exception: exception, skip_reason: skip_reason)
+    if tracked_test_suite
+      set_result(tracked_test_suite, result: result, exception: exception, skip_reason: skip_reason)
+      tracked_test_suite.finish
+    end
 
-    test_suite_span.finish
-    test_module.finish
-    test_session.finish
+    if test_module
+      set_result(test_module, result: result, exception: exception, skip_reason: skip_reason)
+      test_module.finish
+    end
+
+    if test_session
+      set_result(test_session, result: result, exception: exception, skip_reason: skip_reason)
+      test_session.finish
+    end
   end
 
   def test_session_span

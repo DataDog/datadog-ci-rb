@@ -3,15 +3,15 @@ module Datadog
     class ReservedTypeError < StandardError
     end
 
-    def self.trace_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span test) -> untyped } -> untyped
+    def self.trace_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test? test) -> untyped } -> untyped
 
-    def self.start_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Test?
 
-    def self.start_test_session: (?service: String, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test_session: (?service: String, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession?
 
-    def self.start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestModule?
 
-    def self.start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+    def self.start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSuite?
 
     def self.trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 

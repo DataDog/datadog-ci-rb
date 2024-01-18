@@ -216,7 +216,7 @@ RSpec.describe Datadog::CI do
       end
 
       it "doesn't record spans via Datadog::CI interface" do
-        expect(spans.count).to eq(1) # http span only
+        expect(spans).to have(1).item # http span only
       end
     end
 
@@ -232,7 +232,7 @@ RSpec.describe Datadog::CI do
         end
 
         it "records test suite level spans" do
-          expect(spans.count).to eq(5) # session + module + suite + test + http span
+          expect(spans).to have(5).items # session + module + suite + test + http span
           expect(test_session_span).not_to be_nil
         end
       end
@@ -248,7 +248,7 @@ RSpec.describe Datadog::CI do
         end
 
         it "does not record test suite level spans" do
-          expect(spans.count).to eq(2) # test + http span
+          expect(spans).to have(2).items # test + http span
           expect(test_session_span).to be_nil
         end
       end

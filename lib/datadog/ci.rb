@@ -37,8 +37,7 @@ module Datadog
       # @param [String] service the service name for this session (optional, defaults to DD_SERVICE or repository name)
       # @param [Hash<String,String>] tags extra tags which should be added to the test session.
       # @return [Datadog::CI::TestSession] the active, running {Datadog::CI::TestSession}.
-      # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled or if old Datadog agent is
-      #         detected and test suite level visibility cannot be supported.
+      # @return [nil] if test suite level visibility is disabled or CI mode is disabled.
       def start_test_session(service: Utils::Configuration.fetch_service_name("test"), tags: {})
         recorder.start_test_session(service: service, tags: tags)
       end
@@ -92,8 +91,7 @@ module Datadog
       # @param [String] service the service name for this session (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test module (optional, some tags are inherited from test session).
       # @return [Datadog::CI::TestModule] the active, running {Datadog::CI::TestModule}.
-      # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled or if old Datadog agent is
-      #         detected and test suite level visibility cannot be supported.
+      # @return [nil] if test suite level visibility is disabled or CI mode is disabled.
       def start_test_module(test_module_name, service: nil, tags: {})
         recorder.start_test_module(test_module_name, service: service, tags: tags)
       end
@@ -145,8 +143,7 @@ module Datadog
       # @param [String] service the service name for this test suite (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test module (optional, some tags are inherited from test session)
       # @return [Datadog::CI::TestSuite] the active, running {Datadog::CI::TestSuite}.
-      # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled or if old Datadog agent is
-      #         detected and test suite level visibility cannot be supported.
+      # @return [nil] if test suite level visibility is disabled or CI mode is disabled.
       def start_test_suite(test_suite_name, service: nil, tags: {})
         recorder.start_test_suite(test_suite_name, service: service, tags: tags)
       end
@@ -220,10 +217,10 @@ module Datadog
       # @return [Object] If a block is provided, returns the result of the block execution.
       # @return [Datadog::CI::Test] If no block is provided, returns the active,
       #         unfinished {Datadog::CI::Test}.
-      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
+      # @return [nil] if no block is provided and CI mode is disabled.
       # @yield Optional block where newly created {Datadog::CI::Test} captures the execution.
       # @yieldparam [Datadog::CI::Test] ci_test the newly created and active [Datadog::CI::Test]
-      # @yieldparam [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
+      # @yieldparam [nil] if CI mode is disabled
       def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
         recorder.trace_test(test_name, test_suite_name, service: service, tags: tags, &block)
       end
@@ -249,7 +246,7 @@ module Datadog
       # @param [String] service the service name for this span (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test.
       # @return [Datadog::CI::Test] the active, unfinished {Datadog::CI::Test}.
-      # @return [Datadog::CI::NullSpan] null object if CI visibility is disabled
+      # @return [nil] if CI mode is disabled.
       def start_test(test_name, test_suite_name, service: nil, tags: {})
         recorder.trace_test(test_name, test_suite_name, service: service, tags: tags)
       end
@@ -289,11 +286,11 @@ module Datadog
       # @return [Object] If a block is provided, returns the result of the block execution.
       # @return [Datadog::CI::Span] If no block is provided, returns the active,
       #         unfinished {Datadog::CI::Span}.
-      # @return [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
+      # @return [nil] if CI visibility is disabled
       # @raise [ReservedTypeError] if provided type is reserved for Datadog CI visibility
       # @yield Optional block where newly created {Datadog::CI::Span} captures the execution.
       # @yieldparam [Datadog::CI::Span] ci_span the newly created and active [Datadog::CI::Span]
-      # @yieldparam [Datadog::CI::NullSpan] ci_span null object if CI visibility is disabled
+      # @yieldparam [nil] ci_span if CI visibility is disabled
       def trace(span_name, type: "span", tags: {}, &block)
         if Ext::AppTypes::CI_SPAN_TYPES.include?(type)
           raise(

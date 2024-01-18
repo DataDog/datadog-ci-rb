@@ -20,9 +20,10 @@ module Datadog
               test_suite_name = Helpers.test_suite_name(self, method)
 
               test_suite = Datadog::CI.start_test_suite(test_suite_name)
-              test_suite.passed! # will be overridden if any test fails
+              test_suite.passed! if test_suite # will be overridden if any test fails
 
               results = super
+              return results unless test_suite
 
               test_suite.finish
 

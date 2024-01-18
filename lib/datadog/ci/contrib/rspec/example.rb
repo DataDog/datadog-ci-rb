@@ -41,17 +41,19 @@ module Datadog
                 },
                 service: datadog_configuration[:service_name]
               ) do |test_span|
-                test_span.set_parameters({}, {"scoped_id" => metadata[:scoped_id]})
-
                 result = super
 
-                case execution_result.status
-                when :passed
-                  test_span.passed!
-                when :failed
-                  test_span.failed!(exception: execution_result.exception)
-                else
-                  test_span.skipped!(exception: execution_result.exception) if execution_result.example_skipped?
+                if test_span
+                  test_span.set_parameters({}, {"scoped_id" => metadata[:scoped_id]})
+
+                  case execution_result.status
+                  when :passed
+                    test_span.passed!
+                  when :failed
+                    test_span.failed!(exception: execution_result.exception)
+                  else
+                    test_span.skipped!(exception: execution_result.exception) if execution_result.example_skipped?
+                  end
                 end
 
                 result

@@ -9,22 +9,20 @@ module Datadog
         @global_context: Datadog::CI::TestVisibility::Context::Global
         @codeowners: Datadog::CI::Codeowners::Matcher
 
-        @null_span: Datadog::CI::NullSpan
-
         attr_reader environment_tags: Hash[String, String]
         attr_reader test_suite_level_visibility_enabled: bool
 
         def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher) -> void
 
-        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
         def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession
 
-        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestModule
 
-        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Span
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSuite
 
         def active_test_session: () -> Datadog::CI::TestSession?
 

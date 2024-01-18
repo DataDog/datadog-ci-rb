@@ -41,7 +41,7 @@ module Datadog
               },
               service: configuration[:service_name]
             )
-            CI.start_test_module(test_session.name)
+            CI.start_test_module(test_session.name) if test_session
           end
 
           def on_test_run_finished(event)
@@ -71,7 +71,7 @@ module Datadog
               service: configuration[:service_name]
             )
 
-            if (parameters = extract_parameters_hash(event.test_case))
+            if test_span && (parameters = extract_parameters_hash(event.test_case))
               test_span.set_parameters(parameters)
             end
           end
@@ -157,7 +157,7 @@ module Datadog
 
             test_suite = CI.start_test_suite(test_suite_name)
             # will be overridden if any test fails
-            test_suite.passed!
+            test_suite.passed! if test_suite
 
             @current_test_suite = test_suite
           end

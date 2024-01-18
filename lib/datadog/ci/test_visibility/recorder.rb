@@ -15,7 +15,6 @@ require_relative "../ext/environment"
 require_relative "../utils/git"
 
 require_relative "../span"
-require_relative "../null_span"
 require_relative "../test"
 require_relative "../test_session"
 require_relative "../test_module"
@@ -179,11 +178,7 @@ module Datadog
         private
 
         def skip_tracing(block = nil)
-          if block
-            block.call(null_span)
-          else
-            null_span
-          end
+          block.call(nil) if block
         end
 
         # Sets trace's origin to ciapp-test
@@ -293,10 +288,6 @@ module Datadog
 
             tracer_span
           end
-        end
-
-        def null_span
-          @null_span ||= NullSpan.new
         end
 
         def validate_test_suite_level_visibility_correctness(test)

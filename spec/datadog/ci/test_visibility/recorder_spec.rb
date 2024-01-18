@@ -55,7 +55,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     describe "#trace_test_session" do
       subject { recorder.start_test_session(service: service, tags: tags) }
 
-      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+      it { is_expected.to be_nil }
 
       it "does not activate session" do
         expect(recorder.active_test_session).to be_nil
@@ -67,7 +67,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       subject { recorder.start_test_module(module_name, service: service, tags: tags) }
 
-      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+      it { is_expected.to be_nil }
 
       it "does not activate module" do
         expect(recorder.active_test_module).to be_nil
@@ -79,7 +79,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       subject { recorder.start_test_suite(suite_name, service: service, tags: tags) }
 
-      it { is_expected.to be_kind_of(Datadog::CI::NullSpan) }
+      it { is_expected.to be_nil }
 
       it "does not activate test suite" do
         expect(recorder.active_test_suite(suite_name)).to be_nil

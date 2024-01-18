@@ -23,6 +23,7 @@ module Datadog
               test_suite = Datadog::CI.start_test_suite(suite_name)
 
               result = super
+              return result unless test_suite
 
               if result
                 test_suite.passed!

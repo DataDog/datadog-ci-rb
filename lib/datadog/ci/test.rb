@@ -59,6 +59,26 @@ module Datadog
       def source_file
         get_tag(Ext::Test::TAG_SOURCE_FILE)
       end
+
+      # Sets the parameters for this test (e.g. Cucumber example or RSpec shared specs).
+      # Parameters are needed to compute test fingerprint to distinguish between different tests having same names.
+      #
+      # @param [Hash] arguments the arguments that test accepts as key-value hash
+      # @param [Hash] metadata optional metadata
+      # @return [void]
+      def set_parameters(arguments, metadata = {})
+        return if arguments.nil?
+
+        set_tag(
+          Ext::Test::TAG_PARAMETERS,
+          JSON.generate(
+            {
+              arguments: arguments,
+              metadata: metadata
+            }
+          )
+        )
+      end
     end
   end
 end

@@ -42,30 +42,10 @@ module Datadog
         def active_test_suite(test_suite_name)
         end
 
-        def deactivate_test
-        end
-
-        def deactivate_test_session
-        end
-
-        def deactivate_test_module
-        end
-
-        def deactivate_test_suite(test_suite_name)
-        end
-
         private
 
         def skip_tracing(block = nil)
-          if block
-            block.call(null_span)
-          else
-            null_span
-          end
-        end
-
-        def null_span
-          @null_span ||= NullSpan.new
+          block.call(nil) if block
         end
       end
     end

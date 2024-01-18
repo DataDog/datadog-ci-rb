@@ -54,7 +54,7 @@ module Datadog
                 },
                 service: datadog_configuration[:service_name]
               )
-              CI.start_test_module(test_session.name)
+              CI.start_test_module(test_session.name) if test_session
 
               reporter.reporters << DatadogReporter.new(reporter)
             end
