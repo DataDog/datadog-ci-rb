@@ -2,7 +2,8 @@ module Datadog
   module CI
     module Utils
       module Git
-        @@root: String?
+        @root: String?
+        @repository_name: String?
 
         def self.normalize_ref: (String? name) -> String?
 
