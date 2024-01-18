@@ -313,8 +313,8 @@ module Datadog
       # ```
       # # start span
       # Datadog::CI.trace(
-      #   "step",
       #   "Given I have 42 cucumbers",
+      #   type: "step",
       #   tags: {}
       # )
       #
