@@ -324,7 +324,7 @@ module Datadog
       # ```
       #
       # @return [Datadog::CI::Span] the active span
-      # @return [nil] if no span is active, or if the active span is not a custom span with given type
+      # @return [nil] if no span is active, or if the active span is not a custom span
       def active_span
         span = recorder.active_span
         span if span && !Ext::AppTypes::CI_SPAN_TYPES.include?(span.type)
