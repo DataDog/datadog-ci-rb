@@ -6,7 +6,7 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/DataDog/datadog-ci-rb/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/DataDog/datadog-ci-rb/tree/main)
 
 Datadog's Ruby Library for instrumenting your test and continuous integration pipeline.
-Learn more on our [official website](https://docs.datadoghq.com/continuous_integration/tests/ruby/).
+Learn more on our [official website](https://docs.datadoghq.com/tests/) and check out our [documentation for this library](https://docs.datadoghq.com/tests/setup/ruby/?tab=cloudciprovideragentless).
 
 > [!IMPORTANT]
 > The `datadog-ci` gem is currently a component of [`ddtrace`](https://github.com/datadog/dd-trace-rb) and should not be used without it.
@@ -133,30 +133,6 @@ Datadog.configure { |c| c.ci.agentless_mode_enabled = true }
 ```
 
 ## Additional configuration
-
-### Experimental test suite level visibility support
-
-Test suite level visibility (TSLV) is available in experimental mode and disabled by default (yet).
-To enable it add the following line to Datadog configuration:
-
-```ruby
-Datadog.configure do |c|
-  #  ... usual ci configs ...
-  c.ci.experimental_test_suite_level_visibility_enabled = true
-end
-```
-
-This will enable visibility into how your test suites and test sessions behave, providing
-insights about performance and reliability on test suite/session level. Please submit your feedback
-and any issues encountered via Github issues.
-
-Example test suite trace for Ruby project:
-
-![test level visibility trace](./docs/screenshots/tslv-trace.jpeg)
-
-Example test suite level visibility dashboard for a set of Ruby projects:
-
-![test level visibility trace](./docs/screenshots/tslv-dashboard.jpeg)
 
 ### Add tracing instrumentations
 
