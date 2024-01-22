@@ -39,6 +39,9 @@ TEST_METADATA = {
   },
   "minitest" => {
     "minitest-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+  },
+  "ci_queue_minitest" => {
+    "ci-queue-0-minitest-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
   }
 }
 
@@ -101,7 +104,8 @@ namespace :spec do
   [
     :cucumber,
     :rspec,
-    :minitest
+    :minitest,
+    :ci_queue_minitest
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|
