@@ -20,5 +20,5 @@ target :lib do
   library "rspec"
   library "cucumber"
   library "msgpack"
-  library "weakref"
+  library "ci_queue"
 end

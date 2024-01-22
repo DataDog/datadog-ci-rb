@@ -18,14 +18,10 @@ RSpec.describe Datadog::CI::Contrib::Minitest::Patcher do
       end
     end
 
-    context "Minitest includes plugin" do
-      let(:minitest) { Minitest }
+    context "Minitest::CompositeReporter is patched" do
+      let(:reporter) { Minitest::CompositeReporter }
       it "has a custom bases" do
-        expect(minitest.ancestors).to include(Datadog::CI::Contrib::Minitest::Plugin)
-      end
-
-      it "has datadog_ci extension" do
-        expect(minitest.extensions).to include("datadog_ci")
+        expect(reporter.ancestors).to include(Datadog::CI::Contrib::Minitest::Reporter)
       end
     end
   end

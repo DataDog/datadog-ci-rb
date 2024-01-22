@@ -1,0 +1,5 @@
+module Minitest
+end
+
+module Minitest::Queue
+end

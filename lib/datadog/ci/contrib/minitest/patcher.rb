@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "reporter"
 require_relative "hooks"
 require_relative "runnable"
 
@@ -18,13 +19,9 @@ module Datadog
           end
 
           def patch
-            require_relative "plugin"
-
+            ::Minitest::CompositeReporter.include(Reporter)
             ::Minitest::Test.include(Hooks)
-            ::Minitest.include(Plugin)
             ::Minitest::Runnable.include(Runnable)
-
-            ::Minitest.extensions << "datadog_ci"
           end
         end
       end
