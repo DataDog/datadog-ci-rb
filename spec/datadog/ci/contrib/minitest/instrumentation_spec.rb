@@ -390,7 +390,7 @@ RSpec.describe "Minitest instrumentation" do
         Minitest.run([])
       end
 
-      context "single test passed" do
+      context "passed tests" do
         before(:context) do
           Minitest::Runnable.reset
 
