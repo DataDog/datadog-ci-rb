@@ -172,17 +172,17 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
-      describe "#use_test_level_visibility" do
-        subject(:use_test_level_visibility) do
-          settings.ci.use_test_level_visibility
+      describe "#force_test_level_visibility" do
+        subject(:force_test_level_visibility) do
+          settings.ci.force_test_level_visibility
         end
 
         it { is_expected.to be false }
 
-        context "when #{Datadog::CI::Ext::Settings::ENV_USE_TEST_LEVEL_VISIBILITY}" do
+        context "when #{Datadog::CI::Ext::Settings::ENV_FORCE_TEST_LEVEL_VISIBILITY}" do
           around do |example|
             ClimateControl.modify(
-              Datadog::CI::Ext::Settings::ENV_USE_TEST_LEVEL_VISIBILITY => enable
+              Datadog::CI::Ext::Settings::ENV_FORCE_TEST_LEVEL_VISIBILITY => enable
             ) do
               example.run
             end
@@ -208,10 +208,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
-      describe "#use_test_level_visibility=" do
+      describe "#force_test_level_visibility=" do
         it "updates the #enabled setting" do
-          expect { settings.ci.use_test_level_visibility = true }
-            .to change { settings.ci.use_test_level_visibility }
+          expect { settings.ci.force_test_level_visibility = true }
+            .to change { settings.ci.force_test_level_visibility }
             .from(false)
             .to(true)
         end

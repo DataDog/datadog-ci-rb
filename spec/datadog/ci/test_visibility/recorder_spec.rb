@@ -49,7 +49,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
     include_context "CI mode activated" do
-      let(:use_test_level_visibility) { true }
+      let(:force_test_level_visibility) { true }
     end
 
     describe "#trace_test_session" do

@@ -4,7 +4,7 @@ RSpec.shared_context "CI mode activated" do
   let(:integration_options) { {} }
 
   let(:ci_enabled) { true }
-  let(:use_test_level_visibility) { false }
+  let(:force_test_level_visibility) { false }
 
   let(:recorder) { Datadog.send(:components).ci_recorder }
 
@@ -17,7 +17,7 @@ RSpec.shared_context "CI mode activated" do
 
     Datadog.configure do |c|
       c.ci.enabled = ci_enabled
-      c.ci.use_test_level_visibility = use_test_level_visibility
+      c.ci.force_test_level_visibility = force_test_level_visibility
       unless integration_name == :no_instrument
         c.ci.instrument integration_name, integration_options
       end

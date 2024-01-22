@@ -43,8 +43,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .and_return(agentless_enabled)
 
           allow(settings.ci)
-            .to receive(:use_test_level_visibility)
-            .and_return(use_test_level_visibility)
+            .to receive(:force_test_level_visibility)
+            .and_return(force_test_level_visibility)
 
           allow(settings.ci)
             .to receive(:agentless_url)
@@ -85,7 +85,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .to receive(:enabled=)
 
           allow(settings.ci)
-            .to receive(:use_test_level_visibility=)
+            .to receive(:force_test_level_visibility=)
 
           allow(Datadog.logger)
             .to receive(:warn)
@@ -103,7 +103,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:agentless_url) { nil }
         let(:dd_site) { nil }
         let(:agentless_enabled) { false }
-        let(:use_test_level_visibility) { false }
+        let(:force_test_level_visibility) { false }
         let(:evp_proxy_supported) { false }
 
         context "is enabled" do
@@ -113,7 +113,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
             expect(Datadog::CI::Ext::Environment).to have_received(:tags).with(ENV)
           end
 
-          context "when #use_test_level_visibility" do
+          context "when #force_test_level_visibility" do
             context "is false" do
               it "creates a CI recorder with test_suite_level_visibility_enabled=true" do
                 expect(components.ci_recorder).to be_kind_of(Datadog::CI::TestVisibility::Recorder)
@@ -122,7 +122,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
             end
 
             context "is true" do
-              let(:use_test_level_visibility) { true }
+              let(:force_test_level_visibility) { true }
 
               it "creates a CI recorder with test_suite_level_visibility_enabled=false" do
                 expect(components.ci_recorder).to be_kind_of(Datadog::CI::TestVisibility::Recorder)
@@ -164,7 +164,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Partial))
 
                   expect(settings.ci)
-                    .to have_received(:use_test_level_visibility=)
+                    .to have_received(:force_test_level_visibility=)
                     .with(true)
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|

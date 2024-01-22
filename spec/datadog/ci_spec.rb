@@ -237,7 +237,7 @@ RSpec.describe Datadog::CI do
 
       context "when test suite level visibility is disabled" do
         include_context "CI mode activated" do
-          let(:use_test_level_visibility) { true }
+          let(:force_test_level_visibility) { true }
           let(:ci_enabled) { true }
         end
 
