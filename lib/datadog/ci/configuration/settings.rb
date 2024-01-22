@@ -34,10 +34,25 @@ module Datadog
                 o.env CI::Ext::Settings::ENV_AGENTLESS_URL
               end
 
+              option :force_test_level_visibility do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_FORCE_TEST_LEVEL_VISIBILITY
+                o.default false
+              end
+
               option :experimental_test_suite_level_visibility_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_EXPERIMENTAL_TEST_SUITE_LEVEL_VISIBILITY_ENABLED
                 o.default false
+                o.after_set do |value|
+                  if value
+                    Datadog::Core.log_deprecation do
+                      "The experimental_test_suite_level_visibility_enabled setting has no effect and will be removed in 1.0. " \
+                        "Test suite level visibility is now enabled by default. " \
+                        "If you want to disable test suite level visibility set configuration.ci.force_test_level_visibility = true."
+                    end
+                  end
+                end
               end
 
               define_method(:instrument) do |integration_name, options = {}, &block|

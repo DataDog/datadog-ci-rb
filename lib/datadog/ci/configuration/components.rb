@@ -41,7 +41,7 @@ module Datadog
           elsif can_use_evp_proxy?(settings, agent_settings)
             test_visibility_transport = build_evp_proxy_transport(settings, agent_settings)
           else
-            settings.ci.experimental_test_suite_level_visibility_enabled = false
+            settings.ci.force_test_level_visibility = true
           end
 
           # Deactivate telemetry
@@ -72,7 +72,7 @@ module Datadog
           settings.tracing.test_mode.writer_options = writer_options
 
           @ci_recorder = TestVisibility::Recorder.new(
-            test_suite_level_visibility_enabled: settings.ci.experimental_test_suite_level_visibility_enabled
+            test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility
           )
         end
 
@@ -119,10 +119,10 @@ module Datadog
         end
 
         def serializers_factory(settings)
-          if settings.ci.experimental_test_suite_level_visibility_enabled
-            Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel
-          else
+          if settings.ci.force_test_level_visibility
             Datadog::CI::TestVisibility::Serializers::Factories::TestLevel
+          else
+            Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel
           end
         end
 

@@ -313,13 +313,13 @@ module Datadog
       # ```
       # # start span
       # Datadog::CI.trace(
-      #   "step",
       #   "Given I have 42 cucumbers",
+      #   type: "step",
       #   tags: {}
       # )
       #
-      # # somewhere else, access the active "step" span
-      # step_span = Datadog::CI.active_span("step")
+      # # somewhere else, access the active step span
+      # step_span = Datadog::CI.active_span
       # step_span.finish()
       # ```
       #

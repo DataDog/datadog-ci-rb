@@ -207,7 +207,6 @@ RSpec.describe Datadog::CI do
   context "integration testing the manual API" do
     context "when CI mode is disabled" do
       include_context "CI mode activated" do
-        let(:experimental_test_suite_level_visibility_enabled) { false }
         let(:ci_enabled) { false }
       end
 
@@ -223,7 +222,6 @@ RSpec.describe Datadog::CI do
     context "when CI mode is enabled" do
       context "when test suite level visibility is enabled" do
         include_context "CI mode activated" do
-          let(:experimental_test_suite_level_visibility_enabled) { true }
           let(:ci_enabled) { true }
         end
 
@@ -239,7 +237,7 @@ RSpec.describe Datadog::CI do
 
       context "when test suite level visibility is disabled" do
         include_context "CI mode activated" do
-          let(:experimental_test_suite_level_visibility_enabled) { false }
+          let(:force_test_level_visibility) { true }
           let(:ci_enabled) { true }
         end
 

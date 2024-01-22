@@ -37,6 +37,8 @@ module Datadog
         get_tag(Ext::Test::TAG_TEST_SUITE_ID)
       end
 
+      # Name of the running test suite this test belongs to.
+      # @return [String] the name of the test suite.
       def test_suite_name
         get_tag(Ext::Test::TAG_SUITE)
       end
@@ -47,7 +49,7 @@ module Datadog
         get_tag(Ext::Test::TAG_TEST_MODULE_ID)
       end
 
-      # Span id of the running test module this test belongs to.
+      # Span id of the running test session this test belongs to.
       # @return [String] the span id of the test session.
       def test_session_id
         get_tag(Ext::Test::TAG_TEST_SESSION_ID)
