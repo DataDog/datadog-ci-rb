@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "weakref"
-
 require_relative "../../ext/test"
 require_relative "ext"
 

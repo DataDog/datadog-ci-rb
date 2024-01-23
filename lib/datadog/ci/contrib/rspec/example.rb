@@ -27,8 +27,13 @@ module Datadog
               test_suite_description = fetch_top_level_example_group[:description]
               suite_name = "#{test_suite_description} at #{metadata[:example_group][:rerun_file_path]}"
 
-              # remove suite name from test name to avoid duplication
+              # remove example group description from test name to avoid duplication
               test_name = test_name.sub(test_suite_description, "").strip
+
+              if ci_queue?
+                suite_name += " (ci-queue running example [#{test_name}])"
+                test_suite_span = CI.start_test_suite(suite_name)
+              end
 
               CI.trace_test(
                 test_name,
@@ -49,12 +54,24 @@ module Datadog
                   case execution_result.status
                   when :passed
                     test_span.passed!
+                    test_suite_span.passed! if test_suite_span
                   when :failed
                     test_span.failed!(exception: execution_result.exception)
+                    test_suite_span.failed! if test_suite_span
                   else
-                    test_span.skipped!(exception: execution_result.exception) if execution_result.example_skipped?
+                    # :pending or nil
+                    if execution_result.pending_message
+                      test_span.skipped!(reason: execution_result.pending_message)
+                    elsif execution_result.example_skipped?
+                      test_span.skipped!(exception: execution_result.exception)
+                    else
+                      test_span.skipped!(exception: execution_result.pending_exception)
+                    end
+                    test_suite_span.skipped! if test_suite_span
                   end
                 end
+
+                test_suite_span.finish if test_suite_span
 
                 result
               end
@@ -74,6 +91,11 @@ module Datadog
 
             def datadog_configuration
               Datadog.configuration.ci[:rspec]
+            end
+
+            def ci_queue?
+              defined?(::RSpec::Queue::ExampleExtension) &&
+                self.class.ancestors.include?(::RSpec::Queue::ExampleExtension)
             end
           end
         end

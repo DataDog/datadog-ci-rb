@@ -208,6 +208,176 @@ RSpec.describe "RSpec hooks" do
     end
   end
 
+  context "supports skipped examples" do
+    it "with skip: true" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          it "foo", skip: true do
+            expect(1 + 1).to eq(5)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("No reason given")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with skip: reason" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          it "foo", skip: "reason in it block" do
+            expect(1 + 1).to eq(5)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("reason in it block")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with skip instead of it" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          skip "foo" do
+            expect(1 + 1).to eq(5)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("No reason given")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with xit" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          xit "foo" do
+            expect(1 + 1).to eq(5)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("Temporarily skipped with xit")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with skip call" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          it "foo" do
+            skip
+            expect(1 + 1).to eq(5)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("No reason given")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with skip call and reason given" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          it "foo" do
+            skip("reason")
+            expect(1 + 1).to eq(5)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("reason")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with empty body" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          it "foo"
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("Not yet implemented")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with xcontext" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          xcontext "foo" do
+            it "bar" do
+              expect(1 + 1).to eq(5)
+            end
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo bar")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("Temporarily skipped with xcontext")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with pending keyword and failure" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          it "foo", pending: "did not fix the math yet" do
+            expect(1 + 1).to eq(5)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("did not fix the math yet")
+      expect(first_test_span).not_to have_error
+    end
+
+    it "with pending keyword and passing" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          it "foo", pending: "did not fix the math yet" do
+            expect(1 + 1).to eq(2)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span).to have_error
+      expect(first_test_span).to have_error_message("Expected example to fail since it is pending, but it passed.")
+    end
+
+    it "with pending method, reason and failure" do
+      with_new_rspec_environment do
+        RSpec.describe "some skipped test" do
+          it "foo" do
+            pending("did not fix the math yet")
+            expect(1 + 1).to eq(5)
+          end
+        end.run
+      end
+
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("did not fix the math yet")
+      expect(first_test_span).not_to have_error
+    end
+  end
+
   context "with git root changed" do
     before do
       expect(Datadog::CI::Utils::Git).to receive(:root).and_return("#{Dir.pwd}/spec")

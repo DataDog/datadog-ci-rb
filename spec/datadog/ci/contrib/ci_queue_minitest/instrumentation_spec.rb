@@ -8,7 +8,6 @@ RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
   end
 
   let(:run_id) { rand(1..2**64 - 1) }
-  let(:queue_file_path) { "#{Dir.pwd}/tmp/ci-queue-#{run_id}" }
 
   before do
     Minitest::Runnable.reset
