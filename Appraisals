@@ -83,10 +83,22 @@ def self.with_ci_queue_minitest_gem(minitest_versions: 5, ci_queue_versions: 0)
   end
 end
 
+def self.with_ci_queue_rspec_gem(rspec_versions: 3, ci_queue_versions: 0)
+  Array(rspec_versions).each do |rspec_v|
+    Array(ci_queue_versions).each do |ci_queue_v|
+      appraise "ci-queue-#{ci_queue_v}-rspec-#{rspec_v}" do
+        gem "rspec", "~> #{rspec_v}"
+        gem "ci-queue", "~> #{ci_queue_v}"
+      end
+    end
+  end
+end
+
 with_minitest_gem
 with_rspec_gem
 with_cucumber_gem(versions: 3..9)
 with_ci_queue_minitest_gem
+with_ci_queue_rspec_gem
 
 major, minor, = Gem::Version.new(RUBY_ENGINE_VERSION).segments
 
