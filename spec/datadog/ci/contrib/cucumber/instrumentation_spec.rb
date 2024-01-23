@@ -122,23 +122,23 @@ RSpec.describe "Cucumber formatter" do
     end
 
     it "marks pending cucumber scenario as skipped" do
-      undefined_scenario_span = spans.find { |s| s.resource == "pending scenario" }
-      expect(undefined_scenario_span).not_to be_nil
-      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+      pending_scenario_span = spans.find { |s| s.resource == "pending scenario" }
+      expect(pending_scenario_span).not_to be_nil
+      expect(pending_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::SKIP
       )
-      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq(
+      expect(pending_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq(
         "implementation"
       )
     end
 
     it "marks skipped cucumber scenario as skipped" do
-      undefined_scenario_span = spans.find { |s| s.resource == "skipped scenario" }
-      expect(undefined_scenario_span).not_to be_nil
-      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+      skipped_scenario_span = spans.find { |s| s.resource == "skipped scenario" }
+      expect(skipped_scenario_span).not_to be_nil
+      expect(skipped_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::SKIP
       )
-      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq(
+      expect(skipped_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq(
         "Scenario skipped"
       )
     end
@@ -296,6 +296,49 @@ RSpec.describe "Cucumber formatter" do
       )
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::FAIL
+      )
+    end
+  end
+
+  context "executing a feature with undefined steps in strict mode" do
+    let(:expected_test_run_code) { 2 }
+    let(:feature_file_to_run) { "passing.feature" }
+    let(:args) do
+      [
+        "--strict",
+        "-r",
+        steps_file_for_run_path,
+        features_path
+      ]
+    end
+
+    it "marks test session as failed" do
+      expect(test_session_span).not_to be_nil
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
+    end
+
+    it "marks undefined cucumber scenario as failed" do
+      undefined_scenario_span = spans.find { |s| s.resource == "undefined scenario" }
+      expect(undefined_scenario_span).not_to be_nil
+      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::FAIL
+      )
+      expect(undefined_scenario_span).to have_error_message("Undefined step: \"undefined\"")
+    end
+
+    it "marks pending cucumber scenario as failed" do
+      pending_scenario_span = spans.find { |s| s.resource == "pending scenario" }
+      expect(pending_scenario_span).not_to be_nil
+      expect(pending_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::FAIL
+      )
+    end
+
+    it "marks skipped cucumber scenario as skipped" do
+      skipped_scenario_span = spans.find { |s| s.resource == "skipped scenario" }
+      expect(skipped_scenario_span).not_to be_nil
+      expect(skipped_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::SKIP
       )
     end
   end

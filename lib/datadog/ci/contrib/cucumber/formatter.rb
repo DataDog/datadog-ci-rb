@@ -84,8 +84,6 @@ module Datadog
             # TestRunFinished event does not have a success attribute before 8.0.
             #
             if event.result.failed?
-              @failed_tests_count += 1
-
               test_suite = @current_test_suite
               test_suite.failed! if test_suite
             end
@@ -128,6 +126,7 @@ module Datadog
               span.passed!
             else
               span.failed!(exception: result.exception)
+              @failed_tests_count += 1
             end
             span.finish
           end
