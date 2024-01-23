@@ -4,6 +4,15 @@ end
 module RSpec::Core
 end
 
+module RSpec::Queue
+end
+
+module RSpec::Queue::Runner
+end
+
+module RSpec::Queue::ExampleExtension
+end
+
 module RSpec::Core::Example
   def run: () -> untyped
   def execution_result: () -> untyped

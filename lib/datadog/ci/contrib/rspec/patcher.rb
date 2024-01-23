@@ -21,9 +21,18 @@ module Datadog
           end
 
           def patch
-            ::RSpec::Core::Example.include(Example)
+            if ci_queue?
+              ::RSpec::Queue::Runner.include(Runner)
+            end
+
             ::RSpec::Core::Runner.include(Runner)
+            ::RSpec::Core::Example.include(Example)
             ::RSpec::Core::ExampleGroup.include(ExampleGroup)
+          end
+
+          def ci_queue?
+            # ::RSpec::Queue::Runner is a ci-queue runner
+            defined?(::RSpec::Queue::Runner)
           end
         end
       end
