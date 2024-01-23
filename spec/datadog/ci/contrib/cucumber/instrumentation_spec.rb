@@ -70,6 +70,8 @@ RSpec.describe "Cucumber formatter" do
     let(:feature_file_to_run) { "passing.feature" }
 
     it "creates spans for each scenario and step" do
+      expect(test_spans).to have(4).items
+
       scenario_span = spans.find { |s| s.resource == "cucumber scenario" }
 
       expect(scenario_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
@@ -106,6 +108,39 @@ RSpec.describe "Cucumber formatter" do
         expect(span.get_tag(Datadog::Tracing::Metadata::Ext::Distributed::TAG_ORIGIN))
           .to eq(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
       end
+    end
+
+    it "marks undefined cucumber scenario as skipped" do
+      undefined_scenario_span = spans.find { |s| s.resource == "undefined scenario" }
+      expect(undefined_scenario_span).not_to be_nil
+      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::SKIP
+      )
+      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq(
+        'Undefined step: "undefined"'
+      )
+    end
+
+    it "marks pending cucumber scenario as skipped" do
+      undefined_scenario_span = spans.find { |s| s.resource == "pending scenario" }
+      expect(undefined_scenario_span).not_to be_nil
+      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::SKIP
+      )
+      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq(
+        "implementation"
+      )
+    end
+
+    it "marks skipped cucumber scenario as skipped" do
+      undefined_scenario_span = spans.find { |s| s.resource == "skipped scenario" }
+      expect(undefined_scenario_span).not_to be_nil
+      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::SKIP
+      )
+      expect(undefined_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq(
+        "Scenario skipped"
+      )
     end
 
     it "creates test session span" do

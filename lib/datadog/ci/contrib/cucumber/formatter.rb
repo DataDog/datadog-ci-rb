@@ -122,12 +122,16 @@ module Datadog
           end
 
           def finish_test(span, result)
-            if result.skipped?
-              span.skipped!
-            elsif result.ok?
-              span.passed!
+            if result.skipped? || result.pending? || result.undefined?
+              span.skipped!(reason: result.message)
             elsif result.failed?
               span.failed!(exception: result.exception)
+            elsif result.ok?
+              span.passed!
+            else
+              Datadog.logger.warn do
+                "Unknown test result #{result.class.name} for test #{span.name}"
+              end
             end
             span.finish
           end
