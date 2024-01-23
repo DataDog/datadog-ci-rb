@@ -13,7 +13,8 @@ module Datadog
           end
 
           def self.parallel?(klass)
-            klass.ancestors.include?(::Minitest::Parallel::Test)
+            klass.ancestors.include?(::Minitest::Parallel::Test) ||
+              (defined?(::Minitest::Queue) && ::Minitest.singleton_class.ancestors.include?(::Minitest::Queue))
           end
         end
       end

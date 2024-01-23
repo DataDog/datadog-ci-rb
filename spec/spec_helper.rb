@@ -31,6 +31,32 @@ if defined?(Warning.ignore)
   end
 end
 
+require "rubygems" unless defined? Gem
+
+# Caused by https://github.com/simplecov-ruby/simplecov/pull/756 - simplecov plugin for minitest breaks
+# code coverage when running minitest tests under rspec suite.
+if Gem.loaded_specs.has_key?("minitest")
+  require "minitest"
+  module Minitest
+    def self.load_plugins
+      return unless extensions.empty?
+      seen = {}
+      Gem.find_files("minitest/*_plugin.rb").each do |plugin_path|
+        # here is the hack to fix minitest coverage
+        next if plugin_path.include?("simplecov")
+
+        name = File.basename plugin_path, "_plugin.rb"
+
+        next if seen[name]
+        seen[name] = true
+
+        require plugin_path
+        extensions << name
+      end
+    end
+  end
+end
+
 RSpec.configure do |config|
   config.include ConfigurationHelpers
   config.include TracerHelpers

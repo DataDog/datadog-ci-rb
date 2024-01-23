@@ -9,26 +9,23 @@ module Datadog
   module CI
     module Contrib
       module Minitest
-        module Plugin
+        module Reporter
           def self.included(base)
-            base.extend(ClassMethods)
+            base.prepend(InstanceMethods)
           end
 
-          class DatadogReporter < ::Minitest::AbstractReporter
-            def initialize(minitest_reporter)
-              # This creates circular reference as minitest_reporter also holds reference to DatadogReporter.
-              # To make sure that minitest_reporter can be garbage collected, we use WeakRef.
-              @reporter = WeakRef.new(minitest_reporter)
-            end
+          module InstanceMethods
+            def report(*)
+              return super unless datadog_configuration[:enabled]
 
-            def report
+              res = super
+
               active_test_session = CI.active_test_session
               active_test_module = CI.active_test_module
 
-              return unless @reporter.weakref_alive?
-              return if active_test_session.nil? || active_test_module.nil?
+              return res if active_test_session.nil? || active_test_module.nil?
 
-              if @reporter.passed?
+              if passed?
                 active_test_module.passed!
                 active_test_session.passed!
               else
@@ -39,13 +36,11 @@ module Datadog
               active_test_module.finish
               active_test_session.finish
 
-              nil
+              res
             end
-          end
 
-          module ClassMethods
-            def plugin_datadog_ci_init(*)
-              return unless datadog_configuration[:enabled]
+            def start(*)
+              return super unless datadog_configuration[:enabled]
 
               test_session = CI.start_test_session(
                 tags: {
@@ -56,7 +51,7 @@ module Datadog
               )
               CI.start_test_module(test_session.name) if test_session
 
-              reporter.reporters << DatadogReporter.new(reporter)
+              super
             end
 
             private
