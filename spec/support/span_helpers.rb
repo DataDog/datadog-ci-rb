@@ -52,27 +52,6 @@ module SpanHelpers
   define_have_error_tag(:stack, Datadog::Tracing::Metadata::Ext::Errors::TAG_STACK)
   define_have_error_tag(:type, Datadog::Tracing::Metadata::Ext::Errors::TAG_TYPE)
 
-  # Distributed traces have the same trace_id and parent_id as upstream parent
-  # span, but don't actually share the same Context with the parent.
-  RSpec::Matchers.define :have_distributed_parent do |parent|
-    match do |actual|
-      @matcher = have_attributes(parent_id: parent.span_id, trace_id: parent.trace_id)
-      @matcher.matches? actual
-    end
-
-    failure_message do
-      @matcher.failure_message
-    end
-  end
-
-  # Does this span have no parent span?
-  RSpec::Matchers.define :be_root_span do
-    match do |span|
-      value = span.parent_id
-      values_match? 0, value
-    end
-  end
-
   # @param tags [Hash] key value pairs to tags/metrics to assert on
   RSpec::Matchers.define :have_metadata do |tags|
     match do |actual|
