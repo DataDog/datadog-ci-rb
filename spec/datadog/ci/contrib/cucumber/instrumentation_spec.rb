@@ -317,6 +317,11 @@ RSpec.describe "Cucumber formatter" do
       expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
     end
 
+    it "marks test suite as failed" do
+      expect(test_suite_span).not_to be_nil
+      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
+    end
+
     it "marks undefined cucumber scenario as failed" do
       undefined_scenario_span = spans.find { |s| s.resource == "undefined scenario" }
       expect(undefined_scenario_span).not_to be_nil

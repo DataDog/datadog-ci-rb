@@ -80,14 +80,6 @@ module Datadog
             test_span = CI.active_test
             return if test_span.nil?
 
-            # We need to track overall test failures manually if we are using cucumber < 8.0 because
-            # TestRunFinished event does not have a success attribute before 8.0.
-            #
-            if event.result.failed?
-              test_suite = @current_test_suite
-              test_suite.failed! if test_suite
-            end
-
             finish_test(test_span, event.result)
           end
 
@@ -127,6 +119,9 @@ module Datadog
             else
               span.failed!(exception: result.exception)
               @failed_tests_count += 1
+
+              test_suite = @current_test_suite
+              test_suite.failed! if test_suite
             end
             span.finish
           end
