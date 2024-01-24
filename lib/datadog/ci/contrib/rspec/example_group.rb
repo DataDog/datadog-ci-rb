@@ -25,6 +25,14 @@ module Datadog
               success = super
               return success unless test_suite
 
+              if success && test_suite.passed_tests_count > 0
+                test_suite.passed!
+              elsif success
+                test_suite.skipped!
+              else
+                test_suite.failed!
+              end
+
               test_suite.finish
 
               success
