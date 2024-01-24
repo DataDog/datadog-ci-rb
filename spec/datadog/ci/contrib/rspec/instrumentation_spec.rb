@@ -553,5 +553,53 @@ RSpec.describe "RSpec hooks" do
         end
       end
     end
+
+    context "with skipped test suite" do
+      def rspec_skipped_session_run
+        with_new_rspec_environment do
+          RSpec.describe "SomeTest" do
+            it "foo" do
+              # DO NOTHING
+            end
+          end
+
+          spec = RSpec.describe "SkippedTest" do
+            context "nested" do
+              it "skipped foo", skip: true do
+                # DO NOTHING
+              end
+
+              it "pending fails" do
+                pending("did not fix the math yet")
+                expect(1).to eq(2)
+              end
+            end
+          end
+
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+          ::RSpec::Core::Runner.new(options).run(devnull, devnull)
+
+          spec
+        end
+      end
+
+      before do
+        rspec_skipped_session_run
+      end
+
+      it "marks test session as passed" do
+        expect(test_session_span).not_to be_nil
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+      end
+
+      it "marks test suite as skipped" do
+        skipped_suite = test_suite_spans.find do |suite_span|
+          suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE).include?("SkippedTest")
+        end
+
+        expect(skipped_suite).not_to be_nil
+        expect(skipped_suite.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      end
+    end
   end
 end
