@@ -2,27 +2,6 @@ module Datadog
   module CI
     module Contrib
       module RSpec
-        class ExampleResultsCounter
-          @reporter: untyped
-          @examples_start_count: Integer
-          @pending_examples_start_count: Integer
-          @reporter_counts_examples: bool
-
-
-          def initialize: (untyped reporter) -> void
-
-          def all_pending_since_start?: () -> bool
-
-          private
-          attr_reader reporter: untyped
-
-          def reporter_counts_examples?: () -> bool
-
-          def current_examples_count: () -> Integer
-
-          def current_pending_examples_count: () -> Integer
-        end
-
         module ExampleGroup
           def self.included: (untyped base) -> untyped
 
