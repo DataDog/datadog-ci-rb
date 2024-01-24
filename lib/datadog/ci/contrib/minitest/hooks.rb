@@ -41,9 +41,9 @@ module Datadog
             test_span = CI.active_test
             return super unless test_span
 
-            finish_test(test_span, result_code)
+            finish_with_result(test_span, result_code)
             if Helpers.parallel?(self.class)
-              finish_test_suite(test_span.test_suite, result_code)
+              finish_with_result(test_span.test_suite, result_code)
             end
 
             super
@@ -51,23 +51,9 @@ module Datadog
 
           private
 
-          def finish_test(test_span, result_code)
-            finish_with_result(test_span, result_code)
-
-            # mark test suite as failed if any test failed
-            if test_span.failed?
-              test_suite = test_span.test_suite
-              test_suite.failed! if test_suite
-            end
-          end
-
-          def finish_test_suite(test_suite, result_code)
-            return unless test_suite
-
-            finish_with_result(test_suite, result_code)
-          end
-
           def finish_with_result(span, result_code)
+            return unless span
+
             case result_code
             when "."
               span.passed!

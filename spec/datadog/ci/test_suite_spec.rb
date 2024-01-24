@@ -10,6 +10,12 @@ RSpec.describe Datadog::CI::TestSuite do
   describe "#finish" do
     subject(:ci_test_suite) { described_class.new(tracer_span) }
 
+    before do
+      expect(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_STATUS).and_return(
+        Datadog::CI::Ext::Test::Status::PASS
+      )
+    end
+
     it "deactivates the test suite" do
       ci_test_suite.finish
 

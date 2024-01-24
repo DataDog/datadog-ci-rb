@@ -37,11 +37,13 @@ module Datadog
 
           def current_examples_count
             return 0 unless reporter_counts_examples?
+
             reporter.examples.count
           end
 
           def current_pending_examples_count
             return 0 unless reporter_counts_examples?
+
             reporter.pending_examples.count
           end
         end
