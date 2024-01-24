@@ -20,7 +20,6 @@ module Datadog
             @current_test_suite = nil
 
             @failed_tests_count = 0
-            @test_suite_stats = Hash.new(0)
 
             bind_events(config)
           end
@@ -81,9 +80,8 @@ module Datadog
             test_span = CI.active_test
             return if test_span.nil?
 
-            datadog_status = finish_span(test_span, event.result)
-            @test_suite_stats[datadog_status] += 1
-            @failed_tests_count += 1 if datadog_status == :failed
+            finish_span(test_span, event.result)
+            @failed_tests_count += 1 if test_span.failed?
           end
 
           def on_test_step_started(event)
@@ -115,22 +113,14 @@ module Datadog
           end
 
           def finish_span(span, result)
-            datadog_status = if !result.passed? && result.ok?(@config.strict)
+            if !result.passed? && result.ok?(@config.strict)
               span.skipped!(reason: result.message)
-
-              :skipped
             elsif result.passed?
               span.passed!
-
-              :passed
             else
               span.failed!(exception: result.exception)
-
-              :failed
             end
             span.finish
-
-            datadog_status
           end
 
           def finish_session(result)
@@ -163,17 +153,8 @@ module Datadog
             test_suite = @current_test_suite
             return unless test_suite
 
-            if @test_suite_stats[:failed] > 0
-              test_suite.failed!
-            elsif @test_suite_stats[:passed] > 0
-              test_suite.passed!
-            else
-              test_suite.skipped!
-            end
-
             test_suite.finish
 
-            @test_suite_stats = Hash.new(0)
             @current_test_suite = nil
           end
 
