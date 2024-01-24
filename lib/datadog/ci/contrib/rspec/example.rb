@@ -60,13 +60,11 @@ module Datadog
                     test_suite_span.failed! if test_suite_span
                   else
                     # :pending or nil
-                    if execution_result.pending_message
-                      test_span.skipped!(reason: execution_result.pending_message)
-                    elsif execution_result.example_skipped?
-                      test_span.skipped!(exception: execution_result.exception)
-                    else
-                      test_span.skipped!(exception: execution_result.pending_exception)
-                    end
+                    test_span.skipped!(
+                      reason: execution_result.pending_message,
+                      exception: execution_result.pending_exception
+                    )
+
                     test_suite_span.skipped! if test_suite_span
                   end
                 end

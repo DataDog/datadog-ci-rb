@@ -343,7 +343,7 @@ RSpec.describe "RSpec hooks" do
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("did not fix the math yet")
-      expect(first_test_span).not_to have_error
+      expect(first_test_span).to have_error
     end
 
     it "with pending keyword and passing" do
@@ -374,7 +374,7 @@ RSpec.describe "RSpec hooks" do
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("did not fix the math yet")
-      expect(first_test_span).not_to have_error
+      expect(first_test_span).to have_error
     end
   end
 
