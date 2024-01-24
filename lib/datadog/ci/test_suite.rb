@@ -23,7 +23,7 @@ module Datadog
       # @return [void]
       def finish
         synchronize do
-          # we need to derive test suite status from execution stats if no status was set explicitly
+          # we try to derive test suite status from execution stats if no status was set explicitly
           set_status_from_stats! if undefined?
 
           super
