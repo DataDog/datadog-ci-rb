@@ -15,11 +15,12 @@ module Datadog
 
           def initialize(config)
             @ast_lookup = ::Cucumber::Formatter::AstLookup.new(config) if defined?(::Cucumber::Formatter::AstLookup)
-
             @config = config
-            @failed_tests_count = 0
 
             @current_test_suite = nil
+
+            @failed_tests_count = 0
+            @test_suite_stats = Hash.new(0)
 
             bind_events(config)
           end
@@ -80,7 +81,9 @@ module Datadog
             test_span = CI.active_test
             return if test_span.nil?
 
-            finish_test(test_span, event.result)
+            datadog_status = finish_span(test_span, event.result)
+            @test_suite_stats[datadog_status] += 1
+            @failed_tests_count += 1 if datadog_status == :failed
           end
 
           def on_test_step_started(event)
@@ -91,7 +94,7 @@ module Datadog
             current_step_span = CI.active_span
             return if current_step_span.nil?
 
-            finish_test(current_step_span, event.result)
+            finish_span(current_step_span, event.result)
           end
 
           private
@@ -111,19 +114,23 @@ module Datadog
             end
           end
 
-          def finish_test(span, result)
-            if !result.passed? && result.ok?(@config.strict)
+          def finish_span(span, result)
+            datadog_status = if !result.passed? && result.ok?(@config.strict)
               span.skipped!(reason: result.message)
+
+              :skipped
             elsif result.passed?
               span.passed!
+
+              :passed
             else
               span.failed!(exception: result.exception)
-              @failed_tests_count += 1
 
-              test_suite = @current_test_suite
-              test_suite.failed! if test_suite
+              :failed
             end
             span.finish
+
+            datadog_status
           end
 
           def finish_session(result)
@@ -149,18 +156,25 @@ module Datadog
           def start_test_suite(test_suite_name)
             finish_current_test_suite
 
-            test_suite = CI.start_test_suite(test_suite_name)
-            # will be overridden if any test fails
-            test_suite.passed! if test_suite
-
-            @current_test_suite = test_suite
+            @current_test_suite = CI.start_test_suite(test_suite_name)
           end
 
           def finish_current_test_suite
             test_suite = @current_test_suite
             return unless test_suite
 
+            if @test_suite_stats[:failed] > 0
+              test_suite.failed!
+            elsif @test_suite_stats[:passed] > 0
+              test_suite.passed!
+            else
+              test_suite.skipped!
+            end
+
             test_suite.finish
+
+            @test_suite_stats = Hash.new(0)
+            @current_test_suite = nil
           end
 
           def same_test_suite_as_current?(test_suite_name)

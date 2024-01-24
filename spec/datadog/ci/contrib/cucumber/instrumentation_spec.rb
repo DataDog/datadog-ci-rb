@@ -235,8 +235,8 @@ RSpec.describe "Cucumber formatter" do
     let(:feature_file_to_run) { "with_parameters.feature" }
 
     it "a single test suite, and a test span for each example with parameters JSON" do
-      expect(test_spans.count).to eq(3)
-      expect(test_suite_spans.count).to eq(1)
+      expect(test_spans).to have(3).items
+      expect(test_suite_spans).to have(1).item
 
       test_spans.each_with_index do |span, index|
         # test parameters are available since cucumber 4
@@ -269,7 +269,7 @@ RSpec.describe "Cucumber formatter" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans.count).to eq(3)
+      expect(test_suite_spans).to have(4).items
       expect(passing_test_suite.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::PASS
       )
@@ -345,6 +345,27 @@ RSpec.describe "Cucumber formatter" do
       expect(skipped_scenario_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::SKIP
       )
+    end
+  end
+
+  context "executing a feature where all scenarios are skipped" do
+    let(:feature_file_to_run) { "skipped.feature" }
+
+    it "marks all test spans as skipped" do
+      expect(test_spans).to have(2).items
+      expect(test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS) }.uniq).to eq(
+        [Datadog::CI::Ext::Test::Status::SKIP]
+      )
+    end
+
+    it "marks test session as passed" do
+      expect(test_session_span).not_to be_nil
+      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+    end
+
+    it "marks test suite as skipped" do
+      expect(test_suite_span).not_to be_nil
+      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
     end
   end
 end

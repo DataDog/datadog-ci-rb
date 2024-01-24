@@ -4,9 +4,13 @@ module Datadog
       module Cucumber
         class Formatter
           private
-          @failed_tests_count: Integer
-          @current_test_suite: Datadog::CI::Span?
           @ast_lookup: ::Cucumber::Formatter::AstLookup
+          @config: untyped
+
+          @current_test_suite: Datadog::CI::TestSuite?
+
+          @failed_tests_count: Integer
+          @test_suite_stats: Hash[Symbol, Integer]
 
           attr_reader config: untyped
 
@@ -40,7 +44,7 @@ module Datadog
 
           def finish_session: (bool result) -> void
 
-          def finish_test: (Datadog::CI::Span test, Cucumber::Core::Test::Result result) -> void
+          def finish_span: (Datadog::CI::Span span, Cucumber::Core::Test::Result result) -> Symbol
 
           def extract_parameters_hash: (untyped test_case) -> Hash[String, String]?
 
