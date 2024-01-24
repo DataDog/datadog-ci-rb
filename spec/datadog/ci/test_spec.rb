@@ -110,4 +110,83 @@ RSpec.describe Datadog::CI::Test do
       ci_test.set_parameters(parameters)
     end
   end
+
+  describe "#passed!" do
+    before { allow(ci_test).to receive(:test_suite).and_return(test_suite) }
+
+    context "when test suite is set" do
+      let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
+
+      it "records the test result in the test suite" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "pass")
+        ci_test.passed!
+
+        expect(test_suite).to have_received(:record_test_result).with("pass")
+      end
+    end
+
+    context "when test suite is not set" do
+      let(:test_suite) { nil }
+
+      it "does not record the test result in the test suite" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "pass")
+
+        ci_test.passed!
+      end
+    end
+  end
+
+  describe "#skipped!" do
+    before { allow(ci_test).to receive(:test_suite).and_return(test_suite) }
+
+    context "when test suite is set" do
+      let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
+
+      it "records the test result in the test suite" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
+
+        ci_test.skipped!
+
+        expect(test_suite).to have_received(:record_test_result).with("skip")
+      end
+    end
+
+    context "when test suite is not set" do
+      let(:test_suite) { nil }
+
+      it "does not record the test result in the test suite" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
+
+        ci_test.skipped!
+      end
+    end
+  end
+
+  describe "#failed!" do
+    before { allow(ci_test).to receive(:test_suite).and_return(test_suite) }
+
+    context "when test suite is set" do
+      let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
+
+      it "records the test result in the test suite" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
+        expect(tracer_span).to receive(:status=).with(1)
+
+        ci_test.failed!
+
+        expect(test_suite).to have_received(:record_test_result).with("fail")
+      end
+    end
+
+    context "when test suite is not set" do
+      let(:test_suite) { nil }
+
+      it "does not record the test result in the test suite" do
+        expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
+        expect(tracer_span).to receive(:status=).with(1)
+
+        ci_test.failed!
+      end
+    end
+  end
 end

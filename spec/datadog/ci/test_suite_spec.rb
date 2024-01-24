@@ -66,6 +66,8 @@ RSpec.describe Datadog::CI::TestSuite do
           expect(tracer_span).to receive(:status=).with(1)
 
           finish
+
+          expect(recorder).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
 
@@ -80,6 +82,8 @@ RSpec.describe Datadog::CI::TestSuite do
           )
 
           finish
+
+          expect(recorder).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
 
@@ -97,6 +101,8 @@ RSpec.describe Datadog::CI::TestSuite do
           )
 
           finish
+
+          expect(recorder).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
     end
