@@ -34,6 +34,7 @@ RSpec.describe "gem release process" do
         directories_excluded = %r{
           ^(
             spec
+            |sig
             |docs
             |\.circleci
             |\.github

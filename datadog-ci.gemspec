@@ -35,7 +35,6 @@ Gem::Specification.new do |spec|
       NOTICE
       README.md
       lib/**/*
-      sig/**/*
     ]].select { |fn| File.file?(fn) } # We don't want directories, only files
 
   spec.require_paths = ["lib"]
