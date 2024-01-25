@@ -2,11 +2,13 @@ module Datadog
   module CI
     module Contrib
       module Minitest
-        module Reporter
+        module Runner
           def self.included: (untyped base) -> untyped
 
-          class InstanceMethods < ::Minitest::AbstractReporter
-            def report: (*untyped) -> untyped
+          class ClassMethods
+            extend ::Minitest
+
+            def init_plugins: (*untyped) -> (nil | untyped)
 
             private
 

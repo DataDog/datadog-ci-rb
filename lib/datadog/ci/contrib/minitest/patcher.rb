@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "runner"
 require_relative "reporter"
 require_relative "hooks"
 require_relative "runnable"
@@ -19,9 +20,14 @@ module Datadog
           end
 
           def patch
-            ::Minitest::CompositeReporter.include(Reporter)
-            ::Minitest::Test.include(Hooks)
+            # test session start
+            ::Minitest.include(Runner)
+            # test suites (when not executed concurrently)
             ::Minitest::Runnable.include(Runnable)
+            # tests; test suites (when executed concurrently)
+            ::Minitest::Test.include(Hooks)
+            # test session finish
+            ::Minitest::CompositeReporter.include(Reporter)
           end
         end
       end

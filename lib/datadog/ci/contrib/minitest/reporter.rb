@@ -37,21 +37,6 @@ module Datadog
               res
             end
 
-            def start(*)
-              return super unless datadog_configuration[:enabled]
-
-              test_session = CI.start_test_session(
-                tags: {
-                  CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Minitest::Integration.version.to_s
-                },
-                service: datadog_configuration[:service_name]
-              )
-              CI.start_test_module(test_session.name) if test_session
-
-              super
-            end
-
             private
 
             def datadog_configuration
