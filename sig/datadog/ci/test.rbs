@@ -8,6 +8,10 @@ module Datadog
       def test_module_id: () -> String?
       def test_session_id: () -> String?
       def source_file: () -> String?
+
+      private
+
+      def record_test_result: (String datadog_status) -> void
     end
   end
 end

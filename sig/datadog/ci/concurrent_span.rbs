@@ -1,7 +1,7 @@
 module Datadog
   module CI
     class ConcurrentSpan < Span
-      @mutex: Thread::Mutex
+      @mutex: Monitor
 
       def initialize: (Datadog::Tracing::SpanOperation tracer_span) -> void
       def passed!: () -> void

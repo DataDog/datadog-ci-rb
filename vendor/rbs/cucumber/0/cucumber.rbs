@@ -16,8 +16,12 @@ end
 
 class Cucumber::Core::Test::Result
   def failed?: () -> bool
-  def ok?: () -> bool
+  def ok?: (?untyped strict) -> bool
   def skipped?: () -> bool
+  def passed?: () -> bool
+  def pending?: () -> bool
+  def undefined?: () -> bool
+  def message: () -> String
   def exception: () -> untyped
 end
 

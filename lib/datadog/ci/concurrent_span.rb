@@ -12,7 +12,8 @@ module Datadog
       def initialize(tracer_span)
         super
 
-        @mutex = Mutex.new
+        # we use Monitor instead of Mutex because it is reentrant
+        @mutex = Monitor.new
       end
 
       # Gets tag value by key. This method is thread-safe.

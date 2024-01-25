@@ -15,24 +15,27 @@ module Datadog
 
           # Instance methods for configuration
           module ClassMethods
-            def run(*)
+            def run(reporter = ::RSpec::Core::NullReporter)
               return super unless datadog_configuration[:enabled]
               return super unless top_level?
 
               suite_name = "#{description} at #{file_path}"
               test_suite = Datadog::CI.start_test_suite(suite_name)
 
-              result = super
-              return result unless test_suite
+              success = super
+              return success unless test_suite
 
-              if result
+              if success && test_suite.passed_tests_count > 0
                 test_suite.passed!
+              elsif success
+                test_suite.skipped!
               else
                 test_suite.failed!
               end
+
               test_suite.finish
 
-              result
+              success
             end
 
             private

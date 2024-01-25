@@ -62,6 +62,33 @@ module Datadog
         get_tag(Ext::Test::TAG_SOURCE_FILE)
       end
 
+      # Sets the status of the span to "pass".
+      # @return [void]
+      def passed!
+        super
+
+        record_test_result(Ext::Test::Status::PASS)
+      end
+
+      # Sets the status of the span to "fail".
+      # @param [Exception] exception the exception that caused the test to fail.
+      # @return [void]
+      def failed!(exception: nil)
+        super
+
+        record_test_result(Ext::Test::Status::FAIL)
+      end
+
+      # Sets the status of the span to "skip".
+      # @param [Exception] exception the exception that caused the test to fail.
+      # @param [String] reason the reason why the test was skipped.
+      # @return [void]
+      def skipped!(exception: nil, reason: nil)
+        super
+
+        record_test_result(Ext::Test::Status::SKIP)
+      end
+
       # Sets the parameters for this test (e.g. Cucumber example or RSpec shared specs).
       # Parameters are needed to compute test fingerprint to distinguish between different tests having same names.
       #
@@ -80,6 +107,13 @@ module Datadog
             }
           )
         )
+      end
+
+      private
+
+      def record_test_result(datadog_status)
+        suite = test_suite
+        suite.record_test_result(datadog_status) if suite
       end
     end
   end

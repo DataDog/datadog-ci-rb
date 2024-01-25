@@ -675,6 +675,39 @@ RSpec.describe "Minitest instrumentation" do
           )
         end
       end
+
+      context "skipped suite" do
+        before(:context) do
+          Minitest::Runnable.reset
+
+          class SkippedTest < Minitest::Test
+            def test_1
+              skip
+            end
+
+            def test_2
+              skip
+            end
+          end
+        end
+
+        it "marks all test spans as skipped" do
+          expect(test_spans).to have(2).items
+          expect(test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS) }.uniq).to eq(
+            [Datadog::CI::Ext::Test::Status::SKIP]
+          )
+        end
+
+        it "marks test session as passed" do
+          expect(test_session_span).not_to be_nil
+          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+        end
+
+        it "marks test suite as skipped" do
+          expect(test_suite_span).not_to be_nil
+          expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+        end
+      end
     end
   end
 end

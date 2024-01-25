@@ -1,6 +1,17 @@
 module Datadog
   module CI
     class TestSuite < ConcurrentSpan
+      @test_suite_stats: Hash[String, Integer]
+
+      def record_test_result: (String datadog_test_status) -> void
+
+      def passed_tests_count: () -> Integer
+      def skipped_tests_count: () -> Integer
+      def failed_tests_count: () -> Integer
+
+      private
+
+      def set_status_from_stats!: () -> void
     end
   end
 end
