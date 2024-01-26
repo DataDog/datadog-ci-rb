@@ -1,5 +1,31 @@
 ## [Unreleased]
 
+## [0.7.0] - 2024-01-26
+
+### Added
+
+* Source code integration ([#95][])
+* CODEOWNERS support ([#98][])
+* Cucumber scenarios with examples are treated as parametrized tests ([#100][])
+* Deduplicate dynamically generated RSpec examples using test.parameters ([#101][])
+* Repository name is used as default test service name ([#104][])
+* Cucumber v9 support ([#99][])
+* ci-queue runner support for minitest ([#110][])
+* ci-queue support for rspec ([#112][])
+
+### Fixed
+
+* do not publish sig folder when publishing this gem to prevent steep errors in client applications ([#114][])
+* minitest: fix rails parallel test runner ([#115][])
+* Test suites and tests skipped by frameworks are correctly reported as skipped to Datadog ([#113][])
+
+### Changed
+
+* Enable test suite level visibility by default (with killswitch) ([#109][])
+* Test suite names are more human-readable now ([#105][])
+* Remove span_type method in tracer-related models ([#107][])
+* Manual tracing API: convert type parameter to keyword in Datadog::CI.trace, remove internal-only methods from public API ([#108][])
+
 ## [0.6.0] - 2024-01-03
 
 ### Added
@@ -124,7 +150,9 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.7.0...main
+[0.7.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.4.0...v0.4.1
@@ -170,3 +198,18 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#89]: https://github.com/DataDog/datadog-ci-rb/issues/89
 [#90]: https://github.com/DataDog/datadog-ci-rb/issues/90
 [#92]: https://github.com/DataDog/datadog-ci-rb/issues/92
+[#95]: https://github.com/DataDog/datadog-ci-rb/issues/95
+[#98]: https://github.com/DataDog/datadog-ci-rb/issues/98
+[#99]: https://github.com/DataDog/datadog-ci-rb/issues/99
+[#100]: https://github.com/DataDog/datadog-ci-rb/issues/100
+[#101]: https://github.com/DataDog/datadog-ci-rb/issues/101
+[#104]: https://github.com/DataDog/datadog-ci-rb/issues/104
+[#105]: https://github.com/DataDog/datadog-ci-rb/issues/105
+[#107]: https://github.com/DataDog/datadog-ci-rb/issues/107
+[#108]: https://github.com/DataDog/datadog-ci-rb/issues/108
+[#109]: https://github.com/DataDog/datadog-ci-rb/issues/109
+[#110]: https://github.com/DataDog/datadog-ci-rb/issues/110
+[#112]: https://github.com/DataDog/datadog-ci-rb/issues/112
+[#113]: https://github.com/DataDog/datadog-ci-rb/issues/113
+[#114]: https://github.com/DataDog/datadog-ci-rb/issues/114
+[#115]: https://github.com/DataDog/datadog-ci-rb/issues/115
