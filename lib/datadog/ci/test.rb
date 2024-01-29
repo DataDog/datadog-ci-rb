@@ -112,8 +112,7 @@ module Datadog
       private
 
       def record_test_result(datadog_status)
-        suite = test_suite
-        suite.record_test_result(datadog_status) if suite
+        test_suite&.record_test_result(datadog_status)
       end
     end
   end

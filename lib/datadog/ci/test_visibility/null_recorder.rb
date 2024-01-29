@@ -45,7 +45,7 @@ module Datadog
         private
 
         def skip_tracing(block = nil)
-          block.call(nil) if block
+          block&.call(nil)
         end
       end
     end
