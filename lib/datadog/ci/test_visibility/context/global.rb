@@ -55,9 +55,7 @@ module Datadog
 
           def service
             @mutex.synchronize do
-              # thank you RBS for this weirdness
-              test_session = @test_session
-              test_session.service if test_session
+              @test_session&.service
             end
           end
 

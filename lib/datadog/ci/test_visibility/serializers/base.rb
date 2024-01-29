@@ -241,7 +241,7 @@ module Datadog
           end
 
           def to_integer(value)
-            value.to_i if value
+            value&.to_i
           end
         end
       end

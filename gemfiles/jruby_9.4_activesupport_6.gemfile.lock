@@ -1,3 +1,15 @@
+GIT
+  remote: https://github.com/DataDog/dd-trace-rb.git
+  revision: fddce26e9dcec17b441cc78f27c3a0c8d82ce6b3
+  branch: 2.0
+  specs:
+    datadog (2.0.0.dev)
+      base64
+      debase-ruby_core_source (= 3.3.1)
+      libdatadog (~> 6.0.0.2.0)
+      libddwaf (~> 1.14.0.0.0)
+      msgpack
+
 PATH
   remote: ..
   specs:
@@ -18,15 +30,10 @@ GEM
       rake
       thor (>= 0.14.0)
     ast (2.4.2)
+    base64 (0.2.0)
     climate_control (1.2.0)
     coderay (1.1.3)
     concurrent-ruby (1.2.3)
-    ddtrace (1.21.0)
-      datadog-ci (~> 0.8.1)
-      debase-ruby_core_source (= 3.3.1)
-      libdatadog (~> 6.0.0.2.0)
-      libddwaf (~> 1.14.0.0.0)
-      msgpack
     debase-ruby_core_source (3.3.1)
     diff-lcs (1.5.1)
     docile (1.4.0)
@@ -130,8 +137,8 @@ DEPENDENCIES
   activesupport (~> 6)
   appraisal
   climate_control
+  datadog!
   datadog-ci!
-  ddtrace
   os
   pimpmychangelog (>= 0.1.2)
   pry

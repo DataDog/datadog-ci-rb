@@ -5,11 +5,7 @@ module Datadog
         module Ext
           ENV_ENABLED: String
 
-          ENV_OPERATION_NAME: String
-
           FRAMEWORK: String
-
-          OPERATION_NAME: String
 
           DEFAULT_SERVICE_NAME: String
 

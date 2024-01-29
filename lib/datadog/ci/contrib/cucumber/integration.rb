@@ -17,8 +17,7 @@ module Datadog
           register_as :cucumber
 
           def self.version
-            Gem.loaded_specs["cucumber"] \
-              && Gem.loaded_specs["cucumber"].version
+            Gem.loaded_specs["cucumber"]&.version
           end
 
           def self.loaded?
