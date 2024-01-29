@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "datadog/tracing"
+require "datadog/tracing/contrib/component"
 require "datadog/tracing/trace_digest"
 
 require "rbconfig"
@@ -198,12 +199,12 @@ module Datadog
         end
 
         def skip_tracing(block = nil)
-          block.call(nil) if block
+          block&.call(nil)
         end
 
         # Sets trace's origin to ciapp-test
         def set_trace_origin(trace)
-          trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
+          trace&.origin = Ext::Test::CONTEXT_ORIGIN
         end
 
         def build_test_session(tracer_span, tags)

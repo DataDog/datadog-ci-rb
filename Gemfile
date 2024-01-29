@@ -6,7 +6,7 @@ source "https://rubygems.org"
 gemspec
 
 # needed to run tests, always present at runtime
-gem "ddtrace"
+gem "datadog", github: "DataDog/dd-trace-rb", branch: "2.0"
 
 gem "pry"
 gem "rake"

@@ -48,28 +48,26 @@ module Datadog
               ) do |test_span|
                 result = super
 
-                if test_span
-                  test_span.set_parameters({}, {"scoped_id" => metadata[:scoped_id]})
+                test_span&.set_parameters({}, {"scoped_id" => metadata[:scoped_id]})
 
-                  case execution_result.status
-                  when :passed
-                    test_span.passed!
-                    test_suite_span.passed! if test_suite_span
-                  when :failed
-                    test_span.failed!(exception: execution_result.exception)
-                    test_suite_span.failed! if test_suite_span
-                  else
-                    # :pending or nil
-                    test_span.skipped!(
-                      reason: execution_result.pending_message,
-                      exception: execution_result.pending_exception
-                    )
+                case execution_result.status
+                when :passed
+                  test_span&.passed!
+                  test_suite_span&.passed!
+                when :failed
+                  test_span&.failed!(exception: execution_result.exception)
+                  test_suite_span&.failed!
+                else
+                  # :pending or nil
+                  test_span&.skipped!(
+                    reason: execution_result.pending_message,
+                    exception: execution_result.pending_exception
+                  )
 
-                    test_suite_span.skipped! if test_suite_span
-                  end
+                  test_suite_span&.skipped!
                 end
 
-                test_suite_span.finish if test_suite_span
+                test_suite_span&.finish
 
                 result
               end

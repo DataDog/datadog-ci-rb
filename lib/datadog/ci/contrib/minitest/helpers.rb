@@ -25,8 +25,7 @@ module Datadog
           def self.extract_source_location_from_class(klass)
             return nil if klass.nil? || klass.name.nil?
 
-            source_location = klass.const_source_location(klass.name)
-            source_location.first unless source_location.nil?
+            klass.const_source_location(klass.name)&.first
           rescue
             nil
           end

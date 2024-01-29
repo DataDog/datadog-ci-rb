@@ -72,13 +72,7 @@ module Datadog
 
         def encode_traces(traces)
           traces.flat_map do |trace|
-            spans = trace.spans
-            # TODO: remove condition when 1.0 is released
-            if spans.respond_to?(:filter_map)
-              spans.filter_map { |span| encode_span(trace, span) }
-            else
-              spans.map { |span| encode_span(trace, span) }.reject(&:nil?)
-            end
+            trace.spans.filter_map { |span| encode_span(trace, span) }
           end
         end
 

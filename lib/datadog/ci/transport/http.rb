@@ -71,7 +71,7 @@ module Datadog
         end
 
         # this is needed because Datadog::Tracing::Writer is not fully compatiple with Datadog::Core::Transport
-        # TODO: remove before 1.0 when CI implements its own worker
+        # TODO: remove when CI implements its own worker
         class ResponseDecorator < ::SimpleDelegator
           def trace_count
             0
