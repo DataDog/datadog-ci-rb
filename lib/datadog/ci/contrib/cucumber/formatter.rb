@@ -71,8 +71,8 @@ module Datadog
               service: configuration[:service_name]
             )
 
-            if test_span && (parameters = extract_parameters_hash(event.test_case))
-              test_span.set_parameters(parameters)
+            if (parameters = extract_parameters_hash(event.test_case))
+              test_span&.set_parameters(parameters)
             end
           end
 
@@ -100,9 +100,8 @@ module Datadog
           def test_suite_name(test_case)
             feature = if test_case.respond_to?(:feature)
               test_case.feature
-            elsif @ast_lookup
-              gherkin_doc = @ast_lookup.gherkin_document(test_case.location.file)
-              gherkin_doc.feature if gherkin_doc
+            else
+              @ast_lookup&.gherkin_document(test_case.location.file)&.feature
             end
 
             if feature
@@ -150,19 +149,13 @@ module Datadog
           end
 
           def finish_current_test_suite
-            test_suite = @current_test_suite
-            return unless test_suite
-
-            test_suite.finish
+            @current_test_suite&.finish
 
             @current_test_suite = nil
           end
 
           def same_test_suite_as_current?(test_suite_name)
-            test_suite = @current_test_suite
-            return false unless test_suite
-
-            test_suite.name == test_suite_name
+            @current_test_suite&.name == test_suite_name
           end
 
           def extract_parameters_hash(test_case)

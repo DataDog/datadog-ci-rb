@@ -17,7 +17,7 @@ module Datadog
           register_as :minitest
 
           def self.version
-            Gem.loaded_specs["minitest"] && Gem.loaded_specs["minitest"].version
+            Gem.loaded_specs["minitest"]&.version
           end
 
           def self.loaded?

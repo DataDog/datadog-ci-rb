@@ -71,7 +71,7 @@ module Datadog
             return
           end
 
-          unless HEX_NUMBER_REGEXP =~ git_sha
+          unless HEX_NUMBER_REGEXP.match?(git_sha)
             message += " Expected SHA to be a valid HEX number, got #{git_sha}."
             Datadog.logger.error(message)
           end

@@ -47,7 +47,7 @@ module Datadog
                 o.after_set do |value|
                   if value
                     Datadog::Core.log_deprecation do
-                      "The experimental_test_suite_level_visibility_enabled setting has no effect and will be removed in 1.0. " \
+                      "The experimental_test_suite_level_visibility_enabled setting has no effect and will be removed in 2.0. " \
                         "Test suite level visibility is now enabled by default. " \
                         "If you want to disable test suite level visibility set configuration.ci.force_test_level_visibility = true."
                     end
