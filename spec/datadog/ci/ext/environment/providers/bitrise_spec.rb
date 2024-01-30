@@ -1,6 +1,6 @@
 RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Bitrise do
   describe ".tags" do
-    include_context "extract tags from environment with given provider and use a subject"
+    include_context "extract environment tags"
 
     context "example fixture" do
       let(:env) do
