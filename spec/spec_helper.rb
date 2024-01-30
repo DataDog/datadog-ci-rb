@@ -10,7 +10,7 @@ require_relative "../lib/datadog/ci"
 
 # rspec helpers and matchers
 require_relative "support/gems_helpers"
-require_relative "support/log_helpers"
+
 require_relative "support/tracer_helpers"
 require_relative "support/span_helpers"
 require_relative "support/platform_helpers"
