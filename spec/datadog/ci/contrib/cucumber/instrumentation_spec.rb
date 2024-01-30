@@ -173,27 +173,27 @@ RSpec.describe "Cucumber formatter" do
     end
 
     it "creates test suite span" do
-      expect(test_suite_span).not_to be_nil
-      expect(test_suite_span.name).to eq("Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature")
-      expect(test_suite_span.service).to eq("jalapenos")
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
+      expect(first_test_suite_span).not_to be_nil
+      expect(first_test_suite_span.name).to eq("Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature")
+      expect(first_test_suite_span.service).to eq("jalapenos")
+      expect(first_test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
         Datadog::CI::Ext::Test::SPAN_KIND_TEST
       )
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
+      expect(first_test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
         Datadog::CI::Contrib::Cucumber::Ext::FRAMEWORK
       )
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+      expect(first_test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
       )
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+      expect(first_test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
     end
 
     it "connects scenario span to test session and test module" do
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(test_command)
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_span.name)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(first_test_suite_span.id.to_s)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(first_test_suite_span.name)
     end
   end
 
@@ -213,10 +213,10 @@ RSpec.describe "Cucumber formatter" do
         Datadog::CI::Ext::Test::Status::FAIL
       )
 
-      expect(test_suite_span.name).to eq(
+      expect(first_test_suite_span.name).to eq(
         "Datadog integration - test failing features at spec/datadog/ci/contrib/cucumber/features/failing.feature"
       )
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+      expect(first_test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
         Datadog::CI::Ext::Test::Status::FAIL
       )
 
@@ -252,7 +252,7 @@ RSpec.describe "Cucumber formatter" do
         expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
           "Datadog integration for parametrized tests at spec/datadog/ci/contrib/cucumber/features/with_parameters.feature"
         )
-        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
+        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(first_test_suite_span.id.to_s)
         expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
           Datadog::CI::Ext::Test::Status::PASS
         )
@@ -316,8 +316,8 @@ RSpec.describe "Cucumber formatter" do
     end
 
     it "marks test suite as failed" do
-      expect(test_suite_span).not_to be_nil
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
+      expect(first_test_suite_span).not_to be_nil
+      expect(first_test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
     end
 
     it "marks undefined cucumber scenario as failed" do
@@ -362,8 +362,10 @@ RSpec.describe "Cucumber formatter" do
     end
 
     it "marks test suite as skipped" do
-      expect(test_suite_span).not_to be_nil
-      expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(first_test_suite_span).not_to be_nil
+      expect(first_test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        Datadog::CI::Ext::Test::Status::SKIP
+      )
     end
   end
 end
