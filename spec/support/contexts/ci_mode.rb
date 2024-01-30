@@ -1,3 +1,11 @@
+# CI mode shared context sets up the CI recorder and configures the CI mode for tracer like customers do.
+# Example usage:
+#
+# include_context "CI mode activated" do
+#   let(:integration_name) { :cucumber }
+#   let(:integration_options) { {service_name: "jalapenos"} }
+# end
+
 RSpec.shared_context "CI mode activated" do
   let(:test_command) { "command" }
   let(:integration_name) { :no_instrument }
