@@ -3,7 +3,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::LocalGit do
   let(:environment_variables) { {} }
 
   describe "#tags" do
-    include_context "extract tags from environment with given provider and use a subject"
+    include_context "extract environment tags"
 
     context "example git repository" do
       include_context "with git fixture", "gitdir_with_commit"
