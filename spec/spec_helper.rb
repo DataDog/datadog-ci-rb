@@ -13,7 +13,6 @@ require_relative "support/gems_helpers"
 
 require_relative "support/tracer_helpers"
 require_relative "support/span_helpers"
-require_relative "support/platform_helpers"
 require_relative "support/provider_test_helpers"
 require_relative "support/test_visibility_event_serialized"
 
