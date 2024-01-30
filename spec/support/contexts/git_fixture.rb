@@ -1,4 +1,7 @@
-FIXTURE_DIR = "#{File.dirname(__FILE__)}/fixtures/" # rubocop:disable all
+# Git fixture shared context sets up an example git repository in the ../fixture directory.
+# Used to test git integration.
+
+FIXTURE_DIR = "#{File.dirname(__FILE__)}/../fixtures/" # rubocop:disable all
 
 shared_context "with git fixture" do |git_fixture|
   let(:environment_variables) do
