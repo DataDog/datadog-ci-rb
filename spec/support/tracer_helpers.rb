@@ -3,11 +3,8 @@ require "datadog/ci"
 # For contrib, we only allow one tracer to be active:
 # the global tracer in +Datadog::Tracing+.
 module TracerHelpers
-  # Returns the current tracer instance
-  def tracer
-    Datadog::Tracing.send(:tracer)
-  end
-
+  # traces a single test with given parameters
+  # optionally adds a http span using `Datadog::Tracing.trace`
   def produce_test_trace(
     framework: "rspec",
     test_name: "test_add", test_suite: "calculator_tests",
@@ -49,6 +46,7 @@ module TracerHelpers
     Timecop.return
   end
 
+  # traces a test session with given parameters and number of tests
   def produce_test_session_trace(
     tests_count: 1, framework: "rspec",
     test_name: "test_add", test_suite: "calculator_tests", test_module_name: "arithmetic",
@@ -100,36 +98,60 @@ module TracerHelpers
     end
   end
 
+  # returns test session span and asserts that there must be no more than one
   def test_session_span
-    spans.find { |span| span.type == "test_session_end" }
+    @test_session_span ||= begin
+      test_session_spans = spans.filter { |span| span.type == "test_session_end" }
+      expect(test_session_spans.count).to be <= 1
+      test_session_spans.first
+    end
   end
 
+  # returns test module span and asserts that there must be no more than one
   def test_module_span
-    spans.find { |span| span.type == "test_module_end" }
+    @test_module_span ||= begin
+      test_module_spans = spans.filter { |span| span.type == "test_module_end" }
+      expect(test_module_spans.count).to be <= 1
+      test_module_spans.first
+    end
   end
 
-  def test_suite_span
-    test_suite_spans.first
+  # returns all test spans
+  def test_spans
+    @test_spans ||= spans.filter { |span| span.type == "test" }
+  end
+
+  # returns all test suite spans
+  def test_suite_spans
+    @test_suite_spans ||= spans.filter { |span| span.type == "test_suite_end" }
+  end
+
+  # returns all custom (i.e. not test/suite/module/session) spans
+  def custom_spans
+    @custom_spans ||= spans.filter do |span|
+      !Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span.type)
+    end
   end
 
   def first_test_span
-    test_spans.first
+    @first_span_span ||= test_spans.first
   end
 
-  def first_other_span
-    tracer_spans.first
+  def first_test_suite_span
+    @first_stest_suite_span ||= test_suite_spans.first
   end
 
-  def test_spans
-    spans.filter { |span| span.type == "test" }
+  def first_custom_span
+    @first_custom_span ||= custom_spans.first
   end
 
-  def test_suite_spans
-    spans.filter { |span| span.type == "test_suite_end" }
-  end
+  # -------------------------------------
+  # methods inherited from dd-trace-rb
+  # -------------------------------------
 
-  def tracer_spans
-    spans.filter { |span| !Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span.type) }
+  # Returns the current tracer instance
+  def tracer
+    Datadog::Tracing.send(:tracer)
   end
 
   # Returns traces and caches it (similar to +let(:traces)+).

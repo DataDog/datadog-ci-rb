@@ -7,7 +7,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
   end
 
   include_context "citestcycle serializer" do
-    subject { described_class.new(trace_for_span(first_other_span), first_other_span) }
+    subject { described_class.new(trace_for_span(first_custom_span), first_custom_span) }
   end
 
   describe "#to_msgpack" do
@@ -22,7 +22,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
         expect(content).to include(
           {
             "trace_id" => first_test_span.trace_id,
-            "span_id" => first_other_span.id,
+            "span_id" => first_custom_span.id,
             "parent_id" => first_test_span.id,
             "name" => "http-call",
             "service" => "net-http",
@@ -50,7 +50,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
         before do
           produce_test_trace(with_http_span: true)
 
-          first_other_span.name = nil
+          first_custom_span.name = nil
         end
 
         it { is_expected.not_to be_valid }

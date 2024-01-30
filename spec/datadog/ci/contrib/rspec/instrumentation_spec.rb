@@ -127,9 +127,9 @@ RSpec.describe "RSpec hooks" do
     end
 
     expect(test_spans).to have(1).items
-    expect(tracer_spans).to have(1).items
+    expect(custom_spans).to have(1).items
 
-    tracer_spans.each do |span|
+    custom_spans.each do |span|
       expect(span.get_tag(Datadog::Tracing::Metadata::Ext::Distributed::TAG_ORIGIN))
         .to eq(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
@@ -477,10 +477,10 @@ RSpec.describe "RSpec hooks" do
     it "creates test suite span" do
       spec = rspec_session_run
 
-      expect(test_suite_span).not_to be_nil
+      expect(first_test_suite_span).not_to be_nil
 
-      expect(test_suite_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
-      expect(test_suite_span.name).to eq("SomeTest at #{spec.file_path}")
+      expect(first_test_suite_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
+      expect(first_test_suite_span.name).to eq("SomeTest at #{spec.file_path}")
 
       expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
         Datadog::CI::Ext::Test::SPAN_KIND_TEST
@@ -501,7 +501,7 @@ RSpec.describe "RSpec hooks" do
 
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
       expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
+      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(first_test_suite_span.id.to_s)
     end
 
     context "with failures" do
@@ -526,8 +526,8 @@ RSpec.describe "RSpec hooks" do
       it "creates test suite span with failed state" do
         rspec_session_run(with_failed_test: true)
 
-        expect(test_suite_span).not_to be_nil
-        expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
+        expect(first_test_suite_span).not_to be_nil
+        expect(first_test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
           Datadog::CI::Ext::Test::Status::FAIL
         )
       end
@@ -549,7 +549,7 @@ RSpec.describe "RSpec hooks" do
         end
 
         test_spans.each do |test_span|
-          expect(test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
+          expect(test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(first_test_suite_span.id.to_s)
         end
       end
     end

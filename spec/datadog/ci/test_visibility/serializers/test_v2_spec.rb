@@ -29,7 +29,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
             "resource" => "calculator_tests.test_add.run.0",
             "test_session_id" => test_session_span.id,
             "test_module_id" => test_module_span.id,
-            "test_suite_id" => test_suite_span.id
+            "test_suite_id" => first_test_suite_span.id
           }
         )
 
@@ -119,9 +119,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
       end
 
       context "when test_session_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_session_id is nil" do
@@ -129,9 +127,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
           first_test_span.clear_tag("_test.session_id")
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
-        end
+        it { is_expected.not_to be_valid }
       end
     end
 
@@ -141,9 +137,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
       end
 
       context "when test_module_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_module_id is nil" do
@@ -151,9 +145,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
           first_test_span.clear_tag("_test.module_id")
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
-        end
+        it { is_expected.not_to be_valid }
       end
     end
 
@@ -163,9 +155,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
       end
 
       context "when test_suite_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_suite_id is nil" do
@@ -173,9 +163,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
           first_test_span.clear_tag("_test.suite_id")
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
-        end
+        it { is_expected.not_to be_valid }
       end
     end
   end
