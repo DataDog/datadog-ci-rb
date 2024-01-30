@@ -8,7 +8,7 @@ end
 
 require_relative "../lib/datadog/ci"
 
-require_relative "support/configuration_helpers"
+require_relative "support/gems_helpers"
 require_relative "support/log_helpers"
 require_relative "support/tracer_helpers"
 require_relative "support/span_helpers"
@@ -58,7 +58,6 @@ if Gem.loaded_specs.has_key?("minitest")
 end
 
 RSpec.configure do |config|
-  config.include ConfigurationHelpers
   config.include TracerHelpers
   config.include SpanHelpers
 
