@@ -3,8 +3,6 @@ require "fileutils"
 require "cucumber"
 
 RSpec.describe "Cucumber formatter" do
-  extend ConfigurationHelpers
-
   include_context "CI mode activated" do
     let(:integration_name) { :cucumber }
     let(:integration_options) { {service_name: "jalapenos"} }
