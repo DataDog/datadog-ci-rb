@@ -1,4 +1,7 @@
-RSpec.shared_context "Test visibility event serialized" do
+# "citestcycle serializer" shared context uses serializer defined in `subject`
+# to serialize the data and then unpacks it to JSON.
+
+RSpec.shared_context "citestcycle serializer" do
   subject {}
 
   let(:msgpack_jsons) do

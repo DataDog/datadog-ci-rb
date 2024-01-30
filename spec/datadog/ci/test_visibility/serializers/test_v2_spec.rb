@@ -6,7 +6,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
     let(:integration_name) { :rspec }
   end
 
-  include_context "Test visibility event serialized" do
+  include_context "citestcycle serializer" do
     subject { described_class.new(trace_for_span(first_test_span), first_test_span) }
   end
 
