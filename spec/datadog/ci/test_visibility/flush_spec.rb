@@ -25,10 +25,7 @@ RSpec.shared_examples_for "a CI trace flusher" do
       is_expected.to eq(trace)
 
       # Expect each span to have an attached origin
-      trace.spans.each do |span|
-        expect(span.get_tag(Datadog::Tracing::Metadata::Ext::Distributed::TAG_ORIGIN))
-          .to eq(trace.origin)
-      end
+      expect(trace.spans).to all have_origin(trace.origin)
     end
   end
 end
