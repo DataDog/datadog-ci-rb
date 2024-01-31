@@ -13,7 +13,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
     it "has all the environment tags" do
       environment_tags.each do |key, value|
-        expect(span_under_test.get_tag(key)).to eq(value)
+        expect(span_under_test).to have_test_tag(key, value)
       end
     end
   end
@@ -23,8 +23,8 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
     it "span.kind is equal to test" do
       expect(
-        span_under_test.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)
-      ).to eq(Datadog::CI::Ext::Test::SPAN_KIND_TEST)
+        span_under_test
+      ).to have_test_tag(:span_kind, "test")
     end
   end
 
@@ -38,9 +38,9 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         Datadog::CI::Ext::Test::TAG_RUNTIME_NAME,
         Datadog::CI::Ext::Test::TAG_RUNTIME_VERSION
       ].each do |tag|
-        expect(span_under_test.get_tag(tag)).not_to be_nil
+        expect(span_under_test).to have_test_tag(tag)
       end
-      expect(span_under_test.get_tag(Datadog::CI::Ext::Test::TAG_COMMAND)).to eq(test_command)
+      expect(span_under_test).to have_test_tag(:command, test_command)
     end
   end
 
@@ -133,8 +133,8 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         end
 
         it "sets the tags correctly" do
-          expect(subject.get_tag("test.framework")).to eq("my-framework")
-          expect(subject.get_tag("my.tag")).to eq("my_value")
+          expect(subject).to have_test_tag("test.framework", "my-framework")
+          expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
         it_behaves_like "span with environment tags"
@@ -150,8 +150,8 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         end
 
         it "sets the tags correctly" do
-          expect(subject.get_tag("test.framework")).to eq("my-framework")
-          expect(subject.get_tag("my.tag")).to eq("my_value")
+          expect(subject).to have_test_tag("test.framework", "my-framework")
+          expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
         it "sets correct resource and span type for the underlying tracer span" do
@@ -193,17 +193,17 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           end
 
           it "sets the provided tags correctly" do
-            expect(subject.get_tag("test.framework")).to eq("my-framework")
-            expect(subject.get_tag("my.tag")).to eq("my_value")
+            expect(subject).to have_test_tag("test.framework", "my-framework")
+            expect(subject).to have_test_tag("my.tag", "my_value")
           end
 
           it "does not connect the test span to the test session" do
-            expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to be_nil
+            expect(subject).not_to have_test_tag(:test_session_id)
           end
 
           it "sets the test suite name as one of the tags" do
-            expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_name)
-            expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to be_nil
+            expect(subject).to have_test_tag(:suite, test_suite_name)
+            expect(subject).not_to have_test_tag(:test_suite_id)
           end
 
           it_behaves_like "span with environment tags"
@@ -237,14 +237,14 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
             end
 
             it "sets the provided tags correctly while inheriting some tags from the session" do
-              expect(subject.get_tag("test.framework")).to eq("my-framework")
-              expect(subject.get_tag("test.framework_version")).to eq("1.0")
-              expect(subject.get_tag("my.tag")).to eq("my_value")
-              expect(subject.get_tag("my.session.tag")).to be_nil
+              expect(subject).to have_test_tag("test.framework", "my-framework")
+              expect(subject).to have_test_tag("test.framework_version", "1.0")
+              expect(subject).to have_test_tag("my.tag", "my_value")
+              expect(subject).not_to have_test_tag("my.session.tag")
             end
 
             it "connects the test span to the test session" do
-              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID).to_s).to eq(test_session.id.to_s)
+              expect(subject).to have_test_tag(:test_session_id, test_session.id.to_s)
             end
 
             it "starts a new trace" do
@@ -281,14 +281,14 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
             end
 
             it "sets the provided tags correctly while inheriting some tags from the session" do
-              expect(subject.get_tag("test.framework")).to eq("my-framework")
-              expect(subject.get_tag("test.framework_version")).to eq("1.0")
-              expect(subject.get_tag("my.tag")).to eq("my_value")
+              expect(subject).to have_test_tag("test.framework", "my-framework")
+              expect(subject).to have_test_tag("test.framework_version", "1.0")
+              expect(subject).to have_test_tag("my.tag", "my_value")
             end
 
             it "connects the test span to the test module" do
-              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID).to_s).to eq(test_module.id.to_s)
-              expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
+              expect(subject).to have_test_tag(:test_module_id, test_module.id.to_s)
+              expect(subject).to have_test_tag(:module, module_name)
             end
 
             context "when there is an active test suite" do
@@ -301,8 +301,8 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
               end
 
               it "connects the test span to the test suite" do
-                expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID).to_s).to eq(test_suite.id.to_s)
-                expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_name)
+                expect(subject).to have_test_tag(:test_suite_id, test_suite.id.to_s)
+                expect(subject).to have_test_tag(:suite, test_suite_name)
               end
             end
           end
@@ -323,19 +323,19 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         subject { span }
 
         it "traces and finishes a test" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(test_name)
+          expect(subject).to have_test_tag(:name, test_name)
           expect(subject.service).to eq(test_service)
           expect(subject.name).to eq(test_name)
           expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
         end
 
         it "sets the provided tags correctly" do
-          expect(subject.get_tag("test.framework")).to eq("my-framework")
-          expect(subject.get_tag("my.tag")).to eq("my_value")
+          expect(subject).to have_test_tag("test.framework", "my-framework")
+          expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
         it "sets the suite name in tags" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(test_suite_name)
+          expect(subject).to have_test_tag(:suite, test_suite_name)
         end
 
         it_behaves_like "span with environment tags"
@@ -363,12 +363,12 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       it "sets the test session id" do
-        expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID).to_s).to eq(subject.id.to_s)
+        expect(subject).to have_test_tag(:test_session_id, subject.id.to_s)
       end
 
       it "sets the provided tags correctly" do
-        expect(subject.get_tag("test.framework")).to eq("my-framework")
-        expect(subject.get_tag("my.tag")).to eq("my_value")
+        expect(subject).to have_test_tag("test.framework", "my-framework")
+        expect(subject).to have_test_tag("my.tag", "my_value")
       end
 
       it_behaves_like "span with environment tags"
@@ -399,20 +399,20 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         end
 
         it "sets the test module id" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID).to_s).to eq(subject.id.to_s)
+          expect(subject).to have_test_tag(:test_module_id, subject.id.to_s)
         end
 
         it "sets the test module tag" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
+          expect(subject).to have_test_tag(:module, module_name)
         end
 
         it "doesn't connect the test module span to the test session" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to be_nil
+          expect(subject).not_to have_test_tag(:test_session_id)
         end
 
         it "sets the provided tags correctly" do
-          expect(subject.get_tag("test.framework")).to eq("my-framework")
-          expect(subject.get_tag("my.tag")).to eq("my_value")
+          expect(subject).to have_test_tag("test.framework", "my-framework")
+          expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
         it_behaves_like "span with environment tags"
@@ -444,14 +444,14 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         end
 
         it "sets the provided tags correctly while inheriting some tags from the session" do
-          expect(subject.get_tag("test.framework")).to eq("my-framework")
-          expect(subject.get_tag("test.framework_version")).to eq("1.0")
-          expect(subject.get_tag("my.tag")).to eq("my_value")
-          expect(subject.get_tag("my.session.tag")).to be_nil
+          expect(subject).to have_test_tag("test.framework", "my-framework")
+          expect(subject).to have_test_tag("test.framework_version", "1.0")
+          expect(subject).to have_test_tag("my.tag", "my_value")
+          expect(subject).not_to have_test_tag("my.session.tag")
         end
 
         it "connects the test module span to the test session" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID).to_s).to eq(test_session.id.to_s)
+          expect(subject).to have_test_tag(:test_session_id, test_session.id.to_s)
         end
 
         it "does not start a new trace" do
@@ -487,20 +487,20 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         end
 
         it "sets the provided tags correctly while inheriting some tags from the session" do
-          expect(subject.get_tag("test.framework_version")).to eq("1.0")
-          expect(subject.get_tag("my.tag")).to eq("my_value")
-          expect(subject.get_tag("my.session.tag")).to be_nil
+          expect(subject).to have_test_tag("test.framework_version", "1.0")
+          expect(subject).to have_test_tag("my.tag", "my_value")
+          expect(subject).not_to have_test_tag("my.session.tag")
         end
 
         it "sets the test suite context" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID).to_s).to eq(subject.id.to_s)
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(suite_name)
+          expect(subject).to have_test_tag(:test_suite_id, subject.id.to_s)
+          expect(subject).to have_test_tag(:suite, suite_name)
         end
 
         it "sets test session and test module contexts" do
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID).to_s).to eq(test_session.id.to_s)
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID).to_s).to eq(test_module.id.to_s)
-          expect(subject.get_tag(Datadog::CI::Ext::Test::TAG_MODULE)).to eq(module_name)
+          expect(subject).to have_test_tag(:test_session_id, test_session.id.to_s)
+          expect(subject).to have_test_tag(:test_module_id, test_module.id.to_s)
+          expect(subject).to have_test_tag(:module, module_name)
         end
 
         it_behaves_like "span with environment tags"
@@ -521,7 +521,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         it "returns the already running test suite" do
           expect(subject.id).to eq(already_running_test_suite.id)
-          expect(subject.get_tag("my.tag")).to eq("my_value")
+          expect(subject).to have_test_tag("my.tag", "my_value")
         end
       end
     end
