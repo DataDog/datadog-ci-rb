@@ -3,7 +3,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
     let(:integration_name) { :rspec }
   end
 
-  include_context "Test visibility event serialized" do
+  include_context "citestcycle serializer" do
     subject { described_class.new(trace_for_span(test_session_span), test_session_span) }
   end
 
@@ -61,9 +61,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
       end
 
       context "when test_session_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_session_id is nil" do
@@ -71,9 +69,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
           test_session_span.clear_tag("_test.session_id")
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
-        end
+        it { is_expected.not_to be_valid }
       end
     end
   end

@@ -3,7 +3,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
     let(:integration_name) { :rspec }
   end
 
-  include_context "Test visibility event serialized" do
+  include_context "citestcycle serializer" do
     subject { described_class.new(trace_for_span(test_module_span), test_module_span) }
   end
 
@@ -58,47 +58,43 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestModule do
   end
 
   describe "#valid?" do
-    context "test_session_id" do
-      before do
-        produce_test_session_trace
-      end
+    before do
+      produce_test_session_trace
+    end
 
+    context "test_session_id" do
       context "when test_session_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_session_id is nil" do
         before do
           test_module_span.clear_tag("_test.session_id")
+          subject.valid?
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
+        it { is_expected.not_to be_valid }
+
+        it "returns a correct validation error" do
           expect(subject.validation_errors["test_session_id"]).to include("is required")
         end
       end
     end
 
     context "test_module_id" do
-      before do
-        produce_test_session_trace
-      end
-
       context "when test_module_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_module_id is nil" do
         before do
           test_module_span.clear_tag("_test.module_id")
+          subject.valid?
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
+        it { is_expected.not_to be_valid }
+
+        it "returns a correct validation error" do
           expect(subject.validation_errors["test_module_id"]).to include("is required")
         end
       end

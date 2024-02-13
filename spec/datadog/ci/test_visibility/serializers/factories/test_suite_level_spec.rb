@@ -26,7 +26,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLev
     end
 
     context "with a suite span" do
-      let(:ci_span) { test_suite_span }
+      let(:ci_span) { first_test_suite_span }
       it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestSuite) }
     end
 
@@ -36,7 +36,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLev
     end
 
     context "with a http request span" do
-      let(:ci_span) { first_other_span }
+      let(:ci_span) { first_custom_span }
       it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::Span) }
     end
   end

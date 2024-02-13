@@ -1,5 +1,5 @@
 RSpec.describe Datadog::CI::Contrib::Cucumber::Integration do
-  extend ConfigurationHelpers
+  extend GemsHelpers
 
   let(:integration) { described_class.new }
 

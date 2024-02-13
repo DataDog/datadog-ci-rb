@@ -54,22 +54,29 @@ RSpec.describe "Minitest instrumentation" do
       expect(span.name).to eq("test_foo")
       expect(span.resource).to eq("test_foo")
       expect(span.service).to eq("ltest")
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("test_foo")
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
+
+      expect(span).to have_test_tag(:name, "test_foo")
+      expect(span).to have_test_tag(
+        :suite,
         "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::Test::SPAN_KIND_TEST)
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::Type::TEST)
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK)
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+      expect(span).to have_test_tag(:span_kind, "test")
+      expect(span).to have_test_tag(:type, "test")
+      expect(span).to have_test_tag(:framework, "minitest")
+      expect(span).to have_test_tag(
+        :framework_version,
         Datadog::CI::Contrib::Minitest::Integration.version.to_s
       )
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_FILE)).to eq(
+
+      expect(span).to have_pass_status
+
+      expect(span).to have_test_tag(
+        :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_START)).to eq("47")
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_CODEOWNERS)).to eq(
+      expect(span).to have_test_tag(:source_start, "47")
+      expect(span).to have_test_tag(
+        :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
       )
     end
@@ -112,8 +119,9 @@ RSpec.describe "Minitest instrumentation" do
       expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
       expect(span.resource).to eq(method_name)
       expect(span.service).to eq("ltest")
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq(method_name)
-      expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
+      expect(span).to have_test_tag(:name, method_name)
+      expect(span).to have_test_tag(
+        :suite,
         "SomeSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
     end
@@ -155,16 +163,12 @@ RSpec.describe "Minitest instrumentation" do
       klass.new(:test_foo).run
 
       expect(spans).to have(2).items
-
-      spans.each do |span|
-        expect(span.get_tag(Datadog::Tracing::Metadata::Ext::Distributed::TAG_ORIGIN))
-          .to eq(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
-      end
+      expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
     context "catches failures" do
       def expect_failure
-        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
+        expect(span).to have_fail_status
         expect(span).to have_error
         expect(span).to have_error_type
         expect(span).to have_error_message
@@ -228,7 +232,7 @@ RSpec.describe "Minitest instrumentation" do
 
     context "catches errors" do
       def expect_failure
-        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
+        expect(span).to have_fail_status
         expect(span).to have_error
         expect(span).to have_error_type
         expect(span).to have_error_message
@@ -292,7 +296,7 @@ RSpec.describe "Minitest instrumentation" do
 
     context "catches skips" do
       def expect_skip
-        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+        expect(span).to have_skip_status
         expect(span).to_not have_error
       end
 
@@ -310,7 +314,7 @@ RSpec.describe "Minitest instrumentation" do
         klass.new(:test_foo).run
 
         expect_skip
-        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("Skip!")
+        expect(span).to have_test_tag(:skip_reason, "Skip!")
       end
 
       it "without reason" do
@@ -327,7 +331,7 @@ RSpec.describe "Minitest instrumentation" do
         klass.new(:test_foo).run
 
         expect_skip
-        expect(span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("Skipped, no message given")
+        expect(span).to have_test_tag(:skip_reason, "Skipped, no message given")
       end
 
       it "within test" do
@@ -407,89 +411,67 @@ RSpec.describe "Minitest instrumentation" do
 
         it "creates a test session span" do
           expect(test_session_span).not_to be_nil
-          expect(test_session_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
-          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-            Datadog::CI::Ext::Test::SPAN_KIND_TEST
-          )
-          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-            Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
-          )
-          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+          expect(test_session_span.type).to eq("test_session_end")
+          expect(test_session_span).to have_test_tag(:span_kind, "test")
+          expect(test_session_span).to have_test_tag(:framework, "minitest")
+          expect(test_session_span).to have_test_tag(
+            :framework_version,
             Datadog::CI::Contrib::Minitest::Integration.version.to_s
           )
-          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-            Datadog::CI::Ext::Test::Status::PASS
-          )
+          expect(test_session_span).to have_pass_status
         end
 
         it "creates a test module span" do
           expect(test_module_span).not_to be_nil
 
-          expect(test_module_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+          expect(test_module_span.type).to eq("test_module_end")
           expect(test_module_span.name).to eq(test_command)
 
-          expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-            Datadog::CI::Ext::Test::SPAN_KIND_TEST
-          )
-          expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-            Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
-          )
-          expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+          expect(test_module_span).to have_test_tag(:span_kind, "test")
+          expect(test_module_span).to have_test_tag(:framework, "minitest")
+          expect(test_module_span).to have_test_tag(
+            :framework_version,
             Datadog::CI::Contrib::Minitest::Integration.version.to_s
           )
-          expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-            Datadog::CI::Ext::Test::Status::PASS
-          )
+          expect(test_module_span).to have_pass_status
         end
 
         it "creates a test suite span" do
-          expect(test_suite_span).not_to be_nil
+          expect(first_test_suite_span).not_to be_nil
 
-          expect(test_suite_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
-          expect(test_suite_span.name).to eq("SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb")
+          expect(first_test_suite_span.type).to eq("test_suite_end")
+          expect(first_test_suite_span.name).to eq("SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb")
 
-          expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-            Datadog::CI::Ext::Test::SPAN_KIND_TEST
-          )
-          expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-            Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
-          )
-          expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+          expect(first_test_suite_span).to have_test_tag(:span_kind, "test")
+          expect(first_test_suite_span).to have_test_tag(:framework, "minitest")
+          expect(first_test_suite_span).to have_test_tag(
+            :framework_version,
             Datadog::CI::Contrib::Minitest::Integration.version.to_s
           )
-          expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-            Datadog::CI::Ext::Test::Status::PASS
-          )
+          expect(first_test_suite_span).to have_pass_status
         end
 
         it "creates test spans and connects them to the session, module, and suite" do
-          expect(test_spans.count).to eq(2)
+          expect(test_spans).to have(2).items
 
-          expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq(
+          expect(test_spans).to have_unique_tag_values_count(:test_session_id, 1)
+          expect(test_spans).to have_unique_tag_values_count(:test_module_id, 1)
+          expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 1)
+
+          expect(first_test_span).to have_test_tag(
+            :suite,
             "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-            Datadog::CI::Contrib::Minitest::Ext::FRAMEWORK
-          )
-          expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+          expect(first_test_span).to have_test_tag(:framework, "minitest")
+          expect(first_test_span).to have_test_tag(
+            :framework_version,
             Datadog::CI::Contrib::Minitest::Integration.version.to_s
           )
-          expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-            Datadog::CI::Ext::Test::Status::PASS
-          )
+          expect(first_test_span).to have_pass_status
 
-          test_session_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID) }.uniq
-          test_module_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID) }.uniq
-          test_suite_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID) }.uniq
-
-          expect(test_session_ids.count).to eq(1)
-          expect(test_session_ids.first).to eq(test_session_span.id.to_s)
-
-          expect(test_module_ids.count).to eq(1)
-          expect(test_module_ids.first).to eq(test_module_span.id.to_s)
-
-          expect(test_suite_ids.count).to eq(1)
-          expect(test_suite_ids.first).to eq(test_suite_span.id.to_s)
+          expect(first_test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
+          expect(first_test_span).to have_test_tag(:test_module_id, test_module_span.id.to_s)
+          expect(first_test_span).to have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
         end
       end
 
@@ -505,20 +487,11 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "traces test, test session, test module with failed status" do
-          expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("test_fail")
-          expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-            Datadog::CI::Ext::Test::Status::FAIL
-          )
+          expect(first_test_span).to have_test_tag(:name, "test_fail")
 
-          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-            Datadog::CI::Ext::Test::Status::FAIL
-          )
-          expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-            Datadog::CI::Ext::Test::Status::FAIL
-          )
-          expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-            Datadog::CI::Ext::Test::Status::FAIL
-          )
+          expect(
+            [first_test_span, first_test_suite_span, test_session_span, test_module_span]
+          ).to all have_fail_status
         end
       end
 
@@ -548,9 +521,8 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "traces tests with unique names" do
-          test_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_NAME) }.sort
-
-          expect(test_names).to eq(
+          expect(test_spans).to have_tag_values_no_order(
+            :name,
             [
               "test_0001_does not fail",
               "test_0001_does not fail",
@@ -561,11 +533,9 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "connects tests to different test suites (one per spec context)" do
-          test_suite_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID) }.uniq
-          test_suite_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE) }.sort
-
-          expect(test_suite_ids).to have(4).items
-          expect(test_suite_names).to eq(
+          expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 4)
+          expect(test_spans).to have_tag_values_no_order(
+            :suite,
             [
               "SomeSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
               "in context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
@@ -576,10 +546,8 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "connects tests to a single test session" do
-          test_session_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID) }.uniq
-
-          expect(test_session_ids.count).to eq(1)
-          expect(test_session_ids.first).to eq(test_session_span.id.to_s)
+          expect(test_spans).to have_unique_tag_values_count(:test_session_id, 1)
+          expect(first_test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
         end
       end
 
@@ -623,8 +591,8 @@ RSpec.describe "Minitest instrumentation" do
           # note that this test could be flaky
           expect(test_threads.count).to be > 1
 
-          test_names = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_NAME) }.sort
-          expect(test_names).to eq(
+          expect(test_spans).to have_tag_values_no_order(
+            :name,
             [
               "test_a_1",
               "test_a_2",
@@ -632,20 +600,15 @@ RSpec.describe "Minitest instrumentation" do
               "test_b_2"
             ]
           )
-
-          test_suite_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID) }.uniq
-          expect(test_suite_ids).to have(4).items
+          expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 4)
         end
 
         it "connects tests to a single test session and a single test module" do
-          test_session_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID) }.uniq
-          test_module_ids = test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID) }.uniq
+          expect(test_spans).to have_unique_tag_values_count(:test_module_id, 1)
+          expect(test_spans).to have_unique_tag_values_count(:test_session_id, 1)
 
-          expect(test_session_ids.count).to eq(1)
-          expect(test_session_ids.first).to eq(test_session_span.id.to_s)
-
-          expect(test_module_ids.count).to eq(1)
-          expect(test_module_ids.first).to eq(test_module_span.id.to_s)
+          expect(first_test_span).to have_test_tag(:test_module_id, test_module_span.id.to_s)
+          expect(first_test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
         end
 
         it "correctly tracks test and session durations" do
@@ -664,8 +627,8 @@ RSpec.describe "Minitest instrumentation" do
         it "creates test suite spans" do
           expect(test_suite_spans).to have(4).items
 
-          test_suite_names = test_suite_spans.map { |span| span.name }.sort
-          expect(test_suite_names).to eq(
+          expect(test_suite_spans).to have_tag_values_no_order(
+            :suite,
             [
               "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_1 concurrently)",
               "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_2 concurrently)",
@@ -693,19 +656,15 @@ RSpec.describe "Minitest instrumentation" do
 
         it "marks all test spans as skipped" do
           expect(test_spans).to have(2).items
-          expect(test_spans.map { |span| span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS) }.uniq).to eq(
-            [Datadog::CI::Ext::Test::Status::SKIP]
-          )
+          expect(test_spans).to all have_skip_status
         end
 
         it "marks test session as passed" do
-          expect(test_session_span).not_to be_nil
-          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+          expect(test_session_span).to have_pass_status
         end
 
         it "marks test suite as skipped" do
-          expect(test_suite_span).not_to be_nil
-          expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+          expect(first_test_suite_span).to have_skip_status
         end
       end
     end

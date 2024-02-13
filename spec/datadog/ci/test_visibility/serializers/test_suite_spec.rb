@@ -3,8 +3,8 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSuite do
     let(:integration_name) { :rspec }
   end
 
-  include_context "Test visibility event serialized" do
-    subject { described_class.new(trace_for_span(test_suite_span), test_suite_span) }
+  include_context "citestcycle serializer" do
+    subject { described_class.new(trace_for_span(first_test_suite_span), first_test_suite_span) }
   end
 
   describe "#to_msgpack" do
@@ -20,7 +20,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSuite do
           {
             "test_session_id" => test_session_span.id,
             "test_module_id" => test_module_span.id,
-            "test_suite_id" => test_suite_span.id,
+            "test_suite_id" => first_test_suite_span.id,
             "name" => "rspec.test_suite",
             "error" => 0,
             "service" => "rspec-test-suite",
@@ -68,19 +68,15 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSuite do
       end
 
       context "when test_session_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_session_id is nil" do
         before do
-          test_suite_span.clear_tag("_test.session_id")
+          first_test_suite_span.clear_tag("_test.session_id")
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
-        end
+        it { is_expected.not_to be_valid }
       end
     end
 
@@ -90,19 +86,15 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSuite do
       end
 
       context "when test_module_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_module_id is nil" do
         before do
-          test_suite_span.clear_tag("_test.module_id")
+          first_test_suite_span.clear_tag("_test.module_id")
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
-        end
+        it { is_expected.not_to be_valid }
       end
     end
 
@@ -112,19 +104,15 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSuite do
       end
 
       context "when test_suite_id is not nil" do
-        it "returns true" do
-          expect(subject.valid?).to eq(true)
-        end
+        it { is_expected.to be_valid }
       end
 
       context "when test_suite_id is nil" do
         before do
-          test_suite_span.clear_tag("_test.suite_id")
+          first_test_suite_span.clear_tag("_test.suite_id")
         end
 
-        it "returns false" do
-          expect(subject.valid?).to eq(false)
-        end
+        it { is_expected.not_to be_valid }
       end
     end
   end

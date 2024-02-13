@@ -8,16 +8,17 @@ end
 
 require_relative "../lib/datadog/ci"
 
-require_relative "support/configuration_helpers"
-require_relative "support/log_helpers"
+# rspec helpers and matchers
+require_relative "support/gems_helpers"
 require_relative "support/tracer_helpers"
 require_relative "support/span_helpers"
-require_relative "support/platform_helpers"
-require_relative "support/git_helpers"
-require_relative "support/provider_test_helpers"
-require_relative "support/ci_mode_helpers"
-require_relative "support/test_visibility_event_serialized"
-require_relative "support/concurrency_helpers"
+
+# shared contexts
+require_relative "support/contexts/ci_mode"
+require_relative "support/contexts/concurrency_test"
+require_relative "support/contexts/git_fixture"
+require_relative "support/contexts/extract_environment_tags"
+require_relative "support/contexts/citestcycle_serializer"
 
 require "rspec/collection_matchers"
 require "climate_control"
@@ -58,7 +59,6 @@ if Gem.loaded_specs.has_key?("minitest")
 end
 
 RSpec.configure do |config|
-  config.include ConfigurationHelpers
   config.include TracerHelpers
   config.include SpanHelpers
 

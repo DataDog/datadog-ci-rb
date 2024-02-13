@@ -34,22 +34,28 @@ RSpec.describe "RSpec hooks" do
 
     expect(first_test_span.name).to eq("foo")
     expect(first_test_span.resource).to eq("foo")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
 
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq("some test at #{spec.file_path}")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(Datadog::CI::Ext::Test::SPAN_KIND_TEST)
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TYPE)).to eq(Datadog::CI::Ext::Test::Type::TEST)
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK)
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+    expect(first_test_span).to have_test_tag(:name, "foo")
+    expect(first_test_span).to have_test_tag(:suite, "some test at #{spec.file_path}")
+
+    expect(first_test_span).to have_test_tag(:span_kind, "test")
+    expect(first_test_span).to have_test_tag(:type, "test")
+
+    expect(first_test_span).to have_test_tag(:framework, "rspec")
+    expect(first_test_span).to have_test_tag(
+      :framework_version,
       Datadog::CI::Contrib::RSpec::Integration.version.to_s
     )
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
 
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_FILE)).to eq(
+    expect(first_test_span).to have_pass_status
+
+    expect(first_test_span).to have_test_tag(
+      :source_file,
       "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
     )
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_START)).to eq("26")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_CODEOWNERS)).to eq(
+    expect(first_test_span).to have_test_tag(:source_start, "26")
+    expect(first_test_span).to have_test_tag(
+      :codeowners,
       "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
     )
   end
@@ -78,7 +84,7 @@ RSpec.describe "RSpec hooks" do
       end.run
     end
 
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to match(/example at .+/)
+    expect(first_test_span).to have_test_tag(:name, /example at .+/)
   end
 
   it "creates span for deeply nested examples" do
@@ -111,8 +117,8 @@ RSpec.describe "RSpec hooks" do
     end
 
     expect(first_test_span.resource).to eq("1 2 3 4 5 6 7 8 9 10 foo")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("1 2 3 4 5 6 7 8 9 10 foo")
-    expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq("some nested test at #{spec.file_path}")
+    expect(first_test_span).to have_test_tag(:name, "1 2 3 4 5 6 7 8 9 10 foo")
+    expect(first_test_span).to have_test_tag(:suite, "some nested test at #{spec.file_path}")
   end
 
   it "creates spans for example with instrumentation" do
@@ -127,17 +133,13 @@ RSpec.describe "RSpec hooks" do
     end
 
     expect(test_spans).to have(1).items
-    expect(tracer_spans).to have(1).items
-
-    tracer_spans.each do |span|
-      expect(span.get_tag(Datadog::Tracing::Metadata::Ext::Distributed::TAG_ORIGIN))
-        .to eq(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
-    end
+    expect(custom_spans).to have(1).items
+    expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
   end
 
   context "catches failures" do
     def expect_failure
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
+      expect(first_test_span).to have_fail_status
       expect(first_test_span).to have_error
       expect(first_test_span).to have_error_type
       expect(first_test_span).to have_error_message
@@ -218,9 +220,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("No reason given")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "No reason given")
       expect(first_test_span).not_to have_error
     end
 
@@ -233,9 +236,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("reason in it block")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "reason in it block")
       expect(first_test_span).not_to have_error
     end
 
@@ -248,9 +252,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("No reason given")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "No reason given")
       expect(first_test_span).not_to have_error
     end
 
@@ -263,9 +268,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("Temporarily skipped with xit")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "Temporarily skipped with xit")
       expect(first_test_span).not_to have_error
     end
 
@@ -279,9 +285,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("No reason given")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "No reason given")
       expect(first_test_span).not_to have_error
     end
 
@@ -295,9 +302,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("reason")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "reason")
       expect(first_test_span).not_to have_error
     end
 
@@ -308,9 +316,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("Not yet implemented")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "Not yet implemented")
       expect(first_test_span).not_to have_error
     end
 
@@ -325,9 +334,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo bar")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("Temporarily skipped with xcontext")
+      expect(first_test_span).to have_test_tag(:name, "foo bar")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "Temporarily skipped with xcontext")
       expect(first_test_span).not_to have_error
     end
 
@@ -340,9 +350,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("did not fix the math yet")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "did not fix the math yet")
       expect(first_test_span).to have_error
     end
 
@@ -355,8 +366,9 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::FAIL)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_fail_status
       expect(first_test_span).to have_error
       expect(first_test_span).to have_error_message("Expected example to fail since it is pending, but it passed.")
     end
@@ -371,9 +383,10 @@ RSpec.describe "RSpec hooks" do
         end.run
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_NAME)).to eq("foo")
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SKIP_REASON)).to eq("did not fix the math yet")
+      expect(first_test_span).to have_test_tag(:name, "foo")
+
+      expect(first_test_span).to have_skip_status
+      expect(first_test_span).to have_test_tag(:skip_reason, "did not fix the math yet")
       expect(first_test_span).to have_error
     end
   end
@@ -392,7 +405,8 @@ RSpec.describe "RSpec hooks" do
         end.tap(&:run)
       end
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_FILE)).to eq(
+      expect(first_test_span).to have_test_tag(
+        :source_file,
         "datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
     end
@@ -437,19 +451,16 @@ RSpec.describe "RSpec hooks" do
 
       expect(test_session_span).not_to be_nil
 
-      expect(test_session_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::Test::SPAN_KIND_TEST
-      )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-        Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK
-      )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+      expect(test_session_span.type).to eq("test_session_end")
+
+      expect(test_session_span).to have_test_tag(:span_kind, "test")
+      expect(test_session_span).to have_test_tag(:framework, "rspec")
+      expect(test_session_span).to have_test_tag(
+        :framework_version,
         Datadog::CI::Contrib::RSpec::Integration.version.to_s
       )
-      expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-        Datadog::CI::Ext::Test::Status::PASS
-      )
+
+      expect(test_session_span).to have_pass_status
     end
 
     it "creates test module span" do
@@ -457,79 +468,60 @@ RSpec.describe "RSpec hooks" do
 
       expect(test_module_span).not_to be_nil
 
-      expect(test_module_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE)
+      expect(test_module_span.type).to eq("test_module_end")
       expect(test_module_span.name).to eq(test_command)
 
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::Test::SPAN_KIND_TEST
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-        Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+      expect(test_module_span).to have_test_tag(:span_kind, "test")
+      expect(test_module_span).to have_test_tag(:framework, "rspec")
+      expect(test_module_span).to have_test_tag(
+        :framework_version,
         Datadog::CI::Contrib::RSpec::Integration.version.to_s
       )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-        Datadog::CI::Ext::Test::Status::PASS
-      )
+      expect(test_module_span).to have_pass_status
     end
 
     it "creates test suite span" do
       spec = rspec_session_run
 
-      expect(test_suite_span).not_to be_nil
+      expect(first_test_suite_span).not_to be_nil
 
-      expect(test_suite_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
-      expect(test_suite_span.name).to eq("SomeTest at #{spec.file_path}")
+      expect(first_test_suite_span.type).to eq("test_suite_end")
+      expect(first_test_suite_span.name).to eq("SomeTest at #{spec.file_path}")
 
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_SPAN_KIND)).to eq(
-        Datadog::CI::Ext::Test::SPAN_KIND_TEST
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK)).to eq(
-        Datadog::CI::Contrib::RSpec::Ext::FRAMEWORK
-      )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION)).to eq(
+      expect(first_test_suite_span).to have_test_tag(:span_kind, "test")
+      expect(first_test_suite_span).to have_test_tag(:framework, "rspec")
+      expect(first_test_suite_span).to have_test_tag(
+        :framework_version,
         Datadog::CI::Contrib::RSpec::Integration.version.to_s
       )
-      expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-        Datadog::CI::Ext::Test::Status::PASS
-      )
+      expect(first_test_suite_span).to have_pass_status
     end
 
     it "connects test to the session, module, and suite" do
       rspec_session_run
 
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID)).to eq(test_session_span.id.to_s)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_MODULE_ID)).to eq(test_module_span.id.to_s)
-      expect(first_test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
+      expect(first_test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
+      expect(first_test_span).to have_test_tag(:test_module_id, test_module_span.id.to_s)
+      expect(first_test_span).to have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
     end
 
     context "with failures" do
       it "creates test session span with failed state" do
         rspec_session_run(with_failed_test: true)
 
-        expect(test_session_span).not_to be_nil
-        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-          Datadog::CI::Ext::Test::Status::FAIL
-        )
+        expect(test_session_span).to have_fail_status
       end
 
       it "creates test module span with failed state" do
         rspec_session_run(with_failed_test: true)
 
-        expect(test_module_span).not_to be_nil
-        expect(test_module_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-          Datadog::CI::Ext::Test::Status::FAIL
-        )
+        expect(test_module_span).to have_fail_status
       end
 
       it "creates test suite span with failed state" do
         rspec_session_run(with_failed_test: true)
 
-        expect(test_suite_span).not_to be_nil
-        expect(test_suite_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(
-          Datadog::CI::Ext::Test::Status::FAIL
-        )
+        expect(first_test_suite_span).to have_fail_status
       end
     end
 
@@ -541,16 +533,15 @@ RSpec.describe "RSpec hooks" do
         expect(shared_test_spans).to have(2).items
 
         shared_test_spans.each_with_index do |shared_test_span, index|
-          expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE)).to eq("SomeTest at #{spec.file_path}")
+          expect(shared_test_span).to have_test_tag(:suite, "SomeTest at #{spec.file_path}")
 
-          expect(shared_test_span.get_tag(Datadog::CI::Ext::Test::TAG_PARAMETERS)).to eq(
+          expect(shared_test_span).to have_test_tag(
+            :parameters,
             "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:#{2 + index}:1\"}}"
           )
         end
 
-        test_spans.each do |test_span|
-          expect(test_span.get_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID)).to eq(test_suite_span.id.to_s)
-        end
+        expect(test_spans).to all have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
       end
     end
 
@@ -588,8 +579,7 @@ RSpec.describe "RSpec hooks" do
       end
 
       it "marks test session as passed" do
-        expect(test_session_span).not_to be_nil
-        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::PASS)
+        expect(test_session_span).to have_pass_status
       end
 
       it "marks test suite as skipped" do
@@ -597,8 +587,7 @@ RSpec.describe "RSpec hooks" do
           suite_span.get_tag(Datadog::CI::Ext::Test::TAG_SUITE).include?("SkippedTest")
         end
 
-        expect(skipped_suite).not_to be_nil
-        expect(skipped_suite.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+        expect(skipped_suite).to have_skip_status
       end
     end
   end

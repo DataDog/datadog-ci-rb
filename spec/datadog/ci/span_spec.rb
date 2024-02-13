@@ -14,9 +14,7 @@ RSpec.describe Datadog::CI::Span do
         allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
       end
 
-      it "returns true" do
-        expect(span.passed?).to eq(true)
-      end
+      it { is_expected.to be_passed }
     end
 
     context "when status is not PASS" do
@@ -24,9 +22,7 @@ RSpec.describe Datadog::CI::Span do
         allow(tracer_span).to receive(:get_tag).with("test.status").and_return("fail")
       end
 
-      it "returns false" do
-        expect(span.passed?).to eq(false)
-      end
+      it { is_expected.not_to be_passed }
     end
   end
 
@@ -36,9 +32,7 @@ RSpec.describe Datadog::CI::Span do
         allow(tracer_span).to receive(:get_tag).with("test.status").and_return("fail")
       end
 
-      it "returns true" do
-        expect(span.failed?).to eq(true)
-      end
+      it { is_expected.to be_failed }
     end
 
     context "when status is not FAIL" do
@@ -46,9 +40,7 @@ RSpec.describe Datadog::CI::Span do
         allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
       end
 
-      it "returns false" do
-        expect(span.failed?).to eq(false)
-      end
+      it { is_expected.not_to be_failed }
     end
   end
 
@@ -58,9 +50,7 @@ RSpec.describe Datadog::CI::Span do
         allow(tracer_span).to receive(:get_tag).with("test.status").and_return("skip")
       end
 
-      it "returns true" do
-        expect(span.skipped?).to eq(true)
-      end
+      it { is_expected.to be_skipped }
     end
 
     context "when status is not SKIP" do
@@ -68,9 +58,7 @@ RSpec.describe Datadog::CI::Span do
         allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
       end
 
-      it "returns false" do
-        expect(span.skipped?).to eq(false)
-      end
+      it { is_expected.not_to be_skipped }
     end
   end
 
@@ -80,9 +68,7 @@ RSpec.describe Datadog::CI::Span do
         allow(tracer_span).to receive(:get_tag).with("test.status").and_return(nil)
       end
 
-      it "returns true" do
-        expect(span.undefined?).to eq(true)
-      end
+      it { is_expected.to be_undefined }
     end
 
     context "when status is not nil" do
@@ -90,9 +76,7 @@ RSpec.describe Datadog::CI::Span do
         allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
       end
 
-      it "returns false" do
-        expect(span.undefined?).to eq(false)
-      end
+      it { is_expected.not_to be_undefined }
     end
   end
 
