@@ -65,8 +65,12 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .and_return(negotiation)
 
           allow(negotiation)
+            .to receive(:endpoint?).with("/evp_proxy/v4/")
+            .and_return(evp_proxy_v4_supported)
+
+          allow(negotiation)
             .to receive(:endpoint?).with("/evp_proxy/v2/")
-            .and_return(evp_proxy_supported)
+            .and_return(evp_proxy_v2_supported)
 
           # Spy on test mode behavior
           allow(settings.tracing.test_mode)
@@ -104,7 +108,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:dd_site) { nil }
         let(:agentless_enabled) { false }
         let(:force_test_level_visibility) { false }
-        let(:evp_proxy_supported) { false }
+        let(:evp_proxy_v2_supported) { false }
+        let(:evp_proxy_v4_supported) { false }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -135,8 +140,24 @@ RSpec.describe Datadog::CI::Configuration::Components do
             context "is disabled" do
               let(:agentless_enabled) { false }
 
-              context "and when agent supports EVP proxy" do
-                let(:evp_proxy_supported) { true }
+              context "and when agent supports EVP proxy v2" do
+                let(:evp_proxy_v2_supported) { true }
+
+                it "sets async for test mode and constructs transport with EVP proxy API" do
+                  expect(settings.tracing.test_mode)
+                    .to have_received(:async=)
+                    .with(true)
+
+                  expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
+                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
+                    expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::EvpProxy)
+                    expect(options[:shutdown_timeout]).to eq(60)
+                  end
+                end
+              end
+
+              context "and when agent supports EVP proxy v4" do
+                let(:evp_proxy_v4_supported) { true }
 
                 it "sets async for test mode and constructs transport with EVP proxy API" do
                   expect(settings.tracing.test_mode)
@@ -152,8 +173,6 @@ RSpec.describe Datadog::CI::Configuration::Components do
               end
 
               context "and when agent does not support EVP proxy" do
-                let(:evp_proxy_supported) { false }
-
                 it "falls back to default transport and disables test suite level visibility" do
                   expect(settings.tracing.test_mode)
                     .to have_received(:enabled=)
@@ -190,7 +209,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
-                    expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::CiTestCycle)
+                    expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::Agentless)
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
                 end
@@ -200,9 +219,11 @@ RSpec.describe Datadog::CI::Configuration::Components do
                 let(:dd_site) { "wrong" }
 
                 it "logs a warning" do
-                  expect(Datadog.logger).to have_received(:warn).with(
-                    /CI VISIBILITY CONFIGURATION Agentless mode was enabled but DD_SITE is not set to one of the following/
-                  )
+                  expect(Datadog.logger).to have_received(:warn) do |*_args, &block|
+                    expect(block.call).to match(
+                      /CI VISIBILITY CONFIGURATION Agentless mode was enabled but DD_SITE is not set to one of the following/
+                    )
+                  end
                 end
               end
 

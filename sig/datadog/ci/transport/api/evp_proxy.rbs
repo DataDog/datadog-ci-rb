@@ -4,6 +4,9 @@ module Datadog
       module Api
         class EvpProxy < Base
           @container_id: String?
+          @path_prefix: String
+
+          def initialize: (http: Datadog::CI::Transport::HTTP, ?path_prefix: String) -> void
 
           def request: (path: String, payload: String, ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 

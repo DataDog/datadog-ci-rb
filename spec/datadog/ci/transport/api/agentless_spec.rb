@@ -1,6 +1,6 @@
-require_relative "../../../../../lib/datadog/ci/transport/api/ci_test_cycle"
+require_relative "../../../../../lib/datadog/ci/transport/api/agentless"
 
-RSpec.describe Datadog::CI::Transport::Api::CiTestCycle do
+RSpec.describe Datadog::CI::Transport::Api::Agentless do
   subject do
     described_class.new(
       api_key: api_key,

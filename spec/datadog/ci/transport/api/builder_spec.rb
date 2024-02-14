@@ -12,8 +12,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
     end
   end
 
-  describe ".build_ci_test_cycle_api" do
-    subject { described_class.build_ci_test_cycle_api(settings) }
+  describe ".build_agentless_api" do
+    subject { described_class.build_agentless_api(settings) }
 
     let(:api) { double(:api) }
     let(:http) { double(:http) }
@@ -36,7 +36,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
         .and_return(api_key)
     end
 
-    it "creates and configures http client and CiTestCycle" do
+    it "creates and configures http client and Agentless api" do
       expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
         host: "citestcycle-intake.datadoghq.com",
         port: 443,
@@ -44,7 +44,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
         compress: true
       ).and_return(http)
 
-      expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
+      expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
         api_key: "api_key", http: http
       ).and_return(api)
 
@@ -62,7 +62,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
           compress: true
         ).and_return(http)
 
-        expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
+        expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
           api_key: "api_key", http: http
         ).and_return(api)
 
@@ -81,7 +81,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
           compress: true
         ).and_return(http)
 
-        expect(Datadog::CI::Transport::Api::CiTestCycle).to receive(:new).with(
+        expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
           api_key: "api_key", http: http
         ).and_return(api)
 
@@ -91,14 +91,14 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
   end
 
   describe ".build_evp_proxy_api" do
-    subject { described_class.build_evp_proxy_api(agent_settings) }
+    subject { described_class.build_evp_proxy_api(settings) }
 
     let(:api) { double(:api) }
     let(:http) { double(:http) }
 
     let(:agent_settings) do
       Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings.new(
-        adapter: nil,
+        adapter: :net_http,
         ssl: false,
         hostname: "localhost",
         port: 5555,
@@ -108,18 +108,69 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       )
     end
 
-    it "creates and configures http client and EvpProxy" do
-      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-        host: "localhost",
-        port: 5555,
-        ssl: false,
-        timeout: 42,
-        compress: false
-      ).and_return(http)
+    before do
+      allow(Datadog::Core::Configuration::AgentSettingsResolver).to receive(:call).and_return(agent_settings)
+    end
 
-      expect(Datadog::CI::Transport::Api::EvpProxy).to receive(:new).with(http: http).and_return(api)
+    context "agent does not support any evp proxy version" do
+      before do
+        allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
+          receive(:endpoint?).and_return(false)
+        )
+      end
 
-      expect(subject).to eq(api)
+      it { is_expected.to be_nil }
+    end
+
+    context "agent supports evp proxy v2" do
+      before do
+        allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
+          receive(:endpoint?).with("/evp_proxy/v4/").and_return(false)
+        )
+        allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
+          receive(:endpoint?).with("/evp_proxy/v2/").and_return(true)
+        )
+      end
+
+      it "creates and configures http client and EvpProxy" do
+        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+          host: "localhost",
+          port: 5555,
+          ssl: false,
+          timeout: 42,
+          compress: false
+        ).and_return(http)
+
+        expect(Datadog::CI::Transport::Api::EvpProxy).to(
+          receive(:new).with(http: http, path_prefix: "/evp_proxy/v2/").and_return(api)
+        )
+
+        expect(subject).to eq(api)
+      end
+    end
+
+    context "agent supports evp proxy v4" do
+      before do
+        allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
+          receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
+        )
+      end
+
+      it "creates and configures http client and EvpProxy" do
+        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+          host: "localhost",
+          port: 5555,
+          ssl: false,
+          timeout: 42,
+          compress: true
+        ).and_return(http)
+
+        expect(Datadog::CI::Transport::Api::EvpProxy).to(
+          receive(:new).with(http: http, path_prefix: "/evp_proxy/v4/").and_return(api)
+        )
+
+        expect(subject).to eq(api)
+      end
     end
   end
 end
