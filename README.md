@@ -184,6 +184,25 @@ WebMock.disable_net_connect!(:allow_localhost => true)
 WebMock.disable_net_connect!(:allow => "localhost:8126")
 ```
 
+### VCR
+
+[VCR](https://github.com/vcr/vcr) is another popular testing library for HTTP interactions.
+
+It requires additional configuration to correctly work with datadog-ci:
+
+```ruby
+VCR.configure do |config|
+  # ... your usual configuration here ...
+
+  # when using agent
+  config.ignore_hosts "127.0.0.1", "localhost"
+
+  # when using agentless mode
+  # note to use the correct datadog site (e.g. datadoghq.eu, etc)
+  config.ignore_hosts "citestcycle-intake.datadoghq.com"
+end
+```
+
 ### Disabling startup logs
 
 Startup logs produce a report of tracing state when the application is initially configured.
