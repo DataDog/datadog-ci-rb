@@ -14,7 +14,13 @@ module Datadog
 
         HEADER_CONTAINER_ID: "Datadog-Container-ID"
 
-        EVP_PROXY_PATH_PREFIX: "/evp_proxy/v2/"
+        EVP_PROXY_V2_PATH_PREFIX: "/evp_proxy/v2/"
+
+        EVP_PROXY_V4_PATH_PREFIX: "/evp_proxy/v4/"
+
+        EVP_PROXY_PATH_PREFIXES: ::Array[String]
+
+        EVP_PROXY_COMPRESSION_SUPPORTED: ::Hash[String, bool]
 
         TEST_VISIBILITY_INTAKE_HOST_PREFIX: "citestcycle-intake"
 

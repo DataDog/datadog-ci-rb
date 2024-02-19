@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require "datadog/core/configuration/agent_settings_resolver"
-require "datadog/core/remote/negotiation"
-
-require_relative "../ext/transport"
 require_relative "../ext/settings"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/recorder"
@@ -32,18 +28,7 @@ module Datadog
         end
 
         def activate_ci!(settings)
-          test_visibility_transport = nil
-          agent_settings = Datadog::Core::Configuration::AgentSettingsResolver.call(settings)
-
-          if settings.ci.agentless_mode_enabled
-            check_dd_site(settings)
-            test_visibility_transport = build_agentless_transport(settings)
-          elsif can_use_evp_proxy?(settings, agent_settings)
-            test_visibility_transport = build_evp_proxy_transport(settings, agent_settings)
-          else
-            settings.ci.force_test_level_visibility = true
-          end
-
+          # Configure ddtrace library for CI visibility mode
           # Deactivate telemetry
           settings.telemetry.enabled = false
 
@@ -60,9 +45,16 @@ module Datadog
           # Choose user defined TraceFlush or default to CI TraceFlush
           settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
 
+          # transport creation
           writer_options = settings.ci.writer_options
-          if test_visibility_transport
-            writer_options[:transport] = test_visibility_transport
+          test_visibility_api = build_test_visibility_api(settings)
+
+          if test_visibility_api
+            writer_options[:transport] = Datadog::CI::TestVisibility::Transport.new(
+              api: test_visibility_api,
+              serializers_factory: serializers_factory(settings),
+              dd_env: settings.env
+            )
             writer_options[:shutdown_timeout] = 60
             writer_options[:buffer_size] = 10_000
 
@@ -71,51 +63,45 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = writer_options
 
+          # CI visibility recorder global instance
           @ci_recorder = TestVisibility::Recorder.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility
           )
         end
 
-        def can_use_evp_proxy?(settings, agent_settings)
-          Datadog::Core::Remote::Negotiation.new(settings, agent_settings).endpoint?(
-            Ext::Transport::EVP_PROXY_PATH_PREFIX
-          )
-        end
+        def build_test_visibility_api(settings)
+          if settings.ci.agentless_mode_enabled
+            check_dd_site(settings)
 
-        def build_agentless_transport(settings)
-          if settings.api_key.nil?
-            # agentless mode is requested but no API key is provided -
-            # we cannot continue and log an error
-            # Tests are running without CI visibility enabled
-
-            Datadog.logger.error(
-              "DATADOG CONFIGURATION - CI VISIBILITY - ATTENTION - " \
-              "Agentless mode was enabled but DD_API_KEY is not set: CI visibility is disabled. " \
-              "Please make sure to set valid api key in DD_API_KEY environment variable"
-            )
-
-            settings.ci.enabled = false
-
-            nil
-          else
             Datadog.logger.debug("CI visibility configured to use agentless transport")
 
-            Datadog::CI::TestVisibility::Transport.new(
-              api: Transport::Api::Builder.build_ci_test_cycle_api(settings),
-              serializers_factory: serializers_factory(settings),
-              dd_env: settings.env
-            )
+            api = Transport::Api::Builder.build_agentless_api(settings)
+            if api.nil?
+              Datadog.logger.error do
+                "DATADOG CONFIGURATION - CI VISIBILITY - ATTENTION - " \
+                "Agentless mode was enabled but DD_API_KEY is not set: CI visibility is disabled. " \
+                "Please make sure to set valid api key in DD_API_KEY environment variable"
+              end
+
+              # Tests are running without CI visibility enabled
+              settings.ci.enabled = false
+            end
+
+          else
+            Datadog.logger.debug("CI visibility configured to use agent transport via EVP proxy")
+
+            api = Transport::Api::Builder.build_evp_proxy_api(settings)
+            if api.nil?
+              Datadog.logger.debug(
+                "Old agent version detected, no evp_proxy support. Forcing test level visibility mode"
+              )
+
+              # CI visibility is still enabled but in legacy test level visibility mode
+              settings.ci.force_test_level_visibility = true
+            end
           end
-        end
 
-        def build_evp_proxy_transport(settings, agent_settings)
-          Datadog.logger.debug("CI visibility configured to use agent transport via EVP proxy")
-
-          Datadog::CI::TestVisibility::Transport.new(
-            api: Transport::Api::Builder.build_evp_proxy_api(agent_settings),
-            serializers_factory: serializers_factory(settings),
-            dd_env: settings.env
-          )
+          api
         end
 
         def serializers_factory(settings)
@@ -130,11 +116,11 @@ module Datadog
           return if settings.site.nil?
           return if Ext::Settings::DD_SITE_ALLOWLIST.include?(settings.site)
 
-          Datadog.logger.warn(
+          Datadog.logger.warn do
             "CI VISIBILITY CONFIGURATION " \
             "Agentless mode was enabled but DD_SITE is not set to one of the following: #{Ext::Settings::DD_SITE_ALLOWLIST.join(", ")}. " \
             "Please make sure to set valid site in DD_SITE environment variable"
-          )
+          end
         end
       end
     end

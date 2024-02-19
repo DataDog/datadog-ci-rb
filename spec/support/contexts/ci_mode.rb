@@ -18,7 +18,7 @@ RSpec.shared_context "CI mode activated" do
 
   before do
     allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
-      receive(:endpoint?).with("/evp_proxy/v2/").and_return(true)
+      receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
     )
 
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return(test_command)

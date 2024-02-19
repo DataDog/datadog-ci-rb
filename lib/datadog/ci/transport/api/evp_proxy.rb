@@ -10,8 +10,15 @@ module Datadog
     module Transport
       module Api
         class EvpProxy < Base
+          def initialize(http:, path_prefix: Ext::Transport::EVP_PROXY_V2_PATH_PREFIX)
+            super(http: http)
+
+            path_prefix = "#{path_prefix}/" unless path_prefix.end_with?("/")
+            @path_prefix = path_prefix
+          end
+
           def request(path:, payload:, verb: "post")
-            path = "#{Ext::Transport::EVP_PROXY_PATH_PREFIX}#{path.sub(/^\//, "")}"
+            path = "#{@path_prefix}#{path.sub(/^\//, "")}"
 
             super(
               path: path,

@@ -7,7 +7,7 @@ module Datadog
   module CI
     module Transport
       module Api
-        class CiTestCycle < Base
+        class Agentless < Base
           attr_reader :api_key
 
           def initialize(api_key:, http:)
