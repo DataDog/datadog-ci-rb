@@ -18,9 +18,33 @@ module Datadog
           def call(raw_result)
             return nil if raw_result.nil?
 
-            raw_result.select do |path, coverage|
-              path =~ @regex && coverage[:lines].any? { |count| count && count > 0 }
+            raw_result.filter_map do |path, coverage|
+              next unless path =~ @regex
+              next unless coverage[:lines].any? { |line| !line.nil? && line > 0 }
+
+              [path, convert_lines_to_bitmap(coverage[:lines])]
             end
+          end
+
+          private
+
+          def convert_lines_to_bitmap(lines)
+            bitmap = []
+            current = 0
+            bit = 1 << 63
+            lines.each do |line|
+              if !line.nil? && line > 0
+                current |= bit
+              end
+              bit >>= 1
+              if bit == 0
+                bitmap << current
+                current = 0
+                bit = 1 << 63
+              end
+            end
+            bitmap << current
+            lines
           end
         end
       end
