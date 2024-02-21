@@ -20,6 +20,8 @@ require_relative "../test_session"
 require_relative "../test_module"
 require_relative "../test_suite"
 
+require_relative "../itr/coverage/collector"
+
 module Datadog
   module CI
     module TestVisibility
@@ -38,6 +40,13 @@ module Datadog
           @local_context = Context::Local.new
           @global_context = Context::Global.new
           @codeowners = codeowners
+
+          @coverage_collector = Itr::Coverage::Collector.new
+          begin
+            @coverage_collector.setup
+          rescue => e
+            Datadog.logger.debug("Coverage collector setup failed: #{e.message}")
+          end
         end
 
         def start_test_session(service: nil, tags: {})
@@ -103,12 +112,15 @@ module Datadog
             {resource: test_name, continue_from: Datadog::Tracing::TraceDigest.new}
           )
 
+          @coverage_collector.start
           if block
             start_datadog_tracer_span(test_name, span_options) do |tracer_span|
               test = build_test(tracer_span, tags)
 
               @local_context.activate_test(test) do
                 block.call(test)
+
+                on_test_end(test)
               end
             end
           else
@@ -160,6 +172,8 @@ module Datadog
         end
 
         def deactivate_test
+          on_test_end(active_test) if active_test
+
           @local_context.deactivate_test
         end
 
@@ -312,6 +326,17 @@ module Datadog
               "Test [#{test.name}] does not have a test session associated with it. " \
               "Make sure that there is a test session running."
             end
+          end
+        end
+
+        # event system?
+        def on_test_end(test)
+          coverage = @coverage_collector.stop
+          if coverage
+            files_covered = coverage.keys.map { |filename| Utils::Git.relative_to_root(filename) }
+            test.set_tag("_test.coverage", files_covered)
+
+            # p test.get_tag("_test.coverage")
           end
         end
       end
