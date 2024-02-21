@@ -335,6 +335,7 @@ module Datadog
           if coverage
             # move this to the code coverage transport
             # files_covered = coverage.keys.map { |filename| Utils::Git.relative_to_root(filename) }
+            # p coverage
             test.set_tag("_test.coverage", coverage)
           end
         end
