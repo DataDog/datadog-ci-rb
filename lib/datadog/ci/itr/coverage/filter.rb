@@ -6,6 +6,7 @@ module Datadog
   module CI
     module Itr
       module Coverage
+        # not filter, but rather filter and transformer
         class Filter
           def self.call(raw_result)
             new.call(raw_result)
@@ -17,6 +18,9 @@ module Datadog
 
           def call(raw_result)
             return nil if raw_result.nil?
+
+            # p "RAW"
+            # p raw_result.count
 
             raw_result.filter_map do |path, coverage|
               next unless path =~ @regex
