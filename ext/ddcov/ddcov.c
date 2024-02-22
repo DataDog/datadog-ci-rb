@@ -2,13 +2,6 @@
 #include <ruby/debug.h>
 #include <stdio.h>
 
-static ID id_puts;
-
-static void kernel_puts(VALUE val)
-{
-  rb_funcall(rb_mKernel, id_puts, 1, val);
-}
-
 VALUE DDCovClass = Qnil;
 
 VALUE dd_cov_initialize(VALUE self)
@@ -19,14 +12,20 @@ VALUE dd_cov_initialize(VALUE self)
 
 void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE self, ID id, VALUE klass)
 {
-  printf("EVENT HOOK FIRED\n");
-  printf("FILE: %s\n", rb_sourcefile());
-  printf("LINE: %d\n", rb_sourceline());
-  kernel_puts(klass);
-  // kernel_puts(event);
-  // kernel_puts(data);
-  // kernel_puts(self);
-  // kernel_puts(id);
+  // printf("EVENT HOOK FIRED\n");
+  // printf("FILE: %s\n", rb_sourcefile());
+  // printf("LINE: %d\n", rb_sourceline());
+
+  const char *filename = rb_sourcefile();
+  if (filename == 0)
+  {
+    return;
+  }
+
+  unsigned long filename_length = strlen(filename);
+
+  VALUE rb_str_source_file = rb_str_new(filename, filename_length);
+  rb_hash_aset(rb_iv_get(data, "@var"), rb_str_source_file, Qtrue);
 }
 
 VALUE dd_cov_start(VALUE self)
@@ -35,7 +34,7 @@ VALUE dd_cov_start(VALUE self)
   VALUE thval = rb_thread_current();
 
   // add event hook
-  rb_thread_add_event_hook(thval, dd_cov_update_line_coverage, RUBY_EVENT_LINE, Qnil);
+  rb_thread_add_event_hook(thval, dd_cov_update_line_coverage, RUBY_EVENT_LINE, self);
 
   return self;
 }
@@ -47,7 +46,8 @@ VALUE dd_cov_stop(VALUE self)
 
   // remove event hook
   rb_thread_remove_event_hook(thval, dd_cov_update_line_coverage);
-  return self;
+
+  return rb_iv_get(self, "@var");
 }
 
 void Init_ddcov(void)

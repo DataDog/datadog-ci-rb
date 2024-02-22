@@ -1,5 +1,3 @@
-require_relative "../../../lib/ddcov/ddcov"
-
 RSpec.describe Datadog::CI::Span do
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, name: "span_name", type: "test") }
   subject(:span) { described_class.new(tracer_span) }

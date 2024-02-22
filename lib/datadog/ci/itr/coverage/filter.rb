@@ -24,9 +24,8 @@ module Datadog
 
             raw_result.filter_map do |path, coverage|
               next unless path =~ @regex
-              next unless coverage[:lines].any? { |line| !line.nil? && line > 0 }
 
-              [path, convert_lines_to_bitmap(coverage[:lines])]
+              [path, coverage]
             end
           end
 
