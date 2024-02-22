@@ -1,83 +1,61 @@
 #include <ruby.h>
+#include <ruby/debug.h>
+#include <stdio.h>
 
-static ID id_puts, id_each;
+static ID id_puts;
 
 static void kernel_puts(VALUE val)
 {
   rb_funcall(rb_mKernel, id_puts, 1, val);
 }
 
-static VALUE my_fixed_args_method(VALUE self, VALUE arg1, VALUE arg2)
-{
-  kernel_puts(self);
-  kernel_puts(arg1);
-  kernel_puts(arg2);
+VALUE DDCovClass = Qnil;
 
-  return Qnil;
+VALUE dd_cov_initialize(VALUE self)
+{
+  rb_iv_set(self, "@var", rb_hash_new());
+  return self;
 }
 
-static VALUE my_var_args_c_array_method(int argc, VALUE *argv, VALUE self)
+void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE self, ID id, VALUE klass)
 {
-  kernel_puts(self);
-
-  for (int i = 0; i < argc; i++)
-  {
-    kernel_puts(argv[i]);
-  }
-
-  return Qnil;
+  printf("EVENT HOOK FIRED\n");
+  printf("FILE: %s\n", rb_sourcefile());
+  printf("LINE: %d\n", rb_sourceline());
+  kernel_puts(klass);
+  // kernel_puts(event);
+  // kernel_puts(data);
+  // kernel_puts(self);
+  // kernel_puts(id);
 }
 
-static VALUE my_var_args_rb_array_method(VALUE self, VALUE args)
+VALUE dd_cov_start(VALUE self)
 {
-  kernel_puts(self);
-  kernel_puts(args);
+  // get current thread
+  VALUE thval = rb_thread_current();
 
-  return Qnil;
+  // add event hook
+  rb_thread_add_event_hook(thval, dd_cov_update_line_coverage, RUBY_EVENT_LINE, Qnil);
+
+  return self;
 }
 
-static VALUE my_method_with_required_block(VALUE self)
+VALUE dd_cov_stop(VALUE self)
 {
-  VALUE block_ret = rb_yield_values(0);
-  kernel_puts(block_ret);
+  // get current thread
+  VALUE thval = rb_thread_current();
 
-  return Qnil;
-}
-
-static VALUE array_puts_every_other_i(VALUE yielded_arg, VALUE data, int argc, const VALUE *argv, VALUE blockarg)
-{
-  int *puts_cur_ptr = (int *)data;
-  int puts_cur = *puts_cur_ptr;
-
-  if (puts_cur)
-  {
-    kernel_puts(yielded_arg);
-  }
-
-  *puts_cur_ptr = !puts_cur;
-
-  return Qnil;
-}
-
-static VALUE array_puts_every_other(VALUE self)
-{
-  int puts_cur = 1;
-
-  rb_block_call(self, id_each, 0, NULL, array_puts_every_other_i, (VALUE)&puts_cur);
-
-  return Qnil;
+  // remove event hook
+  rb_thread_remove_event_hook(thval, dd_cov_update_line_coverage);
+  return self;
 }
 
 void Init_ddcov(void)
 {
   id_puts = rb_intern("puts");
 
-  rb_define_method(rb_cObject, "my_fixed_args_method", my_fixed_args_method, 2);
-  rb_define_method(rb_cObject, "my_var_args_c_array_method", my_var_args_c_array_method, -1);
-  rb_define_method(rb_cObject, "my_var_args_rb_array_method", my_var_args_rb_array_method, -2);
-  rb_define_method(rb_cObject, "my_method_with_required_block", my_method_with_required_block, 0);
-
-  id_each = rb_intern("each");
-
-  rb_define_method(rb_cArray, "puts_every_other", array_puts_every_other, 0);
+  DDCovClass = rb_define_class("DDCov", rb_cObject);
+  rb_define_method(DDCovClass, "initialize", dd_cov_initialize, 0);
+  rb_define_method(DDCovClass, "start", dd_cov_start, 0);
+  rb_define_method(DDCovClass, "stop", dd_cov_stop, 0);
 }
