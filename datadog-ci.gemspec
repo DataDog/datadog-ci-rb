@@ -35,7 +35,10 @@ Gem::Specification.new do |spec|
       NOTICE
       README.md
       lib/**/*
+      ext/**/*
     ]].select { |fn| File.file?(fn) } # We don't want directories, only files
+
+  spec.extensions << "ext/ddcov/extconf.rb"
 
   spec.require_paths = ["lib"]
 

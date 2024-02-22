@@ -1,6 +1,35 @@
+require_relative "../../../lib/ddcov/ddcov"
+
 RSpec.describe Datadog::CI::Span do
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, name: "span_name", type: "test") }
   subject(:span) { described_class.new(tracer_span) }
+
+  describe "ddcov" do
+    puts "----- Testing Object#my_fixed_args_method -----"
+
+    "I am self".my_fixed_args_method("Hi from argument 1", "Hi from argument 2")
+
+    puts
+    puts "----- Testing Object#my_var_args_c_array_method -----"
+
+    "Hi from self".my_var_args_c_array_method("1", "2", "3", "4")
+
+    puts
+    puts "----- Testing Object#my_var_args_rb_array_method -----"
+
+    "Hi from self".my_var_args_rb_array_method("1", "2")
+
+    puts
+    puts "----- Testing Object#my_method_with_required_block -----"
+
+    my_method_with_required_block do
+      "foo"
+    end
+
+    puts "---- Test Array#puts_every_other ----"
+
+    [1, 2, 3, 4, 5, 6, 7].puts_every_other
+  end
 
   describe "#name" do
     it "returns the span name" do

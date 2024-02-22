@@ -12,6 +12,9 @@ gem "pry"
 gem "rake"
 gem "os"
 
+# To compile native extensions
+gem "rake-compiler"
+
 gem "climate_control"
 
 gem "rspec"

@@ -121,3 +121,9 @@ end
 
 desc "CI task; it runs all tests for current version of Ruby"
 task ci: "test:all"
+
+require "rake/extensiontask"
+
+Rake::ExtensionTask.new("ddcov") do |ext|
+  ext.lib_dir = "lib/ddcov"
+end
