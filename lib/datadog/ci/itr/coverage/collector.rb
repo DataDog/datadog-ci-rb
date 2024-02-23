@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require "coverage"
-
-require_relative "filter"
+require_relative "../../utils/git"
 require_relative "../../../../ddcov/ddcov"
 
 module Datadog
@@ -11,7 +9,7 @@ module Datadog
       module Coverage
         class Collector
           def initialize
-            @ddcov = DDCov.new
+            # TODO: make this thread local
           end
 
           def setup
@@ -19,14 +17,14 @@ module Datadog
           end
 
           def start
+            @ddcov = DDCov.new(Utils::Git.root)
             @ddcov.start
           end
 
           def stop
-            result = @ddcov.stop
-            @ddcov.instance_variable_set(:@var, {})
-
-            Filter.call(result)
+            @ddcov.stop
+            # p "RAW"
+            # p result.count
           end
         end
       end
