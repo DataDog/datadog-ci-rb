@@ -333,10 +333,27 @@ module Datadog
         def on_test_end(test)
           coverage = @coverage_collector.stop
           if coverage
-            # p "FILTERED"
-            # p coverage.count
-            # move this to the code coverage transport
-            # files_covered = coverage.keys.map { |filename| Utils::Git.relative_to_root(filename) }
+            if ENV["DD_COV_REPORT"]
+              # append to report.log file
+              File.open("report.log", "a") do |f|
+                f.write("#{test.name}\n")
+                f.write("---------------------------------------------------\n")
+
+                coverage.each do |filename, cov|
+                  f.write("#{filename}\n")
+                  sorted_lines = []
+
+                  cov[:lines].each_with_index do |count, line_number|
+                    next if count.nil? || count.zero?
+
+                    sorted_lines << line_number + 1
+                  end
+                  f.write("#{sorted_lines.sort}\n")
+                end
+                f.write("---------------------------------------------------\n")
+              end
+            end
+
             test.set_tag("_test.coverage", coverage)
           end
         end

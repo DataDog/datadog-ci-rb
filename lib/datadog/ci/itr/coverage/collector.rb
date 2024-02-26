@@ -9,15 +9,16 @@ module Datadog
     module Itr
       module Coverage
         class Collector
-          def initialize
+          def initialize(enabled: true)
             # Do not run code coverage if someone else is already running it.
             # It means that user is running the test with coverage and ITR would mess it up.
+            @enabled = enabled
             @coverage_supported = !::Coverage.running?
             # @coverage_supported = false
           end
 
           def setup
-            if @coverage_supported
+            if @coverage_supported && @enabled
               p "RUNNING WITH CODE COVERAGE ENABLED!"
               ::Coverage.setup(lines: true)
             else
@@ -26,14 +27,14 @@ module Datadog
           end
 
           def start
-            return unless @coverage_supported
+            return if !@coverage_supported || !@enabled
 
             # if execution is threaded then coverage might already be running
             ::Coverage.resume unless ::Coverage.running?
           end
 
           def stop
-            return nil unless @coverage_supported
+            return if !@coverage_supported || !@enabled
 
             result = ::Coverage.result(stop: false, clear: true)
             ::Coverage.suspend if ::Coverage.running?
