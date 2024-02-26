@@ -41,7 +41,7 @@ module Datadog
           @global_context = Context::Global.new
           @codeowners = codeowners
 
-          @coverage_collector = Itr::Coverage::Collector.new
+          @coverage_collector = Itr::Coverage::Collector.new(mode: :lines, enabled: true)
           begin
             @coverage_collector.setup
           rescue => e
@@ -333,6 +333,20 @@ module Datadog
         def on_test_end(test)
           coverage = @coverage_collector.stop
           if coverage
+            if ENV["DD_COV_REPORT"]
+              # append to report.log file
+              File.open("report.log", "a") do |f|
+                f.write("#{test.name}\n")
+                f.write("---------------------------------------------------\n")
+
+                coverage.each do |filename, lines|
+                  f.write("#{filename}\n")
+                  sorted_lines = lines.uniq.sort
+                  f.write("#{sorted_lines}\n")
+                end
+                f.write("---------------------------------------------------\n")
+              end
+            end
             # p "FILTERED"
             # p coverage.count
             # p coverage

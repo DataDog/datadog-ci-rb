@@ -8,10 +8,15 @@ static bool prefix(const char *pre, const char *str)
   return strncmp(pre, str, strlen(pre)) == 0;
 }
 
+// const
+#define DD_COVERAGE_TARGET_FILES 1
+#define DD_COVERAGE_TARGET_LINES 2
+
 // Data structure
 struct dd_cov_data
 {
   char *root;
+  int mode;
   VALUE coverage;
 };
 
@@ -56,14 +61,39 @@ static VALUE dd_cov_allocate(VALUE klass)
 }
 
 // DDCov methods
-static VALUE dd_cov_initialize(VALUE self, VALUE rb_root)
+static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
 {
-  // printf("INITIALIZE\n");
+  VALUE opt;
+  int mode;
+
+  rb_scan_args(argc, argv, "10", &opt);
+  VALUE rb_root = rb_hash_lookup(opt, ID2SYM(rb_intern("root")));
+  if (!RTEST(rb_root))
+  {
+    rb_raise(rb_eArgError, "root is required");
+  }
+
+  VALUE rb_mode = rb_hash_lookup(opt, ID2SYM(rb_intern("mode")));
+  if (!RTEST(rb_mode) || rb_mode == ID2SYM(rb_intern("files")))
+  {
+    mode = DD_COVERAGE_TARGET_FILES;
+  }
+  else if (rb_mode == ID2SYM(rb_intern("lines")))
+  {
+    mode = DD_COVERAGE_TARGET_LINES;
+  }
+  else
+  {
+    rb_raise(rb_eArgError, "mode is invalid");
+  }
+
+  printf("MODE IS %d\n", mode);
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
   // printf("struct got\n");
   dd_cov_data->root = StringValueCStr(rb_root);
+  dd_cov_data->mode = mode;
   // printf("root set\n");
 
   return Qnil;
@@ -91,7 +121,28 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
   unsigned long len_filename = strlen(filename);
 
   VALUE rb_str_source_file = rb_str_new(filename, len_filename);
-  rb_hash_aset(dd_cov_data->coverage, rb_str_source_file, Qtrue);
+
+  if (dd_cov_data->mode == DD_COVERAGE_TARGET_FILES)
+  {
+    rb_hash_aset(dd_cov_data->coverage, rb_str_source_file, Qtrue);
+    return;
+  }
+
+  if (dd_cov_data->mode == DD_COVERAGE_TARGET_LINES)
+  {
+    VALUE rb_lines = rb_hash_aref(dd_cov_data->coverage, rb_str_source_file);
+    if (rb_lines == Qnil)
+    {
+      rb_lines = rb_ary_new();
+      rb_hash_aset(dd_cov_data->coverage, rb_str_source_file, rb_lines);
+    }
+
+    VALUE line_number = INT2FIX(rb_sourceline());
+    if (rb_ary_includes(rb_lines, line_number) == Qfalse)
+    {
+      rb_ary_push(rb_lines, line_number);
+    }
+  }
 }
 
 static VALUE dd_cov_start(VALUE self)
@@ -109,7 +160,7 @@ static VALUE dd_cov_stop(VALUE self)
 {
   // get current thread
   VALUE thval = rb_thread_current();
-  // remove event hook
+  // remove event hook for the current thread
   rb_thread_remove_event_hook(thval, dd_cov_update_line_coverage);
 
   struct dd_cov_data *dd_cov_data;
@@ -128,7 +179,7 @@ void Init_ddcov(void)
 
   rb_define_alloc_func(cDDCov, dd_cov_allocate);
 
-  rb_define_method(cDDCov, "initialize", dd_cov_initialize, 1);
+  rb_define_method(cDDCov, "initialize", dd_cov_initialize, -1);
   rb_define_method(cDDCov, "start", dd_cov_start, 0);
   rb_define_method(cDDCov, "stop", dd_cov_stop, 0);
 }
