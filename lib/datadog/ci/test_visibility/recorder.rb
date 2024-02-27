@@ -347,9 +347,9 @@ module Datadog
                 f.write("---------------------------------------------------\n")
               end
             end
-            p "FILTERED"
-            p coverage.count
-            p coverage
+            # p "FILTERED"
+            # p coverage.count
+            # p coverage
             # move this to the code coverage transport
             # files_covered = coverage.keys.map { |filename| Utils::Git.relative_to_root(filename) }
             test.set_tag("_test.coverage", coverage)
