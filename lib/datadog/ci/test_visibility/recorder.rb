@@ -341,15 +341,15 @@ module Datadog
 
                 coverage.each do |filename, lines|
                   f.write("#{filename}\n")
-                  sorted_lines = lines.uniq.sort
+                  sorted_lines = lines.to_a.sort
                   f.write("#{sorted_lines}\n")
                 end
                 f.write("---------------------------------------------------\n")
               end
             end
-            # p "FILTERED"
-            # p coverage.count
-            # p coverage
+            p "FILTERED"
+            p coverage.count
+            p coverage
             # move this to the code coverage transport
             # files_covered = coverage.keys.map { |filename| Utils::Git.relative_to_root(filename) }
             test.set_tag("_test.coverage", coverage)

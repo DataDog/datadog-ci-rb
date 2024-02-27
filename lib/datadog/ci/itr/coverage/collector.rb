@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
-require "coverage"
+require "set"
 
 require_relative "../../utils/git"
-require_relative "../../../../ddcov/ddcov"
 
 module Datadog
   module CI
@@ -11,13 +10,24 @@ module Datadog
       module Coverage
         class Collector
           def initialize(mode: :files, enabled: true)
-            # TODO: make this thread local
             # modes available: :files, :lines
             @mode = mode
             @enabled = enabled
+            @regex = /\A#{Regexp.escape(Utils::Git.root + File::SEPARATOR)}/i.freeze
+
+            @coverage = {}
 
             if @enabled
-              @ddcov = DDCov.new(root: Utils::Git.root, mode: mode)
+              @tracepoint = TracePoint.new(:line) do |tp|
+                next unless tp.path =~ @regex
+
+                if @mode == :files
+                  @coverage[tp.path] = true
+                elsif @mode == :lines
+                  @coverage[tp.path] ||= Set.new
+                  @coverage[tp.path] << tp.lineno
+                end
+              end
             end
           end
 
@@ -30,11 +40,17 @@ module Datadog
           end
 
           def start
-            @ddcov.start if @enabled
+            return unless @enabled
+
+            @tracepoint.enable
           end
 
           def stop
-            @ddcov.stop if @enabled
+            return unless @enabled
+            @tracepoint.disable
+            res = @coverage
+            @coverage = {}
+            res
           end
         end
       end
