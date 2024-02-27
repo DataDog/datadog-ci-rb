@@ -41,7 +41,7 @@ module Datadog
           @global_context = Context::Global.new
           @codeowners = codeowners
 
-          @coverage_collector = Itr::Coverage::Collector.new(mode: :lines, enabled: true)
+          @coverage_collector = Itr::Coverage::Collector.new(mode: :files, enabled: true)
           begin
             @coverage_collector.setup
           rescue => e
