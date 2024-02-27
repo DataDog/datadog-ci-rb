@@ -23,7 +23,7 @@ module Datadog
 
           def setup
             if @enabled
-              p "RUNNING WITH CODE COVERAGE ENABLED"
+              p "RUNNING WITH CODE COVERAGE ENABLED AND MODE #{@mode}"
             else
               p "RUNNING WITH CODE COVERAGE DISABLED"
             end
