@@ -1,3 +1,7 @@
+# frozen_string_literal: true
+
+require_relative "../../../../lib/datadog/ci/test_visibility/recorder"
+
 RSpec.describe Datadog::CI::TestVisibility::Recorder do
   shared_examples_for "trace with ciapp-test origin" do
     let(:trace_under_test) { subject }

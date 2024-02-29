@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module ITR
+      class Runner
+        @enabled: bool
+
+        def initialize: (?enabled: bool) -> void
+
+        def enabled?: () -> bool
+
+        def configure: () -> void
+      end
+    end
+  end
+end
