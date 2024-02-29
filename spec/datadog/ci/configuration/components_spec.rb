@@ -1,3 +1,7 @@
+# frozen_string_literal: true
+
+require_relative "../../../../lib/datadog/ci/configuration/components"
+
 RSpec.describe Datadog::CI::Configuration::Components do
   context "when used to extend Datadog::Core::Configuration::Components" do
     subject(:components) do
@@ -50,6 +54,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .to receive(:agentless_url)
             .and_return(agentless_url)
 
+          allow(settings.ci)
+            .to receive(:itr_enabled)
+            .and_return(itr_enabled)
+
           allow(settings)
             .to receive(:site)
             .and_return(dd_site)
@@ -91,6 +99,12 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(settings.ci)
             .to receive(:force_test_level_visibility=)
 
+          allow(settings.ci)
+            .to receive(:itr_enabled=)
+
+          allow(Datadog.logger)
+            .to receive(:debug)
+
           allow(Datadog.logger)
             .to receive(:warn)
 
@@ -110,6 +124,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:force_test_level_visibility) { false }
         let(:evp_proxy_v2_supported) { false }
         let(:evp_proxy_v4_supported) { false }
+        let(:itr_enabled) { false }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -186,6 +201,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     .to have_received(:force_test_level_visibility=)
                     .with(true)
 
+                  expect(settings.ci)
+                    .to have_received(:itr_enabled=)
+                    .with(false)
+
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_nil
                   end
@@ -242,6 +261,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   expect(Datadog.logger).to have_received(:error)
                   expect(settings.ci).to have_received(:enabled=).with(false)
                 end
+              end
+            end
+          end
+
+          context "and when itr" do
+            context "is enabled" do
+              let(:itr_enabled) { true }
+
+              it "configures ITR" do
+                expect(Datadog.logger).to have_received(:debug).with("Sending ITR settings request...")
               end
             end
           end

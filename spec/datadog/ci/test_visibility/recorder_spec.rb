@@ -48,6 +48,16 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     end
   end
 
+  describe "#initialize" do
+    context "no ITR runner is provided" do
+      subject { described_class.new }
+
+      it "raises an error" do
+        expect { subject }.to raise_error(ArgumentError, "ITR runner is required")
+      end
+    end
+  end
+
   context "when test suite level visibility is disabled" do
     let(:service) { "my-service" }
     let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }

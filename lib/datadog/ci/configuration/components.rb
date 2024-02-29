@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../ext/settings"
+require_relative "../itr/runner"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/recorder"
 require_relative "../test_visibility/null_recorder"
@@ -59,13 +60,23 @@ module Datadog
             writer_options[:buffer_size] = 10_000
 
             settings.tracing.test_mode.async = true
+          else
+            # only legacy APM protocol is supported, so no test suite level visibility
+            settings.ci.force_test_level_visibility = true
+
+            # ITR is not supported with APM protocol
+            settings.ci.itr_enabled = false
           end
 
           settings.tracing.test_mode.writer_options = writer_options
 
+          itr = Datadog::CI::ITR::Runner.new(enabled: settings.ci.itr_enabled)
+          itr.configure
+
           # CI visibility recorder global instance
           @ci_recorder = TestVisibility::Recorder.new(
-            test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility
+            test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
+            itr: itr
           )
         end
 
@@ -95,9 +106,6 @@ module Datadog
               Datadog.logger.debug(
                 "Old agent version detected, no evp_proxy support. Forcing test level visibility mode"
               )
-
-              # CI visibility is still enabled but in legacy test level visibility mode
-              settings.ci.force_test_level_visibility = true
             end
           end
 

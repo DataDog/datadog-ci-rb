@@ -30,14 +30,19 @@ module Datadog
 
         def initialize(
           test_suite_level_visibility_enabled: false,
-          codeowners: Codeowners::Parser.new(Utils::Git.root).parse
+          codeowners: Codeowners::Parser.new(Utils::Git.root).parse,
+          itr: nil
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
           @environment_tags = Ext::Environment.tags(ENV).freeze
           @local_context = Context::Local.new
           @global_context = Context::Global.new
+
           @codeowners = codeowners
+
+          raise ArgumentError, "ITR runner is required" unless itr
+          @itr = itr
         end
 
         def start_test_session(service: nil, tags: {})
