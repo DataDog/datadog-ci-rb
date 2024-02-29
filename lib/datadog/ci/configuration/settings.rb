@@ -55,6 +55,12 @@ module Datadog
                 end
               end
 
+              option :itr_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_ITR_ENABLED
+                o.default false
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
