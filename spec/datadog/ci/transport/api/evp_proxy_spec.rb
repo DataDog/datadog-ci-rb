@@ -84,5 +84,21 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
         subject.request(path: "/path", payload: "payload")
       end
     end
+
+    context "overriding content-type" do
+      it "uses content type header from the request parameter" do
+        expect(http).to receive(:request).with(
+          path: "/evp_proxy/v2/path",
+          payload: "payload",
+          verb: "post",
+          headers: {
+            "Content-Type" => "application/json",
+            "X-Datadog-EVP-Subdomain" => "citestcycle-intake"
+          }
+        )
+
+        subject.request(path: "/path", payload: "payload", headers: {"Content-Type" => "application/json"})
+      end
+    end
   end
 end

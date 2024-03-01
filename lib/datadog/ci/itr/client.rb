@@ -16,11 +16,13 @@ module Datadog
 
         def fetch_settings(service:)
           # TODO: application/json support
+          # TODO: id generation
           # TODO: runtime information is required for payload
           # TODO: return error response - use some wrapper from ddtrace as an example
           @api.request(
-            path: "/api/v2/ci/libraries/tests/services/setting",
-            payload: settings_payload(service: service)
+            path: Ext::ITR::API_PATH_SETTINGS,
+            payload: settings_payload(service: service),
+            headers: {Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_JSON}
           )
         end
 

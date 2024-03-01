@@ -29,5 +29,19 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
 
       subject.request(path: "path", payload: "payload")
     end
+
+    it "alows to override headers" do
+      expect(http).to receive(:request).with(
+        path: "path",
+        payload: "payload",
+        verb: "post",
+        headers: {
+          "DD-API-KEY" => "api_key",
+          "Content-Type" => "application/json"
+        }
+      )
+
+      subject.request(path: "path", payload: "payload", headers: {"Content-Type" => "application/json"})
+    end
   end
 end

@@ -18,7 +18,7 @@ module Datadog
 
           private
 
-          def headers
+          def default_headers
             headers = super
             headers[Ext::Transport::HEADER_DD_API_KEY] = api_key
             headers

@@ -13,18 +13,21 @@ module Datadog
             @http = http
           end
 
-          def request(path:, payload:, verb: "post")
+          def request(path:, payload:, headers: {}, verb: "post")
+            request_headers = default_headers
+            request_headers.merge!(headers)
+
             http.request(
               path: path,
               payload: payload,
               verb: verb,
-              headers: headers
+              headers: request_headers
             )
           end
 
           private
 
-          def headers
+          def default_headers
             {
               Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_MESSAGEPACK
             }

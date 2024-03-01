@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "../../../../lib/datadog/ci/itr/client"
 require_relative "../../../../lib/datadog/ci/itr/runner"
 
 RSpec.describe Datadog::CI::ITR::Runner do

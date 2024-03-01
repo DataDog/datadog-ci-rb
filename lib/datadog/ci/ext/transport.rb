@@ -24,6 +24,7 @@ module Datadog
         TEST_VISIBILITY_INTAKE_PATH = "/api/v2/citestcycle"
 
         CONTENT_TYPE_MESSAGEPACK = "application/msgpack"
+        CONTENT_TYPE_JSON = "application/json"
         CONTENT_ENCODING_GZIP = "gzip"
       end
     end

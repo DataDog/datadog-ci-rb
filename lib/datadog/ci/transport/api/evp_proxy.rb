@@ -17,12 +17,13 @@ module Datadog
             @path_prefix = path_prefix
           end
 
-          def request(path:, payload:, verb: "post")
+          def request(path:, payload:, headers: {}, verb: "post")
             path = "#{@path_prefix}#{path.sub(/^\//, "")}"
 
             super(
               path: path,
               payload: payload,
+              headers: headers,
               verb: verb
             )
           end
@@ -35,7 +36,7 @@ module Datadog
             @container_id = Datadog::Core::Environment::Container.container_id
           end
 
-          def headers
+          def default_headers
             headers = super
             headers[Ext::Transport::HEADER_EVP_SUBDOMAIN] = Ext::Transport::TEST_VISIBILITY_INTAKE_HOST_PREFIX
 

@@ -9,11 +9,11 @@ module Datadog
 
           def initialize: (http: Datadog::CI::Transport::HTTP) -> void
 
-          def request: (path: String, payload: String, ?verb: ::String) -> untyped
+          def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
           private
 
-          def headers: () -> Hash[String, String]
+          def default_headers: () -> Hash[String, String]
         end
       end
     end
