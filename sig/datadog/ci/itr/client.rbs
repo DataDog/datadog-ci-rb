@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module ITR
+      class Client
+        @api: untyped
+
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?) -> void
+
+        def fetch_settings: (service: String?) -> untyped
+
+        private
+
+        def settings_payload: (service: String?) -> String
+      end
+    end
+  end
+end

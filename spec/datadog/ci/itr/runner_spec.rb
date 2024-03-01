@@ -4,25 +4,37 @@ require_relative "../../../../lib/datadog/ci/itr/runner"
 
 RSpec.describe Datadog::CI::ITR::Runner do
   let(:itr_enabled) { true }
-  subject(:runner) { described_class.new(enabled: itr_enabled) }
+
+  let(:api) { double("api") }
+  let(:client) { double("client") }
+
+  subject(:runner) { described_class.new(enabled: itr_enabled, api: api) }
 
   describe "#configure" do
+    let(:service) { "service" }
+
     context "itr enabled" do
       before do
-        expect(Datadog.logger).to receive(:debug).with("Sending ITR settings request...")
+        expect(Datadog::CI::ITR::Client).to receive(:new).with(api: api).and_return(client)
       end
 
-      it { runner.configure }
+      it "fetches settings from backend" do
+        expect(client).to receive(:fetch_settings).with(service: service)
+
+        runner.configure(service: service)
+      end
     end
 
     context "itr disabled" do
       let(:itr_enabled) { false }
 
       before do
-        expect(Datadog.logger).to_not receive(:debug).with("Sending ITR settings request...")
+        expect(Datadog::CI::ITR::Client).to_not receive(:new)
       end
 
-      it { runner.configure }
+      it "does nothing" do
+        expect(runner.configure(service: service)).to be_nil
+      end
     end
   end
 end

@@ -4,11 +4,11 @@ module Datadog
       class Runner
         @enabled: bool
 
-        def initialize: (?enabled: bool) -> void
+        def initialize: (?enabled: bool, api: Datadog::CI::Transport::Api::Base?) -> void
 
         def enabled?: () -> bool
 
-        def configure: () -> void
+        def configure: (service: String?) -> void
       end
     end
   end

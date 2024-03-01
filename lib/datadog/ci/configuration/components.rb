@@ -70,8 +70,10 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = writer_options
 
-          itr = Datadog::CI::ITR::Runner.new(enabled: settings.ci.itr_enabled)
-          itr.configure
+          itr = Datadog::CI::ITR::Runner.new(
+            enabled: settings.ci.enabled && settings.ci.itr_enabled,
+            api: test_visibility_api
+          )
 
           # CI visibility recorder global instance
           @ci_recorder = TestVisibility::Recorder.new(

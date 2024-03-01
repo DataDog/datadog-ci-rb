@@ -48,6 +48,10 @@ module Datadog
         def start_test_session(service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
+          # TODO: pass runtime and environment information
+          # actually this is the correct place to configure ITR - when starting test session
+          @itr.configure(service: service)
+
           @global_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(
               "test.session", build_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
@@ -178,6 +182,10 @@ module Datadog
 
         def deactivate_test_suite(test_suite_name)
           @global_context.deactivate_test_suite!(test_suite_name)
+        end
+
+        def itr_enabled?
+          @itr.enabled?
         end
 
         private

@@ -43,6 +43,8 @@ module Datadog
 
         def deactivate_test_suite: (String test_suite_name) -> void
 
+        def itr_enabled?: () -> bool
+
         private
 
         def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
