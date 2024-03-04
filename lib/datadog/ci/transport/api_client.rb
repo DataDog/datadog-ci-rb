@@ -15,7 +15,7 @@ module Datadog
           @dd_env = dd_env
         end
 
-        def fetch_library_settings(service:)
+        def fetch_library_settings(test_session)
           # TODO: return error response if api is not present
           api = @api
           return {} unless api
@@ -24,7 +24,7 @@ module Datadog
           # TODO: return error response - use some wrapper from ddtrace as an example
           api.api_request(
             path: Ext::Transport::DD_API_SETTINGS_PATH,
-            payload: settings_payload(service: service)
+            payload: settings_payload(service: test_session.service)
           )
         end
 

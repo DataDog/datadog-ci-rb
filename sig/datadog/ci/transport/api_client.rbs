@@ -7,7 +7,7 @@ module Datadog
 
         def initialize: (?api: Datadog::CI::Transport::Api::Base?, ?dd_env: String?) -> void
 
-        def fetch_library_settings: (service: String?) -> untyped
+        def fetch_library_settings: (Datadog::CI::TestSession test_session) -> untyped
 
         private
 

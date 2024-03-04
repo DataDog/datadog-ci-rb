@@ -56,7 +56,7 @@ module Datadog
 
             test_session = build_test_session(tracer_span, tags)
 
-            configure_library(service: service)
+            configure_library(test_session)
 
             test_session
           end
@@ -190,12 +190,12 @@ module Datadog
 
         private
 
-        def configure_library(service:)
+        def configure_library(test_session)
           return unless itr_enabled?
           # TODO: error handling when request failed - disable ITR runner
           # TODO: need to pass runtime information
           # TODO: disable ITR runner if itr_enabled is false in settings
-          @api_client.fetch_library_settings(service: service)
+          @api_client.fetch_library_settings(test_session)
         end
 
         def skip_tracing(block = nil)

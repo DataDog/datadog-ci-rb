@@ -48,7 +48,7 @@ module Datadog
 
         private
 
-        def configure_library: (service: String?) -> void
+        def configure_library: (Datadog::CI::TestSession test_session) -> void
 
         def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
