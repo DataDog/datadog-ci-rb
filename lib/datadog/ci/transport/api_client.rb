@@ -17,11 +17,12 @@ module Datadog
 
         def fetch_library_settings(service:)
           # TODO: return error response if api is not present
-          return {} unless @api
+          api = @api
+          return {} unless api
           # TODO: id generation
           # TODO: runtime information is required for payload
           # TODO: return error response - use some wrapper from ddtrace as an example
-          @api.api_request(
+          api.api_request(
             path: Ext::Transport::DD_API_SETTINGS_PATH,
             payload: settings_payload(service: service)
           )
