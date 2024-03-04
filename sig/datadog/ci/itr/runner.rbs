@@ -3,13 +3,12 @@ module Datadog
     module ITR
       class Runner
         @enabled: bool
-        @client: Datadog::CI::ITR::Client
 
-        def initialize: (?enabled: bool, api: Datadog::CI::Transport::Api::Base?) -> void
+        def initialize: (?enabled: bool) -> void
 
         def enabled?: () -> bool
 
-        def configure: (service: String?) -> void
+        def disable: () -> void
       end
     end
   end

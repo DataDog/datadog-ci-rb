@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "client"
-
 module Datadog
   module CI
     module ITR
@@ -10,25 +8,17 @@ module Datadog
       # skip tests that are not impacted by the changes
       class Runner
         def initialize(
-          enabled: false,
-          api: nil
+          enabled: false
         )
           @enabled = enabled
-          return unless enabled
-
-          @client = Client.new(api: api)
         end
 
         def enabled?
           @enabled
         end
 
-        def configure(service:)
-          return unless enabled?
-
-          # TODO: error handling when request failed
-          # TODO: need to pass runtime information
-          @client.fetch_settings(service: service)
+        def disable
+          @enabled = false
         end
       end
     end

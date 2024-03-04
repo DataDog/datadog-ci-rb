@@ -12,6 +12,7 @@ require_relative "../codeowners/parser"
 require_relative "../ext/app_types"
 require_relative "../ext/test"
 require_relative "../ext/environment"
+require_relative "../transport/api_client"
 require_relative "../utils/git"
 
 require_relative "../span"
@@ -29,9 +30,8 @@ module Datadog
         attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
         def initialize(
-          test_suite_level_visibility_enabled: false,
-          codeowners: Codeowners::Parser.new(Utils::Git.root).parse,
-          itr: nil
+          itr:, api_client:, test_suite_level_visibility_enabled: false,
+          codeowners: Codeowners::Parser.new(Utils::Git.root).parse
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
@@ -41,16 +41,12 @@ module Datadog
 
           @codeowners = codeowners
 
-          raise ArgumentError, "ITR runner is required" unless itr
           @itr = itr
+          @api_client = api_client
         end
 
         def start_test_session(service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
-
-          # TODO: pass runtime and environment information
-          # actually this is the correct place to configure ITR - when starting test session
-          @itr.configure(service: service)
 
           @global_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(
@@ -58,7 +54,11 @@ module Datadog
             )
             set_session_context(tags, tracer_span)
 
-            build_test_session(tracer_span, tags)
+            test_session = build_test_session(tracer_span, tags)
+
+            configure_library(service: service)
+
+            test_session
           end
         end
 
@@ -189,6 +189,14 @@ module Datadog
         end
 
         private
+
+        def configure_library(service:)
+          return unless itr_enabled?
+          # TODO: error handling when request failed - disable ITR runner
+          # TODO: need to pass runtime information
+          # TODO: disable ITR runner if itr_enabled is false in settings
+          @api_client.fetch_library_settings(service: service)
+        end
 
         def skip_tracing(block = nil)
           block.call(nil) if block

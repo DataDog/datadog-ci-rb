@@ -1,28 +1,26 @@
 # frozen_string_literal: true
 
-require_relative "../ext/itr"
+require_relative "../ext/transport"
 
 module Datadog
   module CI
-    module ITR
-      # ITR API client
-      # communicates with the CI visibility backend
-      class Client
+    module Transport
+      # Datadog API client
+      # Calls settings endpoint to fetch library settings for given service and env
+      class ApiClient
         def initialize(api: nil)
-          raise ArgumentError, "Test visibility API is required" unless api
-
           @api = api
         end
 
-        def fetch_settings(service:)
-          # TODO: application/json support
+        def fetch_library_settings(service:)
+          # TODO: return error response if api is not present
+          return {} unless @api
           # TODO: id generation
           # TODO: runtime information is required for payload
           # TODO: return error response - use some wrapper from ddtrace as an example
-          @api.request(
-            path: Ext::ITR::API_PATH_SETTINGS,
-            payload: settings_payload(service: service),
-            headers: {Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_JSON}
+          @api.api_request(
+            path: Ext::Transport::DD_API_SETTINGS_PATH,
+            payload: settings_payload(service: service)
           )
         end
 
@@ -32,7 +30,7 @@ module Datadog
           {
             data: {
               id: "change_me",
-              type: Ext::ITR::API_TYPE_SETTINGS,
+              type: Ext::Transport::DD_API_SETTINGS_TYPE,
               attributes: {
                 service: service
               }

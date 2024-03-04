@@ -1,12 +1,12 @@
 module Datadog
   module CI
-    module ITR
-      class Client
+    module Transport
+      class ApiClient
         @api: untyped
 
         def initialize: (?api: Datadog::CI::Transport::Api::Base?) -> void
 
-        def fetch_settings: (service: String?) -> untyped
+        def fetch_library_settings: (service: String?) -> untyped
 
         private
 
