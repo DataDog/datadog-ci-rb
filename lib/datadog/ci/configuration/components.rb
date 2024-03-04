@@ -74,7 +74,10 @@ module Datadog
             enabled: settings.ci.enabled && settings.ci.itr_enabled
           )
 
-          api_client = Transport::ApiClient.new(api: test_visibility_api)
+          api_client = Transport::ApiClient.new(
+            api: test_visibility_api,
+            dd_env: settings.env
+          )
 
           # CI visibility recorder global instance
           @ci_recorder = TestVisibility::Recorder.new(

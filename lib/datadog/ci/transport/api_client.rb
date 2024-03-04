@@ -10,8 +10,9 @@ module Datadog
       # Datadog API client
       # Calls settings endpoint to fetch library settings for given service and env
       class ApiClient
-        def initialize(api: nil)
+        def initialize(api: nil, dd_env: nil)
           @api = api
+          @dd_env = dd_env
         end
 
         def fetch_library_settings(service:)
@@ -34,7 +35,8 @@ module Datadog
               id: Datadog::Core::Environment::Identity.id,
               type: Ext::Transport::DD_API_SETTINGS_TYPE,
               attributes: {
-                service: service
+                service: service,
+                env: @dd_env
               }
             }
           }.to_json

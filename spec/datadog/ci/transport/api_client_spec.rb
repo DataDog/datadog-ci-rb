@@ -2,7 +2,9 @@ require_relative "../../../../lib/datadog/ci/transport/api_client"
 
 RSpec.describe Datadog::CI::Transport::ApiClient do
   let(:api) { spy("api") }
-  subject { described_class.new(api: api) }
+  let(:dd_env) { "ci" }
+
+  subject { described_class.new(api: api, dd_env: dd_env) }
 
   describe "#fetch_library_settings" do
     let(:service) { "service" }
@@ -32,6 +34,7 @@ RSpec.describe Datadog::CI::Transport::ApiClient do
 
         attributes = data["attributes"]
         expect(attributes["service"]).to eq(service)
+        expect(attributes["env"]).to eq(dd_env)
       end
     end
   end
