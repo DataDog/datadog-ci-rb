@@ -33,7 +33,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it "sends correct payload" do
         subject.send_traces([trace])
 
-        expect(api).to have_received(:request) do |args|
+        expect(api).to have_received(:citestcycle_request) do |args|
           expect(args[:path]).to eq("/api/v2/citestcycle")
 
           payload = MessagePack.unpack(args[:payload])
@@ -59,7 +59,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it "sends correct payload including env" do
         subject.send_traces([trace])
 
-        expect(api).to have_received(:request) do |args|
+        expect(api).to have_received(:citestcycle_request) do |args|
           payload = MessagePack.unpack(args[:payload])
 
           metadata = payload["metadata"]["*"]
@@ -79,7 +79,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it "sends event for each of spans" do
         subject.send_traces(traces)
 
-        expect(api).to have_received(:request) do |args|
+        expect(api).to have_received(:citestcycle_request) do |args|
           payload = MessagePack.unpack(args[:payload])
           events = payload["events"]
           expect(events.count).to eq(expected_events_count)
@@ -97,7 +97,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it "filters out invalid events" do
           subject.send_traces(traces)
 
-          expect(api).to have_received(:request) do |args|
+          expect(api).to have_received(:citestcycle_request) do |args|
             payload = MessagePack.unpack(args[:payload])
 
             events = payload["events"]
@@ -127,7 +127,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it "filters out invalid events" do
           responses = subject.send_traces(traces)
 
-          expect(api).to have_received(:request).twice
+          expect(api).to have_received(:citestcycle_request).twice
           expect(responses.count).to eq(2)
         end
       end
@@ -140,7 +140,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it "does not send events that are larger than max size" do
           subject.send_traces(traces)
 
-          expect(api).not_to have_received(:request)
+          expect(api).not_to have_received(:citestcycle_request)
         end
       end
     end
@@ -155,7 +155,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it "does not send anything" do
         subject.send_traces(traces)
 
-        expect(api).not_to have_received(:request)
+        expect(api).not_to have_received(:citestcycle_request)
       end
     end
   end

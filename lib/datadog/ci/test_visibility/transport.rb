@@ -68,7 +68,7 @@ module Datadog
         private
 
         def send_payload(encoded_payload)
-          api.request(
+          api.citestcycle_request(
             path: Datadog::CI::Ext::Transport::TEST_VISIBILITY_INTAKE_PATH,
             payload: encoded_payload
           )

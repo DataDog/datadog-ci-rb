@@ -3,15 +3,13 @@ module Datadog
     module Transport
       module Api
         class Base
-          attr_reader http: Datadog::CI::Transport::HTTP
+          def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
-          @http: Datadog::CI::Transport::HTTP
-
-          def initialize: (http: Datadog::CI::Transport::HTTP) -> void
-
-          def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
+          def citestcycle_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
           private
+
+          def headers_with_default: (Hash[String, String] headers) -> Hash[String, String]
 
           def default_headers: () -> Hash[String, String]
         end

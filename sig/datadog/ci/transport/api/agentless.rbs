@@ -6,12 +6,18 @@ module Datadog
           attr_reader api_key: String
 
           @api_key: String
+          @citestcycle_http: Datadog::CI::Transport::HTTP
+          @api_http: Datadog::CI::Transport::HTTP
 
-          def initialize: (api_key: String, http: Datadog::CI::Transport::HTTP) -> void
+          def initialize: (api_key: String, citestcycle_url: String, api_url: String) -> void
 
           def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 
           private
+
+          def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+
+          def build_http_client: (String url, compress: bool) -> Datadog::CI::Transport::HTTP
 
           def default_headers: () -> Hash[String, String]
         end
