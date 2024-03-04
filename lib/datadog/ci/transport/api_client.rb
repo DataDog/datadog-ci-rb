@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "datadog/core/environment/identity"
+
 require_relative "../ext/transport"
 
 module Datadog
@@ -29,7 +31,7 @@ module Datadog
         def settings_payload(service:)
           {
             data: {
-              id: "change_me",
+              id: Datadog::Core::Environment::Identity.id,
               type: Ext::Transport::DD_API_SETTINGS_TYPE,
               attributes: {
                 service: service
