@@ -16,9 +16,13 @@ module Datadog
           @enabled = enabled
           @test_skipping_enabled = false
           @code_coverage_enabled = false
+
+          Datadog.logger.debug("ITR Runner initialized with enabled: #{@enabled}")
         end
 
         def configure(remote_configuration, test_session)
+          Datadog.logger.debug("Configuring ITR Runner with remote configuration: #{remote_configuration}")
+
           @enabled = convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY, false)
           )
@@ -36,6 +40,8 @@ module Datadog
 
           # we skip tests, not suites
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
+
+          Datadog.logger.debug("Configured ITR Runner with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
         end
 
         def enabled?

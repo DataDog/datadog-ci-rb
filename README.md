@@ -175,7 +175,7 @@ Webmock accordingly.
 ```ruby
 # when using agentless mode
 # note to use the correct datadog site (e.g. datadoghq.eu, etc)
-WebMock.disable_net_connect!(:allow => "citestcycle-intake.datadoghq.com")
+WebMock.disable_net_connect!(:allow => /datadoghq.com/)
 
 # when using agent
 WebMock.disable_net_connect!(:allow_localhost => true)
@@ -199,7 +199,7 @@ VCR.configure do |config|
 
   # when using agentless mode
   # note to use the correct datadog site (e.g. datadoghq.eu, etc)
-  config.ignore_hosts "citestcycle-intake.datadoghq.com"
+  config.ignore_hosts "citestcycle-intake.datadoghq.com", "api.datadoghq.com"
 end
 ```
 

@@ -55,12 +55,17 @@ module Datadog
           api = @api
           return Response.new(nil) unless api
 
-          Response.new(
-            api.api_request(
-              path: Ext::Transport::DD_API_SETTINGS_PATH,
-              payload: payload(test_session)
-            )
+          request_payload = payload(test_session)
+          Datadog.logger.debug("Fetching library settings with request: #{request_payload}")
+
+          http_response = api.api_request(
+            path: Ext::Transport::DD_API_SETTINGS_PATH,
+            payload: request_payload
           )
+
+          Datadog.logger.debug("Library settings response: #{http_response}")
+
+          Response.new(http_response)
         end
 
         private
