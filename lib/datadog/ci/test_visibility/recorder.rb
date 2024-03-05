@@ -191,10 +191,11 @@ module Datadog
         private
 
         def configure_library(test_session)
+          # this will change when EFD is implemented
           return unless itr_enabled?
-          # TODO: error handling when request failed - disable ITR runner
-          # TODO: configure ITR runner based on response
-          @api_client.fetch_library_settings(test_session)
+
+          remote_configuration = @api_client.fetch_library_settings(test_session)
+          @itr.configure(remote_configuration.payload)
         end
 
         def skip_tracing(block = nil)

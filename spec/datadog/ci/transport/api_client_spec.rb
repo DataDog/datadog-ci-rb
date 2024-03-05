@@ -123,6 +123,28 @@ RSpec.describe Datadog::CI::Transport::ApiClient do
             expect(response.payload).to eq("itr_enabled" => false)
           end
         end
+
+        context "when response is OK but JSON has different format" do
+          let(:http_response) do
+            double(
+              "http_response",
+              ok?: true,
+              payload: {
+                "attributes" => {
+                  "code_coverage" => true,
+                  "tests_skipping" => false,
+                  "itr_enabled" => true,
+                  "require_git" => false
+                }
+              }.to_json
+            )
+          end
+
+          it "parses the response" do
+            expect(response.ok?).to be true
+            expect(response.payload).to eq("itr_enabled" => false)
+          end
+        end
       end
 
       context "when there is no api" do

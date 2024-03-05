@@ -26,13 +26,15 @@ module Datadog
           end
 
           def payload
-            return @json if @json
+            cached = @json
+            return cached unless cached.nil?
 
             resp = @http_response
-            return default_payload if resp.nil? || !resp.ok?
+            return @json = default_payload if resp.nil? || !resp.ok?
 
             begin
-              @json = JSON.parse(resp.payload).dig("data", "attributes")
+              @json = JSON.parse(resp.payload).dig(*Ext::Transport::DD_API_SETTINGS_RESPONSE_DIG_KEYS) ||
+                default_payload
             rescue JSON::ParserError => e
               Datadog.logger.error("Failed to parse settings response payload: #{e}. Payload was: #{resp.payload}")
               @json = default_payload
@@ -42,7 +44,7 @@ module Datadog
           private
 
           def default_payload
-            {"itr_enabled" => false}
+            Ext::Transport::DD_API_SETTINGS_RESPONSE_DEFAULT
           end
         end
 

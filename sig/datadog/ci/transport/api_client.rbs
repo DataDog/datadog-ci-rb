@@ -10,6 +10,8 @@ module Datadog
 
           def ok?: () -> bool
 
+          def payload: () -> Hash[String, untyped]
+
           private
 
           def default_payload: () -> Hash[String, untyped]
