@@ -11,7 +11,7 @@ module Datadog
 
         private
 
-        def settings_payload: (service: String?) -> String
+        def payload: (Datadog::CI::TestSession test_session) -> String
       end
     end
   end

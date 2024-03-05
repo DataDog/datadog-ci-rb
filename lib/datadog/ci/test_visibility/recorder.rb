@@ -193,8 +193,7 @@ module Datadog
         def configure_library(test_session)
           return unless itr_enabled?
           # TODO: error handling when request failed - disable ITR runner
-          # TODO: need to pass runtime information
-          # TODO: disable ITR runner if itr_enabled is false in settings
+          # TODO: configure ITR runner based on response
           @api_client.fetch_library_settings(test_session)
         end
 

@@ -9,6 +9,8 @@ module Datadog
     module Transport
       # Datadog API client
       # Calls settings endpoint to fetch library settings for given service and env
+      #
+      # TODO: Rename ApiClient to SettingsApiClient
       class ApiClient
         def initialize(api: nil, dd_env: nil)
           @api = api
@@ -19,25 +21,32 @@ module Datadog
           # TODO: return error response if api is not present
           api = @api
           return {} unless api
-          # TODO: id generation
-          # TODO: runtime information is required for payload
           # TODO: return error response - use some wrapper from ddtrace as an example
           api.api_request(
             path: Ext::Transport::DD_API_SETTINGS_PATH,
-            payload: settings_payload(service: test_session.service)
+            payload: payload(test_session)
           )
         end
 
         private
 
-        def settings_payload(service:)
+        def payload(test_session)
           {
-            data: {
-              id: Datadog::Core::Environment::Identity.id,
-              type: Ext::Transport::DD_API_SETTINGS_TYPE,
-              attributes: {
-                service: service,
-                env: @dd_env
+            "data" => {
+              "id" => Datadog::Core::Environment::Identity.id,
+              "type" => Ext::Transport::DD_API_SETTINGS_TYPE,
+              "attributes" => {
+                "service" => test_session.service,
+                "env" => @dd_env,
+                "repository_url" => test_session.git_repository_url,
+                "branch" => test_session.git_branch,
+                "sha" => test_session.git_commit_sha,
+                "configurations" => {
+                  "os.platform" => test_session.os_platform,
+                  "os.arch" => test_session.os_architecture,
+                  "runtime.name" => test_session.runtime_name,
+                  "runtime.version" => test_session.runtime_version
+                }
               }
             }
           }.to_json

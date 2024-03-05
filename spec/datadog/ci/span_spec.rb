@@ -212,4 +212,60 @@ RSpec.describe Datadog::CI::Span do
       expect(span.type).to eq("test")
     end
   end
+
+  describe "#git_repository_url" do
+    it "returns the git repository URL" do
+      expect(tracer_span).to receive(:get_tag).with("git.repository_url").and_return("url")
+
+      expect(span.git_repository_url).to eq("url")
+    end
+  end
+
+  describe "#git_commit_sha" do
+    it "returns the git commit SHA" do
+      expect(tracer_span).to receive(:get_tag).with("git.commit.sha").and_return("sha")
+
+      expect(span.git_commit_sha).to eq("sha")
+    end
+  end
+
+  describe "#git_branch" do
+    it "returns the git branch" do
+      expect(tracer_span).to receive(:get_tag).with("git.branch").and_return("branch")
+
+      expect(span.git_branch).to eq("branch")
+    end
+  end
+
+  describe "#os_architecture" do
+    it "returns the OS architecture" do
+      expect(tracer_span).to receive(:get_tag).with("os.architecture").and_return("arch")
+
+      expect(span.os_architecture).to eq("arch")
+    end
+  end
+
+  describe "#os_platform" do
+    it "returns the OS platform" do
+      expect(tracer_span).to receive(:get_tag).with("os.platform").and_return("platform")
+
+      expect(span.os_platform).to eq("platform")
+    end
+  end
+
+  describe "#runtime_name" do
+    it "returns the runtime name" do
+      expect(tracer_span).to receive(:get_tag).with("runtime.name").and_return("name")
+
+      expect(span.runtime_name).to eq("name")
+    end
+  end
+
+  describe "#runtime_version" do
+    it "returns the runtime version" do
+      expect(tracer_span).to receive(:get_tag).with("runtime.version").and_return("version")
+
+      expect(span.runtime_version).to eq("version")
+    end
+  end
 end
