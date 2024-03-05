@@ -12,7 +12,6 @@ require_relative "../codeowners/parser"
 require_relative "../ext/app_types"
 require_relative "../ext/test"
 require_relative "../ext/environment"
-require_relative "../transport/api_client"
 require_relative "../utils/git"
 
 require_relative "../span"
@@ -30,7 +29,7 @@ module Datadog
         attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
         def initialize(
-          itr:, api_client:, test_suite_level_visibility_enabled: false,
+          itr:, remote_settings_api:, test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Utils::Git.root).parse
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
@@ -42,7 +41,7 @@ module Datadog
           @codeowners = codeowners
 
           @itr = itr
-          @api_client = api_client
+          @remote_settings_api = remote_settings_api
         end
 
         def start_test_session(service: nil, tags: {})
@@ -194,7 +193,7 @@ module Datadog
           # this will change when EFD is implemented
           return unless itr_enabled?
 
-          remote_configuration = @api_client.fetch_library_settings(test_session)
+          remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
           @itr.configure(remote_configuration.payload)
         end
 

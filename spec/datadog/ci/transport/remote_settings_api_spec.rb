@@ -1,6 +1,6 @@
-require_relative "../../../../lib/datadog/ci/transport/api_client"
+require_relative "../../../../lib/datadog/ci/transport/remote_settings_api"
 
-RSpec.describe Datadog::CI::Transport::ApiClient do
+RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
 

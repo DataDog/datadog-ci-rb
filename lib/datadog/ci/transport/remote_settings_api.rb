@@ -11,9 +11,7 @@ module Datadog
     module Transport
       # Datadog API client
       # Calls settings endpoint to fetch library settings for given service and env
-      #
-      # TODO: Rename ApiClient to SettingsApiClient
-      class ApiClient
+      class RemoteSettingsApi
         class Response
           def initialize(http_response)
             @http_response = http_response

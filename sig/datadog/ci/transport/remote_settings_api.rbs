@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module Transport
-      class ApiClient
+      class RemoteSettingsApi
         class Response
           @http_response: Datadog::Core::Transport::HTTP::Adapters::Net::Response?
           @json: Hash[String, untyped]?

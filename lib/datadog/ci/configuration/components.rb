@@ -9,6 +9,7 @@ require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
+require_relative "../transport/remote_settings_api"
 
 module Datadog
   module CI
@@ -74,7 +75,7 @@ module Datadog
             enabled: settings.ci.enabled && settings.ci.itr_enabled
           )
 
-          api_client = Transport::ApiClient.new(
+          remote_settings_api = Transport::RemoteSettingsApi.new(
             api: test_visibility_api,
             dd_env: settings.env
           )
@@ -83,7 +84,7 @@ module Datadog
           @ci_recorder = TestVisibility::Recorder.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             itr: itr,
-            api_client: api_client
+            remote_settings_api: remote_settings_api
           )
         end
 
