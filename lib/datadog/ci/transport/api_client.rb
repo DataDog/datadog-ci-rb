@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+
 require "datadog/core/environment/identity"
 
 require_relative "../ext/transport"
@@ -12,19 +14,52 @@ module Datadog
       #
       # TODO: Rename ApiClient to SettingsApiClient
       class ApiClient
+        class Response
+          def initialize(http_response)
+            @http_response = http_response
+            @json = nil
+          end
+
+          def ok?
+            resp = @http_response
+            !resp.nil? && resp.ok?
+          end
+
+          def payload
+            return @json if @json
+
+            resp = @http_response
+            return default_payload if resp.nil? || !resp.ok?
+
+            begin
+              @json = JSON.parse(resp.payload).dig("data", "attributes")
+            rescue JSON::ParserError => e
+              Datadog.logger.error("Failed to parse settings response payload: #{e}. Payload was: #{resp.payload}")
+              @json = default_payload
+            end
+          end
+
+          private
+
+          def default_payload
+            {"itr_enabled" => false}
+          end
+        end
+
         def initialize(api: nil, dd_env: nil)
           @api = api
           @dd_env = dd_env
         end
 
         def fetch_library_settings(test_session)
-          # TODO: return error response if api is not present
           api = @api
-          return {} unless api
-          # TODO: return error response - use some wrapper from ddtrace as an example
-          api.api_request(
-            path: Ext::Transport::DD_API_SETTINGS_PATH,
-            payload: payload(test_session)
+          return Response.new(nil) unless api
+
+          Response.new(
+            api.api_request(
+              path: Ext::Transport::DD_API_SETTINGS_PATH,
+              payload: payload(test_session)
+            )
           )
         end
 

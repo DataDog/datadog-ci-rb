@@ -2,12 +2,25 @@ module Datadog
   module CI
     module Transport
       class ApiClient
+        class Response
+          @http_response: Datadog::Core::Transport::HTTP::Adapters::Net::Response?
+          @json: Hash[String, untyped]?
+
+          def initialize: (Datadog::Core::Transport::HTTP::Adapters::Net::Response? http_response) -> void
+
+          def ok?: () -> bool
+
+          private
+
+          def default_payload: () -> Hash[String, untyped]
+        end
+
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
 
         def initialize: (?api: Datadog::CI::Transport::Api::Base?, ?dd_env: String?) -> void
 
-        def fetch_library_settings: (Datadog::CI::TestSession test_session) -> untyped
+        def fetch_library_settings: (Datadog::CI::TestSession test_session) -> Response
 
         private
 

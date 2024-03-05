@@ -4,7 +4,7 @@ RSpec.describe Datadog::CI::Transport::ApiClient do
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
 
-  subject { described_class.new(api: api, dd_env: dd_env) }
+  subject(:client) { described_class.new(api: api, dd_env: dd_env) }
 
   describe "#fetch_library_settings" do
     let(:service) { "service" }
@@ -26,7 +26,7 @@ RSpec.describe Datadog::CI::Transport::ApiClient do
     let(:path) { Datadog::CI::Ext::Transport::DD_API_SETTINGS_PATH }
 
     it "requests the settings" do
-      subject.fetch_library_settings(test_session)
+      client.fetch_library_settings(test_session)
 
       expect(api).to have_received(:api_request) do |args|
         expect(args[:path]).to eq(path)
@@ -48,6 +48,90 @@ RSpec.describe Datadog::CI::Transport::ApiClient do
         expect(configurations["os.arch"]).to eq("arch")
         expect(configurations["runtime.name"]).to eq("runtime_name")
         expect(configurations["runtime.version"]).to eq("runtime_version")
+      end
+    end
+
+    context "parsing response" do
+      subject(:response) { client.fetch_library_settings(test_session) }
+
+      context "when api is present" do
+        before do
+          allow(api).to receive(:api_request).and_return(http_response)
+        end
+
+        context "when response is OK" do
+          let(:http_response) do
+            double(
+              "http_response",
+              ok?: true,
+              payload: {
+                "data" => {
+                  "id" => "123",
+                  "type" => Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE,
+                  "attributes" => {
+                    "code_coverage" => true,
+                    "tests_skipping" => false,
+                    "itr_enabled" => true,
+                    "require_git" => false
+                  }
+                }
+              }.to_json
+            )
+          end
+
+          it "parses the response" do
+            expect(response.ok?).to be true
+            expect(response.payload).to eq({
+              "code_coverage" => true,
+              "tests_skipping" => false,
+              "itr_enabled" => true,
+              "require_git" => false
+            })
+          end
+        end
+
+        context "when response is not OK" do
+          let(:http_response) do
+            double(
+              "http_response",
+              ok?: false,
+              payload: ""
+            )
+          end
+
+          it "parses the response" do
+            expect(response.ok?).to be false
+            expect(response.payload).to eq("itr_enabled" => false)
+          end
+        end
+
+        context "when response is OK but JSON is malformed" do
+          let(:http_response) do
+            double(
+              "http_response",
+              ok?: true,
+              payload: "not json"
+            )
+          end
+
+          before do
+            expect(Datadog.logger).to receive(:error).with(/Failed to parse settings response payload/)
+          end
+
+          it "parses the response" do
+            expect(response.ok?).to be true
+            expect(response.payload).to eq("itr_enabled" => false)
+          end
+        end
+      end
+
+      context "when there is no api" do
+        let(:api) { nil }
+
+        it "returns an empty response" do
+          expect(response.ok?).to be false
+          expect(response.payload).to eq("itr_enabled" => false)
+        end
       end
     end
   end
