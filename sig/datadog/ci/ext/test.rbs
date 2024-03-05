@@ -32,6 +32,12 @@ module Datadog
 
         TAG_PARAMETERS: "test.parameters"
 
+        TAG_ITR_TEST_SKIPPING_ENABLED: "test.itr.tests_skipping.enabled"
+
+        TAG_ITR_TEST_SKIPPING_TYPE: "test.itr.tests_skipping.type"
+
+        TAG_CODE_COVERAGE_ENABLED: "test.code_coverage.enabled"
+
         TAG_TEST_SESSION_ID: "_test.session_id"
 
         TAG_TEST_MODULE_ID: "_test.module_id"
@@ -53,6 +59,8 @@ module Datadog
         TAG_SPAN_KIND: "span.kind"
 
         SPAN_KIND_TEST: "test"
+
+        ITR_TEST_SKIPPING_MODE: "test"
 
         module Status
           PASS: "pass"

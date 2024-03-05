@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe Datadog::CI::TestSession do
-  let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true) }
+  let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:recorder) { spy("recorder") }
 
   before { allow_any_instance_of(described_class).to receive(:recorder).and_return(recorder) }
+  subject(:ci_test_session) { described_class.new(tracer_span) }
 
   describe "#finish" do
-    subject(:ci_test_session) { described_class.new(tracer_span) }
-
     it "deactivates the test session" do
       ci_test_session.finish
 
@@ -19,11 +18,9 @@ RSpec.describe Datadog::CI::TestSession do
   describe "#inheritable_tags" do
     subject(:inheritable_tags) { ci_test_session.inheritable_tags }
 
-    let(:ci_test_session) { described_class.new(tracer_span) }
-
     before do
       Datadog::CI::Ext::Test::INHERITABLE_TAGS.each do |tag|
-        allow(tracer_span).to receive(:get_tag).with(tag).and_return("value for #{tag}")
+        tracer_span.set_tag(tag, "value for #{tag}")
       end
     end
 
@@ -39,12 +36,50 @@ RSpec.describe Datadog::CI::TestSession do
   describe "#name" do
     subject(:name) { ci_test_session.name }
 
-    let(:ci_test_session) { described_class.new(tracer_span) }
-
     before do
-      allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_COMMAND).and_return("test command")
+      tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_COMMAND, "test command")
     end
 
     it { is_expected.to eq("test command") }
+  end
+
+  describe "#skipping_tests?" do
+    subject(:skipping_tests?) { ci_test_session.skipping_tests? }
+
+    context "when not set" do
+      it { is_expected.to be false }
+    end
+
+    context "when true" do
+      before { tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, true) }
+
+      it { is_expected.to be true }
+    end
+
+    context "when false" do
+      before { tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, false) }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#code_coverage?" do
+    subject(:code_coverage?) { ci_test_session.code_coverage? }
+
+    context "when not set" do
+      it { is_expected.to be false }
+    end
+
+    context "when true" do
+      before { tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_CODE_COVERAGE_ENABLED, true) }
+
+      it { is_expected.to be true }
+    end
+
+    context "when false" do
+      before { tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_CODE_COVERAGE_ENABLED, false) }
+
+      it { is_expected.to be false }
+    end
   end
 end

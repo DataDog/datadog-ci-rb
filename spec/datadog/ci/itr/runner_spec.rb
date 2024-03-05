@@ -8,14 +8,17 @@ RSpec.describe Datadog::CI::ITR::Runner do
   subject(:runner) { described_class.new(enabled: itr_enabled) }
 
   describe "#configure" do
+    let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
+    let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
+
     before do
-      runner.configure(remote_configuration)
+      runner.configure(remote_configuration, test_session)
     end
 
     context "when remote configuration call failed" do
       let(:remote_configuration) { {"itr_enabled" => false} }
 
-      it "configures the runner" do
+      it "configures the runner and test session" do
         expect(runner.enabled?).to be false
         expect(runner.skipping_tests?).to be false
         expect(runner.code_coverage?).to be false
@@ -29,6 +32,14 @@ RSpec.describe Datadog::CI::ITR::Runner do
         expect(runner.enabled?).to be true
         expect(runner.skipping_tests?).to be false
         expect(runner.code_coverage?).to be true
+      end
+
+      it "sets test session tags" do
+        expect(test_session.skipping_tests?).to be false
+        expect(test_session.code_coverage?).to be true
+        expect(test_session.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE)).to eq(
+          Datadog::CI::Ext::Test::ITR_TEST_SKIPPING_MODE
+        )
       end
     end
 

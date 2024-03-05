@@ -8,7 +8,7 @@ module Datadog
 
         def initialize: (?enabled: bool) -> void
 
-        def configure: (Hash[String, untyped] remote_configuration) -> void
+        def configure: (Hash[String, untyped] remote_configuration, Datadog::CI::TestSession test_session) -> void
 
         def enabled?: () -> bool
 

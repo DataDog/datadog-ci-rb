@@ -194,7 +194,7 @@ module Datadog
           return unless itr_enabled?
 
           remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
-          @itr.configure(remote_configuration.payload)
+          @itr.configure(remote_configuration.payload, test_session)
         end
 
         def skip_tracing(block = nil)

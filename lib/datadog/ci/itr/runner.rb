@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "../ext/test"
 require_relative "../ext/transport"
 
 module Datadog
@@ -17,7 +18,7 @@ module Datadog
           @code_coverage_enabled = false
         end
 
-        def configure(remote_configuration)
+        def configure(remote_configuration, test_session)
           @enabled = convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY, false)
           )
@@ -27,6 +28,14 @@ module Datadog
           @code_coverage_enabled = @enabled && convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY, false)
           )
+
+          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
+          # currently we set this tag when ITR requires collecting code coverage
+          # this will change as soon as we implement total code coverage support in this library
+          test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
+
+          # we skip tests, not suites
+          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
         end
 
         def enabled?

@@ -26,6 +26,14 @@ module Datadog
         get_tag(Ext::Test::TAG_COMMAND)
       end
 
+      def skipping_tests?
+        get_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED) == "true"
+      end
+
+      def code_coverage?
+        get_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED) == "true"
+      end
+
       # Return the test session tags that could be inherited by sub-spans
       # @return [Hash] the tags to be inherited by sub-spans.
       def inheritable_tags
