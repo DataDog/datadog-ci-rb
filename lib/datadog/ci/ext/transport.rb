@@ -24,7 +24,7 @@ module Datadog
         TEST_VISIBILITY_INTAKE_PATH = "/api/v2/citestcycle"
 
         DD_API_HOST_PREFIX = "api"
-        DD_API_SETTINGS_PATH = "/api/v2/ci/libraries/tests/services/setting"
+        DD_API_SETTINGS_PATH = "/api/v2/libraries/tests/services/setting"
         DD_API_SETTINGS_TYPE = "ci_app_test_service_libraries_settings"
         DD_API_SETTINGS_RESPONSE_DIG_KEYS = %w[data attributes].freeze
         DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY = "itr_enabled"
