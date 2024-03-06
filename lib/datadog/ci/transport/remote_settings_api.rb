@@ -63,8 +63,6 @@ module Datadog
             payload: request_payload
           )
 
-          Datadog.logger.debug("Library settings response: #{http_response}")
-
           Response.new(http_response)
         end
 

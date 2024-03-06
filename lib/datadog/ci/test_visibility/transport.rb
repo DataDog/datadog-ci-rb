@@ -55,10 +55,6 @@ module Datadog
 
             response = send_payload(encoded_payload)
 
-            Datadog.logger.debug do
-              "Received server response: #{response.inspect}"
-            end
-
             responses << response
           end
 
