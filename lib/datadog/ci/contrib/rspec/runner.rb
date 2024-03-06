@@ -25,7 +25,7 @@ module Datadog
                 service: datadog_configuration[:service_name]
               )
 
-              test_module = CI.start_test_module(test_session.name) if test_session
+              test_module = CI.start_test_module(Ext::FRAMEWORK)
 
               result = super
               return result unless test_module && test_session
