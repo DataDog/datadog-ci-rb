@@ -50,6 +50,8 @@ module Datadog
         TAG_SPAN_KIND = "span.kind"
         SPAN_KIND_TEST = "test"
 
+        # could be either "test" or "suite" depending on whether we skip individual tests or whole suites
+        # we use test skipping for Ruby
         ITR_TEST_SKIPPING_MODE = "test"
 
         # test status as recognized by Datadog

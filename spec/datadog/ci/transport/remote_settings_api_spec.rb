@@ -39,6 +39,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
         attributes = data["attributes"]
         expect(attributes["service"]).to eq(service)
         expect(attributes["env"]).to eq(dd_env)
+        expect(attributes["test_level"]).to eq("test")
         expect(attributes["repository_url"]).to eq("repository_url")
         expect(attributes["branch"]).to eq("branch")
         expect(attributes["sha"]).to eq("commit_sha")
