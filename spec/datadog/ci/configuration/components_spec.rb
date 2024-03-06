@@ -1,3 +1,7 @@
+# frozen_string_literal: true
+
+require_relative "../../../../lib/datadog/ci/configuration/components"
+
 RSpec.describe Datadog::CI::Configuration::Components do
   context "when used to extend Datadog::Core::Configuration::Components" do
     subject(:components) do
@@ -33,30 +37,15 @@ RSpec.describe Datadog::CI::Configuration::Components do
     describe "::new" do
       context "when #ci" do
         before do
-          # Stub CI mode behavior
-          allow(settings.ci)
-            .to receive(:enabled)
-            .and_return(enabled)
+          # Configure CI mode
+          settings.ci.enabled = enabled
+          settings.ci.agentless_mode_enabled = agentless_enabled
 
-          allow(settings.ci)
-            .to receive(:agentless_mode_enabled)
-            .and_return(agentless_enabled)
-
-          allow(settings.ci)
-            .to receive(:force_test_level_visibility)
-            .and_return(force_test_level_visibility)
-
-          allow(settings.ci)
-            .to receive(:agentless_url)
-            .and_return(agentless_url)
-
-          allow(settings)
-            .to receive(:site)
-            .and_return(dd_site)
-
-          allow(settings)
-            .to receive(:api_key)
-            .and_return(api_key)
+          settings.ci.force_test_level_visibility = force_test_level_visibility
+          settings.ci.agentless_url = agentless_url
+          settings.ci.itr_enabled = itr_enabled
+          settings.site = dd_site
+          settings.api_key = api_key
 
           negotiation = double(:negotiation)
 
@@ -74,22 +63,19 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
           # Spy on test mode behavior
           allow(settings.tracing.test_mode)
-            .to receive(:enabled=)
+            .to receive(:enabled=).and_call_original
 
           allow(settings.tracing.test_mode)
-            .to receive(:trace_flush=)
+            .to receive(:trace_flush=).and_call_original
 
           allow(settings.tracing.test_mode)
-            .to receive(:writer_options=)
+            .to receive(:writer_options=).and_call_original
 
           allow(settings.tracing.test_mode)
-            .to receive(:async=)
+            .to receive(:async=).and_call_original
 
-          allow(settings.ci)
-            .to receive(:enabled=)
-
-          allow(settings.ci)
-            .to receive(:force_test_level_visibility=)
+          allow(Datadog.logger)
+            .to receive(:debug)
 
           allow(Datadog.logger)
             .to receive(:warn)
@@ -110,6 +96,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:force_test_level_visibility) { false }
         let(:evp_proxy_v2_supported) { false }
         let(:evp_proxy_v4_supported) { false }
+        let(:itr_enabled) { false }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -119,6 +106,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
           end
 
           context "when #force_test_level_visibility" do
+            let(:evp_proxy_v2_supported) { true }
+
             context "is false" do
               it "creates a CI recorder with test_suite_level_visibility_enabled=true" do
                 expect(components.ci_recorder).to be_kind_of(Datadog::CI::TestVisibility::Recorder)
@@ -173,7 +162,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
               end
 
               context "and when agent does not support EVP proxy" do
-                it "falls back to default transport and disables test suite level visibility" do
+                let(:itr_enabled) { true }
+
+                it "falls back to default transport and disables test suite level visibility and ITR" do
                   expect(settings.tracing.test_mode)
                     .to have_received(:enabled=)
                     .with(true)
@@ -182,13 +173,14 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     .to have_received(:trace_flush=)
                     .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Partial))
 
-                  expect(settings.ci)
-                    .to have_received(:force_test_level_visibility=)
-                    .with(true)
+                  expect(settings.ci.force_test_level_visibility).to eq(true)
+                  expect(settings.ci.itr_enabled).to eq(false)
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
                     expect(options[:transport]).to be_nil
                   end
+
+                  expect(components.ci_recorder.itr_enabled?).to eq(false)
                 end
               end
             end
@@ -213,34 +205,53 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
                 end
-              end
 
-              context "when DD_SITE is set to a wrong value" do
-                let(:dd_site) { "wrong" }
+                context "when DD_SITE is set to a wrong value" do
+                  let(:dd_site) { "wrong" }
 
-                it "logs a warning" do
-                  expect(Datadog.logger).to have_received(:warn) do |*_args, &block|
-                    expect(block.call).to match(
-                      /CI VISIBILITY CONFIGURATION Agentless mode was enabled but DD_SITE is not set to one of the following/
-                    )
+                  it "logs a warning" do
+                    expect(Datadog.logger).to have_received(:warn) do |*_args, &block|
+                      expect(block.call).to match(
+                        /CI VISIBILITY CONFIGURATION Agentless mode was enabled but DD_SITE is not set to one of the following/
+                      )
+                    end
                   end
                 end
-              end
 
-              context "when DD_SITE is set to a correct value" do
-                let(:dd_site) { "datadoghq.eu" }
+                context "when DD_SITE is set to a correct value" do
+                  let(:dd_site) { "datadoghq.eu" }
 
-                it "logs a warning" do
-                  expect(Datadog.logger).not_to have_received(:warn)
+                  it "does not log a warning" do
+                    expect(Datadog.logger).not_to have_received(:warn)
+                  end
+                end
+
+                context "when ITR is disabled" do
+                  let(:itr_enabled) { false }
+
+                  it "creates a CI recorder with ITR disabled" do
+                    expect(components.ci_recorder.itr_enabled?).to eq(false)
+                  end
+                end
+
+                context "when ITR is enabled" do
+                  let(:itr_enabled) { true }
+
+                  it "creates a CI recorder with ITR enabled" do
+                    expect(components.ci_recorder.itr_enabled?).to eq(true)
+                  end
                 end
               end
 
               context "when api key is not set" do
                 let(:api_key) { nil }
+                let(:itr_enabled) { true }
 
                 it "logs an error message and disables CI visibility" do
                   expect(Datadog.logger).to have_received(:error)
-                  expect(settings.ci).to have_received(:enabled=).with(false)
+
+                  expect(settings.ci.enabled).to eq(false)
+                  expect(components.ci_recorder.itr_enabled?).to eq(false)
                 end
               end
             end

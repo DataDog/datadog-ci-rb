@@ -45,6 +45,20 @@ module Datadog
 
       def set_parameters: (Hash[String, Object] arguments, ?Hash[String, Object] metadata) -> void
 
+      def git_repository_url: () -> String?
+
+      def git_commit_sha: () -> String?
+
+      def git_branch: () -> String?
+
+      def os_architecture: () -> String?
+
+      def os_platform: () -> String?
+
+      def runtime_name: () -> String?
+
+      def runtime_version: () -> String?
+
       private
 
       def recorder: () -> Datadog::CI::TestVisibility::Recorder

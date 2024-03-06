@@ -40,11 +40,17 @@ module Datadog
               "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
           end
 
-          ResponseDecorator.new(
+          response = ResponseDecorator.new(
             adapter.call(
               build_env(path: path, payload: payload, headers: headers, verb: verb)
             )
           )
+
+          Datadog.logger.debug do
+            "Received server response: #{response.inspect}"
+          end
+
+          response
         end
 
         private

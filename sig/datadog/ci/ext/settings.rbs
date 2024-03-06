@@ -7,6 +7,7 @@ module Datadog
         ENV_AGENTLESS_URL: String
         ENV_EXPERIMENTAL_TEST_SUITE_LEVEL_VISIBILITY_ENABLED: String
         ENV_FORCE_TEST_LEVEL_VISIBILITY: String
+        ENV_ITR_ENABLED: String
 
         DD_SITE_ALLOWLIST: Array[String]
       end

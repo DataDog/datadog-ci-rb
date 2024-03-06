@@ -7,27 +7,23 @@ module Datadog
     module Transport
       module Api
         class Base
-          attr_reader :http
-
-          def initialize(http:)
-            @http = http
+          def api_request(path:, payload:, headers: {}, verb: "post")
+            headers[Ext::Transport::HEADER_CONTENT_TYPE] ||= Ext::Transport::CONTENT_TYPE_JSON
           end
 
-          def request(path:, payload:, verb: "post")
-            http.request(
-              path: path,
-              payload: payload,
-              verb: verb,
-              headers: headers
-            )
+          def citestcycle_request(path:, payload:, headers: {}, verb: "post")
+            headers[Ext::Transport::HEADER_CONTENT_TYPE] ||= Ext::Transport::CONTENT_TYPE_MESSAGEPACK
+          end
+
+          def headers_with_default(headers)
+            request_headers = default_headers
+            request_headers.merge!(headers)
           end
 
           private
 
-          def headers
-            {
-              Ext::Transport::HEADER_CONTENT_TYPE => Ext::Transport::CONTENT_TYPE_MESSAGEPACK
-            }
+          def default_headers
+            {}
           end
         end
       end

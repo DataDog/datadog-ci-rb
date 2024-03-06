@@ -121,6 +121,48 @@ module Datadog
         tracer_span.set_tags(tags)
       end
 
+      # Returns the git repository URL extracted from the environment.
+      # @return [String] the repository URL.
+      def git_repository_url
+        tracer_span.get_tag(Ext::Git::TAG_REPOSITORY_URL)
+      end
+
+      # Returns the latest commit SHA extracted from the environment.
+      # @return [String] the commit SHA of the last commit.
+      def git_commit_sha
+        tracer_span.get_tag(Ext::Git::TAG_COMMIT_SHA)
+      end
+
+      # Returns the git branch name extracted from the environment.
+      # @return [String] the branch.
+      def git_branch
+        tracer_span.get_tag(Ext::Git::TAG_BRANCH)
+      end
+
+      # Returns the OS architecture extracted from the environment.
+      # @return [String] OS arch.
+      def os_architecture
+        tracer_span.get_tag(Ext::Test::TAG_OS_ARCHITECTURE)
+      end
+
+      # Returns the OS platform extracted from the environment.
+      # @return [String] OS platform.
+      def os_platform
+        tracer_span.get_tag(Ext::Test::TAG_OS_PLATFORM)
+      end
+
+      # Returns the runtime name extracted from the environment.
+      # @return [String] runtime name.
+      def runtime_name
+        tracer_span.get_tag(Ext::Test::TAG_RUNTIME_NAME)
+      end
+
+      # Returns the runtime version extracted from the environment.
+      # @return [String] runtime version.
+      def runtime_version
+        tracer_span.get_tag(Ext::Test::TAG_RUNTIME_VERSION)
+      end
+
       def set_environment_runtime_tags
         tracer_span.set_tag(Ext::Test::TAG_OS_ARCHITECTURE, ::RbConfig::CONFIG["host_cpu"])
         tracer_span.set_tag(Ext::Test::TAG_OS_PLATFORM, ::RbConfig::CONFIG["host_os"])

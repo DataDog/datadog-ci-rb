@@ -23,6 +23,13 @@ module Datadog
         TAG_CODEOWNERS = "test.codeowners"
         TAG_PARAMETERS = "test.parameters"
 
+        # ITR tags
+        TAG_ITR_TEST_SKIPPING_ENABLED = "test.itr.tests_skipping.enabled"
+        TAG_ITR_TEST_SKIPPING_TYPE = "test.itr.tests_skipping.type"
+
+        # Code coverage tags
+        TAG_CODE_COVERAGE_ENABLED = "test.code_coverage.enabled"
+
         # those tags are special and used to correlate tests with the test sessions, suites, and modules
         # they are transient and not sent to the backend
         TAG_TEST_SESSION_ID = "_test.session_id"
@@ -42,6 +49,10 @@ module Datadog
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
         SPAN_KIND_TEST = "test"
+
+        # could be either "test" or "suite" depending on whether we skip individual tests or whole suites
+        # we use test skipping for Ruby
+        ITR_TEST_SKIPPING_MODE = "test"
 
         # test status as recognized by Datadog
         module Status

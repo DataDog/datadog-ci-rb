@@ -10,15 +10,48 @@ module Datadog
         class Agentless < Base
           attr_reader :api_key
 
-          def initialize(api_key:, http:)
+          def initialize(api_key:, citestcycle_url:, api_url:)
             @api_key = api_key
+            @citestcycle_http = build_http_client(citestcycle_url, compress: true)
+            @api_http = build_http_client(api_url, compress: false)
+          end
 
-            super(http: http)
+          def citestcycle_request(path:, payload:, headers: {}, verb: "post")
+            super
+
+            perform_request(@citestcycle_http, path: path, payload: payload, headers: headers, verb: verb)
+          end
+
+          def api_request(path:, payload:, headers: {}, verb: "post")
+            super
+
+            perform_request(@api_http, path: path, payload: payload, headers: headers, verb: verb)
           end
 
           private
 
-          def headers
+          def perform_request(http_client, path:, payload:, headers:, verb:)
+            http_client.request(
+              path: path,
+              payload: payload,
+              headers: headers_with_default(headers),
+              verb: verb
+            )
+          end
+
+          def build_http_client(url, compress:)
+            uri = URI.parse(url)
+            raise "Invalid agentless mode URL: #{url}" if uri.host.nil?
+
+            Datadog::CI::Transport::HTTP.new(
+              host: uri.host,
+              port: uri.port,
+              ssl: uri.scheme == "https" || uri.port == 443,
+              compress: compress
+            )
+          end
+
+          def default_headers
             headers = super
             headers[Ext::Transport::HEADER_DD_API_KEY] = api_key
             headers

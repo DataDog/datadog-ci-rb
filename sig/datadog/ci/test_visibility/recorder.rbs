@@ -7,12 +7,14 @@ module Datadog
         @environment_tags: Hash[String, String]
         @local_context: Datadog::CI::TestVisibility::Context::Local
         @global_context: Datadog::CI::TestVisibility::Context::Global
+        @itr: Datadog::CI::ITR::Runner
+        @remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi
         @codeowners: Datadog::CI::Codeowners::Matcher
 
         attr_reader environment_tags: Hash[String, String]
         attr_reader test_suite_level_visibility_enabled: bool
 
-        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher) -> void
+        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, itr: Datadog::CI::ITR::Runner, remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi) -> void
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
@@ -42,7 +44,11 @@ module Datadog
 
         def deactivate_test_suite: (String test_suite_name) -> void
 
+        def itr_enabled?: () -> bool
+
         private
+
+        def configure_library: (Datadog::CI::TestSession test_session) -> void
 
         def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 

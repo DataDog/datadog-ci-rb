@@ -55,10 +55,6 @@ module Datadog
 
             response = send_payload(encoded_payload)
 
-            Datadog.logger.debug do
-              "Received server response: #{response.inspect}"
-            end
-
             responses << response
           end
 
@@ -68,7 +64,7 @@ module Datadog
         private
 
         def send_payload(encoded_payload)
-          api.request(
+          api.citestcycle_request(
             path: Datadog::CI::Ext::Transport::TEST_VISIBILITY_INTAKE_PATH,
             payload: encoded_payload
           )

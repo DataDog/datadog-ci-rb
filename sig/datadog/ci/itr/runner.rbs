@@ -1,0 +1,25 @@
+module Datadog
+  module CI
+    module ITR
+      class Runner
+        @enabled: bool
+        @test_skipping_enabled: bool
+        @code_coverage_enabled: bool
+
+        def initialize: (?enabled: bool) -> void
+
+        def configure: (Hash[String, untyped] remote_configuration, Datadog::CI::TestSession test_session) -> void
+
+        def enabled?: () -> bool
+
+        def skipping_tests?: () -> bool
+
+        def code_coverage: () -> bool
+
+        private
+
+        def convert_to_bool: (untyped value) -> bool
+      end
+    end
+  end
+end

@@ -29,7 +29,7 @@ module Datadog
         attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
         def initialize(
-          test_suite_level_visibility_enabled: false,
+          itr:, remote_settings_api:, test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Utils::Git.root).parse
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
@@ -37,7 +37,11 @@ module Datadog
           @environment_tags = Ext::Environment.tags(ENV).freeze
           @local_context = Context::Local.new
           @global_context = Context::Global.new
+
           @codeowners = codeowners
+
+          @itr = itr
+          @remote_settings_api = remote_settings_api
         end
 
         def start_test_session(service: nil, tags: {})
@@ -49,7 +53,11 @@ module Datadog
             )
             set_session_context(tags, tracer_span)
 
-            build_test_session(tracer_span, tags)
+            test_session = build_test_session(tracer_span, tags)
+
+            configure_library(test_session)
+
+            test_session
           end
         end
 
@@ -175,7 +183,19 @@ module Datadog
           @global_context.deactivate_test_suite!(test_suite_name)
         end
 
+        def itr_enabled?
+          @itr.enabled?
+        end
+
         private
+
+        def configure_library(test_session)
+          # this will change when EFD is implemented
+          return unless itr_enabled?
+
+          remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
+          @itr.configure(remote_configuration.payload, test_session)
+        end
 
         def skip_tracing(block = nil)
           block.call(nil) if block

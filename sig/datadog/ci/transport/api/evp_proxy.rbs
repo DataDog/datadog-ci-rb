@@ -3,18 +3,30 @@ module Datadog
     module Transport
       module Api
         class EvpProxy < Base
+          @agent_intake_http: Datadog::CI::Transport::HTTP
+          @agent_api_http: Datadog::CI::Transport::HTTP
           @container_id: String?
           @path_prefix: String
 
-          def initialize: (http: Datadog::CI::Transport::HTTP, ?path_prefix: String) -> void
+          def initialize: (agent_settings: Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings, ?path_prefix: String) -> void
 
-          def request: (path: String, payload: String, ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+
+          def citestcycle_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+
+          def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 
           private
 
+          def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+
+          def build_http_client: (Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings agent_settings, compress: bool) -> Datadog::CI::Transport::HTTP
+
+          def path_with_prefix: (String path) -> String
+
           def container_id: () -> String?
 
-          def headers: () -> Hash[String, String]
+          def default_headers: () -> Hash[String, String]
         end
       end
     end

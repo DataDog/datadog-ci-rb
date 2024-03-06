@@ -16,7 +16,6 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
     subject { described_class.build_agentless_api(settings) }
 
     let(:api) { double(:api) }
-    let(:http) { double(:http) }
     let(:agentless_url) { nil }
     let(:dd_site) { nil }
     let(:api_key) { "api_key" }
@@ -37,15 +36,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
     end
 
     it "creates and configures http client and Agentless api" do
-      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-        host: "citestcycle-intake.datadoghq.com",
-        port: 443,
-        ssl: true,
-        compress: true
-      ).and_return(http)
-
       expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
-        api_key: "api_key", http: http
+        api_key: "api_key", citestcycle_url: "https://citestcycle-intake.datadoghq.com:443", api_url: "https://api.datadoghq.com:443"
       ).and_return(api)
 
       expect(subject).to eq(api)
@@ -55,15 +47,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       let(:agentless_url) { "http://localhost:5555" }
 
       it "configures transport to use intake URL from settings" do
-        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-          host: "localhost",
-          port: 5555,
-          ssl: false,
-          compress: true
-        ).and_return(http)
-
         expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
-          api_key: "api_key", http: http
+          api_key: "api_key", citestcycle_url: "http://localhost:5555", api_url: "http://localhost:5555"
         ).and_return(api)
 
         expect(subject).to eq(api)
@@ -74,15 +59,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       let(:dd_site) { "datadoghq.eu" }
 
       it "construct intake url using provided host" do
-        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-          host: "citestcycle-intake.datadoghq.eu",
-          port: 443,
-          ssl: true,
-          compress: true
-        ).and_return(http)
-
         expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
-          api_key: "api_key", http: http
+          api_key: "api_key", citestcycle_url: "https://citestcycle-intake.datadoghq.eu:443", api_url: "https://api.datadoghq.eu:443"
         ).and_return(api)
 
         expect(subject).to eq(api)
@@ -94,7 +72,6 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
     subject { described_class.build_evp_proxy_api(settings) }
 
     let(:api) { double(:api) }
-    let(:http) { double(:http) }
 
     let(:agent_settings) do
       Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings.new(
@@ -133,16 +110,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       end
 
       it "creates and configures http client and EvpProxy" do
-        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-          host: "localhost",
-          port: 5555,
-          ssl: false,
-          timeout: 42,
-          compress: false
-        ).and_return(http)
-
         expect(Datadog::CI::Transport::Api::EvpProxy).to(
-          receive(:new).with(http: http, path_prefix: "/evp_proxy/v2/").and_return(api)
+          receive(:new).with(agent_settings: agent_settings, path_prefix: "/evp_proxy/v2/").and_return(api)
         )
 
         expect(subject).to eq(api)
@@ -157,16 +126,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       end
 
       it "creates and configures http client and EvpProxy" do
-        expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
-          host: "localhost",
-          port: 5555,
-          ssl: false,
-          timeout: 42,
-          compress: true
-        ).and_return(http)
-
         expect(Datadog::CI::Transport::Api::EvpProxy).to(
-          receive(:new).with(http: http, path_prefix: "/evp_proxy/v4/").and_return(api)
+          receive(:new).with(agent_settings: agent_settings, path_prefix: "/evp_proxy/v4/").and_return(api)
         )
 
         expect(subject).to eq(api)

@@ -2,86 +2,199 @@ require_relative "../../../../../lib/datadog/ci/transport/api/evp_proxy"
 
 RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
   subject do
-    described_class.new(http: http, path_prefix: path_prefix)
+    described_class.new(agent_settings: agent_settings, path_prefix: path_prefix)
   end
 
-  let(:http) { double(:http) }
-  let(:path_prefix) { "/evp_proxy/v2/" }
+  let(:agent_settings) do
+    Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings.new(
+      adapter: :net_http,
+      ssl: false,
+      hostname: "localhost",
+      port: 5555,
+      uds_path: nil,
+      timeout_seconds: 42,
+      deprecated_for_removal_transport_configuration_proc: nil
+    )
+  end
+  let(:intake_http) { double(:http) }
+  let(:api_http) { double(:http) }
 
-  describe "#request" do
-    let(:container_id) { nil }
+  let(:container_id) { nil }
+  before do
+    expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+  end
+
+  let(:citestcycle_headers) do
+    {
+      "Content-Type" => "application/msgpack",
+      "X-Datadog-EVP-Subdomain" => "citestcycle-intake"
+    }
+  end
+
+  let(:api_headers) do
+    {
+      "Content-Type" => "application/json",
+      "X-Datadog-EVP-Subdomain" => "api"
+    }
+  end
+
+  context "with evp proxy v2" do
+    let(:path_prefix) { Datadog::CI::Ext::Transport::EVP_PROXY_V2_PATH_PREFIX }
 
     before do
-      allow(Datadog::CI::Transport::HTTP).to receive(:new).and_return(http)
-      expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: agent_settings.hostname,
+        port: agent_settings.port,
+        ssl: agent_settings.ssl,
+        timeout: agent_settings.timeout_seconds,
+        compress: false
+      ).and_return(intake_http, api_http)
     end
 
-    context "with path starting from / character" do
-      it "produces correct headers and forwards request to HTTP layer prepending path with evp_proxy" do
-        expect(http).to receive(:request).with(
-          path: "/evp_proxy/v2/path",
-          payload: "payload",
-          verb: "post",
-          headers: {
-            "Content-Type" => "application/msgpack",
-            "X-Datadog-EVP-Subdomain" => "citestcycle-intake"
-          }
-        )
+    describe "#citestcycle_request" do
+      context "with path starting from / character" do
+        it "produces correct headers and forwards request to HTTP layer prepending path with evp_proxy" do
+          expect(intake_http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: citestcycle_headers
+          )
 
-        subject.request(path: "/path", payload: "payload")
+          subject.citestcycle_request(path: "/path", payload: "payload")
+        end
+      end
+
+      context "with path without / in the beginning" do
+        it "constructs evp proxy path correctly" do
+          expect(intake_http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: citestcycle_headers
+          )
+
+          subject.citestcycle_request(path: "path", payload: "payload")
+        end
+      end
+
+      context "with container id" do
+        let(:container_id) { "container-id" }
+
+        it "adds an additional Datadog-Container-ID header" do
+          expect(intake_http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: citestcycle_headers.merge("Datadog-Container-ID" => "container-id")
+          )
+
+          subject.citestcycle_request(path: "/path", payload: "payload")
+        end
+      end
+
+      context "overriding content-type" do
+        it "uses content type header from the request parameter" do
+          expect(intake_http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: citestcycle_headers.merge({"Content-Type" => "application/json"})
+          )
+
+          subject.citestcycle_request(path: "/path", payload: "payload", headers: {"Content-Type" => "application/json"})
+        end
       end
     end
 
-    context "with path without / in the beginning" do
-      it "constructs evp proxy path correctly" do
-        expect(http).to receive(:request).with(
-          path: "/evp_proxy/v2/path",
-          payload: "payload",
-          verb: "post",
-          headers: {
-            "Content-Type" => "application/msgpack",
-            "X-Datadog-EVP-Subdomain" => "citestcycle-intake"
-          }
-        )
+    describe "#api_request" do
+      context "with path starting from / character" do
+        it "produces correct headers and forwards request to HTTP layer prepending path with evp_proxy" do
+          expect(api_http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: api_headers
+          )
 
-        subject.request(path: "path", payload: "payload")
+          subject.api_request(path: "/path", payload: "payload")
+        end
+      end
+
+      context "with path without / in the beginning" do
+        it "constructs evp proxy path correctly" do
+          expect(api_http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: api_headers
+          )
+
+          subject.api_request(path: "path", payload: "payload")
+        end
+      end
+
+      context "with container id" do
+        let(:container_id) { "container-id" }
+
+        it "adds an additional Datadog-Container-ID header" do
+          expect(api_http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: "payload",
+            verb: "post",
+            headers: api_headers.merge("Datadog-Container-ID" => "container-id")
+          )
+
+          subject.api_request(path: "/path", payload: "payload")
+        end
       end
     end
+  end
 
-    context "with different path_prefix" do
-      let(:path_prefix) { "/evp_proxy/v4" }
+  context "with evp proxy v4" do
+    let(:path_prefix) { Datadog::CI::Ext::Transport::EVP_PROXY_V4_PATH_PREFIX }
 
-      it "constructs evp proxy path using this prefix" do
-        expect(http).to receive(:request).with(
+    before do
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: agent_settings.hostname,
+        port: agent_settings.port,
+        ssl: agent_settings.ssl,
+        timeout: agent_settings.timeout_seconds,
+        compress: true
+      ).and_return(intake_http)
+
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: agent_settings.hostname,
+        port: agent_settings.port,
+        ssl: agent_settings.ssl,
+        timeout: agent_settings.timeout_seconds,
+        compress: false
+      ).and_return(api_http)
+    end
+
+    describe "#citestcycle_request" do
+      it "constructs evp proxy path using v4 prefix" do
+        expect(intake_http).to receive(:request).with(
           path: "/evp_proxy/v4/path",
           payload: "payload",
           verb: "post",
-          headers: {
-            "Content-Type" => "application/msgpack",
-            "X-Datadog-EVP-Subdomain" => "citestcycle-intake"
-          }
+          headers: citestcycle_headers
         )
 
-        subject.request(path: "path", payload: "payload")
+        subject.citestcycle_request(path: "path", payload: "payload")
       end
     end
 
-    context "with container id" do
-      let(:container_id) { "container-id" }
-
-      it "adds an additional Datadog-Container-ID header" do
-        expect(http).to receive(:request).with(
-          path: "/evp_proxy/v2/path",
+    describe "#api_request" do
+      it "constructs evp proxy path using v4 prefix" do
+        expect(api_http).to receive(:request).with(
+          path: "/evp_proxy/v4/path",
           payload: "payload",
           verb: "post",
-          headers: {
-            "Content-Type" => "application/msgpack",
-            "X-Datadog-EVP-Subdomain" => "citestcycle-intake",
-            "Datadog-Container-ID" => "container-id"
-          }
+          headers: api_headers
         )
 
-        subject.request(path: "/path", payload: "payload")
+        subject.api_request(path: "path", payload: "payload")
       end
     end
   end
