@@ -34,14 +34,14 @@ module Datadog
           end
 
           def on_test_run_started(event)
-            test_session = CI.start_test_session(
+            CI.start_test_session(
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                 CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s
               },
               service: configuration[:service_name]
             )
-            CI.start_test_module(test_session.name) if test_session
+            CI.start_test_module(Ext::FRAMEWORK)
           end
 
           def on_test_run_finished(event)
