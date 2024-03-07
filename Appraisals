@@ -94,15 +94,31 @@ def self.with_ci_queue_rspec_gem(rspec_versions: 3, ci_queue_versions: 0)
   end
 end
 
+def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context_versions: 2, shoulda_matchers_versions: 6)
+  Array(minitest_versions).each do |minitest_v|
+    Array(shoulda_context_versions).each do |shoulda_context_v|
+      Array(shoulda_matchers_versions).each do |shoulda_matchers_v|
+        appraise "minitest-#{minitest_v}-shoulda-context-#{shoulda_context_v}-shoulda-matchers-#{shoulda_matchers_v}" do
+          gem "minitest", "~> #{minitest_v}"
+          gem "shoulda-context", "~> #{shoulda_context_v}"
+          gem "shoulda-matchers", "~> #{shoulda_matchers_v}"
+        end
+      end
+    end
+  end
+end
+
+ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
+major, minor, = ruby_version.segments
+
+ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
+
 with_minitest_gem
 with_rspec_gem
 with_cucumber_gem(versions: 3..9)
 with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
-
-major, minor, = Gem::Version.new(RUBY_ENGINE_VERSION).segments
-
-ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
+with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
 
 appraisals.each do |appraisal|
   appraisal.name.prepend("#{ruby_runtime}-")
