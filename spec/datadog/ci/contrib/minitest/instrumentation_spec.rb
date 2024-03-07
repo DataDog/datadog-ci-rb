@@ -425,7 +425,7 @@ RSpec.describe "Minitest instrumentation" do
           expect(test_module_span).not_to be_nil
 
           expect(test_module_span.type).to eq("test_module_end")
-          expect(test_module_span.name).to eq(test_command)
+          expect(test_module_span.name).to eq("minitest")
 
           expect(test_module_span).to have_test_tag(:span_kind, "test")
           expect(test_module_span).to have_test_tag(:framework, "minitest")

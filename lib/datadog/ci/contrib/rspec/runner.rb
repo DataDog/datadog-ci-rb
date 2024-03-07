@@ -31,7 +31,6 @@ module Datadog
               return result unless test_module && test_session
 
               if result != 0
-                # TODO: repeating this twice feels clunky, we need to remove test_module API before GA
                 test_module.failed!
                 test_session.failed!
               else

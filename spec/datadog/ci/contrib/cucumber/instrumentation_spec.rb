@@ -145,7 +145,7 @@ RSpec.describe "Cucumber formatter" do
 
     it "creates test module span" do
       expect(test_module_span).not_to be_nil
-      expect(test_module_span.name).to eq(test_command)
+      expect(test_module_span.name).to eq("cucumber")
       expect(test_module_span.service).to eq("jalapenos")
       expect(test_module_span).to have_test_tag(:span_kind, "test")
       expect(test_module_span).to have_test_tag(:framework, "cucumber")
@@ -171,7 +171,7 @@ RSpec.describe "Cucumber formatter" do
 
     it "connects test span to test session, test module, and test suite" do
       expect(first_test_span).to have_test_tag(:test_module_id, test_module_span.id.to_s)
-      expect(first_test_span).to have_test_tag(:module, test_command)
+      expect(first_test_span).to have_test_tag(:module, "cucumber")
       expect(first_test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
       expect(first_test_span).to have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
       expect(first_test_span).to have_test_tag(:suite, first_test_suite_span.name)
