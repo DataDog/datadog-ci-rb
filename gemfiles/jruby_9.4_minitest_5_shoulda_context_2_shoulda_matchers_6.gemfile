@@ -19,7 +19,7 @@ gem "pimpmychangelog", ">= 0.1.2"
 gem "simplecov"
 gem "simplecov-cobertura", "~> 2.1.0"
 gem "minitest", "~> 5"
-gem "shoulda-context", "~> 2"
+gem "shoulda-context", github: "thoughtbot/shoulda-context", branch: "main"
 gem "shoulda-matchers", "~> 6"
 
 group :check do
