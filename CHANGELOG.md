@@ -1,5 +1,19 @@
 ## [Unreleased]
 
+## [0.8.0] - 2024-03-08
+
+### Added
+
+* gzip agent payloads support via evp_proxy/v4 ([#123][])
+
+### Changed
+
+* Add note to README on using VCR ([#122][])
+
+### Fixed
+
+* use framework name as test module name to make test fingerprints stable ([#131][])
+
 ## [0.7.0] - 2024-01-26
 
 ### Added
@@ -150,7 +164,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.7.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.0...main
+[0.8.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.0...v0.5.1
@@ -213,3 +228,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#113]: https://github.com/DataDog/datadog-ci-rb/issues/113
 [#114]: https://github.com/DataDog/datadog-ci-rb/issues/114
 [#115]: https://github.com/DataDog/datadog-ci-rb/issues/115
+[#122]: https://github.com/DataDog/datadog-ci-rb/issues/122
+[#123]: https://github.com/DataDog/datadog-ci-rb/issues/123
+[#131]: https://github.com/DataDog/datadog-ci-rb/issues/131

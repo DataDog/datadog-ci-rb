@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    datadog-ci (0.7.0)
+    datadog-ci (0.8.0)
       msgpack
 
 GEM
