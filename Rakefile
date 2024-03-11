@@ -40,6 +40,9 @@ TEST_METADATA = {
   "minitest" => {
     "minitest-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
   },
+  "activesupport" => {
+    "activesupport-7" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+  },
   "ci_queue_minitest" => {
     "ci-queue-0-minitest-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
   },
@@ -112,6 +115,7 @@ namespace :spec do
     :rspec,
     :minitest,
     :minitest_shoulda_context,
+    :activesupport,
     :ci_queue_minitest,
     :ci_queue_rspec
   ].each do |contrib|

@@ -108,10 +108,16 @@ def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context
   end
 end
 
+def self.with_active_support_gem(versions: 7)
+  Array(versions).each do |activesupport_v|
+    appraise "activesupport-#{activesupport_v}" do
+      gem "activesupport", "~> #{activesupport_v}"
+    end
+  end
+end
+
 ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
 major, minor, = ruby_version.segments
-
-ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
 with_minitest_gem
 with_rspec_gem
@@ -119,6 +125,9 @@ with_cucumber_gem(versions: 3..9)
 with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
 with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
+with_active_support_gem(versions: 7)
+
+ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
 appraisals.each do |appraisal|
   appraisal.name.prepend("#{ruby_runtime}-")
