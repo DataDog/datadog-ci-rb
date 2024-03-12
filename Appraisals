@@ -125,7 +125,7 @@ with_cucumber_gem(versions: 3..9)
 with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
 with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
-with_active_support_gem(versions: 7)
+with_active_support_gem(versions: 4..7)
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
