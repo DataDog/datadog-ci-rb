@@ -1,14 +1,7 @@
-GIT
-  remote: https://github.com/thoughtbot/shoulda-context.git
-  revision: 36d5c380ead406d48587bdbfdc9d8b06a4efce9c
-  branch: main
-  specs:
-    shoulda-context (2.0.0)
-
 PATH
   remote: ..
   specs:
-    datadog-ci (0.7.0)
+    datadog-ci (0.8.0)
       msgpack
 
 GEM
@@ -110,6 +103,7 @@ GEM
       rubocop (>= 1.48.1, < 2.0)
       rubocop-ast (>= 1.30.0, < 2.0)
     ruby-progressbar (1.13.0)
+    shoulda-context (2.0.0)
     shoulda-matchers (6.1.0)
       activesupport (>= 5.2.0)
     simplecov (0.22.0)
@@ -159,7 +153,7 @@ DEPENDENCIES
   rspec
   rspec-collection_matchers
   rspec_junit_formatter
-  shoulda-context!
+  shoulda-context (~> 2)
   shoulda-matchers (~> 6)
   simplecov
   simplecov-cobertura (~> 2.1.0)

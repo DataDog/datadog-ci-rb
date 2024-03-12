@@ -100,7 +100,7 @@ def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context
       Array(shoulda_matchers_versions).each do |shoulda_matchers_v|
         appraise "minitest-#{minitest_v}-shoulda-context-#{shoulda_context_v}-shoulda-matchers-#{shoulda_matchers_v}" do
           gem "minitest", "~> #{minitest_v}"
-          gem "shoulda-context", github: "thoughtbot/shoulda-context", branch: "main"
+          gem "shoulda-context", "~> #{shoulda_context_v}"
           gem "shoulda-matchers", "~> #{shoulda_matchers_v}"
         end
       end
