@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.8.1] - 2024-03-12
+
+### Fixed
+
+* fix minitest instrumentation with mixins ([#134][])
+
 ## [0.8.0] - 2024-03-08
 
 ### Added
@@ -164,7 +170,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.1...main
+[0.8.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.5.1...v0.6.0
@@ -231,3 +238,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#122]: https://github.com/DataDog/datadog-ci-rb/issues/122
 [#123]: https://github.com/DataDog/datadog-ci-rb/issues/123
 [#131]: https://github.com/DataDog/datadog-ci-rb/issues/131
+[#134]: https://github.com/DataDog/datadog-ci-rb/issues/134
