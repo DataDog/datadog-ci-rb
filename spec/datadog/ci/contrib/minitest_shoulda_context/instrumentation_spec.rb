@@ -39,6 +39,15 @@ RSpec.describe "Minitest instrumentation with thoughbot's shoulda-context gem fo
     expect(test_spans).to all have_test_tag(:test_suite_id)
     expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 1)
 
+    expect(test_spans).to have_tag_values_no_order(
+      :name,
+      [
+        "test_: a calculator should add two numbers for the sum. ",
+        "test_: a calculator should multiply two numbers for the product. ",
+        "test_: a calculator should delegate #substract to the #substractor object. "
+      ]
+    )
+
     # every test span is connected to test module and test session
     expect(test_spans).to all have_test_tag(:test_module_id)
     expect(test_spans).to all have_test_tag(:test_session_id)
