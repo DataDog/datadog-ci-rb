@@ -3,6 +3,7 @@
 source "https://rubygems.org"
 
 gem "ddtrace"
+gem "datadog_cov", path: "../../datadog-cov-rb"
 gem "pry"
 gem "rake"
 gem "os"

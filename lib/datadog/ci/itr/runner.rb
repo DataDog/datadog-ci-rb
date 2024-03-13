@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
+require "datadog_cov"
+
 require_relative "../ext/test"
 require_relative "../ext/transport"
+require_relative "../utils/git"
 
 module Datadog
   module CI
@@ -56,7 +59,19 @@ module Datadog
           @code_coverage_enabled
         end
 
+        def start_coverage
+          coverage_collector.start
+        end
+
+        def stop_coverage
+          coverage_collector.stop
+        end
+
         private
+
+        def coverage_collector
+          Thread.current[:ddcov_coverage] ||= DatadogCov::Coverage.new(Utils::Git.root)
+        end
 
         def convert_to_bool(value)
           value.to_s == "true"

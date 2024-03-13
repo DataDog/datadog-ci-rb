@@ -116,7 +116,11 @@ module Datadog
               test = build_test(tracer_span, tags)
 
               @local_context.activate_test(test) do
+                @itr.start_coverage
+
                 block.call(test)
+
+                on_test_end(test)
               end
             end
           else
@@ -124,6 +128,8 @@ module Datadog
 
             test = build_test(tracer_span, tags)
             @local_context.activate_test(test)
+            @itr.start_coverage
+
             test
           end
         end
@@ -168,6 +174,8 @@ module Datadog
         end
 
         def deactivate_test
+          on_test_end(active_test) if active_test
+
           @local_context.deactivate_test
         end
 
@@ -333,6 +341,10 @@ module Datadog
               "Make sure that there is a test session running."
             end
           end
+        end
+
+        def on_test_end(test)
+          p @itr.stop_coverage
         end
       end
     end

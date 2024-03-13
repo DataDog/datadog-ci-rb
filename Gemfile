@@ -8,6 +8,9 @@ gemspec
 # needed to run tests, always present at runtime
 gem "ddtrace"
 
+# code coverage library, to be released...
+gem "datadog_cov", path: "../datadog-cov-rb"
+
 gem "pry"
 gem "rake"
 gem "os"

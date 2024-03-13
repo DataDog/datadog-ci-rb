@@ -1,4 +1,9 @@
 PATH
+  remote: ../../datadog-cov-rb
+  specs:
+    datadog_cov (0.1.0)
+
+PATH
   remote: ..
   specs:
     datadog-ci (0.8.1)
@@ -129,6 +134,7 @@ DEPENDENCIES
   ci-queue (~> 0)
   climate_control
   datadog-ci!
+  datadog_cov!
   ddtrace
   minitest (~> 5)
   minitest-reporters (~> 1)
