@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
+require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}" unless PlatformHelpers.jruby?
+
 require_relative "calculator/calculator"
 
 RSpec.describe Datadog::CI::Cov do
   before do
-    if PlatformHelpers.jruby?
-      skip "Code coverage is not supported in JRuby"
-    else
-      require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
-    end
+    skip "Code coverage is not supported in JRuby" if PlatformHelpers.jruby?
   end
 
   def absolute_path(path)
