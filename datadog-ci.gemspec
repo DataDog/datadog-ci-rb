@@ -37,6 +37,7 @@ Gem::Specification.new do |spec|
       ext/**/*
       lib/**/*
     ]].select { |fn| File.file?(fn) } # We don't want directories, only files
+      .reject { |fn| fn.end_with?(".so", ".bundle") } # Exclude local native binary artifacts
 
   spec.require_paths = ["lib"]
 
