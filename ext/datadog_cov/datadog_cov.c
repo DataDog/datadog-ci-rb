@@ -2,9 +2,9 @@
 #include <ruby/debug.h>
 
 // Utils
-static bool prefix(const char *pre, const char *str)
+static int prefix(const char *pre, const char *str)
 {
-  return strncmp(pre, str, strlen(pre)) == 0;
+  return strncmp(pre, str, strlen(pre));
 }
 
 // const
@@ -102,7 +102,7 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
     return;
   }
 
-  if (!prefix(dd_cov_data->root, filename))
+  if (prefix(dd_cov_data->root, filename) != 0)
   {
     return;
   }
