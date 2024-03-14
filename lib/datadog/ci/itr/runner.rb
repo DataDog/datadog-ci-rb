@@ -3,6 +3,8 @@
 require_relative "../ext/test"
 require_relative "../ext/transport"
 
+require_relative "../utils/git"
+
 module Datadog
   module CI
     module ITR
@@ -56,7 +58,29 @@ module Datadog
           @code_coverage_enabled
         end
 
+        def start_coverage
+          collector = coverage_collector
+          collector.start if collector
+        end
+
+        def stop_coverage
+          collector = coverage_collector
+          collector.stop if collector
+        end
+
         private
+
+        def coverage_collector
+          require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+          Thread.current[:dd_coverage_collector] ||= Datadog::CI::Cov.new(root: Utils::Git.root)
+        rescue LoadError => e
+          Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
+
+          @code_coverage_enabled = false
+
+          # TODO: return null object here
+          nil
+        end
 
         def convert_to_bool(value)
           value.to_s == "true"
