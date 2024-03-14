@@ -4,7 +4,7 @@ require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}" unless PlatformHelpers.jr
 
 require_relative "calculator/calculator"
 
-RSpec.describe Datadog::CI::Cov do
+RSpec.describe "Datadog::CI::Cov" do
   before do
     skip "Code coverage is not supported in JRuby" if PlatformHelpers.jruby?
   end
@@ -13,7 +13,7 @@ RSpec.describe Datadog::CI::Cov do
     File.expand_path(File.join(__dir__, path))
   end
 
-  subject { described_class.new(root: root) }
+  subject { Datadog::CI::Cov.new(root: root) }
 
   describe "code coverage collection" do
     let!(:calculator) { Calculator.new }
