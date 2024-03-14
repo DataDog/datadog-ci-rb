@@ -34,10 +34,13 @@ Gem::Specification.new do |spec|
       LICENSE*
       NOTICE
       README.md
+      ext/**/*
       lib/**/*
     ]].select { |fn| File.file?(fn) } # We don't want directories, only files
 
   spec.require_paths = ["lib"]
 
   spec.add_dependency "msgpack"
+
+  spec.extensions = ["ext/datadog_cov/extconf.rb"]
 end
