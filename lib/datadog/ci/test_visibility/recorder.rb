@@ -117,14 +117,22 @@ module Datadog
               test = build_test(tracer_span, tags)
 
               @local_context.activate_test(test) do
-                block.call(test)
+                @itr.start_coverage
+
+                res = block.call(test)
+                on_test_finished(test)
+
+                res
               end
             end
           else
             tracer_span = start_datadog_tracer_span(test_name, span_options)
 
             test = build_test(tracer_span, tags)
+
             @local_context.activate_test(test)
+            @itr.start_coverage
+
             test
           end
         end
@@ -169,6 +177,9 @@ module Datadog
         end
 
         def deactivate_test
+          test = active_test
+          on_test_finished(test) if test
+
           @local_context.deactivate_test
         end
 
@@ -357,6 +368,11 @@ module Datadog
               "Make sure that there is a test session running."
             end
           end
+        end
+
+        # TODO: use kind of event system to notify about test finished?
+        def on_test_finished(_test)
+          @itr.stop_coverage
         end
       end
     end
