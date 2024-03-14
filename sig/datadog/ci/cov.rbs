@@ -1,0 +1,12 @@
+module Datadog
+  module CI
+    class Cov
+
+      def initialize: (root: String, ?mode: Symbol) -> void
+
+      def start: () -> void
+
+      def stop: () -> Hash[String, untyped]
+    end
+  end
+end

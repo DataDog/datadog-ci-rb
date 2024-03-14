@@ -11,7 +11,7 @@ module Datadog
 
         def self.exec_git_command: (String ref) -> String?
 
-        def self.root: -> String?
+        def self.root: -> String
 
         def self.repository_name: -> String
 

@@ -14,9 +14,15 @@ module Datadog
 
         def skipping_tests?: () -> bool
 
-        def code_coverage: () -> bool
+        def code_coverage?: () -> bool
+
+        def start_coverage: () -> void
+
+        def stop_coverage: () -> Hash[String, untyped]?
 
         private
+
+        def coverage_collector: () -> Datadog::CI::Cov?
 
         def convert_to_bool: (untyped value) -> bool
       end
