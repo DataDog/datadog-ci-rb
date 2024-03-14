@@ -53,6 +53,8 @@ GEM
     racc (1.7.3-java)
     rainbow (3.1.1)
     rake (13.1.0)
+    rake-compiler (1.2.7)
+      rake
     regexp_parser (2.9.0)
     rexml (3.2.6)
     rspec (3.13.0)
@@ -131,6 +133,7 @@ DEPENDENCIES
   pimpmychangelog (>= 0.1.2)
   pry
   rake
+  rake-compiler
   rspec (~> 3)
   rspec-collection_matchers
   rspec_junit_formatter
