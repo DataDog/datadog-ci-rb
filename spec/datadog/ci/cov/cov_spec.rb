@@ -5,6 +5,12 @@ require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 require_relative "calculator/calculator"
 
 RSpec.describe Datadog::CI::Cov do
+  before do
+    if PlatformHelpers.jruby?
+      skip "Code coverage is not supported in JRuby"
+    end
+  end
+
   def absolute_path(path)
     File.expand_path(File.join(__dir__, path))
   end

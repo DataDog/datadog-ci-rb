@@ -12,6 +12,7 @@ require_relative "../lib/datadog/ci"
 require_relative "support/gems_helpers"
 require_relative "support/tracer_helpers"
 require_relative "support/span_helpers"
+require_relative "support/platform_helpers"
 
 # shared contexts
 require_relative "support/contexts/ci_mode"
