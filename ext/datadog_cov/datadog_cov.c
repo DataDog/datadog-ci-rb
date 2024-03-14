@@ -82,7 +82,6 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
     rb_raise(rb_eArgError, "mode is invalid");
   }
 
-  printf("MODE IS %d\n", mode);
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
