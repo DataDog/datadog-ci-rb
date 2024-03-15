@@ -3,6 +3,7 @@
 require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}" unless PlatformHelpers.jruby?
 
 require_relative "calculator/calculator"
+require_relative "calculator/code_with_❤️"
 
 RSpec.describe "Datadog::CI::Cov" do
   before do
@@ -34,6 +35,14 @@ RSpec.describe "Datadog::CI::Cov" do
           absolute_path("calculator/operations/add.rb"),
           absolute_path("calculator/operations/subtract.rb")
         )
+      end
+
+      it "does not support files with non-ASCII characters yet due to additional overhead of UTF-8 strings parsing" do
+        subject.start
+        expect(I❤️Ruby.new.call).to eq("I ❤️ Ruby")
+        coverage = subject.stop
+        expect(coverage.size).to eq(1)
+        expect(coverage.keys.first).to include("calculator/code_with_")
       end
     end
 
