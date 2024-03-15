@@ -108,11 +108,12 @@ end
 namespace :spec do
   desc "" # "Explicitly hiding from `rake -T`"
   RSpec::Core::RakeTask.new(:main) do |t, args|
-    t.pattern = "spec/**/*_spec.rb"
-    t.exclude_pattern = "spec/**/{contrib}/**/*_spec.rb,"
-    if RUBY_ENGINE == "jruby"
-      t.exclude_pattern += "spec/**/cov_spec.rb"
+    t.pattern = if RUBY_ENGINE == "jruby"
+      "spec/datadog/**/*_spec.rb"
+    else
+      "spec/datadog/**/*_spec.rb,spec/cov/**/*_spec.rb"
     end
+    t.exclude_pattern = "spec/datadog/**/{contrib}/**/*_spec.rb,"
     t.rspec_opts = args.to_a.join(" ")
   end
 
