@@ -110,6 +110,9 @@ namespace :spec do
   RSpec::Core::RakeTask.new(:main) do |t, args|
     t.pattern = "spec/**/*_spec.rb"
     t.exclude_pattern = "spec/**/{contrib}/**/*_spec.rb,"
+    if RUBY_ENGINE == "jruby"
+      t.exclude_pattern += "spec/**/cov_spec.rb"
+    end
     t.rspec_opts = args.to_a.join(" ")
   end
 
