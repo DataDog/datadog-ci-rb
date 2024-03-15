@@ -37,7 +37,7 @@ RSpec.describe "Datadog::CI::Cov" do
       end
     end
 
-    context "when root is the operations dir" do
+    context "when root is in the subdirectory of the project" do
       let(:root) { absolute_path("calculator/operations") }
 
       it "collects code coverage including operations only" do

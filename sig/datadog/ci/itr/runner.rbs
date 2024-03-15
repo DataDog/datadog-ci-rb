@@ -25,6 +25,8 @@ module Datadog
         def coverage_collector: () -> Datadog::CI::Cov?
 
         def convert_to_bool: (untyped value) -> bool
+
+        def load_datadog_cov!: () -> void
       end
     end
   end
