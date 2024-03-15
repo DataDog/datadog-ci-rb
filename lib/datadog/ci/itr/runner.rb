@@ -43,6 +43,8 @@ module Datadog
           # we skip tests, not suites
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
 
+          load_datadog_cov! if @code_coverage_enabled
+
           Datadog.logger.debug("Configured ITR Runner with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
         end
 
@@ -59,11 +61,15 @@ module Datadog
         end
 
         def start_coverage
+          return if !enabled? || !code_coverage?
+
           collector = coverage_collector
           collector.start if collector
         end
 
         def stop_coverage
+          return if !enabled? || !code_coverage?
+
           collector = coverage_collector
           collector.stop if collector
         end
@@ -71,15 +77,15 @@ module Datadog
         private
 
         def coverage_collector
-          require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
           Thread.current[:dd_coverage_collector] ||= Datadog::CI::Cov.new(root: Utils::Git.root)
+        end
+
+        def load_datadog_cov!
+          require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
 
           @code_coverage_enabled = false
-
-          # TODO: return null object here
-          nil
         end
 
         def convert_to_bool(value)
