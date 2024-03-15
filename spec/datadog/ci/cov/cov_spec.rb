@@ -37,6 +37,21 @@ RSpec.describe "Datadog::CI::Cov" do
       end
     end
 
+    context "when root is in deeply nested dir" do
+      let(:root) { absolute_path("calculator/operations/suboperations") }
+
+      it "does not fail but also does not collect coverages" do
+        subject.start
+
+        expect(calculator.add(1, 2)).to eq(3)
+        expect(calculator.subtract(1, 2)).to eq(-1)
+
+        coverage = subject.stop
+
+        expect(coverage.size).to eq(0)
+      end
+    end
+
     context "when root is in the subdirectory of the project" do
       let(:root) { absolute_path("calculator/operations") }
 
@@ -67,6 +82,68 @@ RSpec.describe "Datadog::CI::Cov" do
         coverage = subject.stop
         expect(coverage.size).to eq(1)
         expect(coverage.keys).to include(absolute_path("calculator/operations/subtract.rb"))
+      end
+
+      it "does not track coverage when stopped" do
+        subject.start
+        expect(calculator.add(1, 2)).to eq(3)
+        subject.stop
+
+        expect(calculator.subtract(1, 2)).to eq(-1)
+
+        subject.start
+        expect(calculator.multiply(1, 2)).to eq(2)
+        coverage = subject.stop
+        expect(coverage.size).to eq(1)
+        expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+      end
+
+      it "tracks coverage in mixins" do
+        subject.start
+        expect(calculator.divide(6, 3)).to eq(2)
+        coverage = subject.stop
+        expect(coverage.size).to eq(2)
+        expect(coverage.keys).to include(absolute_path("calculator/operations/divide.rb"))
+        expect(coverage.keys).to include(absolute_path("calculator/operations/helpers/calculator_logger.rb"))
+      end
+
+      context "multi threaded execution" do
+        def thread_local_cov
+          Thread.current[:datadog_ci_cov] ||= Datadog::CI::Cov.new(root: root)
+        end
+
+        it "collects coverage for each thread separately" do
+          t1 = Thread.new do
+            cov = thread_local_cov
+            cov.start
+
+            sleep 0.1
+            expect(calculator.add(1, 2)).to eq(3)
+            sleep 0.1
+            expect(calculator.multiply(1, 2)).to eq(2)
+            sleep 0.1
+
+            coverage = cov.stop
+            expect(coverage.size).to eq(2)
+            expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
+            expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+          end
+
+          t2 = Thread.new do
+            cov = thread_local_cov
+            cov.start
+
+            sleep 0.1
+            expect(calculator.subtract(1, 2)).to eq(-1)
+            sleep 0.1
+
+            coverage = cov.stop
+            expect(coverage.size).to eq(1)
+            expect(coverage.keys).to include(absolute_path("calculator/operations/subtract.rb"))
+          end
+
+          [t1, t2].each(&:join)
+        end
       end
     end
   end
