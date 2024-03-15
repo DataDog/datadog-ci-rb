@@ -107,9 +107,7 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
     return;
   }
 
-  unsigned long len_filename = strlen(filename);
-
-  VALUE rb_str_source_file = rb_str_new(filename, len_filename);
+  VALUE rb_str_source_file = rb_str_freeze(rb_str_new2(filename));
 
   if (dd_cov_data->mode == DD_COV_TARGET_FILES)
   {
