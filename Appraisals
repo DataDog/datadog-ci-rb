@@ -116,6 +116,20 @@ def self.with_active_support_gem(versions: 7)
   end
 end
 
+def with_active_support_shoulda_context_gem(activesupport_versions: 7, shoulda_context_versions: 2, shoulda_matchers_versions: 6)
+  Array(activesupport_versions).each do |activesupport_v|
+    Array(shoulda_context_versions).each do |shoulda_context_v|
+      Array(shoulda_matchers_versions).each do |shoulda_matchers_v|
+        appraise "activesupport-#{activesupport_v}-shoulda-context-#{shoulda_context_v}-shoulda-matchers-#{shoulda_matchers_v}" do
+          gem "activesupport", "~> #{activesupport_v}"
+          gem "shoulda-context", "~> #{shoulda_context_v}"
+          gem "shoulda-matchers", "~> #{shoulda_matchers_v}"
+        end
+      end
+    end
+  end
+end
+
 ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
 major, minor, = ruby_version.segments
 
@@ -126,6 +140,7 @@ with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
 with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
 with_active_support_gem(versions: 4..7)
+with_active_support_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
