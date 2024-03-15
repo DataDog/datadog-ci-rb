@@ -107,6 +107,24 @@ RSpec.describe "Datadog::CI::Cov" do
         expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
       end
 
+      it "does not fail if start called several times" do
+        subject.start
+        expect(calculator.add(1, 2)).to eq(3)
+
+        subject.start
+        coverage = subject.stop
+        expect(coverage.size).to eq(1)
+      end
+
+      it "does not fail if stop called several times" do
+        subject.start
+        expect(calculator.add(1, 2)).to eq(3)
+        coverage = subject.stop
+        expect(coverage.size).to eq(1)
+
+        expect(subject.stop).to eq({})
+      end
+
       it "tracks coverage in mixins" do
         subject.start
         expect(calculator.divide(6, 3)).to eq(2)
