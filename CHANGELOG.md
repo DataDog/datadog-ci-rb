@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.8.2] - 2024-03-19
+
+### Fixed
+
+* assign the single running test suite for a test if none found by test suite name ([#139][])
+
 ## [0.8.1] - 2024-03-12
 
 ### Fixed
@@ -239,3 +245,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#123]: https://github.com/DataDog/datadog-ci-rb/issues/123
 [#131]: https://github.com/DataDog/datadog-ci-rb/issues/131
 [#134]: https://github.com/DataDog/datadog-ci-rb/issues/134
+[#139]: https://github.com/DataDog/datadog-ci-rb/issues/139
