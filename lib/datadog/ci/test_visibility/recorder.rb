@@ -227,6 +227,11 @@ module Datadog
         def build_test(tracer_span, tags)
           test = Test.new(tracer_span)
           set_initial_tags(test, tags)
+
+          # sometimes test suite is not being assigned correctly
+          # fix it by fetching the one single running test suite from the global context
+          fix_test_suite!(test) if test.test_suite_id.nil?
+
           validate_test_suite_level_visibility_correctness(test)
           set_codeowners(test)
 
@@ -292,6 +297,24 @@ module Datadog
           else
             tags[Ext::Test::TAG_SUITE] = name
           end
+        end
+
+        def fix_test_suite!(test)
+          test_suite = @global_context.fetch_single_test_suite
+          unless test_suite
+            Datadog.logger.debug do
+              "Trying to fix test suite for test [#{test.name}] but no single test suite is running."
+            end
+            return
+          end
+
+          Datadog.logger.debug do
+            "For test [#{test.name}]: expected test suite [#{test.test_suite_name}] to be running, " \
+            "but it was not found. Fixing it by assigning test suite [#{test_suite.name}] to the test."
+          end
+
+          test.set_tag(Ext::Test::TAG_TEST_SUITE_ID, test_suite.id.to_s)
+          test.set_tag(Ext::Test::TAG_SUITE, test_suite.name)
         end
 
         def start_datadog_tracer_span(span_name, span_options, &block)

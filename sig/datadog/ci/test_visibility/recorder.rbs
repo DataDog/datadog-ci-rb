@@ -73,6 +73,8 @@ module Datadog
 
         def set_suite_context: (Hash[untyped, untyped] tags, ?span: Datadog::Tracing::SpanOperation, ?name: String) -> void
 
+        def fix_test_suite!: (Datadog::CI::Test test) -> void
+
         def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
 
         def set_codeowners: (Datadog::CI::Test test) -> void

@@ -21,6 +21,14 @@ module Datadog
             end
           end
 
+          def fetch_single_test_suite
+            @mutex.synchronize do
+              return nil if @test_suites.empty? || @test_suites.size > 1
+
+              @test_suites.values.first
+            end
+          end
+
           def fetch_or_activate_test_module(&block)
             @mutex.synchronize do
               @test_module ||= block.call
