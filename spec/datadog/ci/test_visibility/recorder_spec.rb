@@ -310,6 +310,32 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
                   expect(subject).to have_test_tag(:suite, test_suite_name)
                 end
               end
+
+              context "when there is a running test suite but with a different name" do
+                let(:test_suite) do
+                  recorder.start_test_suite("other suite")
+                end
+
+                before do
+                  test_suite
+                end
+
+                it "connects the test span to the running test suite" do
+                  expect(subject).to have_test_tag(:test_suite_id, test_suite.id.to_s)
+                  expect(subject).to have_test_tag(:suite, "other suite")
+                end
+              end
+
+              context "when there are several running test suites with different names" do
+                before do
+                  recorder.start_test_suite("other suite")
+                  recorder.start_test_suite("other other suite")
+                end
+
+                it "does not connect test to test suite" do
+                  expect(subject).not_to have_test_tag(:test_suite_id)
+                end
+              end
             end
           end
         end

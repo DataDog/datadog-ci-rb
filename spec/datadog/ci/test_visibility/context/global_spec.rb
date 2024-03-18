@@ -182,6 +182,43 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Global do
       end
     end
   end
+  describe "#fetch_single_test_suite" do
+    let(:test_suite_name) { "my.suite" }
+    let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: test_suite_name) }
+    let(:test_suite) { Datadog::CI::TestSuite.new(tracer_span) }
+
+    context "when a single test suite is active" do
+      before do
+        subject.fetch_or_activate_test_suite(test_suite_name) { test_suite }
+      end
+
+      it "returns the single active test suite" do
+        result = subject.fetch_single_test_suite
+
+        expect(result).to be(test_suite)
+      end
+    end
+
+    context "when no test suites are running" do
+      it "returns nil" do
+        expect(subject.fetch_single_test_suite).to be_nil
+      end
+    end
+
+    context "when multiple test suites are running" do
+      before do
+        ["suite1", "suite2"].each do |test_suite_name|
+          subject.fetch_or_activate_test_suite(test_suite_name) do
+            Datadog::CI::TestSuite.new(double(Datadog::Tracing::SpanOperation))
+          end
+        end
+      end
+
+      it "returns nil" do
+        expect(subject.fetch_single_test_suite).to be_nil
+      end
+    end
+  end
 
   describe "#fetch_or_activate_test_module" do
     let(:test_module_name) { "my.module" }
