@@ -113,7 +113,7 @@ module Datadog
           end
 
           def finish_span(span, result)
-            if !result.passed? && result.ok?(@config.strict)
+            if !result.passed? && ok?(result, @config.strict)
               span.skipped!(reason: result.message)
             elsif result.passed?
               span.passed!
@@ -184,6 +184,16 @@ module Datadog
             end
 
             nil
+          end
+
+          def ok?(result, strict)
+            # in minor update in Cucumber 9.2.0, the arity of the `ok?` method changed
+            parameters = result.method(:ok?).parameters
+            if parameters == [[:opt, :be_strict]]
+              result.ok?(strict)
+            else
+              result.ok?(strict: strict)
+            end
           end
 
           def configuration

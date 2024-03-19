@@ -47,6 +47,8 @@ module Datadog
 
           def extract_parameters_hash: (untyped test_case) -> Hash[String, String]?
 
+          def ok?: (Cucumber::Core::Test::Result result, untyped strict) -> bool
+
           def configuration: () -> untyped
         end
       end
