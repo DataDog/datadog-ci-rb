@@ -29,10 +29,11 @@ module Datadog
 
           def self.build_evp_proxy_api(settings)
             agent_settings = Datadog::Core::Configuration::AgentSettingsResolver.call(settings)
-            negotiation = Datadog::Core::Remote::Negotiation.new(settings, agent_settings)
-
-            # temporary, remove this when patch will be accepted in Core to make logging configurable
-            negotiation.instance_variable_set(:@logged, {no_config_endpoint: true})
+            negotiation = Datadog::Core::Remote::Negotiation.new(
+              settings,
+              agent_settings,
+              suppress_logging: {no_config_endpoint: true}
+            )
 
             evp_proxy_path_prefix = Ext::Transport::EVP_PROXY_PATH_PREFIXES.find do |path_prefix|
               negotiation.endpoint?(path_prefix)
