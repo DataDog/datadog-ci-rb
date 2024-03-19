@@ -79,6 +79,25 @@ if ENV["DD_ENV"] == "ci"
 end
 ```
 
+> [!IMPORTANT]
+> When using `minitest/autorun` the order of requires matters: `datadog/ci` must be
+> always required before `minitest/autorun`.
+
+Example using `minitest/autorun`
+
+```ruby
+require 'datadog/ci'
+require 'minitest/autorun'
+
+if ENV["DD_ENV"] == "ci"
+  Datadog.configure do |c|
+    c.ci.enabled = true
+    c.service = 'my-ruby-app'
+    c.ci.instrument :minitest
+  end
+end
+```
+
 `options` are the following keyword arguments:
 
 | Key | Description | Default |
