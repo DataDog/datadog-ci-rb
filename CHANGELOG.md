@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [0.8.2] - 2024-03-19
+
+### Fixed
+
+* assign the single running test suite for a test if none found by test suite name ([#139][])
+
 ## [0.8.1] - 2024-03-12
 
 ### Fixed
@@ -170,7 +176,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.2...main
+[0.8.2]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.6.0...v0.7.0
@@ -239,3 +246,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#123]: https://github.com/DataDog/datadog-ci-rb/issues/123
 [#131]: https://github.com/DataDog/datadog-ci-rb/issues/131
 [#134]: https://github.com/DataDog/datadog-ci-rb/issues/134
+[#139]: https://github.com/DataDog/datadog-ci-rb/issues/139
