@@ -2,8 +2,9 @@
 
 require "json"
 
+require "datadog/core/utils/url"
+
 require_relative "base"
-require_relative "../../../utils/url"
 
 module Datadog
   module CI
@@ -79,7 +80,7 @@ module Datadog
             def github_server_url
               return @github_server_url if defined?(@github_server_url)
 
-              @github_server_url ||= Utils::Url.filter_sensitive_info(env["GITHUB_SERVER_URL"])
+              @github_server_url ||= Datadog::Core::Utils::Url.filter_basic_auth(env["GITHUB_SERVER_URL"])
             end
           end
         end

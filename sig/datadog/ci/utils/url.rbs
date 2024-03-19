@@ -1,9 +1,0 @@
-module Datadog
-  module CI
-    module Utils
-      module Url
-        def self.filter_sensitive_info: (String? url) -> String?
-      end
-    end
-  end
-end
