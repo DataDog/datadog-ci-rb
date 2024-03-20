@@ -18,6 +18,18 @@ RSpec.describe "Datadog::CI::Cov" do
 
   describe "code coverage collection" do
     let!(:calculator) { Calculator.new }
+
+    context "when allocating and starting coverage without a root" do
+      it "does not fail" do
+        cov = Datadog::CI::Cov.allocate
+        cov.start
+        expect(calculator.add(1, 2)).to eq(3)
+
+        coverage = cov.stop
+        expect(coverage).to eq({})
+      end
+    end
+
     context "when root is the calculator project dir" do
       let(:root) { absolute_path("calculator") }
 
@@ -42,6 +54,7 @@ RSpec.describe "Datadog::CI::Cov" do
         expect(I❤️Ruby.new.call).to eq("I ❤️ Ruby")
         coverage = subject.stop
         expect(coverage.size).to eq(1)
+        # this string will have a bunch of UTF-8 codepoints in it
         expect(coverage.keys.first).to include("calculator/code_with_")
       end
     end
