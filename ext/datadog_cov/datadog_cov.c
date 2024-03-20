@@ -14,7 +14,7 @@ static int prefix(const char *pre, const char *str)
 // Data structure
 struct dd_cov_data
 {
-  char *root;
+  VALUE root;
   int mode;
   VALUE coverage;
 };
@@ -52,6 +52,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   struct dd_cov_data *dd_cov_data;
   VALUE obj = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
   dd_cov_data->coverage = rb_hash_new();
+  dd_cov_data->root = Qnil;
   return obj;
 }
 
@@ -85,7 +86,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
-  dd_cov_data->root = StringValueCStr(rb_root);
+  dd_cov_data->root = rb_root;
   dd_cov_data->mode = mode;
 
   return Qnil;
@@ -97,12 +98,18 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
   TypedData_Get_Struct(data, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
   const char *filename = rb_sourcefile();
-  if (filename == 0)
+  if (filename == NULL)
   {
     return;
   }
 
-  if (dd_cov_data->root == NULL || prefix(dd_cov_data->root, filename) != 0)
+  if (dd_cov_data->root == Qnil)
+  {
+    return;
+  }
+
+  char *c_root = RSTRING_PTR(dd_cov_data->root);
+  if (c_root == NULL || prefix(c_root, filename) != 0)
   {
     return;
   }
