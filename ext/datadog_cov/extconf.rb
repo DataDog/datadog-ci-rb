@@ -1,3 +1,12 @@
+if RUBY_ENGINE != "ruby" || Gem.win_platform?
+  warn(
+    "WARN: Skipping build of code coverage native extension because of unsupported platform."
+  )
+
+  File.write("Makefile", "all install clean: # dummy makefile that does nothing")
+  exit
+end
+
 require "mkmf"
 
 # Tag the native extension library with the Ruby version and Ruby platform.
