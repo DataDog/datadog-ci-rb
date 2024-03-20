@@ -53,6 +53,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   VALUE obj = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
   dd_cov_data->coverage = rb_hash_new();
   dd_cov_data->root = Qnil;
+  dd_cov_data->mode = DD_COV_TARGET_FILES;
   return obj;
 }
 
