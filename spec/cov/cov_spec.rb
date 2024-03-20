@@ -215,9 +215,9 @@ RSpec.describe "Datadog::CI::Cov" do
 
         expect(coverage.size).to eq(3)
         expect(coverage).to eq({
-          absolute_path("calculator/calculator.rb") => [17, 21],
-          absolute_path("calculator/operations/add.rb") => [5],
-          absolute_path("calculator/operations/subtract.rb") => [5]
+          absolute_path("calculator/calculator.rb") => {17 => true, 21 => true},
+          absolute_path("calculator/operations/add.rb") => {5 => true},
+          absolute_path("calculator/operations/subtract.rb") => {5 => true}
         })
       end
     end
