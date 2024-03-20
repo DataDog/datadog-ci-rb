@@ -153,15 +153,21 @@ RSpec.describe "Datadog::CI::Cov" do
         end
 
         it "collects coverage for each thread separately" do
+          t1_queue = Queue.new
+          t2_queue = Queue.new
+
           t1 = Thread.new do
             cov = thread_local_cov
             cov.start
 
-            sleep 0.1
+            t1_queue << :ready
+            expect(t2_queue.pop).to be(:ready)
+
             expect(calculator.add(1, 2)).to eq(3)
-            sleep 0.1
             expect(calculator.multiply(1, 2)).to eq(2)
-            sleep 0.1
+
+            t1_queue << :done
+            expect(t2_queue.pop).to be :done
 
             coverage = cov.stop
             expect(coverage.size).to eq(2)
@@ -173,9 +179,13 @@ RSpec.describe "Datadog::CI::Cov" do
             cov = thread_local_cov
             cov.start
 
-            sleep 0.1
+            t2_queue << :ready
+            expect(t1_queue.pop).to be(:ready)
+
             expect(calculator.subtract(1, 2)).to eq(-1)
-            sleep 0.1
+
+            t2_queue << :done
+            expect(t1_queue.pop).to be :done
 
             coverage = cov.stop
             expect(coverage.size).to eq(1)
