@@ -102,7 +102,7 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
     return;
   }
 
-  if (prefix(dd_cov_data->root, filename) != 0)
+  if (dd_cov_data->root == NULL || prefix(dd_cov_data->root, filename) != 0)
   {
     return;
   }
