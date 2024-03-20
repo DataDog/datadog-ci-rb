@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [0.8.3] - 2024-03-20
+
+### Fixed
+
+* fix: cucumber-ruby 9.2 includes breaking change for Cucumber::Core::Test::Result ([#145][])
+
+### Changed
+
+* remove temporary hack and use Core::Remote::Negotiation's new constructor param ([#142][])
+* use filter_basic_auth method from Datadog::Core ([#141][])
+
 ## [0.8.2] - 2024-03-19
 
 ### Fixed
@@ -176,7 +187,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 * Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.2...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...main
+[0.8.3]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/DataDog/datadog-ci-rb/compare/v0.7.0...v0.8.0
@@ -247,3 +259,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#131]: https://github.com/DataDog/datadog-ci-rb/issues/131
 [#134]: https://github.com/DataDog/datadog-ci-rb/issues/134
 [#139]: https://github.com/DataDog/datadog-ci-rb/issues/139
+[#141]: https://github.com/DataDog/datadog-ci-rb/issues/141
+[#142]: https://github.com/DataDog/datadog-ci-rb/issues/142
+[#145]: https://github.com/DataDog/datadog-ci-rb/issues/145
