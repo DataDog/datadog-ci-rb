@@ -131,15 +131,12 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
     VALUE rb_lines = rb_hash_aref(dd_cov_data->coverage, rb_str_source_file);
     if (rb_lines == Qnil)
     {
-      rb_lines = rb_ary_new();
+      rb_lines = rb_hash_new();
       rb_hash_aset(dd_cov_data->coverage, rb_str_source_file, rb_lines);
     }
 
     VALUE line_number = INT2FIX(rb_sourceline());
-    if (rb_ary_includes(rb_lines, line_number) == Qfalse)
-    {
-      rb_ary_push(rb_lines, line_number);
-    }
+    rb_hash_aset(rb_lines, line_number, Qtrue);
   }
 }
 
