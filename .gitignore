@@ -20,3 +20,6 @@ Gemfile-*.lock
 lib/**/*.bundle
 lib/**/*.so
 lib/**/*.o
+lib/**/*.dylib
+lib/**/*.dll
+

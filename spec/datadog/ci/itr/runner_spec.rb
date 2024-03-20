@@ -30,7 +30,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       it "configures the runner" do
         expect(runner.enabled?).to be true
         expect(runner.skipping_tests?).to be false
-        expect(runner.code_coverage?).to be(!PlatformHelpers.jruby? && true) # code coverage is not supported in JRuby
+        expect(runner.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
       end
 
       it "sets test session tags" do
@@ -48,7 +48,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       it "configures the runner" do
         expect(runner.enabled?).to be true
         expect(runner.skipping_tests?).to be false
-        expect(runner.code_coverage?).to be(!PlatformHelpers.jruby? && true) # code coverage is not supported in JRuby
+        expect(runner.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
       end
     end
 
