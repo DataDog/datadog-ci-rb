@@ -1,13 +1,7 @@
 #include <ruby.h>
 #include <ruby/debug.h>
 
-// Utils
-static int prefix(const char *pre, const char *str)
-{
-  return strncmp(pre, str, strlen(pre));
-}
-
-// const
+// constants
 #define DD_COV_TARGET_FILES 1
 #define DD_COV_TARGET_LINES 2
 
@@ -110,7 +104,14 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
   }
 
   char *c_root = RSTRING_PTR(dd_cov_data->root);
-  if (c_root == NULL || prefix(c_root, filename) != 0)
+  if (c_root == NULL)
+  {
+    return;
+  }
+  long root_len = RSTRING_LEN(dd_cov_data->root);
+  // check that root is a prefix of the filename
+  // so this file is located under the given root
+  if (strncmp(c_root, filename, root_len) != 0)
   {
     return;
   }
