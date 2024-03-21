@@ -371,8 +371,8 @@ module Datadog
         end
 
         # TODO: use kind of event system to notify about test finished?
-        def on_test_finished(_test)
-          @itr.stop_coverage
+        def on_test_finished(test)
+          @itr.stop_coverage(test)
         end
       end
     end
