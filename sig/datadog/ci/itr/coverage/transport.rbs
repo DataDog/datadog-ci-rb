@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module ITR
+      module Coverage
+        class Transport
+          DEFAULT_MAX_PAYLOAD_SIZE: untyped
+
+          attr_reader api: Datadog::CI::Transport::Api::Base
+          attr_reader max_payload_size: Integer
+
+          @api: Datadog::CI::Transport::Api::Base
+          @max_payload_size: Integer
+
+          def initialize: (api: Datadog::CI::Transport::Api::Base, ?max_payload_size: Integer) -> void
+
+          def send_events: (Array[Datadog::CI::ITR::Coverage::Event] events) -> nil
+        end
+      end
+    end
+  end
+end

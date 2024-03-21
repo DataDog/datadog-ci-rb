@@ -66,7 +66,7 @@ module Datadog
           coverage_collector&.start
         end
 
-        def stop_coverage
+        def stop_coverage(_test)
           return if !enabled? || !code_coverage?
 
           coverage_collector&.stop

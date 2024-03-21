@@ -18,7 +18,7 @@ module Datadog
 
         def start_coverage: () -> void
 
-        def stop_coverage: () -> Hash[String, untyped]?
+        def stop_coverage: (Datadog::CI::Test test) -> Hash[String, untyped]?
 
         private
 

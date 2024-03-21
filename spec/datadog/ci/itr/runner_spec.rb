@@ -64,9 +64,13 @@ RSpec.describe Datadog::CI::ITR::Runner do
   end
 
   describe "#start_coverage" do
+    let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
+    let(:test_span) { Datadog::CI::Test.new(tracer_span) }
+
     before do
       runner.configure(remote_configuration, test_session)
     end
+
     context "when code coverage is disabled" do
       let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => false, "tests_skipping" => false} }
 
@@ -74,7 +78,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
         expect(runner).not_to receive(:coverage_collector)
 
         runner.start_coverage
-        expect(runner.stop_coverage).to be_nil
+        expect(runner.stop_coverage(test_span)).to be_nil
       end
     end
 
@@ -85,7 +89,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
         expect(runner).not_to receive(:coverage_collector)
 
         runner.start_coverage
-        expect(runner.stop_coverage).to be_nil
+        expect(runner.stop_coverage(test_span)).to be_nil
       end
     end
 
@@ -101,7 +105,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
 
         runner.start_coverage
         expect(1 + 1).to eq(2)
-        coverage = runner.stop_coverage
+        coverage = runner.stop_coverage(test_span)
         expect(coverage.size).to be > 0
       end
     end
@@ -118,7 +122,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
         expect(runner.code_coverage?).to be(false)
 
         runner.start_coverage
-        expect(runner.stop_coverage).to be_nil
+        expect(runner.stop_coverage(test_span)).to be_nil
       end
     end
   end
