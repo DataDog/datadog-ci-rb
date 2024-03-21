@@ -15,3 +15,11 @@ Gemfile-*.lock
 .ruby-version
 .DS_Store
 /test.rb
+
+# Native extension binaries
+lib/**/*.bundle
+lib/**/*.so
+lib/**/*.o
+lib/**/*.dylib
+lib/**/*.dll
+
