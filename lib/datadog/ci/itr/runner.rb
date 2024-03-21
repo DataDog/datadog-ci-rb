@@ -75,7 +75,7 @@ module Datadog
         private
 
         def coverage_collector
-          Thread.current[:dd_coverage_collector] ||= Datadog::CI::Cov.new(root: Utils::Git.root)
+          Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(root: Utils::Git.root)
         end
 
         def load_datadog_cov!

@@ -1,0 +1,16 @@
+module Datadog
+  module CI
+    module ITR
+      module Coverage
+        class DDCov
+
+          def initialize: (root: String, ?mode: Symbol) -> void
+
+          def start: () -> void
+
+          def stop: () -> Hash[String, untyped]
+        end
+      end
+    end
+  end
+end

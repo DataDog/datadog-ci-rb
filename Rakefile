@@ -111,7 +111,7 @@ namespace :spec do
     t.pattern = if RUBY_ENGINE == "jruby"
       "spec/datadog/**/*_spec.rb"
     else
-      "spec/datadog/**/*_spec.rb,spec/cov/**/*_spec.rb"
+      "spec/datadog/**/*_spec.rb,spec/ddcov/**/*_spec.rb"
     end
     t.exclude_pattern = "spec/datadog/**/{contrib}/**/*_spec.rb,"
     t.rspec_opts = args.to_a.join(" ")
