@@ -23,6 +23,9 @@ module Datadog
         TEST_VISIBILITY_INTAKE_HOST_PREFIX = "citestcycle-intake"
         TEST_VISIBILITY_INTAKE_PATH = "/api/v2/citestcycle"
 
+        TEST_COVERAGE_INTAKE_HOST_PREFIX = "citestcov-intake"
+        TEST_COVERAGE_INTAKE_PATH = "/api/v2/citestcov"
+
         DD_API_HOST_PREFIX = "api"
         DD_API_SETTINGS_PATH = "/api/v2/libraries/tests/services/setting"
         DD_API_SETTINGS_TYPE = "ci_app_test_service_libraries_settings"
@@ -35,6 +38,7 @@ module Datadog
 
         CONTENT_TYPE_MESSAGEPACK = "application/msgpack"
         CONTENT_TYPE_JSON = "application/json"
+        CONTENT_TYPE_MULTIPART_FORM_DATA = "multipart/form-data"
         CONTENT_ENCODING_GZIP = "gzip"
       end
     end

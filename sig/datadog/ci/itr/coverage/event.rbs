@@ -7,7 +7,7 @@ module Datadog
 
           @test_module_id: String
 
-          @test_session_id: String
+          @test_suite_id: String
 
           @coverage: Hash[String, untyped]
 
@@ -15,7 +15,7 @@ module Datadog
 
           attr_reader test_module_id: String
 
-          attr_reader test_session_id: String
+          attr_reader test_suite_id: String
 
           attr_reader coverage: Hash[String, untyped]
 
