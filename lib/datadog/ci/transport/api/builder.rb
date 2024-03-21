@@ -24,7 +24,15 @@ module Datadog
             api_url = settings.ci.agentless_url ||
               "https://#{Ext::Transport::DD_API_HOST_PREFIX}.#{dd_site}:443"
 
-            Agentless.new(api_key: settings.api_key, citestcycle_url: citestcycle_url, api_url: api_url)
+            citestcov_url = settings.ci.agentless_url ||
+              "https://#{Ext::Transport::TEST_COVERAGE_INTAKE_HOST_PREFIX}.#{dd_site}:443"
+
+            Agentless.new(
+              api_key: settings.api_key,
+              citestcycle_url: citestcycle_url,
+              api_url: api_url,
+              citestcov_url: citestcov_url
+            )
           end
 
           def self.build_evp_proxy_api(settings)

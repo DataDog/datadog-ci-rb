@@ -5,11 +5,11 @@ module Datadog
     module ITR
       module Coverage
         class Event
-          attr_reader :test_id, :test_module_id, :test_session_id, :coverage
+          attr_reader :test_id, :test_suite_id, :test_session_id, :coverage
 
-          def initialize(test_id:, test_module_id:, test_session_id:, coverage:)
+          def initialize(test_id:, test_suite_id:, test_session_id:, coverage:)
             @test_id = test_id
-            @test_module_id = test_module_id
+            @test_suite_id = test_suite_id
             @test_session_id = test_session_id
             @coverage = coverage
           end

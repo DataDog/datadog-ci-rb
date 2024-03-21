@@ -10,10 +10,11 @@ module Datadog
         class Agentless < Base
           attr_reader :api_key
 
-          def initialize(api_key:, citestcycle_url:, api_url:)
+          def initialize(api_key:, citestcycle_url:, api_url:, citestcov_url:)
             @api_key = api_key
             @citestcycle_http = build_http_client(citestcycle_url, compress: true)
             @api_http = build_http_client(api_url, compress: false)
+            @citestcov_http = build_http_client(citestcov_url, compress: true)
           end
 
           def citestcycle_request(path:, payload:, headers: {}, verb: "post")
@@ -26,6 +27,12 @@ module Datadog
             super
 
             perform_request(@api_http, path: path, payload: payload, headers: headers, verb: verb)
+          end
+
+          def citestcov_request(path:, payload:, headers: {}, verb: "post")
+            super(path: path, payload: payload, headers: headers, verb: verb)
+
+            perform_request(@citestcov_http, path: path, payload: @citestcov_payload, headers: headers, verb: verb)
           end
 
           private
