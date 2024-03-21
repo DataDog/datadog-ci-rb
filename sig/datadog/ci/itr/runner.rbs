@@ -22,7 +22,7 @@ module Datadog
 
         private
 
-        def coverage_collector: () -> Datadog::CI::Cov?
+        def coverage_collector: () -> Datadog::CI::ITR::Coverage::DDCov?
 
         def convert_to_bool: (untyped value) -> bool
 
