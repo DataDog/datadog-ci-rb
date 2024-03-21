@@ -128,6 +128,12 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
   // we need to implement lines coverage
   if (dd_cov_data->mode == DD_COV_TARGET_LINES)
   {
+    int line_number = rb_sourceline();
+    if (line_number <= 0)
+    {
+      return;
+    }
+
     VALUE rb_lines = rb_hash_aref(dd_cov_data->coverage, rb_str_source_file);
     if (rb_lines == Qnil)
     {
@@ -135,8 +141,7 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
       rb_hash_aset(dd_cov_data->coverage, rb_str_source_file, rb_lines);
     }
 
-    VALUE line_number = INT2FIX(rb_sourceline());
-    rb_hash_aset(rb_lines, line_number, Qtrue);
+    rb_hash_aset(rb_lines, INT2FIX(line_number), Qtrue);
   }
 }
 
