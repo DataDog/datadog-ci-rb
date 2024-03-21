@@ -5,7 +5,7 @@ module Datadog
         class Event
           @test_id: String
 
-          @test_module_id: String
+          @test_session_id: String
 
           @test_suite_id: String
 
@@ -13,13 +13,13 @@ module Datadog
 
           attr_reader test_id: String
 
-          attr_reader test_module_id: String
+          attr_reader test_session_id: String
 
           attr_reader test_suite_id: String
 
           attr_reader coverage: Hash[String, untyped]
 
-          def initialize: (test_id: String, test_module_id: String, test_session_id: String, coverage: Hash[String, untyped]) -> void
+          def initialize: (test_id: String, test_suite_id: String, test_session_id: String, coverage: Hash[String, untyped]) -> void
         end
       end
     end
