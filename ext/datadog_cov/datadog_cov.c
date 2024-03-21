@@ -17,6 +17,7 @@ static void dd_cov_mark(void *ptr)
 {
   struct dd_cov_data *dd_cov_data = ptr;
   rb_gc_mark_movable(dd_cov_data->coverage);
+  rb_gc_mark_movable(dd_cov_data->root);
 }
 
 static void dd_cov_free(void *ptr)
@@ -30,6 +31,7 @@ static void dd_cov_compact(void *ptr)
 {
   struct dd_cov_data *dd_cov_data = ptr;
   dd_cov_data->coverage = rb_gc_location(dd_cov_data->coverage);
+  dd_cov_data->root = rb_gc_location(dd_cov_data->root);
 }
 
 const rb_data_type_t dd_cov_data_type = {
