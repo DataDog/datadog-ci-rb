@@ -180,7 +180,9 @@ void Init_datadog_cov(void)
 {
   VALUE mDatadog = rb_define_module("Datadog");
   VALUE mCI = rb_define_module_under(mDatadog, "CI");
-  VALUE cDatadogCov = rb_define_class_under(mCI, "Cov", rb_cObject);
+  VALUE mITR = rb_define_module_under(mCI, "ITR");
+  VALUE mCoverage = rb_define_module_under(mITR, "Coverage");
+  VALUE cDatadogCov = rb_define_class_under(mCoverage, "DDCov", rb_cObject);
 
   rb_define_alloc_func(cDatadogCov, dd_cov_allocate);
 

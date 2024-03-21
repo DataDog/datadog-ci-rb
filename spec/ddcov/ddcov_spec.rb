@@ -1,20 +1,16 @@
 # frozen_string_literal: true
 
-require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}" unless PlatformHelpers.jruby?
+require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
 require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
 
-RSpec.describe "Datadog::CI::Cov" do
-  before do
-    skip "Code coverage is not supported in JRuby" if PlatformHelpers.jruby?
-  end
-
+RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
   def absolute_path(path)
     File.expand_path(File.join(__dir__, path))
   end
 
-  subject { Datadog::CI::Cov.new(root: root, mode: mode) }
+  subject { described_class.new(root: root, mode: mode) }
 
   describe "code coverage collection" do
     let!(:calculator) { Calculator.new }
@@ -24,7 +20,7 @@ RSpec.describe "Datadog::CI::Cov" do
 
       context "when allocating and starting coverage without a root" do
         it "does not fail" do
-          cov = Datadog::CI::Cov.allocate
+          cov = described_class.allocate
           cov.start
           expect(calculator.add(1, 2)).to eq(3)
 
@@ -152,7 +148,7 @@ RSpec.describe "Datadog::CI::Cov" do
 
         context "multi threaded execution" do
           def thread_local_cov
-            Thread.current[:datadog_ci_cov] ||= Datadog::CI::Cov.new(root: root)
+            Thread.current[:datadog_ci_cov] ||= described_class.new(root: root)
           end
 
           it "collects coverage for each thread separately" do
