@@ -84,7 +84,7 @@ RSpec.describe Datadog::CI::ITR::Coverage::Event do
     context "coverage in lines format" do
       let(:coverage) { {"file.rb" => {1 => true, 2 => true, 3 => true}} }
 
-      it "returns a msgpack representation of the event" do
+      it "returns a msgpack representation of the event without lines information" do
         expect(msgpack_json).to eq(
           {
             "test_session_id" => 3,
