@@ -3,7 +3,7 @@ module Datadog
     module ITR
       module Coverage
         class Transport
-          DEFAULT_MAX_PAYLOAD_SIZE: untyped
+          DEFAULT_MAX_PAYLOAD_SIZE: Integer
 
           attr_reader api: Datadog::CI::Transport::Api::Base
           attr_reader max_payload_size: Integer
@@ -24,6 +24,8 @@ module Datadog
           def pack_events: (Array[String] encoded_events) -> String
 
           def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
+
+          def event_too_large?: (Datadog::CI::ITR::Coverage::Event event, String encoded_event) -> bool
         end
       end
     end
