@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require "msgpack"
+
+require_relative "event"
+
 module Datadog
   module CI
     module ITR
