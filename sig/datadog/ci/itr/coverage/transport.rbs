@@ -2,19 +2,7 @@ module Datadog
   module CI
     module ITR
       module Coverage
-        class Transport
-          DEFAULT_MAX_PAYLOAD_SIZE: Integer
-
-          attr_reader api: Datadog::CI::Transport::Api::Base
-          attr_reader max_payload_size: Integer
-
-          @api: Datadog::CI::Transport::Api::Base
-          @max_payload_size: Integer
-
-          def initialize: (api: Datadog::CI::Transport::Api::Base, ?max_payload_size: Integer) -> void
-
-          def send_events: (Array[Datadog::CI::ITR::Coverage::Event] events) -> ::Array[Datadog::CI::Transport::HTTP::ResponseDecorator]
-
+        class Transport < Datadog::CI::Transport::EventPlatformTransport
           private
 
           def send_payload: (String payload) -> ::Datadog::CI::Transport::HTTP::ResponseDecorator
@@ -22,8 +10,6 @@ module Datadog
           def encode_events: (Array[Datadog::CI::ITR::Coverage::Event] events) -> ::Array[String]
 
           def pack_events: (Array[String] encoded_events) -> String
-
-          def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
 
           def event_too_large?: (Datadog::CI::ITR::Coverage::Event event, String encoded_event) -> bool
         end

@@ -14,7 +14,7 @@ module Datadog
 
             DEFAULT_TIMEOUT: 30
 
-            def initialize: (?untyped? hostname, ?untyped? port, **untyped options) -> void
+            def initialize: (untyped agent_settings) -> void
 
             def self.build: (untyped agent_settings) -> untyped
 

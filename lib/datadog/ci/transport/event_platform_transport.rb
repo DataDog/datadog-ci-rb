@@ -42,6 +42,8 @@ module Datadog
 
             responses << response
           end
+
+          responses
         end
 
         private
