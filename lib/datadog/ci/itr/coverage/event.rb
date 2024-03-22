@@ -55,7 +55,7 @@ module Datadog
           end
 
           def to_s
-            "Coverage::Event[test_id=#{test_id}, test_suite_id=#{test_suite_id}, test_session_id=#{test_session_id}]"
+            "Coverage::Event[test_id=#{test_id}, test_suite_id=#{test_suite_id}, test_session_id=#{test_session_id}, coverage=#{coverage}]"
           end
         end
       end

@@ -13,7 +13,17 @@ module Datadog
 
           def initialize: (api: Datadog::CI::Transport::Api::Base, ?max_payload_size: Integer) -> void
 
-          def send_events: (Array[Datadog::CI::ITR::Coverage::Event] events) -> nil
+          def send_events: (Array[Datadog::CI::ITR::Coverage::Event] events) -> ::Array[Datadog::CI::Transport::HTTP::ResponseDecorator]
+
+          private
+
+          def send_payload: (String payload) -> ::Datadog::CI::Transport::HTTP::ResponseDecorator
+
+          def encode_events: (Array[Datadog::CI::ITR::Coverage::Event] events) -> ::Array[String]
+
+          def pack_events: (Array[String] encoded_events) -> String
+
+          def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
         end
       end
     end

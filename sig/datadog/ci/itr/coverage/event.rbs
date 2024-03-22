@@ -20,6 +20,10 @@ module Datadog
           attr_reader coverage: Hash[String, untyped]
 
           def initialize: (test_id: String, test_suite_id: String, test_session_id: String, coverage: Hash[String, untyped]) -> void
+
+          def valid?: () -> bool
+
+          def to_msgpack: (?untyped? packer) -> untyped
         end
       end
     end
