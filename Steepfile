@@ -12,6 +12,7 @@ target :lib do
   library "minitest"
   library "net-http"
   library "zlib"
+  library "securerandom"
 
   repo_path "vendor/rbs"
   library "ddtrace"
