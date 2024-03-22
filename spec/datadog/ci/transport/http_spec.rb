@@ -13,13 +13,14 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     let(:adapter) { instance_double(::Datadog::Core::Transport::HTTP::Adapters::Net) }
 
     before do
+      settings = Datadog::CI::Transport::HTTP::AdapterSettings.new(
+        hostname: transport.host,
+        port: transport.port,
+        timeout_seconds: transport.timeout,
+        ssl: transport.ssl
+      )
       allow(::Datadog::Core::Transport::HTTP::Adapters::Net).to receive(:new)
-        .with(
-          transport.host,
-          transport.port,
-          timeout: transport.timeout,
-          ssl: transport.ssl
-        ).and_return(adapter)
+        .with(settings).and_return(adapter)
     end
   end
 
