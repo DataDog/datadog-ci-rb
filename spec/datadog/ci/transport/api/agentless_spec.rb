@@ -160,5 +160,47 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         subject.api_request(path: "path", payload: "payload")
       end
     end
+
+    describe "#citestcov_request" do
+      before do
+        expect(SecureRandom).to receive(:uuid).and_return("42")
+      end
+
+      let(:expected_headers) do
+        {
+          "DD-API-KEY" => "api_key",
+          "Content-Type" => "multipart/form-data; boundary=42"
+        }
+      end
+
+      let(:expected_payload) do
+        [
+          "--42",
+          'Content-Disposition: form-data; name="event"; filename="event.json"',
+          "Content-Type: application/json",
+          "",
+          '{"dummy":true}',
+          "--42",
+          'Content-Disposition: form-data; name="coverage1"; filename="coverage1.msgpack"',
+          "Content-Type: application/msgpack",
+          "",
+          "payload",
+          "--42--"
+        ].join("\r\n")
+      end
+
+      it "produces correct headers, constructs multipart payload, and forwards request to HTTP layer" do
+        allow(citestcov_http).to receive(:request)
+
+        subject.citestcov_request(path: "path", payload: "payload")
+
+        expect(citestcov_http).to have_received(:request) do |args|
+          expect(args[:path]).to eq("path")
+          expect(args[:verb]).to eq("post")
+          expect(args[:headers]).to eq(expected_headers)
+          expect(args[:payload]).to eq(expected_payload)
+        end
+      end
+    end
   end
 end
