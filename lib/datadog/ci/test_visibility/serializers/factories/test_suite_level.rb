@@ -11,7 +11,7 @@ module Datadog
     module TestVisibility
       module Serializers
         module Factories
-          # This factory takes care of creating citestcycle serializers when test-suite-level visibility is enabled
+          # This factory takes care of creating msgpack serializers when test-suite-level visibility is enabled
           module TestSuiteLevel
             module_function
 
