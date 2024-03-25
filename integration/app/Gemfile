@@ -6,7 +6,4 @@ gem "pry"
 gem "rspec"
 gem "rake"
 gem "cucumber", "~> 7"
-gem "ddtrace"
-
 gem "datadog-ci", path: "/vendor/datadog-ci"
-gem "datadog", github: "Datadog/dd-trace-rb", branch: "2.0"

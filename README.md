@@ -8,17 +8,14 @@
 Datadog's Ruby Library for instrumenting your test and continuous integration pipeline.
 Learn more on our [official website](https://docs.datadoghq.com/tests/) and check out our [documentation for this library](https://docs.datadoghq.com/tests/setup/ruby/?tab=cloudciprovideragentless).
 
-> [!IMPORTANT]
-> The `datadog-ci` gem is currently a component of [`ddtrace`](https://github.com/datadog/dd-trace-rb) and should not be used without it.
->
-> We expect this to change in the future.
-
 ## Installation
 
 Add to your Gemfile.
 
 ```ruby
-gem "ddtrace"
+group :test do
+  gem "datadog-ci"
+end
 ```
 
 ## Usage
