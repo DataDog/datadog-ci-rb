@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    datadog-ci (0.8.3)
+    datadog-ci (1.0.0.beta1)
       datadog (~> 2.0.0.beta1)
       msgpack
 
