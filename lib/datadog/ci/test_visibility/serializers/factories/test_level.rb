@@ -8,7 +8,7 @@ module Datadog
     module TestVisibility
       module Serializers
         module Factories
-          # This factory takes care of creating citestcycle serializers when test-level visibility is enabled
+          # This factory takes care of creating msgpack serializers when test-level visibility is enabled
           # NOTE: citestcycle is a protocol Datadog uses to submit test execution tracing information to CI visibility
           # backend
           module TestLevel

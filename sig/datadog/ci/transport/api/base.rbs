@@ -3,9 +3,13 @@ module Datadog
     module Transport
       module Api
         class Base
+          @citestcov_payload: String
+
           def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
           def citestcycle_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
+
+          def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
           private
 

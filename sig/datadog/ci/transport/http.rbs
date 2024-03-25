@@ -25,6 +25,20 @@ module Datadog
 
         def build_env: (payload: String, headers: Hash[String, String], path: String, verb: String) -> Datadog::Core::Transport::HTTP::Env
 
+        class AdapterSettings
+          attr_reader hostname: String
+          attr_reader port: Integer?
+          attr_reader ssl: bool
+          attr_reader timeout_seconds: Integer
+
+          @hostname: String
+          @port: Integer?
+          @ssl: bool
+          @timeout_seconds: Integer
+
+          def initialize: (hostname: String, ?port: Integer?, ?ssl: bool, ?timeout_seconds: Integer) -> void
+        end
+
         class ResponseDecorator < ::SimpleDelegator
           def initialize: (untyped anything) -> void
           def trace_count: () -> Integer

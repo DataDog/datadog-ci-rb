@@ -5,6 +5,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
     described_class.new(
       api_key: api_key,
       citestcycle_url: citestcycle_url,
+      citestcov_url: citestcov_url,
       api_url: api_url
     )
   end
@@ -14,6 +15,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
   context "malformed urls" do
     let(:citestcycle_url) { "" }
     let(:api_url) { "api.datadoghq.com" }
+    let(:citestcov_url) { "citestcov.datadoghq.com" }
 
     it { expect { subject }.to raise_error(/Invalid agentless mode URL:/) }
   end
@@ -24,6 +26,9 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
 
     let(:api_url) { "http://localhost:5555" }
     let(:api_http) { double(:http) }
+
+    let(:citestcov_url) { "http://localhost:5555" }
+    let(:citestcov_http) { double(:http) }
 
     before do
       expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
@@ -39,6 +44,13 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         ssl: false,
         compress: false
       ).and_return(api_http)
+
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: "localhost",
+        port: 5555,
+        ssl: false,
+        compress: true
+      ).and_return(citestcov_http)
     end
 
     describe "#citestcycle_request" do
@@ -69,6 +81,9 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
     let(:api_url) { "https://api.datadoghq.com:443" }
     let(:api_http) { double(:http) }
 
+    let(:citestcov_url) { "https://citestcov-intake.datadoghq.com:443" }
+    let(:citestcov_http) { double(:http) }
+
     before do
       expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
         host: "citestcycle-intake.datadoghq.com",
@@ -83,6 +98,13 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         ssl: true,
         compress: false
       ).and_return(api_http)
+
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: "citestcov-intake.datadoghq.com",
+        port: 443,
+        ssl: true,
+        compress: true
+      ).and_return(citestcov_http)
     end
 
     describe "#citestcycle_request" do
@@ -136,6 +158,48 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         )
 
         subject.api_request(path: "path", payload: "payload")
+      end
+    end
+
+    describe "#citestcov_request" do
+      before do
+        expect(SecureRandom).to receive(:uuid).and_return("42")
+      end
+
+      let(:expected_headers) do
+        {
+          "DD-API-KEY" => "api_key",
+          "Content-Type" => "multipart/form-data; boundary=42"
+        }
+      end
+
+      let(:expected_payload) do
+        [
+          "--42",
+          'Content-Disposition: form-data; name="event"; filename="event.json"',
+          "Content-Type: application/json",
+          "",
+          '{"dummy":true}',
+          "--42",
+          'Content-Disposition: form-data; name="coverage1"; filename="coverage1.msgpack"',
+          "Content-Type: application/msgpack",
+          "",
+          "payload",
+          "--42--"
+        ].join("\r\n")
+      end
+
+      it "produces correct headers, constructs multipart payload, and forwards request to HTTP layer" do
+        allow(citestcov_http).to receive(:request)
+
+        subject.citestcov_request(path: "path", payload: "payload")
+
+        expect(citestcov_http).to have_received(:request) do |args|
+          expect(args[:path]).to eq("path")
+          expect(args[:verb]).to eq("post")
+          expect(args[:headers]).to eq(expected_headers)
+          expect(args[:payload]).to eq(expected_payload)
+        end
       end
     end
   end

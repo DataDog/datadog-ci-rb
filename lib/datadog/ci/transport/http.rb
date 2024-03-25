@@ -67,7 +67,8 @@ module Datadog
         end
 
         def adapter
-          @adapter ||= Datadog::Core::Transport::HTTP::Adapters::Net.new(host, port, timeout: timeout, ssl: ssl)
+          settings = AdapterSettings.new(hostname: host, port: port, ssl: ssl, timeout_seconds: timeout)
+          @adapter ||= Datadog::Core::Transport::HTTP::Adapters::Net.new(settings)
         end
 
         # this is needed because Datadog::Tracing::Writer is not fully compatiple with Datadog::Core::Transport
@@ -75,6 +76,22 @@ module Datadog
         class ResponseDecorator < ::SimpleDelegator
           def trace_count
             0
+          end
+        end
+
+        class AdapterSettings
+          attr_reader :hostname, :port, :ssl, :timeout_seconds
+
+          def initialize(hostname:, port: nil, ssl: true, timeout_seconds: nil)
+            @hostname = hostname
+            @port = port
+            @ssl = ssl
+            @timeout_seconds = timeout_seconds
+          end
+
+          def ==(other)
+            hostname == other.hostname && port == other.port && ssl == other.ssl &&
+              timeout_seconds == other.timeout_seconds
           end
         end
       end

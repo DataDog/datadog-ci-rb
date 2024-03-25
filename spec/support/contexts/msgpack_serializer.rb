@@ -1,7 +1,7 @@
-# "citestcycle serializer" shared context uses serializer defined in `subject`
+# "msgpack serializer" shared context uses serializer defined in `subject`
 # to serialize the data and then unpacks it to JSON.
 
-RSpec.shared_context "citestcycle serializer" do
+RSpec.shared_context "msgpack serializer" do
   subject {}
 
   let(:msgpack_jsons) do

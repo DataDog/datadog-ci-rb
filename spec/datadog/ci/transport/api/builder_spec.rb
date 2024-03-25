@@ -37,7 +37,10 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
 
     it "creates and configures http client and Agentless api" do
       expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
-        api_key: "api_key", citestcycle_url: "https://citestcycle-intake.datadoghq.com:443", api_url: "https://api.datadoghq.com:443"
+        api_key: "api_key",
+        citestcycle_url: "https://citestcycle-intake.datadoghq.com:443",
+        api_url: "https://api.datadoghq.com:443",
+        citestcov_url: "https://citestcov-intake.datadoghq.com:443"
       ).and_return(api)
 
       expect(subject).to eq(api)
@@ -48,7 +51,10 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
 
       it "configures transport to use intake URL from settings" do
         expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
-          api_key: "api_key", citestcycle_url: "http://localhost:5555", api_url: "http://localhost:5555"
+          api_key: "api_key",
+          citestcycle_url: "http://localhost:5555",
+          api_url: "http://localhost:5555",
+          citestcov_url: "http://localhost:5555"
         ).and_return(api)
 
         expect(subject).to eq(api)
@@ -60,7 +66,10 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
 
       it "construct intake url using provided host" do
         expect(Datadog::CI::Transport::Api::Agentless).to receive(:new).with(
-          api_key: "api_key", citestcycle_url: "https://citestcycle-intake.datadoghq.eu:443", api_url: "https://api.datadoghq.eu:443"
+          api_key: "api_key",
+          citestcycle_url: "https://citestcycle-intake.datadoghq.eu:443",
+          api_url: "https://api.datadoghq.eu:443",
+          citestcov_url: "https://citestcov-intake.datadoghq.eu:443"
         ).and_return(api)
 
         expect(subject).to eq(api)

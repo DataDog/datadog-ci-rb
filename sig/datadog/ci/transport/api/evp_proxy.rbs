@@ -16,6 +16,8 @@ module Datadog
 
           def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 
+          def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
+
           private
 
           def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
