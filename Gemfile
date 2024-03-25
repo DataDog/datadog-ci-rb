@@ -5,9 +5,6 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in datadog-ci.gemspec
 gemspec
 
-# needed to run tests, always present at runtime
-gem "datadog", github: "DataDog/dd-trace-rb", branch: "2.0"
-
 gem "pry"
 gem "rake"
 gem "os"
