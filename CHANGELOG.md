@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [1.0.0.beta1] - 2024-03-25
+
+### Added
+
+* datadog-cov native extension for per test code coverage ([#137])
+* citestcov transport to serialize and send code coverage events ([#148])
+
+### Removed
+
+* Ruby 2.1-2.6 support is dropped
+
 ## [0.8.3] - 2024-03-20
 
 ### Fixed
@@ -188,6 +199,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 * Ruby versions < 2.7 no longer supported ([#8][])
 
 [Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...main
+[1.0.0.beta1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...v1.0.0.beta1
 [0.8.3]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.0...v0.8.1
@@ -258,7 +270,9 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#123]: https://github.com/DataDog/datadog-ci-rb/issues/123
 [#131]: https://github.com/DataDog/datadog-ci-rb/issues/131
 [#134]: https://github.com/DataDog/datadog-ci-rb/issues/134
+[#137]: https://github.com/DataDog/datadog-ci-rb/issues/137
 [#139]: https://github.com/DataDog/datadog-ci-rb/issues/139
 [#141]: https://github.com/DataDog/datadog-ci-rb/issues/141
 [#142]: https://github.com/DataDog/datadog-ci-rb/issues/142
 [#145]: https://github.com/DataDog/datadog-ci-rb/issues/145
+[#148]: https://github.com/DataDog/datadog-ci-rb/issues/148
