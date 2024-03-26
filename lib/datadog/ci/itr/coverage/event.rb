@@ -50,7 +50,7 @@ module Datadog
             files.each do |filename|
               packer.write_map_header(1)
               packer.write("filename")
-              packer.write(filename)
+              packer.write(Utils::Git.relative_to_root(filename))
             end
           end
 

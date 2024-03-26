@@ -71,7 +71,7 @@ RSpec.describe ::Datadog::CI::Utils::Git do
     context "when path is nil" do
       let(:path) { nil }
 
-      it { is_expected.to be_nil }
+      it { is_expected.to eq("") }
     end
 
     context "when git root is nil" do
