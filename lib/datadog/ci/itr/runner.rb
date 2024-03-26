@@ -5,6 +5,8 @@ require_relative "../ext/transport"
 
 require_relative "../utils/git"
 
+require_relative "coverage/event"
+
 module Datadog
   module CI
     module ITR
@@ -13,11 +15,14 @@ module Datadog
       # skip tests that are not impacted by the changes
       class Runner
         def initialize(
+          coverage_writer: nil,
           enabled: false
         )
           @enabled = enabled
           @test_skipping_enabled = false
           @code_coverage_enabled = false
+
+          @coverage_writer = coverage_writer
 
           Datadog.logger.debug("ITR Runner initialized with enabled: #{@enabled}")
         end
@@ -66,21 +71,30 @@ module Datadog
           coverage_collector&.start
         end
 
-        def stop_coverage(_test)
+        def stop_coverage(test)
           return if !enabled? || !code_coverage?
 
-          coverage_collector&.stop
-          # event = Coverage::Event.new(
-          #   test_id: test.id,
-          #   test_suite_id:
-          #   test.test_suite_id,
-          #   test_session_id: test.test_session_id,
-          #   coverage: coverage
-          # )
-          # @coverage_writer.write(event)
+          coverage = coverage_collector&.stop
+          return if coverage.nil?
+
+          event = Coverage::Event.new(
+            test_id: test.id.to_s,
+            test_suite_id: test.test_suite_id.to_s,
+            test_session_id: test.test_session_id.to_s,
+            coverage: coverage
+          )
+
+          write(event)
+
+          event
         end
 
         private
+
+        def write(event)
+          # skip sending events if writer is not configured
+          @coverage_writer&.write(event)
+        end
 
         def coverage_collector
           Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(root: Utils::Git.root)
