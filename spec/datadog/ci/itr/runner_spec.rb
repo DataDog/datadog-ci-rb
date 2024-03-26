@@ -4,10 +4,15 @@ require_relative "../../../../lib/datadog/ci/itr/runner"
 
 RSpec.describe Datadog::CI::ITR::Runner do
   let(:itr_enabled) { true }
+  let(:writer) { double("writer") }
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
-  subject(:runner) { described_class.new(enabled: itr_enabled) }
+  subject(:runner) { described_class.new(coverage_writer: writer, enabled: itr_enabled) }
+
+  before do
+    allow(writer).to receive(:write)
+  end
 
   describe "#configure" do
     before do
@@ -105,8 +110,8 @@ RSpec.describe Datadog::CI::ITR::Runner do
 
         runner.start_coverage
         expect(1 + 1).to eq(2)
-        coverage = runner.stop_coverage(test_span)
-        expect(coverage.size).to be > 0
+        coverage_event = runner.stop_coverage(test_span)
+        expect(coverage_event.coverage.size).to be > 0
       end
     end
 

@@ -2,6 +2,8 @@
 
 require_relative "../ext/settings"
 require_relative "../itr/runner"
+require_relative "../itr/coverage/transport"
+require_relative "../itr/coverage/writer"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/recorder"
 require_relative "../test_visibility/null_recorder"
@@ -49,9 +51,16 @@ module Datadog
 
           # transport creation
           writer_options = settings.ci.writer_options
+          coverage_writer = nil
           test_visibility_api = build_test_visibility_api(settings)
 
           if test_visibility_api
+            # setup writer for code coverage payloads
+            coverage_writer = Datadog::CI::ITR::Coverage::Writer.new(
+              transport: Datadog::CI::ITR::Coverage::Transport.new(api: test_visibility_api)
+            )
+
+            # configure tracing writer to send traces to CI visibility backend
             writer_options[:transport] = Datadog::CI::TestVisibility::Transport.new(
               api: test_visibility_api,
               serializers_factory: serializers_factory(settings),
@@ -72,6 +81,7 @@ module Datadog
           settings.tracing.test_mode.writer_options = writer_options
 
           itr = Datadog::CI::ITR::Runner.new(
+            coverage_writer: coverage_writer,
             enabled: settings.ci.enabled && settings.ci.itr_enabled
           )
 

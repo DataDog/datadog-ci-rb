@@ -70,9 +70,7 @@ module Datadog
           end
 
           def dequeue
-            # Wrap results in Array because they are
-            # splatted as args against Coverage::Writer#perform.
-            [buffer.pop]
+            buffer.pop
           end
 
           def async?
