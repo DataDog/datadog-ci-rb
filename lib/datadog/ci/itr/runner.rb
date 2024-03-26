@@ -70,6 +70,14 @@ module Datadog
           return if !enabled? || !code_coverage?
 
           coverage_collector&.stop
+          # event = Coverage::Event.new(
+          #   test_id: test.id,
+          #   test_suite_id:
+          #   test.test_suite_id,
+          #   test_session_id: test.test_session_id,
+          #   coverage: coverage
+          # )
+          # @coverage_writer.write(event)
         end
 
         private
