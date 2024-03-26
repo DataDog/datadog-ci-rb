@@ -32,7 +32,7 @@ module Datadog
         end
 
         def self.relative_to_root(path)
-          return nil if path.nil?
+          return "" if path.nil?
 
           git_root = root
           return path if git_root.nil?

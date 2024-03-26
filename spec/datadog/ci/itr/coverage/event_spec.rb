@@ -81,6 +81,27 @@ RSpec.describe Datadog::CI::ITR::Coverage::Event do
       )
     end
 
+    context "when file paths are absolute" do
+      let(:coverage) do
+        {
+          File.expand_path(File.join(__dir__, "./project/file.rb")) => true
+        }
+      end
+
+      it "converts all file paths to relative to the git root" do
+        expect(msgpack_json).to eq(
+          {
+            "test_session_id" => 3,
+            "test_suite_id" => 2,
+            "span_id" => 1,
+            "files" => [
+              {"filename" => "spec/datadog/ci/itr/coverage/project/file.rb"}
+            ]
+          }
+        )
+      end
+    end
+
     context "coverage in lines format" do
       let(:coverage) { {"file.rb" => {1 => true, 2 => true, 3 => true}} }
 
