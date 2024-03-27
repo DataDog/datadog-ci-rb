@@ -91,6 +91,10 @@ module Datadog
           event
         end
 
+        def shutdown!
+          @coverage_writer&.stop
+        end
+
         private
 
         def write(event)
