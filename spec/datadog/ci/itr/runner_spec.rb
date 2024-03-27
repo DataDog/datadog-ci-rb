@@ -138,6 +138,8 @@ RSpec.describe Datadog::CI::ITR::Runner do
     let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
 
     before do
+      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
+
       runner.configure(remote_configuration, test_session)
       expect(test_span).to receive(:id).and_return(1)
       expect(test_span).to receive(:test_suite_id).and_return(2)
