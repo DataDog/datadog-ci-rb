@@ -4,7 +4,7 @@ require_relative "../../../../lib/datadog/ci/itr/runner"
 
 RSpec.describe Datadog::CI::ITR::Runner do
   let(:itr_enabled) { true }
-  let(:writer) { double("writer") }
+  let(:writer) { spy("writer") }
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
@@ -128,6 +128,33 @@ RSpec.describe Datadog::CI::ITR::Runner do
 
         runner.start_coverage
         expect(runner.stop_coverage(test_span)).to be_nil
+      end
+    end
+  end
+
+  describe "#stop_coverage" do
+    let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
+    let(:test_span) { Datadog::CI::Test.new(tracer_span) }
+    let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
+
+    before do
+      runner.configure(remote_configuration, test_session)
+      expect(test_span).to receive(:id).and_return(1)
+      expect(test_span).to receive(:test_suite_id).and_return(2)
+      expect(test_span).to receive(:test_session_id).and_return(3)
+    end
+
+    it "creates coverage event and writes it" do
+      runner.start_coverage
+      expect(1 + 1).to eq(2)
+      expect(runner.stop_coverage(test_span)).not_to be_nil
+
+      expect(writer).to have_received(:write) do |event|
+        expect(event.test_id).to eq("1")
+        expect(event.test_suite_id).to eq("2")
+        expect(event.test_session_id).to eq("3")
+
+        expect(event.coverage.size).to be > 0
       end
     end
   end

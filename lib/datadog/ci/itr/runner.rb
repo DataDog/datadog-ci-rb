@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "pp"
+
 require_relative "../ext/test"
 require_relative "../ext/transport"
 
