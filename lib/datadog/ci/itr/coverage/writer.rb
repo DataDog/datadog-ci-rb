@@ -73,6 +73,10 @@ module Datadog
             buffer.pop
           end
 
+          def work_pending?
+            !buffer.empty?
+          end
+
           def async?
             true
           end
