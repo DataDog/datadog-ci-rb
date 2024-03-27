@@ -25,10 +25,17 @@ module Datadog
           if settings.ci.enabled
             activate_ci!(settings)
           else
+            @itr = nil
             @ci_recorder = TestVisibility::NullRecorder.new
           end
 
           super
+        end
+
+        def shutdown!(replacement = nil)
+          super
+
+          @itr&.shutdown!
         end
 
         def activate_ci!(settings)
@@ -80,14 +87,14 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = writer_options
 
-          itr = Datadog::CI::ITR::Runner.new(
-            coverage_writer: coverage_writer,
-            enabled: settings.ci.enabled && settings.ci.itr_enabled
-          )
-
           remote_settings_api = Transport::RemoteSettingsApi.new(
             api: test_visibility_api,
             dd_env: settings.env
+          )
+
+          itr = Datadog::CI::ITR::Runner.new(
+            coverage_writer: coverage_writer,
+            enabled: settings.ci.enabled && settings.ci.itr_enabled
           )
 
           # CI visibility recorder global instance
@@ -96,6 +103,8 @@ module Datadog
             itr: itr,
             remote_settings_api: remote_settings_api
           )
+
+          @itr = itr
         end
 
         def build_test_visibility_api(settings)
