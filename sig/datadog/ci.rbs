@@ -29,6 +29,6 @@ module Datadog
 
     def self.components: () -> Datadog::CI::Configuration::Components
 
-    def self.recorder: () -> Datadog::CI::TestVisibility::Recorder
+    def self.recorder: () -> (Datadog::CI::TestVisibility::Recorder | Datadog::CI::TestVisibility::NullRecorder)
   end
 end
