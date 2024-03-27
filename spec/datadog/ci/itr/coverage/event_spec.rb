@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "pp"
+
 require_relative "../../../../../lib/datadog/ci/itr/coverage/event"
 
 RSpec.describe Datadog::CI::ITR::Coverage::Event do
@@ -135,6 +137,15 @@ RSpec.describe Datadog::CI::ITR::Coverage::Event do
           }
         )
       end
+    end
+  end
+
+  describe "#pretty_inspect" do
+    it "returns a human readable version of the event" do
+      expect(subject.pretty_inspect).to eq(" Test ID: 1\n" \
+       "Test Suite ID: 2\n" \
+       "Test Session ID: 3\n" \
+       "Files: [file.rb]\n\n")
     end
   end
 end
