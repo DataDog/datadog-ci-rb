@@ -84,6 +84,8 @@ module Datadog
             coverage: coverage
           )
 
+          Datadog.logger.debug { "Writing coverage event \n #{event.pretty_inspect}" }
+
           write(event)
 
           event
