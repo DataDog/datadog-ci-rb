@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "../../../../lib/datadog/ci/test_visibility/transport"
 
 RSpec.describe Datadog::CI::TestVisibility::Transport do
