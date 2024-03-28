@@ -40,6 +40,8 @@ module Datadog
         end
 
         class ResponseDecorator < ::SimpleDelegator
+          include Datadog::Core::Transport::Response
+
           def initialize: (untyped anything) -> void
           def trace_count: () -> Integer
         end

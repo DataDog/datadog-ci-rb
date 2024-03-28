@@ -50,12 +50,27 @@ module Datadog
             files.each do |filename|
               packer.write_map_header(1)
               packer.write("filename")
-              packer.write(filename)
+              packer.write(Utils::Git.relative_to_root(filename))
             end
           end
 
           def to_s
             "Coverage::Event[test_id=#{test_id}, test_suite_id=#{test_suite_id}, test_session_id=#{test_session_id}, coverage=#{coverage}]"
+          end
+
+          # Return a human readable version of the event
+          def pretty_print(q)
+            q.group 0 do
+              q.breakable
+              q.text "Test ID: #{@test_id}\n"
+              q.text "Test Suite ID: #{@test_suite_id}\n"
+              q.text "Test Session ID: #{@test_session_id}\n"
+              q.group(2, "Files: [", "]\n") do
+                q.seplist @coverage.keys.each do |key|
+                  q.text key
+                end
+              end
+            end
           end
         end
       end

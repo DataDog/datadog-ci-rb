@@ -13,6 +13,7 @@ require_relative "support/gems_helpers"
 require_relative "support/tracer_helpers"
 require_relative "support/span_helpers"
 require_relative "support/platform_helpers"
+require_relative "support/synchronization_helpers"
 
 # shared contexts
 require_relative "support/contexts/ci_mode"
@@ -62,6 +63,7 @@ end
 RSpec.configure do |config|
   config.include TracerHelpers
   config.include SpanHelpers
+  config.include SynchronizationHelpers
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "pp"
+
 require_relative "../../../../../lib/datadog/ci/itr/coverage/event"
 
 RSpec.describe Datadog::CI::ITR::Coverage::Event do
@@ -81,6 +83,27 @@ RSpec.describe Datadog::CI::ITR::Coverage::Event do
       )
     end
 
+    context "when file paths are absolute" do
+      let(:coverage) do
+        {
+          File.expand_path(File.join(__dir__, "./project/file.rb")) => true
+        }
+      end
+
+      it "converts all file paths to relative to the git root" do
+        expect(msgpack_json).to eq(
+          {
+            "test_session_id" => 3,
+            "test_suite_id" => 2,
+            "span_id" => 1,
+            "files" => [
+              {"filename" => "spec/datadog/ci/itr/coverage/project/file.rb"}
+            ]
+          }
+        )
+      end
+    end
+
     context "coverage in lines format" do
       let(:coverage) { {"file.rb" => {1 => true, 2 => true, 3 => true}} }
 
@@ -114,6 +137,15 @@ RSpec.describe Datadog::CI::ITR::Coverage::Event do
           }
         )
       end
+    end
+  end
+
+  describe "#pretty_inspect" do
+    it "returns a human readable version of the event" do
+      expect(subject.pretty_inspect).to eq(" Test ID: 1\n" \
+       "Test Suite ID: 2\n" \
+       "Test Session ID: 3\n" \
+       "Files: [file.rb]\n\n")
     end
   end
 end
