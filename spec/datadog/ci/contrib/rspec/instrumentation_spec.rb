@@ -460,6 +460,8 @@ RSpec.describe "RSpec hooks" do
         Datadog::CI::Contrib::RSpec::Integration.version.to_s
       )
 
+      expect(test_session_span).not_to have_test_tag(:code_coverage_enabled)
+
       expect(test_session_span).to have_pass_status
     end
 
