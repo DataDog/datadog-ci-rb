@@ -88,6 +88,7 @@ module Datadog
 
           Datadog.logger.debug { "Writing coverage event \n #{event.pretty_inspect}" }
 
+          p "calling write"
           write(event)
 
           event
@@ -100,6 +101,7 @@ module Datadog
         private
 
         def write(event)
+          p "here I am in write"
           # skip sending events if writer is not configured
           @coverage_writer&.write(event)
         end

@@ -364,6 +364,10 @@ module Datadog
       def recorder
         components.ci_recorder
       end
+
+      def itr_runner
+        components.itr
+      end
     end
   end
 end

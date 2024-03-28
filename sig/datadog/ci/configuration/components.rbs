@@ -6,6 +6,7 @@ module Datadog
         @itr: Datadog::CI::ITR::Runner?
 
         attr_reader ci_recorder: Datadog::CI::TestVisibility::Recorder | Datadog::CI::TestVisibility::NullRecorder
+        attr_reader itr: Datadog::CI::ITR::Runner?
 
         def initialize: (untyped settings) -> void
 
