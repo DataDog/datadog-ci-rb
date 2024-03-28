@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "tempfile"
+
 module SynchronizationHelpers
   def expect_in_fork(fork_expectations: nil, timeout_seconds: 10)
     fork_expectations ||= proc { |status:, stdout:, stderr:|

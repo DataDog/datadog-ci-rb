@@ -18,7 +18,7 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :ci_recorder
+        attr_reader :ci_recorder, :itr
 
         def initialize(settings)
           # Activate CI mode if enabled
