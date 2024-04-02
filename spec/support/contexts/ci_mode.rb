@@ -24,6 +24,8 @@ RSpec.shared_context "CI mode activated" do
   let(:recorder) { Datadog.send(:components).ci_recorder }
 
   before do
+    setup_test_coverage_writer!
+
     allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
       receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
     )

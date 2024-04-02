@@ -19,26 +19,23 @@ module CoverageHelpers
     @coverage_events = nil
   end
 
-  RSpec.configure do |config|
-    # Capture events from the coverage writer
-    config.before do
-      # DEV `*_any_instance_of` has concurrency issues when running with parallelism (e.g. JRuby).
-      # DEV Single object `allow` and `expect` work as intended with parallelism.
-      allow(Datadog::CI::ITR::Runner).to receive(:new).and_wrap_original do |method, **args, &block|
-        instance = method.call(**args, &block)
+  def setup_test_coverage_writer!
+    # DEV `*_any_instance_of` has concurrency issues when running with parallelism (e.g. JRuby).
+    # DEV Single object `allow` and `expect` work as intended with parallelism.
+    allow(Datadog::CI::ITR::Runner).to receive(:new).and_wrap_original do |method, **args, &block|
+      instance = method.call(**args, &block)
 
-        write_lock = Mutex.new
-        allow(instance).to receive(:write) do |event|
-          instance.instance_exec do
-            write_lock.synchronize do
-              @coverage_events ||= []
-              @coverage_events << event
-            end
+      write_lock = Mutex.new
+      allow(instance).to receive(:write) do |event|
+        instance.instance_exec do
+          write_lock.synchronize do
+            @coverage_events ||= []
+            @coverage_events << event
           end
         end
-
-        instance
       end
+
+      instance
     end
   end
 
