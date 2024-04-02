@@ -14,6 +14,8 @@ module Datadog
 
           @shutdown_timeout: Integer
 
+          @stopped: bool
+
           attr_reader transport: Datadog::CI::ITR::Coverage::Transport
 
           DEFAULT_BUFFER_MAX_SIZE: 10000

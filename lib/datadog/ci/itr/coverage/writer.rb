@@ -41,9 +41,13 @@ module Datadog
             self.buffer = buffer_klass.new(@buffer_size)
 
             @shutdown_timeout = options.fetch(:shutdown_timeout, DEFAULT_SHUTDOWN_TIMEOUT)
+
+            @stopped = false
           end
 
           def write(event)
+            return if @stopped
+
             # Start worker thread. If the process has forked, it will trigger #after_fork to
             # reconfigure the worker accordingly.
             perform
@@ -60,6 +64,8 @@ module Datadog
           end
 
           def stop(force_stop = false, timeout = @shutdown_timeout)
+            @stopped = true
+
             buffer.close if running?
 
             super
