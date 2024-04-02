@@ -5,6 +5,10 @@ module CoverageHelpers
     @coverage_events ||= fetch_coverage_events
   end
 
+  def find_coverage_for_test(test_span)
+    coverage_events.find { |event| event.test_id == test_span.id.to_s }
+  end
+
   # Retrieves all traces in the current tracer instance.
   # This method does not cache its results.
   def fetch_coverage_events

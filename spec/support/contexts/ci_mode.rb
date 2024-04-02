@@ -57,5 +57,7 @@ RSpec.shared_context "CI mode activated" do
 
   after do
     ::Datadog::Tracing.shutdown!
+
+    Datadog::CI.send(:itr_runner)&.shutdown!
   end
 end
