@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe "RSpec code coverage collection" do
+  before { skip if PlatformHelpers.jruby? }
+
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
     let(:integration_options) { {service_name: "lspec"} }
