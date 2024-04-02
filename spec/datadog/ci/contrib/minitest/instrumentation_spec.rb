@@ -478,6 +478,8 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "creates code coverage events" do
+          skip if PlatformHelpers.jruby?
+
           expect(coverage_events).to have(2).items
 
           expect_coverage_events_belong_to_session(test_session_span)
@@ -651,6 +653,8 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "creates code coverage events" do
+          skip if PlatformHelpers.jruby?
+
           expect(coverage_events).to have(4).items
 
           expect_coverage_events_belong_to_session(test_session_span)

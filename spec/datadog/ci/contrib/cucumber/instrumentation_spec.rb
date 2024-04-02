@@ -187,6 +187,8 @@ RSpec.describe "Cucumber formatter" do
     end
 
     context "collecting coverage with features dir as root" do
+      before { skip if PlatformHelpers.jruby? }
+
       it "creates coverage events for each test" do
         expect(coverage_events).to have(4).items
 
