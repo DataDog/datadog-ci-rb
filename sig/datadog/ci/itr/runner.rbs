@@ -33,6 +33,8 @@ module Datadog
         def load_datadog_cov!: () -> void
 
         def write: (Datadog::CI::ITR::Coverage::Event event) -> void
+
+        def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void
       end
     end
   end

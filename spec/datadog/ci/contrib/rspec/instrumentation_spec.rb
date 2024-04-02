@@ -632,10 +632,10 @@ RSpec.describe "RSpec hooks" do
       expect(test_spans).to have(3).items
 
       expect(coverage_events).to have(3).items
-      expect(coverage_events.map(&:test_session_id)).to all eq(test_session_span.id.to_s)
-      expect(coverage_events.map(&:test_suite_id)).to all eq(test_suite_spans.first.id.to_s)
-      expect(coverage_events.map(&:test_id).sort).to eq(test_spans.map(&:id).map(&:to_s).sort)
-      expect(coverage_events.map(&:coverage).map(&:size)).to all be > 0
+      expect_coverage_events_belong_to_session(test_session_span)
+      expect_coverage_events_belong_to_suite(first_test_suite_span)
+      expect_coverage_events_belong_to_tests(test_spans)
+      expect_non_empty_coverages
 
       # collects coverage from shared context files
       shared_context_test = test_spans.find { |span| span.name == "nested is 42" }
