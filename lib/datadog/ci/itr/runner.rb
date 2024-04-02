@@ -79,6 +79,11 @@ module Datadog
           coverage = coverage_collector&.stop
           return if coverage.nil?
 
+          test_source_file = test.source_file
+
+          # cucumber's gherkin files are not covered by the code coverage collector
+          ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
+
           event = Coverage::Event.new(
             test_id: test.id.to_s,
             test_suite_id: test.test_suite_id.to_s,
@@ -118,6 +123,13 @@ module Datadog
 
         def convert_to_bool(value)
           value.to_s == "true"
+        end
+
+        def ensure_test_source_covered(test_source_file, coverage)
+          absolute_test_source_file_path = File.join(Utils::Git.root, test_source_file)
+          return if coverage.key?(absolute_test_source_file_path)
+
+          coverage[absolute_test_source_file_path] = true
         end
       end
     end

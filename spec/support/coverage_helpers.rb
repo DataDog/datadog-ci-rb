@@ -46,4 +46,24 @@ module CoverageHelpers
   def runner
     Datadog::CI.send(:itr_runner)
   end
+
+  def expect_coverage_events_belong_to_session(test_session_span)
+    expect(coverage_events.map(&:test_session_id)).to all eq(test_session_span.id.to_s)
+  end
+
+  def expect_coverage_events_belong_to_suite(test_suite_span)
+    expect(coverage_events.map(&:test_suite_id)).to all eq(test_suite_span.id.to_s)
+  end
+
+  def expect_coverage_events_belong_to_suites(test_suite_spans)
+    expect(coverage_events.map(&:test_suite_id).sort).to eq(test_suite_spans.map(&:id).map(&:to_s).sort)
+  end
+
+  def expect_coverage_events_belong_to_tests(test_spans)
+    expect(coverage_events.map(&:test_id).sort).to eq(test_spans.map(&:id).map(&:to_s).sort)
+  end
+
+  def expect_non_empty_coverages
+    expect(coverage_events.map(&:coverage).map(&:size)).to all be > 0
+  end
 end
