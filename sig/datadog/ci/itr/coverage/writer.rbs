@@ -1,0 +1,46 @@
+module Datadog
+  module CI
+    module ITR
+      module Coverage
+        class Writer
+          include Datadog::Core::Workers::Async::Thread
+          include Datadog::Core::Workers::Polling
+          include Datadog::Core::Workers::Queue
+          include Datadog::Core::Workers::IntervalLoop
+
+          @transport: Datadog::CI::ITR::Coverage::Transport
+
+          @buffer_size: Integer
+
+          @shutdown_timeout: Integer
+
+          @stopped: bool
+
+          attr_reader transport: Datadog::CI::ITR::Coverage::Transport
+
+          DEFAULT_BUFFER_MAX_SIZE: 10000
+
+          DEFAULT_SHUTDOWN_TIMEOUT: 60
+
+          def initialize: (transport: Datadog::CI::ITR::Coverage::Transport, ?options: ::Hash[untyped, untyped]) -> void
+
+          def write: (Datadog::CI::ITR::Coverage::Event event) -> untyped
+
+          def perform: (*Datadog::CI::ITR::Coverage::Event events) -> nil
+
+          def stop: (?bool force_stop, ?Integer timeout) -> untyped
+
+          def enqueue: (Datadog::CI::ITR::Coverage::Event event) -> untyped
+
+          def dequeue: () -> ::Array[Datadog::CI::ITR::Coverage::Event]
+
+          def async?: () -> true
+
+          def after_fork: () -> untyped
+
+          def buffer_klass: () -> untyped
+        end
+      end
+    end
+  end
+end

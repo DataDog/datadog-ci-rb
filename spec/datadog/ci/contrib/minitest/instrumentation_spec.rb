@@ -31,6 +31,9 @@ RSpec.describe "Minitest instrumentation" do
     include_context "CI mode activated" do
       let(:integration_name) { :minitest }
       let(:integration_options) { {service_name: "ltest"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
     end
 
     before do
@@ -74,7 +77,7 @@ RSpec.describe "Minitest instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(:source_start, "47")
+      expect(span).to have_test_tag(:source_start, "50")
       expect(span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -473,6 +476,17 @@ RSpec.describe "Minitest instrumentation" do
           expect(first_test_span).to have_test_tag(:test_module_id, test_module_span.id.to_s)
           expect(first_test_span).to have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
         end
+
+        it "creates code coverage events" do
+          skip if PlatformHelpers.jruby?
+
+          expect(coverage_events).to have(2).items
+
+          expect_coverage_events_belong_to_session(test_session_span)
+          expect_coverage_events_belong_to_suite(first_test_suite_span)
+          expect_coverage_events_belong_to_tests(test_spans)
+          expect_non_empty_coverages
+        end
       end
 
       context "single test failed" do
@@ -636,6 +650,17 @@ RSpec.describe "Minitest instrumentation" do
               "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_2 concurrently)"
             ]
           )
+        end
+
+        it "creates code coverage events" do
+          skip if PlatformHelpers.jruby?
+
+          expect(coverage_events).to have(4).items
+
+          expect_coverage_events_belong_to_session(test_session_span)
+          expect_coverage_events_belong_to_suites(test_suite_spans)
+          expect_coverage_events_belong_to_tests(test_spans)
+          expect_non_empty_coverages
         end
       end
 

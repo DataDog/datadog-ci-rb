@@ -5,8 +5,10 @@ module Datadog
         @enabled: bool
         @test_skipping_enabled: bool
         @code_coverage_enabled: bool
+        @api: Datadog::CI::Transport::Api::Base?
+        @coverage_writer: Datadog::CI::ITR::Coverage::Writer?
 
-        def initialize: (?enabled: bool) -> void
+        def initialize: (?enabled: bool, coverage_writer: Datadog::CI::ITR::Coverage::Writer?) -> void
 
         def configure: (Hash[String, untyped] remote_configuration, Datadog::CI::TestSession test_session) -> void
 
@@ -18,7 +20,9 @@ module Datadog
 
         def start_coverage: () -> void
 
-        def stop_coverage: (Datadog::CI::Test test) -> Hash[String, untyped]?
+        def stop_coverage: (Datadog::CI::Test test) -> Datadog::CI::ITR::Coverage::Event?
+
+        def shutdown!: () -> void
 
         private
 
@@ -27,6 +31,10 @@ module Datadog
         def convert_to_bool: (untyped value) -> bool
 
         def load_datadog_cov!: () -> void
+
+        def write: (Datadog::CI::ITR::Coverage::Event event) -> void
+
+        def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void
       end
     end
   end

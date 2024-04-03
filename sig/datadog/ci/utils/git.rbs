@@ -17,7 +17,7 @@ module Datadog
 
         def self.current_folder_name: -> String
 
-        def self.relative_to_root: (String? path) -> String?
+        def self.relative_to_root: (String? path) -> String
       end
     end
   end

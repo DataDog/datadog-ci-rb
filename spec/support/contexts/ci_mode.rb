@@ -6,7 +6,11 @@
 #   let(:integration_options) { {service_name: "jalapenos"} }
 # end
 
+require_relative "../coverage_helpers"
+
 RSpec.shared_context "CI mode activated" do
+  include CoverageHelpers
+
   let(:test_command) { "command" }
   let(:integration_name) { :no_instrument }
   let(:integration_options) { {} }
@@ -14,15 +18,32 @@ RSpec.shared_context "CI mode activated" do
   let(:ci_enabled) { true }
   let(:force_test_level_visibility) { false }
   let(:itr_enabled) { false }
+  let(:code_coverage_enabled) { false }
+  let(:tests_skipping_enabled) { false }
 
   let(:recorder) { Datadog.send(:components).ci_recorder }
 
   before do
+    setup_test_coverage_writer!
+
     allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
       receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
     )
 
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return(test_command)
+
+    allow_any_instance_of(Datadog::CI::Transport::RemoteSettingsApi).to receive(:fetch_library_settings).and_return(
+      double(
+        "remote_settings_api_response",
+        payload: {
+          "itr_enabled" => itr_enabled,
+          "code_coverage" => code_coverage_enabled,
+          "tests_skipping" => tests_skipping_enabled
+        }
+      )
+    )
+
+    allow_any_instance_of(Datadog::CI::ITR::Coverage::Transport).to receive(:send_events).and_return([])
 
     Datadog.configure do |c|
       c.ci.enabled = ci_enabled
@@ -36,5 +57,7 @@ RSpec.shared_context "CI mode activated" do
 
   after do
     ::Datadog::Tracing.shutdown!
+
+    Datadog::CI.send(:itr_runner)&.shutdown!
   end
 end

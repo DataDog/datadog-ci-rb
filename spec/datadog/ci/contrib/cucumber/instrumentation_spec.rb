@@ -3,9 +3,18 @@ require "fileutils"
 require "cucumber"
 
 RSpec.describe "Cucumber formatter" do
+  let(:cucumber_features_root) { File.join(__dir__, "features") }
+
+  before do
+    allow(Datadog::CI::Utils::Git).to receive(:root).and_return(cucumber_features_root)
+  end
+
   include_context "CI mode activated" do
     let(:integration_name) { :cucumber }
     let(:integration_options) { {service_name: "jalapenos"} }
+
+    let(:itr_enabled) { true }
+    let(:code_coverage_enabled) { true }
   end
 
   let(:cucumber_8_or_above) { Gem::Version.new("8.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
@@ -95,13 +104,13 @@ RSpec.describe "Cucumber formatter" do
 
       expect(scenario_span).to have_test_tag(
         :source_file,
-        "spec/datadog/ci/contrib/cucumber/features/passing.feature"
+        "passing.feature"
       )
       expect(scenario_span).to have_test_tag(:source_start, "3")
 
       expect(scenario_span).to have_test_tag(
         :codeowners,
-        "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
+        "[\"@test-owner\"]"
       )
 
       step_span = spans.find { |s| s.resource == "datadog" }
@@ -175,6 +184,27 @@ RSpec.describe "Cucumber formatter" do
       expect(first_test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
       expect(first_test_span).to have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
       expect(first_test_span).to have_test_tag(:suite, first_test_suite_span.name)
+    end
+
+    context "collecting coverage with features dir as root" do
+      before { skip if PlatformHelpers.jruby? }
+
+      it "creates coverage events for each test" do
+        expect(coverage_events).to have(4).items
+
+        expect_coverage_events_belong_to_session(test_session_span)
+        expect_coverage_events_belong_to_suite(first_test_suite_span)
+        expect_coverage_events_belong_to_tests(test_spans)
+        expect_non_empty_coverages
+
+        feature_coverage = coverage_events.first.coverage
+        # expect cucumber features to have gherkin files and step definitions as covered files
+        expect(feature_coverage.size).to eq(2)
+        expect(feature_coverage.keys).to include(
+          match(%r{features/passing\.feature}),
+          match(%r{features/step_definitions/steps_#{run_id}\.rb})
+        )
+      end
     end
   end
 

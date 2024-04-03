@@ -24,6 +24,8 @@ module Datadog
           def valid?: () -> bool
 
           def to_msgpack: (?untyped? packer) -> untyped
+
+          def pretty_inspect: () -> String
         end
       end
     end
