@@ -27,9 +27,13 @@ module Datadog
 
         def self.git_commit_users: () -> Array[Datadog::CI::Git::User]
 
+        def self.git_commits: () -> Array[String]
+
         private
 
         def self.exec_git_command: (String ref) -> String?
+
+        def self.log_failure: (StandardError e, String action) -> void
       end
     end
   end

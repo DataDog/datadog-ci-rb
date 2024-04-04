@@ -99,6 +99,16 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     it { is_expected.to eq("git@github.com:DataDog/datadog-ci-rb.git") }
   end
 
+  describe ".git_commits" do
+    subject { described_class.git_commits }
+
+    it "returns a list of git commit sha (this test will fail if there are no commits to this library in the past month)" do
+      expect(subject).to be_kind_of(Array)
+      expect(subject).not_to be_empty
+      expect(subject.first).to eq(described_class.git_commit_sha)
+    end
+  end
+
   context "with git folder" do
     include_context "with git fixture", "gitdir_with_commit"
 
@@ -174,6 +184,18 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         expect(committer.name).to eq("Andrey Marchenko")
         expect(committer.email).to eq("andrey.marchenko@datadoghq.com")
         expect(committer.date).to eq("2023-10-02T13:52:56+00:00")
+      end
+    end
+
+    describe ".git_commits" do
+      subject do
+        with_custom_git_environment do
+          described_class.git_commits
+        end
+      end
+
+      it "returns empty array as last commit was more than 1 month ago" do
+        expect(subject).to eq([])
       end
     end
   end
