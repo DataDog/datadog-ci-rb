@@ -13,11 +13,6 @@ module Datadog
           return @root if defined?(@root)
 
           @root = git_root || Dir.pwd
-        rescue => e
-          Datadog.logger.debug(
-            "Unable to read git root: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
-          @root = Dir.pwd
         end
 
         def self.relative_to_root(path)
@@ -55,54 +50,42 @@ module Datadog
         def self.git_repository_url
           exec_git_command("git ls-remote --get-url")
         rescue => e
-          Datadog.logger.debug(
-            "Unable to read git repository url: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
+          log_failure(e, "git repository url")
           nil
         end
 
         def self.git_root
           exec_git_command("git rev-parse --show-toplevel")
         rescue => e
-          Datadog.logger.debug(
-            "Unable to read git root path: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
+          log_failure(e, "git root path")
           nil
         end
 
         def self.git_commit_sha
           exec_git_command("git rev-parse HEAD")
         rescue => e
-          Datadog.logger.debug(
-            "Unable to read git commit SHA: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
+          log_failure(e, "git commit sha")
           nil
         end
 
         def self.git_branch
           exec_git_command("git rev-parse --abbrev-ref HEAD")
         rescue => e
-          Datadog.logger.debug(
-            "Unable to read git branch: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
+          log_failure(e, "git branch")
           nil
         end
 
         def self.git_tag
           exec_git_command("git tag --points-at HEAD")
         rescue => e
-          Datadog.logger.debug(
-            "Unable to read git tag: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
+          log_failure(e, "git tag")
           nil
         end
 
         def self.git_commit_message
           exec_git_command("git show -s --format=%s")
         rescue => e
-          Datadog.logger.debug(
-            "Unable to read git commit message: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
+          log_failure(e, "git commit message")
           nil
         end
 
@@ -125,11 +108,21 @@ module Datadog
 
           [author, committer]
         rescue => e
-          Datadog.logger.debug(
-            "Unable to read git commit users: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
+          log_failure(e, "git commit users")
+
           nil_user = NilUser.new
           [nil_user, nil_user]
+        end
+
+        # returns maximum of 1000 latest commits in the last month
+        def self.git_commits
+          output = exec_git_command("git log --format=%H -n 1000 --since=\"1 month ago\"")
+          return [] if output.nil?
+
+          output.split("\n")
+        rescue => e
+          log_failure(e, "git commits")
+          []
         end
 
         # makes .exec_git_command private to make sure that this method
@@ -157,6 +150,12 @@ module Datadog
             return nil if out.empty?
 
             out
+          end
+
+          def log_failure(e, action)
+            Datadog.logger.debug(
+              "Unable to read #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
+            )
           end
         end
       end
