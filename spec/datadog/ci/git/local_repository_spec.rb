@@ -3,6 +3,8 @@
 require_relative "../../../../lib/datadog/ci/git/local_repository"
 
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
+  let(:environment_variables) { {} }
+
   describe ".root" do
     subject { described_class.root }
 
@@ -66,22 +68,11 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     subject { described_class.current_folder_name }
     let(:path) { "/foo/bar" }
 
-    context "when git root is nil" do
-      before do
-        allow(described_class).to receive(:root).and_return(nil)
-        allow(Dir).to receive(:pwd).and_return(path)
-      end
-
-      it { is_expected.to eq("bar") }
+    before do
+      allow(described_class).to receive(:root).and_return(path)
     end
 
-    context "when git root is not nil" do
-      before do
-        allow(described_class).to receive(:root).and_return(path)
-      end
-
-      it { is_expected.to eq("bar") }
-    end
+    it { is_expected.to eq("bar") }
   end
 
   describe ".repository_name" do
@@ -98,6 +89,91 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         2.times do
           expect(described_class.root).to eq(Dir.pwd)
         end
+      end
+    end
+  end
+
+  describe ".git_repository_url" do
+    subject { described_class.git_repository_url }
+
+    it { is_expected.to eq("git@github.com:DataDog/datadog-ci-rb.git") }
+  end
+
+  context "with git folder" do
+    include_context "with git fixture", "gitdir_with_commit"
+
+    def with_custom_git_environment
+      ClimateControl.modify(environment_variables) do
+        yield
+      end
+    end
+
+    describe ".git_root" do
+      subject do
+        with_custom_git_environment do
+          described_class.git_root
+        end
+      end
+
+      it { is_expected.to eq(File.join(Dir.pwd, "spec/support/fixtures/git")) }
+    end
+
+    describe ".git_commit_sha" do
+      subject do
+        with_custom_git_environment do
+          described_class.git_commit_sha
+        end
+      end
+
+      it { is_expected.to eq("c7f893648f656339f62fb7b4d8a6ecdf7d063835") }
+    end
+
+    describe ".git_branch" do
+      subject do
+        with_custom_git_environment do
+          described_class.git_branch
+        end
+      end
+
+      it { is_expected.to eq("master") }
+    end
+
+    describe ".git_tag" do
+      subject do
+        with_custom_git_environment do
+          described_class.git_tag
+        end
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    describe ".git_commit_message" do
+      subject do
+        with_custom_git_environment do
+          described_class.git_commit_message
+        end
+      end
+
+      it { is_expected.to eq("First commit with ❤️") }
+    end
+
+    describe ".git_commit_users" do
+      subject do
+        with_custom_git_environment do
+          described_class.git_commit_users
+        end
+      end
+
+      it "parses author and commiter from the latest commit" do
+        author, committer = subject
+
+        expect(author.name).to eq("Friendly bot")
+        expect(author.email).to eq("bot@friendly.test")
+        expect(author.date).to eq("2011-02-16T13:00:00+00:00")
+        expect(committer.name).to eq("Andrey Marchenko")
+        expect(committer.email).to eq("andrey.marchenko@datadoghq.com")
+        expect(committer.date).to eq("2023-10-02T13:52:56+00:00")
       end
     end
   end

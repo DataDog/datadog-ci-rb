@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Git
+      class User
+        attr_reader name: String?
+        attr_reader email: String?
+        attr_reader timestamp: String?
+
+        @name: String?
+        @email: String?
+        @timestamp: String?
+
+        def initialize: (String? name, String? email, String? timestamp) -> void
+
+        def date: () -> String?
+      end
+
+      class NilUser < User
+        def initialize: () -> void
+      end
+    end
+  end
+end
