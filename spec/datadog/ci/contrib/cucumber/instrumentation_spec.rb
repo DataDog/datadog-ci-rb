@@ -6,7 +6,7 @@ RSpec.describe "Cucumber formatter" do
   let(:cucumber_features_root) { File.join(__dir__, "features") }
 
   before do
-    allow(Datadog::CI::Utils::Git).to receive(:root).and_return(cucumber_features_root)
+    allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(cucumber_features_root)
   end
 
   include_context "CI mode activated" do

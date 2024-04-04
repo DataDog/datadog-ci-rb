@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "base"
-require_relative "../../../utils/git"
+require_relative "../../../git/local_repository"
 
 module Datadog
   module CI
@@ -11,7 +11,7 @@ module Datadog
           # As a fallback we try to fetch git information from the local git repository
           class LocalGit < Base
             def git_repository_url
-              Utils::Git.exec_git_command("git ls-remote --get-url")
+              CI::Git::LocalRepository.exec_git_command("git ls-remote --get-url")
             rescue => e
               Datadog.logger.debug(
                 "Unable to read git repository url: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
@@ -20,7 +20,7 @@ module Datadog
             end
 
             def git_commit_sha
-              Utils::Git.exec_git_command("git rev-parse HEAD")
+              CI::Git::LocalRepository.exec_git_command("git rev-parse HEAD")
             rescue => e
               Datadog.logger.debug(
                 "Unable to read git commit SHA: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
@@ -29,7 +29,7 @@ module Datadog
             end
 
             def git_branch
-              Utils::Git.exec_git_command("git rev-parse --abbrev-ref HEAD")
+              CI::Git::LocalRepository.exec_git_command("git rev-parse --abbrev-ref HEAD")
             rescue => e
               Datadog.logger.debug(
                 "Unable to read git branch: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
@@ -38,7 +38,7 @@ module Datadog
             end
 
             def git_tag
-              Utils::Git.exec_git_command("git tag --points-at HEAD")
+              CI::Git::LocalRepository.exec_git_command("git tag --points-at HEAD")
             rescue => e
               Datadog.logger.debug(
                 "Unable to read git tag: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
@@ -47,7 +47,7 @@ module Datadog
             end
 
             def git_commit_message
-              Utils::Git.exec_git_command("git show -s --format=%s")
+              CI::Git::LocalRepository.exec_git_command("git show -s --format=%s")
             rescue => e
               Datadog.logger.debug(
                 "Unable to read git commit message: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
@@ -80,7 +80,7 @@ module Datadog
             end
 
             def workspace_path
-              Utils::Git.exec_git_command("git rev-parse --show-toplevel")
+              CI::Git::LocalRepository.exec_git_command("git rev-parse --show-toplevel")
             rescue => e
               Datadog.logger.debug(
                 "Unable to read git base directory: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
@@ -106,7 +106,7 @@ module Datadog
 
             def set_git_commit_users
               # Get committer and author information in one command.
-              output = Utils::Git.exec_git_command("git show -s --format='%an\t%ae\t%at\t%cn\t%ce\t%ct'")
+              output = CI::Git::LocalRepository.exec_git_command("git show -s --format='%an\t%ae\t%at\t%cn\t%ce\t%ct'")
               unless output
                 Datadog.logger.debug(
                   "Unable to read git commit users: git command output is nil"
