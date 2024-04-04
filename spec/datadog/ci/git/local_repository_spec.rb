@@ -5,6 +5,12 @@ require_relative "../../../../lib/datadog/ci/git/local_repository"
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
   let(:environment_variables) { {} }
 
+  def with_custom_git_environment
+    ClimateControl.modify(environment_variables) do
+      yield
+    end
+  end
+
   describe ".root" do
     subject { described_class.root }
 
@@ -109,14 +115,20 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
   end
 
+  describe ".git_commits_rev_list" do
+    let(:commits) { described_class.git_commits }
+    let(:included_commits) { commits[0..1] }
+    let(:excluded_commits) { commits[2..] }
+
+    subject { described_class.git_commits_rev_list(included_commits, excluded_commits) }
+
+    it "returns a list of commits that are reachable from included list but not reachable from excluded list" do
+      expect(subject).to include(included_commits.join("\n"))
+    end
+  end
+
   context "with git folder" do
     include_context "with git fixture", "gitdir_with_commit"
-
-    def with_custom_git_environment
-      ClimateControl.modify(environment_variables) do
-        yield
-      end
-    end
 
     describe ".git_root" do
       subject do
@@ -197,6 +209,19 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       it "returns empty array as last commit was more than 1 month ago" do
         expect(subject).to eq([])
       end
+    end
+
+    describe ".git_commits_rev_list" do
+      let(:included_commits) { [] }
+      let(:excluded_commits) { [] }
+
+      subject do
+        with_custom_git_environment do
+          described_class.git_commits_rev_list(included_commits, excluded_commits)
+        end
+      end
+
+      it { is_expected.to be_nil }
     end
   end
 end

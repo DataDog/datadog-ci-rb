@@ -125,6 +125,23 @@ module Datadog
           []
         end
 
+        def self.git_commits_rev_list(included_commits, excluded_commits)
+          included_commits = included_commits.join(" ")
+          excluded_commits = excluded_commits.map! { |sha| "^#{sha}" }.join(" ")
+
+          exec_git_command(
+            "git rev-list " \
+            "--objects " \
+            "--no-object-names " \
+            "--filter=blob:none " \
+            "--since=\"1 month ago\" " \
+            "#{excluded_commits} #{included_commits}"
+          )
+        rescue => e
+          log_failure(e, "git commits rev list")
+          nil
+        end
+
         # makes .exec_git_command private to make sure that this method
         # is not called from outside of this module with insecure parameters
         class << self
