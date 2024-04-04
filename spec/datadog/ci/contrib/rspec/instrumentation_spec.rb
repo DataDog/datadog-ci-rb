@@ -432,7 +432,7 @@ RSpec.describe "RSpec hooks" do
 
     context "with git root changed" do
       before do
-        expect(Datadog::CI::Utils::Git).to receive(:root).and_return("#{Dir.pwd}/spec")
+        expect(Datadog::CI::Git::LocalRepository).to receive(:root).and_return("#{Dir.pwd}/spec")
       end
 
       it "provides source file path relative to git root" do
@@ -610,7 +610,7 @@ RSpec.describe "RSpec hooks" do
     before { skip if PlatformHelpers.jruby? }
 
     before do
-      allow(Datadog::CI::Utils::Git).to receive(:root).and_return(__dir__)
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
     end
 
     include_context "CI mode activated" do
