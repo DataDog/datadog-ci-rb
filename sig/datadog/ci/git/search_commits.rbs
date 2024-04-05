@@ -1,0 +1,26 @@
+module Datadog
+  module CI
+    module Git
+      class SearchCommits
+        @api: Datadog::CI::Transport::Api::Base?
+
+        attr_reader api: Datadog::CI::Transport::Api::Base?
+
+        class ApiError < StandardError
+        end
+
+        def initialize: (api: Datadog::CI::Transport::Api::Base?) -> void
+
+        def call: (String repository_url, Array[String] commits) -> Set[String]
+
+        private
+
+        def request_payload: (String repository_url, Array[String] commits) -> String
+
+        def parse_json_response: (Datadog::Core::Transport::Response response) -> Hash[String, untyped]
+
+        def extract_commits: (Hash[String, untyped] response) -> Set[String]
+      end
+    end
+  end
+end
