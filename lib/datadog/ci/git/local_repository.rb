@@ -37,9 +37,7 @@ module Datadog
           @repository_name = last_path_segment.gsub(".git", "") if last_path_segment
           @repository_name ||= current_folder_name
         rescue => e
-          Datadog.logger.debug(
-            "Unable to get git remote: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-          )
+          log_failure(e, "git repository name")
           @repository_name = current_folder_name
         end
 
