@@ -29,9 +29,11 @@ module Datadog
 
         def self.git_commits: () -> Array[String]
 
+        def self.git_commits_rev_list: (included_commits: Array[String], excluded_commits: Array[String]) -> String?
+
         private
 
-        def self.exec_git_command: (String ref) -> String?
+        def self.exec_git_command: (String ref, ?stdin: String?) -> String?
 
         def self.log_failure: (StandardError e, String action) -> void
       end
