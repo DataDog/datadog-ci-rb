@@ -270,4 +270,18 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       it { is_expected.to be_nil }
     end
   end
+
+  context "with git folder tagged" do
+    include_context "with git fixture", "gitdir_with_tag"
+
+    describe ".git_tag" do
+      subject do
+        with_custom_git_environment do
+          described_class.git_tag
+        end
+      end
+
+      it { is_expected.to eq("first-tag") }
+    end
+  end
 end
