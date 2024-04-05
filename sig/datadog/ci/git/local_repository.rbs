@@ -1,0 +1,42 @@
+module Datadog
+  module CI
+    module Git
+      module LocalRepository
+        @root: String?
+        @repository_name: String?
+
+        def self.root: -> String
+
+        def self.repository_name: -> String
+
+        def self.current_folder_name: -> String
+
+        def self.relative_to_root: (String? path) -> String
+
+        def self.git_repository_url: () -> String?
+
+        def self.git_root: () -> String?
+
+        def self.git_commit_sha: () -> String?
+
+        def self.git_branch: () -> String?
+
+        def self.git_tag: () -> String?
+
+        def self.git_commit_message: () -> String?
+
+        def self.git_commit_users: () -> Array[Datadog::CI::Git::User]
+
+        def self.git_commits: () -> Array[String]
+
+        def self.git_commits_rev_list: (included_commits: Array[String], excluded_commits: Array[String]) -> String?
+
+        private
+
+        def self.exec_git_command: (String ref, ?stdin: String?) -> String?
+
+        def self.log_failure: (StandardError e, String action) -> void
+      end
+    end
+  end
+end

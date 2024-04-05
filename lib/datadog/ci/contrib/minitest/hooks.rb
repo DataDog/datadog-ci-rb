@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../ext/test"
+require_relative "../../git/local_repository"
 require_relative "ext"
 require_relative "helpers"
 
@@ -30,7 +31,7 @@ module Datadog
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                 CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Minitest::Integration.version.to_s,
-                CI::Ext::Test::TAG_SOURCE_FILE => Utils::Git.relative_to_root(source_file),
+                CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(source_file),
                 CI::Ext::Test::TAG_SOURCE_START => line_number.to_s
               },
               service: datadog_configuration[:service_name]

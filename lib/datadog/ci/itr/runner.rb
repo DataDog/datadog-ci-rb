@@ -5,7 +5,7 @@ require "pp"
 require_relative "../ext/test"
 require_relative "../ext/transport"
 
-require_relative "../utils/git"
+require_relative "../git/local_repository"
 
 require_relative "coverage/event"
 
@@ -110,7 +110,7 @@ module Datadog
         end
 
         def coverage_collector
-          Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(root: Utils::Git.root)
+          Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(root: Git::LocalRepository.root)
         end
 
         def load_datadog_cov!
@@ -126,7 +126,7 @@ module Datadog
         end
 
         def ensure_test_source_covered(test_source_file, coverage)
-          absolute_test_source_file_path = File.join(Utils::Git.root, test_source_file)
+          absolute_test_source_file_path = File.join(Git::LocalRepository.root, test_source_file)
           return if coverage.key?(absolute_test_source_file_path)
 
           coverage[absolute_test_source_file_path] = true
