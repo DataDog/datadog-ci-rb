@@ -2,7 +2,7 @@ module Datadog
   module Core
     module Transport
       module Response
-        def payload: () -> nil
+        def payload: () -> String
 
         def ok?: () -> nil
 

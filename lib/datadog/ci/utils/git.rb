@@ -7,6 +7,12 @@ module Datadog
   module CI
     module Utils
       module Git
+        def self.valid_commit_sha?(sha)
+          return false if sha.nil?
+
+          sha.match?(/\A[0-9a-f]{40}\Z/) || sha.match?(/\A[0-9a-f]{64}\Z/)
+        end
+
         def self.normalize_ref(ref)
           return nil if ref.nil?
 

@@ -27,6 +27,7 @@ module Datadog
         TEST_COVERAGE_INTAKE_PATH = "/api/v2/citestcov"
 
         DD_API_HOST_PREFIX = "api"
+
         DD_API_SETTINGS_PATH = "/api/v2/libraries/tests/services/setting"
         DD_API_SETTINGS_TYPE = "ci_app_test_service_libraries_settings"
         DD_API_SETTINGS_RESPONSE_DIG_KEYS = %w[data attributes].freeze
@@ -35,6 +36,8 @@ module Datadog
         DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY = "tests_skipping"
         DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY = "require_git"
         DD_API_SETTINGS_RESPONSE_DEFAULT = {DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY => false}.freeze
+
+        DD_API_GIT_SEARCH_COMMITS_PATH = "/api/v2/git/repository/search_commits"
 
         CONTENT_TYPE_MESSAGEPACK = "application/msgpack"
         CONTENT_TYPE_JSON = "application/json"
