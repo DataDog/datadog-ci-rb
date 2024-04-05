@@ -144,7 +144,7 @@ module Datadog
 
         def self.git_generate_packfiles(included_commits:, excluded_commits:, path:)
           commit_tree = git_commits_rev_list(included_commits: included_commits, excluded_commits: excluded_commits)
-          return [] if commit_tree.nil?
+          return nil if commit_tree.nil?
 
           basename = SecureRandom.hex(4)
 
