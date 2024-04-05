@@ -125,7 +125,7 @@ module Datadog
           []
         end
 
-        def self.git_commits_rev_list(included_commits, excluded_commits)
+        def self.git_commits_rev_list(included_commits:, excluded_commits:)
           included_commits = included_commits.join(" ")
           excluded_commits = excluded_commits.map! { |sha| "^#{sha}" }.join(" ")
 
@@ -142,16 +142,31 @@ module Datadog
           nil
         end
 
+        def self.git_generate_packfiles(included_commits:, excluded_commits:, path:)
+          commit_tree = git_commits_rev_list(included_commits: included_commits, excluded_commits: excluded_commits)
+          return [] if commit_tree.nil?
+
+          basename = SecureRandom.hex(4)
+
+          exec_git_command(
+            "git pack-objects --compression=9 --max-pack-size=3m #{path}/#{basename}",
+            stdin: commit_tree
+          )
+        rescue => e
+          log_failure(e, "git generate packfiles")
+          nil
+        end
+
         # makes .exec_git_command private to make sure that this method
         # is not called from outside of this module with insecure parameters
         class << self
           private
 
-          def exec_git_command(cmd)
+          def exec_git_command(cmd, stdin: nil)
             # Shell injection is alleviated by making sure that no outside modules call this method.
             # It is called only internally with static parameters.
             # no-dd-sa:ruby-security/shell-injection
-            out, status = Open3.capture2e(cmd)
+            out, status = Open3.capture2e(cmd, stdin_data: stdin)
 
             raise "Failed to run git command #{cmd}: #{out}" unless status.success?
 

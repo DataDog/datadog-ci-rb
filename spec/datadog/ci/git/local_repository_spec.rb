@@ -116,14 +116,57 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
   end
 
   describe ".git_commits_rev_list" do
+    # skip for jruby for now - old git version DD docker image
+    before { skip if PlatformHelpers.jruby? }
+
     let(:commits) { described_class.git_commits }
     let(:included_commits) { commits[0..1] }
     let(:excluded_commits) { commits[2..] }
 
-    subject { described_class.git_commits_rev_list(included_commits, excluded_commits) }
+    subject do
+      described_class.git_commits_rev_list(included_commits: included_commits, excluded_commits: excluded_commits)
+    end
 
     it "returns a list of commits that are reachable from included list but not reachable from excluded list" do
       expect(subject).to include(included_commits.join("\n"))
+    end
+  end
+
+  describe ".git_generate_packfiles" do
+    let(:commits) { described_class.git_commits }
+    let(:included_commits) { commits[0..1] }
+    let(:excluded_commits) { commits[2..] }
+
+    subject do
+      described_class.git_generate_packfiles(
+        included_commits: included_commits,
+        excluded_commits: excluded_commits,
+        path: tmpdir
+      )
+    end
+
+    context "temporary directory" do
+      let(:tmpdir) { Dir.mktmpdir }
+
+      after do
+        FileUtils.remove_entry(tmpdir)
+      end
+
+      it "generates packfiles in temp directory" do
+        expect(subject).not_to be_nil
+        packfiles = Dir.entries(tmpdir) - %w[. ..]
+        expect(packfiles).not_to be_empty
+        expect(packfiles).to all(match(/^\h{8}-\h{40}\.(pack|idx|rev)$/))
+      end
+    end
+
+    context "no such directory" do
+      let(:tmpdir) { "./no/such/directory" }
+
+      it "returns nil" do
+        expect(subject).to be_nil
+        expect(File.exist?(tmpdir)).to be_falsey
+      end
     end
   end
 
@@ -217,7 +260,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
       subject do
         with_custom_git_environment do
-          described_class.git_commits_rev_list(included_commits, excluded_commits)
+          described_class.git_commits_rev_list(included_commits: included_commits, excluded_commits: excluded_commits)
         end
       end
 
