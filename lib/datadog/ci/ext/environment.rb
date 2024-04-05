@@ -3,6 +3,8 @@
 require_relative "git"
 require_relative "environment/extractor"
 
+require_relative "../utils/git"
+
 module Datadog
   module CI
     module Ext
@@ -20,8 +22,6 @@ module Datadog
         TAG_NODE_LABELS = "ci.node.labels"
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
-
-        HEX_NUMBER_REGEXP = /[0-9a-f]{40}/i.freeze
 
         module_function
 
@@ -57,24 +57,19 @@ module Datadog
         end
 
         def validate_git_sha(git_sha)
+          return if Utils::Git.valid_commit_sha?(git_sha)
+
           message = "DD_GIT_COMMIT_SHA must be a full-length git SHA."
 
-          if git_sha.nil? || git_sha.empty?
-            message += " No value was set and no SHA was automatically extracted."
-            Datadog.logger.error(message)
-            return
+          message += if git_sha.nil? || git_sha.empty?
+            " No value was set and no SHA was automatically extracted."
+          elsif git_sha.length < Git::SHA_LENGTH
+            " Expected SHA length #{Git::SHA_LENGTH}, was #{git_sha.length}."
+          else
+            " Expected SHA to be a valid HEX number, got #{git_sha}."
           end
 
-          if git_sha.length < Git::SHA_LENGTH
-            message += " Expected SHA length #{Git::SHA_LENGTH}, was #{git_sha.length}."
-            Datadog.logger.error(message)
-            return
-          end
-
-          unless HEX_NUMBER_REGEXP.match?(git_sha)
-            message += " Expected SHA to be a valid HEX number, got #{git_sha}."
-            Datadog.logger.error(message)
-          end
+          Datadog.logger.error(message)
         end
       end
     end
