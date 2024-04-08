@@ -164,7 +164,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
 
     context "no such directory" do
-      let(:tmpdir) { "./no/such/directory" }
+      let(:tmpdir) { " | echo \"boo\"" }
 
       it "returns nil" do
         expect(subject).to be_nil
