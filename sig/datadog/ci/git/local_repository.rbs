@@ -31,6 +31,8 @@ module Datadog
 
         def self.git_commits_rev_list: (included_commits: Array[String], excluded_commits: Array[String]) -> String?
 
+        def self.git_generate_packfiles: (included_commits: Array[String], excluded_commits: Array[String], path: String) -> String?
+
         private
 
         def self.filter_invalid_commits: (Array[String] commits) -> Array[String]

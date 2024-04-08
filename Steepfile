@@ -13,6 +13,7 @@ target :lib do
   library "net-http"
   library "zlib"
   library "securerandom"
+  library "tmpdir"
 
   repo_path "vendor/rbs"
   library "ddtrace"
