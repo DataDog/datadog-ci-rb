@@ -14,6 +14,7 @@ target :lib do
   library "zlib"
   library "securerandom"
   library "tmpdir"
+  library "fileutils"
 
   repo_path "vendor/rbs"
   library "ddtrace"
