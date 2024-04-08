@@ -28,11 +28,19 @@ RSpec.describe Datadog::CI::Git::UploadPackfile do
       let(:http_response) { double("http_response", ok?: true) }
 
       context "when file does not exist" do
+        let(:expected_error_message) do
+          if PlatformHelpers.jruby?
+            "Failed to read packfile: No such file or directory - nonexistent"
+          else
+            "Failed to read packfile: No such file or directory @ rb_sysopen - nonexistent"
+          end
+        end
+
         it "raises an error" do
           expect { upload_packfile.call(filepath: filepath) }
             .to raise_error(
               Datadog::CI::Git::UploadPackfile::ApiError,
-              "Failed to read packfile: No such file or directory @ rb_sysopen - nonexistent"
+              expected_error_message
             )
         end
       end
