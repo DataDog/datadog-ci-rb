@@ -33,6 +33,8 @@ module Datadog
 
         private
 
+        def self.filter_invalid_commits: (Array[String] commits) -> Array[String]
+
         def self.exec_git_command: (String ref, ?stdin: String?) -> String?
 
         def self.log_failure: (StandardError e, String action) -> void
