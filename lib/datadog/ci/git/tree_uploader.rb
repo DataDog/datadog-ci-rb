@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "tmpdir"
+require "fileutils"
 
 require_relative "local_repository"
 require_relative "search_commits"
@@ -40,24 +41,36 @@ module Datadog
           # 5. Get commits and trees excluding the backend commits
           # 6. Generate pack files
           included_commits = latest_commits.filter do |commit|
-            # check that backend_commits has this commit
             !backend_commits.include?(commit)
           end
 
           Dir.mktmpdir do |tmpdir|
+            packfiles_folder = tmpdir
             res = LocalRepository.git_generate_packfiles(
               included_commits: included_commits,
               excluded_commits: backend_commits.to_a,
-              path: tmpdir
+              path: packfiles_folder
             )
 
             if res.nil?
               Datadog.logger.debug("packfiles generation failed, retrying with different folder")
 
-              # TODO: retry with tmp folder under current process directory
+              packfiles_folder = File.join(Dir.pwd, "tmp", "packfiles")
+              FileUtils.mkdir_p(packfiles_folder)
+
+              res = LocalRepository.git_generate_packfiles(
+                included_commits: included_commits,
+                excluded_commits: backend_commits.to_a,
+                path: packfiles_folder
+              )
+
+              if res.nil?
+                Datadog.logger.debug("packfiles generation failed, aborting git upload")
+                break
+              end
             end
 
-            packfiles = Dir.entries(tmpdir) - [".", ".."]
+            packfiles = Dir.entries(packfiles_folder) - [".", ".."]
             if packfiles.empty?
               Datadog.logger.debug("Empty packfiles list, nothing to upload")
               break
