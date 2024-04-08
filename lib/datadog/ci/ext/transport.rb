@@ -39,6 +39,8 @@ module Datadog
 
         DD_API_GIT_SEARCH_COMMITS_PATH = "/api/v2/git/repository/search_commits"
 
+        DD_API_GIT_UPLOAD_PACKFILE_PATH = "/api/v2/git/repository/packfile"
+
         CONTENT_TYPE_MESSAGEPACK = "application/msgpack"
         CONTENT_TYPE_JSON = "application/json"
         CONTENT_TYPE_MULTIPART_FORM_DATA = "multipart/form-data"
