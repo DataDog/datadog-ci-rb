@@ -22,7 +22,8 @@ module Datadog
           # TO BE ADDED IN CIVIS-2863
           # 3. Get a maximum of 1000 latest commits in the last month with git log
           latest_commits = LocalRepository.git_commits
-          if latest_commits.empty?
+          head_commit = latest_commits.first
+          if head_commit.nil?
             Datadog.logger.debug("Got empty latest commits list, aborting git upload")
             return
           end
@@ -58,13 +59,7 @@ module Datadog
 
             packfiles = Dir.entries(tmpdir) - [".", ".."]
             if packfiles.empty?
-              Datadog.logger.debug("Empty packfiles, nothing to upload")
-              break
-            end
-
-            head_commit = latest_commits.first
-            if head_commit.nil?
-              Datadog.logger.debug("Got empty latest commits list, aborting git upload")
+              Datadog.logger.debug("Empty packfiles list, nothing to upload")
               break
             end
 
