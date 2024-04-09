@@ -26,8 +26,6 @@ module Datadog
 
           Datadog.logger.debug { "Uploading git tree for repository #{repository_url}" }
 
-          # 2. Check if the repository clone is shallow and unshallow if appropriate
-          # TO BE ADDED IN CIVIS-2863
           latest_commits = LocalRepository.git_commits
           head_commit = latest_commits&.first
           if head_commit.nil?
@@ -36,10 +34,33 @@ module Datadog
           end
 
           begin
+            # This "far from perfect" code stays here as is and not split up multiple methods and classes because
+            # the unshallowing logic with optimizations is inherently complex and I don't hide this
+            # complexity on purpose.
             excluded_commits, included_commits = split_known_commits(repository_url, latest_commits)
             if included_commits.empty?
-              Datadog.logger.debug("No new commits to upload")
-              return
+              if LocalRepository.git_shallow_clone?
+                Datadog.logger.debug("Detected shallow clone, unshallowing the git repository")
+
+                unshallow_result = LocalRepository.git_unshallow
+                if unshallow_result.nil?
+                  Datadog.logger.debug("Failed to unshallow the git repository, aborting git upload")
+                  return
+                end
+
+                excluded_commits, included_commits = split_known_commits(
+                  repository_url,
+                  LocalRepository.git_commits
+                )
+
+                if included_commits.empty?
+                  Datadog.logger.debug("No new commits to upload after unshallowing")
+                  return
+                end
+              else
+                Datadog.logger.debug("No new commits to upload")
+                return
+              end
             end
           rescue SearchCommits::ApiError => e
             Datadog.logger.debug("SearchCommits failed with #{e}, aborting git upload")
