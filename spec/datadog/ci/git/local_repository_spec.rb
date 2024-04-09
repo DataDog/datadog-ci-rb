@@ -165,7 +165,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
 
       it "generates packfiles in temp directory" do
-        expect(subject).not_to be_nil
+        expect(subject).to match(/^\h{8}$/)
         packfiles = Dir.entries(tmpdir) - %w[. ..]
         expect(packfiles).not_to be_empty
         expect(packfiles).to all(match(/^\h{8}-\h{40}\.(pack|idx|rev)$/))
