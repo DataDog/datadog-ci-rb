@@ -1,0 +1,14 @@
+module Datadog
+  module CI
+    module Git
+      class TreeUploader
+        @api: Datadog::CI::Transport::Api::Base?
+
+        attr_reader api: Datadog::CI::Transport::Api::Base?
+
+        def initialize: (api: Datadog::CI::Transport::Api::Base?) -> void
+        def call: (String repository_url) -> void
+      end
+    end
+  end
+end
