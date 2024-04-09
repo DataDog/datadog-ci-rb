@@ -337,6 +337,9 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
 
     describe ".git_unshallow" do
+      # skip for jruby for now - old git version DD docker image
+      before { skip if PlatformHelpers.jruby? }
+
       subject do
         with_shallow_clone_git_dir { described_class.git_unshallow }
       end

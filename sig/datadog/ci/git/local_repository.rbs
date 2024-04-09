@@ -35,6 +35,8 @@ module Datadog
 
         def self.git_shallow_clone?: () -> bool
 
+        def self.git_unshallow: () -> String?
+
         private
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]
