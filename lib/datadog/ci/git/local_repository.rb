@@ -124,8 +124,8 @@ module Datadog
         end
 
         def self.git_commits_rev_list(included_commits:, excluded_commits:)
-          included_commits = included_commits.join(" ")
-          excluded_commits = excluded_commits.map! { |sha| "^#{sha}" }.join(" ")
+          included_commits = filter_invalid_commits(included_commits).join(" ")
+          excluded_commits = filter_invalid_commits(excluded_commits).map! { |sha| "^#{sha}" }.join(" ")
 
           exec_git_command(
             "git rev-list " \
@@ -141,6 +141,8 @@ module Datadog
         end
 
         def self.git_generate_packfiles(included_commits:, excluded_commits:, path:)
+          return nil unless File.exist?(path)
+
           commit_tree = git_commits_rev_list(included_commits: included_commits, excluded_commits: excluded_commits)
           return nil if commit_tree.nil?
 
@@ -159,6 +161,14 @@ module Datadog
         # is not called from outside of this module with insecure parameters
         class << self
           private
+
+          def filter_invalid_commits(commits)
+            commits.filter_map do |commit|
+              next unless Utils::Git.valid_commit_sha?(commit)
+
+              commit
+            end
+          end
 
           def exec_git_command(cmd, stdin: nil)
             # Shell injection is alleviated by making sure that no outside modules call this method.

@@ -130,6 +130,15 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     it "returns a list of commits that are reachable from included list but not reachable from excluded list" do
       expect(subject).to include(included_commits.join("\n"))
     end
+
+    context "invalid commits" do
+      let(:included_commits) { [" | echo \"boo\" "] }
+      let(:excluded_commits) { [" | echo \"boo\" "] }
+
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+    end
   end
 
   describe ".git_generate_packfiles" do
@@ -164,7 +173,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
 
     context "no such directory" do
-      let(:tmpdir) { "./no/such/directory" }
+      let(:tmpdir) { " | echo \"boo\"" }
 
       it "returns nil" do
         expect(subject).to be_nil

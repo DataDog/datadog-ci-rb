@@ -25,7 +25,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
       end
 
       context "when the API request fails" do
-        let(:http_response) { double("http_response", ok?: false, body: "error message") }
+        let(:http_response) { double("http_response", ok?: false, inspect: "error message") }
 
         it "raises an error" do
           expect { search_commits.call(repository_url, commits) }
@@ -37,10 +37,10 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
         let(:http_response) { double("http_response", ok?: true, payload: response_payload) }
         let(:response_payload) do
           {
-            "data" => [
+            data: [
               {
-                "id" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
-                "type" => "commit"
+                id: "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
+                type: "commit"
               }
             ]
           }.to_json
@@ -71,10 +71,10 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
         context "when the response contains an invalid commit type" do
           let(:response_payload) do
             {
-              "data" => [
+              data: [
                 {
-                  "id" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
-                  "type" => "invalid"
+                  id: "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
+                  type: "invalid"
                 }
               ]
             }.to_json
@@ -92,10 +92,10 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
         context "when the response contains an invalid commit SHA" do
           let(:response_payload) do
             {
-              "data" => [
+              data: [
                 {
-                  "id" => "INVALID_SHA",
-                  "type" => "commit"
+                  id: "INVALID_SHA",
+                  type: "commit"
                 }
               ]
             }.to_json
@@ -134,9 +134,9 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
         context "when the response is missing the commit type" do
           let(:response_payload) do
             {
-              "data" => [
+              data: [
                 {
-                  "id" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835"
+                  id: "c7f893648f656339f62fb7b4d8a6ecdf7d063835"
                 }
               ]
             }.to_json

@@ -1,0 +1,32 @@
+module Datadog
+  module CI
+    module Git
+      class UploadPackfile
+        @api: Datadog::CI::Transport::Api::Base?
+
+        @head_commit_sha: String
+
+        @repository_url: String
+
+        class ApiError < StandardError
+        end
+
+        attr_reader api: Datadog::CI::Transport::Api::Base?
+
+        attr_reader head_commit_sha: String
+
+        attr_reader repository_url: String
+
+        def initialize: (api: Datadog::CI::Transport::Api::Base?, head_commit_sha: String, repository_url: String) -> void
+
+        def call: (filepath: String) -> void
+
+        private
+
+        def request_payload: (String boundary, String filename, String packfile_contents) -> untyped
+
+        def read_file: (String filepath) -> untyped
+      end
+    end
+  end
+end

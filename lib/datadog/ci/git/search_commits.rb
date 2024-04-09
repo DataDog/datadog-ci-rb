@@ -25,7 +25,7 @@ module Datadog
             path: Ext::Transport::DD_API_GIT_SEARCH_COMMITS_PATH,
             payload: request_payload(repository_url, commits)
           )
-          raise ApiError, "Failed to search commits: #{http_response.body}" unless http_response.ok?
+          raise ApiError, "Failed to search commits: #{http_response.inspect}" unless http_response.ok?
 
           response_payload = parse_json_response(http_response)
           extract_commits(response_payload)
