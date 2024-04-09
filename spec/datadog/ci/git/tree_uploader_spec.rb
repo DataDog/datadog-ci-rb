@@ -67,6 +67,10 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
 
           tree_uploader.call(repository_url)
         end
+      end
+
+      context "when some commits are new" do
+        let(:upload_packfile) { double("upload_packfile", call: nil) }
 
         context "when the repository is shallow cloned" do
           before do
@@ -78,8 +82,11 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
               expect(Datadog::CI::Git::LocalRepository).to receive(:git_unshallow).and_return(nil)
             end
 
-            it "logs a debug message and aborts the git upload" do
-              expect(Datadog.logger).to receive(:debug).with("Failed to unshallow the git repository, aborting git upload")
+            it "uploads what we can upload" do
+              expect(Datadog::CI::Git::Packfiles).to receive(:generate).with(
+                included_commits: %w[13c988d4f15e06bcdd0b0af290086a3079cdadb0],
+                excluded_commits: backend_commits
+              ).and_yield("packfile_path")
 
               tree_uploader.call(repository_url)
             end
@@ -88,79 +95,56 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
           context "when the unshallowing succeeds" do
             before do
               expect(Datadog::CI::Git::LocalRepository).to receive(:git_unshallow).and_return("unshallow_result")
+              expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(
+                latest_commits + %w[782d09e3fbfd8cf1b5c13f3eb9621362f9089ed5]
+              )
             end
 
-            context "when there are new commits after unshallowing" do
-              before do
-                expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(
-                  latest_commits + %w[782d09e3fbfd8cf1b5c13f3eb9621362f9089ed5]
-                )
-              end
+            it "uploads the new commits" do
+              expect(Datadog::CI::Git::Packfiles).to receive(:generate).with(
+                included_commits: %w[13c988d4f15e06bcdd0b0af290086a3079cdadb0 782d09e3fbfd8cf1b5c13f3eb9621362f9089ed5],
+                excluded_commits: backend_commits
+              ).and_yield("packfile_path")
 
-              it "uploads the new commits" do
-                expect(Datadog::CI::Git::Packfiles).to receive(:generate).with(
-                  included_commits: %w[782d09e3fbfd8cf1b5c13f3eb9621362f9089ed5],
-                  excluded_commits: backend_commits
-                ).and_yield("packfile_path")
-
-                expect(Datadog::CI::Git::UploadPackfile).to receive(:new).with(
-                  api: api,
-                  head_commit_sha: head_commit,
-                  repository_url: repository_url
-                ).and_return(double("upload_packfile", call: nil))
-
-                tree_uploader.call(repository_url)
-              end
-            end
-
-            context "when there are no new commits" do
-              before do
-                expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(latest_commits)
-              end
-
-              it "logs a debug message and aborts the git upload" do
-                expect(Datadog.logger).to receive(:debug).with("No new commits to upload after unshallowing")
-
-                tree_uploader.call(repository_url)
-              end
+              tree_uploader.call(repository_url)
             end
           end
         end
-      end
 
-      context "when some commits are new" do
-        let(:upload_packfile) { double("upload_packfile", call: nil) }
-
-        before do
-          expect(Datadog::CI::Git::Packfiles).to receive(:generate).with(
-            included_commits: latest_commits - backend_commits.to_a,
-            excluded_commits: backend_commits
-          ).and_yield("packfile_path")
-
-          expect(Datadog::CI::Git::UploadPackfile).to receive(:new).with(
-            api: api,
-            head_commit_sha: head_commit,
-            repository_url: repository_url
-          ).and_return(upload_packfile)
-        end
-
-        context "when the packfile upload fails" do
+        context "when the repository is not shallow cloned" do
           before do
-            expect(upload_packfile).to receive(:call).and_raise(Datadog::CI::Git::UploadPackfile::ApiError, "test error")
+            expect(Datadog::CI::Git::LocalRepository).to receive(:git_shallow_clone?).and_return(false)
+
+            expect(Datadog::CI::Git::Packfiles).to receive(:generate).with(
+              included_commits: latest_commits - backend_commits.to_a,
+              excluded_commits: backend_commits
+            ).and_yield("packfile_path")
+
+            expect(Datadog::CI::Git::UploadPackfile).to receive(:new).with(
+              api: api,
+              head_commit_sha: head_commit,
+              repository_url: repository_url
+            ).and_return(upload_packfile)
           end
 
-          it "logs a debug message and aborts the git upload" do
-            expect(Datadog.logger).to receive(:debug).with("Packfile upload failed with test error")
+          context "when the packfile upload fails" do
+            before do
+              expect(upload_packfile).to receive(:call).and_raise(Datadog::CI::Git::UploadPackfile::ApiError, "test error")
+            end
 
-            tree_uploader.call(repository_url)
+            it "logs a debug message and aborts the git upload" do
+              expect(Datadog.logger).to receive(:debug).with("Packfile upload failed with test error")
+
+              tree_uploader.call(repository_url)
+            end
           end
-        end
 
-        context "when the packfile upload succeeds" do
-          it "uploads the new commits" do
-            expect(upload_packfile).to receive(:call).with(filepath: "packfile_path").and_return(nil)
+          context "when the packfile upload succeeds" do
+            it "uploads the new commits" do
+              expect(upload_packfile).to receive(:call).with(filepath: "packfile_path").and_return(nil)
 
-            tree_uploader.call(repository_url)
+              tree_uploader.call(repository_url)
+            end
           end
         end
       end

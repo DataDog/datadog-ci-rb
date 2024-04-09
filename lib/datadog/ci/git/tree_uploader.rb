@@ -34,33 +34,23 @@ module Datadog
           end
 
           begin
-            # This "far from perfect" code stays here as is and not split up multiple methods and classes because
-            # the unshallowing logic with optimizations is inherently complex and I don't hide this
-            # complexity on purpose.
+            # ask the backend for the list of commits it already has
             excluded_commits, included_commits = split_known_commits(repository_url, latest_commits)
+            # if all commits are present in the backend, we don't need to upload anything
             if included_commits.empty?
-              if LocalRepository.git_shallow_clone?
-                Datadog.logger.debug("Detected shallow clone, unshallowing the git repository")
+              Datadog.logger.debug("No new commits to upload")
+              return
+            end
 
-                unshallow_result = LocalRepository.git_unshallow
-                if unshallow_result.nil?
-                  Datadog.logger.debug("Failed to unshallow the git repository, aborting git upload")
-                  return
-                end
+            # quite often we deal with shallow clones in CI environment
+            if LocalRepository.git_shallow_clone? && LocalRepository.git_unshallow
+              Datadog.logger.debug("Detected shallow clone and unshallowed the repository, repeating commits search")
 
-                excluded_commits, included_commits = split_known_commits(
-                  repository_url,
-                  LocalRepository.git_commits
-                )
-
-                if included_commits.empty?
-                  Datadog.logger.debug("No new commits to upload after unshallowing")
-                  return
-                end
-              else
-                Datadog.logger.debug("No new commits to upload")
-                return
-              end
+              # re-run the search with the updated commit list after unshallowing
+              excluded_commits, included_commits = split_known_commits(
+                repository_url,
+                LocalRepository.git_commits
+              )
             end
           rescue SearchCommits::ApiError => e
             Datadog.logger.debug("SearchCommits failed with #{e}, aborting git upload")
