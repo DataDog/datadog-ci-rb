@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Git
+      module Packfiles
+        def self.generate: (included_commits: Enumerable[String], excluded_commits: Enumerable[String]) { (String) -> untyped } -> void
+      end
+    end
+  end
+end

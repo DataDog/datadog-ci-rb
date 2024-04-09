@@ -1,0 +1,18 @@
+module Datadog
+  module CI
+    module Git
+      class TreeUploader
+        @api: Datadog::CI::Transport::Api::Base?
+
+        attr_reader api: Datadog::CI::Transport::Api::Base?
+
+        def initialize: (api: Datadog::CI::Transport::Api::Base?) -> void
+        def call: (String repository_url) -> void
+
+        private
+
+        def split_known_commits: (String repository_url, Array[String] latest_commits) -> [Array[String], Array[String]]
+      end
+    end
+  end
+end

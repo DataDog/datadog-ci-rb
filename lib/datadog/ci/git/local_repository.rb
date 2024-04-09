@@ -152,6 +152,8 @@ module Datadog
             "git pack-objects --compression=9 --max-pack-size=3m #{path}/#{basename}",
             stdin: commit_tree
           )
+
+          basename
         rescue => e
           log_failure(e, "git generate packfiles")
           nil
