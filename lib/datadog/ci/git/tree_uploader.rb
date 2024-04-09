@@ -44,48 +44,58 @@ module Datadog
             !backend_commits.include?(commit)
           end
 
+          if included_commits.empty?
+            Datadog.logger.debug("No new commits to upload")
+            return
+          end
+
+          uploader = UploadPackfile.new(
+            api: api,
+            head_commit_sha: head_commit,
+            repository_url: repository_url
+          )
+
+          # TODO: extract packfile generation to a separate class that yields files one by one
+          # hopefully it'll make it easier to test
           Dir.mktmpdir do |tmpdir|
             packfiles_folder = tmpdir
-            res = LocalRepository.git_generate_packfiles(
+            prefix = LocalRepository.git_generate_packfiles(
               included_commits: included_commits,
               excluded_commits: backend_commits.to_a,
               path: packfiles_folder
             )
 
-            if res.nil?
+            if prefix.nil?
               Datadog.logger.debug("packfiles generation failed, retrying with different folder")
 
               packfiles_folder = File.join(Dir.pwd, "tmp", "packfiles")
               FileUtils.mkdir_p(packfiles_folder)
 
-              res = LocalRepository.git_generate_packfiles(
+              prefix = LocalRepository.git_generate_packfiles(
                 included_commits: included_commits,
                 excluded_commits: backend_commits.to_a,
                 path: packfiles_folder
               )
 
-              if res.nil?
+              if prefix.nil?
                 Datadog.logger.debug("packfiles generation failed, aborting git upload")
                 break
               end
             end
 
-            packfiles = Dir.entries(packfiles_folder) - [".", ".."]
+            packfiles = Dir.entries(packfiles_folder) - %w[. ..]
             if packfiles.empty?
               Datadog.logger.debug("Empty packfiles list, nothing to upload")
               break
             end
 
             # 7. Upload packfiles via an HTTP multipart POST to /api/v2/git/repository/packfile for each generated packfile
-            uploader = UploadPackfile.new(
-              api: api,
-              head_commit_sha: head_commit,
-              repository_url: repository_url
-            )
-
             packfiles.each do |packfile|
-              # TODO: skip packfiles that do not have the same prefix (return prefix from git_generate_packfiles)
-              # TODO: upload only .pack files
+              filename = File.basename(packfile)
+
+              next unless filename.start_with?(prefix)
+              next unless filename.end_with?(".pack")
+
               uploader.call(filepath: packfile)
             rescue UploadPackfile::ApiError => e
               Datadog.logger.debug("Packfile upload failed with #{e}")
