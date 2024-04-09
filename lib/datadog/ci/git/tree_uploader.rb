@@ -42,7 +42,7 @@ module Datadog
               return
             end
           rescue SearchCommits::ApiError => e
-            Datadog.logger.debug { "SearchCommits failed with #{e}, aborting git upload" }
+            Datadog.logger.debug("SearchCommits failed with #{e}, aborting git upload")
             return
           end
 
