@@ -335,5 +335,22 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         expect(subject.first).to match(/^\h{40}$/)
       end
     end
+
+    describe ".git_unshallow" do
+      subject do
+        with_shallow_clone_git_dir { described_class.git_unshallow }
+      end
+      let(:commits0) do
+        with_shallow_clone_git_dir { described_class.git_commits }
+      end
+      let(:commits) do
+        with_shallow_clone_git_dir { described_class.git_commits }
+      end
+
+      it "unshallows the repository" do
+        expect(subject).to be_truthy
+        expect(commits.size).to be > 1
+      end
+    end
   end
 end
