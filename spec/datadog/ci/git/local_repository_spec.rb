@@ -343,9 +343,6 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       subject do
         with_shallow_clone_git_dir { described_class.git_unshallow }
       end
-      let(:commits0) do
-        with_shallow_clone_git_dir { described_class.git_commits }
-      end
       let(:commits) do
         with_shallow_clone_git_dir { described_class.git_commits }
       end
