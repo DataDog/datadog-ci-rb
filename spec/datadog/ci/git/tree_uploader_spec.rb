@@ -6,6 +6,10 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
   let(:api) { double("api") }
   subject(:tree_uploader) { described_class.new(api: api) }
 
+  before do
+    allow(Datadog.logger).to receive(:debug)
+  end
+
   describe "#call" do
     let(:repository_url) { "https://datadoghq.com/git/test.git" }
     let(:latest_commits) { %w[c7f893648f656339f62fb7b4d8a6ecdf7d063835 13c988d4f15e06bcdd0b0af290086a3079cdadb0] }
