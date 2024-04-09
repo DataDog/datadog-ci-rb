@@ -159,6 +159,13 @@ module Datadog
           nil
         end
 
+        def self.git_shallow_clone?
+          exec_git_command("git rev-parse --is-shallow-repository") == "true"
+        rescue => e
+          log_failure(e, "git shallow clone")
+          false
+        end
+
         # makes .exec_git_command private to make sure that this method
         # is not called from outside of this module with insecure parameters
         class << self

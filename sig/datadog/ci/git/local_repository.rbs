@@ -33,6 +33,8 @@ module Datadog
 
         def self.git_generate_packfiles: (included_commits: Enumerable[String], excluded_commits: Enumerable[String], path: String) -> String?
 
+        def self.git_shallow_clone?: () -> bool
+
         private
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]
