@@ -182,6 +182,12 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
   end
 
+  describe ".git_shallow_clone?" do
+    subject { described_class.git_shallow_clone? }
+
+    it { is_expected.to be_falsey }
+  end
+
   context "with git folder" do
     include_context "with git fixture", "gitdir_with_commit"
 
