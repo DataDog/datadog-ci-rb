@@ -24,6 +24,8 @@ module Datadog
             return
           end
 
+          Datadog.logger.debug { "Uploading git tree for repository #{repository_url}" }
+
           # 2. Check if the repository clone is shallow and unshallow if appropriate
           # TO BE ADDED IN CIVIS-2863
           latest_commits = LocalRepository.git_commits
@@ -40,10 +42,11 @@ module Datadog
               return
             end
           rescue SearchCommits::ApiError => e
-            Datadog.logger.debug("SearchCommits failed with #{e}, aborting git upload")
+            Datadog.logger.debug { "SearchCommits failed with #{e}, aborting git upload" }
             return
           end
 
+          Datadog.logger.debug { "Uploading packfiles for commits: #{included_commits}" }
           uploader = UploadPackfile.new(
             api: api,
             head_commit_sha: head_commit,
@@ -60,6 +63,7 @@ module Datadog
         private
 
         def split_known_commits(repository_url, latest_commits)
+          Datadog.logger.debug { "Checking the latest commits list with backend: #{latest_commits}" }
           backend_commits = SearchCommits.new(api: api).call(repository_url, latest_commits)
           latest_commits.partition do |commit|
             backend_commits.include?(commit)
