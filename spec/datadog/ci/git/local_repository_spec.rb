@@ -322,5 +322,18 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
       it { is_expected.to be_truthy }
     end
+
+    describe ".git_commits" do
+      subject do
+        with_shallow_clone_git_dir { described_class.git_commits }
+      end
+
+      it "returns a list of single git commit sha" do
+        expect(subject).to be_kind_of(Array)
+        expect(subject).not_to be_empty
+        expect(subject).to have(1).item
+        expect(subject.first).to match(/^\h{40}$/)
+      end
+    end
   end
 end
