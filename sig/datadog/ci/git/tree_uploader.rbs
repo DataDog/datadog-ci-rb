@@ -11,7 +11,7 @@ module Datadog
 
         private
 
-        def split_known_commits: (String repository_url, Array[String] latest_commits) -> [Array[String], Array[String]]
+        def fetch_known_commits_and_split: (String repository_url, Array[String] latest_commits) -> [Array[String], Array[String]]
       end
     end
   end
