@@ -60,7 +60,9 @@ module Datadog
         rescue => e
           Datadog.logger.debug("Packfiles could not be generated, error: #{e}")
         ensure
-          FileUtils.remove_entry(current_process_tmp_folder) unless current_process_tmp_folder.nil?
+          if current_process_tmp_folder && File.exist?(current_process_tmp_folder)
+            FileUtils.remove_entry(current_process_tmp_folder)
+          end
         end
       end
     end
