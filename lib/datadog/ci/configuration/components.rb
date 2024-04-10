@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../ext/settings"
+require_relative "../git/tree_uploader"
 require_relative "../itr/runner"
 require_relative "../itr/coverage/transport"
 require_relative "../itr/coverage/writer"
@@ -12,6 +13,7 @@ require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
 require_relative "../transport/remote_settings_api"
+require_relative "../worker"
 
 module Datadog
   module CI
@@ -35,6 +37,7 @@ module Datadog
         def shutdown!(replacement = nil)
           super
 
+          @ci_recorder&.shutdown!
           @itr&.shutdown!
         end
 
@@ -63,12 +66,12 @@ module Datadog
 
           if test_visibility_api
             # setup writer for code coverage payloads
-            coverage_writer = Datadog::CI::ITR::Coverage::Writer.new(
-              transport: Datadog::CI::ITR::Coverage::Transport.new(api: test_visibility_api)
+            coverage_writer = ITR::Coverage::Writer.new(
+              transport: ITR::Coverage::Transport.new(api: test_visibility_api)
             )
 
             # configure tracing writer to send traces to CI visibility backend
-            writer_options[:transport] = Datadog::CI::TestVisibility::Transport.new(
+            writer_options[:transport] = TestVisibility::Transport.new(
               api: test_visibility_api,
               serializers_factory: serializers_factory(settings),
               dd_env: settings.env
@@ -92,16 +95,26 @@ module Datadog
             dd_env: settings.env
           )
 
-          itr = Datadog::CI::ITR::Runner.new(
+          itr = ITR::Runner.new(
             coverage_writer: coverage_writer,
             enabled: settings.ci.enabled && settings.ci.itr_enabled
           )
+
+          git_tree_uploader = Git::TreeUploader.new(api: test_visibility_api)
+          git_tree_upload_worker = if settings.ci.git_metadata_upload_enabled
+            Worker.new do |repository_url|
+              git_tree_uploader.call(repository_url)
+            end
+          else
+            DummyWorker.new
+          end
 
           # CI visibility recorder global instance
           @ci_recorder = TestVisibility::Recorder.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             itr: itr,
-            remote_settings_api: remote_settings_api
+            remote_settings_api: remote_settings_api,
+            git_tree_upload_worker: git_tree_upload_worker
           )
 
           @itr = itr
@@ -141,9 +154,9 @@ module Datadog
 
         def serializers_factory(settings)
           if settings.ci.force_test_level_visibility
-            Datadog::CI::TestVisibility::Serializers::Factories::TestLevel
+            TestVisibility::Serializers::Factories::TestLevel
           else
-            Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel
+            TestVisibility::Serializers::Factories::TestSuiteLevel
           end
         end
 
