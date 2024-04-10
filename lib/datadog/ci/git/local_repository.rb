@@ -159,17 +159,34 @@ module Datadog
           nil
         end
 
+        def self.git_shallow_clone?
+          exec_git_command("git rev-parse --is-shallow-repository") == "true"
+        rescue => e
+          log_failure(e, "git shallow clone")
+          false
+        end
+
+        def self.git_unshallow
+          exec_git_command(
+            "git fetch " \
+            "--shallow-since=\"1 month ago\" " \
+            "--update-shallow " \
+            "--filter=\"blob:none\" " \
+            "--recurse-submodules=no " \
+            "$(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)"
+          )
+        rescue => e
+          log_failure(e, "git unshallow")
+          nil
+        end
+
         # makes .exec_git_command private to make sure that this method
         # is not called from outside of this module with insecure parameters
         class << self
           private
 
           def filter_invalid_commits(commits)
-            commits.filter_map do |commit|
-              next unless Utils::Git.valid_commit_sha?(commit)
-
-              commit
-            end
+            commits.filter { |commit| Utils::Git.valid_commit_sha?(commit) }
           end
 
           def exec_git_command(cmd, stdin: nil)

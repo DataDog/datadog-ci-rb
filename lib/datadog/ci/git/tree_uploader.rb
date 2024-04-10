@@ -26,8 +26,6 @@ module Datadog
 
           Datadog.logger.debug { "Uploading git tree for repository #{repository_url}" }
 
-          # 2. Check if the repository clone is shallow and unshallow if appropriate
-          # TO BE ADDED IN CIVIS-2863
           latest_commits = LocalRepository.git_commits
           head_commit = latest_commits&.first
           if head_commit.nil?
@@ -36,23 +34,36 @@ module Datadog
           end
 
           begin
-            excluded_commits, included_commits = split_known_commits(repository_url, latest_commits)
-            if included_commits.empty?
+            # ask the backend for the list of commits it already has
+            known_commits, new_commits = fetch_known_commits_and_split(repository_url, latest_commits)
+            # if all commits are present in the backend, we don't need to upload anything
+            if new_commits.empty?
               Datadog.logger.debug("No new commits to upload")
               return
+            end
+
+            # quite often we deal with shallow clones in CI environment
+            if LocalRepository.git_shallow_clone? && LocalRepository.git_unshallow
+              Datadog.logger.debug("Detected shallow clone and unshallowed the repository, repeating commits search")
+
+              # re-run the search with the updated commit list after unshallowing
+              known_commits, new_commits = fetch_known_commits_and_split(
+                repository_url,
+                LocalRepository.git_commits
+              )
             end
           rescue SearchCommits::ApiError => e
             Datadog.logger.debug("SearchCommits failed with #{e}, aborting git upload")
             return
           end
 
-          Datadog.logger.debug { "Uploading packfiles for commits: #{included_commits}" }
+          Datadog.logger.debug { "Uploading packfiles for commits: #{new_commits}" }
           uploader = UploadPackfile.new(
             api: api,
             head_commit_sha: head_commit,
             repository_url: repository_url
           )
-          Packfiles.generate(included_commits: included_commits, excluded_commits: excluded_commits) do |filepath|
+          Packfiles.generate(included_commits: new_commits, excluded_commits: known_commits) do |filepath|
             uploader.call(filepath: filepath)
           rescue UploadPackfile::ApiError => e
             Datadog.logger.debug("Packfile upload failed with #{e}")
@@ -62,7 +73,9 @@ module Datadog
 
         private
 
-        def split_known_commits(repository_url, latest_commits)
+        # Split the latest commits list into known and new commits
+        # based on the backend response provided by /search_commits endpoint
+        def fetch_known_commits_and_split(repository_url, latest_commits)
           Datadog.logger.debug { "Checking the latest commits list with backend: #{latest_commits}" }
           backend_commits = SearchCommits.new(api: api).call(repository_url, latest_commits)
           latest_commits.partition do |commit|

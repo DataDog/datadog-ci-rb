@@ -293,4 +293,82 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       it { is_expected.to eq("first-tag") }
     end
   end
+
+  context "with shallow clone" do
+    let(:tmpdir) { Dir.mktmpdir }
+    after { FileUtils.remove_entry(tmpdir) }
+
+    before do
+      # shallow clone datadog-ci-rb repository
+      `cd #{tmpdir} && git clone --depth 1 https://github.com/DataDog/datadog-ci-rb`
+    end
+
+    def with_shallow_clone_git_dir
+      ClimateControl.modify("GIT_DIR" => File.join(tmpdir, "datadog-ci-rb/.git")) do
+        yield
+      end
+    end
+
+    describe ".git_shallow_clone?" do
+      subject do
+        with_shallow_clone_git_dir { described_class.git_shallow_clone? }
+      end
+
+      it { is_expected.to be_truthy }
+    end
+
+    describe ".git_commits" do
+      subject do
+        with_shallow_clone_git_dir { described_class.git_commits }
+      end
+
+      it "returns a list of single git commit sha" do
+        expect(subject).to be_kind_of(Array)
+        expect(subject).not_to be_empty
+        expect(subject).to have(1).item
+        expect(subject.first).to match(/^\h{40}$/)
+      end
+    end
+
+    describe ".git_unshallow" do
+      # skip for jruby for now - old git version DD docker image
+      before { skip if PlatformHelpers.jruby? }
+
+      subject do
+        with_shallow_clone_git_dir { described_class.git_unshallow }
+      end
+      let(:commits) do
+        with_shallow_clone_git_dir { described_class.git_commits }
+      end
+
+      it "unshallows the repository" do
+        expect(subject).to be_truthy
+        expect(commits.size).to be > 1
+      end
+    end
+  end
+
+  context "with full clone" do
+    let(:tmpdir) { Dir.mktmpdir }
+    after { FileUtils.remove_entry(tmpdir) }
+
+    before do
+      # shallow clone datadog-ci-rb repository
+      `cd #{tmpdir} && git clone https://github.com/DataDog/datadog-ci-rb`
+    end
+
+    def with_full_clone_git_dir
+      ClimateControl.modify("GIT_DIR" => File.join(tmpdir, "datadog-ci-rb/.git")) do
+        yield
+      end
+    end
+
+    describe ".git_shallow_clone?" do
+      subject do
+        with_full_clone_git_dir { described_class.git_shallow_clone? }
+      end
+
+      it { is_expected.to be_falsey }
+    end
+  end
 end
