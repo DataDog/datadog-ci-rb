@@ -69,6 +69,8 @@ module Datadog
             Datadog.logger.debug("Packfile upload failed with #{e}")
             break
           end
+        ensure
+          Datadog.logger.debug("Git tree upload finished")
         end
 
         private
