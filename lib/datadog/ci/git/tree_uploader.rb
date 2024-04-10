@@ -35,9 +35,9 @@ module Datadog
 
           begin
             # ask the backend for the list of commits it already has
-            excluded_commits, included_commits = split_known_commits(repository_url, latest_commits)
+            known_commits, new_commits = fetch_known_commits_and_split(repository_url, latest_commits)
             # if all commits are present in the backend, we don't need to upload anything
-            if included_commits.empty?
+            if new_commits.empty?
               Datadog.logger.debug("No new commits to upload")
               return
             end
@@ -47,7 +47,7 @@ module Datadog
               Datadog.logger.debug("Detected shallow clone and unshallowed the repository, repeating commits search")
 
               # re-run the search with the updated commit list after unshallowing
-              excluded_commits, included_commits = split_known_commits(
+              known_commits, new_commits = fetch_known_commits_and_split(
                 repository_url,
                 LocalRepository.git_commits
               )
@@ -57,13 +57,13 @@ module Datadog
             return
           end
 
-          Datadog.logger.debug { "Uploading packfiles for commits: #{included_commits}" }
+          Datadog.logger.debug { "Uploading packfiles for commits: #{new_commits}" }
           uploader = UploadPackfile.new(
             api: api,
             head_commit_sha: head_commit,
             repository_url: repository_url
           )
-          Packfiles.generate(included_commits: included_commits, excluded_commits: excluded_commits) do |filepath|
+          Packfiles.generate(included_commits: new_commits, excluded_commits: known_commits) do |filepath|
             uploader.call(filepath: filepath)
           rescue UploadPackfile::ApiError => e
             Datadog.logger.debug("Packfile upload failed with #{e}")
@@ -73,7 +73,9 @@ module Datadog
 
         private
 
-        def split_known_commits(repository_url, latest_commits)
+        # Split the latest commits list into known and new commits
+        # based on the backend response provided by /search_commits endpoint
+        def fetch_known_commits_and_split(repository_url, latest_commits)
           Datadog.logger.debug { "Checking the latest commits list with backend: #{latest_commits}" }
           backend_commits = SearchCommits.new(api: api).call(repository_url, latest_commits)
           latest_commits.partition do |commit|

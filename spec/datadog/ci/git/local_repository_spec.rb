@@ -182,12 +182,6 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
   end
 
-  describe ".git_shallow_clone?" do
-    subject { described_class.git_shallow_clone? }
-
-    it { is_expected.to be_falsey }
-  end
-
   context "with git folder" do
     include_context "with git fixture", "gitdir_with_commit"
 
@@ -351,6 +345,30 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         expect(subject).to be_truthy
         expect(commits.size).to be > 1
       end
+    end
+  end
+
+  context "with full clone" do
+    let(:tmpdir) { Dir.mktmpdir }
+    after { FileUtils.remove_entry(tmpdir) }
+
+    before do
+      # shallow clone datadog-ci-rb repository
+      `cd #{tmpdir} && git clone https://github.com/DataDog/datadog-ci-rb`
+    end
+
+    def with_full_clone_git_dir
+      ClimateControl.modify("GIT_DIR" => File.join(tmpdir, "datadog-ci-rb/.git")) do
+        yield
+      end
+    end
+
+    describe ".git_shallow_clone?" do
+      subject do
+        with_full_clone_git_dir { described_class.git_shallow_clone? }
+      end
+
+      it { is_expected.to be_falsey }
     end
   end
 end

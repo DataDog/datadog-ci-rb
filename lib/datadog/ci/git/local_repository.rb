@@ -186,11 +186,7 @@ module Datadog
           private
 
           def filter_invalid_commits(commits)
-            commits.filter_map do |commit|
-              next unless Utils::Git.valid_commit_sha?(commit)
-
-              commit
-            end
+            commits.filter { |commit| Utils::Git.valid_commit_sha?(commit) }
           end
 
           def exec_git_command(cmd, stdin: nil)
