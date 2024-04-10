@@ -61,6 +61,12 @@ module Datadog
                 o.default false
               end
 
+              option :git_metadata_upload_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_GIT_METADATA_UPLOAD_ENABLED
+                o.default true
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
