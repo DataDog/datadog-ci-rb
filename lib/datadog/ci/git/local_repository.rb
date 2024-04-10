@@ -195,7 +195,20 @@ module Datadog
             # no-dd-sa:ruby-security/shell-injection
             out, status = Open3.capture2e(cmd, stdin_data: stdin)
 
-            raise "Failed to run git command #{cmd}: #{out}" unless status.success?
+            if status.nil?
+              retry_count = 5
+              Datadog.logger.debug { "Opening pipe failed, starting retries..." }
+              while status.nil? && retry_count.positive?
+                # no-dd-sa:ruby-security/shell-injection
+                out, status = Open3.capture2e(cmd, stdin_data: stdin)
+                Datadog.logger.debug { "After retry status is [#{status}]" }
+                retry_count -= 1
+              end
+            end
+
+            if status.nil? || !status.success?
+              raise "Failed to run git command [#{cmd}] with input [#{stdin}] and output [#{out}]"
+            end
 
             # Sometimes Encoding.default_external is somehow set to US-ASCII which breaks
             # commit messages with UTF-8 characters like emojis
@@ -213,7 +226,7 @@ module Datadog
 
           def log_failure(e, action)
             Datadog.logger.debug(
-              "Unable to read #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
+              "Unable to perform #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
             )
           end
         end
