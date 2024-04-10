@@ -10,6 +10,7 @@ module Datadog
         @itr: Datadog::CI::ITR::Runner
         @remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi
         @codeowners: Datadog::CI::Codeowners::Matcher
+        @git_tree_upload_worker: Datadog::CI::Worker
 
         attr_reader environment_tags: Hash[String, String]
         attr_reader test_suite_level_visibility_enabled: bool

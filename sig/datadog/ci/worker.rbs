@@ -1,6 +1,7 @@
 module Datadog
   module CI
     class Worker < Datadog::Core::Worker
+      include  Datadog::Core::Workers::Async::Thread::PrependedMethods
       include Datadog::Core::Workers::Async::Thread
 
       DEFAULT_SHUTDOWN_TIMEOUT: 60
