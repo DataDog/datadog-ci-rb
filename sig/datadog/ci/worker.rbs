@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    class Worker < Datadog::Core::Worker
+      include Datadog::Core::Workers::Async::Thread
+
+      DEFAULT_SHUTDOWN_TIMEOUT: 60
+
+      def stop: (?Integer timeout) -> untyped
+
+      def done?: () -> untyped
+    end
+
+    class DummyWorker < Worker
+      def initialize: () -> void
+    end
+  end
+end

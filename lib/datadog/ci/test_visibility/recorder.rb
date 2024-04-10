@@ -20,6 +20,7 @@ require_relative "../test"
 require_relative "../test_session"
 require_relative "../test_module"
 require_relative "../test_suite"
+require_relative "../worker"
 
 module Datadog
   module CI
@@ -30,7 +31,10 @@ module Datadog
         attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
         def initialize(
-          itr:, remote_settings_api:, test_suite_level_visibility_enabled: false,
+          itr:,
+          remote_settings_api:,
+          git_tree_upload_worker: DummyWorker.new,
+          test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
@@ -43,6 +47,11 @@ module Datadog
 
           @itr = itr
           @remote_settings_api = remote_settings_api
+          @git_tree_upload_worker = git_tree_upload_worker
+        end
+
+        def shutdown!
+          @git_tree_upload_worker.stop
         end
 
         def start_test_session(service: nil, tags: {})
@@ -56,6 +65,7 @@ module Datadog
 
             test_session = build_test_session(tracer_span, tags)
 
+            @git_tree_upload_worker.perform(test_session.git_repository_url)
             configure_library(test_session)
 
             test_session

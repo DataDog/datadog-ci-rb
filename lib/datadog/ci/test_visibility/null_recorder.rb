@@ -42,6 +42,9 @@ module Datadog
         def active_test_suite(test_suite_name)
         end
 
+        def shutdown!
+        end
+
         private
 
         def skip_tracing(block = nil)
