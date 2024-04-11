@@ -24,11 +24,17 @@ RSpec.describe Datadog::CI::Worker do
 
     context "when the worker has started" do
       context "when the worker is running" do
+        let(:queue) { Queue.new }
+        subject(:worker) { described_class.new { queue.pop } }
+
         it do
           worker.perform
           is_expected.not_to be_done
 
+          queue << :done
           worker.stop
+
+          is_expected.to be_done
         end
       end
 
