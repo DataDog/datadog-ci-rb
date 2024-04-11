@@ -6,9 +6,13 @@ module Datadog
 
       DEFAULT_SHUTDOWN_TIMEOUT: 60
 
-      def stop: (?Integer timeout) -> untyped
+      DEFAULT_WAIT_TIMEOUT: 60
 
-      def done?: () -> untyped
+      def stop: (?Integer timeout) -> void
+
+      def wait_until_done: (?Integer timeout) -> void
+
+      def done?: () -> bool
     end
 
     class DummyWorker < Worker
