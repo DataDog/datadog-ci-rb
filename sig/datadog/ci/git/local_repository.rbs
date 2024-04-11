@@ -2,6 +2,8 @@ module Datadog
   module CI
     module Git
       module LocalRepository
+        COMMAND_RETRY_COUNT: 3
+
         @root: String?
         @repository_name: String?
 

@@ -371,4 +371,31 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       it { is_expected.to be_falsey }
     end
   end
+
+  context "with failing command" do
+    describe ".git_commits" do
+      subject { described_class.git_commits }
+
+      context "succeeds on retries" do
+        before do
+          expect(Open3).to receive(:capture2e).and_return([nil, nil], [+"sha1\nsha2", double(success?: true)])
+        end
+
+        it { is_expected.to eq(%w[sha1 sha2]) }
+      end
+
+      context "fails on retries" do
+        before do
+          expect(Open3).to(
+            receive(:capture2e)
+              .and_return([nil, nil])
+              .at_most(described_class::COMMAND_RETRY_COUNT + 1)
+              .times
+          )
+        end
+
+        it { is_expected.to eq([]) }
+      end
+    end
+  end
 end
