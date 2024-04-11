@@ -24,6 +24,8 @@ module Datadog
 
         def active_span: () -> nil
 
+        def shutdown!: () -> nil
+
         private
 
         def skip_tracing: (?untyped block) -> nil

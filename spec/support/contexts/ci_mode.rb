@@ -20,6 +20,7 @@ RSpec.shared_context "CI mode activated" do
   let(:itr_enabled) { false }
   let(:code_coverage_enabled) { false }
   let(:tests_skipping_enabled) { false }
+  let(:git_metadata_upload_enabled) { false }
 
   let(:recorder) { Datadog.send(:components).ci_recorder }
 
@@ -49,6 +50,7 @@ RSpec.shared_context "CI mode activated" do
       c.ci.enabled = ci_enabled
       c.ci.force_test_level_visibility = force_test_level_visibility
       c.ci.itr_enabled = itr_enabled
+      c.ci.git_metadata_upload_enabled = git_metadata_upload_enabled
       unless integration_name == :no_instrument
         c.ci.instrument integration_name, integration_options
       end
@@ -59,5 +61,6 @@ RSpec.shared_context "CI mode activated" do
     ::Datadog::Tracing.shutdown!
 
     Datadog::CI.send(:itr_runner)&.shutdown!
+    Datadog::CI.send(:recorder)&.shutdown!
   end
 end
