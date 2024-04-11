@@ -402,6 +402,23 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
+        context "with git upload enabled and gitdb api spy" do
+          let(:git_metadata_upload_enabled) { true }
+          let(:search_commits) { double("search_commits") }
+          let(:tags) { {"test.framework" => "my-framework"} }
+
+          it "starts git metadata upload" do
+            expect(Datadog::CI::Git::SearchCommits).to receive(:new).and_return(search_commits)
+            expect(search_commits).to receive(:call) do |repo_url, commits|
+              expect(repo_url).to eq("git@github.com:DataDog/datadog-ci-rb.git")
+
+              commits
+            end
+
+            subject
+          end
+        end
+
         it_behaves_like "span with environment tags"
         it_behaves_like "span with default tags"
         it_behaves_like "span with runtime tags"
