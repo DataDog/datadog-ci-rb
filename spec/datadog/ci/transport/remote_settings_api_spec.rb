@@ -73,12 +73,13 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
                     "code_coverage" => true,
                     "tests_skipping" => false,
                     "itr_enabled" => true,
-                    "require_git" => false
+                    "require_git" => require_git
                   }
                 }
               }.to_json
             )
           end
+          let(:require_git) { false }
 
           it "parses the response" do
             expect(response.ok?).to be true
@@ -86,8 +87,17 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
               "code_coverage" => true,
               "tests_skipping" => false,
               "itr_enabled" => true,
-              "require_git" => false
+              "require_git" => require_git
             })
+            expect(response.require_git?).to be false
+          end
+
+          context "when git is required" do
+            let(:require_git) { "True" }
+
+            it "parses the response" do
+              expect(response.require_git?).to be true
+            end
           end
         end
 
@@ -103,6 +113,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
           it "parses the response" do
             expect(response.ok?).to be false
             expect(response.payload).to eq("itr_enabled" => false)
+            expect(response.require_git?).to be false
           end
         end
 
@@ -122,6 +133,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
           it "parses the response" do
             expect(response.ok?).to be true
             expect(response.payload).to eq("itr_enabled" => false)
+            expect(response.require_git?).to be false
           end
         end
 
@@ -144,6 +156,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
           it "parses the response" do
             expect(response.ok?).to be true
             expect(response.payload).to eq("itr_enabled" => false)
+            expect(response.require_git?).to be false
           end
         end
       end
@@ -154,6 +167,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
         it "returns an empty response" do
           expect(response.ok?).to be false
           expect(response.payload).to eq("itr_enabled" => false)
+          expect(response.require_git?).to be false
         end
       end
     end
