@@ -9,6 +9,8 @@ module Datadog
   module CI
     module Git
       module LocalRepository
+        COMMAND_RETRY_COUNT = 3
+
         def self.root
           return @root if defined?(@root)
 
@@ -196,7 +198,7 @@ module Datadog
             out, status = Open3.capture2e(cmd, stdin_data: stdin)
 
             if status.nil?
-              retry_count = 5
+              retry_count = COMMAND_RETRY_COUNT
               Datadog.logger.debug { "Opening pipe failed, starting retries..." }
               while status.nil? && retry_count.positive?
                 # no-dd-sa:ruby-security/shell-injection
