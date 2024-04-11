@@ -28,8 +28,6 @@ module Datadog
 
         def coverage_collector: () -> Datadog::CI::ITR::Coverage::DDCov?
 
-        def convert_to_bool: (untyped value) -> bool
-
         def load_datadog_cov!: () -> void
 
         def write: (Datadog::CI::ITR::Coverage::Event event) -> void

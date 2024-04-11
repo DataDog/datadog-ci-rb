@@ -5,6 +5,7 @@ require "json"
 require "datadog/core/environment/identity"
 
 require_relative "../ext/transport"
+require_relative "../utils/parsing"
 
 module Datadog
   module CI
@@ -37,6 +38,10 @@ module Datadog
               Datadog.logger.error("Failed to parse settings response payload: #{e}. Payload was: #{resp.payload}")
               @json = default_payload
             end
+          end
+
+          def require_git?
+            Utils::Parsing.convert_to_bool(payload[Ext::Transport::DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY])
           end
 
           private

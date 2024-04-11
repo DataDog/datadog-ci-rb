@@ -7,6 +7,8 @@ require_relative "../ext/transport"
 
 require_relative "../git/local_repository"
 
+require_relative "../utils/parsing"
+
 require_relative "coverage/event"
 
 module Datadog
@@ -32,13 +34,13 @@ module Datadog
         def configure(remote_configuration, test_session)
           Datadog.logger.debug("Configuring ITR Runner with remote configuration: #{remote_configuration}")
 
-          @enabled = convert_to_bool(
+          @enabled = Utils::Parsing.convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY, false)
           )
-          @test_skipping_enabled = @enabled && convert_to_bool(
+          @test_skipping_enabled = @enabled && Utils::Parsing.convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY, false)
           )
-          @code_coverage_enabled = @enabled && convert_to_bool(
+          @code_coverage_enabled = @enabled && Utils::Parsing.convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY, false)
           )
 
@@ -119,10 +121,6 @@ module Datadog
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
 
           @code_coverage_enabled = false
-        end
-
-        def convert_to_bool(value)
-          value.to_s == "true"
         end
 
         def ensure_test_source_covered(test_source_file, coverage)
