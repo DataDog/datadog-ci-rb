@@ -2,17 +2,26 @@
 
 require "json"
 
-require "datadog/core/environment/identity"
-
 require_relative "../ext/transport"
-require_relative "../utils/parsing"
+require_relative "../ext/test"
 
 module Datadog
   module CI
-    module Transport
-      # Datadog API client
-      # Calls settings endpoint to fetch library settings for given service and env
-      class RemoteSettingsApi
+    module ITR
+      class Skippable
+        class Test
+          attr_reader :name, :suite
+
+          def initialize(name:, suite:)
+            @name = name
+            @suite = suite
+          end
+
+          def ==(other)
+            name == other.name && suite == other.suite
+          end
+        end
+
         class Response
           def initialize(http_response)
             @http_response = http_response
@@ -24,30 +33,35 @@ module Datadog
             !resp.nil? && resp.ok?
           end
 
+          def correlation_id
+            payload.dig("meta", "correlation_id")
+          end
+
+          def tests
+            payload.fetch("data", [])
+              .filter_map do |test_data|
+                next unless test_data["type"] == Ext::Test::ITR_TEST_SKIPPING_MODE
+
+                attrs = test_data["attributes"] || {}
+                Test.new(name: attrs["name"], suite: attrs["suite"])
+              end
+          end
+
+          private
+
           def payload
             cached = @json
             return cached unless cached.nil?
 
             resp = @http_response
-            return @json = default_payload if resp.nil? || !ok?
+            return @json = {} if resp.nil? || !ok?
 
             begin
-              @json = JSON.parse(resp.payload).dig(*Ext::Transport::DD_API_SETTINGS_RESPONSE_DIG_KEYS) ||
-                default_payload
+              @json = JSON.parse(resp.payload)
             rescue JSON::ParserError => e
-              Datadog.logger.error("Failed to parse settings response payload: #{e}. Payload was: #{resp.payload}")
-              @json = default_payload
+              Datadog.logger.error("Failed to parse skippable tests response payload: #{e}. Payload was: #{resp.payload}")
+              @json = {}
             end
-          end
-
-          def require_git?
-            Utils::Parsing.convert_to_bool(payload[Ext::Transport::DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY])
-          end
-
-          private
-
-          def default_payload
-            Ext::Transport::DD_API_SETTINGS_RESPONSE_DEFAULT
           end
         end
 
@@ -56,15 +70,15 @@ module Datadog
           @dd_env = dd_env
         end
 
-        def fetch_library_settings(test_session)
+        def fetch_skippable_tests(test_session)
           api = @api
           return Response.new(nil) unless api
 
           request_payload = payload(test_session)
-          Datadog.logger.debug("Fetching library settings with request: #{request_payload}")
+          Datadog.logger.debug("Fetching skippable tests with request: #{request_payload}")
 
           http_response = api.api_request(
-            path: Ext::Transport::DD_API_SETTINGS_PATH,
+            path: Ext::Transport::DD_API_SKIPPABLE_TESTS_PATH,
             payload: request_payload
           )
 
@@ -76,18 +90,16 @@ module Datadog
         def payload(test_session)
           {
             "data" => {
-              "id" => Datadog::Core::Environment::Identity.id,
-              "type" => Ext::Transport::DD_API_SETTINGS_TYPE,
+              "type" => Ext::Transport::DD_API_SKIPPABLE_TESTS_TYPE,
               "attributes" => {
+                "test_level" => Ext::Test::ITR_TEST_SKIPPING_MODE,
                 "service" => test_session.service,
                 "env" => @dd_env,
                 "repository_url" => test_session.git_repository_url,
-                "branch" => test_session.git_branch,
                 "sha" => test_session.git_commit_sha,
-                "test_level" => Ext::Test::ITR_TEST_SKIPPING_MODE,
                 "configurations" => {
                   "os.platform" => test_session.os_platform,
-                  "os.arch" => test_session.os_architecture,
+                  "os.architecture" => test_session.os_architecture,
                   "runtime.name" => test_session.runtime_name,
                   "runtime.version" => test_session.runtime_version
                 }

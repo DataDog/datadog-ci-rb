@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Dummy Integration
 class FakeIntegration
   include Datadog::CI::Contrib::Integration
