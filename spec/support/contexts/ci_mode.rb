@@ -21,6 +21,7 @@ RSpec.shared_context "CI mode activated" do
   let(:code_coverage_enabled) { false }
   let(:tests_skipping_enabled) { false }
   let(:git_metadata_upload_enabled) { false }
+  let(:require_git) { false }
 
   let(:recorder) { Datadog.send(:components).ci_recorder }
 
@@ -40,7 +41,18 @@ RSpec.shared_context "CI mode activated" do
           "itr_enabled" => itr_enabled,
           "code_coverage" => code_coverage_enabled,
           "tests_skipping" => tests_skipping_enabled
-        }
+        },
+        require_git?: require_git
+      ),
+      # This is for the second call to fetch_library_settings
+      double(
+        "remote_settings_api_response",
+        payload: {
+          "itr_enabled" => itr_enabled,
+          "code_coverage" => !code_coverage_enabled,
+          "tests_skipping" => !tests_skipping_enabled
+        },
+        require_git?: !require_git
       )
     )
 

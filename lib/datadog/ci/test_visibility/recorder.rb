@@ -216,6 +216,15 @@ module Datadog
           return unless itr_enabled?
 
           remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
+          # sometimes we can skip code coverage for default branch if there are no changes in the repository
+          # backend needs git metadata uploaded for this test session to check if we can skip code coverage
+          if remote_configuration.require_git?
+            Datadog.logger.debug { "Library configuration endpoint requires git upload to be finished, waiting..." }
+            @git_tree_upload_worker.wait_until_done
+
+            Datadog.logger.debug { "Requesting library configuration again..." }
+            remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
+          end
           @itr.configure(remote_configuration.payload, test_session)
         end
 
