@@ -5,12 +5,15 @@ module Datadog
         @enabled: bool
         @test_skipping_enabled: bool
         @code_coverage_enabled: bool
-        @api: Datadog::CI::Transport::Api::Base?
+        @correlation_id: String
+        @skippable_tests: Array[Datadog::CI::ITR::Skippable::Test]
         @coverage_writer: Datadog::CI::ITR::Coverage::Writer?
 
-        def initialize: (?enabled: bool, coverage_writer: Datadog::CI::ITR::Coverage::Writer?) -> void
+        @api: Datadog::CI::Transport::Api::Base?
 
-        def configure: (Hash[String, untyped] remote_configuration, Datadog::CI::TestSession test_session) -> void
+        def initialize: (?enabled: bool, coverage_writer: Datadog::CI::ITR::Coverage::Writer?, api: Datadog::CI::Transport::Api::Base?) -> void
+
+        def configure: (Hash[String, untyped] remote_configuration, test_session: Datadog::CI::TestSession, git_tree_upload_worker: Datadog::CI::Worker) -> void
 
         def enabled?: () -> bool
 

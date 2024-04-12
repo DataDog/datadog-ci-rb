@@ -10,6 +10,7 @@ require_relative "../git/local_repository"
 require_relative "../utils/parsing"
 
 require_relative "coverage/event"
+require_relative "skippable"
 
 module Datadog
   module CI
@@ -18,20 +19,28 @@ module Datadog
       # Integrates with backend to provide test impact analysis data and
       # skip tests that are not impacted by the changes
       class Runner
+        attr_reader :correlation_id, :skippable_tests
+
         def initialize(
+          api: nil,
           coverage_writer: nil,
           enabled: false
         )
           @enabled = enabled
+          @api = api
+
           @test_skipping_enabled = false
           @code_coverage_enabled = false
 
           @coverage_writer = coverage_writer
 
+          @correlation_id = nil
+          @skippable_tests = []
+
           Datadog.logger.debug("ITR Runner initialized with enabled: #{@enabled}")
         end
 
-        def configure(remote_configuration, test_session)
+        def configure(remote_configuration, test_session:, git_tree_upload_worker:)
           Datadog.logger.debug("Configuring ITR Runner with remote configuration: #{remote_configuration}")
 
           @enabled = Utils::Parsing.convert_to_bool(
@@ -55,6 +64,18 @@ module Datadog
           load_datadog_cov! if @code_coverage_enabled
 
           Datadog.logger.debug("Configured ITR Runner with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
+
+          return unless skipping_tests?
+
+          # we can only request skippable tests if git metadata is already uploaded
+          git_tree_upload_worker.wait_until_done
+
+          skippable_response = Skippable.new(api: @api).fetch_skippable_tests(test_session)
+          @correlation_id = skippable_response.correlation_id
+          @skippable_tests = skippable_response.tests
+
+          Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
+          Datadog.logger.debug { "ITR correlation ID: #{@correlation_id}" }
         end
 
         def enabled?
