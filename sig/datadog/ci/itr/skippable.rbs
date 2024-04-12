@@ -1,0 +1,47 @@
+module Datadog
+  module CI
+    module ITR
+      class Skippable
+        @api: Datadog::CI::Transport::Api::Base?
+        @dd_env: String?
+
+        class Test
+          @name: String?
+
+          @suite: String?
+
+          attr_reader name: String?
+
+          attr_reader suite: String?
+
+          def initialize: (name: String?, suite: String?) -> void
+        end
+
+        class Response
+          @http_response: Datadog::Core::Transport::HTTP::Adapters::Net::Response?
+          @json: Hash[String, untyped]?
+
+          def initialize: (Datadog::Core::Transport::HTTP::Adapters::Net::Response? http_response) -> void
+
+          def ok?: () -> bool
+
+          def correlation_id: () -> String?
+
+          def tests: () -> Array[Test]
+
+          private
+
+          def payload: () -> Hash[String, untyped]
+        end
+
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, ?dd_env: String?) -> void
+
+        def fetch_skippable_tests: (Datadog::CI::TestSession test_session) -> Response
+
+        private
+
+        def payload: (Datadog::CI::TestSession test_session) -> String
+      end
+    end
+  end
+end

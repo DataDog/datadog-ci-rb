@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/transport/remote_settings_api"
+require_relative "../../../../lib/datadog/ci/itr/skippable"
 
-RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
+RSpec.describe Datadog::CI::ITR::Skippable do
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
 
   subject(:client) { described_class.new(api: api, dd_env: dd_env) }
 
-  describe "#fetch_library_settings" do
+  describe "#fetch_skippable_tests" do
     let(:service) { "service" }
     let(:tracer_span) do
       Datadog::Tracing::SpanOperation.new("session", service: service).tap do |span|
@@ -25,37 +25,35 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
     end
     let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
-    let(:path) { Datadog::CI::Ext::Transport::DD_API_SETTINGS_PATH }
+    let(:path) { Datadog::CI::Ext::Transport::DD_API_SKIPPABLE_TESTS_PATH }
 
-    it "requests the settings" do
-      client.fetch_library_settings(test_session)
+    it "requests the skippable tests" do
+      client.fetch_skippable_tests(test_session)
 
       expect(api).to have_received(:api_request) do |args|
         expect(args[:path]).to eq(path)
 
         data = JSON.parse(args[:payload])["data"]
 
-        expect(data["id"]).to eq(Datadog::Core::Environment::Identity.id)
-        expect(data["type"]).to eq(Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE)
+        expect(data["type"]).to eq(Datadog::CI::Ext::Transport::DD_API_SKIPPABLE_TESTS_TYPE)
 
         attributes = data["attributes"]
         expect(attributes["service"]).to eq(service)
         expect(attributes["env"]).to eq(dd_env)
         expect(attributes["test_level"]).to eq("test")
         expect(attributes["repository_url"]).to eq("repository_url")
-        expect(attributes["branch"]).to eq("branch")
         expect(attributes["sha"]).to eq("commit_sha")
 
         configurations = attributes["configurations"]
         expect(configurations["os.platform"]).to eq("platform")
-        expect(configurations["os.arch"]).to eq("arch")
+        expect(configurations["os.architecture"]).to eq("arch")
         expect(configurations["runtime.name"]).to eq("runtime_name")
         expect(configurations["runtime.version"]).to eq("runtime_version")
       end
     end
 
     context "parsing response" do
-      subject(:response) { client.fetch_library_settings(test_session) }
+      subject(:response) { client.fetch_skippable_tests(test_session) }
 
       context "when api is present" do
         before do
@@ -68,38 +66,37 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
               "http_response",
               ok?: true,
               payload: {
-                "data" => {
-                  "id" => "123",
-                  "type" => Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE,
-                  "attributes" => {
-                    "code_coverage" => true,
-                    "tests_skipping" => false,
-                    "itr_enabled" => true,
-                    "require_git" => require_git
+                "meta" => {
+                  "correlation_id" => "correlation_id_123"
+                },
+                "data" => [
+                  {
+                    "id" => "123",
+                    "type" => Datadog::CI::Ext::Test::ITR_TEST_SKIPPING_MODE,
+                    "attributes" => {
+                      "suite" => "test_suite_name",
+                      "name" => "test_name",
+                      "parameters" => "string",
+                      "configurations" => {
+                        "os.platform" => "linux",
+                        "os.version" => "bionic",
+                        "os.architecture" => "amd64",
+                        "runtime.vendor" => "string",
+                        "runtime.architecture" => "amd64"
+                      }
+                    }
                   }
-                }
+                ]
               }.to_json
             )
           end
-          let(:require_git) { false }
 
           it "parses the response" do
             expect(response.ok?).to be true
-            expect(response.payload).to eq({
-              "code_coverage" => true,
-              "tests_skipping" => false,
-              "itr_enabled" => true,
-              "require_git" => require_git
-            })
-            expect(response.require_git?).to be false
-          end
-
-          context "when git is required" do
-            let(:require_git) { "True" }
-
-            it "parses the response" do
-              expect(response.require_git?).to be true
-            end
+            expect(response.correlation_id).to eq("correlation_id_123")
+            expect(response.tests.first).to eq(
+              Datadog::CI::ITR::Skippable::Test.new(name: "test_name", suite: "test_suite_name")
+            )
           end
         end
 
@@ -114,8 +111,8 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
 
           it "parses the response" do
             expect(response.ok?).to be false
-            expect(response.payload).to eq("itr_enabled" => false)
-            expect(response.require_git?).to be false
+            expect(response.correlation_id).to be_nil
+            expect(response.tests).to be_empty
           end
         end
 
@@ -129,13 +126,13 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
           end
 
           before do
-            expect(Datadog.logger).to receive(:error).with(/Failed to parse settings response payload/)
+            expect(Datadog.logger).to receive(:error).with(/Failed to parse skippable tests response payload/)
           end
 
           it "parses the response" do
             expect(response.ok?).to be true
-            expect(response.payload).to eq("itr_enabled" => false)
-            expect(response.require_git?).to be false
+            expect(response.correlation_id).to be_nil
+            expect(response.tests).to be_empty
           end
         end
 
@@ -146,10 +143,16 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
               ok?: true,
               payload: {
                 "attributes" => {
-                  "code_coverage" => true,
-                  "tests_skipping" => false,
-                  "itr_enabled" => true,
-                  "require_git" => false
+                  "suite" => "test_suite_name",
+                  "name" => "test_name",
+                  "parameters" => "string",
+                  "configurations" => {
+                    "os.platform" => "linux",
+                    "os.version" => "bionic",
+                    "os.architecture" => "amd64",
+                    "runtime.vendor" => "string",
+                    "runtime.architecture" => "amd64"
+                  }
                 }
               }.to_json
             )
@@ -157,8 +160,8 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
 
           it "parses the response" do
             expect(response.ok?).to be true
-            expect(response.payload).to eq("itr_enabled" => false)
-            expect(response.require_git?).to be false
+            expect(response.correlation_id).to be_nil
+            expect(response.tests).to be_empty
           end
         end
       end
@@ -168,8 +171,8 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
 
         it "returns an empty response" do
           expect(response.ok?).to be false
-          expect(response.payload).to eq("itr_enabled" => false)
-          expect(response.require_git?).to be false
+          expect(response.correlation_id).to be_nil
+          expect(response.tests).to be_empty
         end
       end
     end
