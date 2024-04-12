@@ -96,6 +96,7 @@ module Datadog
           )
 
           itr = ITR::Runner.new(
+            api: test_visibility_api,
             coverage_writer: coverage_writer,
             enabled: settings.ci.enabled && settings.ci.itr_enabled
           )
