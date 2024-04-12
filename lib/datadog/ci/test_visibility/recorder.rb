@@ -224,6 +224,10 @@ module Datadog
 
             Datadog.logger.debug { "Requesting library configuration again..." }
             remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
+
+            if remote_configuration.require_git?
+              Datadog.logger.debug { "git metadata upload did not complete in time when configuring library" }
+            end
           end
           @itr.configure(remote_configuration.payload, test_session)
         end
