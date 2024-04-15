@@ -34,7 +34,7 @@ module Datadog
           def payload: () -> Hash[String, untyped]
         end
 
-        def initialize: (?api: Datadog::CI::Transport::Api::Base?, ?dd_env: String?) -> void
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?) -> void
 
         def fetch_skippable_tests: (Datadog::CI::TestSession test_session) -> Response
 

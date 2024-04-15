@@ -65,7 +65,7 @@ module Datadog
           end
         end
 
-        def initialize(api: nil, dd_env: nil)
+        def initialize(dd_env:, api: nil)
           @api = api
           @dd_env = dd_env
         end

@@ -11,7 +11,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
-  subject(:runner) { described_class.new(coverage_writer: writer, enabled: itr_enabled) }
+  subject(:runner) { described_class.new(dd_env: "dd_env", coverage_writer: writer, enabled: itr_enabled) }
 
   before do
     allow(writer).to receive(:write)

@@ -22,12 +22,14 @@ module Datadog
         attr_reader :correlation_id, :skippable_tests
 
         def initialize(
+          dd_env:,
           api: nil,
           coverage_writer: nil,
           enabled: false
         )
           @enabled = enabled
           @api = api
+          @dd_env = dd_env
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false
@@ -147,7 +149,7 @@ module Datadog
           # we can only request skippable tests if git metadata is already uploaded
           git_tree_upload_worker.wait_until_done
 
-          skippable_response = Skippable.new(api: @api).fetch_skippable_tests(test_session)
+          skippable_response = Skippable.new(api: @api, dd_env: @dd_env).fetch_skippable_tests(test_session)
           @correlation_id = skippable_response.correlation_id
           @skippable_tests = skippable_response.tests
 
