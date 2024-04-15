@@ -4,7 +4,10 @@ require_relative "../../../../lib/datadog/ci/itr/runner"
 
 RSpec.describe Datadog::CI::ITR::Runner do
   let(:itr_enabled) { true }
+
   let(:writer) { spy("writer") }
+  let(:git_worker) { spy("git_worker") }
+
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
@@ -12,13 +15,11 @@ RSpec.describe Datadog::CI::ITR::Runner do
 
   before do
     allow(writer).to receive(:write)
+
+    runner.configure(remote_configuration, test_session: test_session, git_tree_upload_worker: git_worker)
   end
 
   describe "#configure" do
-    before do
-      runner.configure(remote_configuration, test_session)
-    end
-
     context "when remote configuration call failed" do
       let(:remote_configuration) { {"itr_enabled" => false} }
 
@@ -71,10 +72,6 @@ RSpec.describe Datadog::CI::ITR::Runner do
   describe "#start_coverage" do
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
     let(:test_span) { Datadog::CI::Test.new(tracer_span) }
-
-    before do
-      runner.configure(remote_configuration, test_session)
-    end
 
     context "when code coverage is disabled" do
       let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => false, "tests_skipping" => false} }
@@ -140,7 +137,6 @@ RSpec.describe Datadog::CI::ITR::Runner do
     before do
       skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
 
-      runner.configure(remote_configuration, test_session)
       expect(test_span).to receive(:id).and_return(1)
       expect(test_span).to receive(:test_suite_id).and_return(2)
       expect(test_span).to receive(:test_session_id).and_return(3)

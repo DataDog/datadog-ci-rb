@@ -65,17 +65,7 @@ module Datadog
 
           Datadog.logger.debug("Configured ITR Runner with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
 
-          return unless skipping_tests?
-
-          # we can only request skippable tests if git metadata is already uploaded
-          git_tree_upload_worker.wait_until_done
-
-          skippable_response = Skippable.new(api: @api).fetch_skippable_tests(test_session)
-          @correlation_id = skippable_response.correlation_id
-          @skippable_tests = skippable_response.tests
-
-          Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
-          Datadog.logger.debug { "ITR correlation ID: #{@correlation_id}" }
+          fetch_skippable_tests(test_session: test_session, git_tree_upload_worker: git_tree_upload_worker)
         end
 
         def enabled?
@@ -149,6 +139,20 @@ module Datadog
           return if coverage.key?(absolute_test_source_file_path)
 
           coverage[absolute_test_source_file_path] = true
+        end
+
+        def fetch_skippable_tests(test_session:, git_tree_upload_worker:)
+          return unless skipping_tests?
+
+          # we can only request skippable tests if git metadata is already uploaded
+          git_tree_upload_worker.wait_until_done
+
+          skippable_response = Skippable.new(api: @api).fetch_skippable_tests(test_session)
+          @correlation_id = skippable_response.correlation_id
+          @skippable_tests = skippable_response.tests
+
+          Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
+          Datadog.logger.debug { "ITR correlation ID: #{@correlation_id}" }
         end
       end
     end

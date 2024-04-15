@@ -23,6 +23,18 @@ RSpec.shared_context "CI mode activated" do
   let(:git_metadata_upload_enabled) { false }
   let(:require_git) { false }
 
+  let(:itr_correlation_id) { "itr_correlation_id" }
+  let(:itr_skippable_tests) { [] }
+
+  let(:skippable_tests_response) do
+    instance_double(
+      Datadog::CI::ITR::Skippable::Response,
+      ok?: true,
+      correlation_id: itr_correlation_id,
+      tests: itr_skippable_tests
+    )
+  end
+
   let(:recorder) { Datadog.send(:components).ci_recorder }
 
   before do
@@ -35,8 +47,8 @@ RSpec.shared_context "CI mode activated" do
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return(test_command)
 
     allow_any_instance_of(Datadog::CI::Transport::RemoteSettingsApi).to receive(:fetch_library_settings).and_return(
-      double(
-        "remote_settings_api_response",
+      instance_double(
+        Datadog::CI::Transport::RemoteSettingsApi::Response,
         payload: {
           "itr_enabled" => itr_enabled,
           "code_coverage" => code_coverage_enabled,
@@ -45,8 +57,8 @@ RSpec.shared_context "CI mode activated" do
         require_git?: require_git
       ),
       # This is for the second call to fetch_library_settings
-      double(
-        "remote_settings_api_response",
+      instance_double(
+        Datadog::CI::Transport::RemoteSettingsApi::Response,
         payload: {
           "itr_enabled" => itr_enabled,
           "code_coverage" => !code_coverage_enabled,
@@ -55,7 +67,7 @@ RSpec.shared_context "CI mode activated" do
         require_git?: !require_git
       )
     )
-
+    allow_any_instance_of(Datadog::CI::ITR::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
     allow_any_instance_of(Datadog::CI::ITR::Coverage::Transport).to receive(:send_events).and_return([])
 
     Datadog.configure do |c|

@@ -36,6 +36,8 @@ module Datadog
         def write: (Datadog::CI::ITR::Coverage::Event event) -> void
 
         def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void
+
+        def fetch_skippable_tests: (test_session: Datadog::CI::TestSession, git_tree_upload_worker: Datadog::CI::Worker) -> void
       end
     end
   end
