@@ -254,6 +254,14 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
+  describe "#os_version" do
+    it "returns the OS version" do
+      expect(tracer_span).to receive(:get_tag).with("os.version").and_return("version")
+
+      expect(span.os_version).to eq("version")
+    end
+  end
+
   describe "#runtime_name" do
     it "returns the runtime name" do
       expect(tracer_span).to receive(:get_tag).with("runtime.name").and_return("name")
