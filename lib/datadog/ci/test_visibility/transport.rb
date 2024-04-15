@@ -14,7 +14,7 @@ module Datadog
 
         def initialize(
           api:,
-          dd_env: nil,
+          dd_env:,
           serializers_factory: Datadog::CI::TestVisibility::Serializers::Factories::TestLevel,
           max_payload_size: DEFAULT_MAX_PAYLOAD_SIZE
         )

@@ -10,8 +10,9 @@ module Datadog
         @coverage_writer: Datadog::CI::ITR::Coverage::Writer?
 
         @api: Datadog::CI::Transport::Api::Base?
+        @dd_env: String?
 
-        def initialize: (?enabled: bool, coverage_writer: Datadog::CI::ITR::Coverage::Writer?, api: Datadog::CI::Transport::Api::Base?) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, coverage_writer: Datadog::CI::ITR::Coverage::Writer?, api: Datadog::CI::Transport::Api::Base?) -> void
 
         def configure: (Hash[String, untyped] remote_configuration, test_session: Datadog::CI::TestSession, git_tree_upload_worker: Datadog::CI::Worker) -> void
 

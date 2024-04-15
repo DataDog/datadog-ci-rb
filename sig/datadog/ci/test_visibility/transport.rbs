@@ -10,7 +10,7 @@ module Datadog
 
         def initialize: (
           api: Datadog::CI::Transport::Api::Base,
-          ?dd_env: ::String?,
+          dd_env: ::String?,
           ?serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel),
           ?max_payload_size: Integer
         ) -> void
