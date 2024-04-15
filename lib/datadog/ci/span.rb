@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "datadog/core/environment/platform"
+
 require_relative "ext/test"
 require_relative "utils/test_run"
 
@@ -166,6 +168,7 @@ module Datadog
       def set_environment_runtime_tags
         tracer_span.set_tag(Ext::Test::TAG_OS_ARCHITECTURE, ::RbConfig::CONFIG["host_cpu"])
         tracer_span.set_tag(Ext::Test::TAG_OS_PLATFORM, ::RbConfig::CONFIG["host_os"])
+        tracer_span.set_tag(Ext::Test::TAG_OS_VERSION, Core::Environment::Platform.kernel_release)
         tracer_span.set_tag(Ext::Test::TAG_RUNTIME_NAME, Core::Environment::Ext::LANG_ENGINE)
         tracer_span.set_tag(Ext::Test::TAG_RUNTIME_VERSION, Core::Environment::Ext::ENGINE_VERSION)
         tracer_span.set_tag(Ext::Test::TAG_COMMAND, Utils::TestRun.command)

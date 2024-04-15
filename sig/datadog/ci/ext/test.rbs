@@ -52,6 +52,8 @@ module Datadog
 
         TAG_OS_PLATFORM: "os.platform"
 
+        TAG_OS_VERSION: "os.version"
+
         TAG_RUNTIME_NAME: "runtime.name"
 
         TAG_RUNTIME_VERSION: "runtime.version"

@@ -48,7 +48,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
 
         configurations = attributes["configurations"]
         expect(configurations["os.platform"]).to eq("platform")
-        expect(configurations["os.arch"]).to eq("arch")
+        expect(configurations["os.architecture"]).to eq("arch")
         expect(configurations["runtime.name"]).to eq("runtime_name")
         expect(configurations["runtime.version"]).to eq("runtime_version")
       end

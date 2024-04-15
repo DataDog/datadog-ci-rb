@@ -43,6 +43,7 @@ module Datadog
         # Environment runtime tags
         TAG_OS_ARCHITECTURE = "os.architecture"
         TAG_OS_PLATFORM = "os.platform"
+        TAG_OS_VERSION = "os.version"
         TAG_RUNTIME_NAME = "runtime.name"
         TAG_RUNTIME_VERSION = "runtime.version"
 
