@@ -153,6 +153,12 @@ module Datadog
         tracer_span.get_tag(Ext::Test::TAG_OS_PLATFORM)
       end
 
+      # Returns the OS version extracted from the environment.
+      # @return [String] OS version.
+      def os_version
+        tracer_span.get_tag(Ext::Test::TAG_OS_VERSION)
+      end
+
       # Returns the runtime name extracted from the environment.
       # @return [String] runtime name.
       def runtime_name
