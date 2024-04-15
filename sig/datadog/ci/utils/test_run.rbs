@@ -5,6 +5,8 @@ module Datadog
         self.@command: String
 
         def self.command: () -> String
+
+        def self.test_full_name: (String test_name, String test_suite) -> String
       end
     end
   end

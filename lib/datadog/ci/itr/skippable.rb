@@ -4,24 +4,12 @@ require "json"
 
 require_relative "../ext/transport"
 require_relative "../ext/test"
+require_relative "../utils/test_run"
 
 module Datadog
   module CI
     module ITR
       class Skippable
-        class Test
-          attr_reader :name, :suite
-
-          def initialize(name:, suite:)
-            @name = name
-            @suite = suite
-          end
-
-          def ==(other)
-            name == other.name && suite == other.suite
-          end
-        end
-
         class Response
           def initialize(http_response)
             @http_response = http_response
@@ -38,13 +26,17 @@ module Datadog
           end
 
           def tests
+            res = Set.new
+
             payload.fetch("data", [])
-              .filter_map do |test_data|
+              .each do |test_data|
                 next unless test_data["type"] == Ext::Test::ITR_TEST_SKIPPING_MODE
 
                 attrs = test_data["attributes"] || {}
-                Test.new(name: attrs["name"], suite: attrs["suite"])
+                res << Utils::TestRun.test_full_name(attrs["name"], attrs["suite"])
               end
+
+            res
           end
 
           private
