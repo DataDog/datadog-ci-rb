@@ -98,10 +98,10 @@ module Datadog
                 "repository_url" => test_session.git_repository_url,
                 "sha" => test_session.git_commit_sha,
                 "configurations" => {
-                  "os.platform" => test_session.os_platform,
-                  "os.architecture" => test_session.os_architecture,
-                  "runtime.name" => test_session.runtime_name,
-                  "runtime.version" => test_session.runtime_version
+                  Ext::Test::TAG_OS_PLATFORM => test_session.os_platform,
+                  Ext::Test::TAG_OS_ARCHITECTURE => test_session.os_architecture,
+                  Ext::Test::TAG_RUNTIME_NAME => test_session.runtime_name,
+                  Ext::Test::TAG_RUNTIME_VERSION => test_session.runtime_version
                 }
               }
             }
