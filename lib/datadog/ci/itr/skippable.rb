@@ -100,6 +100,7 @@ module Datadog
                 "configurations" => {
                   Ext::Test::TAG_OS_PLATFORM => test_session.os_platform,
                   Ext::Test::TAG_OS_ARCHITECTURE => test_session.os_architecture,
+                  Ext::Test::TAG_OS_VERSION => test_session.os_version,
                   Ext::Test::TAG_RUNTIME_NAME => test_session.runtime_name,
                   Ext::Test::TAG_RUNTIME_VERSION => test_session.runtime_version
                 }
