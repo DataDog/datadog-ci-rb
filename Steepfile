@@ -15,6 +15,7 @@ target :lib do
   library "securerandom"
   library "tmpdir"
   library "fileutils"
+  library "socket"
 
   repo_path "vendor/rbs"
   library "ddtrace"
