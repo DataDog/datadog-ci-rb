@@ -5,18 +5,18 @@ require_relative "../../../../lib/datadog/ci/itr/runner"
 RSpec.describe Datadog::CI::ITR::Runner do
   let(:itr_enabled) { true }
 
+  let(:api) { double("api") }
   let(:writer) { spy("writer") }
   let(:git_worker) { spy("git_worker") }
 
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
-  subject(:runner) { described_class.new(dd_env: "dd_env", coverage_writer: writer, enabled: itr_enabled) }
+  subject(:runner) { described_class.new(api: api, dd_env: "dd_env", coverage_writer: writer, enabled: itr_enabled) }
+  let(:configure) { runner.configure(remote_configuration, test_session: test_session, git_tree_upload_worker: git_worker) }
 
   before do
     allow(writer).to receive(:write)
-
-    runner.configure(remote_configuration, test_session: test_session, git_tree_upload_worker: git_worker)
   end
 
   describe "#configure" do
@@ -24,14 +24,20 @@ RSpec.describe Datadog::CI::ITR::Runner do
       let(:remote_configuration) { {"itr_enabled" => false} }
 
       it "configures the runner and test session" do
+        configure
+
         expect(runner.enabled?).to be false
         expect(runner.skipping_tests?).to be false
         expect(runner.code_coverage?).to be false
       end
     end
 
-    context "when remote configuration call returned correct response" do
+    context "when remote configuration call returned correct response without tests skipping" do
       let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
+
+      before do
+        configure
+      end
 
       it "configures the runner" do
         expect(runner.enabled?).to be true
@@ -48,10 +54,41 @@ RSpec.describe Datadog::CI::ITR::Runner do
       end
     end
 
+    context "when remote configuration call returned correct response with tests skipping" do
+      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => true} }
+      let(:skippable) do
+        instance_double(
+          Datadog::CI::ITR::Skippable,
+          fetch_skippable_tests: instance_double(
+            Datadog::CI::ITR::Skippable::Response,
+            correlation_id: "42",
+            tests: Set.new(["suite.test"])
+          )
+        )
+      end
+
+      before do
+        expect(Datadog::CI::ITR::Skippable).to receive(:new).and_return(skippable)
+        configure
+      end
+
+      it "configures the runner" do
+        expect(runner.enabled?).to be true
+        expect(runner.skipping_tests?).to be true
+
+        expect(runner.correlation_id).to eq("42")
+        expect(runner.skippable_tests).to eq(Set.new(["suite.test"]))
+
+        expect(git_worker).to have_received(:wait_until_done)
+      end
+    end
+
     context "when remote configuration call returned correct response with strings instead of bools" do
       let(:remote_configuration) { {"itr_enabled" => "true", "code_coverage" => "true", "tests_skipping" => "false"} }
 
       it "configures the runner" do
+        configure
+
         expect(runner.enabled?).to be true
         expect(runner.skipping_tests?).to be false
         expect(runner.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
@@ -62,6 +99,8 @@ RSpec.describe Datadog::CI::ITR::Runner do
       let(:remote_configuration) { {} }
 
       it "configures the runner" do
+        configure
+
         expect(runner.enabled?).to be false
         expect(runner.skipping_tests?).to be false
         expect(runner.code_coverage?).to be false
@@ -72,6 +111,10 @@ RSpec.describe Datadog::CI::ITR::Runner do
   describe "#start_coverage" do
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
     let(:test_span) { Datadog::CI::Test.new(tracer_span) }
+
+    before do
+      configure
+    end
 
     context "when code coverage is disabled" do
       let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => false, "tests_skipping" => false} }
@@ -136,6 +179,8 @@ RSpec.describe Datadog::CI::ITR::Runner do
 
     before do
       skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
+
+      configure
 
       expect(test_span).to receive(:id).and_return(1)
       expect(test_span).to receive(:test_suite_id).and_return(2)
