@@ -96,7 +96,7 @@ RSpec.describe Datadog::CI::ITR::Skippable do
           it "parses the response" do
             expect(response.ok?).to be true
             expect(response.correlation_id).to eq("correlation_id_123")
-            expect(response.tests.first).to eq("test_suite_name.test_name")
+            expect(response.tests).to eq(Set.new(["test_suite_name.test_name"]))
           end
         end
 
