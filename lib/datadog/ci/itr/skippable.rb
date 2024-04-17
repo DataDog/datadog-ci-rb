@@ -4,24 +4,12 @@ require "json"
 
 require_relative "../ext/transport"
 require_relative "../ext/test"
+require_relative "../utils/test_run"
 
 module Datadog
   module CI
     module ITR
       class Skippable
-        class Test
-          attr_reader :name, :suite
-
-          def initialize(name:, suite:)
-            @name = name
-            @suite = suite
-          end
-
-          def ==(other)
-            name == other.name && suite == other.suite
-          end
-        end
-
         class Response
           def initialize(http_response)
             @http_response = http_response
@@ -38,13 +26,17 @@ module Datadog
           end
 
           def tests
+            res = Set.new
+
             payload.fetch("data", [])
-              .filter_map do |test_data|
+              .each do |test_data|
                 next unless test_data["type"] == Ext::Test::ITR_TEST_SKIPPING_MODE
 
                 attrs = test_data["attributes"] || {}
-                Test.new(name: attrs["name"], suite: attrs["suite"])
+                res << Utils::TestRun.test_full_name(attrs["name"], attrs["suite"])
               end
+
+            res
           end
 
           private
@@ -65,7 +57,7 @@ module Datadog
           end
         end
 
-        def initialize(api: nil, dd_env: nil)
+        def initialize(dd_env:, api: nil)
           @api = api
           @dd_env = dd_env
         end
@@ -98,10 +90,11 @@ module Datadog
                 "repository_url" => test_session.git_repository_url,
                 "sha" => test_session.git_commit_sha,
                 "configurations" => {
-                  "os.platform" => test_session.os_platform,
-                  "os.architecture" => test_session.os_architecture,
-                  "runtime.name" => test_session.runtime_name,
-                  "runtime.version" => test_session.runtime_version
+                  Ext::Test::TAG_OS_PLATFORM => test_session.os_platform,
+                  Ext::Test::TAG_OS_ARCHITECTURE => test_session.os_architecture,
+                  Ext::Test::TAG_OS_VERSION => test_session.os_version,
+                  Ext::Test::TAG_RUNTIME_NAME => test_session.runtime_name,
+                  Ext::Test::TAG_RUNTIME_VERSION => test_session.runtime_version
                 }
               }
             }

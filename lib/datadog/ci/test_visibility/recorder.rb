@@ -229,7 +229,12 @@ module Datadog
               Datadog.logger.debug { "git metadata upload did not complete in time when configuring library" }
             end
           end
-          @itr.configure(remote_configuration.payload, test_session)
+
+          @itr.configure(
+            remote_configuration.payload,
+            test_session: test_session,
+            git_tree_upload_worker: @git_tree_upload_worker
+          )
         end
 
         def skip_tracing(block = nil)

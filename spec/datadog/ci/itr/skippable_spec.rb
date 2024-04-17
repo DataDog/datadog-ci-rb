@@ -18,6 +18,7 @@ RSpec.describe Datadog::CI::ITR::Skippable do
           "git.commit.sha" => "commit_sha",
           "os.platform" => "platform",
           "os.architecture" => "arch",
+          "os.version" => "version",
           "runtime.name" => "runtime_name",
           "runtime.version" => "runtime_version"
         })
@@ -47,6 +48,7 @@ RSpec.describe Datadog::CI::ITR::Skippable do
         configurations = attributes["configurations"]
         expect(configurations["os.platform"]).to eq("platform")
         expect(configurations["os.architecture"]).to eq("arch")
+        expect(configurations["os.version"]).to eq("version")
         expect(configurations["runtime.name"]).to eq("runtime_name")
         expect(configurations["runtime.version"]).to eq("runtime_version")
       end
@@ -94,9 +96,7 @@ RSpec.describe Datadog::CI::ITR::Skippable do
           it "parses the response" do
             expect(response.ok?).to be true
             expect(response.correlation_id).to eq("correlation_id_123")
-            expect(response.tests.first).to eq(
-              Datadog::CI::ITR::Skippable::Test.new(name: "test_name", suite: "test_suite_name")
-            )
+            expect(response.tests).to eq(Set.new(["test_suite_name.test_name"]))
           end
         end
 

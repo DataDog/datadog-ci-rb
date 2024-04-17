@@ -4,6 +4,7 @@ require "delegate"
 require "datadog/core/transport/http/adapters/net"
 require "datadog/core/transport/http/env"
 require "datadog/core/transport/request"
+require "socket"
 
 require_relative "gzip"
 require_relative "../ext/transport"
@@ -20,6 +21,8 @@ module Datadog
           :compress
 
         DEFAULT_TIMEOUT = 30
+        MAX_RETRIES = 3
+        INITIAL_BACKOFF = 1
 
         def initialize(host:, timeout: DEFAULT_TIMEOUT, port: nil, ssl: true, compress: false)
           @host = host
@@ -29,7 +32,7 @@ module Datadog
           @compress = compress.nil? ? false : compress
         end
 
-        def request(path:, payload:, headers:, verb: "post")
+        def request(path:, payload:, headers:, verb: "post", retries: MAX_RETRIES, backoff: INITIAL_BACKOFF)
           if compress
             headers[Ext::Transport::HEADER_CONTENT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
             payload = Gzip.compress(payload)
@@ -41,9 +44,7 @@ module Datadog
           end
 
           response = ResponseDecorator.new(
-            adapter.call(
-              build_env(path: path, payload: payload, headers: headers, verb: verb)
-            )
+            perform_http_call(path: path, payload: payload, headers: headers, verb: verb, retries: retries, backoff: backoff)
           )
 
           Datadog.logger.debug do
@@ -54,6 +55,25 @@ module Datadog
         end
 
         private
+
+        def perform_http_call(path:, payload:, headers:, verb:, retries: MAX_RETRIES, backoff: INITIAL_BACKOFF)
+          adapter.call(
+            build_env(path: path, payload: payload, headers: headers, verb: verb)
+          )
+        rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, SocketError, Net::HTTPBadResponse => e
+          Datadog.logger.debug("Failed to send request with #{e} (#{e.message})")
+
+          if retries.positive?
+            sleep(backoff)
+
+            perform_http_call(
+              path: path, payload: payload, headers: headers, verb: verb, retries: retries - 1, backoff: backoff * 2
+            )
+          else
+            Datadog.logger.error("Failed to send request after #{MAX_RETRIES} retries")
+            raise e
+          end
+        end
 
         def build_env(path:, payload:, headers:, verb:)
           env = Datadog::Core::Transport::HTTP::Env.new(

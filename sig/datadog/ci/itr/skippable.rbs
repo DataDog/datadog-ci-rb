@@ -5,18 +5,6 @@ module Datadog
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
 
-        class Test
-          @name: String?
-
-          @suite: String?
-
-          attr_reader name: String?
-
-          attr_reader suite: String?
-
-          def initialize: (name: String?, suite: String?) -> void
-        end
-
         class Response
           @http_response: Datadog::Core::Transport::HTTP::Adapters::Net::Response?
           @json: Hash[String, untyped]?
@@ -27,14 +15,14 @@ module Datadog
 
           def correlation_id: () -> String?
 
-          def tests: () -> Array[Test]
+          def tests: () -> Set[String]
 
           private
 
           def payload: () -> Hash[String, untyped]
         end
 
-        def initialize: (?api: Datadog::CI::Transport::Api::Base?, ?dd_env: String?) -> void
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?) -> void
 
         def fetch_skippable_tests: (Datadog::CI::TestSession test_session) -> Response
 
