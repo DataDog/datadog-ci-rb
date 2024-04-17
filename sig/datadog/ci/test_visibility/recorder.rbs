@@ -95,6 +95,8 @@ module Datadog
         def on_test_finished: (Datadog::CI::Test test) -> void
 
         def on_test_started: (Datadog::CI::Test test) -> void
+
+        def on_test_session_finished: (Datadog::CI::TestSession test_session) -> void
       end
     end
   end

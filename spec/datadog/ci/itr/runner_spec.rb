@@ -337,4 +337,61 @@ RSpec.describe Datadog::CI::ITR::Runner do
       end
     end
   end
+
+  describe "#write_test_session_tags" do
+    let(:test_session_span) do
+      Datadog::CI::TestSession.new(
+        Datadog::Tracing::SpanOperation.new("test_session")
+      )
+    end
+
+    before do
+      runner.count_skipped_test(test_span)
+    end
+
+    subject { runner.write_test_session_tags(test_session_span) }
+
+    let(:test_span) do
+      Datadog::CI::Test.new(
+        Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "pass"})
+      )
+    end
+
+    context "when ITR is enabled" do
+      context "when tests were not skipped" do
+        it "submits 0 skipped tests" do
+          subject
+
+          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TESTS_SKIPPED)).to eq("false")
+          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT)).to eq(0)
+        end
+      end
+
+      context "when tests were skipped" do
+        let(:test_span) do
+          Datadog::CI::Test.new(
+            Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "skip", "test.itr.skipped_by_itr" => "true"})
+          )
+        end
+
+        it "submits number of skipped tests" do
+          subject
+
+          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TESTS_SKIPPED)).to eq("true")
+          expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT)).to eq(1)
+        end
+      end
+    end
+
+    context "when ITR is disabled" do
+      let(:itr_enabled) { false }
+
+      it "does not add ITR tags to the session" do
+        subject
+
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TESTS_SKIPPED)).to be_nil
+        expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT)).to be_nil
+      end
+    end
+  end
 end

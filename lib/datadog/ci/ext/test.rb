@@ -26,7 +26,9 @@ module Datadog
         # ITR tags
         TAG_ITR_TEST_SKIPPING_ENABLED = "test.itr.tests_skipping.enabled"
         TAG_ITR_TEST_SKIPPING_TYPE = "test.itr.tests_skipping.type"
+        TAG_ITR_TEST_SKIPPING_COUNT = "test.itr.tests_skipping.count"
         TAG_ITR_SKIPPED_BY_ITR = "test.itr.skipped_by_itr"
+        TAG_ITR_TESTS_SKIPPED = "_dd.ci.itr.tests_skipped"
 
         # Code coverage tags
         TAG_CODE_COVERAGE_ENABLED = "test.code_coverage.enabled"
