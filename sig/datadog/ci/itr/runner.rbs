@@ -27,7 +27,7 @@ module Datadog
 
         def code_coverage?: () -> bool
 
-        def start_coverage: () -> void
+        def start_coverage: (Datadog::CI::Test test) -> void
 
         def stop_coverage: (Datadog::CI::Test test) -> Datadog::CI::ITR::Coverage::Event?
 
