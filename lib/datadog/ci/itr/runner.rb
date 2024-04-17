@@ -2,6 +2,8 @@
 
 require "pp"
 
+require "datadog/core/utils/forking"
+
 require_relative "../ext/test"
 require_relative "../ext/transport"
 
@@ -19,7 +21,9 @@ module Datadog
       # Integrates with backend to provide test impact analysis data and
       # skip tests that are not impacted by the changes
       class Runner
-        attr_reader :correlation_id, :skippable_tests
+        include Core::Utils::Forking
+
+        attr_reader :correlation_id, :skippable_tests, :skipped_tests_count
 
         def initialize(
           dd_env:,
@@ -38,6 +42,9 @@ module Datadog
 
           @correlation_id = nil
           @skippable_tests = []
+
+          @skipped_tests_count = 0
+          @mutex = Mutex.new
 
           Datadog.logger.debug("ITR Runner initialized with enabled: #{@enabled}")
         end
@@ -111,6 +118,32 @@ module Datadog
           write(event)
 
           event
+        end
+
+        def mark_if_skippable(test)
+          return unless enabled? && skipping_tests?
+
+          test_full_name = Utils::TestRun.test_full_name(test.name, test.test_suite_name)
+
+          if @skippable_tests.include?(test_full_name)
+            test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
+            increment_skipped_tests_counter
+
+            Datadog.logger.debug { "Marked test as skippable: #{test_full_name}" }
+          else
+            Datadog.logger.debug { "Test is not skippable: #{test_full_name}" }
+          end
+        end
+
+        def increment_skipped_tests_counter
+          if forked?
+            Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
+            return
+          end
+
+          @mutex.synchronize do
+            @skipped_tests_count += 1
+          end
         end
 
         def shutdown!

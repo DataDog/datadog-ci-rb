@@ -127,21 +127,18 @@ module Datadog
               test = build_test(tracer_span, tags)
 
               @local_context.activate_test(test) do
-                @itr.start_coverage
-
+                on_test_started(test)
                 res = block.call(test)
                 on_test_finished(test)
-
                 res
               end
             end
           else
             tracer_span = start_datadog_tracer_span(test_name, span_options)
-
             test = build_test(tracer_span, tags)
 
             @local_context.activate_test(test)
-            @itr.start_coverage
+            on_test_started(test)
 
             test
           end
@@ -401,6 +398,11 @@ module Datadog
         # TODO: use kind of event system to notify about test finished?
         def on_test_finished(test)
           @itr.stop_coverage(test)
+        end
+
+        def on_test_started(test)
+          @itr.mark_if_skippable(test)
+          @itr.start_coverage
         end
       end
     end

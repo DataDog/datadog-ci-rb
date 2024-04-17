@@ -62,6 +62,12 @@ module Datadog
         get_tag(Ext::Test::TAG_SOURCE_FILE)
       end
 
+      # Returns "true" if the test is skipped by the ITR.
+      # @return [Boolean] true if the test is skipped by the ITR, false otherwise.
+      def skipped_by_itr?
+        get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
+      end
+
       # Sets the status of the span to "pass".
       # @return [void]
       def passed!

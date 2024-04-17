@@ -7,6 +7,7 @@ module Datadog
       def test_suite_name: () -> String?
       def test_module_id: () -> String?
       def test_session_id: () -> String?
+      def skipped_by_itr?: () -> bool
       def source_file: () -> String?
 
       private
