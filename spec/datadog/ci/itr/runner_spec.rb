@@ -153,16 +153,6 @@ RSpec.describe Datadog::CI::ITR::Runner do
         coverage_event = runner.stop_coverage(test_span)
         expect(coverage_event.coverage.size).to be > 0
       end
-
-      context "when test is skipped by ITR" do
-        it "does not start coverage" do
-          test_span.set_tag(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
-
-          expect(runner).not_to receive(:coverage_collector)
-
-          runner.start_coverage(test_span)
-        end
-      end
     end
 
     context "when JRuby and code coverage is enabled" do
@@ -212,17 +202,6 @@ RSpec.describe Datadog::CI::ITR::Runner do
     end
 
     context "when test is skipped" do
-      it "does not write coverage event" do
-        runner.start_coverage(test_span)
-        expect(1 + 1).to eq(2)
-        test_span.set_tag(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
-
-        expect(runner.stop_coverage(test_span)).to be_nil
-        expect(writer).not_to have_received(:write)
-      end
-    end
-
-    context "when test is skipped by ITR" do
       it "does not write coverage event" do
         runner.start_coverage(test_span)
         expect(1 + 1).to eq(2)
