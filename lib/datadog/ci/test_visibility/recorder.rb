@@ -191,6 +191,9 @@ module Datadog
         end
 
         def deactivate_test_session
+          test_session = active_test_session
+          on_test_session_finished(test_session) if test_session
+
           @global_context.deactivate_test_session!
         end
 
@@ -404,6 +407,10 @@ module Datadog
         def on_test_started(test)
           @itr.mark_if_skippable(test)
           @itr.start_coverage(test)
+        end
+
+        def on_test_session_finished(test_session)
+          @itr.write_test_session_tags(test_session)
         end
       end
     end

@@ -18,9 +18,9 @@ module Datadog
       # Finishes the current test.
       # @return [void]
       def finish
-        super
-
         recorder.deactivate_test
+
+        super
       end
 
       # Running test suite that this test is part of (if any).

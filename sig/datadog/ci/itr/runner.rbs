@@ -35,6 +35,8 @@ module Datadog
 
         def count_skipped_test: (Datadog::CI::Test test) -> void
 
+        def write_test_session_tags: (Datadog::CI::TestSession test_session) -> void
+
         def shutdown!: () -> void
 
         private

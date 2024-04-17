@@ -149,6 +149,13 @@ module Datadog
           end
         end
 
+        def write_test_session_tags(test_session)
+          return if !enabled?
+
+          test_session.set_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, @skipped_tests_count.positive?.to_s)
+          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, @skipped_tests_count)
+        end
+
         def shutdown!
           @coverage_writer&.stop
         end
