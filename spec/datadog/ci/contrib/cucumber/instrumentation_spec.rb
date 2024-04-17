@@ -189,12 +189,12 @@ RSpec.describe "Cucumber formatter" do
     context "collecting coverage with features dir as root" do
       before { skip if PlatformHelpers.jruby? }
 
-      it "creates coverage events for each test" do
-        expect(coverage_events).to have(4).items
+      it "creates coverage events for each non-skipped test" do
+        expect(coverage_events).to have(1).item
 
         expect_coverage_events_belong_to_session(test_session_span)
         expect_coverage_events_belong_to_suite(first_test_suite_span)
-        expect_coverage_events_belong_to_tests(test_spans)
+        expect_coverage_events_belong_to_tests([test_spans.first])
         expect_non_empty_coverages
 
         feature_coverage = coverage_events.first.coverage

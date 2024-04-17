@@ -402,7 +402,7 @@ module Datadog
 
         def on_test_started(test)
           @itr.mark_if_skippable(test)
-          @itr.start_coverage
+          @itr.start_coverage(test)
         end
       end
     end

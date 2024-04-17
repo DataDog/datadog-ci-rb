@@ -89,8 +89,9 @@ module Datadog
           @code_coverage_enabled
         end
 
-        def start_coverage
+        def start_coverage(test)
           return if !enabled? || !code_coverage?
+          return if test.skipped_by_itr?
 
           coverage_collector&.start
         end
@@ -99,7 +100,9 @@ module Datadog
           return if !enabled? || !code_coverage?
 
           coverage = coverage_collector&.stop
-          return if coverage.nil?
+          return if coverage.nil? || coverage.empty?
+
+          return if test.skipped? || test.skipped_by_itr?
 
           test_source_file = test.source_file
 
@@ -121,7 +124,7 @@ module Datadog
         end
 
         def mark_if_skippable(test)
-          return unless enabled? && skipping_tests?
+          return if !enabled? || !skipping_tests?
 
           test_full_name = Utils::TestRun.test_full_name(test.name, test.test_suite_name)
 

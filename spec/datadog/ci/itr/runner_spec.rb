@@ -122,7 +122,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       it "does not start coverage" do
         expect(runner).not_to receive(:coverage_collector)
 
-        runner.start_coverage
+        runner.start_coverage(test_span)
         expect(runner.stop_coverage(test_span)).to be_nil
       end
     end
@@ -133,7 +133,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       it "does not start coverage" do
         expect(runner).not_to receive(:coverage_collector)
 
-        runner.start_coverage
+        runner.start_coverage(test_span)
         expect(runner.stop_coverage(test_span)).to be_nil
       end
     end
@@ -148,10 +148,20 @@ RSpec.describe Datadog::CI::ITR::Runner do
       it "starts coverage" do
         expect(runner).to receive(:coverage_collector).twice.and_call_original
 
-        runner.start_coverage
+        runner.start_coverage(test_span)
         expect(1 + 1).to eq(2)
         coverage_event = runner.stop_coverage(test_span)
         expect(coverage_event.coverage.size).to be > 0
+      end
+
+      context "when test is skipped by ITR" do
+        it "does not start coverage" do
+          test_span.set_tag(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
+
+          expect(runner).not_to receive(:coverage_collector)
+
+          runner.start_coverage(test_span)
+        end
       end
     end
 
@@ -166,7 +176,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
         expect(runner).not_to receive(:coverage_collector)
         expect(runner.code_coverage?).to be(false)
 
-        runner.start_coverage
+        runner.start_coverage(test_span)
         expect(runner.stop_coverage(test_span)).to be_nil
       end
     end
@@ -182,13 +192,13 @@ RSpec.describe Datadog::CI::ITR::Runner do
 
       configure
 
-      expect(test_span).to receive(:id).and_return(1)
-      expect(test_span).to receive(:test_suite_id).and_return(2)
-      expect(test_span).to receive(:test_session_id).and_return(3)
+      allow(test_span).to receive(:id).and_return(1)
+      allow(test_span).to receive(:test_suite_id).and_return(2)
+      allow(test_span).to receive(:test_session_id).and_return(3)
     end
 
     it "creates coverage event and writes it" do
-      runner.start_coverage
+      runner.start_coverage(test_span)
       expect(1 + 1).to eq(2)
       expect(runner.stop_coverage(test_span)).not_to be_nil
 
@@ -198,6 +208,37 @@ RSpec.describe Datadog::CI::ITR::Runner do
         expect(event.test_session_id).to eq("3")
 
         expect(event.coverage.size).to be > 0
+      end
+    end
+
+    context "when test is skipped" do
+      it "does not write coverage event" do
+        runner.start_coverage(test_span)
+        expect(1 + 1).to eq(2)
+        test_span.set_tag(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
+
+        expect(runner.stop_coverage(test_span)).to be_nil
+        expect(writer).not_to have_received(:write)
+      end
+    end
+
+    context "when test is skipped by ITR" do
+      it "does not write coverage event" do
+        runner.start_coverage(test_span)
+        expect(1 + 1).to eq(2)
+        test_span.skipped!
+
+        expect(runner.stop_coverage(test_span)).to be_nil
+        expect(writer).not_to have_received(:write)
+      end
+    end
+
+    context "when coverage was not collected" do
+      it "does not write coverage event" do
+        expect(1 + 1).to eq(2)
+
+        expect(runner.stop_coverage(test_span)).to be_nil
+        expect(writer).not_to have_received(:write)
       end
     end
   end
@@ -213,7 +254,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
           fetch_skippable_tests: instance_double(
             Datadog::CI::ITR::Skippable::Response,
             correlation_id: "42",
-            tests: Set.new(["suite.test"])
+            tests: Set.new(["suite.test", "suite2.test", "suite.test3"])
           )
         )
       end
@@ -249,7 +290,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       context "when test is not skippable" do
         let(:test_span) do
           Datadog::CI::Test.new(
-            Datadog::Tracing::SpanOperation.new("test", tags: {"test.name" => "test", "test.suite" => "test"})
+            Datadog::Tracing::SpanOperation.new("test", tags: {"test.name" => "test2", "test.suite" => "suite"})
           )
         end
 
