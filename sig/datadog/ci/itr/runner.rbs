@@ -33,6 +33,8 @@ module Datadog
 
         def mark_if_skippable: (Datadog::CI::Test test) -> void
 
+        def count_skipped_test: (Datadog::CI::Test test) -> void
+
         def shutdown!: () -> void
 
         private

@@ -257,13 +257,6 @@ RSpec.describe Datadog::CI::ITR::Runner do
             .from(false)
             .to(true)
         end
-
-        it "increments skipped tests count" do
-          expect { subject }
-            .to change { runner.skipped_tests_count }
-            .from(0)
-            .to(1)
-        end
       end
 
       context "when test is not skippable" do
@@ -276,11 +269,6 @@ RSpec.describe Datadog::CI::ITR::Runner do
         it "does not mark test as skippable" do
           expect { subject }
             .not_to change { test_span.skipped_by_itr? }
-        end
-
-        it "does not increment skipped tests count" do
-          expect { subject }
-            .not_to change { runner.skipped_tests_count }
         end
       end
     end
@@ -301,6 +289,46 @@ RSpec.describe Datadog::CI::ITR::Runner do
       it "does not mark test as skippable" do
         expect { subject }
           .not_to change { test_span.skipped_by_itr? }
+      end
+    end
+  end
+
+  describe "#count_skipped_test" do
+    subject { runner.count_skipped_test(test_span) }
+
+    context "test is skipped by framework" do
+      let(:test_span) do
+        Datadog::CI::Test.new(
+          Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "skip"})
+        )
+      end
+
+      it "does not increment skipped tests count" do
+        expect { subject }
+          .not_to change { runner.skipped_tests_count }
+      end
+    end
+
+    context "test is skipped by ITR" do
+      let(:test_span) do
+        Datadog::CI::Test.new(
+          Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "skip", "test.itr.skipped_by_itr" => "true"})
+        )
+      end
+
+      it "increments skipped tests count" do
+        expect { subject }
+          .to change { runner.skipped_tests_count }
+          .from(0)
+          .to(1)
+      end
+    end
+
+    context "test is not skipped" do
+      let(:test_span) do
+        Datadog::CI::Test.new(
+          Datadog::Tracing::SpanOperation.new("test")
+        )
       end
 
       it "does not increment skipped tests count" do
