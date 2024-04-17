@@ -91,7 +91,6 @@ module Datadog
 
         def start_coverage(test)
           return if !enabled? || !code_coverage?
-          return if test.skipped_by_itr?
 
           coverage_collector&.start
         end
@@ -102,7 +101,7 @@ module Datadog
           coverage = coverage_collector&.stop
           return if coverage.nil? || coverage.empty?
 
-          return if test.skipped? || test.skipped_by_itr?
+          return if test.skipped?
 
           test_source_file = test.source_file
 
