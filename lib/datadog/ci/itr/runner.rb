@@ -129,7 +129,6 @@ module Datadog
 
           if @skippable_tests.include?(test_full_name)
             test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
-            increment_skipped_tests_counter
 
             Datadog.logger.debug { "Marked test as skippable: #{test_full_name}" }
           else
@@ -137,11 +136,13 @@ module Datadog
           end
         end
 
-        def increment_skipped_tests_counter
+        def count_skipped_test(test)
           if forked?
             Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
             return
           end
+
+          return if !test.skipped? || !test.skipped_by_itr?
 
           @mutex.synchronize do
             @skipped_tests_count += 1
