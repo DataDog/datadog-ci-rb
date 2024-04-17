@@ -201,4 +201,92 @@ RSpec.describe Datadog::CI::ITR::Runner do
       end
     end
   end
+
+  describe "#mark_if_skippable" do
+    subject { runner.mark_if_skippable(test_span) }
+
+    context "when skipping tests" do
+      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => true} }
+      let(:skippable) do
+        instance_double(
+          Datadog::CI::ITR::Skippable,
+          fetch_skippable_tests: instance_double(
+            Datadog::CI::ITR::Skippable::Response,
+            correlation_id: "42",
+            tests: Set.new(["suite.test"])
+          )
+        )
+      end
+
+      before do
+        expect(Datadog::CI::ITR::Skippable).to receive(:new).and_return(skippable)
+
+        configure
+      end
+
+      context "when test is skippable" do
+        let(:test_span) do
+          Datadog::CI::Test.new(
+            Datadog::Tracing::SpanOperation.new("test", tags: {"test.name" => "test", "test.suite" => "suite"})
+          )
+        end
+
+        it "marks test as skippable" do
+          expect { subject }
+            .to change { test_span.skipped_by_itr? }
+            .from(false)
+            .to(true)
+        end
+
+        it "increments skipped tests count" do
+          expect { subject }
+            .to change { runner.skipped_tests_count }
+            .from(0)
+            .to(1)
+        end
+      end
+
+      context "when test is not skippable" do
+        let(:test_span) do
+          Datadog::CI::Test.new(
+            Datadog::Tracing::SpanOperation.new("test", tags: {"test.name" => "test", "test.suite" => "test"})
+          )
+        end
+
+        it "does not mark test as skippable" do
+          expect { subject }
+            .not_to change { test_span.skipped_by_itr? }
+        end
+
+        it "does not increment skipped tests count" do
+          expect { subject }
+            .not_to change { runner.skipped_tests_count }
+        end
+      end
+    end
+
+    context "when not skipping tests" do
+      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
+
+      before do
+        configure
+      end
+
+      let(:test_span) do
+        Datadog::CI::Test.new(
+          Datadog::Tracing::SpanOperation.new("test", tags: {"test.name" => "test", "test.suite" => "suite"})
+        )
+      end
+
+      it "does not mark test as skippable" do
+        expect { subject }
+          .not_to change { test_span.skipped_by_itr? }
+      end
+
+      it "does not increment skipped tests count" do
+        expect { subject }
+          .not_to change { runner.skipped_tests_count }
+      end
+    end
+  end
 end
