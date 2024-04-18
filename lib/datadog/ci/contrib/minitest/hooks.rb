@@ -25,7 +25,7 @@ module Datadog
 
             source_file, line_number = method(name).source_location
 
-            CI.start_test(
+            test_span = CI.start_test(
               name,
               test_suite_name,
               tags: {
@@ -36,6 +36,7 @@ module Datadog
               },
               service: datadog_configuration[:service_name]
             )
+            skip("skipped by ITR") if test_span&.skipped_by_itr?
           end
 
           def after_teardown

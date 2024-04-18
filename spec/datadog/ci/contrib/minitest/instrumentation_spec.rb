@@ -34,6 +34,7 @@ RSpec.describe "Minitest instrumentation" do
 
       let(:itr_enabled) { true }
       let(:code_coverage_enabled) { true }
+      let(:tests_skipping_enabled) { true }
     end
 
     before do
@@ -77,7 +78,7 @@ RSpec.describe "Minitest instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(:source_start, "50")
+      expect(span).to have_test_tag(:source_start, "51")
       expect(span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -421,6 +422,13 @@ RSpec.describe "Minitest instrumentation" do
             :framework_version,
             Datadog::CI::Contrib::Minitest::Integration.version.to_s
           )
+
+          # ITR
+          expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+          expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
+          expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+          expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+
           expect(test_session_span).to have_pass_status
         end
 
@@ -486,6 +494,54 @@ RSpec.describe "Minitest instrumentation" do
           expect_coverage_events_belong_to_suite(first_test_suite_span)
           expect_coverage_events_belong_to_tests(test_spans)
           expect_non_empty_coverages
+        end
+
+        context "when ITR skips tests" do
+          context "single skipped test" do
+            let(:itr_skippable_tests) do
+              Set.new(["SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass"])
+            end
+
+            it "skips a single test" do
+              expect(test_spans).to have(2).items
+              expect(test_spans).to have_tag_values_no_order(:status, ["skip", "pass"])
+
+              expect(first_test_span).to have_test_tag(:itr_skipped_by_itr, "true")
+              expect(test_spans.last).not_to have_test_tag(:itr_skipped_by_itr)
+            end
+
+            it "send test session level tags" do
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
+              expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
+            end
+          end
+
+          context "multiple skipped tests" do
+            let(:itr_skippable_tests) do
+              Set.new(
+                [
+                  "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass",
+                  "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass_other"
+                ]
+              )
+            end
+
+            it "skips all tests" do
+              expect(test_spans).to have(2).items
+              expect(test_spans).to all have_skip_status
+
+              expect(test_spans).to all have_test_tag(:itr_skipped_by_itr, "true")
+            end
+
+            it "send test session level tags" do
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
+              expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 2)
+            end
+          end
         end
       end
 
@@ -661,6 +717,33 @@ RSpec.describe "Minitest instrumentation" do
           expect_coverage_events_belong_to_suites(test_suite_spans)
           expect_coverage_events_belong_to_tests(test_spans)
           expect_non_empty_coverages
+        end
+
+        context "when ITR skips tests" do
+          let(:itr_skippable_tests) do
+            Set.new(
+              [
+                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_1 concurrently).test_a_1",
+                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_2 concurrently).test_a_2",
+                "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_2 concurrently).test_b_2"
+              ]
+            )
+          end
+
+          it "skips given tests" do
+            expect(test_spans).to have(4).items
+            expect(test_spans).to have_tag_values_no_order(:status, ["skip", "skip", "skip", "pass"])
+
+            skipped = test_spans.select { |span| span.get_tag("status") == "skip" }
+            expect(skipped).to
+          end
+
+          it "send test session level tags" do
+            expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+            expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
+            expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+            expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 3)
+          end
         end
       end
 

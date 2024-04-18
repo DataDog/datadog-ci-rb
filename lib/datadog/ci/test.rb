@@ -62,8 +62,8 @@ module Datadog
         get_tag(Ext::Test::TAG_SOURCE_FILE)
       end
 
-      # Returns "true" if the test is skipped by the ITR.
-      # @return [Boolean] true if the test is skipped by the ITR, false otherwise.
+      # Returns "true" if the test is skipped by the intelligent test runner.
+      # @return [Boolean] true if the test is skipped by the intelligent test runner, false otherwise.
       def skipped_by_itr?
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
