@@ -312,7 +312,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
     context "test is skipped by ITR" do
       let(:test_span) do
         Datadog::CI::Test.new(
-          Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "skip", "test.itr.skipped_by_itr" => "true"})
+          Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "skip", "test.skipped_by_itr" => "true"})
         )
       end
 
@@ -370,7 +370,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       context "when tests were skipped" do
         let(:test_span) do
           Datadog::CI::Test.new(
-            Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "skip", "test.itr.skipped_by_itr" => "true"})
+            Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "skip", "test.skipped_by_itr" => "true"})
           )
         end
 
