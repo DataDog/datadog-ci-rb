@@ -735,7 +735,7 @@ RSpec.describe "Minitest instrumentation" do
             expect(test_spans).to have_tag_values_no_order(:status, ["skip", "skip", "skip", "pass"])
 
             skipped = test_spans.select { |span| span.get_tag("status") == "skip" }
-            expect(skipped).to
+            expect(skipped).to all have_test_tag(:itr_skipped_by_itr, "true")
           end
 
           it "send test session level tags" do
