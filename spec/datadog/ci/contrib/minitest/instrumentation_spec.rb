@@ -738,7 +738,7 @@ RSpec.describe "Minitest instrumentation" do
             expect(skipped).to all have_test_tag(:itr_skipped_by_itr, "true")
           end
 
-          it "send test session level tags" do
+          it "sends test session level tags" do
             expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
             expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
             expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")

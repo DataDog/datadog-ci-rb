@@ -13,6 +13,15 @@ module Datadog
         def self.test_full_name(test_name, suite, parameters = nil)
           "#{suite}.#{test_name}.#{parameters}"
         end
+
+        def self.test_parameters(arguments: {}, metadata: {})
+          JSON.generate(
+            {
+              arguments: arguments,
+              metadata: metadata
+            }
+          )
+        end
       end
     end
   end

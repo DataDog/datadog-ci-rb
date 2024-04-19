@@ -3,6 +3,7 @@
 require "json"
 
 require_relative "span"
+require_relative "utils/test_run"
 
 module Datadog
   module CI
@@ -104,15 +105,7 @@ module Datadog
       def set_parameters(arguments, metadata = {})
         return if arguments.nil?
 
-        set_tag(
-          Ext::Test::TAG_PARAMETERS,
-          JSON.generate(
-            {
-              arguments: arguments,
-              metadata: metadata
-            }
-          )
-        )
+        set_tag(Ext::Test::TAG_PARAMETERS, Utils::TestRun.test_parameters(arguments: arguments, metadata: metadata))
       end
 
       # Gets the parameters for this test (e.g. Cucumber example or RSpec specs) as a serialized JSON.

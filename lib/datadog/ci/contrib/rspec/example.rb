@@ -2,6 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
+require_relative "../../utils/test_run"
 require_relative "ext"
 
 module Datadog
@@ -42,11 +43,14 @@ module Datadog
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
                   CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
-                  CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
+                  CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s,
+                  CI::Ext::Test::TAG_PARAMETERS => Utils::TestRun.test_parameters(
+                    metadata: {"scoped_id" => metadata[:scoped_id]}
+                  )
                 },
                 service: datadog_configuration[:service_name]
               ) do |test_span|
-                test_span&.set_parameters({}, {"scoped_id" => metadata[:scoped_id]})
+                metadata[:skip] = CI::Ext::Test::ITR_TEST_SKIP_REASON if test_span&.skipped_by_itr?
 
                 result = super
 
