@@ -474,6 +474,12 @@ RSpec.describe "RSpec hooks" do
 
       expect(test_session_span).not_to have_test_tag(:code_coverage_enabled)
 
+      # ITR
+      expect(test_session_span).not_to have_test_tag(:itr_test_skipping_enabled)
+      expect(test_session_span).not_to have_test_tag(:itr_test_skipping_type)
+      expect(test_session_span).not_to have_test_tag(:itr_tests_skipped)
+      expect(test_session_span).not_to have_test_tag(:itr_test_skipping_count)
+
       expect(test_session_span).to have_pass_status
     end
 
@@ -644,6 +650,68 @@ RSpec.describe "RSpec hooks" do
       expect(shared_context_coverage.coverage).to eq({
         File.join(__dir__, "some_shared_context.rb") => true
       })
+    end
+  end
+
+  context "when skipping tests" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:tests_skipping_enabled) { true }
+    end
+
+    context "skipped a single test" do
+      let(:itr_skippable_tests) do
+        Set.new([
+          'SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{"arguments":{},"metadata":{"scoped_id":"1:1:1"}}'
+        ])
+      end
+
+      it "skips test" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(test_spans).to have(2).items
+        expect(test_spans).to have_tag_values_no_order(:status, ["skip", "fail"])
+
+        itr_skipped_test = test_spans.find { |span| span.name == "nested foo" }
+        expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
+      end
+
+      it "sends test session level tags" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
+      end
+    end
+
+    context "skipped all tests" do
+      let(:itr_skippable_tests) do
+        Set.new([
+          'SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{"arguments":{},"metadata":{"scoped_id":"1:1:1"}}',
+          'SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails.{"arguments":{},"metadata":{"scoped_id":"1:1:2"}}'
+        ])
+      end
+
+      it "skips tests and suite" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(test_spans).to have(2).items
+        expect(test_spans).to all have_skip_status
+        expect(test_spans).to all have_test_tag(:itr_skipped_by_itr, "true")
+        expect(first_test_suite_span).to have_skip_status
+      end
+
+      it "sends test session level tags" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 2)
+      end
     end
   end
 end
