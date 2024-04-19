@@ -2,6 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
+require_relative "../../utils/test_run"
 require_relative "ext"
 
 module Datadog
@@ -55,12 +56,17 @@ module Datadog
           def on_test_case_started(event)
             test_suite_name = test_suite_name(event.test_case)
 
+            # @type var tags: Hash[String, String]
             tags = {
               CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
               CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
               CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(event.test_case.location.file),
               CI::Ext::Test::TAG_SOURCE_START => event.test_case.location.line.to_s
             }
+
+            if (parameters = extract_parameters_hash(event.test_case))
+              tags[CI::Ext::Test::TAG_PARAMETERS] = Utils::TestRun.test_parameters(arguments: parameters)
+            end
 
             start_test_suite(test_suite_name) unless same_test_suite_as_current?(test_suite_name)
 
@@ -70,15 +76,20 @@ module Datadog
               tags: tags,
               service: configuration[:service_name]
             )
-
-            if (parameters = extract_parameters_hash(event.test_case))
-              test_span&.set_parameters(parameters)
+            if test_span&.skipped_by_itr?
+              p "WANT TO SKIP TEST #{test_span}"
+              p ::Cucumber::Core::Ast::Tag.new("", "_dd_itr_skip")
+              event.test_case.tags << ::Cucumber::Core::Ast::Tag.new("", "@_dd_itr_skip")
             end
           end
 
           def on_test_case_finished(event)
             test_span = CI.active_test
             return if test_span.nil?
+
+            if test_span.skipped_by_itr?
+              p "DID WE SKIP TEST? answer: #{event.result}"
+            end
 
             finish_span(test_span, event.result)
             @failed_tests_count += 1 if test_span.failed?

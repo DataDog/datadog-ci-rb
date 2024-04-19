@@ -15,6 +15,7 @@ RSpec.describe "Cucumber formatter" do
 
     let(:itr_enabled) { true }
     let(:code_coverage_enabled) { true }
+    let(:tests_skipping_enabled) { true }
   end
 
   let(:cucumber_8_or_above) { Gem::Version.new("8.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
@@ -204,6 +205,20 @@ RSpec.describe "Cucumber formatter" do
           match(%r{features/passing\.feature}),
           match(%r{features/step_definitions/steps_#{run_id}\.rb})
         )
+      end
+    end
+
+    context "skipping a test" do
+      let(:itr_skippable_tests) do
+        Set.new([
+          "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature.cucumber scenario."
+        ])
+      end
+
+      it "skips the test" do
+        expect(test_spans).to have(4).items
+        p test_spans.map { |span| span.get_tag("test.status") }
+        # expect(test_spans).to all have_skip_status
       end
     end
   end
