@@ -95,7 +95,7 @@ module Datadog
         record_test_result(Ext::Test::Status::SKIP)
       end
 
-      # Sets the parameters for this test (e.g. Cucumber example or RSpec shared specs).
+      # Sets the parameters for this test (e.g. Cucumber example or RSpec specs).
       # Parameters are needed to compute test fingerprint to distinguish between different tests having same names.
       #
       # @param [Hash] arguments the arguments that test accepts as key-value hash
@@ -113,6 +113,14 @@ module Datadog
             }
           )
         )
+      end
+
+      # Gets the parameters for this test (e.g. Cucumber example or RSpec specs) as a serialized JSON.
+      #
+      # @return [String] the serialized JSON of the parameters
+      # @return [nil] if this test does not have parameters
+      def parameters
+        get_tag(Ext::Test::TAG_PARAMETERS)
       end
 
       private

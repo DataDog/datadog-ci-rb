@@ -36,7 +36,7 @@ module Datadog
               },
               service: datadog_configuration[:service_name]
             )
-            skip("skipped by ITR") if test_span&.skipped_by_itr?
+            skip(CI::Ext::Test::ITR_TEST_SKIP_REASON) if test_span&.skipped_by_itr?
           end
 
           def after_teardown

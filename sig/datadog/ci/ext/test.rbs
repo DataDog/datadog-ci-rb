@@ -70,6 +70,8 @@ module Datadog
 
         ITR_TEST_SKIPPING_MODE: "test"
 
+        ITR_TEST_SKIP_REASON: String
+
         module Status
           PASS: "pass"
 

@@ -10,8 +10,8 @@ module Datadog
           @command = "#{$0} #{ARGV.join(" ")}"
         end
 
-        def self.test_full_name(test_name, suite)
-          "#{suite}.#{test_name}"
+        def self.test_full_name(test_name, suite, parameters = nil)
+          "#{suite}.#{test_name}.#{parameters}"
         end
       end
     end
