@@ -54,6 +54,16 @@ module Datadog
           end
 
           def on_test_case_started(event)
+            ::Cucumber::Core::Test::Step.class_eval do
+              def execute(*args)
+                test_span = CI.active_test
+                if test_span&.skipped_by_itr?
+                  @action.skip(*args)
+                else
+                  @action.execute(*args)
+                end
+              end
+            end
             test_suite_name = test_suite_name(event.test_case)
 
             # @type var tags: Hash[String, String]
@@ -70,26 +80,17 @@ module Datadog
 
             start_test_suite(test_suite_name) unless same_test_suite_as_current?(test_suite_name)
 
-            test_span = CI.start_test(
+            CI.start_test(
               event.test_case.name,
               test_suite_name,
               tags: tags,
               service: configuration[:service_name]
             )
-            if test_span&.skipped_by_itr?
-              p "WANT TO SKIP TEST #{test_span}"
-              p ::Cucumber::Core::Ast::Tag.new("", "_dd_itr_skip")
-              event.test_case.tags << ::Cucumber::Core::Ast::Tag.new("", "@_dd_itr_skip")
-            end
           end
 
           def on_test_case_finished(event)
             test_span = CI.active_test
             return if test_span.nil?
-
-            if test_span.skipped_by_itr?
-              p "DID WE SKIP TEST? answer: #{event.result}"
-            end
 
             finish_span(test_span, event.result)
             @failed_tests_count += 1 if test_span.failed?

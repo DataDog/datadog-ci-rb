@@ -217,8 +217,7 @@ RSpec.describe "Cucumber formatter" do
 
       it "skips the test" do
         expect(test_spans).to have(4).items
-        p test_spans.map { |span| span.get_tag("test.status") }
-        # expect(test_spans).to all have_skip_status
+        expect(test_spans).to all have_skip_status
       end
     end
   end
