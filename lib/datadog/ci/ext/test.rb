@@ -57,6 +57,7 @@ module Datadog
         # could be either "test" or "suite" depending on whether we skip individual tests or whole suites
         # we use test skipping for Ruby
         ITR_TEST_SKIPPING_MODE = "test"
+        ITR_TEST_SKIP_REASON = "Skipped by Datadog's intelligent test runner"
 
         # test status as recognized by Datadog
         module Status

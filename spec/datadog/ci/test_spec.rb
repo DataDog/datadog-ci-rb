@@ -209,4 +209,16 @@ RSpec.describe Datadog::CI::Test do
       end
     end
   end
+
+  describe "#parameters" do
+    let(:parameters) { JSON.generate({arguments: {"foo" => "bar", "baz" => "qux"}, metadata: {}}) }
+
+    before do
+      allow(tracer_span).to receive(:get_tag).with("test.parameters").and_return(parameters)
+    end
+
+    it "returns the parameters" do
+      expect(ci_test.parameters).to eq(parameters)
+    end
+  end
 end

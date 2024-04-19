@@ -62,7 +62,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
           fetch_skippable_tests: instance_double(
             Datadog::CI::ITR::Skippable::Response,
             correlation_id: "42",
-            tests: Set.new(["suite.test"])
+            tests: Set.new(["suite.test."])
           )
         )
       end
@@ -77,7 +77,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
         expect(runner.skipping_tests?).to be true
 
         expect(runner.correlation_id).to eq("42")
-        expect(runner.skippable_tests).to eq(Set.new(["suite.test"]))
+        expect(runner.skippable_tests).to eq(Set.new(["suite.test."]))
 
         expect(git_worker).to have_received(:wait_until_done)
       end
@@ -233,7 +233,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
           fetch_skippable_tests: instance_double(
             Datadog::CI::ITR::Skippable::Response,
             correlation_id: "42",
-            tests: Set.new(["suite.test", "suite2.test", "suite.test3"])
+            tests: Set.new(["suite.test.", "suite2.test.", "suite.test3."])
           )
         )
       end

@@ -499,7 +499,7 @@ RSpec.describe "Minitest instrumentation" do
         context "when ITR skips tests" do
           context "single skipped test" do
             let(:itr_skippable_tests) do
-              Set.new(["SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass"])
+              Set.new(["SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass."])
             end
 
             it "skips a single test" do
@@ -522,8 +522,8 @@ RSpec.describe "Minitest instrumentation" do
             let(:itr_skippable_tests) do
               Set.new(
                 [
-                  "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass",
-                  "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass_other"
+                  "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass.",
+                  "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass_other."
                 ]
               )
             end
@@ -723,9 +723,9 @@ RSpec.describe "Minitest instrumentation" do
           let(:itr_skippable_tests) do
             Set.new(
               [
-                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_1 concurrently).test_a_1",
-                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_2 concurrently).test_a_2",
-                "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_2 concurrently).test_b_2"
+                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_1 concurrently).test_a_1.",
+                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_2 concurrently).test_a_2.",
+                "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_2 concurrently).test_b_2."
               ]
             )
           end

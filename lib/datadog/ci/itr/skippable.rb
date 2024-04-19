@@ -33,7 +33,7 @@ module Datadog
                 next unless test_data["type"] == Ext::Test::ITR_TEST_SKIPPING_MODE
 
                 attrs = test_data["attributes"] || {}
-                res << Utils::TestRun.test_full_name(attrs["name"], attrs["suite"])
+                res << Utils::TestRun.test_full_name(attrs["name"], attrs["suite"], attrs["parameters"])
               end
 
             res
