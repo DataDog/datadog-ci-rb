@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require "datadog/tracing/contrib/patcher"
+
 require_relative "instrumentation"
+require_relative "step"
 
 module Datadog
   module CI
@@ -19,6 +21,7 @@ module Datadog
 
           def patch
             ::Cucumber::Runtime.include(Instrumentation)
+            ::Cucumber::Core::Test::Step.include(Datadog::CI::Contrib::Cucumber::Step)
           end
         end
       end

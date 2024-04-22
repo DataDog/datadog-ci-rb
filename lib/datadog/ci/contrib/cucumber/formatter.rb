@@ -54,16 +54,6 @@ module Datadog
           end
 
           def on_test_case_started(event)
-            ::Cucumber::Core::Test::Step.class_eval do
-              def execute(*args)
-                test_span = CI.active_test
-                if test_span&.skipped_by_itr?
-                  @action.skip(*args)
-                else
-                  @action.execute(*args)
-                end
-              end
-            end
             test_suite_name = test_suite_name(event.test_case)
 
             # @type var tags: Hash[String, String]
