@@ -125,7 +125,7 @@ module Datadog
         def mark_if_skippable(test)
           return if !enabled? || !skipping_tests?
 
-          skippable_test_id = Utils::TestRun.test_full_name(test.name, test.test_suite_name, test.parameters)
+          skippable_test_id = Utils::TestRun.skippable_test_id(test.name, test.test_suite_name, test.parameters)
           if @skippable_tests.include?(skippable_test_id)
             test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
