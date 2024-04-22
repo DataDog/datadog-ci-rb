@@ -29,8 +29,6 @@ RSpec.describe Datadog::CI::Configuration::Components do
     end
 
     after do
-      components.telemetry.worker.stop(true)
-      components.telemetry.worker.join
       components.shutdown!
     end
 
