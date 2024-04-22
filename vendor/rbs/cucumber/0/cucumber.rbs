@@ -25,6 +25,11 @@ class Cucumber::Core::Test::Result
   def exception: () -> untyped
 end
 
+module Cucumber::Core::Test::Step
+  @action: untyped
+  def execute: (untyped args) -> untyped
+end
+
 class Cucumber::Formatter::AstLookup
   def initialize: (untyped config) -> void
 

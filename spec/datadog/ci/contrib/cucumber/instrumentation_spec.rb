@@ -151,6 +151,12 @@ RSpec.describe "Cucumber formatter" do
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
       )
       expect(test_session_span).to have_pass_status
+
+      # ITR
+      expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+      expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
+      expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+      expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
     end
 
     it "creates test module span" do
@@ -218,6 +224,16 @@ RSpec.describe "Cucumber formatter" do
       it "skips the test" do
         expect(test_spans).to have(4).items
         expect(test_spans).to all have_skip_status
+
+        itr_skipped_test = test_spans.find { |span| span.name == "cucumber scenario" }
+        expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
+      end
+
+      it "sets session level tags" do
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
       end
     end
   end
@@ -270,6 +286,31 @@ RSpec.describe "Cucumber formatter" do
         )
         expect(span).to have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
         expect(span).to have_pass_status
+      end
+    end
+
+    context "skipping some tests" do
+      before do
+        skip("test parameters are not supported in cucumber 3") unless cucumber_4_or_above
+      end
+
+      let(:itr_skippable_tests) do
+        Set.new([
+          'Datadog integration for parametrized tests at spec/datadog/ci/contrib/cucumber/features/with_parameters.feature.scenario with examples.{"arguments":{"num1":"0","num2":"1","total":"1"},"metadata":{}}',
+          'Datadog integration for parametrized tests at spec/datadog/ci/contrib/cucumber/features/with_parameters.feature.scenario with examples.{"arguments":{"num1":"2","num2":"3","total":"5"},"metadata":{}}'
+        ])
+      end
+
+      it "skips the test" do
+        expect(test_spans).to have(3).items
+        expect(test_spans).to have_tag_values_no_order(:status, ["skip", "skip", "pass"])
+      end
+
+      it "sets session level tags" do
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 2)
       end
     end
   end
