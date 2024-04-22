@@ -12,13 +12,15 @@ require_relative "../lib/datadog/ci"
 require_relative "support/gems_helpers"
 require_relative "support/tracer_helpers"
 require_relative "support/span_helpers"
+require_relative "support/platform_helpers"
+require_relative "support/synchronization_helpers"
 
 # shared contexts
 require_relative "support/contexts/ci_mode"
 require_relative "support/contexts/concurrency_test"
 require_relative "support/contexts/git_fixture"
 require_relative "support/contexts/extract_environment_tags"
-require_relative "support/contexts/citestcycle_serializer"
+require_relative "support/contexts/msgpack_serializer"
 
 require "rspec/collection_matchers"
 require "climate_control"
@@ -61,6 +63,7 @@ end
 RSpec.configure do |config|
   config.include TracerHelpers
   config.include SpanHelpers
+  config.include SynchronizationHelpers
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"

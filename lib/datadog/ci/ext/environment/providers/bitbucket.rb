@@ -20,7 +20,7 @@ module Datadog
             end
 
             def pipeline_id
-              env["BITBUCKET_PIPELINE_UUID"] ? env["BITBUCKET_PIPELINE_UUID"].tr("{}", "") : nil
+              env["BITBUCKET_PIPELINE_UUID"]&.tr("{}", "")
             end
 
             def pipeline_name

@@ -3,6 +3,7 @@
 require "json"
 
 require_relative "span"
+require_relative "utils/test_run"
 
 module Datadog
   module CI
@@ -18,9 +19,9 @@ module Datadog
       # Finishes the current test.
       # @return [void]
       def finish
-        super
-
         recorder.deactivate_test
+
+        super
       end
 
       # Running test suite that this test is part of (if any).
@@ -62,6 +63,12 @@ module Datadog
         get_tag(Ext::Test::TAG_SOURCE_FILE)
       end
 
+      # Returns "true" if the test is skipped by the intelligent test runner.
+      # @return [Boolean] true if the test is skipped by the intelligent test runner, false otherwise.
+      def skipped_by_itr?
+        get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
+      end
+
       # Sets the status of the span to "pass".
       # @return [void]
       def passed!
@@ -89,7 +96,7 @@ module Datadog
         record_test_result(Ext::Test::Status::SKIP)
       end
 
-      # Sets the parameters for this test (e.g. Cucumber example or RSpec shared specs).
+      # Sets the parameters for this test (e.g. Cucumber example or RSpec specs).
       # Parameters are needed to compute test fingerprint to distinguish between different tests having same names.
       #
       # @param [Hash] arguments the arguments that test accepts as key-value hash
@@ -98,22 +105,21 @@ module Datadog
       def set_parameters(arguments, metadata = {})
         return if arguments.nil?
 
-        set_tag(
-          Ext::Test::TAG_PARAMETERS,
-          JSON.generate(
-            {
-              arguments: arguments,
-              metadata: metadata
-            }
-          )
-        )
+        set_tag(Ext::Test::TAG_PARAMETERS, Utils::TestRun.test_parameters(arguments: arguments, metadata: metadata))
+      end
+
+      # Gets the parameters for this test (e.g. Cucumber example or RSpec specs) as a serialized JSON.
+      #
+      # @return [String] the serialized JSON of the parameters
+      # @return [nil] if this test does not have parameters
+      def parameters
+        get_tag(Ext::Test::TAG_PARAMETERS)
       end
 
       private
 
       def record_test_result(datadog_status)
-        suite = test_suite
-        suite.record_test_result(datadog_status) if suite
+        test_suite&.record_test_result(datadog_status)
       end
     end
   end

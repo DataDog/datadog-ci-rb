@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../../ext/test"
-require_relative "../../utils/git"
+require_relative "../../git/local_repository"
+require_relative "../../utils/test_run"
 require_relative "ext"
 
 module Datadog
@@ -55,25 +56,26 @@ module Datadog
           def on_test_case_started(event)
             test_suite_name = test_suite_name(event.test_case)
 
+            # @type var tags: Hash[String, String]
             tags = {
               CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
               CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
-              CI::Ext::Test::TAG_SOURCE_FILE => Utils::Git.relative_to_root(event.test_case.location.file),
+              CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(event.test_case.location.file),
               CI::Ext::Test::TAG_SOURCE_START => event.test_case.location.line.to_s
             }
 
+            if (parameters = extract_parameters_hash(event.test_case))
+              tags[CI::Ext::Test::TAG_PARAMETERS] = Utils::TestRun.test_parameters(arguments: parameters)
+            end
+
             start_test_suite(test_suite_name) unless same_test_suite_as_current?(test_suite_name)
 
-            test_span = CI.start_test(
+            CI.start_test(
               event.test_case.name,
               test_suite_name,
               tags: tags,
               service: configuration[:service_name]
             )
-
-            if test_span && (parameters = extract_parameters_hash(event.test_case))
-              test_span.set_parameters(parameters)
-            end
           end
 
           def on_test_case_finished(event)
@@ -100,9 +102,8 @@ module Datadog
           def test_suite_name(test_case)
             feature = if test_case.respond_to?(:feature)
               test_case.feature
-            elsif @ast_lookup
-              gherkin_doc = @ast_lookup.gherkin_document(test_case.location.file)
-              gherkin_doc.feature if gherkin_doc
+            else
+              @ast_lookup&.gherkin_document(test_case.location.file)&.feature
             end
 
             if feature
@@ -150,19 +151,13 @@ module Datadog
           end
 
           def finish_current_test_suite
-            test_suite = @current_test_suite
-            return unless test_suite
-
-            test_suite.finish
+            @current_test_suite&.finish
 
             @current_test_suite = nil
           end
 
           def same_test_suite_as_current?(test_suite_name)
-            test_suite = @current_test_suite
-            return false unless test_suite
-
-            test_suite.name == test_suite_name
+            @current_test_suite&.name == test_suite_name
           end
 
           def extract_parameters_hash(test_case)

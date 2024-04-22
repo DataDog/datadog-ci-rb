@@ -55,6 +55,8 @@ module Datadog
 
       def os_platform: () -> String?
 
+      def os_version: () -> String?
+
       def runtime_name: () -> String?
 
       def runtime_version: () -> String?

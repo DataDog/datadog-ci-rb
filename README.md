@@ -8,17 +8,14 @@
 Datadog's Ruby Library for instrumenting your test and continuous integration pipeline.
 Learn more on our [official website](https://docs.datadoghq.com/tests/) and check out our [documentation for this library](https://docs.datadoghq.com/tests/setup/ruby/?tab=cloudciprovideragentless).
 
-> [!IMPORTANT]
-> The `datadog-ci` gem is currently a component of [`ddtrace`](https://github.com/datadog/dd-trace-rb) and should not be used without it.
->
-> We expect this to change in the future.
-
 ## Installation
 
 Add to your Gemfile.
 
 ```ruby
-gem "ddtrace"
+group :test do
+  gem "datadog-ci"
+end
 ```
 
 ## Usage
@@ -52,7 +49,6 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether RSpec tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `rspec` instrumentation. | `'rspec'` |
-| `operation_name` | *DEPRECATED, to be removed in 1.0* Operation name used for `rspec` instrumentation (has no effect in agentless mode or when using newer agent versions). | `'rspec.example'` |
 
 ### Minitest
 
@@ -104,7 +100,6 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether Minitest tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `minitest` instrumentation. | `'minitest'` |
-| `operation_name` | *DEPRECATED, to be removed in 1.0* Operation name used for `minitest` instrumentation (has no effect in agentless mode or when using newer agent versions). | `'minitest.test'` |
 
 ### Cucumber
 
@@ -135,7 +130,6 @@ end
 | --- | ----------- | ------- |
 | `enabled` | Defines whether Cucumber tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
 | `service_name` | Service name used for `cucumber` instrumentation. | `'cucumber'` |
-| `operation_name` | *DEPRECATED, to be removed in 1.0* Operation name used for `cucumber` instrumentation (has no effect in agentless mode or when using newer agent versions). | `'cucumber.test'` |
 
 ## Agentless mode
 

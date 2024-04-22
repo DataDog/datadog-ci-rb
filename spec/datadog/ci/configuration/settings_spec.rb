@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Dummy Integration
 class FakeIntegration
   include Datadog::CI::Contrib::Integration
@@ -255,6 +257,47 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             .to change { settings.ci.itr_enabled }
             .from(false)
             .to(true)
+        end
+      end
+
+      describe "#git_metadata_upload_enabled" do
+        subject(:git_metadata_upload_enabled) { settings.ci.git_metadata_upload_enabled }
+
+        it { is_expected.to be true }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_GIT_METADATA_UPLOAD_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_GIT_METADATA_UPLOAD_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#git_metadata_upload_enabled=" do
+        it "updates the #enabled setting" do
+          expect { settings.ci.git_metadata_upload_enabled = false }
+            .to change { settings.ci.git_metadata_upload_enabled }
+            .from(true)
+            .to(false)
         end
       end
 

@@ -23,7 +23,7 @@ module Datadog
           skip_tracing(block)
         end
 
-        def trace(type, span_name, tags: {}, &block)
+        def trace(span_name, type: "span", tags: {}, &block)
           skip_tracing(block)
         end
 
@@ -42,10 +42,13 @@ module Datadog
         def active_test_suite(test_suite_name)
         end
 
+        def shutdown!
+        end
+
         private
 
         def skip_tracing(block = nil)
-          block.call(nil) if block
+          block&.call(nil)
         end
       end
     end

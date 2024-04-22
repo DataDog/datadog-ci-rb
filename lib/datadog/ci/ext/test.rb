@@ -26,6 +26,9 @@ module Datadog
         # ITR tags
         TAG_ITR_TEST_SKIPPING_ENABLED = "test.itr.tests_skipping.enabled"
         TAG_ITR_TEST_SKIPPING_TYPE = "test.itr.tests_skipping.type"
+        TAG_ITR_TEST_SKIPPING_COUNT = "test.itr.tests_skipping.count"
+        TAG_ITR_SKIPPED_BY_ITR = "test.skipped_by_itr"
+        TAG_ITR_TESTS_SKIPPED = "_dd.ci.itr.tests_skipped"
 
         # Code coverage tags
         TAG_CODE_COVERAGE_ENABLED = "test.code_coverage.enabled"
@@ -43,6 +46,7 @@ module Datadog
         # Environment runtime tags
         TAG_OS_ARCHITECTURE = "os.architecture"
         TAG_OS_PLATFORM = "os.platform"
+        TAG_OS_VERSION = "os.version"
         TAG_RUNTIME_NAME = "runtime.name"
         TAG_RUNTIME_VERSION = "runtime.version"
 
@@ -53,6 +57,7 @@ module Datadog
         # could be either "test" or "suite" depending on whether we skip individual tests or whole suites
         # we use test skipping for Ruby
         ITR_TEST_SKIPPING_MODE = "test"
+        ITR_TEST_SKIP_REASON = "Skipped by Datadog's intelligent test runner"
 
         # test status as recognized by Datadog
         module Status

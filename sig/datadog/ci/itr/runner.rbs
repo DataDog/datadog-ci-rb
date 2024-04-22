@@ -2,23 +2,56 @@ module Datadog
   module CI
     module ITR
       class Runner
+        include Datadog::Core::Utils::Forking
+
         @enabled: bool
         @test_skipping_enabled: bool
         @code_coverage_enabled: bool
+        @correlation_id: String
+        @skippable_tests: Array[String]
+        @coverage_writer: Datadog::CI::ITR::Coverage::Writer?
 
-        def initialize: (?enabled: bool) -> void
+        @api: Datadog::CI::Transport::Api::Base?
+        @dd_env: String?
 
-        def configure: (Hash[String, untyped] remote_configuration, Datadog::CI::TestSession test_session) -> void
+        @skipped_tests_count: Integer
+        @mutex: Thread::Mutex
+
+        def initialize: (dd_env: String?, ?enabled: bool, coverage_writer: Datadog::CI::ITR::Coverage::Writer?, api: Datadog::CI::Transport::Api::Base?) -> void
+
+        def configure: (Hash[String, untyped] remote_configuration, test_session: Datadog::CI::TestSession, git_tree_upload_worker: Datadog::CI::Worker) -> void
 
         def enabled?: () -> bool
 
         def skipping_tests?: () -> bool
 
-        def code_coverage: () -> bool
+        def code_coverage?: () -> bool
+
+        def start_coverage: (Datadog::CI::Test test) -> void
+
+        def stop_coverage: (Datadog::CI::Test test) -> Datadog::CI::ITR::Coverage::Event?
+
+        def mark_if_skippable: (Datadog::CI::Test test) -> void
+
+        def count_skipped_test: (Datadog::CI::Test test) -> void
+
+        def write_test_session_tags: (Datadog::CI::TestSession test_session) -> void
+
+        def shutdown!: () -> void
 
         private
 
-        def convert_to_bool: (untyped value) -> bool
+        def coverage_collector: () -> Datadog::CI::ITR::Coverage::DDCov?
+
+        def load_datadog_cov!: () -> void
+
+        def write: (Datadog::CI::ITR::Coverage::Event event) -> void
+
+        def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void
+
+        def fetch_skippable_tests: (test_session: Datadog::CI::TestSession, git_tree_upload_worker: Datadog::CI::Worker) -> void
+
+        def increment_skipped_tests_counter: () -> void
       end
     end
   end

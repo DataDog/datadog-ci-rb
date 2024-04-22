@@ -4,28 +4,10 @@ module Datadog
       module Environment
         module Providers
           class LocalGit < Base
-            class GitUser
-              attr_reader name: String?
-              attr_reader email: String?
-              attr_reader timestamp: String?
-
-              @name: String?
-              @email: String?
-              @timestamp: String?
-
-              def initialize: (String? name, String? email, String? timestamp) -> void
-
-              def date: () -> String?
-            end
-
-            class NilUser < GitUser
-              def initialize: () -> void
-            end
-
             private
 
-            @author: GitUser
-            @committer: GitUser
+            @author: Datadog::CI::Git::User
+            @committer: Datadog::CI::Git::User
 
             def git_repository_url: () -> String?
 
@@ -51,9 +33,9 @@ module Datadog
 
             def workspace_path: () -> String?
 
-            def author: () -> GitUser
+            def author: () -> Datadog::CI::Git::User
 
-            def committer: () -> GitUser
+            def committer: () -> Datadog::CI::Git::User
 
             def set_git_commit_users: () -> void
           end

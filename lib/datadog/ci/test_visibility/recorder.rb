@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "datadog/tracing"
+require "datadog/tracing/contrib/component"
 require "datadog/tracing/trace_digest"
 
 require "rbconfig"
@@ -12,13 +13,14 @@ require_relative "../codeowners/parser"
 require_relative "../ext/app_types"
 require_relative "../ext/test"
 require_relative "../ext/environment"
-require_relative "../utils/git"
+require_relative "../git/local_repository"
 
 require_relative "../span"
 require_relative "../test"
 require_relative "../test_session"
 require_relative "../test_module"
 require_relative "../test_suite"
+require_relative "../worker"
 
 module Datadog
   module CI
@@ -29,8 +31,11 @@ module Datadog
         attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
         def initialize(
-          itr:, remote_settings_api:, test_suite_level_visibility_enabled: false,
-          codeowners: Codeowners::Parser.new(Utils::Git.root).parse
+          itr:,
+          remote_settings_api:,
+          git_tree_upload_worker: DummyWorker.new,
+          test_suite_level_visibility_enabled: false,
+          codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
@@ -42,6 +47,11 @@ module Datadog
 
           @itr = itr
           @remote_settings_api = remote_settings_api
+          @git_tree_upload_worker = git_tree_upload_worker
+        end
+
+        def shutdown!
+          @git_tree_upload_worker.stop
         end
 
         def start_test_session(service: nil, tags: {})
@@ -55,6 +65,7 @@ module Datadog
 
             test_session = build_test_session(tracer_span, tags)
 
+            @git_tree_upload_worker.perform(test_session.git_repository_url)
             configure_library(test_session)
 
             test_session
@@ -116,14 +127,19 @@ module Datadog
               test = build_test(tracer_span, tags)
 
               @local_context.activate_test(test) do
-                block.call(test)
+                on_test_started(test)
+                res = block.call(test)
+                on_test_finished(test)
+                res
               end
             end
           else
             tracer_span = start_datadog_tracer_span(test_name, span_options)
-
             test = build_test(tracer_span, tags)
+
             @local_context.activate_test(test)
+            on_test_started(test)
+
             test
           end
         end
@@ -168,10 +184,16 @@ module Datadog
         end
 
         def deactivate_test
+          test = active_test
+          on_test_finished(test) if test
+
           @local_context.deactivate_test
         end
 
         def deactivate_test_session
+          test_session = active_test_session
+          on_test_session_finished(test_session) if test_session
+
           @global_context.deactivate_test_session!
         end
 
@@ -194,16 +216,34 @@ module Datadog
           return unless itr_enabled?
 
           remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
-          @itr.configure(remote_configuration.payload, test_session)
+          # sometimes we can skip code coverage for default branch if there are no changes in the repository
+          # backend needs git metadata uploaded for this test session to check if we can skip code coverage
+          if remote_configuration.require_git?
+            Datadog.logger.debug { "Library configuration endpoint requires git upload to be finished, waiting..." }
+            @git_tree_upload_worker.wait_until_done
+
+            Datadog.logger.debug { "Requesting library configuration again..." }
+            remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
+
+            if remote_configuration.require_git?
+              Datadog.logger.debug { "git metadata upload did not complete in time when configuring library" }
+            end
+          end
+
+          @itr.configure(
+            remote_configuration.payload,
+            test_session: test_session,
+            git_tree_upload_worker: @git_tree_upload_worker
+          )
         end
 
         def skip_tracing(block = nil)
-          block.call(nil) if block
+          block&.call(nil)
         end
 
         # Sets trace's origin to ciapp-test
         def set_trace_origin(trace)
-          trace.origin = Ext::Test::CONTEXT_ORIGIN if trace
+          trace&.origin = Ext::Test::CONTEXT_ORIGIN
         end
 
         def build_test_session(tracer_span, tags)
@@ -356,6 +396,21 @@ module Datadog
               "Make sure that there is a test session running."
             end
           end
+        end
+
+        # TODO: use kind of event system to notify about test finished?
+        def on_test_finished(test)
+          @itr.stop_coverage(test)
+          @itr.count_skipped_test(test)
+        end
+
+        def on_test_started(test)
+          @itr.mark_if_skippable(test)
+          @itr.start_coverage(test)
+        end
+
+        def on_test_session_finished(test_session)
+          @itr.write_test_session_tags(test_session)
         end
       end
     end

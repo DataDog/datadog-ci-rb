@@ -402,6 +402,23 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
+        context "with git upload enabled and gitdb api spy" do
+          let(:git_metadata_upload_enabled) { true }
+          let(:search_commits) { double("search_commits") }
+          let(:tags) { {"test.framework" => "my-framework"} }
+
+          it "starts git metadata upload" do
+            expect(Datadog::CI::Git::SearchCommits).to receive(:new).and_return(search_commits)
+            expect(search_commits).to receive(:call) do |repo_url, commits|
+              expect(repo_url).to eq("git@github.com:DataDog/datadog-ci-rb.git")
+
+              commits
+            end
+
+            subject
+          end
+        end
+
         it_behaves_like "span with environment tags"
         it_behaves_like "span with default tags"
         it_behaves_like "span with runtime tags"
@@ -716,41 +733,44 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     end
 
     context "with ITR" do
-      include_context "CI mode activated" do
-        let(:itr_enabled) { true }
+      context "without require_git in settings response" do
+        include_context "CI mode activated" do
+          let(:itr_enabled) { true }
+          let(:tests_skipping_enabled) { true }
+          let(:code_coverage_enabled) { true }
+        end
+
+        describe "#start_test_session" do
+          let(:service) { "my-service" }
+          let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
+
+          subject { recorder.start_test_session(service: service, tags: tags) }
+
+          it "returns a new CI test_session span with ITR tags" do
+            expect(subject).to be_kind_of(Datadog::CI::TestSession)
+            expect(subject.service).to eq(service)
+
+            expect(subject.skipping_tests?).to be true
+            expect(subject.code_coverage?).to be true
+          end
+        end
       end
 
-      before do
-        settings_http_response = double(
-          "http-response",
-          ok?: true,
-          payload: {
-            "data" => {
-              "attributes" => {
-                "itr_enabled" => true,
-                "tests_skipping" => true,
-                "code_coverage" => true
-              }
-            }
-          }.to_json
-        )
-        allow_any_instance_of(Datadog::CI::Transport::RemoteSettingsApi).to receive(:fetch_library_settings).and_return(
-          Datadog::CI::Transport::RemoteSettingsApi::Response.new(settings_http_response)
-        )
-      end
+      context "with require_git in settings response" do
+        include_context "CI mode activated" do
+          let(:itr_enabled) { true }
+          let(:tests_skipping_enabled) { true }
+          let(:code_coverage_enabled) { true }
+          let(:require_git) { true }
+        end
 
-      describe "#start_test_session" do
-        let(:service) { "my-service" }
-        let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
+        describe "#start_test_session" do
+          let(:service) { "my-service" }
+          let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
-        subject { recorder.start_test_session(service: service, tags: tags) }
+          subject { recorder.start_test_session(service: service, tags: tags) }
 
-        it "returns a new CI test_session span with ITR tags" do
-          expect(subject).to be_kind_of(Datadog::CI::TestSession)
-          expect(subject.service).to eq(service)
-
-          expect(subject.skipping_tests?).to be true
-          expect(subject.code_coverage?).to be true
+          it { is_expected.not_to be_skipping_tests }
         end
       end
     end

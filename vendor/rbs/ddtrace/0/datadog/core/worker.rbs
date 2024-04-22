@@ -1,0 +1,7 @@
+module Datadog
+  module Core
+    class Worker
+      def initialize: () { (untyped) -> untyped } -> void
+    end
+  end
+end

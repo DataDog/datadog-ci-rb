@@ -1,7 +1,8 @@
 PATH
   remote: ..
   specs:
-    datadog-ci (0.8.3)
+    datadog-ci (1.0.0.beta1)
+      datadog (~> 2.0.0.beta2)
       msgpack
 
 GEM
@@ -39,23 +40,22 @@ GEM
       cucumber-messages (~> 18.0, >= 18.0.0)
     cucumber-messages (18.0.0)
     cucumber-tag-expressions (4.1.0)
-    ddtrace (1.21.0)
-      datadog-ci (~> 0.8.1)
+    datadog (2.0.0.beta2)
       debase-ruby_core_source (= 3.3.1)
-      libdatadog (~> 6.0.0.2.0)
+      libdatadog (~> 7.0.0.1.0)
       libddwaf (~> 1.14.0.0.0)
       msgpack
     debase-ruby_core_source (3.3.1)
     diff-lcs (1.5.1)
     docile (1.4.0)
     ffi (1.16.3)
-    json (2.7.1)
+    json (2.7.2)
     language_server-protocol (3.17.0.3)
-    libdatadog (6.0.0.2.0-aarch64-linux)
+    libdatadog (7.0.0.1.0-aarch64-linux)
     libddwaf (1.14.0.0.0-aarch64-linux)
       ffi (~> 1.0)
     lint_roller (1.1.0)
-    method_source (1.0.0)
+    method_source (1.1.0)
     mime-types (3.5.2)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2024.0305)
@@ -72,7 +72,9 @@ GEM
       method_source (~> 1.0)
     racc (1.7.3)
     rainbow (3.1.1)
-    rake (13.1.0)
+    rake (13.2.1)
+    rake-compiler (1.2.7)
+      rake
     redcarpet (3.6.0)
     regexp_parser (2.9.0)
     rexml (3.2.6)
@@ -147,11 +149,11 @@ DEPENDENCIES
   climate_control
   cucumber (~> 8)
   datadog-ci!
-  ddtrace
   os
   pimpmychangelog (>= 0.1.2)
   pry
   rake
+  rake-compiler
   redcarpet
   rspec
   rspec-collection_matchers

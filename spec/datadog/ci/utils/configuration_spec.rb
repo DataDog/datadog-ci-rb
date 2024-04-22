@@ -1,3 +1,7 @@
+# frozen_string_literal: true
+
+require_relative "../../../../lib/datadog/ci/utils/configuration"
+
 RSpec.describe ::Datadog::CI::Utils::Configuration do
   describe ".fetch_service_name" do
     subject { described_class.fetch_service_name(default) }
@@ -18,7 +22,7 @@ RSpec.describe ::Datadog::CI::Utils::Configuration do
       let(:service) { nil }
 
       before do
-        expect(::Datadog::CI::Utils::Git).to receive(:repository_name).and_return(repository_name)
+        expect(::Datadog::CI::Git::LocalRepository).to receive(:repository_name).and_return(repository_name)
       end
 
       context "when repository_name can be fetched" do

@@ -11,10 +11,6 @@ module Datadog
           DEFAULT_SERVICE_NAME = "rspec"
 
           ENV_ENABLED = "DD_TRACE_RSPEC_ENABLED"
-
-          # TODO: remove in 1.0
-          ENV_OPERATION_NAME = "DD_TRACE_RSPEC_OPERATION_NAME"
-          OPERATION_NAME = "rspec.example"
         end
       end
     end

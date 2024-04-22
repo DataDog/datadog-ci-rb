@@ -7,9 +7,6 @@ module Datadog
 
           FRAMEWORK: String
           DEFAULT_SERVICE_NAME: String
-
-          OPERATION_NAME: String
-          ENV_OPERATION_NAME: String
         end
       end
     end

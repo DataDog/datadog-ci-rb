@@ -5,6 +5,7 @@ require_relative "lib/datadog/ci/version"
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
 require "yard"
+require "rake/extensiontask"
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -107,8 +108,12 @@ end
 namespace :spec do
   desc "" # "Explicitly hiding from `rake -T`"
   RSpec::Core::RakeTask.new(:main) do |t, args|
-    t.pattern = "spec/**/*_spec.rb"
-    t.exclude_pattern = "spec/**/{contrib}/**/*_spec.rb,"
+    t.pattern = if RUBY_ENGINE == "jruby"
+      "spec/datadog/**/*_spec.rb"
+    else
+      "spec/datadog/**/*_spec.rb,spec/ddcov/**/*_spec.rb"
+    end
+    t.exclude_pattern = "spec/datadog/**/{contrib}/**/*_spec.rb,"
     t.rspec_opts = args.to_a.join(" ")
   end
 
@@ -132,3 +137,18 @@ end
 
 desc "CI task; it runs all tests for current version of Ruby"
 task ci: "test:all"
+
+# native extensions
+Rake::ExtensionTask.new("datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}") do |ext|
+  ext.ext_dir = "ext/datadog_cov"
+end
+
+task :compile_ext do
+  if RUBY_ENGINE == "ruby"
+    Rake::Task[:clean].invoke
+    Rake::Task[:compile].invoke
+  end
+end
+
+# run compile before any tests are run
+Rake::Task["test:all"].prerequisite_tasks.each { |t| t.enhance([:compile_ext]) }

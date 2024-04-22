@@ -2,22 +2,11 @@ module Datadog
   module CI
     module Utils
       module Git
-        @root: String?
-        @repository_name: String?
+        def self.valid_commit_sha?: (String? sha) -> bool
 
         def self.normalize_ref: (String? name) -> String?
 
         def self.is_git_tag?: (String? ref) -> bool
-
-        def self.exec_git_command: (String ref) -> String?
-
-        def self.root: -> String?
-
-        def self.repository_name: -> String
-
-        def self.current_folder_name: -> String
-
-        def self.relative_to_root: (String? path) -> String?
       end
     end
   end

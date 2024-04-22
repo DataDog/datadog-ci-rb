@@ -13,13 +13,14 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     let(:adapter) { instance_double(::Datadog::Core::Transport::HTTP::Adapters::Net) }
 
     before do
+      settings = Datadog::CI::Transport::HTTP::AdapterSettings.new(
+        hostname: transport.host,
+        port: transport.port,
+        timeout_seconds: transport.timeout,
+        ssl: transport.ssl
+      )
       allow(::Datadog::Core::Transport::HTTP::Adapters::Net).to receive(:new)
-        .with(
-          transport.host,
-          transport.port,
-          timeout: transport.timeout,
-          ssl: transport.ssl
-        ).and_return(adapter)
+        .with(settings).and_return(adapter)
     end
   end
 
@@ -142,6 +143,33 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         is_expected.to be_a_kind_of(described_class::ResponseDecorator)
 
         expect(response.code).to eq(200)
+      end
+    end
+
+    context "when request fails" do
+      let(:request_options) { {backoff: 0} }
+
+      context "when succeeds after retries" do
+        before do
+          expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES).times
+          expect(adapter).to receive(:call).and_return(http_response)
+        end
+
+        it "produces a response" do
+          is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+
+          expect(response.code).to eq(200)
+        end
+      end
+
+      context "when retries are exhausted" do
+        before do
+          expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES + 1).times
+        end
+
+        it "raises" do
+          expect { response }.to raise_error(Errno::ECONNRESET)
+        end
       end
     end
   end

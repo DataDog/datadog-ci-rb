@@ -43,7 +43,7 @@ RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
         recorder.trace_test("my test", "my suite") do |test_span|
           spy_under_test.call
 
-          test_span.passed! if test_span
+          test_span&.passed!
         end
       end
 
@@ -68,10 +68,10 @@ RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
       let(:spy_under_test) { spy("spy") }
 
       before do
-        recorder.trace("step", "my step") do |span|
+        recorder.trace("my step", type: "step") do |span|
           spy_under_test.call
 
-          span.set_metric("my.metric", 42) if span
+          span&.set_metric("my.metric", 42)
         end
       end
 
@@ -85,7 +85,7 @@ RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
     end
 
     context "without a block" do
-      subject { recorder.trace("step", "my step") }
+      subject { recorder.trace("my step", type: "step") }
 
       it { is_expected.to be_nil }
     end

@@ -14,10 +14,12 @@ module Datadog
         attr_reader compress: bool
 
         DEFAULT_TIMEOUT: 30
+        MAX_RETRIES: 3
+        INITIAL_BACKOFF: 1
 
         def initialize: (host: String, ?port: Integer?, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
 
-        def request: (?verb: String, payload: String, headers: Hash[String, String], path: String) -> ResponseDecorator
+        def request: (?verb: String, payload: String, headers: Hash[String, String], path: String, ?retries: Integer, ?backoff: Integer) -> ResponseDecorator
 
         private
 
@@ -25,7 +27,25 @@ module Datadog
 
         def build_env: (payload: String, headers: Hash[String, String], path: String, verb: String) -> Datadog::Core::Transport::HTTP::Env
 
+        def perform_http_call: (payload: String, headers: Hash[String, String], path: String, verb: String, ?retries: Integer, ?backoff: Integer) -> Datadog::Core::Transport::Response
+
+        class AdapterSettings
+          attr_reader hostname: String
+          attr_reader port: Integer?
+          attr_reader ssl: bool
+          attr_reader timeout_seconds: Integer
+
+          @hostname: String
+          @port: Integer?
+          @ssl: bool
+          @timeout_seconds: Integer
+
+          def initialize: (hostname: String, ?port: Integer?, ?ssl: bool, ?timeout_seconds: Integer) -> void
+        end
+
         class ResponseDecorator < ::SimpleDelegator
+          include Datadog::Core::Transport::Response
+
           def initialize: (untyped anything) -> void
           def trace_count: () -> Integer
         end

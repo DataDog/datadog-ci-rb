@@ -2,10 +2,10 @@
 
 source "https://rubygems.org"
 
-gem "ddtrace"
 gem "pry"
 gem "rake"
 gem "os"
+gem "rake-compiler"
 gem "climate_control"
 gem "rspec", "~> 3"
 gem "rspec-collection_matchers"

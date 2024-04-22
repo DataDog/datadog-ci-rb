@@ -103,7 +103,7 @@ module Datadog
               @branch = @tag = nil
 
               # @type var branch_or_tag_string: untyped
-              if branch_or_tag_string && branch_or_tag_string.include?("tags/")
+              if branch_or_tag_string&.include?("tags/")
                 @tag = branch_or_tag_string
               else
                 @branch = branch_or_tag_string

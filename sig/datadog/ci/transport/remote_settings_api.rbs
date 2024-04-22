@@ -12,6 +12,8 @@ module Datadog
 
           def payload: () -> Hash[String, untyped]
 
+          def require_git?: () -> bool
+
           private
 
           def default_payload: () -> Hash[String, untyped]
@@ -20,7 +22,7 @@ module Datadog
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
 
-        def initialize: (?api: Datadog::CI::Transport::Api::Base?, ?dd_env: String?) -> void
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?) -> void
 
         def fetch_library_settings: (Datadog::CI::TestSession test_session) -> Response
 

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../ext/test"
+require_relative "../../git/local_repository"
 require_relative "ext"
 require_relative "helpers"
 
@@ -24,17 +25,18 @@ module Datadog
 
             source_file, line_number = method(name).source_location
 
-            CI.start_test(
+            test_span = CI.start_test(
               name,
               test_suite_name,
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                 CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Minitest::Integration.version.to_s,
-                CI::Ext::Test::TAG_SOURCE_FILE => Utils::Git.relative_to_root(source_file),
+                CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(source_file),
                 CI::Ext::Test::TAG_SOURCE_START => line_number.to_s
               },
               service: datadog_configuration[:service_name]
             )
+            skip(CI::Ext::Test::ITR_TEST_SKIP_REASON) if test_span&.skipped_by_itr?
           end
 
           def after_teardown

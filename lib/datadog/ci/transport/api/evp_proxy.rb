@@ -38,6 +38,14 @@ module Datadog
             perform_request(@agent_api_http, path: path, payload: payload, headers: headers, verb: verb)
           end
 
+          def citestcov_request(path:, payload:, headers: {}, verb: "post")
+            super(path: path, payload: payload, headers: headers, verb: verb)
+
+            headers[Ext::Transport::HEADER_EVP_SUBDOMAIN] = Ext::Transport::TEST_COVERAGE_INTAKE_HOST_PREFIX
+
+            perform_request(@agent_intake_http, path: path, payload: @citestcov_payload, headers: headers, verb: verb)
+          end
+
           private
 
           def perform_request(http_client, path:, payload:, headers:, verb:)

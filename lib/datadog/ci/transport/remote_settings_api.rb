@@ -5,6 +5,7 @@ require "json"
 require "datadog/core/environment/identity"
 
 require_relative "../ext/transport"
+require_relative "../utils/parsing"
 
 module Datadog
   module CI
@@ -28,7 +29,7 @@ module Datadog
             return cached unless cached.nil?
 
             resp = @http_response
-            return @json = default_payload if resp.nil? || !resp.ok?
+            return @json = default_payload if resp.nil? || !ok?
 
             begin
               @json = JSON.parse(resp.payload).dig(*Ext::Transport::DD_API_SETTINGS_RESPONSE_DIG_KEYS) ||
@@ -39,6 +40,10 @@ module Datadog
             end
           end
 
+          def require_git?
+            Utils::Parsing.convert_to_bool(payload[Ext::Transport::DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY])
+          end
+
           private
 
           def default_payload
@@ -46,7 +51,7 @@ module Datadog
           end
         end
 
-        def initialize(api: nil, dd_env: nil)
+        def initialize(dd_env:, api: nil)
           @api = api
           @dd_env = dd_env
         end
@@ -81,10 +86,11 @@ module Datadog
                 "sha" => test_session.git_commit_sha,
                 "test_level" => Ext::Test::ITR_TEST_SKIPPING_MODE,
                 "configurations" => {
-                  "os.platform" => test_session.os_platform,
-                  "os.arch" => test_session.os_architecture,
-                  "runtime.name" => test_session.runtime_name,
-                  "runtime.version" => test_session.runtime_version
+                  Ext::Test::TAG_OS_PLATFORM => test_session.os_platform,
+                  Ext::Test::TAG_OS_ARCHITECTURE => test_session.os_architecture,
+                  Ext::Test::TAG_OS_VERSION => test_session.os_version,
+                  Ext::Test::TAG_RUNTIME_NAME => test_session.runtime_name,
+                  Ext::Test::TAG_RUNTIME_VERSION => test_session.runtime_version
                 }
               }
             }

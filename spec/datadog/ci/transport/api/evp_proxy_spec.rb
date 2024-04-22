@@ -12,8 +12,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
       hostname: "localhost",
       port: 5555,
       uds_path: nil,
-      timeout_seconds: 42,
-      deprecated_for_removal_transport_configuration_proc: nil
+      timeout_seconds: 42
     )
   end
   let(:intake_http) { double(:http) }
@@ -35,6 +34,13 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
     {
       "Content-Type" => "application/json",
       "X-Datadog-EVP-Subdomain" => "api"
+    }
+  end
+
+  let(:citestcov_headers) do
+    {
+      "Content-Type" => "multipart/form-data; boundary=42",
+      "X-Datadog-EVP-Subdomain" => "citestcov-intake"
     }
   end
 
@@ -147,6 +153,39 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
 
           subject.api_request(path: "/path", payload: "payload")
         end
+      end
+    end
+
+    describe "#citestcov_request" do
+      before do
+        expect(SecureRandom).to receive(:uuid).and_return("42")
+      end
+
+      let(:expected_payload) do
+        [
+          "--42",
+          'Content-Disposition: form-data; name="event"; filename="event.json"',
+          "Content-Type: application/json",
+          "",
+          '{"dummy":true}',
+          "--42",
+          'Content-Disposition: form-data; name="coverage1"; filename="coverage1.msgpack"',
+          "Content-Type: application/msgpack",
+          "",
+          "payload",
+          "--42--"
+        ].join("\r\n")
+      end
+
+      it "produces correct headers, constructs multipart payload, and forwards request to HTTP layer" do
+        expect(intake_http).to receive(:request).with(
+          path: "/evp_proxy/v2/path",
+          payload: expected_payload,
+          verb: "post",
+          headers: citestcov_headers
+        )
+
+        subject.citestcov_request(path: "/path", payload: "payload")
       end
     end
   end

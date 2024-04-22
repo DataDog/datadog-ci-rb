@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Utils
+      module Parsing
+        def self.convert_to_bool: (untyped value) -> bool
+      end
+    end
+  end
+end

@@ -27,6 +27,7 @@ RSpec.describe "gem release process" do
            |Steepfile
            |datadog-ci\.gemspec
            |docker-compose\.yml
+           |static-analysis\.datadog\.yml
           )
           $
         /x
@@ -51,6 +52,7 @@ RSpec.describe "gem release process" do
         expect(files)
           .to match_array(
             `git ls-files -z`
+              .force_encoding(Encoding::UTF_8)
               .split("\x0")
               .reject { |f| f.match(directories_excluded) }
               .reject { |f| f.match(single_files_excluded) }

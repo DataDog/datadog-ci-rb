@@ -18,7 +18,6 @@ module Datadog
         #
         def enabled: () -> bool
         def service_name: () -> String
-        def operation_name: () -> String
       end
     end
   end

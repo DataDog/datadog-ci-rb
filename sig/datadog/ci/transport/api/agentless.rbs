@@ -8,10 +8,17 @@ module Datadog
           @api_key: String
           @citestcycle_http: Datadog::CI::Transport::HTTP
           @api_http: Datadog::CI::Transport::HTTP
+          @citestcov_http: Datadog::CI::Transport::HTTP
 
-          def initialize: (api_key: String, citestcycle_url: String, api_url: String) -> void
+          def initialize: (api_key: String, citestcycle_url: String, api_url: String, citestcov_url: String) -> void
 
           def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+
+          def citestcycle_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+
+          def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+
+          def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 
           private
 

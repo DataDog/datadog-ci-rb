@@ -1,64 +1,32 @@
 # frozen_string_literal: true
 
-require "msgpack"
-require "uri"
-
-require "datadog/core/encoding"
 require "datadog/core/environment/identity"
-require "datadog/core/chunker"
 
 require_relative "serializers/factories/test_level"
 require_relative "../ext/transport"
+require_relative "../transport/event_platform_transport"
 
 module Datadog
   module CI
     module TestVisibility
-      class Transport
-        # CI test cycle intake's limit is 5.1MB uncompressed
-        # We will use a bit more conservative value 5MB
-        DEFAULT_MAX_PAYLOAD_SIZE = 5 * 1024 * 1024
-
-        attr_reader :serializers_factory,
-          :api,
-          :max_payload_size,
-          :dd_env
+      class Transport < Datadog::CI::Transport::EventPlatformTransport
+        attr_reader :serializers_factory, :dd_env
 
         def initialize(
           api:,
-          dd_env: nil,
+          dd_env:,
           serializers_factory: Datadog::CI::TestVisibility::Serializers::Factories::TestLevel,
           max_payload_size: DEFAULT_MAX_PAYLOAD_SIZE
         )
+          super(api: api, max_payload_size: max_payload_size)
+
           @serializers_factory = serializers_factory
-          @max_payload_size = max_payload_size
           @dd_env = dd_env
-          @api = api
         end
 
+        # this method is needed for compatibility with Datadog::Tracing::Writer that uses this Transport
         def send_traces(traces)
-          return [] if traces.nil? || traces.empty?
-
-          Datadog.logger.debug { "Sending #{traces.count} traces..." }
-
-          encoded_events = encode_traces(traces)
-          if encoded_events.empty?
-            Datadog.logger.debug { "Empty encoded events list, skipping send" }
-            return []
-          end
-
-          responses = []
-          Datadog::Core::Chunker.chunk_by_size(encoded_events, max_payload_size).map do |chunk|
-            encoded_payload = pack_events(chunk)
-            Datadog.logger.debug do
-              "Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
-            end
-
-            response = send_payload(encoded_payload)
-
-            responses << response
-          end
-
-          responses
+          send_events(traces)
         end
 
         private
@@ -70,15 +38,9 @@ module Datadog
           )
         end
 
-        def encode_traces(traces)
+        def encode_events(traces)
           traces.flat_map do |trace|
-            spans = trace.spans
-            # TODO: remove condition when 1.0 is released
-            if spans.respond_to?(:filter_map)
-              spans.filter_map { |span| encode_span(trace, span) }
-            else
-              spans.map { |span| encode_span(trace, span) }.reject(&:nil?)
-            end
+            trace.spans.filter_map { |span| encode_span(trace, span) }
           end
         end
 
@@ -107,9 +69,7 @@ module Datadog
           Datadog::Core::Encoding::MsgpackEncoder
         end
 
-        def pack_events(encoded_events)
-          packer = MessagePack::Packer.new
-
+        def write_payload_header(packer)
           packer.write_map_header(3) # Set header with how many elements in the map
 
           packer.write("version")
@@ -137,9 +97,6 @@ module Datadog
           packer.write(Datadog::CI::VERSION::STRING)
 
           packer.write("events")
-          packer.write_array_header(encoded_events.size)
-
-          (packer.buffer.to_a + encoded_events).join
         end
       end
     end

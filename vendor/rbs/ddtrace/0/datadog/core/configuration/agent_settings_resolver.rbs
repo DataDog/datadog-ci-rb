@@ -3,7 +3,7 @@ module Datadog
     module Configuration
       class AgentSettingsResolver
         class AgentSettings < ::Struct[untyped]
-          def initialize: (adapter: untyped, ssl: untyped, hostname: untyped, port: untyped, uds_path: untyped, timeout_seconds: untyped, deprecated_for_removal_transport_configuration_proc: untyped) -> void
+          def initialize: (adapter: untyped, ssl: untyped, hostname: untyped, port: untyped, uds_path: untyped, timeout_seconds: untyped) -> void
           def merge: (**::Hash[untyped, untyped] member_values) -> AgentSettingsResolver
 
           attr_reader adapter: untyped
@@ -12,7 +12,6 @@ module Datadog
           attr_reader port: untyped
           attr_reader uds_path: untyped
           attr_reader timeout_seconds: untyped
-          attr_reader deprecated_for_removal_transport_configuration_proc: untyped
         end
 
         def self.call: (untyped settings, ?logger: untyped) -> untyped
@@ -44,8 +43,6 @@ module Datadog
         def uds_path: () -> untyped
 
         def timeout_seconds: () -> untyped
-
-        def deprecated_for_removal_transport_configuration_proc: () -> (untyped | nil)
 
         def uds_fallback: () -> untyped
 

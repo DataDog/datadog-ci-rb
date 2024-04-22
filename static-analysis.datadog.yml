@@ -1,0 +1,6 @@
+rulesets:
+  - ruby-code-style
+  - ruby-security
+  - ruby-best-practices
+  - rails-best-practices
+ignorePaths: []

@@ -34,10 +34,15 @@ Gem::Specification.new do |spec|
       LICENSE*
       NOTICE
       README.md
+      ext/**/*
       lib/**/*
     ]].select { |fn| File.file?(fn) } # We don't want directories, only files
+      .reject { |fn| fn.end_with?(".so", ".bundle") } # Exclude local native binary artifacts
 
   spec.require_paths = ["lib"]
 
+  spec.add_dependency "datadog", "~> 2.0.0.beta2"
   spec.add_dependency "msgpack"
+
+  spec.extensions = ["ext/datadog_cov/extconf.rb"]
 end

@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
 require_relative "../ext/settings"
+require_relative "../git/tree_uploader"
 require_relative "../itr/runner"
+require_relative "../itr/coverage/transport"
+require_relative "../itr/coverage/writer"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/recorder"
 require_relative "../test_visibility/null_recorder"
@@ -10,23 +13,32 @@ require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
 require_relative "../transport/remote_settings_api"
+require_relative "../worker"
 
 module Datadog
   module CI
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :ci_recorder
+        attr_reader :ci_recorder, :itr
 
         def initialize(settings)
           # Activate CI mode if enabled
           if settings.ci.enabled
             activate_ci!(settings)
           else
+            @itr = nil
             @ci_recorder = TestVisibility::NullRecorder.new
           end
 
           super
+        end
+
+        def shutdown!(replacement = nil)
+          super
+
+          @ci_recorder&.shutdown!
+          @itr&.shutdown!
         end
 
         def activate_ci!(settings)
@@ -49,10 +61,17 @@ module Datadog
 
           # transport creation
           writer_options = settings.ci.writer_options
+          coverage_writer = nil
           test_visibility_api = build_test_visibility_api(settings)
 
           if test_visibility_api
-            writer_options[:transport] = Datadog::CI::TestVisibility::Transport.new(
+            # setup writer for code coverage payloads
+            coverage_writer = ITR::Coverage::Writer.new(
+              transport: ITR::Coverage::Transport.new(api: test_visibility_api)
+            )
+
+            # configure tracing writer to send traces to CI visibility backend
+            writer_options[:transport] = TestVisibility::Transport.new(
               api: test_visibility_api,
               serializers_factory: serializers_factory(settings),
               dd_env: settings.env
@@ -71,21 +90,36 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = writer_options
 
-          itr = Datadog::CI::ITR::Runner.new(
-            enabled: settings.ci.enabled && settings.ci.itr_enabled
-          )
-
           remote_settings_api = Transport::RemoteSettingsApi.new(
             api: test_visibility_api,
             dd_env: settings.env
           )
 
+          itr = ITR::Runner.new(
+            api: test_visibility_api,
+            dd_env: settings.env,
+            coverage_writer: coverage_writer,
+            enabled: settings.ci.enabled && settings.ci.itr_enabled
+          )
+
+          git_tree_uploader = Git::TreeUploader.new(api: test_visibility_api)
+          git_tree_upload_worker = if settings.ci.git_metadata_upload_enabled
+            Worker.new do |repository_url|
+              git_tree_uploader.call(repository_url)
+            end
+          else
+            DummyWorker.new
+          end
+
           # CI visibility recorder global instance
           @ci_recorder = TestVisibility::Recorder.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             itr: itr,
-            remote_settings_api: remote_settings_api
+            remote_settings_api: remote_settings_api,
+            git_tree_upload_worker: git_tree_upload_worker
           )
+
+          @itr = itr
         end
 
         def build_test_visibility_api(settings)
@@ -122,9 +156,9 @@ module Datadog
 
         def serializers_factory(settings)
           if settings.ci.force_test_level_visibility
-            Datadog::CI::TestVisibility::Serializers::Factories::TestLevel
+            TestVisibility::Serializers::Factories::TestLevel
           else
-            Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel
+            TestVisibility::Serializers::Factories::TestSuiteLevel
           end
         end
 

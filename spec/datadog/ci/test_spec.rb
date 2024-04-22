@@ -99,6 +99,26 @@ RSpec.describe Datadog::CI::Test do
     it { is_expected.to eq("foo/bar.rb") }
   end
 
+  describe "#skipped_by_itr?" do
+    subject(:skipped_by_itr) { ci_test.skipped_by_itr? }
+
+    context "when tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR).and_return("true")
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR).and_return(nil) }
+
+      it { is_expected.to be false }
+    end
+  end
+
   describe "#set_parameters" do
     let(:parameters) { {"foo" => "bar", "baz" => "qux"} }
 
@@ -187,6 +207,18 @@ RSpec.describe Datadog::CI::Test do
 
         ci_test.failed!
       end
+    end
+  end
+
+  describe "#parameters" do
+    let(:parameters) { JSON.generate({arguments: {"foo" => "bar", "baz" => "qux"}, metadata: {}}) }
+
+    before do
+      allow(tracer_span).to receive(:get_tag).with("test.parameters").and_return(parameters)
+    end
+
+    it "returns the parameters" do
+      expect(ci_test.parameters).to eq(parameters)
     end
   end
 end
