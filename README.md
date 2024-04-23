@@ -200,8 +200,10 @@ VCR.configure do |config|
   config.ignore_hosts "127.0.0.1", "localhost"
 
   # when using agentless mode
-  # note to use the correct datadog site (e.g. datadoghq.eu, etc)
-  config.ignore_hosts "citestcycle-intake.datadoghq.com", "api.datadoghq.com", "citestcov-intake.datadoghq.com"
+  config.ignore_request do |request|
+    # ignore all requests to datadoghq hosts
+    request.uri =~ /datadoghq/
+  end
 end
 ```
 

@@ -39,11 +39,13 @@ For WebMock allow all requests that match datadoghq:
 WebMock.disable_net_connect!(:allow => /datadoghq/)
 ```
 
-For VCR provide a list of Datadog backend hosts as ignored hosts:
+For VCR provide `ignore_request` configuration:
 
 ```ruby
 VCR.configure do |config|
-  # note to use the correct datadog site (e.g. datadoghq.eu, etc)
-  config.ignore_hosts "citestcycle-intake.datadoghq.com", "api.datadoghq.com", "citestcov-intake.datadoghq.com"
+  config.ignore_request do |request|
+    # ignore all requests to datadoghq hosts
+    request.uri =~ /datadoghq/
+  end
 end
 ```
