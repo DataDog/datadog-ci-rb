@@ -1,8 +1,7 @@
 # Upgrading from ddtrace 1.x to datadog-ci
 
 Test visibility for Ruby is no longer part of `datadog` gem and fully migrated to
-`datadog-ci` gem. To continue using it after gem `datadog` v2.0 is released, only a
-couple of changes needed.
+`datadog-ci` gem. To continue using it after gem `datadog` v2.0 is released, do these changes.
 
 ## Add datadog-ci to your gemfile
 
