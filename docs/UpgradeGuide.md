@@ -1,6 +1,6 @@
 # Upgrading from ddtrace 1.x to datadog-ci
 
-Test visibility for Ruby is no longer part of `datadog` gem and fully migrated to
+[Test visibility for Ruby](https://docs.datadoghq.com/tests/setup/ruby/) is no longer part of `datadog` gem and fully migrated to
 `datadog-ci` gem. To continue using it after gem `datadog` v2.0 is released, do these changes.
 
 ## Add datadog-ci to your gemfile
@@ -31,7 +31,7 @@ end
 
 ## Change WebMock or VCR configuration
 
-Test visibility features (such as intelligent test runner, git metadata upload, code coverage support) require some DataDog endpoints to be allowlisted by WebMock/VCR tools when using agentless mode.
+New test visibility features (such as [intelligent test runner](https://docs.datadoghq.com/intelligent_test_runner/), git metadata upload, [code coverage support](https://docs.datadoghq.com/tests/code_coverage)) require some DataDog endpoints to be allowlisted by WebMock/VCR tools when using agentless mode.
 
 For WebMock allow all requests that match datadoghq:
 

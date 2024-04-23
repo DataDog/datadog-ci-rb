@@ -20,7 +20,7 @@ end
 
 ## Upgrade from ddtrace v1.x
 
-If you used test visibility for Ruby with ddtrace gem, check out our [upgrade guide](/docs/UpgradeGuide.md).
+If you used [test visibility for Ruby](https://docs.datadoghq.com/tests/setup/ruby/) with [ddtrace](https://github.com/datadog/dd-trace-rb) gem, check out our [upgrade guide](/docs/UpgradeGuide.md).
 
 ## Usage
 
@@ -108,7 +108,7 @@ end
 Configuration `ci.instrument` accepts the following optional parameters:
 
 - `enabled` (default: `true`) - defines whether tests should be traced (useful for temporarily disabling tracing)
-- `service_name` - service name used for this instrumentation (when you want it to be different for given test framework)
+- `service_name` - name of the service or library under test (when you want it to be different for a test framework)
 
 Example usage:
 
@@ -219,7 +219,7 @@ Datadog.configure { |c| c.diagnostics.startup_logs.enabled = false }
 
 Switching the library into debug mode will produce verbose, detailed logs about tracing activity, including any suppressed errors. This output can be helpful in identifying errors, confirming trace output, or catching HTTP transport issues.
 
-You can enable this via `DD_TRACE_DEBUG=1` or in the configure block:
+You can enable this via `DD_TRACE_DEBUG=1` or in the `Datadog.configure` block:
 
 ```ruby
 Datadog.configure { |c| c.diagnostics.debug = true }
