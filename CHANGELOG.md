@@ -1,5 +1,21 @@
 ## [Unreleased]
 
+## [1.0.0.beta2] - 2024-04-23
+
+### Added
+
+* Code coverage events writer ([#150])
+* Git tree upload - git command line integration ([#151])
+* Add Git::SearchCommits api client ([#152])
+* Upload packfiles API client ([#153])
+* Git tree uploader ([#154])
+* Git repository unshallowing logic ([#155])
+* Git upload async worker ([#156])
+* Reduce ITR-induced code coverage overhead for default branch ([#157])
+* Skippable tests api client ([#158])
+* Request skippable tests when configuring ITR ([#159])
+* Test skipping implementation ([#160])
+
 ## [1.0.0.beta1] - 2024-03-25
 
 ### Added
@@ -199,6 +215,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 * Ruby versions < 2.7 no longer supported ([#8][])
 
 [Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...main
+[1.0.0.beta2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta1...v1.0.0.beta2
 [1.0.0.beta1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...v1.0.0.beta1
 [0.8.3]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.1...v0.8.2
@@ -276,3 +293,14 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#142]: https://github.com/DataDog/datadog-ci-rb/issues/142
 [#145]: https://github.com/DataDog/datadog-ci-rb/issues/145
 [#148]: https://github.com/DataDog/datadog-ci-rb/issues/148
+[#150]: https://github.com/DataDog/datadog-ci-rb/issues/150
+[#151]: https://github.com/DataDog/datadog-ci-rb/issues/151
+[#152]: https://github.com/DataDog/datadog-ci-rb/issues/152
+[#153]: https://github.com/DataDog/datadog-ci-rb/issues/153
+[#154]: https://github.com/DataDog/datadog-ci-rb/issues/154
+[#155]: https://github.com/DataDog/datadog-ci-rb/issues/155
+[#156]: https://github.com/DataDog/datadog-ci-rb/issues/156
+[#157]: https://github.com/DataDog/datadog-ci-rb/issues/157
+[#158]: https://github.com/DataDog/datadog-ci-rb/issues/158
+[#159]: https://github.com/DataDog/datadog-ci-rb/issues/159
+[#160]: https://github.com/DataDog/datadog-ci-rb/issues/160
