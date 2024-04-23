@@ -105,83 +105,6 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     it { is_expected.to eq("git@github.com:DataDog/datadog-ci-rb.git") }
   end
 
-  describe ".git_commits" do
-    subject { described_class.git_commits }
-
-    it "returns a list of git commit sha (this test will fail if there are no commits to this library in the past month)" do
-      expect(subject).to be_kind_of(Array)
-      expect(subject).not_to be_empty
-      expect(subject.first).to eq(described_class.git_commit_sha)
-    end
-  end
-
-  describe ".git_commits_rev_list" do
-    # skip for jruby for now - old git version DD docker image
-    before { skip if PlatformHelpers.jruby? }
-
-    let(:commits) { described_class.git_commits }
-    let(:included_commits) { commits[0..1] }
-    let(:excluded_commits) { commits[2..] }
-
-    subject do
-      described_class.git_commits_rev_list(included_commits: included_commits, excluded_commits: excluded_commits)
-    end
-
-    it "returns a list of commits that are reachable from included list but not reachable from excluded list" do
-      expect(subject).to include(included_commits.join("\n"))
-    end
-
-    context "invalid commits" do
-      let(:included_commits) { [" | echo \"boo\" "] }
-      let(:excluded_commits) { [" | echo \"boo\" "] }
-
-      it "returns nil" do
-        expect(subject).to be_nil
-      end
-    end
-  end
-
-  describe ".git_generate_packfiles" do
-    # skip for jruby for now - old git version DD docker image
-    before { skip if PlatformHelpers.jruby? }
-
-    let(:commits) { described_class.git_commits }
-    let(:included_commits) { commits[0..1] }
-    let(:excluded_commits) { commits[2..] }
-
-    subject do
-      described_class.git_generate_packfiles(
-        included_commits: included_commits,
-        excluded_commits: excluded_commits,
-        path: tmpdir
-      )
-    end
-
-    context "temporary directory" do
-      let(:tmpdir) { Dir.mktmpdir }
-
-      after do
-        FileUtils.remove_entry(tmpdir)
-      end
-
-      it "generates packfiles in temp directory" do
-        expect(subject).to match(/^\h{8}$/)
-        packfiles = Dir.entries(tmpdir) - %w[. ..]
-        expect(packfiles).not_to be_empty
-        expect(packfiles).to all(match(/^\h{8}-\h{40}\.(pack|idx|rev)$/))
-      end
-    end
-
-    context "no such directory" do
-      let(:tmpdir) { " | echo \"boo\"" }
-
-      it "returns nil" do
-        expect(subject).to be_nil
-        expect(File.exist?(tmpdir)).to be_falsey
-      end
-    end
-  end
-
   context "with git folder" do
     include_context "with git fixture", "gitdir_with_commit"
 
@@ -294,83 +217,182 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
   end
 
-  context "with shallow clone" do
-    before { skip("temporariliy skipped until development returns to main") }
+  context "with cloned repository" do
+    before { skip if PlatformHelpers.jruby? }
+
+    let(:commits_count) { 2 }
 
     let(:tmpdir) { Dir.mktmpdir }
-    after { FileUtils.remove_entry(tmpdir) }
 
-    before do
-      # shallow clone datadog-ci-rb repository
-      `cd #{tmpdir} && git clone --depth 1 https://github.com/DataDog/datadog-ci-rb`
-    end
+    let(:origin_path) { File.join(tmpdir, "repo_origin") }
+    let(:source_path) { File.join(tmpdir, "source_repo") }
 
-    def with_shallow_clone_git_dir
-      ClimateControl.modify("GIT_DIR" => File.join(tmpdir, "datadog-ci-rb/.git")) do
+    let(:clone_folder_name) { "repo_clone" }
+    let(:clone_path) { File.join(tmpdir, clone_folder_name) }
+
+    def with_clone_git_dir
+      ClimateControl.modify("GIT_DIR" => File.join(clone_path, ".git")) do
         yield
       end
     end
 
-    describe ".git_shallow_clone?" do
-      subject do
-        with_shallow_clone_git_dir { described_class.git_shallow_clone? }
-      end
+    before do
+      `mkdir -p #{origin_path}`
+      # create origin
+      `cd #{origin_path} && git init --bare`
 
-      it { is_expected.to be_truthy }
+      # create a new git repository
+      `mkdir -p #{source_path}`
+      `cd #{source_path} && git init && git remote add origin #{origin_path}`
+      if ENV["CI"] == "true"
+        `cd #{source_path} && git config user.email "dev@datadoghq.com"`
+        `cd #{source_path} && git config user.name "Bits"`
+      end
+      `cd #{source_path} && echo "Hello, world!" >> README.md && git add README.md && git commit -m "Initial commit"`
+
+      commits_count.times do
+        `cd #{source_path} && echo "Hello, world!" >> README.md && git add README.md && git commit -m "Update README"`
+      end
+      `cd #{source_path} && git push origin master`
     end
 
-    describe ".git_commits" do
-      subject do
-        with_shallow_clone_git_dir { described_class.git_commits }
-      end
-
-      it "returns a list of single git commit sha" do
-        expect(subject).to be_kind_of(Array)
-        expect(subject).not_to be_empty
-        expect(subject).to have(1).item
-        expect(subject.first).to match(/^\h{40}$/)
-      end
-    end
-
-    describe ".git_unshallow" do
-      # skip for jruby for now - old git version DD docker image
-      before { skip if PlatformHelpers.jruby? }
-
-      subject do
-        with_shallow_clone_git_dir { described_class.git_unshallow }
-      end
-      let(:commits) do
-        with_shallow_clone_git_dir { described_class.git_commits }
-      end
-
-      it "unshallows the repository" do
-        expect(subject).to be_truthy
-        expect(commits.size).to be > 1
-      end
-    end
-  end
-
-  context "with full clone" do
-    let(:tmpdir) { Dir.mktmpdir }
     after { FileUtils.remove_entry(tmpdir) }
 
-    before do
-      # shallow clone datadog-ci-rb repository
-      `cd #{tmpdir} && git clone https://github.com/DataDog/datadog-ci-rb`
-    end
+    context "with shallow clone" do
+      before do
+        # create a shallow clone
+        `cd #{tmpdir} && git clone --depth=1 file://#{origin_path} #{clone_folder_name}`
+      end
 
-    def with_full_clone_git_dir
-      ClimateControl.modify("GIT_DIR" => File.join(tmpdir, "datadog-ci-rb/.git")) do
-        yield
+      describe ".git_shallow_clone?" do
+        subject do
+          with_clone_git_dir { described_class.git_shallow_clone? }
+        end
+
+        it { is_expected.to be_truthy }
+      end
+
+      describe ".git_commits" do
+        subject do
+          with_clone_git_dir { described_class.git_commits }
+        end
+
+        it "returns a list of single git commit sha" do
+          expect(subject).to be_kind_of(Array)
+          expect(subject).not_to be_empty
+          expect(subject).to have(1).item
+          expect(subject.first).to match(/^\h{40}$/)
+        end
+      end
+
+      describe ".git_unshallow" do
+        subject do
+          with_clone_git_dir { described_class.git_unshallow }
+        end
+        let(:commits) do
+          with_clone_git_dir { described_class.git_commits }
+        end
+
+        it "unshallows the repository" do
+          expect(subject).to be_truthy
+          # additional commits plus the initial commit
+          expect(commits.size).to eq(commits_count + 1)
+        end
       end
     end
 
-    describe ".git_shallow_clone?" do
-      subject do
-        with_full_clone_git_dir { described_class.git_shallow_clone? }
+    context "with full clone" do
+      before do
+        # create a full clone
+        `cd #{tmpdir} && git clone file://#{origin_path} #{clone_folder_name}`
       end
 
-      it { is_expected.to be_falsey }
+      describe ".git_commits" do
+        subject { with_clone_git_dir { described_class.git_commits } }
+
+        it "returns a list of git commit sha" do
+          expect(subject).to be_kind_of(Array)
+          expect(subject).not_to be_empty
+          expect(subject.first).to eq(
+            with_clone_git_dir do
+              described_class.git_commit_sha
+            end
+          )
+        end
+      end
+
+      describe ".git_commits_rev_list" do
+        let(:commits) { with_clone_git_dir { described_class.git_commits } }
+        let(:included_commits) { commits[0..1] }
+        let(:excluded_commits) { commits[2..] }
+
+        subject do
+          with_clone_git_dir do
+            described_class.git_commits_rev_list(included_commits: included_commits, excluded_commits: excluded_commits)
+          end
+        end
+
+        it "returns a list of commits that are reachable from included list but not reachable from excluded list" do
+          expect(subject).to include(included_commits.join("\n"))
+          expect(subject).not_to include(excluded_commits.first)
+        end
+
+        context "invalid commits" do
+          let(:included_commits) { [" | echo \"boo\" "] }
+          let(:excluded_commits) { [" | echo \"boo\" "] }
+
+          it "returns nil" do
+            expect(subject).to be_nil
+          end
+        end
+      end
+
+      describe ".git_generate_packfiles" do
+        let(:commits) { with_clone_git_dir { described_class.git_commits } }
+        let(:included_commits) { commits[0..1] }
+        let(:excluded_commits) { commits[2..] }
+
+        subject do
+          with_clone_git_dir do
+            described_class.git_generate_packfiles(
+              included_commits: included_commits,
+              excluded_commits: excluded_commits,
+              path: packfiles_dir
+            )
+          end
+        end
+
+        context "temporary directory" do
+          let(:packfiles_dir) { File.join(tmpdir, "packfiles") }
+          before do
+            `mkdir -p #{packfiles_dir}`
+          end
+
+          it "generates packfiles in temp directory" do
+            expect(subject).to match(/^\h{8}$/)
+            packfiles = Dir.entries(packfiles_dir) - %w[. ..]
+            expect(packfiles).not_to be_empty
+            expect(packfiles).to all(match(/^\h{8}-\h{40}\.(pack|idx|rev)$/))
+          end
+        end
+
+        context "no such directory" do
+          let(:packfiles_dir) { " | echo \"boo\"" }
+
+          it "returns nil" do
+            expect(subject).to be_nil
+            expect(File.exist?(packfiles_dir)).to be_falsey
+          end
+        end
+      end
+
+      describe ".git_shallow_clone?" do
+        subject do
+          with_clone_git_dir { described_class.git_shallow_clone? }
+        end
+
+        it { is_expected.to be_falsey }
+      end
     end
   end
 

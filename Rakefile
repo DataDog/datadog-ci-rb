@@ -26,6 +26,9 @@ TEST_METADATA = {
   "main" => {
     "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
   },
+  "git" => {
+    "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+  },
   "cucumber" => {
     "cucumber-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
     "cucumber-4" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
@@ -113,7 +116,7 @@ namespace :spec do
     else
       "spec/datadog/**/*_spec.rb,spec/ddcov/**/*_spec.rb"
     end
-    t.exclude_pattern = "spec/datadog/**/{contrib}/**/*_spec.rb,"
+    t.exclude_pattern = "spec/datadog/**/contrib/**/*_spec.rb,spec/datadog/**/git/**/*_spec.rb"
     t.rspec_opts = args.to_a.join(" ")
   end
 
@@ -132,6 +135,13 @@ namespace :spec do
       t.pattern = "spec/datadog/ci/contrib/#{contrib}/**/*_spec.rb"
       t.rspec_opts = args.to_a.join(" ")
     end
+  end
+
+  # slow git tests
+  desc ""
+  RSpec::Core::RakeTask.new(:git) do |t, args|
+    t.pattern = "spec/datadog/ci/git/**/*_spec.rb"
+    t.rspec_opts = args.to_a.join(" ")
   end
 end
 
