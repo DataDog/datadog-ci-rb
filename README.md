@@ -144,7 +144,7 @@ or other external calls like here:
 
 ![Test trace with redis instrumented](./docs/screenshots/test-trace-with-redis.png)
 
-In order to achieve this you can configure Datadog tracing instrumentations in your configure block:
+To achieve this, add Datadog tracing instrumentations in your `Datadog.configure` block:
 
 ```ruby
 Datadog.configure do |c|
