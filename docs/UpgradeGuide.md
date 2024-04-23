@@ -31,7 +31,7 @@ end
 
 ## Change WebMock or VCR configuration
 
-We work on adding new features to the test visibility product in Ruby (intelligent test runner, git metadata upload, code coverage support) that require new endpoints being allowlisted by WebMock/VCR tools when using agentless mode.
+Test visibility features (such as intelligent test runner, git metadata upload, code coverage support) require some DataDog endpoints to be allowlisted by WebMock/VCR tools when using agentless mode.
 
 For WebMock allow all requests that match datadoghq:
 

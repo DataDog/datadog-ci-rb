@@ -209,7 +209,7 @@ end
 
 Startup logs produce a report of tracing state when the application is initially configured.
 These logs are activated by default in test mode, if you don't want them you can disable this
-via `DD_TRACE_STARTUP_LOGS=0` or in the configure block:
+via `DD_TRACE_STARTUP_LOGS=0` or in the `Datadog.configure` block:
 
 ```ruby
 Datadog.configure { |c| c.diagnostics.startup_logs.enabled = false }
