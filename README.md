@@ -18,6 +18,10 @@ group :test do
 end
 ```
 
+## Upgrade from ddtrace v1.x
+
+If you used test visibility for Ruby with ddtrace gem, check out our [upgrade guide](/docs/UpgradeGuide.md).
+
 ## Usage
 
 ### RSpec
@@ -31,24 +35,13 @@ require 'datadog/ci'
 # Only activates test instrumentation on CI
 if ENV["DD_ENV"] == "ci"
   Datadog.configure do |c|
-    # Configures the tracer to ensure results delivery
-    c.ci.enabled = true
-
     # The name of the service or library under test
     c.service = 'my-ruby-app'
-
-    # Enables the RSpec instrumentation
-    c.ci.instrument :rspec, **options
+    c.ci.enabled = true
+    c.ci.instrument :rspec
   end
 end
 ```
-
-`options` are the following keyword arguments:
-
-| Key | Description | Default |
-| --- | ----------- | ------- |
-| `enabled` | Defines whether RSpec tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
-| `service_name` | Service name used for `rspec` instrumentation. | `'rspec'` |
 
 ### Minitest
 
@@ -64,13 +57,10 @@ require 'datadog/ci'
 if ENV["DD_ENV"] == "ci"
 # Configure default Minitest integration
   Datadog.configure do |c|
-    # Configures the tracer to ensure results delivery
-    c.ci.enabled = true
-
     # The name of the service or library under test
     c.service = 'my-ruby-app'
-
-    c.ci.instrument :minitest, **options
+    c.ci.enabled = true
+    c.ci.instrument :minitest
   end
 end
 ```
@@ -87,19 +77,12 @@ require 'minitest/autorun'
 
 if ENV["DD_ENV"] == "ci"
   Datadog.configure do |c|
-    c.ci.enabled = true
     c.service = 'my-ruby-app'
+    c.ci.enabled = true
     c.ci.instrument :minitest
   end
 end
 ```
-
-`options` are the following keyword arguments:
-
-| Key | Description | Default |
-| --- | ----------- | ------- |
-| `enabled` | Defines whether Minitest tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
-| `service_name` | Service name used for `minitest` instrumentation. | `'minitest'` |
 
 ### Cucumber
 
@@ -112,24 +95,31 @@ require 'datadog/ci'
 # Only activates test instrumentation on CI
 if ENV["DD_ENV"] == "ci"
   Datadog.configure do |c|
-    # Configures the tracer to ensure results delivery
-    c.ci.enabled = true
-
     # The name of the service or library under test
     c.service = 'my-ruby-app'
-
-    # Enables the Cucumber instrumentation
-    c.ci.instrument :cucumber, **options
+    c.ci.enabled = true
+    c.ci.instrument :cucumber
   end
 end
 ```
 
-`options` are the following keyword arguments:
+### Instrumentation options
 
-| Key | Description | Default |
-| --- | ----------- | ------- |
-| `enabled` | Defines whether Cucumber tests should be traced. Useful for temporarily disabling tracing. `true` or `false` | `true` |
-| `service_name` | Service name used for `cucumber` instrumentation. | `'cucumber'` |
+Configuration `ci.instrument` accepts the following optional parameters:
+
+- `enabled` (default: `true`) - defines whether tests should be traced (useful for temporarily disabling tracing)
+- `service_name` - service name used for this instrumentation (when you want it to be different for given test framework)
+
+Example usage:
+
+```ruby
+  Datadog.configure do |c|
+    c.service = 'my-ruby-app'
+    c.ci.enabled = true
+    c.ci.instrument :cucumber, service_name: 'my-cucumber-features', enabled: true
+    c.ci.instrument :minitest, service_name: 'my-unit-tests', enabled: false
+  end
+```
 
 ## Agentless mode
 
@@ -154,7 +144,7 @@ or other external calls like here:
 
 ![Test trace with redis instrumented](./docs/screenshots/test-trace-with-redis.png)
 
-In order to achieve this you can configure ddtrace instrumentations in your configure block:
+In order to achieve this you can configure Datadog tracing instrumentations in your configure block:
 
 ```ruby
 Datadog.configure do |c|
@@ -167,13 +157,13 @@ end
 ...or enable auto instrumentation in your test_helper/spec_helper:
 
 ```ruby
-require "ddtrace/auto_instrument"
+require "datadog/auto_instrument"
 ```
 
 Note: in CI mode these traces are going to be submitted to CI Visibility,
 they will **not** show up in Datadog APM.
 
-For the full list of available instrumentations see [ddtrace documentation](https://github.com/DataDog/dd-trace-rb/blob/master/docs/GettingStarted.md)
+For the full list of available instrumentations see [datadog documentation](https://github.com/DataDog/dd-trace-rb/blob/master/docs/GettingStarted.md)
 
 ### WebMock
 
@@ -187,8 +177,7 @@ Webmock accordingly.
 
 ```ruby
 # when using agentless mode
-# note to use the correct datadog site (e.g. datadoghq.eu, etc)
-WebMock.disable_net_connect!(:allow => /datadoghq.com/)
+WebMock.disable_net_connect!(:allow => /datadoghq/)
 
 # when using agent
 WebMock.disable_net_connect!(:allow_localhost => true)
@@ -212,7 +201,7 @@ VCR.configure do |config|
 
   # when using agentless mode
   # note to use the correct datadog site (e.g. datadoghq.eu, etc)
-  config.ignore_hosts "citestcycle-intake.datadoghq.com", "api.datadoghq.com"
+  config.ignore_hosts "citestcycle-intake.datadoghq.com", "api.datadoghq.com", "citestcov-intake.datadoghq.com"
 end
 ```
 
@@ -220,7 +209,7 @@ end
 
 Startup logs produce a report of tracing state when the application is initially configured.
 These logs are activated by default in test mode, if you don't want them you can disable this
-via `diagnostics.startup_logs.enabled = false` or `DD_TRACE_STARTUP_LOGS=0`.
+via `DD_TRACE_STARTUP_LOGS=0` or in the configure block:
 
 ```ruby
 Datadog.configure { |c| c.diagnostics.startup_logs.enabled = false }
@@ -230,7 +219,7 @@ Datadog.configure { |c| c.diagnostics.startup_logs.enabled = false }
 
 Switching the library into debug mode will produce verbose, detailed logs about tracing activity, including any suppressed errors. This output can be helpful in identifying errors, confirming trace output, or catching HTTP transport issues.
 
-You can enable this via `diagnostics.debug = true` or `DD_TRACE_DEBUG=1`.
+You can enable this via `DD_TRACE_DEBUG=1` or in the configure block:
 
 ```ruby
 Datadog.configure { |c| c.diagnostics.debug = true }
