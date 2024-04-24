@@ -8,7 +8,6 @@ module Datadog
       module Test
         CONTEXT_ORIGIN = "ciapp-test"
 
-        TAG_ARGUMENTS = "test.arguments"
         TAG_FRAMEWORK = "test.framework"
         TAG_FRAMEWORK_VERSION = "test.framework_version"
         TAG_NAME = "test.name"
@@ -29,6 +28,8 @@ module Datadog
         TAG_ITR_TEST_SKIPPING_COUNT = "test.itr.tests_skipping.count"
         TAG_ITR_SKIPPED_BY_ITR = "test.skipped_by_itr"
         TAG_ITR_TESTS_SKIPPED = "_dd.ci.itr.tests_skipped"
+        TAG_ITR_UNSKIPPABLE = "test.itr.unskippable"
+        TAG_ITR_FORCED_RUN = "test.itr.forced_run"
 
         # Code coverage tags
         TAG_CODE_COVERAGE_ENABLED = "test.code_coverage.enabled"
