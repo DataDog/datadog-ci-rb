@@ -78,6 +78,30 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
     end
 
+    context "with itr correlation id" do
+      let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel }
+
+      before do
+        allow_any_instance_of(Datadog::CI::ITR::Runner).to receive(:correlation_id).and_return("correlation-id")
+
+        produce_test_session_trace
+      end
+
+      it "passes itr correlation id to serializer" do
+        subject.send_events([trace_for_span(first_test_span)])
+
+        expect(api).to have_received(:citestcycle_request) do |args|
+          payload = MessagePack.unpack(args[:payload])
+          expect(payload["version"]).to eq(1)
+
+          events = payload["events"]
+          expect(events.count).to eq(1)
+          expect(events.first["content"]["resource"]).to include("calculator_tests")
+          expect(events.first["content"]["itr_correlation_id"]).to eq("correlation-id")
+        end
+      end
+    end
+
     context "multiple traces with 2 spans each" do
       let(:traces_count) { 2 }
       let(:expected_events_count) { 4 }

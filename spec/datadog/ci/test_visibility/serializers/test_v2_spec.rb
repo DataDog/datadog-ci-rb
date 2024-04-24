@@ -6,8 +6,9 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
     let(:integration_name) { :rspec }
   end
 
+  let(:options) { {} }
   include_context "msgpack serializer" do
-    subject { described_class.new(trace_for_span(first_test_span), first_test_span) }
+    subject { described_class.new(trace_for_span(first_test_span), first_test_span, options: options) }
   end
 
   describe "#to_msgpack" do
@@ -108,6 +109,18 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
           "start" => start_time.to_i * 1_000_000_000 + start_time.nsec,
           "duration" => 3 * 1_000_000_000
         })
+      end
+    end
+
+    context "with itr correlation id" do
+      let(:options) { {itr_correlation_id: "itr-correlation-id"} }
+
+      before do
+        produce_test_session_trace
+      end
+
+      it "correctly serializes itr correlation id" do
+        expect(content).to include("itr_correlation_id" => "itr-correlation-id")
       end
     end
   end
