@@ -12,32 +12,45 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLev
     produce_test_session_trace(with_http_span: true)
   end
 
-  subject { described_class.serializer(trace_for_span(ci_span), ci_span) }
+  context "without options" do
+    subject { described_class.serializer(trace_for_span(ci_span), ci_span) }
 
-  describe ".convert_trace_to_serializable_events" do
-    context "with a session span" do
-      let(:ci_span) { test_session_span }
-      it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestSession) }
+    describe ".convert_trace_to_serializable_events" do
+      context "with a session span" do
+        let(:ci_span) { test_session_span }
+        it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestSession) }
+      end
+
+      context "with a module span" do
+        let(:ci_span) { test_module_span }
+        it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestModule) }
+      end
+
+      context "with a suite span" do
+        let(:ci_span) { first_test_suite_span }
+        it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestSuite) }
+      end
+
+      context "with a test span" do
+        let(:ci_span) { first_test_span }
+        it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestV2) }
+      end
+
+      context "with a http request span" do
+        let(:ci_span) { first_custom_span }
+        it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::Span) }
+      end
     end
+  end
 
-    context "with a module span" do
-      let(:ci_span) { test_module_span }
-      it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestModule) }
-    end
+  context "with options" do
+    let(:ci_span) { first_test_span }
+    subject { described_class.serializer(trace_for_span(ci_span), ci_span, options: {custom: "option"}) }
 
-    context "with a suite span" do
-      let(:ci_span) { first_test_suite_span }
-      it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestSuite) }
-    end
-
-    context "with a test span" do
-      let(:ci_span) { first_test_span }
-      it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::TestV2) }
-    end
-
-    context "with a http request span" do
-      let(:ci_span) { first_custom_span }
-      it { is_expected.to be_kind_of(Datadog::CI::TestVisibility::Serializers::Span) }
+    describe ".serializer" do
+      it "passes options to the serializer" do
+        expect(subject.options).to eq({custom: "option"})
+      end
     end
   end
 end

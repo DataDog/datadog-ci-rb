@@ -14,12 +14,12 @@ module Datadog
           module TestLevel
             module_function
 
-            def serializer(trace, span)
+            def serializer(trace, span, options: {})
               case span.type
               when Datadog::CI::Ext::AppTypes::TYPE_TEST
-                Serializers::TestV1.new(trace, span)
+                Serializers::TestV1.new(trace, span, options: options)
               else
-                Serializers::Span.new(trace, span)
+                Serializers::Span.new(trace, span, options: options)
               end
             end
           end
