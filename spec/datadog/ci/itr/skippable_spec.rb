@@ -5,8 +5,9 @@ require_relative "../../../../lib/datadog/ci/itr/skippable"
 RSpec.describe Datadog::CI::ITR::Skippable do
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
+  let(:config_tags) { {} }
 
-  subject(:client) { described_class.new(api: api, dd_env: dd_env) }
+  subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
   describe "#fetch_skippable_tests" do
     let(:service) { "service" }
@@ -173,6 +174,25 @@ RSpec.describe Datadog::CI::ITR::Skippable do
           expect(response.ok?).to be false
           expect(response.correlation_id).to be_nil
           expect(response.tests).to be_empty
+        end
+      end
+    end
+
+    context "when there are custom configurations" do
+      let(:config_tags) do
+        {
+          "tag1" => "value1"
+        }
+      end
+
+      it "requests the skippable tests with custom configurations" do
+        client.fetch_skippable_tests(test_session)
+
+        expect(api).to have_received(:api_request) do |args|
+          data = JSON.parse(args[:payload])["data"]
+          configurations = data["attributes"]["configurations"]
+
+          expect(configurations["custom"]).to eq("tag1" => "value1")
         end
       end
     end

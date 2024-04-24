@@ -57,9 +57,10 @@ module Datadog
           end
         end
 
-        def initialize(dd_env:, api: nil)
+        def initialize(dd_env:, api: nil, config_tags: {})
           @api = api
           @dd_env = dd_env
+          @config_tags = config_tags
         end
 
         def fetch_skippable_tests(test_session)
@@ -94,7 +95,8 @@ module Datadog
                   Ext::Test::TAG_OS_ARCHITECTURE => test_session.os_architecture,
                   Ext::Test::TAG_OS_VERSION => test_session.os_version,
                   Ext::Test::TAG_RUNTIME_NAME => test_session.runtime_name,
-                  Ext::Test::TAG_RUNTIME_VERSION => test_session.runtime_version
+                  Ext::Test::TAG_RUNTIME_VERSION => test_session.runtime_version,
+                  "custom" => @config_tags
                 }
               }
             }
