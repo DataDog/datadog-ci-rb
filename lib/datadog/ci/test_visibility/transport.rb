@@ -45,7 +45,7 @@ module Datadog
         end
 
         def encode_span(trace, span)
-          serializer = serializers_factory.serializer(trace, span)
+          serializer = serializers_factory.serializer(trace, span, options: {itr_correlation_id: itr&.correlation_id})
 
           if serializer.valid?
             encoded = encoder.encode(serializer)
@@ -97,6 +97,10 @@ module Datadog
           packer.write(Datadog::CI::VERSION::STRING)
 
           packer.write("events")
+        end
+
+        def itr
+          @itr ||= Datadog::CI.send(:itr_runner)
         end
       end
     end

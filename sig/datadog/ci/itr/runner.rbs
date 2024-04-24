@@ -7,8 +7,8 @@ module Datadog
         @enabled: bool
         @test_skipping_enabled: bool
         @code_coverage_enabled: bool
-        @correlation_id: String
-        @skippable_tests: Array[String]
+        @correlation_id: String?
+        @skippable_tests: Set[String]
         @coverage_writer: Datadog::CI::ITR::Coverage::Writer?
 
         @api: Datadog::CI::Transport::Api::Base?
@@ -16,6 +16,10 @@ module Datadog
 
         @skipped_tests_count: Integer
         @mutex: Thread::Mutex
+
+        attr_reader skippable_tests: Set[String]
+        attr_reader skipped_tests_count: Integer
+        attr_reader correlation_id: String?
 
         def initialize: (dd_env: String?, ?enabled: bool, coverage_writer: Datadog::CI::ITR::Coverage::Writer?, api: Datadog::CI::Transport::Api::Base?) -> void
 
