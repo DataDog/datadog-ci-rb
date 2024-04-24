@@ -28,11 +28,12 @@ module Datadog
             "duration"
           ].freeze
 
-          attr_reader :trace, :span, :meta
+          attr_reader :trace, :span, :meta, :options
 
-          def initialize(trace, span)
+          def initialize(trace, span, options: {})
             @trace = trace
             @span = span
+            @options = options
 
             @meta = @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
 

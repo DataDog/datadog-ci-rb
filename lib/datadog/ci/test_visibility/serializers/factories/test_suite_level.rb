@@ -15,18 +15,18 @@ module Datadog
           module TestSuiteLevel
             module_function
 
-            def serializer(trace, span)
+            def serializer(trace, span, options: {})
               case span.type
               when Datadog::CI::Ext::AppTypes::TYPE_TEST
-                Serializers::TestV2.new(trace, span)
+                Serializers::TestV2.new(trace, span, options: options)
               when Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION
-                Serializers::TestSession.new(trace, span)
+                Serializers::TestSession.new(trace, span, options: options)
               when Datadog::CI::Ext::AppTypes::TYPE_TEST_MODULE
-                Serializers::TestModule.new(trace, span)
+                Serializers::TestModule.new(trace, span, options: options)
               when Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE
-                Serializers::TestSuite.new(trace, span)
+                Serializers::TestSuite.new(trace, span, options: options)
               else
-                Serializers::Span.new(trace, span)
+                Serializers::Span.new(trace, span, options: options)
               end
             end
           end

@@ -5,7 +5,11 @@ module Datadog
         class TestV2 < TestV1
           CONTENT_FIELDS: ::Array[String | ::Hash[::String, String]]
 
+          CONTENT_FIELDS_WITH_ITR_CORRELATION_ID: ::Array[String | ::Hash[::String, String]]
+
           CONTENT_MAP_SIZE: Integer
+
+          CONTENT_MAP_SIZE_WITH_ITR_CORRELATION_ID: Integer
 
           REQUIRED_FIELDS: ::Array[String]
 
@@ -14,6 +18,8 @@ module Datadog
           def content_map_size: () -> Integer
 
           def version: () -> 2
+
+          def itr_correlation_id: () -> String?
 
           private
 
