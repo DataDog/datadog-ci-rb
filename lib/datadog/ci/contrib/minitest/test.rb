@@ -10,7 +10,7 @@ module Datadog
     module Contrib
       module Minitest
         # Lifecycle hooks to instrument Minitest::Test
-        module Hooks
+        module Test
           def self.included(base)
             base.prepend(InstanceMethods)
             base.singleton_class.prepend(ClassMethods)
