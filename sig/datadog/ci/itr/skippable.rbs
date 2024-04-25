@@ -4,6 +4,7 @@ module Datadog
       class Skippable
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
+        @config_tags: Hash[String, String]
 
         class Response
           @http_response: Datadog::Core::Transport::HTTP::Adapters::Net::Response?
@@ -22,7 +23,7 @@ module Datadog
           def payload: () -> Hash[String, untyped]
         end
 
-        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?) -> void
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String]) -> void
 
         def fetch_skippable_tests: (Datadog::CI::TestSession test_session) -> Response
 

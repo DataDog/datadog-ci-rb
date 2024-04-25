@@ -22,6 +22,18 @@ module Datadog
             }
           )
         end
+
+        def self.custom_configuration(env_tags)
+          return {} if env_tags.nil?
+
+          res = {}
+          env_tags.each do |tag, value|
+            next unless tag.start_with?("test.configuration.")
+
+            res[tag.sub("test.configuration.", "")] = value
+          end
+          res
+        end
       end
     end
   end

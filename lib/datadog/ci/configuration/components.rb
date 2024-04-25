@@ -13,6 +13,7 @@ require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
 require_relative "../transport/remote_settings_api"
+require_relative "../utils/test_run"
 require_relative "../worker"
 
 module Datadog
@@ -90,14 +91,18 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = writer_options
 
+          custom_configuration_tags = Utils::TestRun.custom_configuration(settings.tags)
+
           remote_settings_api = Transport::RemoteSettingsApi.new(
             api: test_visibility_api,
-            dd_env: settings.env
+            dd_env: settings.env,
+            config_tags: custom_configuration_tags
           )
 
           itr = ITR::Runner.new(
             api: test_visibility_api,
             dd_env: settings.env,
+            config_tags: custom_configuration_tags,
             coverage_writer: coverage_writer,
             enabled: settings.ci.enabled && settings.ci.itr_enabled
           )

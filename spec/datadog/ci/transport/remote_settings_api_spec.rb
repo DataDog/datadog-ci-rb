@@ -5,8 +5,9 @@ require_relative "../../../../lib/datadog/ci/transport/remote_settings_api"
 RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
+  let(:config_tags) { {} }
 
-  subject(:client) { described_class.new(api: api, dd_env: dd_env) }
+  subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
   describe "#fetch_library_settings" do
     let(:service) { "service" }
@@ -172,6 +173,22 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
           expect(response.ok?).to be false
           expect(response.payload).to eq("itr_enabled" => false)
           expect(response.require_git?).to be false
+        end
+      end
+    end
+
+    context "with custom configuration" do
+      let(:config_tags) { {"key" => "value"} }
+
+      it "requests the settings" do
+        client.fetch_library_settings(test_session)
+
+        expect(api).to have_received(:api_request) do |args|
+          data = JSON.parse(args[:payload])["data"]
+
+          attributes = data["attributes"]
+          configurations = attributes["configurations"]
+          expect(configurations["custom"]).to eq("key" => "value")
         end
       end
     end
