@@ -775,6 +775,84 @@ RSpec.describe "Minitest instrumentation" do
           expect(first_test_suite_span).to have_skip_status
         end
       end
+
+      context "unskippable suite" do
+        before(:context) do
+          Minitest::Runnable.reset
+
+          class UnskippableTest < Minitest::Test
+            datadog_itr_unskippable
+
+            def test_1
+            end
+
+            def test_2
+            end
+          end
+
+          class ActuallySkippableTest < Minitest::Test
+            def test_1
+            end
+          end
+        end
+
+        let(:itr_skippable_tests) do
+          Set.new(
+            [
+              "UnskippableTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_1.",
+              "UnskippableTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_2.",
+              "ActuallySkippableTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_1."
+            ]
+          )
+        end
+
+        it "runs all tests in unskippable suite and sets forced run tag" do
+          expect(test_spans).to have(3).items
+          expect(test_spans).to have_tag_values_no_order(:status, ["pass", "pass", "skip"])
+
+          unskippable = test_spans.select { |span| span.get_tag("test.status") == "pass" }
+          expect(unskippable).to all have_test_tag(:itr_forced_run, "true")
+
+          expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+          expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
+        end
+      end
+
+      context "partially unskippable suite" do
+        before(:context) do
+          Minitest::Runnable.reset
+
+          class PartiallyUnskippableTest < Minitest::Test
+            datadog_itr_unskippable "test_1"
+
+            def test_1
+            end
+
+            def test_2
+            end
+          end
+        end
+
+        let(:itr_skippable_tests) do
+          Set.new(
+            [
+              "PartiallyUnskippableTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_1.",
+              "PartiallyUnskippableTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_2."
+            ]
+          )
+        end
+
+        it "runs unskippable test and sets forced run tag" do
+          expect(test_spans).to have(2).items
+          expect(test_spans).to have_tag_values_no_order(:status, ["pass", "skip"])
+
+          unskippable = test_spans.select { |span| span.get_tag("test.status") == "pass" }
+          expect(unskippable).to all have_test_tag(:itr_forced_run, "true")
+
+          expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+          expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
+        end
+      end
     end
   end
 end
