@@ -70,12 +70,15 @@ module Datadog
 
             start_test_suite(test_suite_name) unless same_test_suite_as_current?(test_suite_name)
 
-            CI.start_test(
+            test_span = CI.start_test(
               event.test_case.name,
               test_suite_name,
               tags: tags,
               service: configuration[:service_name]
             )
+            if event.test_case.match_tags?("@#{CI::Ext::Test::ITR_UNSKIPPABLE_OPTION}")
+              test_span&.itr_unskippable!
+            end
           end
 
           def on_test_case_finished(event)

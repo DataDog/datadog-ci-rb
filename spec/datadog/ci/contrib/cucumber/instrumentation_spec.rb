@@ -322,7 +322,7 @@ RSpec.describe "Cucumber formatter" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans).to have(4).items
+      expect(test_suite_spans).to have(6).items
       expect(passing_test_suite).to have_pass_status
       expect(failing_test_suite).to have_fail_status
     end
@@ -393,6 +393,45 @@ RSpec.describe "Cucumber formatter" do
 
     it "marks test suite as skipped" do
       expect(first_test_suite_span).to have_skip_status
+    end
+  end
+
+  context "executing a feature with unskippable scenario" do
+    let(:feature_file_to_run) { "unskippable_scenario.feature" }
+
+    let(:itr_skippable_tests) do
+      Set.new([
+        "Datadog integration at spec/datadog/ci/contrib/cucumber/features/unskippable_scenario.feature.unskippable scenario."
+      ])
+    end
+
+    it "runs the test and adds forced run tag" do
+      expect(test_spans).to have(1).item
+      expect(first_test_span).to have_pass_status
+      expect(first_test_span).to have_test_tag(:itr_forced_run, "true")
+      expect(first_test_span).not_to have_test_tag(:itr_skipped_by_itr)
+
+      expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+      expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+    end
+  end
+
+  context "executing a feature with unskippable feature" do
+    let(:feature_file_to_run) { "unskippable.feature" }
+
+    let(:itr_skippable_tests) do
+      Set.new([
+        "Datadog integration at spec/datadog/ci/contrib/cucumber/features/unskippable.feature.unskippable scenario."
+      ])
+    end
+
+    it "runs the test and adds forced run tag" do
+      expect(test_spans).to have(1).item
+      expect(first_test_span).to have_pass_status
+      expect(first_test_span).to have_test_tag(:itr_forced_run, "true")
+
+      expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+      expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
     end
   end
 end

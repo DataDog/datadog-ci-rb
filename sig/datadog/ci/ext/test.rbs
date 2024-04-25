@@ -74,6 +74,8 @@ module Datadog
 
         ITR_TEST_SKIP_REASON: String
 
+        ITR_UNSKIPPABLE_OPTION: :datadog_itr_unskippable
+
         module Status
           PASS: "pass"
 

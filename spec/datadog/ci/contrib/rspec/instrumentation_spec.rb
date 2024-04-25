@@ -29,9 +29,9 @@ RSpec.describe "RSpec hooks" do
       suite: false
     }
   )
-    test_meta = unskippable[:test] ? {datadog_itr_unskippable: true} : {}
-    context_meta = unskippable[:context] ? {datadog_itr_unskippable: true} : {}
-    suite_meta = unskippable[:suite] ? {datadog_itr_unskippable: true} : {}
+    test_meta = unskippable[:test] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
+    context_meta = unskippable[:context] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
+    suite_meta = unskippable[:suite] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
     with_new_rspec_environment do
       spec = RSpec.describe "SomeTest", suite_meta do
         context "nested", context_meta do

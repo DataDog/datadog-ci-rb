@@ -59,6 +59,7 @@ module Datadog
         # we use test skipping for Ruby
         ITR_TEST_SKIPPING_MODE = "test"
         ITR_TEST_SKIP_REASON = "Skipped by Datadog's intelligent test runner"
+        ITR_UNSKIPPABLE_OPTION = :datadog_itr_unskippable
 
         # test status as recognized by Datadog
         module Status
