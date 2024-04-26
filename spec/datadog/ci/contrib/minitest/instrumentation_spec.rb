@@ -853,6 +853,45 @@ RSpec.describe "Minitest instrumentation" do
           expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
         end
       end
+
+      context "partially unskippable suite with Minitest::Spec" do
+        before(:context) do
+          Minitest::Runnable.reset
+
+          class SomeUnskippableSpec < Minitest::Spec
+            datadog_itr_unskippable
+
+            it "does not fail" do
+            end
+
+            minitest_describe "in context" do
+              datadog_itr_unskippable
+
+              it "does not fail" do
+              end
+            end
+          end
+        end
+
+        let(:itr_skippable_tests) do
+          Set.new(
+            [
+              "SomeUnskippableSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_0001_does not fail.",
+              "in context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_0001_does not fail."
+            ]
+          )
+        end
+
+        it "runs unskippable test and sets forced run tag" do
+          expect(test_spans).to have(2).items
+          expect(test_spans).to all have_pass_status
+
+          expect(test_spans).to all have_test_tag(:itr_forced_run, "true")
+
+          expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+          expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+        end
+      end
     end
   end
 end
