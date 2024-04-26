@@ -2,7 +2,7 @@
 
 require_relative "runner"
 require_relative "reporter"
-require_relative "hooks"
+require_relative "test"
 require_relative "runnable"
 
 module Datadog
@@ -25,7 +25,7 @@ module Datadog
             # test suites (when not executed concurrently)
             ::Minitest::Runnable.include(Runnable)
             # tests; test suites (when executed concurrently)
-            ::Minitest::Test.include(Hooks)
+            ::Minitest::Test.include(Test)
             # test session finish
             ::Minitest::CompositeReporter.include(Reporter)
           end

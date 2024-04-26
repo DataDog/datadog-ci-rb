@@ -4,8 +4,6 @@ module Datadog
       module Test
         CONTEXT_ORIGIN: "ciapp-test"
 
-        TAG_ARGUMENTS: "test.arguments"
-
         TAG_FRAMEWORK: "test.framework"
 
         TAG_FRAMEWORK_VERSION: "test.framework_version"
@@ -42,6 +40,10 @@ module Datadog
 
         TAG_ITR_TESTS_SKIPPED: "_dd.ci.itr.tests_skipped"
 
+        TAG_ITR_UNSKIPPABLE: "test.itr.unskippable"
+
+        TAG_ITR_FORCED_RUN: "test.itr.forced_run"
+
         TAG_CODE_COVERAGE_ENABLED: "test.code_coverage.enabled"
 
         TAG_TEST_SESSION_ID: "_test.session_id"
@@ -71,6 +73,8 @@ module Datadog
         ITR_TEST_SKIPPING_MODE: "test"
 
         ITR_TEST_SKIP_REASON: String
+
+        ITR_UNSKIPPABLE_OPTION: :datadog_itr_unskippable
 
         module Status
           PASS: "pass"

@@ -19,11 +19,23 @@ RSpec.describe "RSpec hooks" do
     File.new("/dev/null", "w")
   end
 
-  def rspec_session_run(with_failed_test: false, with_shared_test: false, with_shared_context: false)
+  def rspec_session_run(
+    with_failed_test: false,
+    with_shared_test: false,
+    with_shared_context: false,
+    unskippable: {
+      test: false,
+      context: false,
+      suite: false
+    }
+  )
+    test_meta = unskippable[:test] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
+    context_meta = unskippable[:context] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
+    suite_meta = unskippable[:suite] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
     with_new_rspec_environment do
-      spec = RSpec.describe "SomeTest" do
-        context "nested" do
-          it "foo" do
+      spec = RSpec.describe "SomeTest", suite_meta do
+        context "nested", context_meta do
+          it "foo", test_meta do
             expect(1 + 1).to eq(2)
           end
 
@@ -92,7 +104,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "65")
+      expect(first_test_span).to have_test_tag(:source_start, "77")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -711,6 +723,53 @@ RSpec.describe "RSpec hooks" do
 
         expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
         expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 2)
+      end
+
+      context "but some tests are unskippable" do
+        context "when a test is unskippable" do
+          it "runs the test and adds forced run tag" do
+            rspec_session_run(with_failed_test: true, unskippable: {test: true})
+
+            expect(test_spans).to have(2).items
+            expect(test_spans).to have_tag_values_no_order(:status, ["skip", "pass"])
+
+            itr_unskippable_test = test_spans.find { |span| span.name == "nested foo" }
+            expect(itr_unskippable_test).not_to have_test_tag(:itr_skipped_by_itr)
+            expect(itr_unskippable_test).to have_test_tag(:itr_forced_run, "true")
+
+            itr_skipped_test = test_spans.find { |span| span.name == "nested fails" }
+            expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
+
+            expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+            expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
+          end
+        end
+
+        context "when a context is unskippable" do
+          it "runs all tests in context and adds forced run tag" do
+            rspec_session_run(with_failed_test: true, unskippable: {context: true})
+
+            expect(test_spans).to have(2).items
+            expect(test_spans).to have_tag_values_no_order(:status, ["fail", "pass"])
+            expect(test_spans).to all have_test_tag(:itr_forced_run, "true")
+
+            expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+            expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+          end
+        end
+
+        context "when a suite is unskippable" do
+          it "runs all tests in context and adds forced run tag" do
+            rspec_session_run(with_failed_test: true, unskippable: {suite: true})
+
+            expect(test_spans).to have(2).items
+            expect(test_spans).to have_tag_values_no_order(:status, ["fail", "pass"])
+            expect(test_spans).to all have_test_tag(:itr_forced_run, "true")
+
+            expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+            expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+          end
+        end
       end
     end
   end

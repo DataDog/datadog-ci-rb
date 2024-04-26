@@ -50,6 +50,8 @@ module Datadog
                 },
                 service: datadog_configuration[:service_name]
               ) do |test_span|
+                test_span&.itr_unskippable! if metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
+
                 metadata[:skip] = CI::Ext::Test::ITR_TEST_SKIP_REASON if test_span&.skipped_by_itr?
 
                 result = super

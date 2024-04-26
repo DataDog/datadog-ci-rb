@@ -4,6 +4,15 @@ RSpec.describe "Minitest instrumentation with thoughbot's shoulda-context gem fo
   include_context "CI mode activated" do
     let(:integration_name) { :minitest }
     let(:integration_options) { {service_name: "ltest"} }
+    let(:itr_enabled) { true }
+    let(:code_coverage_enabled) { true }
+    let(:tests_skipping_enabled) { true }
+  end
+
+  let(:itr_skippable_tests) do
+    Set.new([
+      "CalculatorTest at spec/datadog/ci/contrib/minitest_shoulda_context/fake_test.rb.test_: a calculator should add two numbers for the sum. ."
+    ])
   end
 
   before do
@@ -15,14 +24,11 @@ RSpec.describe "Minitest instrumentation with thoughbot's shoulda-context gem fo
   end
 
   it "instruments this minitest session" do
-    # test session and module traced
     expect(test_session_span).not_to be_nil
     expect(test_module_span).not_to be_nil
 
-    # test session and module are failed
     expect([test_session_span, test_module_span]).to all have_pass_status
 
-    # test suite spans are created for each test as for parallel execution
     expect(test_suite_spans).to have(1).item
     expect(test_suite_spans).to have_tag_values_no_order(:status, ["pass"])
 
@@ -33,8 +39,8 @@ RSpec.describe "Minitest instrumentation with thoughbot's shoulda-context gem fo
       ]
     )
 
-    # there is test span for every test case
     expect(test_spans).to have(3).items
+    expect(test_spans).to have_tag_values_no_order(:status, ["pass", "pass", "skip"])
 
     expect(test_spans).to all have_test_tag(:test_suite_id)
     expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 1)
@@ -48,8 +54,13 @@ RSpec.describe "Minitest instrumentation with thoughbot's shoulda-context gem fo
       ]
     )
 
-    # every test span is connected to test module and test session
     expect(test_spans).to all have_test_tag(:test_module_id)
     expect(test_spans).to all have_test_tag(:test_session_id)
+
+    skipped_test = test_spans.find { |span| span.get_tag("test.status") == "skip" }
+    expect(skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
+
+    expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+    expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
   end
 end

@@ -119,6 +119,34 @@ RSpec.describe Datadog::CI::Test do
     end
   end
 
+  describe "#itr_unskippable!" do
+    context "when test is not skipped by ITR" do
+      before do
+        allow(ci_test).to receive(:skipped_by_itr?).and_return(false)
+      end
+
+      it "sets unskippable tag" do
+        expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
+
+        ci_test.itr_unskippable!
+      end
+    end
+
+    context "when test is skipped by ITR" do
+      before do
+        allow(ci_test).to receive(:skipped_by_itr?).and_return(true)
+      end
+
+      it "sets unskippable tag, removes skipped by ITR tag, and sets forced run tag" do
+        expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
+        expect(tracer_span).to receive(:clear_tag).with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
+        expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_FORCED_RUN, "true")
+
+        ci_test.itr_unskippable!
+      end
+    end
+  end
+
   describe "#set_parameters" do
     let(:parameters) { {"foo" => "bar", "baz" => "qux"} }
 

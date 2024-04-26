@@ -7,7 +7,7 @@ RSpec.describe Datadog::CI::Contrib::Minitest::Patcher do
     context "Minitest::Test is patched" do
       let(:test) { Minitest::Test }
       it "has a custom bases" do
-        expect(test.ancestors).to include(Datadog::CI::Contrib::Minitest::Hooks)
+        expect(test.ancestors).to include(Datadog::CI::Contrib::Minitest::Test)
       end
     end
 

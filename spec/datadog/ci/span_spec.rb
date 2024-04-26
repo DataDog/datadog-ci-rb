@@ -157,6 +157,14 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
+  describe "#clear_tag" do
+    it "clears the tag" do
+      expect(tracer_span).to receive(:clear_tag).with("foo")
+
+      span.clear_tag("foo")
+    end
+  end
+
   describe "#set_tags" do
     it "sets the tags" do
       expect(tracer_span).to receive(:set_tags).with({"foo" => "bar", "baz" => "qux"})

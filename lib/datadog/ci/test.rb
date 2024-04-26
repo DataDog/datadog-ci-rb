@@ -69,6 +69,24 @@ module Datadog
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
 
+      # Marks this test as unskippable by the intelligent test runner.
+      # This must be done before the test execution starts.
+      #
+      # Examples of tests that should be unskippable:
+      # - tests that read files from disk
+      # - tests that make network requests
+      # - tests that call external processes
+      # - tests that use forking or threading
+      #
+      # @return [void]
+      def itr_unskippable!
+        set_tag(Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
+        if skipped_by_itr?
+          clear_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
+          set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
+        end
+      end
+
       # Sets the status of the span to "pass".
       # @return [void]
       def passed!
