@@ -129,6 +129,11 @@ module Datadog
 
           skippable_test_id = Utils::TestRun.skippable_test_id(test.name, test.test_suite_name, test.parameters)
           if @skippable_tests.include?(skippable_test_id)
+            if forked?
+              Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
+              return
+            end
+
             test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
             Datadog.logger.debug { "Marked test as skippable: #{skippable_test_id}" }
@@ -138,12 +143,12 @@ module Datadog
         end
 
         def count_skipped_test(test)
+          return if !test.skipped? || !test.skipped_by_itr?
+
           if forked?
             Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
             return
           end
-
-          return if !test.skipped? || !test.skipped_by_itr?
 
           @mutex.synchronize do
             @skipped_tests_count += 1
@@ -152,6 +157,9 @@ module Datadog
 
         def write_test_session_tags(test_session)
           return if !enabled?
+
+          Datadog.logger.debug { "Finished ITR session with test skipping enabled: #{@test_skipping_enabled}" }
+          Datadog.logger.debug { "#{@skipped_tests_count} tests were skipped" }
 
           test_session.set_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, @skipped_tests_count.positive?.to_s)
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, @skipped_tests_count)
@@ -201,6 +209,7 @@ module Datadog
           @skippable_tests = skippable_response.tests
 
           Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
+          Datadog.logger.debug { "Found #{@skippable_tests.count} skippable tests." }
           Datadog.logger.debug { "ITR correlation ID: #{@correlation_id}" }
         end
       end
