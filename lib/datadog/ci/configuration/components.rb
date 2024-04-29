@@ -60,6 +60,9 @@ module Datadog
           # Choose user defined TraceFlush or default to CI TraceFlush
           settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
 
+          # startup logs are useless for CI visibility and create noise
+          settings.diagnostics.startup_logs.enabled = false
+
           # transport creation
           writer_options = settings.ci.writer_options
           coverage_writer = nil
