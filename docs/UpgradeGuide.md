@@ -49,3 +49,15 @@ VCR.configure do |config|
   end
 end
 ```
+
+## Upgrade tracing auto instrumentation
+
+If you use auto instrumenation feature from tracing you need to change the require:
+
+```ruby
+# === Before ===
+require 'ddtrace/auto_instrument'
+
+# === After ===
+require 'datadog/auto_instrument'
+```
