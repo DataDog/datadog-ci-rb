@@ -58,9 +58,15 @@ module Datadog
           def perform(*events)
             responses = transport.send_events(events)
 
-            loop_back_off! if responses.find(&:server_error?)
+            if responses.find(&:server_error?)
+              loop_back_off!
+              Datadog.logger.warn { "Encountered server error while sending coverage events" }
+            end
 
             nil
+          rescue => e
+            Datadog.logger.warn { "Error while sending coverage events: #{e}" }
+            loop_back_off!
           end
 
           def stop(force_stop = false, timeout = @shutdown_timeout)
