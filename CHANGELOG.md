@@ -1,117 +1,129 @@
 ## [Unreleased]
 
+## [1.0.0.beta3] - 2024-04-30
+
+### Added
+
+- "why this test was skipped" feature ([#165])
+- custom configurations tags support for ITR ([#166])
+- unskippable tests for ITR ([#167])
+
+### Changed
+
+- additional debug logging, do not skip tests when running in forked processes ([#168])
+
 ## [1.0.0.beta2] - 2024-04-23
 
 ### Added
 
-* Code coverage events writer ([#150])
-* Git tree upload - git command line integration ([#151])
-* Add Git::SearchCommits api client ([#152])
-* Upload packfiles API client ([#153])
-* Git tree uploader ([#154])
-* Git repository unshallowing logic ([#155])
-* Git upload async worker ([#156])
-* Reduce ITR-induced code coverage overhead for default branch ([#157])
-* Skippable tests api client ([#158])
-* Request skippable tests when configuring ITR ([#159])
-* Test skipping implementation ([#160])
+- Code coverage events writer ([#150])
+- Git tree upload - git command line integration ([#151])
+- Add Git::SearchCommits api client ([#152])
+- Upload packfiles API client ([#153])
+- Git tree uploader ([#154])
+- Git repository unshallowing logic ([#155])
+- Git upload async worker ([#156])
+- Reduce ITR-induced code coverage overhead for default branch ([#157])
+- Skippable tests api client ([#158])
+- Request skippable tests when configuring ITR ([#159])
+- Test skipping implementation ([#160])
 
 ## [1.0.0.beta1] - 2024-03-25
 
 ### Added
 
-* datadog-cov native extension for per test code coverage ([#137])
-* citestcov transport to serialize and send code coverage events ([#148])
+- datadog-cov native extension for per test code coverage ([#137])
+- citestcov transport to serialize and send code coverage events ([#148])
 
 ### Removed
 
-* Ruby 2.1-2.6 support is dropped
+- Ruby 2.1-2.6 support is dropped
 
 ## [0.8.3] - 2024-03-20
 
 ### Fixed
 
-* fix: cucumber-ruby 9.2 includes breaking change for Cucumber::Core::Test::Result ([#145][])
+- fix: cucumber-ruby 9.2 includes breaking change for Cucumber::Core::Test::Result ([#145][])
 
 ### Changed
 
-* remove temporary hack and use Core::Remote::Negotiation's new constructor param ([#142][])
-* use filter_basic_auth method from Datadog::Core ([#141][])
+- remove temporary hack and use Core::Remote::Negotiation's new constructor param ([#142][])
+- use filter_basic_auth method from Datadog::Core ([#141][])
 
 ## [0.8.2] - 2024-03-19
 
 ### Fixed
 
-* assign the single running test suite for a test if none found by test suite name ([#139][])
+- assign the single running test suite for a test if none found by test suite name ([#139][])
 
 ## [0.8.1] - 2024-03-12
 
 ### Fixed
 
-* fix minitest instrumentation with mixins ([#134][])
+- fix minitest instrumentation with mixins ([#134][])
 
 ## [0.8.0] - 2024-03-08
 
 ### Added
 
-* gzip agent payloads support via evp_proxy/v4 ([#123][])
+- gzip agent payloads support via evp_proxy/v4 ([#123][])
 
 ### Changed
 
-* Add note to README on using VCR ([#122][])
+- Add note to README on using VCR ([#122][])
 
 ### Fixed
 
-* use framework name as test module name to make test fingerprints stable ([#131][])
+- use framework name as test module name to make test fingerprints stable ([#131][])
 
 ## [0.7.0] - 2024-01-26
 
 ### Added
 
-* Source code integration ([#95][])
-* CODEOWNERS support ([#98][])
-* Cucumber scenarios with examples are treated as parametrized tests ([#100][])
-* Deduplicate dynamically generated RSpec examples using test.parameters ([#101][])
-* Repository name is used as default test service name ([#104][])
-* Cucumber v9 support ([#99][])
-* ci-queue runner support for minitest ([#110][])
-* ci-queue support for rspec ([#112][])
+- Source code integration ([#95][])
+- CODEOWNERS support ([#98][])
+- Cucumber scenarios with examples are treated as parametrized tests ([#100][])
+- Deduplicate dynamically generated RSpec examples using test.parameters ([#101][])
+- Repository name is used as default test service name ([#104][])
+- Cucumber v9 support ([#99][])
+- ci-queue runner support for minitest ([#110][])
+- ci-queue support for rspec ([#112][])
 
 ### Fixed
 
-* do not publish sig folder when publishing this gem to prevent steep errors in client applications ([#114][])
-* minitest: fix rails parallel test runner ([#115][])
-* Test suites and tests skipped by frameworks are correctly reported as skipped to Datadog ([#113][])
+- do not publish sig folder when publishing this gem to prevent steep errors in client applications ([#114][])
+- minitest: fix rails parallel test runner ([#115][])
+- Test suites and tests skipped by frameworks are correctly reported as skipped to Datadog ([#113][])
 
 ### Changed
 
-* Enable test suite level visibility by default (with killswitch) ([#109][])
-* Test suite names are more human-readable now ([#105][])
-* Remove span_type method in tracer-related models ([#107][])
-* Manual tracing API: convert type parameter to keyword in Datadog::CI.trace, remove internal-only methods from public API ([#108][])
+- Enable test suite level visibility by default (with killswitch) ([#109][])
+- Test suite names are more human-readable now ([#105][])
+- Remove span_type method in tracer-related models ([#107][])
+- Manual tracing API: convert type parameter to keyword in Datadog::CI.trace, remove internal-only methods from public API ([#108][])
 
 ## [0.6.0] - 2024-01-03
 
 ### Added
 
-* Test suite level visibility instrumentation for RSpec ([#86][])
-* Test suite level visibility instrumentation for Cucumber ([#90][])
-* Test suite level visibility instrumentation for Minitest framework ([#92][])
+- Test suite level visibility instrumentation for RSpec ([#86][])
+- Test suite level visibility instrumentation for Cucumber ([#90][])
+- Test suite level visibility instrumentation for Minitest framework ([#92][])
 
 ### Fixed
 
-* Do not instantiate TestVisibility::Recorder unless CI visibility is enabled ([#89][])
+- Do not instantiate TestVisibility::Recorder unless CI visibility is enabled ([#89][])
 
 ## [0.5.1] - 2023-12-11
 
 ### Fixed
 
-* do not collect environment tags when CI is not enabled ([#87][])
+- do not collect environment tags when CI is not enabled ([#87][])
 
 ### Changed
 
-* Move private classes and modules deeper in module hierarchy ([#85][])
-* update appraisal dependencies ([#84][])
+- Move private classes and modules deeper in module hierarchy ([#85][])
+- update appraisal dependencies ([#84][])
 
 ## [0.5.0] - 2023-12-06
 
@@ -123,98 +135,99 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 ### Added
 
-* Test suite level visibility: add test session public API ([#72][])
-* Test suite level visibility: test module support ([#76][])
-* Test suite level visibility: test suites support ([#77][])
-* add YARD documentation ([#82][])
-* support validation errors for CI spans ([#78][])
+- Test suite level visibility: add test session public API ([#72][])
+- Test suite level visibility: test module support ([#76][])
+- Test suite level visibility: test suites support ([#77][])
+- add YARD documentation ([#82][])
+- support validation errors for CI spans ([#78][])
 
 ### Changed
 
-* Validate DD_SITE variable ([#79][])
-* Document how to use WebMock with datadog-ci ([#80][])
+- Validate DD_SITE variable ([#79][])
+- Document how to use WebMock with datadog-ci ([#80][])
 
 ### Fixed
 
-* Datadog::CI.trace_test always starts a new trace ([#74][])
-* Skip tracing when CI mode disabled and manual API is used ([#75][])
+- Datadog::CI.trace_test always starts a new trace ([#74][])
+- Skip tracing when CI mode disabled and manual API is used ([#75][])
 
 ### Removed
 
-* Deprecate operation name setting, change service_name to service in public API ([#81][])
+- Deprecate operation name setting, change service_name to service in public API ([#81][])
 
 ## [0.4.1] - 2023-11-22
 
 ### Fixed
 
-* disable 128-bit trace id generation in CI mode ([#70][])
+- disable 128-bit trace id generation in CI mode ([#70][])
 
 ## [0.4.0] - 2023-11-21
 
 ### Added
 
-* Public API for manual test instrumentation ([#64][]) ([#61][])
+- Public API for manual test instrumentation ([#64][]) ([#61][])
 
 ### Changed
 
-* fix tracing instrumentation example in readme ([#60][])
+- fix tracing instrumentation example in readme ([#60][])
 
 ### Fixed
 
-* Remove user credentials from ssh URLs and from GITHUB_REPO_URL environment variable ([#66][])
+- Remove user credentials from ssh URLs and from GITHUB_REPO_URL environment variable ([#66][])
 
 ### Removed
 
-* Remove _dd.measured tag from spans ([#65][])
+- Remove _dd.measured tag from spans ([#65][])
 
 ## [0.3.0] - 2023-10-25
 
 ### Added
 
-* Add AWS CodePipeline support for automatic CI tags extraction ([#54][])
-* Support test visibility protocol via Datadog Agent with EVP proxy ([#51][])
+- Add AWS CodePipeline support for automatic CI tags extraction ([#54][])
+- Support test visibility protocol via Datadog Agent with EVP proxy ([#51][])
 
 ### Changed
 
-* Migrate to Net::HTTP adapter from Core module of ddtrace gem ([#49][])
+- Migrate to Net::HTTP adapter from Core module of ddtrace gem ([#49][])
 
 ## [0.2.0] - 2023-10-05
 
 ### Added
 
-* [CIAPP-2959] Agentless mode ([#33][])
+- [CIAPP-2959] Agentless mode ([#33][])
 
 ### Fixed
 
-* [CIAPP-4278] Fix an issue with emojis in commit message breaking LocalGit tags provider ([#40][])
+- [CIAPP-4278] Fix an issue with emojis in commit message breaking LocalGit tags provider ([#40][])
 
 ## [0.1.1] - 2023-09-14
 
 ### Fixed
 
-* Fix circular dependencies warnings ([#31][])
+- Fix circular dependencies warnings ([#31][])
 
 ## 0.1.0 - 2023-09-12
 
 ### Added
 
-* Add cucumber 8.0.0 support ([#7][])
-* Docs: contribution documentation ([#14][], [#28][])
-* Dev process: issue templates ([#20][])
+- Add cucumber 8.0.0 support ([#7][])
+- Docs: contribution documentation ([#14][], [#28][])
+- Dev process: issue templates ([#20][])
 
 ### Changed
 
-* Validate customer-supplied git tags ([#15][])
+- Validate customer-supplied git tags ([#15][])
 
 ### Fixed
 
-* Fix Datadog::CI::Environment to support the new CI specs ([#11][])
+- Fix Datadog::CI::Environment to support the new CI specs ([#11][])
 
 ### Removed
 
-* Ruby versions < 2.7 no longer supported ([#8][])
+- Ruby versions < 2.7 no longer supported ([#8][])
 
 [Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...main
+[1.0.0.beta3]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta2...v1.0.0.beta3
 [1.0.0.beta2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta1...v1.0.0.beta2
 [1.0.0.beta1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...v1.0.0.beta1
 [0.8.3]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.2...v0.8.3
@@ -304,3 +317,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#158]: https://github.com/DataDog/datadog-ci-rb/issues/158
 [#159]: https://github.com/DataDog/datadog-ci-rb/issues/159
 [#160]: https://github.com/DataDog/datadog-ci-rb/issues/160
+[#165]: https://github.com/DataDog/datadog-ci-rb/issues/165
+[#166]: https://github.com/DataDog/datadog-ci-rb/issues/166
+[#167]: https://github.com/DataDog/datadog-ci-rb/issues/167
+[#168]: https://github.com/DataDog/datadog-ci-rb/issues/168
