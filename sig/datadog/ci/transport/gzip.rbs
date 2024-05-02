@@ -3,6 +3,7 @@ module Datadog
     module Transport
       module Gzip
         def self?.compress: (String input) -> String
+        def self?.decompress: (String input) -> String
       end
     end
   end

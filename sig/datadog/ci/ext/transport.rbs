@@ -6,6 +6,8 @@ module Datadog
 
         HEADER_DD_API_KEY: "DD-API-KEY"
 
+        HEADER_ACCEPT_ENCODING: "Accept-Encoding"
+
         HEADER_CONTENT_TYPE: "Content-Type"
 
         HEADER_CONTENT_ENCODING: "Content-Encoding"
@@ -63,6 +65,8 @@ module Datadog
         CONTENT_TYPE_MULTIPART_FORM_DATA: "multipart/form-data"
 
         CONTENT_ENCODING_GZIP: "gzip"
+
+        GZIP_MAGIC_NUMBER: String
       end
     end
   end

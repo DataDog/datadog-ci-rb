@@ -89,32 +89,60 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     let(:path) { "/api/v1/intake" }
     let(:payload) { '{ "key": "value" }' }
     let(:headers) { {"Content-Type" => "application/json"} }
-    let(:request_options) { {} }
+    let(:expected_headers) { headers }
+    let(:request_options) { {accept_compressed_response: false} }
 
-    let(:http_response) { double("http_response", code: 200) }
+    let(:response_payload) { "sample payload" }
+    let(:http_response) { double("http_response", code: 200, payload: response_payload) }
 
     subject(:response) { transport.request(path: path, payload: payload, headers: headers, **request_options) }
 
     context "when request is successful" do
-      let(:env) do
+      let(:expected_env) do
         env = Datadog::Core::Transport::HTTP::Env.new(
           Datadog::Core::Transport::Request.new
         )
         env.body = payload
         env.path = path
-        env.headers = headers
+        env.headers = expected_headers
         env.verb = "post"
         env
       end
 
       before do
-        expect(adapter).to receive(:call).with(env).and_return(http_response)
+        expect(adapter).to receive(:call).with(expected_env).and_return(http_response)
       end
 
       it "produces a response" do
         is_expected.to be_a_kind_of(described_class::ResponseDecorator)
 
         expect(response.code).to eq(200)
+        expect(response.payload).to eq("sample payload")
+      end
+
+      context "when accepting gzipped response" do
+        let(:expected_headers) { {"Content-Type" => "application/json", "Accept-Encoding" => "gzip"} }
+        let(:request_options) { {accept_compressed_response: true} }
+
+        it "adds Accept-Encoding header" do
+          is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+
+          expect(response.code).to eq(200)
+          expect(response.payload).to eq("sample payload")
+        end
+
+        context "when response is gzipped" do
+          let(:response_payload) do
+            Datadog::CI::Transport::Gzip.compress("sample payload")
+          end
+
+          it "decompressed response payload" do
+            is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+
+            expect(response.code).to eq(200)
+            expect(response.payload).to eq("sample payload")
+          end
+        end
       end
     end
 

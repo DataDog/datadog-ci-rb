@@ -20,7 +20,7 @@ module Datadog
         def decompress(input)
           sio = StringIO.new(input)
           gzip_reader = Zlib::GzipReader.new(sio)
-          gzip_reader.read
+          gzip_reader.read || ""
         ensure
           gzip_reader&.close
         end
