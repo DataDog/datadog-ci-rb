@@ -109,6 +109,7 @@ module Datadog
             return @decompressed_payload if defined?(@decompressed_payload)
 
             if gzipped?(__getobj__.payload)
+              Datadog.logger.debug("Decompressing gzipped response payload")
               @decompressed_payload = Gzip.decompress(__getobj__.payload)
             else
               __getobj__.payload
