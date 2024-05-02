@@ -16,6 +16,14 @@ module Datadog
           gzip_writer.close
           sio.string
         end
+
+        def decompress(input)
+          sio = StringIO.new(input)
+          gzip_reader = Zlib::GzipReader.new(sio)
+          gzip_reader.read
+        ensure
+          gzip_reader&.close
+        end
       end
     end
   end
