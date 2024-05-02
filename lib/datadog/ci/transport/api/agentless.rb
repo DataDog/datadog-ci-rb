@@ -26,7 +26,14 @@ module Datadog
           def api_request(path:, payload:, headers: {}, verb: "post")
             super
 
-            perform_request(@api_http, path: path, payload: payload, headers: headers, verb: verb)
+            perform_request(
+              @api_http,
+              path: path,
+              payload: payload,
+              headers: headers,
+              verb: verb,
+              accept_compressed_response: true
+            )
           end
 
           def citestcov_request(path:, payload:, headers: {}, verb: "post")
@@ -37,12 +44,13 @@ module Datadog
 
           private
 
-          def perform_request(http_client, path:, payload:, headers:, verb:)
+          def perform_request(http_client, path:, payload:, headers:, verb:, accept_compressed_response: false)
             http_client.request(
               path: path,
               payload: payload,
               headers: headers_with_default(headers),
-              verb: verb
+              verb: verb,
+              accept_compressed_response: accept_compressed_response
             )
           end
 

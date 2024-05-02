@@ -66,7 +66,8 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
           path: "path",
           payload: "payload",
           verb: "post",
-          headers: expected_headers
+          headers: expected_headers,
+          accept_compressed_response: false
         )
 
         subject.citestcycle_request(path: "path", payload: "payload")
@@ -120,7 +121,8 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
           path: "path",
           payload: "payload",
           verb: "post",
-          headers: expected_headers
+          headers: expected_headers,
+          accept_compressed_response: false
         )
 
         subject.citestcycle_request(path: "path", payload: "payload")
@@ -131,7 +133,8 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
           path: "path",
           payload: "payload",
           verb: "post",
-          headers: expected_headers.merge({"Content-Type" => "application/json"})
+          headers: expected_headers.merge({"Content-Type" => "application/json"}),
+          accept_compressed_response: false
         )
 
         subject.citestcycle_request(path: "path", payload: "payload", headers: {"Content-Type" => "application/json"})
@@ -154,7 +157,8 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
           headers: {
             "DD-API-KEY" => "api_key",
             "Content-Type" => "application/json"
-          }
+          },
+          accept_compressed_response: true
         )
 
         subject.api_request(path: "path", payload: "payload")
@@ -199,6 +203,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
           expect(args[:verb]).to eq("post")
           expect(args[:headers]).to eq(expected_headers)
           expect(args[:payload]).to eq(expected_payload)
+          expect(args[:accept_compressed_response]).to eq(false)
         end
       end
     end

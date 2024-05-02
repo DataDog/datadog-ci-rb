@@ -22,7 +22,7 @@ module Datadog
 
           private
 
-          def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String, ?accept_compressed_response: bool) -> Datadog::CI::Transport::HTTP::ResponseDecorator
 
           def build_http_client: (String url, compress: bool) -> Datadog::CI::Transport::HTTP
 
