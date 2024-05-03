@@ -22,6 +22,8 @@ module Datadog
           DEFAULT_BUFFER_MAX_SIZE = 10_000
           DEFAULT_SHUTDOWN_TIMEOUT = 60
 
+          DEFAULT_INTERVAL = 3
+
           def initialize(transport:, options: {})
             @transport = transport
 
@@ -32,7 +34,7 @@ module Datadog
             self.fork_policy = Core::Workers::Async::Thread::FORK_POLICY_RESTART
 
             # Workers::IntervalLoop settings
-            self.loop_base_interval = options[:interval] if options.key?(:interval)
+            self.loop_base_interval = options[:interval] || DEFAULT_INTERVAL
             self.loop_back_off_ratio = options[:back_off_ratio] if options.key?(:back_off_ratio)
             self.loop_back_off_max = options[:back_off_max] if options.key?(:back_off_max)
 
