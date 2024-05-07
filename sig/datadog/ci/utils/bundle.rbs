@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Utils
+      module Bundle
+        def self.location: () -> String?
+      end
+    end
+  end
+end

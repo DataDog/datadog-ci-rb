@@ -23,6 +23,13 @@ module Datadog
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
+        POSSIBLE_BUNDLE_LOCATIONS = [
+          ".bundle",
+          "vendor/bundle",
+          "vendor/cache",
+          "vendor/gems"
+        ].freeze
+
         module_function
 
         def tags(env)
