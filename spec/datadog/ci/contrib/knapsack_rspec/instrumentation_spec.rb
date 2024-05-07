@@ -6,6 +6,13 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
     let(:integration_name) { :rspec }
   end
 
+  before do
+    allow_any_instance_of(KnapsackPro::Runners::Queue::RSpecRunner).to receive(:test_file_paths).and_return(
+      ["./spec/datadog/ci/contrib/knapsack_rspec/suite_under_test/some_test_rspec.rb"],
+      []
+    )
+  end
+
   # Yields to a block in a new RSpec global context. All RSpec
   # test configuration and execution should be wrapped in this method.
   def with_new_rspec_environment
@@ -26,8 +33,14 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
 
   it "instruments this rspec session" do
     with_new_rspec_environment do
-      KnapsackPro::Adapters::RSpecAdapter.bind
-      KnapsackPro::Runners::Queue::RSpecRunner.run("")
+      ClimateControl.modify(
+        "KNAPSACK_PRO_CI_NODE_BUILD_ID" => "142",
+        "KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC" => "example_token",
+        "KNAPSACK_PRO_FIXED_QUEUE_SPLIT" => "true"
+      ) do
+        KnapsackPro::Adapters::RSpecAdapter.bind
+        KnapsackPro::Runners::Queue::RSpecRunner.run("")
+      end
     end
 
     # test session and module traced

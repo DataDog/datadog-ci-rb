@@ -21,6 +21,8 @@ module Datadog
           end
 
           def patch
+            # ci-queue test runner instrumentation
+            # https://github.com/Shopify/ci-queue
             if ci_queue?
               ::RSpec::Queue::Runner.include(Runner)
             end
@@ -31,7 +33,6 @@ module Datadog
           end
 
           def ci_queue?
-            # ::RSpec::Queue::Runner is a ci-queue runner
             defined?(::RSpec::Queue::Runner)
           end
         end
