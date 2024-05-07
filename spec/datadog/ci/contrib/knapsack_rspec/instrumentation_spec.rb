@@ -46,11 +46,11 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
     end
 
     # test session and module traced
-    # expect(test_session_span).not_to be_nil
-    # expect(test_module_span).not_to be_nil
+    expect(test_session_span).not_to be_nil
+    expect(test_module_span).not_to be_nil
 
     # test session and module are failed
-    # expect([test_session_span, test_module_span]).to all have_fail_status
+    expect([test_session_span, test_module_span]).to all have_fail_status
 
     # single test suite span
     expect(test_suite_spans).to have(1).item
@@ -70,7 +70,7 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
     )
 
     # every test span is connected to test module and test session
-    # expect(test_spans).to all have_test_tag(:test_module_id)
-    # expect(test_spans).to all have_test_tag(:test_session_id)
+    expect(test_spans).to all have_test_tag(:test_module_id)
+    expect(test_spans).to all have_test_tag(:test_session_id)
   end
 end
