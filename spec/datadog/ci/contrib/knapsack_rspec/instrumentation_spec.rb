@@ -2,6 +2,8 @@ require "knapsack_pro"
 require "fileutils"
 
 RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
+  before { skip("jruby fails on file with emojis in name") if PlatformHelpers.jruby? }
+
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
   end
