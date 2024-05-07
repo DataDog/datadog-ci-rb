@@ -10,6 +10,8 @@ module Datadog
           def self?.patch: () -> void
 
           def self?.ci_queue?: () -> bool
+
+          def self?.knapsack_pro?: () -> bool
         end
       end
     end
