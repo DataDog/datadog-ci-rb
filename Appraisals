@@ -125,6 +125,17 @@ def self.with_active_support_gem(versions: 7)
   end
 end
 
+def self.with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7, rspec_versions: 3)
+  Array(knapsack_pro_versions).each do |knapsack_pro_v|
+    Array(rspec_versions).each do |rspec_v|
+      appraise "knapsack_pro-#{knapsack_pro_v}-rspec-#{rspec_v}" do
+        gem "knapsack_pro", "~> #{knapsack_pro_v}"
+        gem "rspec", "~> #{rspec_v}"
+      end
+    end
+  end
+end
+
 ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
 major, minor, = ruby_version.segments
 
@@ -135,6 +146,7 @@ with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
 with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
 with_active_support_gem(versions: 4..7)
+with_knapsack_pro_rspec_gem
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
