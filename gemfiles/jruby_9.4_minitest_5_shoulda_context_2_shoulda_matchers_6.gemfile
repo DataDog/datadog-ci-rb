@@ -21,6 +21,7 @@ gem "simplecov-cobertura", "~> 2.1.0"
 gem "minitest", "~> 5"
 gem "shoulda-context", "~> 2"
 gem "shoulda-matchers", "~> 6"
+gem "bigdecimal", "< 3.1.8"
 
 group :check do
 

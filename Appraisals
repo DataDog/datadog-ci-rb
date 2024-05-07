@@ -59,6 +59,9 @@ def self.with_cucumber_gem(versions:)
       if (4..6).cover?(v)
         gem "activesupport", "< 7.1"
       end
+      if v == 9 && RUBY_ENGINE.include?("jruby")
+        gem "bigdecimal", "< 3.1.8"
+      end
     end
   end
 end
@@ -102,6 +105,9 @@ def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context
           gem "minitest", "~> #{minitest_v}"
           gem "shoulda-context", "~> #{shoulda_context_v}"
           gem "shoulda-matchers", "~> #{shoulda_matchers_v}"
+          if RUBY_ENGINE.include?("jruby")
+            gem "bigdecimal", "< 3.1.8"
+          end
         end
       end
     end
@@ -112,6 +118,9 @@ def self.with_active_support_gem(versions: 7)
   Array(versions).each do |activesupport_v|
     appraise "activesupport-#{activesupport_v}" do
       gem "activesupport", "~> #{activesupport_v}"
+      if RUBY_ENGINE.include?("jruby")
+        gem "bigdecimal", "< 3.1.8"
+      end
     end
   end
 end
