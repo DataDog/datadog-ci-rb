@@ -71,10 +71,8 @@ module Datadog
               option :itr_code_coverage_excluded_bundle_path do |o|
                 o.type :string, nilable: true
                 o.env CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH
-                o.after_set do |path|
-                  path ||= Datadog::CI::Utils::Bundle.location
-
-                  File.expand_path(path) if path
+                o.default do
+                  Datadog::CI::Utils::Bundle.location
                 end
               end
 

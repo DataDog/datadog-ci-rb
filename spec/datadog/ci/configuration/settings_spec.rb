@@ -301,6 +301,54 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#itr_code_coverage_excluded_bundle_path" do
+        subject(:itr_code_coverage_excluded_bundle_path) do
+          settings.ci.itr_code_coverage_excluded_bundle_path
+        end
+
+        it { is_expected.to be nil }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH}" do
+          around do |example|
+            ClimateControl.modify(
+              Datadog::CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH => path
+            ) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:path) { nil }
+
+            it { is_expected.to be nil }
+
+            context "and when bundle location is found in project folder" do
+              let(:bundle_location) { "/path/to/repo/vendor/bundle" }
+              before do
+                allow(Datadog::CI::Utils::Bundle).to receive(:location).and_return(bundle_location)
+              end
+
+              it { is_expected.to eq bundle_location }
+            end
+          end
+
+          context "is set to some value" do
+            let(:path) { "/path/to/excluded" }
+
+            it { is_expected.to eq path }
+          end
+        end
+      end
+
+      describe "#itr_code_coverage_excluded_bundle_path=" do
+        it "updates the #enabled setting" do
+          expect { settings.ci.itr_code_coverage_excluded_bundle_path = "/path/to/excluded" }
+            .to change { settings.ci.itr_code_coverage_excluded_bundle_path }
+            .from(nil)
+            .to("/path/to/excluded")
+        end
+      end
+
       describe "#instrument" do
         let(:integration_name) { :fake }
 
