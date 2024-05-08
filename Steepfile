@@ -25,4 +25,5 @@ target :lib do
   library "cucumber"
   library "msgpack"
   library "ci_queue"
+  library "knapsack_pro"
 end

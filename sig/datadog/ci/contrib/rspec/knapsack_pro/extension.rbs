@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Contrib
+      module RSpec
+        module KnapsackPro
+          module Extension
+            def self.included: (untyped base) -> untyped
+
+            module ClassMethods
+              include ::KnapsackPro::Extensions::RSpecExtension
+
+              def setup!: () -> void
+            end
+          end
+        end
+      end
+    end
+  end
+end

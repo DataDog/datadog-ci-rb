@@ -1,0 +1,17 @@
+module KnapsackPro
+  module Runners
+    module Queue
+      module RSpecRunner
+        def knapsack__run_specs: (untyped arg) -> untyped
+      end
+    end
+  end
+end
+
+module KnapsackPro
+  module Extensions
+    module RSpecExtension
+      def setup!: () -> void
+    end
+  end
+end

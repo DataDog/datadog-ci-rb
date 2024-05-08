@@ -59,6 +59,9 @@ def self.with_cucumber_gem(versions:)
       if (4..6).cover?(v)
         gem "activesupport", "< 7.1"
       end
+      if v == 9 && RUBY_ENGINE.include?("jruby")
+        gem "bigdecimal", "< 3.1.8"
+      end
     end
   end
 end
@@ -102,6 +105,9 @@ def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context
           gem "minitest", "~> #{minitest_v}"
           gem "shoulda-context", "~> #{shoulda_context_v}"
           gem "shoulda-matchers", "~> #{shoulda_matchers_v}"
+          if RUBY_ENGINE.include?("jruby")
+            gem "bigdecimal", "< 3.1.8"
+          end
         end
       end
     end
@@ -112,6 +118,20 @@ def self.with_active_support_gem(versions: 7)
   Array(versions).each do |activesupport_v|
     appraise "activesupport-#{activesupport_v}" do
       gem "activesupport", "~> #{activesupport_v}"
+      if RUBY_ENGINE.include?("jruby")
+        gem "bigdecimal", "< 3.1.8"
+      end
+    end
+  end
+end
+
+def self.with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7, rspec_versions: 3)
+  Array(knapsack_pro_versions).each do |knapsack_pro_v|
+    Array(rspec_versions).each do |rspec_v|
+      appraise "knapsack_pro-#{knapsack_pro_v}-rspec-#{rspec_v}" do
+        gem "knapsack_pro", "~> #{knapsack_pro_v}"
+        gem "rspec", "~> #{rspec_v}"
+      end
     end
   end
 end
@@ -126,6 +146,7 @@ with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
 with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
 with_active_support_gem(versions: 4..7)
+with_knapsack_pro_rspec_gem
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
