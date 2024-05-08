@@ -68,17 +68,13 @@ module Datadog
                 o.default true
               end
 
-              option :itr_code_coverage_excluded_paths do |o|
-                o.type :array
-                o.env CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_EXCLUDED_PATHS
-                o.after_set do |paths|
-                  if paths.nil? && (bundle_path = Datadog::CI::Utils::Bundle.location)
-                    paths = [bundle_path]
-                  end
+              option :itr_code_coverage_excluded_bundle_path do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH
+                o.after_set do |path|
+                  path ||= Datadog::CI::Utils::Bundle.location
 
-                  paths.map do |path|
-                    File.expand_path(path)
-                  end
+                  File.expand_path(path) if path
                 end
               end
 
@@ -103,6 +99,9 @@ module Datadog
               define_method(:[]) do |integration_name|
                 fetch_integration(integration_name).configuration
               end
+
+              # @deprecated Will be removed on datadog-ci-rb 1.0.
+              alias_method :use, :instrument
 
               option :trace_flush
 
