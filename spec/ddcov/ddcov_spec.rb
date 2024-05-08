@@ -10,7 +10,8 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
     File.expand_path(File.join(__dir__, path))
   end
 
-  subject { described_class.new(root: root, mode: mode) }
+  let(:ignored_path) { nil }
+  subject { described_class.new(root: root, mode: mode, ignored_path: ignored_path) }
 
   describe "code coverage collection" do
     let!(:calculator) { Calculator.new }

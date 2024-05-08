@@ -107,7 +107,8 @@ module Datadog
             dd_env: settings.env,
             config_tags: custom_configuration_tags,
             coverage_writer: coverage_writer,
-            enabled: settings.ci.enabled && settings.ci.itr_enabled
+            enabled: settings.ci.enabled && settings.ci.itr_enabled,
+            bundle_location: settings.ci.itr_code_coverage_excluded_bundle_path
           )
 
           git_tree_uploader = Git::TreeUploader.new(api: test_visibility_api)
