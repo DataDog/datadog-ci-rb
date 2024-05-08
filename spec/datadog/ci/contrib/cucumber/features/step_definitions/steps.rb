@@ -1,5 +1,7 @@
+require_relative "helpers/helper"
+
 Then "datadog" do
-  true
+  Helper.help?
 end
 
 Then "failure" do

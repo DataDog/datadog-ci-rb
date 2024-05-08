@@ -5,10 +5,35 @@
 #define DD_COV_TARGET_FILES 1
 #define DD_COV_TARGET_LINES 2
 
+static int is_prefix(VALUE prefix, const char *str)
+{
+  if (prefix == Qnil)
+  {
+    return 0;
+  }
+
+  const char *c_prefix = RSTRING_PTR(prefix);
+  if (c_prefix == NULL)
+  {
+    return 0;
+  }
+
+  long prefix_len = RSTRING_LEN(prefix);
+  if (strncmp(c_prefix, str, prefix_len) == 0)
+  {
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
 // Data structure
 struct dd_cov_data
 {
   VALUE root;
+  VALUE ignored_path;
   int mode;
   VALUE coverage;
 };
@@ -18,6 +43,7 @@ static void dd_cov_mark(void *ptr)
   struct dd_cov_data *dd_cov_data = ptr;
   rb_gc_mark_movable(dd_cov_data->coverage);
   rb_gc_mark_movable(dd_cov_data->root);
+  rb_gc_mark_movable(dd_cov_data->ignored_path);
 }
 
 static void dd_cov_free(void *ptr)
@@ -32,6 +58,7 @@ static void dd_cov_compact(void *ptr)
   struct dd_cov_data *dd_cov_data = ptr;
   dd_cov_data->coverage = rb_gc_location(dd_cov_data->coverage);
   dd_cov_data->root = rb_gc_location(dd_cov_data->root);
+  dd_cov_data->ignored_path = rb_gc_location(dd_cov_data->ignored_path);
 }
 
 const rb_data_type_t dd_cov_data_type = {
@@ -49,6 +76,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   VALUE obj = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
   dd_cov_data->coverage = rb_hash_new();
   dd_cov_data->root = Qnil;
+  dd_cov_data->ignored_path = Qnil;
   dd_cov_data->mode = DD_COV_TARGET_FILES;
   return obj;
 }
@@ -65,6 +93,8 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   {
     rb_raise(rb_eArgError, "root is required");
   }
+
+  VALUE rb_ignored_path = rb_hash_lookup(opt, ID2SYM(rb_intern("ignored_path")));
 
   VALUE rb_mode = rb_hash_lookup(opt, ID2SYM(rb_intern("mode")));
   if (!RTEST(rb_mode) || rb_mode == ID2SYM(rb_intern("files")))
@@ -84,6 +114,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
   dd_cov_data->root = rb_root;
+  dd_cov_data->ignored_path = rb_ignored_path;
   dd_cov_data->mode = mode;
 
   return Qnil;
@@ -100,20 +131,15 @@ static void dd_cov_update_line_coverage(rb_event_flag_t event, VALUE data, VALUE
     return;
   }
 
-  if (dd_cov_data->root == Qnil)
+  // if given filename is not located under the root, we skip it
+  if (is_prefix(dd_cov_data->root, filename) == 0)
   {
     return;
   }
 
-  char *c_root = RSTRING_PTR(dd_cov_data->root);
-  if (c_root == NULL)
-  {
-    return;
-  }
-  long root_len = RSTRING_LEN(dd_cov_data->root);
-  // check that root is a prefix of the filename
-  // so this file is located under the given root
-  if (strncmp(c_root, filename, root_len) != 0)
+  // if ignored_path is provided and given filename is located under the ignored_path, we skip it too
+  // this is useful for ignoring bundled gems location
+  if (RTEST(dd_cov_data->ignored_path) && is_prefix(dd_cov_data->ignored_path, filename) == 1)
   {
     return;
   }

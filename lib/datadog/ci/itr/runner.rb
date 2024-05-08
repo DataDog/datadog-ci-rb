@@ -37,7 +37,12 @@ module Datadog
           @api = api
           @dd_env = dd_env
           @config_tags = config_tags || {}
-          @bundle_location = bundle_location
+
+          @bundle_location = if bundle_location && !File.absolute_path?(bundle_location)
+            File.join(Git::LocalRepository.root, bundle_location)
+          else
+            bundle_location
+          end
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false

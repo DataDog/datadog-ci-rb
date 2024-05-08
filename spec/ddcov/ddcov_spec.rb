@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
     context "in files mode" do
       let(:mode) { :files }
 
-      context "when allocating and starting coverage without a root" do
+      context "when allocating and starting coverage without root" do
         it "does not fail" do
           cov = described_class.allocate
           cov.start
@@ -56,6 +56,22 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
           expect(coverage.size).to eq(1)
           # this string will have a bunch of UTF-8 codepoints in it
           expect(coverage.keys.first).to include("calculator/code_with_")
+        end
+
+        context "when ignored_path is set" do
+          let(:ignored_path) { absolute_path("calculator/operations") }
+
+          it "collects code coverage excluding ignored_path" do
+            subject.start
+
+            expect(calculator.add(1, 2)).to eq(3)
+            expect(calculator.subtract(1, 2)).to eq(-1)
+
+            coverage = subject.stop
+
+            expect(coverage.size).to eq(1)
+            expect(coverage.keys).to include(absolute_path("calculator/calculator.rb"))
+          end
         end
       end
 
