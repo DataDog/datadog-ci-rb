@@ -36,6 +36,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
       context "when #ci" do
         before do
           # Configure CI mode
+          settings.tracing.enabled = tracing_enabled
           settings.ci.enabled = enabled
           settings.ci.agentless_mode_enabled = agentless_enabled
 
@@ -95,12 +96,23 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:evp_proxy_v2_supported) { false }
         let(:evp_proxy_v4_supported) { false }
         let(:itr_enabled) { false }
+        let(:tracing_enabled) { true }
 
         context "is enabled" do
           let(:enabled) { true }
 
           it "collects environment tags" do
             expect(Datadog::CI::Ext::Environment).to have_received(:tags).with(ENV)
+          end
+
+          context "when tracing is disabled" do
+            let(:tracing_enabled) { false }
+
+            it "logs an error message and disables CI visibility" do
+              expect(Datadog.logger).to have_received(:error)
+
+              expect(settings.ci.enabled).to eq(false)
+            end
           end
 
           context "when #force_test_level_visibility" do

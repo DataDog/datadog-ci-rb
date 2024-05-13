@@ -43,6 +43,16 @@ module Datadog
         end
 
         def activate_ci!(settings)
+          unless settings.tracing.enabled
+            Datadog.logger.error(
+              "CI visibility requires tracing to be enabled. Disabling CI visibility. " \
+              "NOTE: if you didn't disable tracing intentionally, add `c.tracing enabled = true` to " \
+              "your Datadog.configure block."
+            )
+            settings.ci.enabled = false
+            return
+          end
+
           # Configure ddtrace library for CI visibility mode
           # Deactivate telemetry
           settings.telemetry.enabled = false
