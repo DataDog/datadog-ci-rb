@@ -26,4 +26,5 @@ target :lib do
   library "msgpack"
   library "ci_queue"
   library "knapsack_pro"
+  library "bundler"
 end

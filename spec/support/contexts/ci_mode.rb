@@ -22,6 +22,7 @@ RSpec.shared_context "CI mode activated" do
   let(:tests_skipping_enabled) { false }
   let(:git_metadata_upload_enabled) { false }
   let(:require_git) { false }
+  let(:bundle_path) { nil }
 
   let(:itr_correlation_id) { "itr_correlation_id" }
   let(:itr_skippable_tests) { [] }
@@ -75,6 +76,7 @@ RSpec.shared_context "CI mode activated" do
       c.ci.force_test_level_visibility = force_test_level_visibility
       c.ci.itr_enabled = itr_enabled
       c.ci.git_metadata_upload_enabled = git_metadata_upload_enabled
+      c.ci.itr_code_coverage_excluded_bundle_path = bundle_path
       unless integration_name == :no_instrument
         c.ci.instrument integration_name, integration_options
       end

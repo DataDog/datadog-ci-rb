@@ -30,12 +30,19 @@ module Datadog
           config_tags: {},
           api: nil,
           coverage_writer: nil,
-          enabled: false
+          enabled: false,
+          bundle_location: nil
         )
           @enabled = enabled
           @api = api
           @dd_env = dd_env
           @config_tags = config_tags || {}
+
+          @bundle_location = if bundle_location && !File.absolute_path?(bundle_location)
+            File.join(Git::LocalRepository.root, bundle_location)
+          else
+            bundle_location
+          end
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false
@@ -43,7 +50,7 @@ module Datadog
           @coverage_writer = coverage_writer
 
           @correlation_id = nil
-          @skippable_tests = []
+          @skippable_tests = Set.new
 
           @skipped_tests_count = 0
           @mutex = Mutex.new
@@ -177,7 +184,10 @@ module Datadog
         end
 
         def coverage_collector
-          Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(root: Git::LocalRepository.root)
+          Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(
+            root: Git::LocalRepository.root,
+            ignored_path: @bundle_location
+          )
         end
 
         def load_datadog_cov!

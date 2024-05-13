@@ -9,6 +9,7 @@ module Datadog
         ENV_FORCE_TEST_LEVEL_VISIBILITY: String
         ENV_ITR_ENABLED: String
         ENV_GIT_METADATA_UPLOAD_ENABLED: String
+        ENV_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH: String
 
         DD_SITE_ALLOWLIST: Array[String]
       end

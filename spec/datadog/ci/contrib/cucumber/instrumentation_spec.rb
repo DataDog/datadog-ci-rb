@@ -16,6 +16,7 @@ RSpec.describe "Cucumber formatter" do
     let(:itr_enabled) { true }
     let(:code_coverage_enabled) { true }
     let(:tests_skipping_enabled) { true }
+    let(:bundle_path) { "step_definitions/helpers" }
   end
 
   let(:cucumber_8_or_above) { Gem::Version.new("8.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
@@ -196,7 +197,7 @@ RSpec.describe "Cucumber formatter" do
     context "collecting coverage with features dir as root" do
       before { skip if PlatformHelpers.jruby? }
 
-      it "creates coverage events for each non-skipped test" do
+      it "creates coverage events for each non-skipped test ignoring bundle_path" do
         expect(coverage_events).to have(1).item
 
         expect_coverage_events_belong_to_session(test_session_span)

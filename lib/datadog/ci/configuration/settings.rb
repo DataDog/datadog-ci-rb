@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../ext/settings"
+require_relative "../utils/bundle"
 
 module Datadog
   module CI
@@ -65,6 +66,14 @@ module Datadog
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_GIT_METADATA_UPLOAD_ENABLED
                 o.default true
+              end
+
+              option :itr_code_coverage_excluded_bundle_path do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH
+                o.default do
+                  Datadog::CI::Utils::Bundle.location
+                end
               end
 
               define_method(:instrument) do |integration_name, options = {}, &block|
