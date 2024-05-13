@@ -46,7 +46,7 @@ module Datadog
           unless settings.tracing.enabled
             Datadog.logger.error(
               "CI visibility requires tracing to be enabled. Disabling CI visibility. " \
-              "NOTE: if you didn't disable tracing intentionally, add `c.tracing enabled = true` to " \
+              "NOTE: if you didn't disable tracing intentionally, add `c.tracing.enabled = true` to " \
               "your Datadog.configure block."
             )
             settings.ci.enabled = false
