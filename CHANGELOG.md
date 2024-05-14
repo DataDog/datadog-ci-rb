@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [1.0.0.beta4] - 2024-05-14
+
+### Added
+
+* Knapsack Pro 7/RSpec 3 support ([#172][])
+* add settings option to ignore code coverage for bundled gems location ([#174][])
+* log an error message if tracing is disabled but test visibility is enabled ([#175][])
+
+### Removed
+
+* remove deprecated use alias ([#173][])
+
 ## [1.0.0.beta3] - 2024-04-30
 
 ### Added
@@ -226,7 +238,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta4...main
+[1.0.0.beta4]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta3...v1.0.0.beta4
 [1.0.0.beta3]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta2...v1.0.0.beta3
 [1.0.0.beta2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta1...v1.0.0.beta2
 [1.0.0.beta1]: https://github.com/DataDog/datadog-ci-rb/compare/v0.8.3...v1.0.0.beta1
@@ -321,3 +334,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#166]: https://github.com/DataDog/datadog-ci-rb/issues/166
 [#167]: https://github.com/DataDog/datadog-ci-rb/issues/167
 [#168]: https://github.com/DataDog/datadog-ci-rb/issues/168
+[#172]: https://github.com/DataDog/datadog-ci-rb/issues/172
+[#173]: https://github.com/DataDog/datadog-ci-rb/issues/173
+[#174]: https://github.com/DataDog/datadog-ci-rb/issues/174
+[#175]: https://github.com/DataDog/datadog-ci-rb/issues/175
