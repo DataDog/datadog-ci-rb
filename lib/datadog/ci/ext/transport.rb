@@ -50,7 +50,7 @@ module Datadog
         CONTENT_TYPE_MULTIPART_FORM_DATA = "multipart/form-data"
         CONTENT_ENCODING_GZIP = "gzip"
 
-        GZIP_MAGIC_NUMBER = "\x1F\x8B"
+        GZIP_MAGIC_NUMBER = "\x1F\x8B".b
       end
     end
   end

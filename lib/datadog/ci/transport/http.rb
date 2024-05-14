@@ -123,7 +123,10 @@ module Datadog
           def gzipped?(payload)
             return false if payload.nil? || payload.empty?
 
-            payload[0, 2] == "\x1F\x8B"
+            first_bytes = payload[0, 2]
+            return false if first_bytes.nil? || first_bytes.empty?
+
+            first_bytes.b == Datadog::CI::Ext::Transport::GZIP_MAGIC_NUMBER
           end
         end
 

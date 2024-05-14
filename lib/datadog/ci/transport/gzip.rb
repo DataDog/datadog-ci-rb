@@ -19,7 +19,11 @@ module Datadog
 
         def decompress(input)
           sio = StringIO.new(input)
-          gzip_reader = Zlib::GzipReader.new(sio)
+          gzip_reader = Zlib::GzipReader.new(
+            sio,
+            external_encoding: Encoding::UTF_8.name,
+            internal_encoding: Encoding::UTF_8.name
+          )
           gzip_reader.read || ""
         ensure
           gzip_reader&.close

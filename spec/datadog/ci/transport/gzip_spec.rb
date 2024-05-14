@@ -3,7 +3,7 @@ require_relative "../../../../lib/datadog/ci/transport/gzip"
 RSpec.describe Datadog::CI::Transport::Gzip do
   let(:input) do
     <<-LOREM
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc et est eu dui dignissim tempus. Aliquam
+        ❤️ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc et est eu dui dignissim tempus. Aliquam
         scelerisque posuere odio id sollicitudin. Etiam dolor lorem, interdum sed mollis consectetur, sagittis a massa.
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec gravida, libero ac gravida ornare, leo elit
         facilisis nunc, in pharetra odio lectus sit amet augue. Cras fermentum interdum tortor, pulvinar laoreet massa
