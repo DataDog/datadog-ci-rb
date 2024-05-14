@@ -21,8 +21,8 @@ module Datadog
           sio = StringIO.new(input)
           gzip_reader = Zlib::GzipReader.new(
             sio,
-            external_encoding: Encoding::UTF_8.name,
-            internal_encoding: Encoding::UTF_8.name
+            external_encoding: Encoding::UTF_8,
+            internal_encoding: Encoding::UTF_8
           )
           gzip_reader.read || ""
         ensure

@@ -26,7 +26,11 @@ RSpec.describe Datadog::CI::Transport::Gzip do
     end
 
     it "can be decompressed with gzip" do
-      Zlib::GzipReader.new(StringIO.new(subject)) do |gzip|
+      Zlib::GzipReader.new(
+        StringIO.new(subject),
+        external_encoding: Encoding::UTF_8,
+        internal_encoding: Encoding::UTF_8
+      ) do |gzip|
         expect(gzip.read).to eq(input)
       end
     end
