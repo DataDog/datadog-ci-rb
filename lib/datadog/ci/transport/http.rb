@@ -104,6 +104,7 @@ module Datadog
         end
 
         # adds compatibility with Datadog::Tracing transport and
+        # provides ungzipping capabilities
         class ResponseDecorator < ::SimpleDelegator
           def payload
             return @decompressed_payload if defined?(@decompressed_payload)
