@@ -37,11 +37,13 @@ module Datadog
               # DEV Initializing +Net::HTTP+ directly help us avoid expensive
               # options processing done in +Net::HTTP.start+:
               # https://github.com/ruby/ruby/blob/b2d96abb42abbe2e01f010ffc9ac51f0f9a50002/lib/net/http.rb#L614-L618
+              Datadog.logger.debug("Net::HTTP class: #{::Net::HTTP}")
               req = ::Net::HTTP.new(hostname, port, nil)
 
               req.use_ssl = ssl
               req.open_timeout = req.read_timeout = timeout
 
+              Datadog.logger.debug("Net::HTTP#start method location: #{req.method(:start).source_location}")
               req.start(&block)
             end
 
