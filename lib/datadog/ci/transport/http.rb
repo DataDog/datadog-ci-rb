@@ -8,6 +8,8 @@ require "datadog/core/transport/request"
 require_relative "gzip"
 require_relative "../ext/transport"
 
+require_relative "net_shim"
+
 module Datadog
   module CI
     module Transport
