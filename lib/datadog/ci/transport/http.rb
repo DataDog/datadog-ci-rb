@@ -32,10 +32,22 @@ module Datadog
           @compress = compress.nil? ? false : compress
         end
 
-        def request(path:, payload:, headers:, verb: "post", retries: MAX_RETRIES, backoff: INITIAL_BACKOFF)
+        def request(
+          path:,
+          payload:,
+          headers:,
+          verb: "post",
+          retries: MAX_RETRIES,
+          backoff: INITIAL_BACKOFF,
+          accept_compressed_response: false
+        )
           if compress
             headers[Ext::Transport::HEADER_CONTENT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
             payload = Gzip.compress(payload)
+          end
+
+          if accept_compressed_response
+            headers[Ext::Transport::HEADER_ACCEPT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
           end
 
           Datadog.logger.debug do
@@ -91,11 +103,31 @@ module Datadog
           @adapter ||= Datadog::Core::Transport::HTTP::Adapters::Net.new(settings)
         end
 
-        # this is needed because Datadog::Tracing::Writer is not fully compatiple with Datadog::Core::Transport
-        # TODO: remove when CI implements its own worker
+        # adds compatibility with Datadog::Tracing transport and
+        # provides ungzipping capabilities
         class ResponseDecorator < ::SimpleDelegator
+          def payload
+            return @decompressed_payload if defined?(@decompressed_payload)
+
+            if gzipped?(__getobj__.payload)
+              Datadog.logger.debug("Decompressing gzipped response payload")
+              @decompressed_payload = Gzip.decompress(__getobj__.payload)
+            else
+              __getobj__.payload
+            end
+          end
+
           def trace_count
             0
+          end
+
+          def gzipped?(payload)
+            return false if payload.nil? || payload.empty?
+
+            first_bytes = payload[0, 2]
+            return false if first_bytes.nil? || first_bytes.empty?
+
+            first_bytes.b == Datadog::CI::Ext::Transport::GZIP_MAGIC_NUMBER
           end
         end
 

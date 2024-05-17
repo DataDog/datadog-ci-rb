@@ -1,4 +1,9 @@
 class SimpleDelegator
+  @decompressed_payload: String
+
+  def __getobj__: () -> Datadog::Core::Transport::Response
+  def gzipped?: (String payload) -> bool
+  def payload: () -> String
 end
 
 module Datadog
@@ -19,7 +24,7 @@ module Datadog
 
         def initialize: (host: String, ?port: Integer?, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
 
-        def request: (?verb: String, payload: String, headers: Hash[String, String], path: String, ?retries: Integer, ?backoff: Integer) -> ResponseDecorator
+        def request: (?verb: String, payload: String, headers: Hash[String, String], path: String, ?retries: Integer, ?backoff: Integer, ?accept_compressed_response: bool) -> ResponseDecorator
 
         private
 

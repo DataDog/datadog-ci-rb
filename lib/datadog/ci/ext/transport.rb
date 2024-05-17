@@ -7,6 +7,7 @@ module Datadog
         DEFAULT_DD_SITE = "datadoghq.com"
 
         HEADER_DD_API_KEY = "DD-API-KEY"
+        HEADER_ACCEPT_ENCODING = "Accept-Encoding"
         HEADER_CONTENT_TYPE = "Content-Type"
         HEADER_CONTENT_ENCODING = "Content-Encoding"
         HEADER_EVP_SUBDOMAIN = "X-Datadog-EVP-Subdomain"
@@ -48,6 +49,8 @@ module Datadog
         CONTENT_TYPE_JSON = "application/json"
         CONTENT_TYPE_MULTIPART_FORM_DATA = "multipart/form-data"
         CONTENT_ENCODING_GZIP = "gzip"
+
+        GZIP_MAGIC_NUMBER = "\x1F\x8B".b
       end
     end
   end
