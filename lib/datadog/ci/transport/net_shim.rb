@@ -34,10 +34,6 @@ module Datadog
             end
 
             def open(&block)
-              # DEV Initializing +Net::HTTP+ directly help us avoid expensive
-              # options processing done in +Net::HTTP.start+:
-              # https://github.com/ruby/ruby/blob/b2d96abb42abbe2e01f010ffc9ac51f0f9a50002/lib/net/http.rb#L614-L618
-              Datadog.logger.debug("Net::HTTP class: #{::Net::HTTP}")
               req = ::Net::HTTP.new(hostname, port, nil)
 
               req.use_ssl = ssl
@@ -83,6 +79,9 @@ module Datadog
 
               # Connect and send the request
               http_response = open do |http|
+                Datadog.logger.debug("Executing POST request...")
+                Datadog.logger.debug("Net::HTTP#request method location: #{http.method(:request).source_location}")
+
                 http.request(post)
               end
 
