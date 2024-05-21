@@ -306,8 +306,8 @@ job_configuration:
     # ADD NEW RUBIES HERE
   - &config-jruby-9_4
     <<: *filters_all_branches_and_tags
-    ruby_version: 'jruby-9.4.0.0'
-    image: ghcr.io/datadog/dd-trace-rb/jruby:9.4.0.0-dd
+    ruby_version: 'jruby-9.4.7.0'
+    image: ghcr.io/datadog/dd-trace-rb/jruby:9.4.7.0-dd
     resource_class_to_use: medium+
 
 workflows:
