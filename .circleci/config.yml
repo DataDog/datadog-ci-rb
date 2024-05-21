@@ -43,14 +43,6 @@ test_containers:
     <<: *job_parameters
     docker:
       - *container_base
-  - &container_agent
-    image: datadog/agent
-    environment:
-      - DD_APM_ENABLED=true
-      - DD_BIND_HOST=0.0.0.0
-      - DD_API_KEY=00000000000000000000000000000000
-      - DD_HOSTNAME=datadog-ci-rb-ci
-  - &agent_port 8126
 
 check_exact_bundle_cache_hit: &check_exact_bundle_cache_hit
   run:
@@ -189,7 +181,6 @@ orbs:
         <<: *test_job_default
         docker:
           - <<: *container_base
-          - *container_agent
         parallelism: 8
         steps:
           - restore_cache:
@@ -203,9 +194,6 @@ orbs:
               command: |
                 # Create a unique coverage directory for this job, to avoid conflicts when merging all results
                 echo 'export COVERAGE_DIR="$COVERAGE_BASE_DIR/versions/$CIRCLE_JOB/$CIRCLE_NODE_INDEX"' >> $BASH_ENV
-          # Wait for containers to start
-          - docker-wait:
-              port: *agent_port
           - *step_run_all_tests
           - store_test_results:
               path: /tmp/rspec
