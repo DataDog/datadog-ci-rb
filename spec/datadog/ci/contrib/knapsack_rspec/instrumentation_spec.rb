@@ -75,4 +75,26 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
     expect(test_spans).to all have_test_tag(:test_module_id)
     expect(test_spans).to all have_test_tag(:test_session_id)
   end
+
+  context "when collecting examples with knapsack_pro:rspec_test_example_detector" do
+    it "does not instrument this rspec session" do
+      with_new_rspec_environment do
+        ClimateControl.modify(
+          "KNAPSACK_PRO_CI_NODE_BUILD_ID" => "142",
+          "KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC" => "example_token",
+          "KNAPSACK_PRO_FIXED_QUEUE_SPLIT" => "true"
+        ) do
+          expect(KnapsackPro::SlowTestFileDeterminer).to receive(:read_from_json_report).and_return([])
+
+          detector = KnapsackPro::TestCaseDetectors::RSpecTestExampleDetector.new
+          detector.generate_json_report
+        rescue ArgumentError
+          # suppress invalid API key error
+        end
+      end
+
+      expect(test_session_span).to be_nil
+      expect(test_spans).to be_empty
+    end
+  end
 end

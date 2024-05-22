@@ -27,7 +27,8 @@ RSpec.describe "RSpec hooks" do
       test: false,
       context: false,
       suite: false
-    }
+    },
+    dry_run: false
   )
     test_meta = unskippable[:test] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
     context_meta = unskippable[:context] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
@@ -58,7 +59,11 @@ RSpec.describe "RSpec hooks" do
         end
       end
 
-      options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+      options_array = %w[--pattern none]
+      if dry_run
+        options_array << "--dry-run"
+      end
+      options = ::RSpec::Core::ConfigurationOptions.new(options_array)
       ::RSpec::Core::Runner.new(options).run(devnull, devnull)
 
       spec
@@ -104,7 +109,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "77")
+      expect(first_test_span).to have_test_tag(:source_start, "82")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -771,6 +776,20 @@ RSpec.describe "RSpec hooks" do
           end
         end
       end
+    end
+  end
+
+  context "with dry run" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+    end
+
+    it "does not instrument test session" do
+      rspec_session_run(dry_run: true)
+
+      expect(test_session_span).to be_nil
+      expect(test_spans).to be_empty
     end
   end
 end

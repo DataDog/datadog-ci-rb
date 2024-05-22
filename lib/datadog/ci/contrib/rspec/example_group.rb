@@ -16,6 +16,7 @@ module Datadog
           # Instance methods for configuration
           module ClassMethods
             def run(reporter = ::RSpec::Core::NullReporter)
+              return super if ::RSpec.configuration.dry_run?
               return super unless datadog_configuration[:enabled]
               return super unless top_level?
 
