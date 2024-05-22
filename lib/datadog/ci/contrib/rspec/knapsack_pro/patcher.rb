@@ -11,7 +11,7 @@ module Datadog
                   ::RSpec::Core::Runner.ancestors.include?(::KnapsackPro::Extensions::RSpecExtension::Runner)
                 # knapsack already patched rspec runner
                 require_relative "runner"
-                ::RSpec::Core::Runner.include(Datadog::CI::Contrib::RSpec::KnapsackPro::Runner)
+                ::RSpec::Core::Runner.include(KnapsackPro::Runner)
               else
                 # knapsack didn't patch rspec runner yet
                 require_relative "extension"
