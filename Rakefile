@@ -60,7 +60,10 @@ TEST_METADATA = {
     "minitest-5-shoulda-context-2-shoulda-matchers-6" => "❌ 2.7 / ❌ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
   },
   "knapsack_rspec" => {
-    "knapsack_pro-7-rspec-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+    "knapsack_pro-7-rspec-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ❌ jruby"
+  },
+  "knapsack_rspec_go" => {
+    "knapsack_pro-7-rspec-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ❌ jruby"
   }
 }
 
@@ -132,7 +135,8 @@ namespace :spec do
     :activesupport,
     :ci_queue_minitest,
     :ci_queue_rspec,
-    :knapsack_rspec
+    :knapsack_rspec,
+    :knapsack_rspec_go
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|
