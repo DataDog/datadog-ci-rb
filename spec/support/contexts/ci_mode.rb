@@ -88,5 +88,9 @@ RSpec.shared_context "CI mode activated" do
 
     Datadog::CI.send(:itr_runner)&.shutdown!
     Datadog::CI.send(:recorder)&.shutdown!
+
+    Datadog.configure do |c|
+      c.ci.enabled = false
+    end
   end
 end

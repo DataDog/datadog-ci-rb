@@ -27,14 +27,16 @@ module Datadog
               ::RSpec::Queue::Runner.include(Runner)
             end
 
-            # Knapsack Pro test runner instrumentation
-            # https://github.com/KnapsackPro/knapsack_pro-ruby
             if knapsack_pro?
-              require_relative "knapsack_pro/extension"
-              ::KnapsackPro::Extensions::RSpecExtension.include(KnapsackPro::Extension)
+              # Knapsack Pro test runner instrumentation
+              # https://github.com/KnapsackPro/knapsack_pro-ruby
+              require_relative "knapsack_pro/patcher"
+              Datadog::CI::Contrib::RSpec::KnapsackPro::Patcher.patch
             end
 
+            # default rspec test runner instrumentation
             ::RSpec::Core::Runner.include(Runner)
+
             ::RSpec::Core::Example.include(Example)
             ::RSpec::Core::ExampleGroup.include(ExampleGroup)
           end

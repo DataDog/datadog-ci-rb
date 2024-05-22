@@ -12,6 +12,9 @@ module KnapsackPro
   module Extensions
     module RSpecExtension
       def setup!: () -> void
+
+      module Runner
+      end
     end
   end
 end

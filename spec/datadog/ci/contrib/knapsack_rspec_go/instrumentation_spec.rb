@@ -1,18 +1,7 @@
 require "knapsack_pro"
 require "fileutils"
 
-RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
-  include_context "CI mode activated" do
-    let(:integration_name) { :rspec }
-  end
-
-  before do
-    allow_any_instance_of(KnapsackPro::Runners::Queue::RSpecRunner).to receive(:test_file_paths).and_return(
-      ["./spec/datadog/ci/contrib/knapsack_rspec/suite_under_test/some_test_rspec.rb"],
-      []
-    )
-  end
-
+RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the knapsack run like in rspec_go rake task" do
   # Yields to a block in a new RSpec global context. All RSpec
   # test configuration and execution should be wrapped in this method.
   def with_new_rspec_environment
@@ -31,15 +20,29 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
     File.new("/dev/null", "w")
   end
 
+  before do
+    allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
+      receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
+    )
+
+    allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return("knapsack:queue:rspec")
+
+    allow_any_instance_of(KnapsackPro::Runners::Queue::RSpecRunner).to receive(:test_file_paths).and_return(
+      ["./spec/datadog/ci/contrib/knapsack_rspec_go/suite_under_test/some_test_rspec.rb"],
+      []
+    )
+  end
+
   it "instruments this rspec session" do
     with_new_rspec_environment do
       ClimateControl.modify(
-        "KNAPSACK_PRO_CI_NODE_BUILD_ID" => "142",
+        "KNAPSACK_PRO_CI_NODE_BUILD_ID" => "144",
         "KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC" => "example_token",
-        "KNAPSACK_PRO_FIXED_QUEUE_SPLIT" => "true"
+        "KNAPSACK_PRO_FIXED_QUEUE_SPLIT" => "true",
+        "KNAPSACK_PRO_QUEUE_ID" => nil
       ) do
         KnapsackPro::Adapters::RSpecAdapter.bind
-        KnapsackPro::Runners::Queue::RSpecRunner.run("", devnull, devnull)
+        KnapsackPro::Runners::Queue::RSpecRunner.run("--require knapsack_helper", devnull, devnull)
       rescue ArgumentError
         # suppress invalid API key error
       end
@@ -57,7 +60,7 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
     expect(test_suite_spans.first).to have_test_tag(:status, Datadog::CI::Ext::Test::Status::FAIL)
     expect(test_suite_spans.first).to have_test_tag(
       :suite,
-      "SomeTest at ./spec/datadog/ci/contrib/knapsack_rspec/suite_under_test/some_test_rspec.rb"
+      "SomeTest at ./spec/datadog/ci/contrib/knapsack_rspec_go/suite_under_test/some_test_rspec.rb"
     )
 
     # there is test span for every test case

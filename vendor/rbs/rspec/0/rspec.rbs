@@ -1,4 +1,5 @@
 module RSpec
+  def self.configuration: () -> RSpec::Core::Configuration
 end
 
 module RSpec::Core
@@ -35,4 +36,8 @@ module RSpec::Core::ExampleGroup
 end
 
 class RSpec::Core::NullReporter
+end
+
+class RSpec::Core::Configuration
+  def dry_run?: () -> bool
 end

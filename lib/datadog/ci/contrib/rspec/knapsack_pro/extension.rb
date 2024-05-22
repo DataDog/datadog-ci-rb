@@ -8,7 +8,6 @@ module Datadog
   module CI
     module Contrib
       module RSpec
-        # Instrument RSpec::Core::Example
         module KnapsackPro
           module Extension
             def self.included(base)

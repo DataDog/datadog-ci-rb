@@ -15,6 +15,7 @@ module Datadog
 
             module InstanceMethods
               def knapsack__run_specs(*)
+                return super if ::RSpec.configuration.dry_run?
                 return super unless datadog_configuration[:enabled]
 
                 test_session = CI.start_test_session(
