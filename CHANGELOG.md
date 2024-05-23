@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [1.0.0.beta5] - 2024-05-23
+
+### Changed
+
+* accept gzipped responses from API ([#170][])
+
+### Fixed
+
+* Fix Knapsack Pro integration ([#180][])
+
 ## [1.0.0.beta4] - 2024-05-14
 
 ### Added
@@ -238,7 +248,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta4...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta5...main
+[1.0.0.beta5]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta4...v1.0.0.beta5
 [1.0.0.beta4]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta3...v1.0.0.beta4
 [1.0.0.beta3]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta2...v1.0.0.beta3
 [1.0.0.beta2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta1...v1.0.0.beta2
@@ -334,7 +345,9 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#166]: https://github.com/DataDog/datadog-ci-rb/issues/166
 [#167]: https://github.com/DataDog/datadog-ci-rb/issues/167
 [#168]: https://github.com/DataDog/datadog-ci-rb/issues/168
+[#170]: https://github.com/DataDog/datadog-ci-rb/issues/170
 [#172]: https://github.com/DataDog/datadog-ci-rb/issues/172
 [#173]: https://github.com/DataDog/datadog-ci-rb/issues/173
 [#174]: https://github.com/DataDog/datadog-ci-rb/issues/174
 [#175]: https://github.com/DataDog/datadog-ci-rb/issues/175
+[#180]: https://github.com/DataDog/datadog-ci-rb/issues/180
