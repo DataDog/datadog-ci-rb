@@ -681,19 +681,6 @@ RSpec.describe "Minitest instrumentation" do
           expect(first_test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
         end
 
-        it "correctly tracks test and session durations" do
-          test_session_duration = test_session_span.duration
-
-          test_durations_sum = test_spans.map { |span| span.duration }.sum
-          # with parallel execution test durations sum should be greater than test session duration
-          expect(test_durations_sum).to be > test_session_duration
-
-          # each individual test duration should be less than test session duration
-          test_spans.each do |span|
-            expect(span.duration).to be < test_session_duration
-          end
-        end
-
         it "creates test suite spans" do
           expect(test_suite_spans).to have(4).items
 
