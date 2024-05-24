@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Contrib
+      module Selenium
+        module Ext
+          ENV_ENABLED: "DD_CIVISIBILITY_SELENIUM_ENABLED"
+        end
+      end
+    end
+  end
+end

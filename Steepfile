@@ -27,4 +27,5 @@ target :lib do
   library "ci_queue"
   library "knapsack_pro"
   library "bundler"
+  library "selenium-webdriver"
 end
