@@ -218,8 +218,6 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
   end
 
   context "with cloned repository" do
-    before { skip if PlatformHelpers.jruby? }
-
     let(:commits_count) { 2 }
 
     let(:tmpdir) { Dir.mktmpdir }
