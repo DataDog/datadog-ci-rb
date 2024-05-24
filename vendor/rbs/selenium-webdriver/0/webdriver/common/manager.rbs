@@ -1,13 +1,13 @@
 module Selenium
   module WebDriver
     class Manager
-      attr_reader bridge: Remote::Bridge
+      attr_reader bridge: untyped
 
       @timeouts: Timeouts
 
       @window: Window
 
-      def initialize: (Remote::Bridge bridge) -> void
+      def initialize: (untyped bridge) -> void
 
       def add_cookie: (?Hash[Symbol, untyped] opts) -> void
 

@@ -8,7 +8,7 @@ module Datadog
 
         def self.register: (untyped integration, Symbol name) -> void
 
-        def self.registry: () -> Hash[Symbol, Struct[untyped]]
+        def self.registry: () -> Hash[Symbol, untyped]
 
         module ClassMethods
           def register_as: (Symbol name) -> void

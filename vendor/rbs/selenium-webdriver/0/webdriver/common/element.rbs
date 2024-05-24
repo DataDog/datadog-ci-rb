@@ -5,7 +5,7 @@ module Selenium
 
       include SearchContext
 
-      def initialize: (Remote::Bridge | Support::EventFiringBridge bridge, String id) -> void
+      def initialize: (untyped bridge, String id) -> void
 
       def inspect: () -> untyped
 
@@ -76,7 +76,7 @@ module Selenium
 
       private
 
-      attr_reader bridge: Remote::Bridge
+      attr_reader bridge: untyped
 
       def selectable?: () -> bool
 

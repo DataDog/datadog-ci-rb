@@ -1,0 +1,7 @@
+module Datadog
+  module CI
+    module Contrib
+      def self.auto_instrument_on_session_start!: () -> void
+    end
+  end
+end

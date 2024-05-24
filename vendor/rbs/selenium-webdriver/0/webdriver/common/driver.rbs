@@ -11,7 +11,7 @@ module Selenium
 
       def self.for: (untyped browser, Hash[untyped, untyped] opts) -> untyped
 
-      def initialize: (?bridge: Support::EventFiringBridge? bridge, ?listener: Support::AbstractEventListener? listener, **untyped opts) -> void
+      def initialize: (?bridge: untyped? bridge, ?listener: untyped? listener, **untyped opts) -> void
 
       def inspect: () -> String
 
@@ -23,7 +23,7 @@ module Selenium
 
       def manage: () -> Manager
 
-      def action: (**untyped opts) -> ActionBuilder
+      def action: (**untyped opts) -> untyped
 
       def get: (String url) -> untyped
 
@@ -33,9 +33,9 @@ module Selenium
 
       def page_source: () -> String
 
-      def quit: () -> WebDriver::Remote::Response?
+      def quit: () -> untyped
 
-      def close: () -> WebDriver::Remote::Response?
+      def close: () -> untyped
 
       def window_handles: () -> Array[String]
 
@@ -45,7 +45,7 @@ module Selenium
 
       def execute_async_script: (String script, *untyped args) -> untyped
 
-      def add_virtual_authenticator: (untyped options) -> VirtualAuthenticator
+      def add_virtual_authenticator: (untyped options) -> untyped
 
       alias first find_element
 
