@@ -14,7 +14,7 @@ module Datadog
             end
 
             module InstanceMethods
-              def knapsack__run_specs(*)
+              def knapsack__run_specs(*args)
                 return super if ::RSpec.configuration.dry_run?
                 return super unless datadog_configuration[:enabled]
 

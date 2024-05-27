@@ -9,6 +9,8 @@ module Datadog
 
       def id: () -> Integer
 
+      def trace_id: () -> Integer
+
       def name: () -> String
 
       def service: () -> String

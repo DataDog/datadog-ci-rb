@@ -14,7 +14,7 @@ module Datadog
           end
 
           module InstanceMethods
-            def run_specs(*)
+            def run_specs(*args)
               return super if ::RSpec.configuration.dry_run?
               return super unless datadog_configuration[:enabled]
 

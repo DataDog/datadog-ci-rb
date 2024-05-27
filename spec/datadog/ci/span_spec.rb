@@ -8,6 +8,20 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
+  describe "#id" do
+    it "returns the span ID" do
+      expect(tracer_span).to receive(:id).and_return(123)
+      expect(span.id).to eq(123)
+    end
+  end
+
+  describe "#trace_id" do
+    it "returns the trace ID" do
+      expect(tracer_span).to receive(:trace_id).and_return(456)
+      expect(span.trace_id).to eq(456)
+    end
+  end
+
   describe "#passed?" do
     context "when status is PASS" do
       before do

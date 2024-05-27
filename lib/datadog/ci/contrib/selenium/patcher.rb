@@ -2,6 +2,8 @@
 
 require "datadog/tracing/contrib/patcher"
 
+require_relative "navigation"
+
 module Datadog
   module CI
     module Contrib
@@ -17,7 +19,7 @@ module Datadog
           end
 
           def patch
-            Datadog.logger.info("Patch Selenium")
+            ::Selenium::WebDriver::Navigation.include(Navigation)
           end
         end
       end

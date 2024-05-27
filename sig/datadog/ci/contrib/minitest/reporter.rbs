@@ -5,7 +5,7 @@ module Datadog
         module Reporter
           def self.included: (untyped base) -> untyped
 
-          class InstanceMethods < ::Minitest::AbstractReporter
+          module InstanceMethods : ::Minitest::AbstractReporter
             def report: (*untyped) -> untyped
 
             private
