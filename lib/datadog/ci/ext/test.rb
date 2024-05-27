@@ -8,6 +8,7 @@ module Datadog
       module Test
         CONTEXT_ORIGIN = "ciapp-test"
 
+        # Base test visibility tags
         TAG_FRAMEWORK = "test.framework"
         TAG_FRAMEWORK_VERSION = "test.framework_version"
         TAG_NAME = "test.name"
@@ -34,15 +35,12 @@ module Datadog
         # Code coverage tags
         TAG_CODE_COVERAGE_ENABLED = "test.code_coverage.enabled"
 
-        # those tags are special and used to correlate tests with the test sessions, suites, and modules
-        # they are transient and not sent to the backend
+        # Special tags, not sent to the backend.
+        # these tags are special and used to correlate tests with the test sessions, suites, and modules
         TAG_TEST_SESSION_ID = "_test.session_id"
         TAG_TEST_MODULE_ID = "_test.module_id"
         TAG_TEST_SUITE_ID = "_test.suite_id"
         TRANSIENT_TAGS = [TAG_TEST_SESSION_ID, TAG_TEST_MODULE_ID, TAG_TEST_SUITE_ID].freeze
-
-        # tags that are common for the whole session and can be inherited from the test session
-        INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION].freeze
 
         # Environment runtime tags
         TAG_OS_ARCHITECTURE = "os.architecture"
@@ -51,9 +49,23 @@ module Datadog
         TAG_RUNTIME_NAME = "runtime.name"
         TAG_RUNTIME_VERSION = "runtime.version"
 
+        # Tags for browser tests
+        # true if Datadog RUM was detected in the page(s) loaded by Selenium
+        TAG_IS_RUM_ACTIVE = "test.is_rum_active"
+        TAG_BROWSER_DRIVER = "test.browser.driver"
+        # version of selenium driver used
+        TAG_BROWSER_DRIVER_VERSION = "test.browser.driver_version"
+        # name of the browser (Chrome, Firefox, Edge, etc), if multiple browsers then this tag is empty
+        TAG_BROWSER_NAME = "test.browser.name"
+        # version of the browser, if multiple browsers or multiple versions then this tag is empty
+        TAG_BROWSER_VERSION = "test.browser.version"
+
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
         SPAN_KIND_TEST = "test"
+
+        # tags that are common for the whole session and can be inherited from the test session
+        INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION].freeze
 
         # could be either "test" or "suite" depending on whether we skip individual tests or whole suites
         # we use test skipping for Ruby
@@ -71,6 +83,7 @@ module Datadog
         # test types (e.g. test, benchmark, browser)
         module Type
           TEST = "test"
+          BROWSER = "browser"
           BENCHMARK = "benchmark" # DEV: not used yet, will be used when benchmarks are supported
         end
       end
