@@ -26,6 +26,29 @@ module Datadog
 
               # Set the test's trace id as a cookie in browser session
               @bridge.manage.add_cookie(name: Ext::COOKIE_TEST_EXECUTION_ID, value: active_test.trace_id.to_s)
+
+              # set the tags specific to the browser test
+              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_DRIVER, "selenium")
+              active_test.set_tag(
+                CI::Ext::Test::TAG_BROWSER_DRIVER_VERSION,
+                Integration.version
+              )
+              active_test.set_tag(
+                CI::Ext::Test::TAG_BROWSER_NAME,
+                @bridge.browser
+              )
+              active_test.set_tag(
+                CI::Ext::Test::TAG_BROWSER_VERSION,
+                @bridge.capabilities.browser_version
+              )
+
+              is_rum_active_result = @bridge.execute_script(Ext::SCRIPT_IS_RUM_ACTIVE)
+              if is_rum_active_result == "true"
+                active_test.set_tag(
+                  CI::Ext::Test::TAG_IS_RUM_ACTIVE,
+                  "true"
+                )
+              end
             end
           end
         end

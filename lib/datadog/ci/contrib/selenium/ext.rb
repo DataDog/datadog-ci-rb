@@ -10,6 +10,10 @@ module Datadog
           ENV_ENABLED = "DD_CIVISIBILITY_SELENIUM_ENABLED"
 
           COOKIE_TEST_EXECUTION_ID = "datadog-ci-visibility-test-execution-id"
+
+          SCRIPT_IS_RUM_ACTIVE = <<~JS
+            return !!window.DD_RUM
+          JS
         end
       end
     end
