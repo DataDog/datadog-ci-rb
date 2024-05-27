@@ -136,6 +136,19 @@ def self.with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7, rspec_versions: 3
   end
 end
 
+def self.with_selenium_gem(selenium_versions: 4, capybara_versions: 3)
+  Array(selenium_versions).each do |selenium_v|
+    Array(capybara_versions).each do |capybara_v|
+      appraise "selenium-#{selenium_v}-capybara-#{capybara_v}" do
+        gem "capybara", "~> #{capybara_v}"
+        gem "selenium-webdriver", "~> #{selenium_v}"
+
+        gem "cucumber", "~> 9"
+      end
+    end
+  end
+end
+
 ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
 major, minor, = ruby_version.segments
 
@@ -147,6 +160,7 @@ with_ci_queue_rspec_gem
 with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
 with_active_support_gem(versions: 4..7)
 with_knapsack_pro_rspec_gem
+with_selenium_gem if ruby_version >= Gem::Version.new("3.0")
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
