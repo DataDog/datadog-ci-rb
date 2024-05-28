@@ -21,14 +21,20 @@ module Datadog
 
               return result unless datadog_configuration[:enabled]
 
+              Datadog.logger.debug("[Selenium] Navigation to #{url}")
+
               # on session reset Capybara navigates to about:blank
               return result if url == "about:blank"
 
               active_test = Datadog::CI.active_test
+              Datadog.logger.debug("[Selenium] Active test: #{active_test}")
+
               return result unless active_test
 
               # Set the test's trace id as a cookie in browser session
-              @bridge.manage.add_cookie(name: Ext::COOKIE_TEST_EXECUTION_ID, value: active_test.trace_id.to_s)
+              cookie_hash = {name: Ext::COOKIE_TEST_EXECUTION_ID, value: active_test.trace_id.to_s}
+              Datadog.logger.debug { "[Selenium] Setting cookie: #{cookie_hash}" }
+              @bridge.manage.add_cookie(cookie_hash)
 
               # set the test type to browser
               active_test.set_tag(CI::Ext::Test::TAG_TYPE, CI::Ext::Test::Type::BROWSER)
@@ -48,13 +54,9 @@ module Datadog
                 @bridge.capabilities.browser_version
               )
 
-              is_rum_active_result = @bridge.execute_script(Ext::SCRIPT_IS_RUM_ACTIVE)
-              if is_rum_active_result == "true"
-                active_test.set_tag(
-                  CI::Ext::Test::TAG_IS_RUM_ACTIVE,
-                  "true"
-                )
-              end
+              result
+            rescue ::Selenium::WebDriver::Error::WebDriverError => e
+              Datadog.logger.debug("[Selenium] Error while navigating: #{e.message}")
 
               result
             end

@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Contrib
+      module Selenium
+        module Driver
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods : Selenium::WebDriver::Driver
+            def quit: () -> void
+
+            private
+
+            def datadog_configuration: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end

@@ -12,7 +12,7 @@ RSpec.describe "Browser tests with selenium" do
     let(:integration_name) { :cucumber }
   end
 
-  let(:manager) { spy("manager", add_cookie: nil) }
+  let(:manager) { spy("manager") }
   let(:bridge) do
     instance_double(
       Selenium::WebDriver::Remote::Bridge,
@@ -32,10 +32,6 @@ RSpec.describe "Browser tests with selenium" do
   let(:stdin) { StringIO.new }
   let(:stdout) { StringIO.new }
   let(:stderr) { StringIO.new }
-
-  # let(:stdin) { $stdin }
-  # let(:stdout) { $stdout }
-  # let(:stderr) { $stderr }
 
   let(:kernel) { double(:kernel) }
 
@@ -64,29 +60,35 @@ RSpec.describe "Browser tests with selenium" do
   before do
     # expect(kernel).to receive(:exit).with(expected_test_run_code)
     expect(Selenium::WebDriver::Remote::Bridge).to receive(:new).and_return(bridge)
-    expect(bridge).to receive(:execute_script) do |script|
+    allow(bridge).to receive(:execute_script) do |script|
       executed_scripts << script
       "true"
     end
-    expect(bridge).to receive(:get) do |url|
+    allow(bridge).to receive(:get) do |url|
       visited_urls << url
     end
 
-    allow(kernel).to receive(:exit)
-    ClimateControl.modify("DD_CIVISIBILITY_SELENIUM_ENABLED" => "1") do
+    expect(kernel).to receive(:exit).with(expected_test_run_code)
+    ClimateControl.modify("DD_CIVISIBILITY_SELENIUM_ENABLED" => "1", "DD_CIVISIBILITY_RUM_FLUSH_WAIT_MILLIS" => "1") do
       cli.execute!(existing_runtime)
     end
   end
 
   it "recognize the test as browser test and adds additional tags" do
     expect(visited_urls).to eq(["http://www.example.com"])
-    expect(executed_scripts).to eq([Datadog::CI::Contrib::Selenium::Ext::SCRIPT_IS_RUM_ACTIVE])
+    expect(executed_scripts).to eq(
+      [
+        Datadog::CI::Contrib::Selenium::Ext::SCRIPT_IS_RUM_ACTIVE,
+        Datadog::CI::Contrib::Selenium::Ext::SCRIPT_STOP_RUM_SESSION
+      ]
+    )
 
     expect(test_spans).to have(1).item
 
     expect(manager).to have_received(:add_cookie).with(
       {name: "datadog-ci-visibility-test-execution-id", value: first_test_span.trace_id.to_s}
     )
+    expect(manager).to have_received(:delete_cookie).with("datadog-ci-visibility-test-execution-id")
 
     expect(first_test_span).to have_test_tag(:type, "browser")
     expect(first_test_span).to have_test_tag(:browser_driver, "selenium")

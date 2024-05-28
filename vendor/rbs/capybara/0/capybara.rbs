@@ -1,0 +1,9 @@
+module Capybara
+end
+
+module Capybara::Selenium
+end
+
+module Capybara::Selenium::Driver
+  def reset!: () -> void
+end

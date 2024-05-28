@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Contrib
+      module Selenium
+        module CapybaraDriver
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods : Capybara::Selenium::Driver
+            def reset!: () -> void
+
+            private
+
+            def datadog_configuration: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end

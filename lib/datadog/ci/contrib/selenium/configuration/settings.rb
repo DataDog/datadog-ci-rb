@@ -20,7 +20,7 @@ module Datadog
             end
 
             option :rum_flush_wait_millis do |o|
-              o.type :integer
+              o.type :int
               o.env Ext::ENV_RUM_FLUSH_WAIT_MILLIS
               o.default 500
             end

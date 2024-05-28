@@ -28,4 +28,5 @@ target :lib do
   library "knapsack_pro"
   library "bundler"
   library "selenium-webdriver"
+  library "capybara"
 end

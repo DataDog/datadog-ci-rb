@@ -2,6 +2,8 @@
 
 require "datadog/tracing/contrib/patcher"
 
+require_relative "capybara_driver"
+require_relative "driver"
 require_relative "navigation"
 
 module Datadog
@@ -19,7 +21,13 @@ module Datadog
           end
 
           def patch
+            ::Selenium::WebDriver::Driver.include(Driver)
             ::Selenium::WebDriver::Navigation.include(Navigation)
+
+            # capybara calls `reset!` after each test, so we need to patch it as well
+            if defined?(::Capybara::Selenium::Driver)
+              ::Capybara::Selenium::Driver.include(CapybaraDriver)
+            end
           end
         end
       end

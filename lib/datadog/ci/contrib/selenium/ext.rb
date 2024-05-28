@@ -15,6 +15,14 @@ module Datadog
           SCRIPT_IS_RUM_ACTIVE = <<~JS
             return !!window.DD_RUM
           JS
+          SCRIPT_STOP_RUM_SESSION = <<~JS
+            if (window.DD_RUM && window.DD_RUM.stopSession) {
+              window.DD_RUM.stopSession();
+              return true;
+            } else {
+            	return false;
+            }
+          JS
         end
       end
     end

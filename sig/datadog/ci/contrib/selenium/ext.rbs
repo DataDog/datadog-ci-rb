@@ -10,6 +10,8 @@ module Datadog
           COOKIE_TEST_EXECUTION_ID: "datadog-ci-visibility-test-execution-id"
 
           SCRIPT_IS_RUM_ACTIVE: String
+
+          SCRIPT_STOP_RUM_SESSION: String
         end
       end
     end
