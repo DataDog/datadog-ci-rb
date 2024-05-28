@@ -75,9 +75,13 @@ RSpec.describe "Browser tests with selenium" do
   end
 
   it "recognize the test as browser test and adds additional tags" do
-    expect(visited_urls).to eq(["http://www.example.com"])
+    expect(visited_urls).to eq(["http://www.example.com", "about:blank"])
     expect(executed_scripts).to eq(
       [
+        Datadog::CI::Contrib::Selenium::Ext::SCRIPT_IS_RUM_ACTIVE,
+        Datadog::CI::Contrib::Selenium::Ext::SCRIPT_STOP_RUM_SESSION,
+        "window.sessionStorage.clear()",
+        "window.localStorage.clear()",
         Datadog::CI::Contrib::Selenium::Ext::SCRIPT_IS_RUM_ACTIVE,
         Datadog::CI::Contrib::Selenium::Ext::SCRIPT_STOP_RUM_SESSION
       ]
@@ -88,7 +92,7 @@ RSpec.describe "Browser tests with selenium" do
     expect(manager).to have_received(:add_cookie).with(
       {name: "datadog-ci-visibility-test-execution-id", value: first_test_span.trace_id.to_s}
     )
-    expect(manager).to have_received(:delete_cookie).with("datadog-ci-visibility-test-execution-id")
+    expect(manager).to have_received(:delete_cookie).with("datadog-ci-visibility-test-execution-id").twice
 
     expect(first_test_span).to have_test_tag(:type, "browser")
     expect(first_test_span).to have_test_tag(:browser_driver, "selenium")
