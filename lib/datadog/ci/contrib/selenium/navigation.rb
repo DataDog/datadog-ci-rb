@@ -17,13 +17,15 @@ module Datadog
 
           module InstanceMethods
             def to(url)
-              super
+              result = super
+
+              return result unless datadog_configuration[:enabled]
 
               # on session reset Capybara navigates to about:blank
-              return if url == "about:blank"
+              return result if url == "about:blank"
 
               active_test = Datadog::CI.active_test
-              return unless active_test
+              return result unless active_test
 
               # Set the test's trace id as a cookie in browser session
               @bridge.manage.add_cookie(name: Ext::COOKIE_TEST_EXECUTION_ID, value: active_test.trace_id.to_s)
@@ -53,6 +55,14 @@ module Datadog
                   "true"
                 )
               end
+
+              result
+            end
+
+            private
+
+            def datadog_configuration
+              Datadog.configuration.ci[:selenium]
             end
           end
         end

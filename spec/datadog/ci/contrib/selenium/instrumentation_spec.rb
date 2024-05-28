@@ -72,10 +72,10 @@ RSpec.describe "Browser tests with selenium" do
       visited_urls << url
     end
 
-    # allow_any_instance_of(Selenium::WebDriver::Remote::Bridge).to receive(:get).and_return(nil)
-
     allow(kernel).to receive(:exit)
-    cli.execute!(existing_runtime)
+    ClimateControl.modify("DD_CIVISIBILITY_SELENIUM_ENABLED" => "1") do
+      cli.execute!(existing_runtime)
+    end
   end
 
   it "recognize the test as browser test and adds additional tags" do

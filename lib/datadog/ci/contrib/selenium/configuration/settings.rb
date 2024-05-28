@@ -18,6 +18,12 @@ module Datadog
               o.env Ext::ENV_ENABLED
               o.default true
             end
+
+            option :rum_flush_wait_millis do |o|
+              o.type :integer
+              o.env Ext::ENV_RUM_FLUSH_WAIT_MILLIS
+              o.default 500
+            end
           end
         end
       end
