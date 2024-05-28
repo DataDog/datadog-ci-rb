@@ -3,6 +3,7 @@
 require "datadog/tracing/contrib/patcher"
 
 require_relative "ext"
+require_relative "../../ext/test"
 
 module Datadog
   module CI
