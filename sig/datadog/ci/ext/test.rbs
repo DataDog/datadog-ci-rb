@@ -76,6 +76,16 @@ module Datadog
 
         ITR_UNSKIPPABLE_OPTION: :datadog_itr_unskippable
 
+        TAG_IS_RUM_ACTIVE: "test.is_rum_active"
+
+        TAG_BROWSER_DRIVER: "test.browser.driver"
+
+        TAG_BROWSER_DRIVER_VERSION: "test.browser.driver_version"
+
+        TAG_BROWSER_NAME: "test.browser.name"
+
+        TAG_BROWSER_VERSION: "test.browser.version"
+
         module Status
           PASS: "pass"
 
@@ -86,6 +96,8 @@ module Datadog
 
         module Type
           TEST: "test"
+
+          BROWSER: "browser"
 
           BENCHMARK: "benchmark"
         end

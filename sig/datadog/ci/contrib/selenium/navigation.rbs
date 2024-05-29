@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module Contrib
+      module Selenium
+        module Navigation
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods : ::Selenium::WebDriver::Navigation
+            def to: (String url) -> void
+
+            def datadog_configuration: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end

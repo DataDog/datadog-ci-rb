@@ -13,7 +13,7 @@ module Datadog
           end
 
           module ClassMethods
-            def init_plugins(*)
+            def init_plugins(*args)
               super
 
               return unless datadog_configuration[:enabled]

@@ -13,7 +13,7 @@ module Datadog
           end
 
           module InstanceMethods
-            def report(*)
+            def report(*args)
               return super unless datadog_configuration[:enabled]
 
               res = super

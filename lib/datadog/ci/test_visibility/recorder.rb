@@ -10,6 +10,7 @@ require_relative "context/global"
 require_relative "context/local"
 
 require_relative "../codeowners/parser"
+require_relative "../contrib/contrib"
 require_relative "../ext/app_types"
 require_relative "../ext/test"
 require_relative "../ext/environment"
@@ -56,6 +57,9 @@ module Datadog
 
         def start_test_session(service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
+
+          # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
+          Contrib.auto_instrument_on_session_start!
 
           @global_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(

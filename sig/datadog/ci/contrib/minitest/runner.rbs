@@ -5,7 +5,7 @@ module Datadog
         module Runner
           def self.included: (untyped base) -> untyped
 
-          class ClassMethods
+          module ClassMethods
             extend ::Minitest
 
             def init_plugins: (*untyped) -> (nil | untyped)

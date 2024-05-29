@@ -23,6 +23,11 @@ module Datadog
         tracer_span.id
       end
 
+      # @return [Integer] the trace ID of the trace this span belongs to
+      def trace_id
+        tracer_span.trace_id
+      end
+
       # @return [String] the name of the span.
       def name
         tracer_span.name

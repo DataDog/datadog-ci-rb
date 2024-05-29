@@ -10,7 +10,7 @@ module Datadog
           end
 
           module ClassMethods
-            def run(*)
+            def run(*args)
               return super unless datadog_configuration[:enabled]
               return super if Helpers.parallel?(self)
 
