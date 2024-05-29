@@ -20,7 +20,7 @@ module Datadog
               window.DD_RUM.stopSession();
               return true;
             } else {
-            	return false;
+              return false;
             }
           JS
         end

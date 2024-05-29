@@ -4,6 +4,7 @@ require "datadog/tracing/contrib/patcher"
 
 require_relative "ext"
 require_relative "../../ext/test"
+require_relative "../../utils/parsing"
 
 module Datadog
   module CI
@@ -17,7 +18,7 @@ module Datadog
           def self.is_rum_active?(script_executor)
             is_rum_active_script_result = script_executor.execute_script(Ext::SCRIPT_IS_RUM_ACTIVE)
             Datadog.logger.debug { "[Selenium] SCRIPT_IS_RUM_ACTIVE result is #{is_rum_active_script_result.inspect}" }
-            is_rum_active_script_result == "true" || is_rum_active_script_result == true
+            Utils::Parsing.convert_to_bool(is_rum_active_script_result)
           end
 
           def self.stop_rum_session(script_executor)
