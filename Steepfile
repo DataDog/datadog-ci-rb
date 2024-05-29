@@ -29,4 +29,5 @@ target :lib do
   library "bundler"
   library "selenium-webdriver"
   library "capybara"
+  library "timecop"
 end

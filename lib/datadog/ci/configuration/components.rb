@@ -70,6 +70,17 @@ module Datadog
           # Choose user defined TraceFlush or default to CI TraceFlush
           settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
 
+          # When timecop is present, Time.now is mocked and .now_without_mock_time is added on Time to
+          # get the current time without the mock.
+          if timecop?
+            settings.time_now_provider = -> do
+              Time.now_without_mock_time
+            rescue NoMethodError
+              # fallback to normal Time.now if Time.now_without_mock_time is not defined for any reason
+              Time.now
+            end
+          end
+
           # startup logs are useless for CI visibility and create noise
           settings.diagnostics.startup_logs.enabled = false
 
@@ -190,6 +201,10 @@ module Datadog
             "Agentless mode was enabled but DD_SITE is not set to one of the following: #{Ext::Settings::DD_SITE_ALLOWLIST.join(", ")}. " \
             "Please make sure to set valid site in DD_SITE environment variable"
           end
+        end
+
+        def timecop?
+          Gem.loaded_specs.key?("timecop") || defined?(Timecop)
         end
       end
     end
