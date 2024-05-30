@@ -1,4 +1,5 @@
 require "minitest"
+require "timecop"
 
 RSpec.describe "Minitest instrumentation" do
   include_context "CI mode activated" do
