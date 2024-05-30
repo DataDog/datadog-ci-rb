@@ -12,13 +12,11 @@ gem "os"
 # To compile native extensions
 gem "rake-compiler"
 
-gem "climate_control"
-
 gem "rspec"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
+gem "climate_control"
 gem "appraisal"
-gem "timecop"
 
 gem "standard", "~> 1.31"
 

@@ -3,11 +3,6 @@ require "minitest"
 RSpec.describe "Minitest instrumentation" do
   include_context "CI mode activated" do
     let(:integration_name) { :minitest }
-    let(:integration_options) { {service_name: "ltest"} }
-
-    let(:itr_enabled) { true }
-    let(:code_coverage_enabled) { true }
-    let(:tests_skipping_enabled) { true }
   end
   let(:time_1990) { Time.utc(1990) }
 
