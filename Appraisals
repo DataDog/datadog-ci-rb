@@ -149,6 +149,16 @@ def self.with_selenium_gem(selenium_versions: 4, capybara_versions: 3)
   end
 end
 
+def self.with_timecop_gem(timecop_versions: 0)
+  Array(timecop_versions).each do |timecop_v|
+    appraise "timecop-#{timecop_v}" do
+      gem "timecop", "~> #{timecop_v}"
+
+      gem "minitest", "~> 5"
+    end
+  end
+end
+
 ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
 major, minor, = ruby_version.segments
 
@@ -161,6 +171,7 @@ with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
 with_active_support_gem(versions: 4..7)
 with_knapsack_pro_rspec_gem
 with_selenium_gem if ruby_version >= Gem::Version.new("3.0")
+with_timecop_gem
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 

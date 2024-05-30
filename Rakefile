@@ -67,6 +67,9 @@ TEST_METADATA = {
   },
   "selenium" => {
     "selenium-4-capybara-3" => "❌ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
+  },
+  "timecop" => {
+    "timecop-0" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby"
   }
 }
 
@@ -140,7 +143,8 @@ namespace :spec do
     :ci_queue_rspec,
     :knapsack_rspec,
     :knapsack_rspec_go,
-    :selenium
+    :selenium,
+    :timecop
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|

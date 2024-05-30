@@ -1,0 +1,6 @@
+class Time
+  def self.now_without_mock_time: () -> Time
+end
+
+class Timecop
+end

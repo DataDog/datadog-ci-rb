@@ -10,3 +10,5 @@ ignore:
       - Style/Alias
   - spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:
       - Lint/ConstantDefinitionInBlock
+  - spec/datadog/ci/contrib/timecop/instrumentation_spec.rb:
+      - Lint/ConstantDefinitionInBlock

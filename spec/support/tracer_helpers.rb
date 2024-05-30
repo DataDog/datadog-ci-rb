@@ -9,16 +9,8 @@ module TracerHelpers
     framework: "rspec",
     test_name: "test_add", test_suite: "calculator_tests",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
-    skip_reason: nil, start_time: Time.now, duration_seconds: 2,
-    with_http_span: false
+    skip_reason: nil, with_http_span: false
   )
-    # each time monotonic clock is called it will return a number that is
-    # by `duration_seconds` bigger than the previous
-    allow(Process).to receive(:clock_gettime).and_return(
-      0, duration_seconds, 2 * duration_seconds, 3 * duration_seconds
-    )
-    Timecop.freeze(start_time)
-
     Datadog::CI.trace_test(
       test_name,
       test_suite,
@@ -39,11 +31,7 @@ module TracerHelpers
       Datadog::CI.active_test&.set_metric("memory_allocations", 16)
 
       set_result(test, result: result, exception: exception, skip_reason: skip_reason) if test
-
-      Timecop.travel(start_time + duration_seconds)
     end
-
-    Timecop.return
   end
 
   # traces a test session with given parameters and number of tests
@@ -51,13 +39,8 @@ module TracerHelpers
     tests_count: 1, framework: "rspec",
     test_name: "test_add", test_suite: "calculator_tests", test_module_name: "arithmetic",
     service: "rspec-test-suite", result: "PASSED", exception: nil,
-    skip_reason: nil, start_time: Time.now, duration_seconds: 2,
-    with_http_span: false
+    skip_reason: nil, with_http_span: false
   )
-    allow(Process).to receive(:clock_gettime).and_return(
-      0, duration_seconds, 2 * duration_seconds, 3 * duration_seconds, 4 * duration_seconds, 5 * duration_seconds
-    )
-
     test_session = Datadog::CI.start_test_session(
       service: service,
       tags: {
@@ -77,7 +60,6 @@ module TracerHelpers
         # service is inherited from test_session
         service: nil,
         result: result, exception: exception, skip_reason: skip_reason,
-        start_time: start_time, duration_seconds: duration_seconds,
         with_http_span: with_http_span
       )
     end

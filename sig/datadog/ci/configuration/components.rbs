@@ -17,6 +17,8 @@ module Datadog
         def serializers_factory: (untyped settings) -> (singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel))
 
         def check_dd_site: (untyped settings) -> void
+
+        def timecop?: () -> bool
       end
     end
   end
