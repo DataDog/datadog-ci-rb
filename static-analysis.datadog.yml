@@ -6,4 +6,8 @@ rulesets:
       symbols-as-keys:
         ignore:
           - '**'
+      hash-fetch:
+        ignore:
+          - 'spec/**/*'
+
 ignorePaths: []
