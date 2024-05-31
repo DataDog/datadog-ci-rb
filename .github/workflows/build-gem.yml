@@ -120,7 +120,7 @@ jobs:
       - name: List gem
         run: |
           find pkg
-      - uses: ruby/setup-ruby@31a7f6d628878b80bc63375a93ae079ec50a1601 # v1.143.0
+      - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
       - name: Install gem
