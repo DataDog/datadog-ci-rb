@@ -4,5 +4,6 @@ rulesets:
   - ruby-best-practices:
     rules:
       symbols-as-keys:
-        ignore: '**'
+        ignore:
+          - '**'
 ignorePaths: []
