@@ -1,4 +1,4 @@
-# Datadog CI Visibility for Ruby
+# Datadog Test Visibility for Ruby
 
 [![Gem Version](https://badge.fury.io/rb/datadog-ci.svg)](https://badge.fury.io/rb/datadog-ci)
 [![YARD documentation](https://img.shields.io/badge/YARD-documentation-blue)](https://datadoghq.dev/datadog-ci-rb/)
