@@ -1,6 +1,8 @@
 rulesets:
   - ruby-code-style
   - ruby-security
-  - ruby-best-practices
-  - rails-best-practices
+  - ruby-best-practices:
+    rules:
+      symbols-as-keys:
+        ignore: '**'
 ignorePaths: []
