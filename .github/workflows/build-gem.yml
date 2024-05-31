@@ -28,9 +28,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@31a7f6d628878b80bc63375a93ae079ec50a1601 # v1.143.0
+      - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2'
+          ruby-version: '3.3'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Patch version
         if: ${{ matrix.type != 'final' }}
@@ -122,7 +122,7 @@ jobs:
           find pkg
       - uses: ruby/setup-ruby@31a7f6d628878b80bc63375a93ae079ec50a1601 # v1.143.0
         with:
-          ruby-version: '3.2'
+          ruby-version: '3.3'
       - name: Install gem
         run: |
           gem install pkg/*.gem
