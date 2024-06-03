@@ -118,7 +118,7 @@ module SpanHelpers
     end
   end
 
-  ["skip", "pass", "fail"].each do |status|
+  %w[skip pass fail].each do |status|
     RSpec::Matchers.define "have_#{status}_status" do
       match do |span|
         @actual = span.get_tag(Datadog::CI::Ext::Test::TAG_STATUS)
