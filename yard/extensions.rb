@@ -131,6 +131,7 @@ class DatadogConfigurationOptionHandler < YARD::Handlers::Ruby::Base
   end
 end
 
+# no-dd-sa
 def camelize(str)
   str.split("_").collect(&:capitalize).join
 end

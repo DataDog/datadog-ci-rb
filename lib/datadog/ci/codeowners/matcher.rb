@@ -87,7 +87,7 @@ module Datadog
           return pattern if pattern == "*"
 
           # if pattern ends with a slash then it matches everything deeply nested in this directory
-          pattern += "**" if pattern.end_with?(::File::SEPARATOR)
+          pattern << "**" if pattern.end_with?(::File::SEPARATOR)
 
           # if pattern doesn't start with a slash then it matches anywhere in the repository
           if !pattern.start_with?(::File::SEPARATOR, "**#{::File::SEPARATOR}", "*#{::File::SEPARATOR}")

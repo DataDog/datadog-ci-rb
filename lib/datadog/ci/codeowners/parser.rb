@@ -8,11 +8,11 @@ module Datadog
       # Responsible for parsing a CODEOWNERS file
       class Parser
         DEFAULT_LOCATION = "CODEOWNERS"
-        POSSIBLE_CODEOWNERS_LOCATIONS = [
-          "CODEOWNERS",
-          ".github/CODEOWNERS",
-          ".gitlab/CODEOWNERS",
-          "docs/CODEOWNERS"
+        POSSIBLE_CODEOWNERS_LOCATIONS = %w[
+          CODEOWNERS
+          .github/CODEOWNERS
+          .gitlab/CODEOWNERS
+          docs/CODEOWNERS
         ].freeze
 
         def initialize(root_file_path)

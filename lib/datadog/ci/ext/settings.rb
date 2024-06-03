@@ -15,13 +15,13 @@ module Datadog
         ENV_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH = "DD_CIVISIBILITY_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH"
 
         # Source: https://docs.datadoghq.com/getting_started/site/
-        DD_SITE_ALLOWLIST = [
-          "datadoghq.com",
-          "us3.datadoghq.com",
-          "us5.datadoghq.com",
-          "datadoghq.eu",
-          "ddog-gov.com",
-          "ap1.datadoghq.com"
+        DD_SITE_ALLOWLIST = %w[
+          datadoghq.com
+          us3.datadoghq.com
+          us5.datadoghq.com
+          datadoghq.eu
+          ddog-gov.com
+          ap1.datadoghq.com
         ].freeze
       end
     end

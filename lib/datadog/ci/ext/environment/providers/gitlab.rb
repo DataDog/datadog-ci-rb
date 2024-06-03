@@ -75,12 +75,12 @@ module Datadog
             end
 
             def git_commit_author_name
-              name, _ = extract_name_email
+              name, _email = extract_name_email
               name
             end
 
             def git_commit_author_email
-              _, email = extract_name_email
+              _name, email = extract_name_email
               email
             end
 

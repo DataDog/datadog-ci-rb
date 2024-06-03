@@ -6,7 +6,7 @@ module Datadog
 
         DEFAULT_LOCATION: "CODEOWNERS"
 
-        POSSIBLE_CODEOWNERS_LOCATIONS: ::Array["CODEOWNERS" | ".github/CODEOWNERS" | ".gitlab/CODEOWNERS" | "docs/CODEOWNERS"]
+        POSSIBLE_CODEOWNERS_LOCATIONS: Array[String]
 
         def initialize: (String? root_file_path) -> void
 
