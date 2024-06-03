@@ -1,3 +1,4 @@
+schema-version: v1
 rulesets:
   - ruby-code-style
   - ruby-security
@@ -8,6 +9,4 @@ rulesets:
           - '**'
       hash-fetch:
         ignore:
-          - 'spec/**/*'
-
-ignorePaths: []
+          - spec/**/*

@@ -3,27 +3,19 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 module DisableBundleCheck
   def check_command
-    ["bundle", "exec", "false"]
+    %w[bundle exec false]
   end
 end
 
-if ["true", "y", "yes", "1"].include?(ENV["APPRAISAL_SKIP_BUNDLE_CHECK"])
+if %w[true y yes 1].include?(ENV["APPRAISAL_SKIP_BUNDLE_CHECK"])
   ::Appraisal::Appraisal.prepend(DisableBundleCheck)
 end
 
 alias original_appraise appraise
 
 REMOVED_GEMS = {
-  check: [
-    "rbs",
-    "steep"
-  ],
-  development: [
-    "ruby-lsp",
-    "ruby-lsp-rspec",
-    "debug",
-    "irb"
-  ]
+  check: %w[rbs steep],
+  development: %w[ruby-lsp ruby-lsp-rspec debug irb]
 }
 
 def appraise(group, &block)
