@@ -33,7 +33,7 @@ module Datadog
               test_name = test_name.sub(test_suite_description, "").strip
 
               if ci_queue?
-                suite_name << " (ci-queue running example [#{test_name}])"
+                suite_name = "#{suite_name} (ci-queue running example [#{test_name}])"
                 test_suite_span = CI.start_test_suite(suite_name)
               end
 
