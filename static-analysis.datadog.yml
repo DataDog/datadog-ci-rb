@@ -9,7 +9,7 @@ rulesets:
           - '**'
       hash-fetch:
         ignore:
-          - spec/**/*
+          - '**'
       percent-w:
         ignore:
           - spec/**/*

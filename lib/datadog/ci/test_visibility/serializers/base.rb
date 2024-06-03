@@ -20,13 +20,7 @@ module Datadog
             "type" => "span_type"
           ].freeze
 
-          REQUIRED_FIELDS = [
-            "error",
-            "name",
-            "resource",
-            "start",
-            "duration"
-          ].freeze
+          REQUIRED_FIELDS = %w[error name resource start duration].freeze
 
           attr_reader :trace, :span, :meta, :options
 
