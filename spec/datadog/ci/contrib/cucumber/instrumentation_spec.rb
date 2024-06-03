@@ -1,6 +1,7 @@
 require "stringio"
 require "fileutils"
 require "cucumber"
+require "securerandom"
 
 RSpec.describe "Cucumber formatter" do
   let(:cucumber_features_root) { File.join(__dir__, "features") }
@@ -22,7 +23,7 @@ RSpec.describe "Cucumber formatter" do
   let(:cucumber_8_or_above) { Gem::Version.new("8.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
   let(:cucumber_4_or_above) { Gem::Version.new("4.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
 
-  let(:run_id) { rand(1..2**64 - 1) }
+  let(:run_id) { SecureRandom.random_number(2**64 - 1) }
   let(:steps_file_definition_path) { "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps.rb" }
   let(:steps_file_for_run_path) do
     "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{run_id}.rb"

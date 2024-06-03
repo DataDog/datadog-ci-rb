@@ -1,5 +1,6 @@
 require "minitest/queue/runner"
 require "fileutils"
+require "securerandom"
 
 RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
   include_context "CI mode activated" do
@@ -7,7 +8,7 @@ RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
     let(:integration_options) { {service_name: "ltest"} }
   end
 
-  let(:run_id) { rand(1..2**64 - 1) }
+  let(:run_id) { SecureRandom.random_number(2**64 - 1) }
 
   before do
     Minitest::Runnable.reset

@@ -1,12 +1,13 @@
 require "rspec/queue"
 require "fileutils"
+require "securerandom"
 
 RSpec.describe "RSpec instrumentation with Shopify's ci-queue runner" do
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
   end
 
-  let(:run_id) { rand(1..2**64 - 1) }
+  let(:run_id) { SecureRandom.random_number(2**64 - 1) }
   let(:options) do
     RSpec::Core::ConfigurationOptions.new([
       "-Ispec/datadog/ci/contrib/ci_queue_rspec/suite_under_test",
