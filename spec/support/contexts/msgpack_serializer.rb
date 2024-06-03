@@ -5,11 +5,7 @@ RSpec.shared_context "msgpack serializer" do
   subject {}
 
   let(:msgpack_jsons) do
-    if subject.is_a?(Array)
-      subject.map { |s| MessagePack.unpack(MessagePack.pack(s)) }
-    else
-      [MessagePack.unpack(MessagePack.pack(subject))]
-    end
+    Array(subject).map { |s| MessagePack.unpack(MessagePack.pack(s)) }
   end
 
   let(:msgpack_json) { msgpack_jsons.first }

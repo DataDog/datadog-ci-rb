@@ -65,7 +65,7 @@ class DatadogConfigurationSettingsHandler < YARD::Handlers::Ruby::Base
   process do
     next if statement.is_a?(YARD::Parser::Ruby::ReferenceNode)
 
-    name = call_params[0]
+    name = call_params.first
 
     # Check if we are already nested inside the DSL namespace
     if namespace.has_tag?(:dsl)

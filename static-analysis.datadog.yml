@@ -13,3 +13,6 @@ rulesets:
       percent-w:
         ignore:
           - spec/**/*
+      no-optional-hash-params:
+        ignore:
+          - '**'
