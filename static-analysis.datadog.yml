@@ -10,8 +10,6 @@ rulesets:
       hash-fetch:
         ignore:
           - spec/**/*
-    rules:
       percent-w:
         ignore:
-         - spec/**/*
-
+          - spec/**/*
