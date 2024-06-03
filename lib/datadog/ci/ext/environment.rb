@@ -23,10 +23,7 @@ module Datadog
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
-        POSSIBLE_BUNDLE_LOCATIONS = [
-          "vendor/bundle",
-          ".bundle"
-        ].freeze
+        POSSIBLE_BUNDLE_LOCATIONS = %w[vendor/bundle .bundle].freeze
 
         module_function
 

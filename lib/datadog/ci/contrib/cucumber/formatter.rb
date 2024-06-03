@@ -187,7 +187,7 @@ module Datadog
           def ok?(result, strict)
             # in minor update in Cucumber 9.2.0, the arity of the `ok?` method changed
             parameters = result.method(:ok?).parameters
-            if parameters == [[:opt, :be_strict]]
+            if parameters == [%i[opt be_strict]]
               result.ok?(strict)
             else
               result.ok?(strict: strict)

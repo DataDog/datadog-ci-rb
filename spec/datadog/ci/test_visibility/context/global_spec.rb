@@ -207,7 +207,7 @@ RSpec.describe Datadog::CI::TestVisibility::Context::Global do
 
     context "when multiple test suites are running" do
       before do
-        ["suite1", "suite2"].each do |test_suite_name|
+        %w[suite1 suite2].each do |test_suite_name|
           subject.fetch_or_activate_test_suite(test_suite_name) do
             Datadog::CI::TestSuite.new(double(Datadog::Tracing::SpanOperation))
           end

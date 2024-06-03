@@ -21,7 +21,7 @@ module Datadog
           def valid?
             valid = true
 
-            [:test_id, :test_suite_id, :test_session_id, :coverage].each do |key|
+            %i[test_id test_suite_id test_session_id coverage].each do |key|
               next unless send(key).nil?
 
               Datadog.logger.warn("citestcov event is invalid: [#{key}] is nil. Event: #{self}")

@@ -124,6 +124,7 @@ module Datadog
           def gzipped?(payload)
             return false if payload.nil? || payload.empty?
 
+            # no-dd-sa
             first_bytes = payload[0, 2]
             return false if first_bytes.nil? || first_bytes.empty?
 

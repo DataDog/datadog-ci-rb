@@ -23,7 +23,7 @@ module Datadog
               test_name = full_description.strip
               if metadata[:description].empty?
                 # for unnamed it blocks this appends something like "example at ./spec/some_spec.rb:10"
-                test_name += " #{description}"
+                test_name << " #{description}"
               end
 
               test_suite_description = fetch_top_level_example_group[:description]
@@ -33,7 +33,7 @@ module Datadog
               test_name = test_name.sub(test_suite_description, "").strip
 
               if ci_queue?
-                suite_name += " (ci-queue running example [#{test_name}])"
+                suite_name = "#{suite_name} (ci-queue running example [#{test_name}])"
                 test_suite_span = CI.start_test_suite(suite_name)
               end
 
@@ -83,9 +83,12 @@ module Datadog
             private
 
             def fetch_top_level_example_group
-              return metadata[:example_group] unless metadata[:example_group][:parent_example_group]
+              example_group = metadata[:example_group]
+              parent_example_group = example_group[:parent_example_group]
 
-              res = metadata[:example_group][:parent_example_group]
+              return example_group unless parent_example_group
+
+              res = parent_example_group
               while (parent = res[:parent_example_group])
                 res = parent
               end
