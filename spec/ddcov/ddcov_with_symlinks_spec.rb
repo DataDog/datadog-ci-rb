@@ -1,12 +1,30 @@
 # frozen_string_literal: true
 
-require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+require "fileutils"
 
-require_relative "calculator_with_symlinks/calculator"
+require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
 RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
   def absolute_path(path)
     File.expand_path(File.join(__dir__, path))
+  end
+
+  before do
+    # create a symlink to the calculator_with_symlinks/operations folder in vendor/gems
+    FileUtils.ln_s(
+      absolute_path("calculator_with_symlinks/operations"),
+      absolute_path("calculator_with_symlinks/vendor/gems/operations"),
+      force: true
+    )
+
+    require_relative "calculator_with_symlinks/calculator"
+  end
+
+  after do
+    # delete symlink
+    FileUtils.rm_f(
+      absolute_path("calculator_with_symlinks/vendor/gems/operations")
+    )
   end
 
   subject { described_class.new(root: root) }
