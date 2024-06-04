@@ -103,7 +103,7 @@ namespace :test do
           "bundle exec appraisal #{ruby_runtime}-#{appraisal_group} rake #{spec_task}"
         end
 
-        command += "'[#{spec_arguments}]'" if spec_arguments
+        command = "#{command} '[#{spec_arguments}]'" if spec_arguments
 
         total_executors = ENV.key?("CIRCLE_NODE_TOTAL") ? ENV["CIRCLE_NODE_TOTAL"].to_i : nil
         current_executor = ENV.key?("CIRCLE_NODE_INDEX") ? ENV["CIRCLE_NODE_INDEX"].to_i : nil
@@ -133,18 +133,17 @@ namespace :spec do
   end
 
   # Datadog CI integrations
-  [
-    :cucumber,
-    :rspec,
-    :minitest,
-    :minitest_shoulda_context,
-    :activesupport,
-    :ci_queue_minitest,
-    :ci_queue_rspec,
-    :knapsack_rspec,
-    :knapsack_rspec_go,
-    :selenium,
-    :timecop
+  %i[
+    cucumber
+    rspec
+    minitest
+    minitest_shoulda_context
+    activesupport
+    ci_queue_minitest
+    ci_queue_rspec
+    knapsack_rspec
+    knapsack_rspec_go
+    selenium timecop
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|
