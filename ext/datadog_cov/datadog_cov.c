@@ -207,9 +207,7 @@ static VALUE dd_cov_stop(VALUE self)
 
   if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
   {
-    // get current thread
     VALUE thval = rb_thread_current();
-    // remove event hook for the current thread
     rb_thread_remove_event_hook(thval, dd_cov_update_coverage);
   }
   else
