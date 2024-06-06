@@ -228,6 +228,16 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
             expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
           end
         end
+
+        context "when threading mode is invalid" do
+          let(:threading_mode) { :invalid_mode }
+
+          it "raises an error" do
+            expect { described_class.new(root: root, threading_mode: threading_mode) }.to(
+              raise_error(ArgumentError, "threading mode is invalid")
+            )
+          end
+        end
       end
     end
   end

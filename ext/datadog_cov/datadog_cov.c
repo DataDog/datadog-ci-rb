@@ -104,7 +104,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   }
   else
   {
-    rb_raise(rb_eArgError, "mode is invalid");
+    rb_raise(rb_eArgError, "threading mode is invalid");
   }
 
   struct dd_cov_data *dd_cov_data;
