@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.0.0] - 2024-06-06
+
+
+### Changed
+* automatically trace with correct time even when time is stubbed by timecop ([#185][])
+* depend on gem datadog ~> 2.0 ([#190][])
+
 ## [1.0.0.beta6] - 2024-05-29
 
 ### Added
@@ -254,7 +261,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta6...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0...main
+[1.0.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta6...v1.0.0
 [1.0.0.beta6]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta5...v1.0.0.beta6
 [1.0.0.beta5]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta4...v1.0.0.beta5
 [1.0.0.beta4]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta3...v1.0.0.beta4
@@ -359,3 +367,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#175]: https://github.com/DataDog/datadog-ci-rb/issues/175
 [#180]: https://github.com/DataDog/datadog-ci-rb/issues/180
 [#183]: https://github.com/DataDog/datadog-ci-rb/issues/183
+[#185]: https://github.com/DataDog/datadog-ci-rb/issues/185
+[#190]: https://github.com/DataDog/datadog-ci-rb/issues/190
