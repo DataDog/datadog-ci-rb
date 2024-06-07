@@ -118,19 +118,6 @@ static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self
   }
   dd_cov_data->last_filename_ptr = current_filename_ptr;
 
-  // if the current filename is not located under the root, we skip it
-  if (strncmp(dd_cov_data->root, c_filename, dd_cov_data->root_len) != 0)
-  {
-    return;
-  }
-
-  // if ignored_path is provided and the current filename is located under the ignored_path, we skip it too
-  // this is useful for ignoring bundled gems location
-  if (dd_cov_data->ignored_path_len != 0 && strncmp(dd_cov_data->ignored_path, c_filename, dd_cov_data->ignored_path_len) == 0)
-  {
-    return;
-  }
-
   int captured_frames = rb_profile_frames(
       0 /* stack starting depth */,
       PROFILE_FRAMES_BUFFER_SIZE,
@@ -144,6 +131,20 @@ static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self
 
   VALUE filename = rb_profile_frame_path(dd_cov_data->frame_buffer[0]);
   if (filename == Qnil)
+  {
+    return;
+  }
+
+  char *filename_ptr = StringValuePtr(filename);
+  // if the current filename is not located under the root, we skip it
+  if (strncmp(dd_cov_data->root, filename_ptr, dd_cov_data->root_len) != 0)
+  {
+    return;
+  }
+
+  // if ignored_path is provided and the current filename is located under the ignored_path, we skip it too
+  // this is useful for ignoring bundled gems location
+  if (dd_cov_data->ignored_path_len != 0 && strncmp(dd_cov_data->ignored_path, filename_ptr, dd_cov_data->ignored_path_len) == 0)
   {
     return;
   }
