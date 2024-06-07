@@ -165,8 +165,8 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
           let(:threading_mode) { :single }
 
           it "collects coverage for each thread separately" do
-            t1_queue = Queue.new
-            t2_queue = Queue.new
+            t1_queue = Thread::Queue.new
+            t2_queue = Thread::Queue.new
 
             t1 = Thread.new do
               cov = thread_local_cov
@@ -221,6 +221,33 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
 
             expect(calculator.multiply(1, 2)).to eq(2)
             t.join
+
+            coverage = cov.stop
+            expect(coverage.size).to eq(2)
+            expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
+            expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+          end
+
+          it "collects coverage for background threads that started before the coverage collection" do
+            jobs_queue = Thread::Queue.new
+            background_jobs_worker = Thread.new do
+              loop do
+                job = jobs_queue.pop
+                break if job == :done
+
+                job.call
+              end
+            end
+
+            cov = described_class.new(root: root, threading_mode: :multi)
+            cov.start
+
+            jobs_queue << -> { expect(calculator.add(1, 2)).to eq(3) }
+            jobs_queue << -> { expect(calculator.multiply(1, 2)).to eq(2) }
+
+            jobs_queue << :done
+
+            background_jobs_worker.join
 
             coverage = cov.stop
             expect(coverage.size).to eq(2)
