@@ -76,6 +76,12 @@ module Datadog
                 end
               end
 
+              option :itr_code_coverage_use_single_threaded_mode do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_USE_SINGLE_THREADED_MODE
+                o.default false
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
