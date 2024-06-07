@@ -1,4 +1,4 @@
-Rake::Task["build"].enhance(["build:pre_check"])
+Rake::Task["build"].enhance(%w[build:pre_check])
 
 desc "Checks executed before gem is built"
 task :"build:pre_check" do

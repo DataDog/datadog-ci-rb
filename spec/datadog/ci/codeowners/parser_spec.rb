@@ -18,7 +18,7 @@ RSpec.describe Datadog::CI::Codeowners::Parser do
       let(:root_file_path) { "#{fixtures_location}/default-codeowners" }
 
       it "returns a Matcher instance with default codeowners file path" do
-        expect(matcher.list_owners("foo/bar.rb")).to eq(["@default"])
+        expect(matcher.list_owners("foo/bar.rb")).to eq(%w[@default])
       end
     end
 
@@ -26,7 +26,7 @@ RSpec.describe Datadog::CI::Codeowners::Parser do
       let(:root_file_path) { "#{fixtures_location}/github-codeowners" }
 
       it "returns a Matcher instance with github codeowners file path" do
-        expect(matcher.list_owners("foo/bar.rb")).to eq(["@github"])
+        expect(matcher.list_owners("foo/bar.rb")).to eq(%w[@github])
       end
     end
 
@@ -34,7 +34,7 @@ RSpec.describe Datadog::CI::Codeowners::Parser do
       let(:root_file_path) { "#{fixtures_location}/gitlab-codeowners" }
 
       it "returns a Matcher instance with gitlab codeowners file path" do
-        expect(matcher.list_owners("foo/bar.rb")).to eq(["@gitlab"])
+        expect(matcher.list_owners("foo/bar.rb")).to eq(%w[@gitlab])
       end
     end
 
@@ -42,7 +42,7 @@ RSpec.describe Datadog::CI::Codeowners::Parser do
       let(:root_file_path) { "#{fixtures_location}/docs-codeowners" }
 
       it "returns a Matcher instance with docs codeowners file path" do
-        expect(matcher.list_owners("foo/bar.rb")).to eq(["@docs"])
+        expect(matcher.list_owners("foo/bar.rb")).to eq(%w[@docs])
       end
     end
   end

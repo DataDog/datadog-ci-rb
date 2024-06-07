@@ -504,7 +504,7 @@ RSpec.describe "Minitest instrumentation" do
 
             it "skips a single test" do
               expect(test_spans).to have(2).items
-              expect(test_spans).to have_tag_values_no_order(:status, ["skip", "pass"])
+              expect(test_spans).to have_tag_values_no_order(:status, %w[skip pass])
 
               expect(first_test_span).to have_test_tag(:itr_skipped_by_itr, "true")
               expect(test_spans.last).not_to have_test_tag(:itr_skipped_by_itr)
@@ -663,11 +663,11 @@ RSpec.describe "Minitest instrumentation" do
 
           expect(test_spans).to have_tag_values_no_order(
             :name,
-            [
-              "test_a_1",
-              "test_a_2",
-              "test_b_1",
-              "test_b_2"
+            %w[
+              test_a_1
+              test_a_2
+              test_b_1
+              test_b_2
             ]
           )
           expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 4)
@@ -719,7 +719,7 @@ RSpec.describe "Minitest instrumentation" do
 
           it "skips given tests" do
             expect(test_spans).to have(4).items
-            expect(test_spans).to have_tag_values_no_order(:status, ["skip", "skip", "skip", "pass"])
+            expect(test_spans).to have_tag_values_no_order(:status, %w[skip skip skip pass])
 
             skipped = test_spans.select { |span| span.get_tag("status") == "skip" }
             expect(skipped).to all have_test_tag(:itr_skipped_by_itr, "true")
@@ -795,7 +795,7 @@ RSpec.describe "Minitest instrumentation" do
 
         it "runs all tests in unskippable suite and sets forced run tag" do
           expect(test_spans).to have(3).items
-          expect(test_spans).to have_tag_values_no_order(:status, ["pass", "pass", "skip"])
+          expect(test_spans).to have_tag_values_no_order(:status, %w[pass pass skip])
 
           unskippable = test_spans.select { |span| span.get_tag("test.status") == "pass" }
           expect(unskippable).to all have_test_tag(:itr_forced_run, "true")
@@ -831,7 +831,7 @@ RSpec.describe "Minitest instrumentation" do
 
         it "runs unskippable test and sets forced run tag" do
           expect(test_spans).to have(2).items
-          expect(test_spans).to have_tag_values_no_order(:status, ["pass", "skip"])
+          expect(test_spans).to have_tag_values_no_order(:status, %w[pass skip])
 
           unskippable = test_spans.select { |span| span.get_tag("test.status") == "pass" }
           expect(unskippable).to all have_test_tag(:itr_forced_run, "true")

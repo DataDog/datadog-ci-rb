@@ -77,7 +77,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
         expect(runner.skipping_tests?).to be true
 
         expect(runner.correlation_id).to eq("42")
-        expect(runner.skippable_tests).to eq(Set.new(["suite.test."]))
+        expect(runner.skippable_tests).to eq(Set.new(%W[suite.test.]))
 
         expect(git_worker).to have_received(:wait_until_done)
       end

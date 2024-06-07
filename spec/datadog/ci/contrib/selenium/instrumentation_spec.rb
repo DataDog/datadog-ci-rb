@@ -19,7 +19,7 @@ RSpec.describe "Browser tests with selenium" do
       create_session: nil,
       browser: "mockbrowser",
       capabilities: double("capabilities", browser_version: "mockversion", "[]": "mockcapabilities"),
-      window_handles: ["window"],
+      window_handles: %w[window],
       switch_to_window: true,
       manage: manager,
       find_elements_by: [],

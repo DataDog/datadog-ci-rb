@@ -690,7 +690,7 @@ RSpec.describe "RSpec hooks" do
         rspec_session_run(with_failed_test: true)
 
         expect(test_spans).to have(2).items
-        expect(test_spans).to have_tag_values_no_order(:status, ["skip", "fail"])
+        expect(test_spans).to have_tag_values_no_order(:status, %w[skip fail])
 
         itr_skipped_test = test_spans.find { |span| span.name == "nested foo" }
         expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
@@ -736,7 +736,7 @@ RSpec.describe "RSpec hooks" do
             rspec_session_run(with_failed_test: true, unskippable: {test: true})
 
             expect(test_spans).to have(2).items
-            expect(test_spans).to have_tag_values_no_order(:status, ["skip", "pass"])
+            expect(test_spans).to have_tag_values_no_order(:status, %w[skip pass])
 
             itr_unskippable_test = test_spans.find { |span| span.name == "nested foo" }
             expect(itr_unskippable_test).not_to have_test_tag(:itr_skipped_by_itr)
@@ -755,7 +755,7 @@ RSpec.describe "RSpec hooks" do
             rspec_session_run(with_failed_test: true, unskippable: {context: true})
 
             expect(test_spans).to have(2).items
-            expect(test_spans).to have_tag_values_no_order(:status, ["fail", "pass"])
+            expect(test_spans).to have_tag_values_no_order(:status, %w[fail pass])
             expect(test_spans).to all have_test_tag(:itr_forced_run, "true")
 
             expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
@@ -768,7 +768,7 @@ RSpec.describe "RSpec hooks" do
             rspec_session_run(with_failed_test: true, unskippable: {suite: true})
 
             expect(test_spans).to have(2).items
-            expect(test_spans).to have_tag_values_no_order(:status, ["fail", "pass"])
+            expect(test_spans).to have_tag_values_no_order(:status, %w[fail pass])
             expect(test_spans).to all have_test_tag(:itr_forced_run, "true")
 
             expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")

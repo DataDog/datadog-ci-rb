@@ -30,7 +30,7 @@ RSpec.describe "Minitest instrumentation with thoughbot's shoulda-context gem fo
     expect([test_session_span, test_module_span]).to all have_pass_status
 
     expect(test_suite_spans).to have(1).item
-    expect(test_suite_spans).to have_tag_values_no_order(:status, ["pass"])
+    expect(test_suite_spans).to have_tag_values_no_order(:status, %w[pass])
 
     expect(test_suite_spans).to have_tag_values_no_order(
       :suite,
@@ -40,7 +40,7 @@ RSpec.describe "Minitest instrumentation with thoughbot's shoulda-context gem fo
     )
 
     expect(test_spans).to have(3).items
-    expect(test_spans).to have_tag_values_no_order(:status, ["pass", "pass", "skip"])
+    expect(test_spans).to have_tag_values_no_order(:status, %w[pass pass skip])
 
     expect(test_spans).to all have_test_tag(:test_suite_id)
     expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 1)
