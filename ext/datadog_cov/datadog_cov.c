@@ -25,7 +25,6 @@ struct dd_cov_data
 
   VALUE coverage;
 
-  VALUE *top_frame;
   uintptr_t last_filename_ptr;
 };
 
@@ -40,7 +39,6 @@ static void dd_cov_free(void *ptr)
   struct dd_cov_data *dd_cov_data = ptr;
   xfree(dd_cov_data->root);
   xfree(dd_cov_data->ignored_path);
-  xfree(dd_cov_data->top_frame);
   xfree(dd_cov_data);
 }
 
@@ -70,7 +68,6 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->ignored_path = NULL;
   dd_cov_data->ignored_path_len = 0;
   dd_cov_data->last_filename_ptr = 0;
-  dd_cov_data->top_frame = xmalloc(sizeof(VALUE));
 
   return obj;
 }
@@ -118,10 +115,11 @@ static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self
   }
   dd_cov_data->last_filename_ptr = current_filename_ptr;
 
+  VALUE top_frame;
   int captured_frames = rb_profile_frames(
       0 /* stack starting depth */,
       PROFILE_FRAMES_BUFFER_SIZE,
-      dd_cov_data->top_frame,
+      &top_frame,
       NULL);
 
   if (captured_frames != PROFILE_FRAMES_BUFFER_SIZE)
@@ -129,7 +127,7 @@ static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self
     return;
   }
 
-  VALUE filename = rb_profile_frame_path(dd_cov_data->top_frame);
+  VALUE filename = rb_profile_frame_path(top_frame);
   if (filename == Qnil)
   {
     return;
