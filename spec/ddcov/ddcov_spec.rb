@@ -17,13 +17,10 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
     let!(:calculator) { Calculator.new }
 
     context "when allocating and starting coverage without a root" do
-      it "does not fail" do
+      it "throws Runtime error" do
         cov = described_class.allocate
-        cov.start
-        expect(calculator.add(1, 2)).to eq(3)
 
-        coverage = cov.stop
-        expect(coverage).to eq({})
+        expect { cov.start }.to raise_error(RuntimeError, "root is required")
       end
     end
 

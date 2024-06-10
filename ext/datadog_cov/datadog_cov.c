@@ -160,11 +160,13 @@ static VALUE dd_cov_start(VALUE self)
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
-  if (dd_cov_data->root_len != 0)
+  if (dd_cov_data->root_len == 0)
   {
-    // add event hook
-    rb_thread_add_event_hook(thval, dd_cov_update_coverage, RUBY_EVENT_LINE, self);
+    rb_raise(rb_eRuntimeError, "root is required");
   }
+
+  // add event hook
+  rb_thread_add_event_hook(thval, dd_cov_update_coverage, RUBY_EVENT_LINE, self);
 
   return self;
 }
