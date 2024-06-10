@@ -194,9 +194,6 @@ static VALUE dd_cov_start(VALUE self)
     rb_add_event_hook(dd_cov_update_coverage, RUBY_EVENT_LINE, self);
   }
 
-  // add event hook
-  rb_thread_add_event_hook(thval, dd_cov_update_coverage, RUBY_EVENT_LINE, self);
-
   return self;
 }
 
