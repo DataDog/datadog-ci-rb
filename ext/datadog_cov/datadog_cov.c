@@ -31,6 +31,9 @@ struct dd_cov_data
 
   uintptr_t last_filename_ptr;
 
+  // for single threaded mode: thread that is being covered
+  VALUE th_covered;
+
   int threading_mode;
 };
 
@@ -38,6 +41,7 @@ static void dd_cov_mark(void *ptr)
 {
   struct dd_cov_data *dd_cov_data = ptr;
   rb_gc_mark_movable(dd_cov_data->coverage);
+  rb_gc_mark_movable(dd_cov_data->th_covered);
 }
 
 static void dd_cov_free(void *ptr)
@@ -52,6 +56,7 @@ static void dd_cov_compact(void *ptr)
 {
   struct dd_cov_data *dd_cov_data = ptr;
   dd_cov_data->coverage = rb_gc_location(dd_cov_data->coverage);
+  dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
 }
 
 const rb_data_type_t dd_cov_data_type = {
@@ -188,6 +193,7 @@ static VALUE dd_cov_start(VALUE self)
   {
     VALUE thval = rb_thread_current();
     rb_thread_add_event_hook(thval, dd_cov_update_coverage, RUBY_EVENT_LINE, self);
+    dd_cov_data->th_covered = thval;
   }
   else
   {
@@ -205,7 +211,13 @@ static VALUE dd_cov_stop(VALUE self)
   if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
   {
     VALUE thval = rb_thread_current();
-    rb_thread_remove_event_hook(thval, dd_cov_update_coverage);
+    if (!rb_equal(thval, dd_cov_data->th_covered))
+    {
+      rb_raise(rb_eRuntimeError, "Coverage was not started by this thread");
+    }
+
+    rb_thread_remove_event_hook(dd_cov_data->th_covered, dd_cov_update_coverage);
+    dd_cov_data->th_covered = Qnil;
   }
   else
   {
