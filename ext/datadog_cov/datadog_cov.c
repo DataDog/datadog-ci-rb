@@ -94,7 +94,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
 
   VALUE rb_threading_mode = rb_hash_lookup(opt, ID2SYM(rb_intern("threading_mode")));
   int threading_mode;
-  if (!RTEST(rb_threading_mode) || rb_threading_mode == ID2SYM(rb_intern("multi")))
+  if (rb_threading_mode == ID2SYM(rb_intern("multi")))
   {
     threading_mode = MULTI_THREADED_COVERAGE_MODE;
   }

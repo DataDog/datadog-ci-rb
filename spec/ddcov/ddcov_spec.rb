@@ -11,7 +11,8 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
   end
 
   let(:ignored_path) { nil }
-  subject { described_class.new(root: root, ignored_path: ignored_path) }
+  let(:threading_mode) { :multi }
+  subject { described_class.new(root: root, ignored_path: ignored_path, threading_mode: threading_mode) }
 
   describe "code coverage collection" do
     let!(:calculator) { Calculator.new }

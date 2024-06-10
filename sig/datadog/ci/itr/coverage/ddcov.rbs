@@ -5,7 +5,7 @@ module Datadog
         class DDCov
           type threading_mode = :multi | :single
 
-          def initialize: (root: String, ignored_path: String?, ?threading_mode: threading_mode?) -> void
+          def initialize: (root: String, ignored_path: String?, threading_mode: threading_mode) -> void
 
           def start: () -> void
 
