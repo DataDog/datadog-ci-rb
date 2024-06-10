@@ -24,7 +24,7 @@ RSpec.describe Datadog::CI::Worker do
 
     context "when the worker has started" do
       context "when the worker is running" do
-        let(:queue) { Queue.new }
+        let(:queue) { Thread::Queue.new }
         subject(:worker) { described_class.new { queue.pop } }
 
         it do

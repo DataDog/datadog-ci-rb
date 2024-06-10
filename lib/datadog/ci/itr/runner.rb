@@ -31,7 +31,8 @@ module Datadog
           api: nil,
           coverage_writer: nil,
           enabled: false,
-          bundle_location: nil
+          bundle_location: nil,
+          use_single_threaded_coverage: false
         )
           @enabled = enabled
           @api = api
@@ -43,6 +44,7 @@ module Datadog
           else
             bundle_location
           end
+          @use_single_threaded_coverage = use_single_threaded_coverage
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false
@@ -186,12 +188,15 @@ module Datadog
         def coverage_collector
           Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(
             root: Git::LocalRepository.root,
-            ignored_path: @bundle_location
+            ignored_path: @bundle_location,
+            threading_mode: code_coverage_mode
           )
         end
 
         def load_datadog_cov!
           require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+
+          Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
 
@@ -221,6 +226,10 @@ module Datadog
           Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
           Datadog.logger.debug { "Found #{@skippable_tests.count} skippable tests." }
           Datadog.logger.debug { "ITR correlation ID: #{@correlation_id}" }
+        end
+
+        def code_coverage_mode
+          @use_single_threaded_coverage ? :single : :multi
         end
       end
     end

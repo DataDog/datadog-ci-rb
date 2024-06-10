@@ -23,6 +23,7 @@ RSpec.shared_context "CI mode activated" do
   let(:git_metadata_upload_enabled) { false }
   let(:require_git) { false }
   let(:bundle_path) { nil }
+  let(:use_single_threaded_coverage) { false }
 
   let(:itr_correlation_id) { "itr_correlation_id" }
   let(:itr_skippable_tests) { [] }
@@ -77,6 +78,7 @@ RSpec.shared_context "CI mode activated" do
       c.ci.itr_enabled = itr_enabled
       c.ci.git_metadata_upload_enabled = git_metadata_upload_enabled
       c.ci.itr_code_coverage_excluded_bundle_path = bundle_path
+      c.ci.itr_code_coverage_use_single_threaded_mode = use_single_threaded_coverage
       unless integration_name == :no_instrument
         c.ci.instrument integration_name, integration_options
       end

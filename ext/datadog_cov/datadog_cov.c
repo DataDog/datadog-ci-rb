@@ -1,7 +1,11 @@
 #include <ruby.h>
 #include <ruby/debug.h>
 
-const int PROFILE_FRAMES_BUFFER_SIZE = 1;
+#define PROFILE_FRAMES_BUFFER_SIZE 1
+
+// threading modes
+#define SINGLE_THREADED_COVERAGE_MODE 0
+#define MULTI_THREADED_COVERAGE_MODE 1
 
 char *ruby_strndup(const char *str, size_t size)
 {
@@ -26,12 +30,18 @@ struct dd_cov_data
   VALUE coverage;
 
   uintptr_t last_filename_ptr;
+
+  // for single threaded mode: thread that is being covered
+  VALUE th_covered;
+
+  int threading_mode;
 };
 
 static void dd_cov_mark(void *ptr)
 {
   struct dd_cov_data *dd_cov_data = ptr;
   rb_gc_mark_movable(dd_cov_data->coverage);
+  rb_gc_mark_movable(dd_cov_data->th_covered);
 }
 
 static void dd_cov_free(void *ptr)
@@ -46,6 +56,7 @@ static void dd_cov_compact(void *ptr)
 {
   struct dd_cov_data *dd_cov_data = ptr;
   dd_cov_data->coverage = rb_gc_location(dd_cov_data->coverage);
+  dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
 }
 
 const rb_data_type_t dd_cov_data_type = {
@@ -68,6 +79,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->ignored_path = NULL;
   dd_cov_data->ignored_path_len = 0;
   dd_cov_data->last_filename_ptr = 0;
+  dd_cov_data->threading_mode = MULTI_THREADED_COVERAGE_MODE;
 
   return obj;
 }
@@ -85,9 +97,25 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   }
   VALUE rb_ignored_path = rb_hash_lookup(opt, ID2SYM(rb_intern("ignored_path")));
 
+  VALUE rb_threading_mode = rb_hash_lookup(opt, ID2SYM(rb_intern("threading_mode")));
+  int threading_mode;
+  if (rb_threading_mode == ID2SYM(rb_intern("multi")))
+  {
+    threading_mode = MULTI_THREADED_COVERAGE_MODE;
+  }
+  else if (rb_threading_mode == ID2SYM(rb_intern("single")))
+  {
+    threading_mode = SINGLE_THREADED_COVERAGE_MODE;
+  }
+  else
+  {
+    rb_raise(rb_eArgError, "threading mode is invalid");
+  }
+
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
+  dd_cov_data->threading_mode = threading_mode;
   dd_cov_data->root_len = RSTRING_LEN(rb_root);
   dd_cov_data->root = ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
 
@@ -152,8 +180,6 @@ static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self
 
 static VALUE dd_cov_start(VALUE self)
 {
-  // get current thread
-  VALUE thval = rb_thread_current();
 
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
@@ -163,21 +189,40 @@ static VALUE dd_cov_start(VALUE self)
     rb_raise(rb_eRuntimeError, "root is required");
   }
 
-  // add event hook
-  rb_thread_add_event_hook(thval, dd_cov_update_coverage, RUBY_EVENT_LINE, self);
+  if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
+  {
+    VALUE thval = rb_thread_current();
+    rb_thread_add_event_hook(thval, dd_cov_update_coverage, RUBY_EVENT_LINE, self);
+    dd_cov_data->th_covered = thval;
+  }
+  else
+  {
+    rb_add_event_hook(dd_cov_update_coverage, RUBY_EVENT_LINE, self);
+  }
 
   return self;
 }
 
 static VALUE dd_cov_stop(VALUE self)
 {
-  // get current thread
-  VALUE thval = rb_thread_current();
-  // remove event hook for the current thread
-  rb_thread_remove_event_hook(thval, dd_cov_update_coverage);
-
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
+
+  if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
+  {
+    VALUE thval = rb_thread_current();
+    if (!rb_equal(thval, dd_cov_data->th_covered))
+    {
+      rb_raise(rb_eRuntimeError, "Coverage was not started by this thread");
+    }
+
+    rb_thread_remove_event_hook(dd_cov_data->th_covered, dd_cov_update_coverage);
+    dd_cov_data->th_covered = Qnil;
+  }
+  else
+  {
+    rb_remove_event_hook(dd_cov_update_coverage);
+  }
 
   VALUE res = dd_cov_data->coverage;
 

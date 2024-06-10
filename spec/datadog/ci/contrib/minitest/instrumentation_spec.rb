@@ -27,7 +27,7 @@ RSpec.describe "Minitest instrumentation" do
     end
   end
 
-  context "with service name configured" do
+  context "with service name configured and code coverage enabled" do
     include_context "CI mode activated" do
       let(:integration_name) { :minitest }
       let(:integration_options) { {service_name: "ltest"} }
@@ -402,12 +402,18 @@ RSpec.describe "Minitest instrumentation" do
         before(:context) do
           Minitest::Runnable.reset
 
+          require_relative "helpers/addition_helper"
           class SomeTest < Minitest::Test
             def test_pass
               assert true
             end
 
             def test_pass_other
+              # add thread to test that code coverage is collected
+              t = Thread.new do
+                AdditionHelper.add(1, 2)
+              end
+              t.join
               assert true
             end
           end
@@ -494,6 +500,13 @@ RSpec.describe "Minitest instrumentation" do
           expect_coverage_events_belong_to_suite(first_test_suite_span)
           expect_coverage_events_belong_to_tests(test_spans)
           expect_non_empty_coverages
+
+          # expect that background thread is covered
+          test_span = test_spans.find { |span| span.get_tag("test.name") == "test_pass_other" }
+          cov_event = find_coverage_for_test(test_span)
+          expect(cov_event.coverage.keys).to include(
+            File.expand_path(File.join(__dir__, "helpers/addition_helper.rb"))
+          )
         end
 
         context "when ITR skips tests" do
@@ -879,6 +892,51 @@ RSpec.describe "Minitest instrumentation" do
           expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
         end
       end
+    end
+  end
+
+  context "when using single threaded code coverage" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      let(:use_single_threaded_coverage) { true }
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Thread.current[:dd_coverage_collector] = nil
+
+      Minitest::Runnable.reset
+
+      require_relative "helpers/addition_helper"
+      class SomeTestWithThreads < Minitest::Test
+        def test_with_background_thread
+          # add thread to test that code coverage is collected
+          t = Thread.new do
+            AdditionHelper.add(1, 2)
+          end
+          t.join
+          assert true
+        end
+      end
+    end
+
+    it "does not cover the background thread" do
+      skip if PlatformHelpers.jruby?
+
+      expect(test_spans).to have(1).item
+      expect(coverage_events).to have(1).item
+
+      # expect that background thread is not covered
+      cov_event = find_coverage_for_test(first_test_span)
+      expect(cov_event.coverage.keys).not_to include(
+        File.expand_path(File.join(__dir__, "helpers/addition_helper.rb"))
+      )
     end
   end
 end

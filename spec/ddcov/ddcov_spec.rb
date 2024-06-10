@@ -11,7 +11,8 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
   end
 
   let(:ignored_path) { nil }
-  subject { described_class.new(root: root, ignored_path: ignored_path) }
+  let(:threading_mode) { :multi }
+  subject { described_class.new(root: root, ignored_path: ignored_path, threading_mode: threading_mode) }
 
   describe "code coverage collection" do
     let!(:calculator) { Calculator.new }
@@ -158,25 +159,69 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
 
       context "multi threaded execution" do
         def thread_local_cov
-          Thread.current[:datadog_ci_cov] ||= described_class.new(root: root)
+          Thread.current[:datadog_ci_cov] ||= described_class.new(root: root, threading_mode: threading_mode)
         end
 
-        it "collects coverage for each thread separately" do
-          t1_queue = Queue.new
-          t2_queue = Queue.new
+        context "in single threaded coverage mode" do
+          let(:threading_mode) { :single }
 
-          t1 = Thread.new do
+          it "collects coverage for each thread separately" do
+            t1_queue = Thread::Queue.new
+            t2_queue = Thread::Queue.new
+
+            t1 = Thread.new do
+              cov = thread_local_cov
+              cov.start
+
+              t1_queue << :ready
+              expect(t2_queue.pop).to be(:ready)
+
+              expect(calculator.add(1, 2)).to eq(3)
+              expect(calculator.multiply(1, 2)).to eq(2)
+
+              t1_queue << :done
+              expect(t2_queue.pop).to be :done
+
+              coverage = cov.stop
+              expect(coverage.size).to eq(2)
+              expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
+              expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+            end
+
+            t2 = Thread.new do
+              cov = thread_local_cov
+              cov.start
+
+              t2_queue << :ready
+              expect(t1_queue.pop).to be(:ready)
+
+              expect(calculator.subtract(1, 2)).to eq(-1)
+
+              t2_queue << :done
+              expect(t1_queue.pop).to be :done
+
+              coverage = cov.stop
+              expect(coverage.size).to eq(1)
+              expect(coverage.keys).to include(absolute_path("calculator/operations/subtract.rb"))
+            end
+
+            [t1, t2].each(&:join)
+          end
+        end
+
+        context "in multi threaded code coverage mode" do
+          let(:threading_mode) { :multi }
+
+          it "collects coverage for background threads" do
             cov = thread_local_cov
             cov.start
 
-            t1_queue << :ready
-            expect(t2_queue.pop).to be(:ready)
+            t = Thread.new do
+              expect(calculator.add(1, 2)).to eq(3)
+            end
 
-            expect(calculator.add(1, 2)).to eq(3)
             expect(calculator.multiply(1, 2)).to eq(2)
-
-            t1_queue << :done
-            expect(t2_queue.pop).to be :done
+            t.join
 
             coverage = cov.stop
             expect(coverage.size).to eq(2)
@@ -184,24 +229,56 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
             expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
           end
 
-          t2 = Thread.new do
-            cov = thread_local_cov
+          it "collects coverage for background threads that started before the coverage collection" do
+            jobs_queue = Thread::Queue.new
+            background_jobs_worker = Thread.new do
+              loop do
+                job = jobs_queue.pop
+                break if job == :done
+
+                job.call
+              end
+            end
+
+            cov = described_class.new(root: root, threading_mode: :multi)
             cov.start
 
-            t2_queue << :ready
-            expect(t1_queue.pop).to be(:ready)
+            jobs_queue << -> { expect(calculator.add(1, 2)).to eq(3) }
+            jobs_queue << -> { expect(calculator.multiply(1, 2)).to eq(2) }
+
+            jobs_queue << :done
+
+            background_jobs_worker.join
+
+            coverage = cov.stop
+            expect(coverage.size).to eq(2)
+            expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
+            expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+          end
+
+          it "does not track coverage when stopped" do
+            subject.start
+            expect(calculator.add(1, 2)).to eq(3)
+            subject.stop
 
             expect(calculator.subtract(1, 2)).to eq(-1)
 
-            t2_queue << :done
-            expect(t1_queue.pop).to be :done
-
-            coverage = cov.stop
+            subject.start
+            expect(calculator.multiply(1, 2)).to eq(2)
+            coverage = subject.stop
             expect(coverage.size).to eq(1)
-            expect(coverage.keys).to include(absolute_path("calculator/operations/subtract.rb"))
+            expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
           end
+        end
 
-          [t1, t2].each(&:join)
+        context "when threading mode is invalid" do
+          let(:threading_mode) { :invalid_mode }
+
+          it "raises an error" do
+            expect { described_class.new(root: root, threading_mode: threading_mode) }.to(
+              raise_error(ArgumentError, "threading mode is invalid")
+            )
+          end
         end
       end
     end

@@ -15,6 +15,7 @@ module Datadog
         @dd_env: String?
         @config_tags: Hash[String, String]
         @bundle_location: String?
+        @use_single_threaded_coverage: bool
 
         @skipped_tests_count: Integer
         @mutex: Thread::Mutex
@@ -23,7 +24,7 @@ module Datadog
         attr_reader skipped_tests_count: Integer
         attr_reader correlation_id: String?
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::ITR::Coverage::Writer?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::ITR::Coverage::Writer?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool) -> void
 
         def configure: (Hash[String, untyped] remote_configuration, test_session: Datadog::CI::TestSession, git_tree_upload_worker: Datadog::CI::Worker) -> void
 
@@ -58,6 +59,8 @@ module Datadog
         def fetch_skippable_tests: (test_session: Datadog::CI::TestSession, git_tree_upload_worker: Datadog::CI::Worker) -> void
 
         def increment_skipped_tests_counter: () -> void
+
+        def code_coverage_mode: () -> Datadog::CI::ITR::Coverage::DDCov::threading_mode
       end
     end
   end
