@@ -255,6 +255,20 @@ RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
             expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
             expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
           end
+
+          it "does not track coverage when stopped" do
+            subject.start
+            expect(calculator.add(1, 2)).to eq(3)
+            subject.stop
+
+            expect(calculator.subtract(1, 2)).to eq(-1)
+
+            subject.start
+            expect(calculator.multiply(1, 2)).to eq(2)
+            coverage = subject.stop
+            expect(coverage.size).to eq(1)
+            expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+          end
         end
 
         context "when threading mode is invalid" do
