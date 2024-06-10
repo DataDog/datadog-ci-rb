@@ -135,7 +135,7 @@ static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self
     return;
   }
 
-  char *filename_ptr = StringValuePtr(filename);
+  char *filename_ptr = RSTRING_PTR(filename);
   // if the current filename is not located under the root, we skip it
   if (strncmp(dd_cov_data->root, filename_ptr, dd_cov_data->root_len) != 0)
   {
