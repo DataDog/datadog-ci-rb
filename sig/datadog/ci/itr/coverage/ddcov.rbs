@@ -4,7 +4,7 @@ module Datadog
       module Coverage
         class DDCov
 
-          def initialize: (root: String, ?mode: Symbol, ignored_path: String?) -> void
+          def initialize: (root: String, ignored_path: String?) -> void
 
           def start: () -> void
 

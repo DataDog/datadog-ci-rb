@@ -22,6 +22,8 @@ module Datadog
 
           DEFAULT_SHUTDOWN_TIMEOUT: 60
 
+          DEFAULT_INTERVAL: 3
+
           def initialize: (transport: Datadog::CI::ITR::Coverage::Transport, ?options: ::Hash[untyped, untyped]) -> void
 
           def write: (Datadog::CI::ITR::Coverage::Event event) -> untyped
