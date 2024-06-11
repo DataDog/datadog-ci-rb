@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.0.1] - 2024-06-11
+
+### Fixed
+* multi threaded code coverage support for datadog_cov ([#189][])
+* code coverage extension fixes and improvements ([#171][])
+
 ## [1.0.0] - 2024-06-06
 
 
@@ -261,7 +267,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.1...main
+[1.0.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta6...v1.0.0
 [1.0.0.beta6]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta5...v1.0.0.beta6
 [1.0.0.beta5]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta4...v1.0.0.beta5
@@ -361,6 +368,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#167]: https://github.com/DataDog/datadog-ci-rb/issues/167
 [#168]: https://github.com/DataDog/datadog-ci-rb/issues/168
 [#170]: https://github.com/DataDog/datadog-ci-rb/issues/170
+[#171]: https://github.com/DataDog/datadog-ci-rb/issues/171
 [#172]: https://github.com/DataDog/datadog-ci-rb/issues/172
 [#173]: https://github.com/DataDog/datadog-ci-rb/issues/173
 [#174]: https://github.com/DataDog/datadog-ci-rb/issues/174
@@ -368,4 +376,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#180]: https://github.com/DataDog/datadog-ci-rb/issues/180
 [#183]: https://github.com/DataDog/datadog-ci-rb/issues/183
 [#185]: https://github.com/DataDog/datadog-ci-rb/issues/185
+[#189]: https://github.com/DataDog/datadog-ci-rb/issues/189
 [#190]: https://github.com/DataDog/datadog-ci-rb/issues/190
