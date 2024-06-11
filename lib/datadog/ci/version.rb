@@ -3,9 +3,9 @@
 module Datadog
   module CI
     module VERSION
-      MAJOR = "1"
-      MINOR = "0"
-      PATCH = "0"
+      MAJOR = 1
+      MINOR = 0
+      PATCH = 1
       PRE = nil
       BUILD = nil
       # PRE and BUILD above are modified for dev gems during gem build GHA workflow

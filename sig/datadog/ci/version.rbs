@@ -1,9 +1,9 @@
 module Datadog
   module CI
     module VERSION
-      MAJOR: String
-      MINOR: String
-      PATCH: String
+      MAJOR: Integer
+      MINOR: Integer
+      PATCH: Integer
       PRE: String?
       BUILD: String?
 
