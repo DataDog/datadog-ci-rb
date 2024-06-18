@@ -6,10 +6,6 @@ require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
 
 RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
-  def absolute_path(path)
-    File.expand_path(File.join(__dir__, path))
-  end
-
   let(:ignored_path) { nil }
   let(:threading_mode) { :multi }
   subject { described_class.new(root: root, ignored_path: ignored_path, threading_mode: threading_mode) }
