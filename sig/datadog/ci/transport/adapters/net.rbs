@@ -7,7 +7,7 @@ module Datadog
 
           @port: Integer
 
-          @timeout: Float
+          @timeout: Integer
 
           @ssl: bool
 
@@ -15,7 +15,7 @@ module Datadog
 
           attr_reader port: Integer
 
-          attr_reader timeout: Float
+          attr_reader timeout: Integer
 
           attr_reader ssl: bool
 
