@@ -60,7 +60,7 @@ module Datadog
 
             Datadog::CI::Transport::HTTP.new(
               host: uri.host,
-              port: uri.port,
+              port: uri.port || 80,
               ssl: uri.scheme == "https" || uri.port == 443,
               compress: compress
             )

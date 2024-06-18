@@ -1,0 +1,63 @@
+module Datadog
+  module CI
+    module Transport
+      module Adapters
+        class Net
+          @hostname: String
+
+          @port: Integer
+
+          @timeout: Float
+
+          @ssl: bool
+
+          attr_reader hostname: String
+
+          attr_reader port: Integer
+
+          attr_reader timeout: Float
+
+          attr_reader ssl: bool
+
+          def initialize: (hostname: String, port: Integer, ssl: bool, timeout_seconds: Integer) -> void
+
+          def open: () { (Net::HTTP http) -> ::Net::HTTPResponse } -> ::Net::HTTPResponse
+
+          def call: (path: String, payload: String, headers: Hash[String, String], verb: String) -> Response
+
+          def post: (path: String, payload: String, headers: Hash[String, String]) -> Response
+
+          class Response
+            @http_response: ::Net::HTTPResponse
+
+            @decompressed_payload: String
+
+            attr_reader http_response: ::Net::HTTPResponse
+
+            def initialize: (::Net::HTTPResponse http_response) -> void
+
+            def payload: () -> String
+
+            def header: (String name) -> String?
+
+            def code: () -> Integer
+
+            def ok?: () -> bool
+
+            def unsupported?: () -> bool
+
+            def not_found?: () -> bool
+
+            def client_error?: () -> bool
+
+            def server_error?: () -> bool
+
+            def gzipped?: (String body) -> bool
+
+            def inspect: () -> ::String
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
 require "delegate"
-require "datadog/core/transport/http/adapters/net"
-require "datadog/core/transport/http/env"
-require "datadog/core/transport/request"
 require "socket"
 
 require_relative "gzip"
+require_relative "adapters/net"
 require_relative "../ext/transport"
 
 module Datadog
@@ -24,7 +22,7 @@ module Datadog
         MAX_RETRIES = 3
         INITIAL_BACKOFF = 1
 
-        def initialize(host:, timeout: DEFAULT_TIMEOUT, port: nil, ssl: true, compress: false)
+        def initialize(host:, port:, timeout: DEFAULT_TIMEOUT, ssl: true, compress: false)
           @host = host
           @port = port
           @timeout = timeout
@@ -70,7 +68,7 @@ module Datadog
 
         def perform_http_call(path:, payload:, headers:, verb:, retries: MAX_RETRIES, backoff: INITIAL_BACKOFF)
           adapter.call(
-            build_env(path: path, payload: payload, headers: headers, verb: verb)
+            path: path, payload: payload, headers: headers, verb: verb
           )
         rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, SocketError, Net::HTTPBadResponse => e
           Datadog.logger.debug("Failed to send request with #{e} (#{e.message})")
@@ -87,64 +85,17 @@ module Datadog
           end
         end
 
-        def build_env(path:, payload:, headers:, verb:)
-          env = Datadog::Core::Transport::HTTP::Env.new(
-            Datadog::Core::Transport::Request.new
-          )
-          env.body = payload
-          env.path = path
-          env.headers = headers
-          env.verb = verb
-          env
-        end
-
         def adapter
-          settings = AdapterSettings.new(hostname: host, port: port, ssl: ssl, timeout_seconds: timeout)
-          @adapter ||= Datadog::Core::Transport::HTTP::Adapters::Net.new(settings)
+          @adapter ||= Datadog::CI::Transport::Adapters::Net.new(
+            hostname: host, port: port, ssl: ssl, timeout_seconds: timeout
+          )
         end
 
         # adds compatibility with Datadog::Tracing transport and
         # provides ungzipping capabilities
         class ResponseDecorator < ::SimpleDelegator
-          def payload
-            return @decompressed_payload if defined?(@decompressed_payload)
-
-            if gzipped?(__getobj__.payload)
-              Datadog.logger.debug("Decompressing gzipped response payload")
-              @decompressed_payload = Gzip.decompress(__getobj__.payload)
-            else
-              __getobj__.payload
-            end
-          end
-
           def trace_count
             0
-          end
-
-          def gzipped?(payload)
-            return false if payload.nil? || payload.empty?
-
-            # no-dd-sa
-            first_bytes = payload[0, 2]
-            return false if first_bytes.nil? || first_bytes.empty?
-
-            first_bytes.b == Datadog::CI::Ext::Transport::GZIP_MAGIC_NUMBER
-          end
-        end
-
-        class AdapterSettings
-          attr_reader :hostname, :port, :ssl, :timeout_seconds
-
-          def initialize(hostname:, port: nil, ssl: true, timeout_seconds: nil)
-            @hostname = hostname
-            @port = port
-            @ssl = ssl
-            @timeout_seconds = timeout_seconds
-          end
-
-          def ==(other)
-            hostname == other.hostname && port == other.port && ssl == other.ssl &&
-              timeout_seconds == other.timeout_seconds
           end
         end
       end

@@ -1,7 +1,7 @@
 require_relative "../../../../lib/datadog/ci/transport/http"
 
 RSpec.describe Datadog::CI::Transport::HTTP do
-  subject(:transport) { described_class.new(host: host, **options) }
+  subject(:transport) { described_class.new(host: host, port: port, **options) }
 
   let(:host) { "datadog-host" }
   let(:port) { 8132 }
@@ -10,17 +10,16 @@ RSpec.describe Datadog::CI::Transport::HTTP do
   let(:options) { {} }
 
   shared_context "HTTP adapter stub" do
-    let(:adapter) { instance_double(::Datadog::Core::Transport::HTTP::Adapters::Net) }
+    let(:adapter) { instance_double(::Datadog::CI::Transport::Adapters::Net) }
 
     before do
-      settings = Datadog::CI::Transport::HTTP::AdapterSettings.new(
-        hostname: transport.host,
-        port: transport.port,
-        timeout_seconds: transport.timeout,
-        ssl: transport.ssl
-      )
-      allow(::Datadog::Core::Transport::HTTP::Adapters::Net).to receive(:new)
-        .with(settings).and_return(adapter)
+      allow(::Datadog::CI::Transport::Adapters::Net).to receive(:new)
+        .with(
+          hostname: transport.host,
+          port: transport.port,
+          timeout_seconds: transport.timeout,
+          ssl: transport.ssl
+        ).and_return(adapter)
     end
   end
 
@@ -31,7 +30,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       it do
         is_expected.to have_attributes(
           host: host,
-          port: nil,
+          port: port,
           timeout: Datadog::CI::Transport::HTTP::DEFAULT_TIMEOUT,
           ssl: true
         )
@@ -98,19 +97,18 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     subject(:response) { transport.request(path: path, payload: payload, headers: headers, **request_options) }
 
     context "when request is successful" do
-      let(:expected_env) do
-        env = Datadog::Core::Transport::HTTP::Env.new(
-          Datadog::Core::Transport::Request.new
-        )
-        env.body = payload
-        env.path = path
-        env.headers = expected_headers
-        env.verb = "post"
-        env
-      end
+      let(:expected_payload) { payload }
+      let(:expected_path) { path }
+      let(:expected_headers) { headers }
+      let(:expected_verb) { "post" }
 
       before do
-        expect(adapter).to receive(:call).with(expected_env).and_return(http_response)
+        expect(adapter).to receive(:call).with(
+          payload: expected_payload,
+          path: expected_path,
+          headers: expected_headers,
+          verb: expected_verb
+        ).and_return(http_response)
       end
 
       it "produces a response" do
@@ -124,25 +122,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         let(:expected_headers) { {"Content-Type" => "application/json", "Accept-Encoding" => "gzip"} }
         let(:request_options) { {accept_compressed_response: true} }
 
-        it "adds Accept-Encoding header" do
-          is_expected.to be_a_kind_of(described_class::ResponseDecorator)
-
-          expect(response.code).to eq(200)
-          expect(response.payload).to eq("sample payload")
-        end
-
-        context "when response is gzipped" do
-          let(:response_payload) do
-            Datadog::CI::Transport::Gzip.compress("sample payload")
-          end
-
-          it "decompressed response payload" do
-            is_expected.to be_a_kind_of(described_class::ResponseDecorator)
-
-            expect(response.code).to eq(200)
-            expect(response.payload).to eq("sample payload")
-          end
-        end
+        it { is_expected.to be_a_kind_of(described_class::ResponseDecorator) }
       end
     end
 
@@ -152,19 +132,18 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       let(:options) { {compress: true} }
       let(:post_request) { double(:post_request) }
 
-      let(:env) do
-        env = Datadog::Core::Transport::HTTP::Env.new(
-          Datadog::Core::Transport::Request.new
-        )
-        env.body = Datadog::CI::Transport::Gzip.compress(payload)
-        env.path = path
-        env.headers = headers
-        env.verb = "post"
-        env
-      end
+      let(:expected_payload) { Datadog::CI::Transport::Gzip.compress(payload) }
+      let(:expected_path) { path }
+      let(:expected_headers) { headers }
+      let(:expected_verb) { "post" }
 
       before do
-        expect(adapter).to receive(:call).with(env).and_return(http_response)
+        expect(adapter).to receive(:call).with(
+          payload: expected_payload,
+          path: expected_path,
+          headers: expected_headers,
+          verb: expected_verb
+        ).and_return(http_response)
       end
 
       it "produces a response" do
