@@ -37,7 +37,7 @@ module Datadog
           end
 
           def citestcov_request(path:, payload:, headers: {}, verb: "post")
-            super(path: path, payload: payload, headers: headers, verb: verb)
+            super
 
             perform_request(@citestcov_http, path: path, payload: @citestcov_payload, headers: headers, verb: verb)
           end

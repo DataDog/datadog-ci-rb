@@ -39,7 +39,7 @@ module Datadog
           end
 
           def citestcov_request(path:, payload:, headers: {}, verb: "post")
-            super(path: path, payload: payload, headers: headers, verb: verb)
+            super
 
             headers[Ext::Transport::HEADER_EVP_SUBDOMAIN] = Ext::Transport::TEST_COVERAGE_INTAKE_HOST_PREFIX
 
