@@ -100,12 +100,19 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
 
     context "with webmock" do
       let(:verb) { :post }
+      let(:expected_error) do
+        if defined?(Socket::ResolutionError)
+          Socket::ResolutionError
+        else
+          SocketError
+        end
+      end
 
       before { WebMock.enable! }
       after { WebMock.disable! }
 
       it "makes a request and fails" do
-        expect { call }.to raise_error(Socket::ResolutionError)
+        expect { call }.to raise_error(expected_error)
       end
     end
   end
