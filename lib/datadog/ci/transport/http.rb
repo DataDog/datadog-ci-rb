@@ -91,8 +91,7 @@ module Datadog
           )
         end
 
-        # adds compatibility with Datadog::Tracing transport and
-        # provides ungzipping capabilities
+        # adds compatibility with Datadog::Tracing transport
         class ResponseDecorator < ::SimpleDelegator
           def trace_count
             0

@@ -1,3 +1,5 @@
+require "webmock"
+
 require_relative "../../../../../lib/datadog/ci/transport/adapters/net"
 
 RSpec.describe Datadog::CI::Transport::Adapters::Net do
@@ -60,35 +62,31 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
 
     subject(:call) { adapter.call(verb: verb, path: path, payload: body, headers: headers) }
 
-    context "given a verb" do
+    context "with mocked HTTP and verb" do
       context ":post" do
         include_context "HTTP connection stub"
 
         let(:verb) { :post }
         let(:http_response) { double("http_response") }
+        let(:post) { instance_double(Net::HTTP::Post) }
 
-        context "and an empty form body" do
-          let(:form) { {} }
-          let(:post) { instance_double(Net::HTTP::Post) }
+        it "makes a POST and produces a response" do
+          expect(Net::HTTP::Post)
+            .to receive(:new)
+            .with(path, expected_headers)
+            .and_return(post)
 
-          it "makes a POST and produces a response" do
-            expect(Net::HTTP::Post)
-              .to receive(:new)
-              .with(path, expected_headers)
-              .and_return(post)
+          expect(post)
+            .to receive(:body=)
+            .with(body)
 
-            expect(post)
-              .to receive(:body=)
-              .with(body)
+          expect(http_connection)
+            .to receive(:request)
+            .with(post)
+            .and_return(http_response)
 
-            expect(http_connection)
-              .to receive(:request)
-              .with(post)
-              .and_return(http_response)
-
-            is_expected.to be_a_kind_of(described_class::Response)
-            expect(call.http_response).to be(http_response)
-          end
+          is_expected.to be_a_kind_of(described_class::Response)
+          expect(call.http_response).to be(http_response)
         end
       end
 
@@ -96,6 +94,17 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
         let(:verb) { :get }
 
         it { expect { call }.to raise_error("Unknown HTTP method [get]") }
+      end
+    end
+
+    context "with webmock" do
+      let(:verb) { :post }
+
+      before { WebMock.enable! }
+      after { WebMock.disable! }
+
+      it "makes a request and fails" do
+        expect { call }.to raise_error(Socket::ResolutionError)
       end
     end
   end
