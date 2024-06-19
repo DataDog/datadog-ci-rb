@@ -1,4 +1,5 @@
 require "webmock"
+require "socket"
 
 require_relative "../../../../../lib/datadog/ci/transport/adapters/net"
 
