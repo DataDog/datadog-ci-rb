@@ -205,7 +205,7 @@ module Datadog
         end
 
         def timecop?
-          Gem.loaded_specs.key?("timecop") || defined?(Timecop)
+          Gem.loaded_specs.key?("timecop") || !!defined?(Timecop)
         end
       end
     end
