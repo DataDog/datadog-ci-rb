@@ -52,7 +52,9 @@ module Datadog
 
             def server_error?: () -> bool
 
-            def gzipped?: (String body) -> bool
+            def gzipped_body?: (String body) -> bool
+
+            def gzipped_content?: () -> bool
 
             def inspect: () -> ::String
           end

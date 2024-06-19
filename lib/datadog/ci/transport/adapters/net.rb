@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "datadog/core/transport/response"
+
 require_relative "../../ext/transport"
 
 module Datadog
@@ -52,6 +54,8 @@ module Datadog
           end
 
           class Response
+            include Datadog::Core::Transport::Response
+
             attr_reader :http_response
 
             def initialize(http_response)
@@ -60,13 +64,11 @@ module Datadog
 
             def payload
               return @decompressed_payload if defined?(@decompressed_payload)
+              return http_response.body unless gzipped_content?
+              return http_response.body unless gzipped_body?(http_response.body)
 
-              if gzipped?(http_response.body)
-                Datadog.logger.debug("Decompressing gzipped response payload")
-                @decompressed_payload = Gzip.decompress(http_response.body)
-              else
-                http_response.body
-              end
+              Datadog.logger.debug("Decompressing gzipped response payload")
+              @decompressed_payload = Gzip.decompress(http_response.body)
             end
 
             def header(name)
@@ -97,14 +99,18 @@ module Datadog
               code.between?(500, 599)
             end
 
-            def gzipped?(body)
+            def gzipped_content?
+              header(Ext::Transport::HEADER_CONTENT_ENCODING) == Ext::Transport::CONTENT_ENCODING_GZIP
+            end
+
+            def gzipped_body?(body)
               return false if body.nil? || body.empty?
 
               # no-dd-sa
               first_bytes = body[0, 2]
               return false if first_bytes.nil? || first_bytes.empty?
 
-              first_bytes.b == Datadog::CI::Ext::Transport::GZIP_MAGIC_NUMBER
+              first_bytes.b == Ext::Transport::GZIP_MAGIC_NUMBER
             end
 
             def inspect

@@ -131,13 +131,19 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net::Response do
 
   describe "#payload" do
     subject(:payload) { response.payload }
+    let(:encoding) { "plain/text" }
 
     let(:http_response) { instance_double(::Net::HTTPResponse, body: "body") }
+
+    before do
+      expect(http_response).to receive(:[]).with("Content-Encoding").and_return(encoding)
+    end
 
     it { is_expected.to be(http_response.body) }
 
     context "when payload is gzipped" do
       let(:expected_payload) { "sample_payload" }
+      let(:encoding) { "gzip" }
       let(:http_response) do
         instance_double(::Net::HTTPResponse, body: Datadog::CI::Transport::Gzip.compress(expected_payload))
       end
