@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 require "datadog/core/transport/response"
+require "datadog/core/transport/ext"
 
+require_relative "../gzip"
 require_relative "../../ext/transport"
 
 module Datadog
@@ -33,6 +35,10 @@ module Datadog
           end
 
           def call(path:, payload:, headers:, verb:)
+            headers ||= {}
+            # skip tracing for internal DD requests
+            headers[Core::Transport::Ext::HTTP::HEADER_DD_INTERNAL_UNTRACED_REQUEST] = "1"
+
             if respond_to?(verb)
               send(verb, path: path, payload: payload, headers: headers)
             else

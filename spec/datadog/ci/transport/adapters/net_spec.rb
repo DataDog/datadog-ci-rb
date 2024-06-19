@@ -1,5 +1,4 @@
 require_relative "../../../../../lib/datadog/ci/transport/adapters/net"
-require_relative "../../../../../lib/datadog/ci/transport/gzip"
 
 RSpec.describe Datadog::CI::Transport::Adapters::Net do
   subject(:adapter) do
@@ -57,6 +56,7 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
     let(:path) { "/foo" }
     let(:body) { "{}" }
     let(:headers) { {} }
+    let(:expected_headers) { {"DD-Internal-Untraced-Request" => "1"} }
 
     subject(:call) { adapter.call(verb: verb, path: path, payload: body, headers: headers) }
 
@@ -74,7 +74,7 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
           it "makes a POST and produces a response" do
             expect(Net::HTTP::Post)
               .to receive(:new)
-              .with(path, headers)
+              .with(path, expected_headers)
               .and_return(post)
 
             expect(post)
