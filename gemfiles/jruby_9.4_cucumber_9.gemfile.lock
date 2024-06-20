@@ -4,6 +4,7 @@ PATH
     datadog-ci (1.2.0)
       datadog (~> 2.0)
       msgpack
+      rake
 
 GEM
   remote: https://rubygems.org/
