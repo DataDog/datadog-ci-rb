@@ -54,23 +54,16 @@ module Datadog
             return
           end
 
-          # Configure ddtrace library for CI visibility mode
+          # Configure ddtrace library for test visibility mode
+
           # Deactivate telemetry
           settings.telemetry.enabled = false
 
           # Test visibility uses its own remote settings
           settings.remote.enabled = false
 
-          # No need not use 128-bit trace ids for test visibility,
-          # they are used for OTEL compatibility in Datadog tracer
-          settings.tracing.trace_id_128_bit_generation_enabled = false
-
-          # Activate underlying tracing test mode with async worker
-          settings.tracing.test_mode.enabled = true
-          settings.tracing.test_mode.async = true
-
-          # Choose user defined TraceFlush or default to CI TraceFlush
-          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
+          # startup logs are useless for test visibility and create noise
+          settings.diagnostics.startup_logs.enabled = false
 
           # When timecop is present, Time.now is mocked and .now_without_mock_time is added on Time to
           # get the current time without the mock.
@@ -83,8 +76,14 @@ module Datadog
             end
           end
 
-          # startup logs are useless for test visibility and create noise
-          settings.diagnostics.startup_logs.enabled = false
+          # No need not use 128-bit trace ids for test visibility,
+          # they are used for OTEL compatibility in Datadog tracer
+          settings.tracing.trace_id_128_bit_generation_enabled = false
+
+          # Activate underlying tracing test mode with async worker
+          settings.tracing.test_mode.enabled = true
+          settings.tracing.test_mode.async = true
+          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
 
           # Builds test visibility API layer in agentless or EvP proxy mode
           test_visibility_api = build_test_visibility_api(settings)
