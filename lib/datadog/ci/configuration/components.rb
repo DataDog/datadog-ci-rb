@@ -11,6 +11,7 @@ require_relative "../test_visibility/null_recorder"
 require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
+require_relative "../test_visibility/stats_collector"
 require_relative "../transport/api/builder"
 require_relative "../transport/remote_settings_api"
 require_relative "../utils/test_run"
@@ -21,7 +22,7 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :ci_recorder, :itr
+        attr_reader :ci_recorder, :itr, :stats_collector
 
         def initialize(settings)
           # Activate CI mode if enabled
@@ -57,15 +58,16 @@ module Datadog
           # Deactivate telemetry
           settings.telemetry.enabled = false
 
-          # Deactivate remote configuration
+          # Test visibility uses its own remote settings
           settings.remote.enabled = false
 
-          # do not use 128-bit trace ids for CI visibility
+          # No need not use 128-bit trace ids for test visibility,
           # they are used for OTEL compatibility in Datadog tracer
           settings.tracing.trace_id_128_bit_generation_enabled = false
 
-          # Activate underlying tracing test mode
+          # Activate underlying tracing test mode with async worker
           settings.tracing.test_mode.enabled = true
+          settings.tracing.test_mode.async = true
 
           # Choose user defined TraceFlush or default to CI TraceFlush
           settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
@@ -81,30 +83,39 @@ module Datadog
             end
           end
 
-          # startup logs are useless for CI visibility and create noise
+          # startup logs are useless for test visibility and create noise
           settings.diagnostics.startup_logs.enabled = false
 
-          # transport creation
-          writer_options = settings.ci.writer_options
-          coverage_writer = nil
+          # Builds test visibility API layer in agentless or EvP proxy mode
           test_visibility_api = build_test_visibility_api(settings)
 
-          if test_visibility_api
+          # transport creation
+          trace_writer_options = settings.ci.writer_options
+          trace_writer_options[:shutdown_timeout] = 60
+          trace_writer_options[:buffer_size] = 10_000
+
+          coverage_writer = nil
+
+          # StatsCollector is used to collect test stats when used with dry run mode.
+          # Note that stats are only collected if test visibility is configured to collect stats.
+          # In this case no traces are sent to Datadog.
+          @stats_collector = TestVisibility::StatsCollector.new
+
+          if true
+            # configure tracer to collect stats for test optimisation
+            trace_writer_options[:transport] = @stats_collector
+          elsif test_visibility_api
             # setup writer for code coverage payloads
             coverage_writer = ITR::Coverage::Writer.new(
               transport: ITR::Coverage::Transport.new(api: test_visibility_api)
             )
 
-            # configure tracing writer to send traces to CI visibility backend
-            writer_options[:transport] = TestVisibility::Transport.new(
+            # configure tracing writer to send traces to test visibility backend
+            trace_writer_options[:transport] = TestVisibility::Transport.new(
               api: test_visibility_api,
               serializers_factory: serializers_factory(settings),
               dd_env: settings.env
             )
-            writer_options[:shutdown_timeout] = 60
-            writer_options[:buffer_size] = 10_000
-
-            settings.tracing.test_mode.async = true
           else
             # only legacy APM protocol is supported, so no test suite level visibility
             settings.ci.force_test_level_visibility = true
@@ -113,7 +124,7 @@ module Datadog
             settings.ci.itr_enabled = false
           end
 
-          settings.tracing.test_mode.writer_options = writer_options
+          settings.tracing.test_mode.writer_options = trace_writer_options
 
           custom_configuration_tags = Utils::TestRun.custom_configuration(settings.tags)
 
