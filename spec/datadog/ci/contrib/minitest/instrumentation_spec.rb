@@ -504,9 +504,7 @@ RSpec.describe "Minitest instrumentation" do
           # expect that background thread is covered
           test_span = test_spans.find { |span| span.get_tag("test.name") == "test_pass_other" }
           cov_event = find_coverage_for_test(test_span)
-          expect(cov_event.coverage.keys).to include(
-            File.expand_path(File.join(__dir__, "helpers/addition_helper.rb"))
-          )
+          expect(cov_event.coverage.keys).to include(absolute_path("helpers/addition_helper.rb"))
         end
 
         context "when ITR skips tests" do
@@ -935,7 +933,7 @@ RSpec.describe "Minitest instrumentation" do
       # expect that background thread is not covered
       cov_event = find_coverage_for_test(first_test_span)
       expect(cov_event.coverage.keys).not_to include(
-        File.expand_path(File.join(__dir__, "helpers/addition_helper.rb"))
+        absolute_path("helpers/addition_helper.rb")
       )
     end
   end

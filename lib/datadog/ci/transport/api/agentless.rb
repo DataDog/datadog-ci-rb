@@ -37,7 +37,7 @@ module Datadog
           end
 
           def citestcov_request(path:, payload:, headers: {}, verb: "post")
-            super(path: path, payload: payload, headers: headers, verb: verb)
+            super
 
             perform_request(@citestcov_http, path: path, payload: @citestcov_payload, headers: headers, verb: verb)
           end
@@ -60,7 +60,7 @@ module Datadog
 
             Datadog::CI::Transport::HTTP.new(
               host: uri.host,
-              port: uri.port,
+              port: uri.port || 80,
               ssl: uri.scheme == "https" || uri.port == 443,
               compress: compress
             )

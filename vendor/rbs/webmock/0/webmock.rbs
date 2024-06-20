@@ -1,0 +1,9 @@
+module WebMock
+end
+
+module WebMock::HttpLibAdapters
+end
+
+module WebMock::HttpLibAdapters::NetHttpAdapter
+  OriginalNetHTTP: singleton(::Net::HTTP)
+end

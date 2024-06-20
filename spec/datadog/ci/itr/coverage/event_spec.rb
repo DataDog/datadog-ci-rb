@@ -86,7 +86,7 @@ RSpec.describe Datadog::CI::ITR::Coverage::Event do
     context "when file paths are absolute" do
       let(:coverage) do
         {
-          File.expand_path(File.join(__dir__, "./project/file.rb")) => true
+          absolute_path("./project/file.rb") => true
         }
       end
 

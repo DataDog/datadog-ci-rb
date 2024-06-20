@@ -30,4 +30,5 @@ target :lib do
   library "selenium-webdriver"
   library "capybara"
   library "timecop"
+  library "webmock"
 end

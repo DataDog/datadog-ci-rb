@@ -42,15 +42,15 @@ module Datadog
           end
 
           def ci_queue?
-            defined?(::RSpec::Queue::Runner)
+            !!defined?(::RSpec::Queue::Runner)
           end
 
           def knapsack_pro?
             knapsack_version = Gem.loaded_specs["knapsack_pro"]&.version
 
             # additional instrumentation is needed for KnapsackPro version 7 and later
-            defined?(::KnapsackPro) &&
-              knapsack_version && knapsack_version >= Gem::Version.new("7")
+            !!defined?(::KnapsackPro) &&
+              !knapsack_version.nil? && knapsack_version >= Gem::Version.new("7")
           end
         end
       end
