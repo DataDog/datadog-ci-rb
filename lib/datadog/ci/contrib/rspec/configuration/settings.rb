@@ -24,6 +24,12 @@ module Datadog
                 Utils::Configuration.fetch_service_name(Ext::DEFAULT_SERVICE_NAME)
               end
             end
+
+            # internal only
+            option :dry_run_enabled do |o|
+              o.type :bool
+              o.default false
+            end
           end
         end
       end

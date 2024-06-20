@@ -15,7 +15,7 @@ module Datadog
 
           module InstanceMethods
             def run_specs(*args)
-              return super if ::RSpec.configuration.dry_run?
+              return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
               return super unless datadog_configuration[:enabled]
 
               test_session = test_visibility_component.start_test_session(
