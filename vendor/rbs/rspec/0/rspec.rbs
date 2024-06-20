@@ -28,7 +28,14 @@ module RSpec::Core::Example
   def finish: (untyped) -> void
 end
 
-module RSpec::Core::Runner
+class RSpec::Core::ConfigurationOptions
+  def initialize: (Array[String] args) -> void
+end
+
+class RSpec::Core::Runner
+  def initialize: (RSpec::Core::ConfigurationOptions configuration) -> void
+
+  def run: (untyped stdout, untyped stderr) -> Integer
   def run_specs: (untyped example_groups) -> untyped
 end
 

@@ -117,6 +117,12 @@ module Datadog
                 o.default true
               end
 
+              # internal only
+              option :discard_traces do |o|
+                o.type :bool
+                o.default false
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

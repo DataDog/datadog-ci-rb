@@ -19,6 +19,7 @@ require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
+require_relative "../test_visibility/null_transport"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
 require_relative "../utils/test_run"
@@ -203,6 +204,9 @@ module Datadog
         end
 
         def build_tracing_transport(settings, api)
+          # NullTransport ignores traces
+          return TestVisibility::NullTransport.new if settings.ci.discard_traces
+          # nil means that default legacy APM transport will be used (only for very old Datadog Agent versions)
           return nil if api.nil?
 
           TestVisibility::Transport.new(
@@ -213,7 +217,8 @@ module Datadog
         end
 
         def build_coverage_writer(settings, api)
-          return nil if api.nil?
+          # nil means that coverage event will be ignored
+          return nil if api.nil? || settings.ci.discard_traces
 
           TestOptimisation::Coverage::Writer.new(
             transport: TestOptimisation::Coverage::Transport.new(api: api)

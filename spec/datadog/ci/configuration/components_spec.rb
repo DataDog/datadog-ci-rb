@@ -45,6 +45,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.ci.itr_enabled = itr_enabled
           settings.ci.itr_code_coverage_use_single_threaded_mode = itr_code_coverage_use_single_threaded_mode
           settings.ci.itr_test_impact_analysis_use_allocation_tracing = itr_test_impact_analysis_use_allocation_tracing
+          settings.ci.discard_traces = discard_traces
           settings.site = dd_site
           settings.api_key = api_key
 
@@ -116,6 +117,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:tracing_enabled) { true }
         let(:itr_code_coverage_use_single_threaded_mode) { false }
         let(:itr_test_impact_analysis_use_allocation_tracing) { true }
+        let(:discard_traces) { false }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -240,6 +242,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   end
 
                   expect(components.test_visibility.itr_enabled?).to eq(false)
+                end
+              end
+
+              context "and when discard_traces setting is enabled" do
+                let(:discard_traces) { true }
+
+                it "sets tracing transport to TestVisibility::NullTransport" do
+                  expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
+                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::NullTransport)
+                  end
                 end
               end
             end

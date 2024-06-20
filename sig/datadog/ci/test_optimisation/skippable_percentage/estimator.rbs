@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module TestOptimisation
+      module SkippablePercentage
+        class Estimator < Base
+          def initialize: (?verbose: bool, ?spec_path: ::String) -> void
+
+          def call: () -> Numeric
+        end
+      end
+    end
+  end
+end

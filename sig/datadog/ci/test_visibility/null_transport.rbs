@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module TestVisibility
+      class NullTransport
+        def initialize: () -> void
+
+        def send_traces: (untyped traces) -> ::Array[untyped]
+      end
+    end
+  end
+end

@@ -18,6 +18,8 @@ module Datadog
 
           def tests: () -> Set[String]
 
+          def error_message: () -> String?
+
           private
 
           def payload: () -> Hash[String, untyped]

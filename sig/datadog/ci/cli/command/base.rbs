@@ -1,0 +1,25 @@
+module Datadog
+  module CI
+    module CLI
+      module Command
+        class Base
+          @options: Hash[Symbol, String]
+
+          def exec: () -> void
+
+          private
+
+          def build_action: () -> untyped
+
+          def options: () -> Hash[Symbol, String]
+
+          def command_options: (untyped opts) -> void
+
+          def validate!: (untyped action) -> void
+
+          def output: (untyped result) -> void
+        end
+      end
+    end
+  end
+end

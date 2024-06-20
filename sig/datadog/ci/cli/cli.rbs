@@ -1,0 +1,7 @@
+module Datadog
+  module CI
+    module CLI
+      def self.exec: (String action) -> void
+    end
+  end
+end
