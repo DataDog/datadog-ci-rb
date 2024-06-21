@@ -32,4 +32,5 @@ target :lib do
   library "timecop"
   library "webmock"
   library "simplecov"
+  library "rake"
 end

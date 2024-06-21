@@ -20,6 +20,7 @@ require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../test_visibility/stats_collector"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
+require_relative "../test_visibility/null_transport"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
 require_relative "../utils/test_run"
@@ -204,6 +205,7 @@ module Datadog
         end
 
         def build_tracing_transport(settings, api)
+          return TestVisibility::NullTransport.new if settings.ci.discard_traces
           return nil if api.nil?
 
           TestVisibility::Transport.new(

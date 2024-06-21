@@ -26,7 +26,7 @@ module Datadog
 
         def check_dd_site: (untyped settings) -> void
 
-        def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestVisibility::Transport?
+        def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> (Datadog::CI::TestVisibility::Transport? | Datadog::CI::TestVisibility::NullTransport)
 
         def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestOptimisation::Coverage::Writer?
 

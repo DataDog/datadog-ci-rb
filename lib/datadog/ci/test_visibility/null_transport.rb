@@ -1,15 +1,9 @@
 # frozen_string_literal: true
 
-require "set"
-
-require_relative "../ext/app_types"
-require_relative "../ext/test"
-require_relative "../utils/test_run"
-
 module Datadog
   module CI
     module TestVisibility
-      class StatsCollector
+      class NullTransport
         def initialize
         end
 
