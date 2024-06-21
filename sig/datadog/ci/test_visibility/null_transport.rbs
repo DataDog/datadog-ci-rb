@@ -4,7 +4,7 @@ module Datadog
       class NullTransport
         def initialize: () -> void
 
-        def send_traces: (untyped traces) -> []
+        def send_traces: (untyped traces) -> ::Array[untyped]
       end
     end
   end
