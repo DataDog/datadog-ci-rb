@@ -45,6 +45,10 @@ module Datadog
         def shutdown!
         end
 
+        def itr_enabled?
+          false
+        end
+
         private
 
         def skip_tracing(block = nil)

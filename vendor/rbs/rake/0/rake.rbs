@@ -1,0 +1,6 @@
+module Rake
+end
+
+module Rake::DSL
+  def import: (String file) -> void
+end

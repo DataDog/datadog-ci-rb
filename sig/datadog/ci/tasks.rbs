@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Tasks
+      extend ::Rake::DSL
+
+      def self.load!: () -> void
+    end
+  end
+end
