@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [1.1.0] - 2024-07-01
+
+### Added
+* Ignore Webmock automatically when making HTTP calls ([#193][])
+
 ## [1.0.1] - 2024-06-11
 
 ### Fixed
@@ -267,7 +272,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.1.0...main
+[1.1.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta6...v1.0.0
 [1.0.0.beta6]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta5...v1.0.0.beta6
@@ -378,3 +384,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#185]: https://github.com/DataDog/datadog-ci-rb/issues/185
 [#189]: https://github.com/DataDog/datadog-ci-rb/issues/189
 [#190]: https://github.com/DataDog/datadog-ci-rb/issues/190
+[#193]: https://github.com/DataDog/datadog-ci-rb/issues/193
