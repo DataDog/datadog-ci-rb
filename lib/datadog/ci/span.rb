@@ -202,9 +202,9 @@ module Datadog
 
       private
 
-      # provides access to global CI recorder for CI models to deactivate themselves
-      def recorder
-        Datadog.send(:components).ci_recorder
+      # provides access to the test visibility component for CI models to deactivate themselves
+      def test_visibility
+        Datadog.send(:components).test_visibility
       end
     end
   end

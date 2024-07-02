@@ -3,9 +3,9 @@
 RSpec.describe Datadog::CI::TestSuite do
   let(:test_suite_name) { "my.suite" }
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true, name: test_suite_name) }
-  let(:recorder) { spy("recorder") }
+  let(:test_visibility) { spy("test_visibility") }
 
-  before { allow_any_instance_of(described_class).to receive(:recorder).and_return(recorder) }
+  before { allow_any_instance_of(described_class).to receive(:test_visibility).and_return(test_visibility) }
   subject(:ci_test_suite) { described_class.new(tracer_span) }
 
   describe "#record_test_result" do
@@ -47,7 +47,7 @@ RSpec.describe Datadog::CI::TestSuite do
       it "deactivates the test suite" do
         finish
 
-        expect(recorder).to have_received(:deactivate_test_suite).with(test_suite_name)
+        expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
       end
     end
 
@@ -67,7 +67,7 @@ RSpec.describe Datadog::CI::TestSuite do
 
           finish
 
-          expect(recorder).to have_received(:deactivate_test_suite).with(test_suite_name)
+          expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
 
@@ -83,7 +83,7 @@ RSpec.describe Datadog::CI::TestSuite do
 
           finish
 
-          expect(recorder).to have_received(:deactivate_test_suite).with(test_suite_name)
+          expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
 
@@ -102,7 +102,7 @@ RSpec.describe Datadog::CI::TestSuite do
 
           finish
 
-          expect(recorder).to have_received(:deactivate_test_suite).with(test_suite_name)
+          expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
     end

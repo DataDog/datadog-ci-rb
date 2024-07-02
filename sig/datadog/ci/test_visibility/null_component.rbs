@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module TestVisibility
-      class NullRecorder
+      class NullComponent
         def initialize: (?untyped args) -> void
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (nil span) -> untyped } -> untyped
@@ -25,6 +25,8 @@ module Datadog
         def active_span: () -> nil
 
         def shutdown!: () -> nil
+
+        def itr_enabled?: () -> bool
 
         private
 

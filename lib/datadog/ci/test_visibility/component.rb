@@ -28,11 +28,11 @@ module Datadog
     module TestVisibility
       # Common behavior for CI tests
       # Note: this class has too many responsibilities and should be split into multiple classes
-      class Recorder
+      class Component
         attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
         def initialize(
-          itr:,
+          test_optimisation:,
           remote_settings_api:,
           git_tree_upload_worker: DummyWorker.new,
           test_suite_level_visibility_enabled: false,
@@ -46,7 +46,7 @@ module Datadog
 
           @codeowners = codeowners
 
-          @itr = itr
+          @test_optimisation = test_optimisation
           @remote_settings_api = remote_settings_api
           @git_tree_upload_worker = git_tree_upload_worker
         end
@@ -210,7 +210,7 @@ module Datadog
         end
 
         def itr_enabled?
-          @itr.enabled?
+          @test_optimisation.enabled?
         end
 
         private
@@ -234,7 +234,7 @@ module Datadog
             end
           end
 
-          @itr.configure(
+          @test_optimisation.configure(
             remote_configuration.payload,
             test_session: test_session,
             git_tree_upload_worker: @git_tree_upload_worker
@@ -404,17 +404,17 @@ module Datadog
 
         # TODO: use kind of event system to notify about test finished?
         def on_test_finished(test)
-          @itr.stop_coverage(test)
-          @itr.count_skipped_test(test)
+          @test_optimisation.stop_coverage(test)
+          @test_optimisation.count_skipped_test(test)
         end
 
         def on_test_started(test)
-          @itr.mark_if_skippable(test)
-          @itr.start_coverage(test)
+          @test_optimisation.mark_if_skippable(test)
+          @test_optimisation.start_coverage(test)
         end
 
         def on_test_session_finished(test_session)
-          @itr.write_test_session_tags(test_session)
+          @test_optimisation.write_test_session_tags(test_session)
         end
       end
     end

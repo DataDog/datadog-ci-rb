@@ -1,13 +1,13 @@
 module Datadog
   module CI
     module TestVisibility
-      class Recorder
+      class Component
         @test_suite_level_visibility_enabled: bool
 
         @environment_tags: Hash[String, String]
         @local_context: Datadog::CI::TestVisibility::Context::Local
         @global_context: Datadog::CI::TestVisibility::Context::Global
-        @itr: Datadog::CI::ITR::Runner
+        @test_optimisation: Datadog::CI::TestOptimisation::Component
         @remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi
         @codeowners: Datadog::CI::Codeowners::Matcher
         @git_tree_upload_worker: Datadog::CI::Worker
@@ -15,7 +15,7 @@ module Datadog
         attr_reader environment_tags: Hash[String, String]
         attr_reader test_suite_level_visibility_enabled: bool
 
-        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, itr: Datadog::CI::ITR::Runner, remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi, ?git_tree_upload_worker: Datadog::CI::Worker) -> void
+        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, test_optimisation: Datadog::CI::TestOptimisation::Component, remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi, ?git_tree_upload_worker: Datadog::CI::Worker) -> void
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 

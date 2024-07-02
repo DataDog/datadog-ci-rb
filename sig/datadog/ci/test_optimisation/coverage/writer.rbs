@@ -1,6 +1,6 @@
 module Datadog
   module CI
-    module ITR
+    module TestOptimisation
       module Coverage
         class Writer
           include Datadog::Core::Workers::Async::Thread
@@ -8,7 +8,7 @@ module Datadog
           include Datadog::Core::Workers::Queue
           include Datadog::Core::Workers::IntervalLoop
 
-          @transport: Datadog::CI::ITR::Coverage::Transport
+          @transport: Datadog::CI::TestOptimisation::Coverage::Transport
 
           @buffer_size: Integer
 
@@ -16,7 +16,7 @@ module Datadog
 
           @stopped: bool
 
-          attr_reader transport: Datadog::CI::ITR::Coverage::Transport
+          attr_reader transport: Datadog::CI::TestOptimisation::Coverage::Transport
 
           DEFAULT_BUFFER_MAX_SIZE: 10000
 
@@ -24,17 +24,17 @@ module Datadog
 
           DEFAULT_INTERVAL: 3
 
-          def initialize: (transport: Datadog::CI::ITR::Coverage::Transport, ?options: ::Hash[untyped, untyped]) -> void
+          def initialize: (transport: Datadog::CI::TestOptimisation::Coverage::Transport, ?options: ::Hash[untyped, untyped]) -> void
 
-          def write: (Datadog::CI::ITR::Coverage::Event event) -> untyped
+          def write: (Datadog::CI::TestOptimisation::Coverage::Event event) -> untyped
 
-          def perform: (*Datadog::CI::ITR::Coverage::Event events) -> nil
+          def perform: (*Datadog::CI::TestOptimisation::Coverage::Event events) -> nil
 
           def stop: (?bool force_stop, ?Integer timeout) -> untyped
 
-          def enqueue: (Datadog::CI::ITR::Coverage::Event event) -> untyped
+          def enqueue: (Datadog::CI::TestOptimisation::Coverage::Event event) -> untyped
 
-          def dequeue: () -> ::Array[Datadog::CI::ITR::Coverage::Event]
+          def dequeue: () -> ::Array[Datadog::CI::TestOptimisation::Coverage::Event]
 
           def async?: () -> true
 

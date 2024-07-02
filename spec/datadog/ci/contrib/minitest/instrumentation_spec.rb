@@ -429,7 +429,6 @@ RSpec.describe "Minitest instrumentation" do
             Datadog::CI::Contrib::Minitest::Integration.version.to_s
           )
 
-          # ITR
           expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
           expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
           expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
@@ -507,7 +506,7 @@ RSpec.describe "Minitest instrumentation" do
           expect(cov_event.coverage.keys).to include(absolute_path("helpers/addition_helper.rb"))
         end
 
-        context "when ITR skips tests" do
+        context "when test optimisation skips tests" do
           context "single skipped test" do
             let(:itr_skippable_tests) do
               Set.new(["SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_pass."])
@@ -717,7 +716,7 @@ RSpec.describe "Minitest instrumentation" do
           expect_non_empty_coverages
         end
 
-        context "when ITR skips tests" do
+        context "when test optimisation skips tests" do
           let(:itr_skippable_tests) do
             Set.new(
               [

@@ -2,7 +2,7 @@
 
 module Datadog
   module CI
-    module ITR
+    module TestOptimisation
       module Coverage
         # Placeholder for code coverage collection
         # Implementation in ext/datadog_cov

@@ -11,7 +11,7 @@ require "datadog/core/environment/ext"
 
 module Datadog
   module CI
-    module ITR
+    module TestOptimisation
       module Coverage
         class Writer
           include Core::Workers::Queue

@@ -2,11 +2,12 @@ module Datadog
   module CI
     module Configuration
       module Components : Datadog::Core::Configuration::Components
-        @ci_recorder: Datadog::CI::TestVisibility::Recorder | Datadog::CI::TestVisibility::NullRecorder
-        @itr: Datadog::CI::ITR::Runner?
+        @test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
+        @test_optimisation: Datadog::CI::TestOptimisation::Component?
+        @custom_configuration: Hash[String, String]
 
-        attr_reader ci_recorder: Datadog::CI::TestVisibility::Recorder | Datadog::CI::TestVisibility::NullRecorder
-        attr_reader itr: Datadog::CI::ITR::Runner?
+        attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
+        attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component?
 
         def initialize: (untyped settings) -> void
 
@@ -17,6 +18,16 @@ module Datadog
         def serializers_factory: (untyped settings) -> (singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel))
 
         def check_dd_site: (untyped settings) -> void
+
+        def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestVisibility::Transport?
+
+        def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestOptimisation::Coverage::Writer?
+
+        def build_git_upload_worker: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Worker
+
+        def build_remote_settings_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Transport::RemoteSettingsApi
+
+        def custom_configuration: (untyped settings) -> Hash[String, String]
 
         def timecop?: () -> bool
       end

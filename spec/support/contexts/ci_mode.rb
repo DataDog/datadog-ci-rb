@@ -1,4 +1,4 @@
-# CI mode shared context sets up the CI recorder and configures the CI mode for tracer like customers do.
+# CI mode shared context sets up the CI test_visibility and configures the CI mode for tracer like customers do.
 # Example usage:
 #
 # include_context "CI mode activated" do
@@ -30,14 +30,14 @@ RSpec.shared_context "CI mode activated" do
 
   let(:skippable_tests_response) do
     instance_double(
-      Datadog::CI::ITR::Skippable::Response,
+      Datadog::CI::TestOptimisation::Skippable::Response,
       ok?: true,
       correlation_id: itr_correlation_id,
       tests: itr_skippable_tests
     )
   end
 
-  let(:recorder) { Datadog.send(:components).ci_recorder }
+  let(:test_visibility) { Datadog.send(:components).test_visibility }
 
   before do
     setup_test_coverage_writer!
@@ -69,8 +69,8 @@ RSpec.shared_context "CI mode activated" do
         require_git?: !require_git
       )
     )
-    allow_any_instance_of(Datadog::CI::ITR::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
-    allow_any_instance_of(Datadog::CI::ITR::Coverage::Transport).to receive(:send_events).and_return([])
+    allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
+    allow_any_instance_of(Datadog::CI::TestOptimisation::Coverage::Transport).to receive(:send_events).and_return([])
 
     Datadog.configure do |c|
       c.ci.enabled = ci_enabled
@@ -88,8 +88,8 @@ RSpec.shared_context "CI mode activated" do
   after do
     ::Datadog::Tracing.shutdown!
 
-    Datadog::CI.send(:itr_runner)&.shutdown!
-    Datadog::CI.send(:recorder)&.shutdown!
+    Datadog::CI.send(:test_optimisation)&.shutdown!
+    Datadog::CI.send(:test_visibility)&.shutdown!
 
     Datadog.configure do |c|
       c.ci.enabled = false

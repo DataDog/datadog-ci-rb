@@ -29,8 +29,8 @@ module Datadog
 
     def self.components: () -> Datadog::CI::Configuration::Components
 
-    def self.recorder: () -> (Datadog::CI::TestVisibility::Recorder | Datadog::CI::TestVisibility::NullRecorder)
+    def self.test_visibility: () -> (Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent)
 
-    def self.itr_runner: () -> Datadog::CI::ITR::Runner?
+    def self.test_optimisation: () -> Datadog::CI::TestOptimisation::Component?
   end
 end

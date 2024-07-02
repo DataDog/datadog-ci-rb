@@ -1,5 +1,5 @@
 require_relative "../../../../../lib/datadog/ci/test_visibility/serializers/span"
-require_relative "../../../../../lib/datadog/ci/test_visibility/recorder"
+require_relative "../../../../../lib/datadog/ci/test_visibility/component"
 
 RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
   include_context "CI mode activated" do
@@ -11,7 +11,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Span do
   end
 
   describe "#to_msgpack" do
-    context "traced a single test execution with Recorder" do
+    context "traced a single test execution with test visibility" do
       before do
         produce_test_trace(with_http_span: true)
       end

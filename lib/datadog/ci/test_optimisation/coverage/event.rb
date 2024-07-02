@@ -6,7 +6,7 @@ require_relative "../../git/local_repository"
 
 module Datadog
   module CI
-    module ITR
+    module TestOptimisation
       module Coverage
         class Event
           attr_reader :test_id, :test_suite_id, :test_session_id, :coverage

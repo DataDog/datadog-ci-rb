@@ -2,9 +2,9 @@
 
 require "pp"
 
-require_relative "../../../../../lib/datadog/ci/itr/coverage/event"
+require_relative "../../../../../lib/datadog/ci/test_optimisation/coverage/event"
 
-RSpec.describe Datadog::CI::ITR::Coverage::Event do
+RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
   subject do
     described_class.new(
       test_id: test_id,
@@ -97,7 +97,7 @@ RSpec.describe Datadog::CI::ITR::Coverage::Event do
             "test_suite_id" => 2,
             "span_id" => 1,
             "files" => [
-              {"filename" => "spec/datadog/ci/itr/coverage/project/file.rb"}
+              {"filename" => "spec/datadog/ci/test_optimisation/coverage/project/file.rb"}
             ]
           }
         )

@@ -1,6 +1,6 @@
 module Datadog
   module CI
-    module ITR
+    module TestOptimisation
       class Skippable
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?

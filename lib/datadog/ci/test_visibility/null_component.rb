@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "recorder"
-
 module Datadog
   module CI
     module TestVisibility
-      # Special recorder that does not record anything
-      class NullRecorder
+      # Special test visibility component that does not record anything
+      class NullComponent
         def start_test_session(service: nil, tags: {})
           skip_tracing
         end
@@ -43,6 +41,10 @@ module Datadog
         end
 
         def shutdown!
+        end
+
+        def itr_enabled?
+          false
         end
 
         private

@@ -82,7 +82,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       let(:serializers_factory) { Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel }
 
       before do
-        allow_any_instance_of(Datadog::CI::ITR::Runner).to receive(:correlation_id).and_return("correlation-id")
+        allow_any_instance_of(Datadog::CI::TestOptimisation::Component).to receive(:correlation_id).and_return("correlation-id")
 
         produce_test_session_trace
       end

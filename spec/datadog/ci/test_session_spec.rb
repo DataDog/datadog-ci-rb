@@ -2,16 +2,16 @@
 
 RSpec.describe Datadog::CI::TestSession do
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
-  let(:recorder) { spy("recorder") }
+  let(:test_visibility) { spy("test_visibility") }
 
-  before { allow_any_instance_of(described_class).to receive(:recorder).and_return(recorder) }
+  before { allow_any_instance_of(described_class).to receive(:test_visibility).and_return(test_visibility) }
   subject(:ci_test_session) { described_class.new(tracer_span) }
 
   describe "#finish" do
     it "deactivates the test session" do
       ci_test_session.finish
 
-      expect(recorder).to have_received(:deactivate_test_session)
+      expect(test_visibility).to have_received(:deactivate_test_session)
     end
   end
 

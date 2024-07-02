@@ -2,12 +2,12 @@
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
-require_relative "../itr/runner"
-require_relative "../itr/coverage/transport"
-require_relative "../itr/coverage/writer"
+require_relative "../test_optimisation/component"
+require_relative "../test_optimisation/coverage/transport"
+require_relative "../test_optimisation/coverage/writer"
+require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
-require_relative "../test_visibility/recorder"
-require_relative "../test_visibility/null_recorder"
+require_relative "../test_visibility/null_component"
 require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
@@ -21,15 +21,15 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :ci_recorder, :itr
+        attr_reader :test_visibility, :test_optimisation
 
         def initialize(settings)
+          @test_optimisation = nil
+          @test_visibility = TestVisibility::NullComponent.new
+
           # Activate CI mode if enabled
           if settings.ci.enabled
             activate_ci!(settings)
-          else
-            @itr = nil
-            @ci_recorder = TestVisibility::NullRecorder.new
           end
 
           super
@@ -38,8 +38,8 @@ module Datadog
         def shutdown!(replacement = nil)
           super
 
-          @ci_recorder&.shutdown!
-          @itr&.shutdown!
+          @test_visibility&.shutdown!
+          @test_optimisation&.shutdown!
         end
 
         def activate_ci!(settings)
@@ -53,22 +53,21 @@ module Datadog
             return
           end
 
-          # Configure ddtrace library for CI visibility mode
+          # Builds test visibility API layer in agentless or EvP proxy mode
+          test_visibility_api = build_test_visibility_api(settings)
+          # bail out early if api is misconfigured
+          return unless settings.ci.enabled
+
+          # Configure datadog gem for test visibility mode
+
           # Deactivate telemetry
           settings.telemetry.enabled = false
 
-          # Deactivate remote configuration
+          # Test visibility uses its own remote settings
           settings.remote.enabled = false
 
-          # do not use 128-bit trace ids for CI visibility
-          # they are used for OTEL compatibility in Datadog tracer
-          settings.tracing.trace_id_128_bit_generation_enabled = false
-
-          # Activate underlying tracing test mode
-          settings.tracing.test_mode.enabled = true
-
-          # Choose user defined TraceFlush or default to CI TraceFlush
-          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
+          # startup logs are useless for test visibility and create noise
+          settings.diagnostics.startup_logs.enabled = false
 
           # When timecop is present, Time.now is mocked and .now_without_mock_time is added on Time to
           # get the current time without the mock.
@@ -81,76 +80,42 @@ module Datadog
             end
           end
 
-          # startup logs are useless for CI visibility and create noise
-          settings.diagnostics.startup_logs.enabled = false
+          # Configure Datadog::Tracing module
 
-          # transport creation
-          writer_options = settings.ci.writer_options
-          coverage_writer = nil
-          test_visibility_api = build_test_visibility_api(settings)
+          # No need not use 128-bit trace ids for test visibility,
+          # they are used for OTEL compatibility in Datadog tracer
+          settings.tracing.trace_id_128_bit_generation_enabled = false
 
-          if test_visibility_api
-            # setup writer for code coverage payloads
-            coverage_writer = ITR::Coverage::Writer.new(
-              transport: ITR::Coverage::Transport.new(api: test_visibility_api)
-            )
+          # Activate underlying tracing test mode with async worker
+          settings.tracing.test_mode.enabled = true
+          settings.tracing.test_mode.async = true
+          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
 
-            # configure tracing writer to send traces to CI visibility backend
-            writer_options[:transport] = TestVisibility::Transport.new(
-              api: test_visibility_api,
-              serializers_factory: serializers_factory(settings),
-              dd_env: settings.env
-            )
-            writer_options[:shutdown_timeout] = 60
-            writer_options[:buffer_size] = 10_000
+          trace_writer_options = settings.ci.writer_options
+          trace_writer_options[:shutdown_timeout] = 60
+          trace_writer_options[:buffer_size] = 10_000
+          tracing_transport = build_tracing_transport(settings, test_visibility_api)
+          trace_writer_options[:transport] = tracing_transport if tracing_transport
 
-            settings.tracing.test_mode.async = true
-          else
-            # only legacy APM protocol is supported, so no test suite level visibility
-            settings.ci.force_test_level_visibility = true
+          settings.tracing.test_mode.writer_options = trace_writer_options
 
-            # ITR is not supported with APM protocol
-            settings.ci.itr_enabled = false
-          end
-
-          settings.tracing.test_mode.writer_options = writer_options
-
-          custom_configuration_tags = Utils::TestRun.custom_configuration(settings.tags)
-
-          remote_settings_api = Transport::RemoteSettingsApi.new(
+          # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
+          @test_optimisation = TestOptimisation::Component.new(
             api: test_visibility_api,
             dd_env: settings.env,
-            config_tags: custom_configuration_tags
-          )
-
-          itr = ITR::Runner.new(
-            api: test_visibility_api,
-            dd_env: settings.env,
-            config_tags: custom_configuration_tags,
-            coverage_writer: coverage_writer,
+            config_tags: custom_configuration(settings),
+            coverage_writer: build_coverage_writer(settings, test_visibility_api),
             enabled: settings.ci.enabled && settings.ci.itr_enabled,
             bundle_location: settings.ci.itr_code_coverage_excluded_bundle_path,
             use_single_threaded_coverage: settings.ci.itr_code_coverage_use_single_threaded_mode
           )
 
-          git_tree_uploader = Git::TreeUploader.new(api: test_visibility_api)
-          git_tree_upload_worker = if settings.ci.git_metadata_upload_enabled
-            Worker.new do |repository_url|
-              git_tree_uploader.call(repository_url)
-            end
-          else
-            DummyWorker.new
-          end
-
-          # CI visibility recorder global instance
-          @ci_recorder = TestVisibility::Recorder.new(
+          @test_visibility = TestVisibility::Component.new(
+            test_optimisation: @test_optimisation,
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
-            itr: itr,
-            remote_settings_api: remote_settings_api,
-            git_tree_upload_worker: git_tree_upload_worker
+            remote_settings_api: build_remote_settings_client(settings, test_visibility_api),
+            git_tree_upload_worker: build_git_upload_worker(settings, test_visibility_api)
           )
-
-          @itr = itr
         end
 
         def build_test_visibility_api(settings)
@@ -179,10 +144,59 @@ module Datadog
               Datadog.logger.debug(
                 "Old agent version detected, no evp_proxy support. Forcing test level visibility mode"
               )
+
+              # only legacy APM protocol is supported, so no test suite level visibility
+              settings.ci.force_test_level_visibility = true
+
+              # ITR is not supported with APM protocol
+              settings.ci.itr_enabled = false
             end
           end
 
           api
+        end
+
+        def build_tracing_transport(settings, api)
+          return nil if api.nil?
+
+          TestVisibility::Transport.new(
+            api: api,
+            serializers_factory: serializers_factory(settings),
+            dd_env: settings.env
+          )
+        end
+
+        def build_coverage_writer(settings, api)
+          return nil if api.nil?
+
+          TestOptimisation::Coverage::Writer.new(
+            transport: TestOptimisation::Coverage::Transport.new(api: api)
+          )
+        end
+
+        def build_git_upload_worker(settings, api)
+          if settings.ci.git_metadata_upload_enabled
+            git_tree_uploader = Git::TreeUploader.new(api: api)
+            Worker.new do |repository_url|
+              git_tree_uploader.call(repository_url)
+            end
+          else
+            DummyWorker.new
+          end
+        end
+
+        def build_remote_settings_client(settings, api)
+          Transport::RemoteSettingsApi.new(
+            api: api,
+            dd_env: settings.env,
+            config_tags: custom_configuration(settings)
+          )
+        end
+
+        # fetch custom tags provided by the user in DD_TAGS env var
+        # with prefix test.configuration.
+        def custom_configuration(settings)
+          @custom_configuration ||= Utils::TestRun.custom_configuration(settings.tags)
         end
 
         def serializers_factory(settings)
