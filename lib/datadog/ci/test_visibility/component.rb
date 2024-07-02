@@ -28,7 +28,7 @@ module Datadog
     module TestVisibility
       # Common behavior for CI tests
       # Note: this class has too many responsibilities and should be split into multiple classes
-      class Recorder
+      class Component
         attr_reader :environment_tags, :test_suite_level_visibility_enabled
 
         def initialize(

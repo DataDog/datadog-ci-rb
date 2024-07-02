@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module TestVisibility
-      class Recorder
+      class Component
         @test_suite_level_visibility_enabled: bool
 
         @environment_tags: Hash[String, String]

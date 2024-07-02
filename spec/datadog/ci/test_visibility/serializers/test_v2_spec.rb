@@ -1,5 +1,5 @@
 require_relative "../../../../../lib/datadog/ci/test_visibility/serializers/test_v2"
-require_relative "../../../../../lib/datadog/ci/test_visibility/recorder"
+require_relative "../../../../../lib/datadog/ci/test_visibility/component"
 
 RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
   include_context "CI mode activated" do
@@ -12,7 +12,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
   end
 
   describe "#to_msgpack" do
-    context "traced a single test execution with Recorder" do
+    context "traced a single test execution with test visibility" do
       before do
         produce_test_session_trace
       end
@@ -53,7 +53,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
       end
     end
 
-    context "trace several tests executions with Recorder" do
+    context "trace several tests executions with test visibility" do
       let(:test_spans) { spans.select { |span| span.type == "test" } }
       subject { test_spans.map { |span| described_class.new(trace_for_span(span), span) } }
 

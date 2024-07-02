@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/test_visibility/recorder"
+require_relative "../../../../lib/datadog/ci/test_visibility/component"
 
-RSpec.describe Datadog::CI::TestVisibility::Recorder do
+RSpec.describe Datadog::CI::TestVisibility::Component do
   shared_examples_for "trace with ciapp-test origin" do
     let(:trace_under_test) { subject }
 
@@ -57,36 +57,36 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
     end
 
     describe "#trace_test_session" do
-      subject { recorder.start_test_session(service: service, tags: tags) }
+      subject { test_visibility.start_test_session(service: service, tags: tags) }
 
       it { is_expected.to be_nil }
 
       it "does not activate session" do
-        expect(recorder.active_test_session).to be_nil
+        expect(test_visibility.active_test_session).to be_nil
       end
     end
 
     describe "#trace_test_module" do
       let(:module_name) { "my-module" }
 
-      subject { recorder.start_test_module(module_name, service: service, tags: tags) }
+      subject { test_visibility.start_test_module(module_name, service: service, tags: tags) }
 
       it { is_expected.to be_nil }
 
       it "does not activate module" do
-        expect(recorder.active_test_module).to be_nil
+        expect(test_visibility.active_test_module).to be_nil
       end
     end
 
     describe "#trace_test_suite" do
       let(:suite_name) { "my-module" }
 
-      subject { recorder.start_test_suite(suite_name, service: service, tags: tags) }
+      subject { test_visibility.start_test_suite(suite_name, service: service, tags: tags) }
 
       it { is_expected.to be_nil }
 
       it "does not activate test suite" do
-        expect(recorder.active_test_suite(suite_name)).to be_nil
+        expect(test_visibility.active_test_suite(suite_name)).to be_nil
       end
     end
 
@@ -97,7 +97,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
       context "when given a block" do
         before do
-          recorder.trace(span_name, type: type, tags: tags) do |span|
+          test_visibility.trace(span_name, type: type, tags: tags) do |span|
             span.set_metric("my.metric", 42)
           end
         end
@@ -122,7 +122,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         context "when given a block" do
           before do
-            recorder.trace(span_name, type: type, tags: tags) do |span|
+            test_visibility.trace(span_name, type: type, tags: tags) do |span|
               span.set_metric("my.metric", 42)
             end
           end
@@ -148,7 +148,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         end
 
         context "without a block" do
-          subject { recorder.trace("my test step", type: type, tags: tags) }
+          subject { test_visibility.trace("my test step", type: type, tags: tags) }
 
           it "returns a new CI span" do
             expect(subject).to be_kind_of(Datadog::CI::Span)
@@ -180,7 +180,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         context "without a block" do
           subject do
-            recorder.trace_test(
+            test_visibility.trace_test(
               test_name,
               test_suite_name,
               service: test_service,
@@ -228,7 +228,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
             let(:session_service) { "my-session-service" }
             let(:test_service) { nil }
 
-            let(:test_session) { recorder.start_test_session(service: session_service, tags: test_session_tags) }
+            let(:test_session) { test_visibility.start_test_session(service: session_service, tags: test_session_tags) }
 
             before do
               test_session
@@ -273,7 +273,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
               let(:module_name) { "my-module" }
 
               let(:test_module) do
-                recorder.start_test_module(module_name)
+                test_visibility.start_test_module(module_name)
               end
 
               before do
@@ -298,7 +298,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
               context "when there is an active test suite" do
                 let(:test_suite) do
-                  recorder.start_test_suite(test_suite_name)
+                  test_visibility.start_test_suite(test_suite_name)
                 end
 
                 before do
@@ -313,7 +313,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
               context "when there is a running test suite but with a different name" do
                 let(:test_suite) do
-                  recorder.start_test_suite("other suite")
+                  test_visibility.start_test_suite("other suite")
                 end
 
                 before do
@@ -328,8 +328,8 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
               context "when there are several running test suites with different names" do
                 before do
-                  recorder.start_test_suite("other suite")
-                  recorder.start_test_suite("other other suite")
+                  test_visibility.start_test_suite("other suite")
+                  test_visibility.start_test_suite("other other suite")
                 end
 
                 it "does not connect test to test suite" do
@@ -342,7 +342,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         context "when given a block" do
           before do
-            recorder.trace_test(
+            test_visibility.trace_test(
               test_name,
               test_suite_name,
               service: test_service,
@@ -384,7 +384,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         let(:service) { "my-service" }
         let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
-        subject { recorder.start_test_session(service: service, tags: tags) }
+        subject { test_visibility.start_test_session(service: service, tags: tags) }
 
         it "returns a new CI test_session span" do
           expect(subject).to be_kind_of(Datadog::CI::TestSession)
@@ -436,7 +436,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         let(:service) { "my-service" }
         let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
-        subject { recorder.start_test_module(module_name, service: service, tags: tags) }
+        subject { test_visibility.start_test_module(module_name, service: service, tags: tags) }
 
         context "when there is no active test session" do
           it "returns a new CI test_module span" do
@@ -479,7 +479,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           let(:service) { nil }
           let(:session_service) { "session_service" }
           let(:session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
-          let(:test_session) { recorder.start_test_session(service: session_service, tags: session_tags) }
+          let(:test_session) { test_visibility.start_test_session(service: session_service, tags: session_tags) }
 
           before do
             test_session
@@ -513,8 +513,8 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         let(:session_service) { "session_service" }
         let(:session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
 
-        let(:test_session) { recorder.start_test_session(service: session_service, tags: session_tags) }
-        let(:test_module) { recorder.start_test_module(module_name) }
+        let(:test_session) { test_visibility.start_test_session(service: session_service, tags: session_tags) }
+        let(:test_module) { test_visibility.start_test_module(module_name) }
 
         before do
           test_session
@@ -525,7 +525,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           let(:suite_name) { "my-suite" }
           let(:tags) { {"my.tag" => "my_value"} }
 
-          subject { recorder.start_test_suite(suite_name, tags: tags) }
+          subject { test_visibility.start_test_suite(suite_name, tags: tags) }
 
           it "returns a new CI test_suite span" do
             expect(subject).to be_kind_of(Datadog::CI::TestSuite)
@@ -559,13 +559,13 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         context "when test suite with given name is already started" do
           let(:suite_name) { "my-suite" }
           let(:tags) { {"my.tag" => "my_value"} }
-          let(:already_running_test_suite) { recorder.start_test_suite(suite_name, tags: tags) }
+          let(:already_running_test_suite) { test_visibility.start_test_suite(suite_name, tags: tags) }
 
           before do
             already_running_test_suite
           end
 
-          subject { recorder.start_test_suite(suite_name) }
+          subject { test_visibility.start_test_suite(suite_name) }
 
           it "returns the already running test suite" do
             expect(subject.id).to eq(already_running_test_suite.id)
@@ -575,13 +575,13 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       describe "#active_test_session" do
-        subject { recorder.active_test_session }
+        subject { test_visibility.active_test_session }
         context "when there is no active test session" do
           it { is_expected.to be_nil }
         end
 
         context "when test session is started" do
-          let(:test_session) { recorder.start_test_session }
+          let(:test_session) { test_visibility.start_test_session }
           before do
             test_session
           end
@@ -593,13 +593,13 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       describe "#active_test_module" do
-        subject { recorder.active_test_module }
+        subject { test_visibility.active_test_module }
         context "when there is no active test module" do
           it { is_expected.to be_nil }
         end
 
         context "when test module is started" do
-          let(:test_module) { recorder.start_test_module("my module") }
+          let(:test_module) { test_visibility.start_test_module("my module") }
           before do
             test_module
           end
@@ -611,14 +611,14 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       describe "#active_test" do
-        subject { recorder.active_test }
+        subject { test_visibility.active_test }
 
         context "when there is no active test" do
           it { is_expected.to be_nil }
         end
 
         context "when test is started" do
-          let(:ci_test) { recorder.trace_test("my test", "my suite") }
+          let(:ci_test) { test_visibility.trace_test("my test", "my suite") }
 
           before do
             ci_test
@@ -631,14 +631,14 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       describe "#active_span" do
-        subject { recorder.active_span }
+        subject { test_visibility.active_span }
 
         context "when there is no active span" do
           it { is_expected.to be_nil }
         end
 
         context "when span is started" do
-          let(:ci_span) { recorder.trace("my test step", type: "step") }
+          let(:ci_span) { test_visibility.trace("my test step", type: "step") }
 
           before do
             ci_span
@@ -652,7 +652,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
       end
 
       describe "#deactivate_test" do
-        subject { recorder.deactivate_test }
+        subject { test_visibility.deactivate_test }
 
         context "when there is no active test" do
           let(:ci_test) { Datadog::CI::Test.new(double("tracer span")) }
@@ -661,18 +661,18 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
         end
 
         context "when deactivating the currently active test" do
-          let(:ci_test) { recorder.trace_test("my test", "my suite") }
+          let(:ci_test) { test_visibility.trace_test("my test", "my suite") }
 
           it "deactivates the test" do
             subject
 
-            expect(recorder.active_test).to be_nil
+            expect(test_visibility.active_test).to be_nil
           end
         end
       end
 
       describe "#deactivate_test_session" do
-        subject { recorder.deactivate_test_session }
+        subject { test_visibility.deactivate_test_session }
 
         context "when there is no active test session" do
           it { is_expected.to be_nil }
@@ -680,19 +680,19 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         context "when deactivating the currently active test session" do
           before do
-            recorder.start_test_session
+            test_visibility.start_test_session
           end
 
           it "deactivates the test session" do
             subject
 
-            expect(recorder.active_test_session).to be_nil
+            expect(test_visibility.active_test_session).to be_nil
           end
         end
       end
 
       describe "#deactivate_test_module" do
-        subject { recorder.deactivate_test_module }
+        subject { test_visibility.deactivate_test_module }
 
         context "when there is no active test module" do
           it { is_expected.to be_nil }
@@ -700,19 +700,19 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         context "when deactivating the currently active test module" do
           before do
-            recorder.start_test_module("my module")
+            test_visibility.start_test_module("my module")
           end
 
           it "deactivates the test module" do
             subject
 
-            expect(recorder.active_test_module).to be_nil
+            expect(test_visibility.active_test_module).to be_nil
           end
         end
       end
 
       describe "#deactivate_test_suite" do
-        subject { recorder.deactivate_test_suite("my suite") }
+        subject { test_visibility.deactivate_test_suite("my suite") }
 
         context "when there is no active test suite" do
           it { is_expected.to be_nil }
@@ -720,13 +720,13 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
 
         context "when deactivating the currently active test suite" do
           before do
-            recorder.start_test_suite("my suite")
+            test_visibility.start_test_suite("my suite")
           end
 
           it "deactivates the test suite" do
             subject
 
-            expect(recorder.active_test_suite("my suite")).to be_nil
+            expect(test_visibility.active_test_suite("my suite")).to be_nil
           end
         end
       end
@@ -744,7 +744,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           let(:service) { "my-service" }
           let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
-          subject { recorder.start_test_session(service: service, tags: tags) }
+          subject { test_visibility.start_test_session(service: service, tags: tags) }
 
           it "returns a new CI test_session span with ITR tags" do
             expect(subject).to be_kind_of(Datadog::CI::TestSession)
@@ -768,7 +768,7 @@ RSpec.describe Datadog::CI::TestVisibility::Recorder do
           let(:service) { "my-service" }
           let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
 
-          subject { recorder.start_test_session(service: service, tags: tags) }
+          subject { test_visibility.start_test_session(service: service, tags: tags) }
 
           it { is_expected.not_to be_skipping_tests }
         end

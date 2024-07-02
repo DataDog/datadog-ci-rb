@@ -8,7 +8,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSuite do
   end
 
   describe "#to_msgpack" do
-    context "traced a single test execution with Recorder" do
+    context "traced a single test execution with test visibility" do
       before do
         produce_test_session_trace
       end

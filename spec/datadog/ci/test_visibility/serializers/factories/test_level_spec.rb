@@ -1,6 +1,6 @@
 require_relative "../../../../../../lib/datadog/ci/test_visibility/serializers/factories/test_level"
 require_relative "../../../../../../lib/datadog/ci/test_visibility/serializers/test_v1"
-require_relative "../../../../../../lib/datadog/ci/test_visibility/recorder"
+require_relative "../../../../../../lib/datadog/ci/test_visibility/component"
 
 RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestLevel do
   include_context "CI mode activated" do
@@ -10,7 +10,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::Factories::TestLevel do
   subject { described_class.serializer(trace_for_span(span), span) }
 
   describe ".convert_trace_to_serializable_events" do
-    context "traced a single test execution with Recorder" do
+    context "traced a single test execution with test visibility" do
       before do
         produce_test_trace
       end

@@ -1,37 +1,41 @@
-RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
-  let(:recorder) { described_class.new }
+# frozen_string_literal: true
+
+require_relative "../../../../lib/datadog/ci/test_visibility/null_component"
+
+RSpec.describe Datadog::CI::TestVisibility::NullComponent do
+  let(:test_visibility) { described_class.new }
 
   describe "#start_test_session" do
-    subject { recorder.start_test_session }
+    subject { test_visibility.start_test_session }
 
     it { is_expected.to be_nil }
 
     it "does not activate session" do
-      expect(recorder.active_test_session).to be_nil
+      expect(test_visibility.active_test_session).to be_nil
     end
   end
 
   describe "#start_test_module" do
     let(:module_name) { "my-module" }
 
-    subject { recorder.start_test_module(module_name) }
+    subject { test_visibility.start_test_module(module_name) }
 
     it { is_expected.to be_nil }
 
     it "does not activate module" do
-      expect(recorder.active_test_module).to be_nil
+      expect(test_visibility.active_test_module).to be_nil
     end
   end
 
   describe "#start_test_suite" do
     let(:suite_name) { "my-module" }
 
-    subject { recorder.start_test_suite(suite_name) }
+    subject { test_visibility.start_test_suite(suite_name) }
 
     it { is_expected.to be_nil }
 
     it "does not activate test suite" do
-      expect(recorder.active_test_suite(suite_name)).to be_nil
+      expect(test_visibility.active_test_suite(suite_name)).to be_nil
     end
   end
 
@@ -40,7 +44,7 @@ RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
       let(:spy_under_test) { spy("spy") }
 
       before do
-        recorder.trace_test("my test", "my suite") do |test_span|
+        test_visibility.trace_test("my test", "my suite") do |test_span|
           spy_under_test.call
 
           test_span&.passed!
@@ -57,7 +61,7 @@ RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
     end
 
     context "without a block" do
-      subject { recorder.trace_test("my test", "my suite") }
+      subject { test_visibility.trace_test("my test", "my suite") }
 
       it { is_expected.to be_nil }
     end
@@ -68,7 +72,7 @@ RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
       let(:spy_under_test) { spy("spy") }
 
       before do
-        recorder.trace("my step", type: "step") do |span|
+        test_visibility.trace("my step", type: "step") do |span|
           spy_under_test.call
 
           span&.set_metric("my.metric", 42)
@@ -85,31 +89,31 @@ RSpec.describe Datadog::CI::TestVisibility::NullRecorder do
     end
 
     context "without a block" do
-      subject { recorder.trace("my step", type: "step") }
+      subject { test_visibility.trace("my step", type: "step") }
 
       it { is_expected.to be_nil }
     end
   end
 
   describe "#active_test_session" do
-    subject { recorder.active_test_session }
+    subject { test_visibility.active_test_session }
 
     it { is_expected.to be_nil }
   end
 
   describe "#active_test_module" do
-    subject { recorder.active_test_module }
+    subject { test_visibility.active_test_module }
     it { is_expected.to be_nil }
   end
 
   describe "#active_test" do
-    subject { recorder.active_test }
+    subject { test_visibility.active_test }
 
     it { is_expected.to be_nil }
   end
 
   describe "#active_span" do
-    subject { recorder.active_span }
+    subject { test_visibility.active_span }
 
     it { is_expected.to be_nil }
   end

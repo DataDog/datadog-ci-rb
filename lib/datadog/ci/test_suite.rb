@@ -26,7 +26,7 @@ module Datadog
           # we try to derive test suite status from execution stats if no status was set explicitly
           set_status_from_stats! if undefined?
 
-          recorder.deactivate_test_suite(name)
+          test_visibility.deactivate_test_suite(name)
 
           super
         end

@@ -119,18 +119,18 @@ RSpec.describe Datadog::CI::Configuration::Components do
             let(:evp_proxy_v2_supported) { true }
 
             context "is false" do
-              it "creates a CI recorder with test_suite_level_visibility_enabled=true" do
-                expect(components.ci_recorder).to be_kind_of(Datadog::CI::TestVisibility::Recorder)
-                expect(components.ci_recorder.test_suite_level_visibility_enabled).to eq(true)
+              it "creates test visibility component with test_suite_level_visibility_enabled=true" do
+                expect(components.test_visibility).to be_kind_of(Datadog::CI::TestVisibility::Component)
+                expect(components.test_visibility.test_suite_level_visibility_enabled).to eq(true)
               end
             end
 
             context "is true" do
               let(:force_test_level_visibility) { true }
 
-              it "creates a CI recorder with test_suite_level_visibility_enabled=false" do
-                expect(components.ci_recorder).to be_kind_of(Datadog::CI::TestVisibility::Recorder)
-                expect(components.ci_recorder.test_suite_level_visibility_enabled).to eq(false)
+              it "creates test visibility component with test_suite_level_visibility_enabled=false" do
+                expect(components.test_visibility).to be_kind_of(Datadog::CI::TestVisibility::Component)
+                expect(components.test_visibility.test_suite_level_visibility_enabled).to eq(false)
               end
             end
           end
@@ -190,7 +190,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     expect(options[:transport]).to be_nil
                   end
 
-                  expect(components.ci_recorder.itr_enabled?).to eq(false)
+                  expect(components.test_visibility.itr_enabled?).to eq(false)
                 end
               end
             end
@@ -239,16 +239,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
                 context "when ITR is disabled" do
                   let(:itr_enabled) { false }
 
-                  it "creates a CI recorder with ITR disabled" do
-                    expect(components.ci_recorder.itr_enabled?).to eq(false)
+                  it "creates test visibility component with ITR disabled" do
+                    expect(components.test_visibility.itr_enabled?).to eq(false)
                   end
                 end
 
                 context "when ITR is enabled" do
                   let(:itr_enabled) { true }
 
-                  it "creates a CI recorder with ITR enabled" do
-                    expect(components.ci_recorder.itr_enabled?).to eq(true)
+                  it "creates test visibility component with ITR enabled" do
+                    expect(components.test_visibility.itr_enabled?).to eq(true)
                   end
                 end
               end
@@ -261,7 +261,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   expect(Datadog.logger).to have_received(:error)
 
                   expect(settings.ci.enabled).to eq(false)
-                  expect(components.ci_recorder.itr_enabled?).to eq(false)
+                  expect(components.test_visibility.itr_enabled?).to eq(false)
                 end
               end
             end

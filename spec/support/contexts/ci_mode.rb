@@ -1,4 +1,4 @@
-# CI mode shared context sets up the CI recorder and configures the CI mode for tracer like customers do.
+# CI mode shared context sets up the CI test_visibility and configures the CI mode for tracer like customers do.
 # Example usage:
 #
 # include_context "CI mode activated" do
@@ -37,7 +37,7 @@ RSpec.shared_context "CI mode activated" do
     )
   end
 
-  let(:recorder) { Datadog.send(:components).ci_recorder }
+  let(:test_visibility) { Datadog.send(:components).test_visibility }
 
   before do
     setup_test_coverage_writer!
@@ -89,7 +89,7 @@ RSpec.shared_context "CI mode activated" do
     ::Datadog::Tracing.shutdown!
 
     Datadog::CI.send(:itr_runner)&.shutdown!
-    Datadog::CI.send(:recorder)&.shutdown!
+    Datadog::CI.send(:test_visibility)&.shutdown!
 
     Datadog.configure do |c|
       c.ci.enabled = false

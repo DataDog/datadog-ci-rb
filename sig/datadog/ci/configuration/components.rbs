@@ -2,11 +2,11 @@ module Datadog
   module CI
     module Configuration
       module Components : Datadog::Core::Configuration::Components
-        @ci_recorder: Datadog::CI::TestVisibility::Recorder | Datadog::CI::TestVisibility::NullRecorder
+        @test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
         @itr: Datadog::CI::ITR::Runner?
         @custom_configuration: Hash[String, String]
 
-        attr_reader ci_recorder: Datadog::CI::TestVisibility::Recorder | Datadog::CI::TestVisibility::NullRecorder
+        attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
         attr_reader itr: Datadog::CI::ITR::Runner?
 
         def initialize: (untyped settings) -> void

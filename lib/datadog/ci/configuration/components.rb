@@ -5,9 +5,9 @@ require_relative "../git/tree_uploader"
 require_relative "../itr/runner"
 require_relative "../itr/coverage/transport"
 require_relative "../itr/coverage/writer"
+require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
-require_relative "../test_visibility/recorder"
-require_relative "../test_visibility/null_recorder"
+require_relative "../test_visibility/null_component"
 require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
@@ -21,11 +21,11 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :ci_recorder, :itr
+        attr_reader :test_visibility, :itr
 
         def initialize(settings)
           @itr = nil
-          @ci_recorder = TestVisibility::NullRecorder.new
+          @test_visibility = TestVisibility::NullComponent.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -38,7 +38,7 @@ module Datadog
         def shutdown!(replacement = nil)
           super
 
-          @ci_recorder&.shutdown!
+          @test_visibility&.shutdown!
           @itr&.shutdown!
         end
 
@@ -110,8 +110,7 @@ module Datadog
             use_single_threaded_coverage: settings.ci.itr_code_coverage_use_single_threaded_mode
           )
 
-          # CI visibility recorder global instance
-          @ci_recorder = TestVisibility::Recorder.new(
+          @test_visibility = TestVisibility::Component.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             itr: @itr,
             remote_settings_api: build_remote_settings_client(settings, test_visibility_api),

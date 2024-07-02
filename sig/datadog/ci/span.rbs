@@ -67,7 +67,7 @@ module Datadog
 
       private
 
-      def recorder: () -> Datadog::CI::TestVisibility::Recorder
+      def test_visibility: () -> Datadog::CI::TestVisibility::Component
     end
   end
 end

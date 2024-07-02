@@ -15,7 +15,7 @@ module Datadog
       # Finishes the current test session.
       # @return [void]
       def finish
-        recorder.deactivate_test_session
+        test_visibility.deactivate_test_session
 
         super
       end

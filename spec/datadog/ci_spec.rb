@@ -1,9 +1,9 @@
 RSpec.describe Datadog::CI do
-  context "with recorder stubbed" do
-    let(:recorder) { instance_double(Datadog::CI::TestVisibility::Recorder) }
+  context "with test visibility stubbed" do
+    let(:test_visibility) { instance_double(Datadog::CI::TestVisibility::Component) }
 
     before do
-      allow(Datadog::CI).to receive(:recorder).and_return(recorder)
+      allow(Datadog::CI).to receive(:test_visibility).and_return(test_visibility)
     end
 
     describe "::trace_test" do
@@ -22,7 +22,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test) { instance_double(Datadog::CI::Test) }
 
       before do
-        allow(recorder).to receive(:trace_test).with(test_name, test_suite_name, **options, &block).and_return(ci_test)
+        allow(test_visibility).to receive(:trace_test).with(test_name, test_suite_name, **options, &block).and_return(ci_test)
       end
 
       it { is_expected.to be(ci_test) }
@@ -43,7 +43,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test) { instance_double(Datadog::CI::Test) }
 
       before do
-        allow(recorder).to receive(:trace_test).with(test_name, test_suite_name, **options).and_return(ci_test)
+        allow(test_visibility).to receive(:trace_test).with(test_name, test_suite_name, **options).and_return(ci_test)
       end
 
       it { is_expected.to be(ci_test) }
@@ -60,7 +60,7 @@ RSpec.describe Datadog::CI do
       let(:ci_span) { instance_double(Datadog::CI::Span) }
 
       before do
-        allow(recorder).to receive(:trace).with(span_name, type: type, **options, &block).and_return(ci_span)
+        allow(test_visibility).to receive(:trace).with(span_name, type: type, **options, &block).and_return(ci_span)
       end
 
       it { is_expected.to be(ci_span) }
@@ -83,7 +83,7 @@ RSpec.describe Datadog::CI do
         let(:ci_span) { instance_double(Datadog::CI::Span, type: type) }
 
         before do
-          allow(recorder).to receive(:active_span).and_return(ci_span)
+          allow(test_visibility).to receive(:active_span).and_return(ci_span)
         end
 
         it { is_expected.to be(ci_span) }
@@ -93,7 +93,7 @@ RSpec.describe Datadog::CI do
         let(:ci_span) { instance_double(Datadog::CI::Span, type: "test") }
 
         before do
-          allow(recorder).to receive(:active_span).and_return(ci_span)
+          allow(test_visibility).to receive(:active_span).and_return(ci_span)
         end
 
         it { is_expected.to be_nil }
@@ -101,7 +101,7 @@ RSpec.describe Datadog::CI do
 
       context "when no active span" do
         before do
-          allow(recorder).to receive(:active_span).and_return(nil)
+          allow(test_visibility).to receive(:active_span).and_return(nil)
         end
 
         it { is_expected.to be_nil }
@@ -116,7 +116,7 @@ RSpec.describe Datadog::CI do
         subject(:start_test_session) { described_class.start_test_session(service: service) }
 
         before do
-          allow(recorder).to receive(:start_test_session).with(service: service, tags: {}).and_return(ci_test_session)
+          allow(test_visibility).to receive(:start_test_session).with(service: service, tags: {}).and_return(ci_test_session)
         end
 
         it { is_expected.to be(ci_test_session) }
@@ -128,7 +128,7 @@ RSpec.describe Datadog::CI do
         context "when service is configured on library level" do
           before do
             allow(Datadog.configuration).to receive(:service_without_fallback).and_return("configured-service")
-            allow(recorder).to receive(:start_test_session).with(
+            allow(test_visibility).to receive(:start_test_session).with(
               service: "configured-service", tags: {}
             ).and_return(ci_test_session)
           end
@@ -144,7 +144,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_session) { instance_double(Datadog::CI::TestSession) }
 
       before do
-        allow(recorder).to receive(:active_test_session).and_return(ci_test_session)
+        allow(test_visibility).to receive(:active_test_session).and_return(ci_test_session)
       end
 
       it { is_expected.to be(ci_test_session) }
@@ -156,7 +156,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_module) { instance_double(Datadog::CI::TestModule) }
 
       before do
-        allow(recorder).to(
+        allow(test_visibility).to(
           receive(:start_test_module).with("my-module", service: nil, tags: {}).and_return(ci_test_module)
         )
       end
@@ -170,7 +170,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_module) { instance_double(Datadog::CI::TestModule) }
 
       before do
-        allow(recorder).to receive(:active_test_module).and_return(ci_test_module)
+        allow(test_visibility).to receive(:active_test_module).and_return(ci_test_module)
       end
 
       it { is_expected.to be(ci_test_module) }
@@ -182,7 +182,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_suite) { instance_double(Datadog::CI::TestSuite) }
 
       before do
-        allow(recorder).to(
+        allow(test_visibility).to(
           receive(:start_test_suite).with("my-suite", service: nil, tags: {}).and_return(ci_test_suite)
         )
       end
@@ -197,7 +197,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_suite) { instance_double(Datadog::CI::TestSuite) }
 
       before do
-        allow(recorder).to receive(:active_test_suite).with(test_suite_name).and_return(ci_test_suite)
+        allow(test_visibility).to receive(:active_test_suite).with(test_suite_name).and_return(ci_test_suite)
       end
 
       it { is_expected.to be(ci_test_suite) }
