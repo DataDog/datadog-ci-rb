@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/itr/skippable"
+require_relative "../../../../lib/datadog/ci/test_optimisation/skippable"
 
-RSpec.describe Datadog::CI::ITR::Skippable do
+RSpec.describe Datadog::CI::TestOptimisation::Skippable do
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
   let(:config_tags) { {} }

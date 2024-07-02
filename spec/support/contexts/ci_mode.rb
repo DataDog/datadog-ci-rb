@@ -30,7 +30,7 @@ RSpec.shared_context "CI mode activated" do
 
   let(:skippable_tests_response) do
     instance_double(
-      Datadog::CI::ITR::Skippable::Response,
+      Datadog::CI::TestOptimisation::Skippable::Response,
       ok?: true,
       correlation_id: itr_correlation_id,
       tests: itr_skippable_tests
@@ -69,8 +69,8 @@ RSpec.shared_context "CI mode activated" do
         require_git?: !require_git
       )
     )
-    allow_any_instance_of(Datadog::CI::ITR::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
-    allow_any_instance_of(Datadog::CI::ITR::Coverage::Transport).to receive(:send_events).and_return([])
+    allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
+    allow_any_instance_of(Datadog::CI::TestOptimisation::Coverage::Transport).to receive(:send_events).and_return([])
 
     Datadog.configure do |c|
       c.ci.enabled = ci_enabled
@@ -88,7 +88,7 @@ RSpec.shared_context "CI mode activated" do
   after do
     ::Datadog::Tracing.shutdown!
 
-    Datadog::CI.send(:itr_runner)&.shutdown!
+    Datadog::CI.send(:test_optimisation)&.shutdown!
     Datadog::CI.send(:test_visibility)&.shutdown!
 
     Datadog.configure do |c|

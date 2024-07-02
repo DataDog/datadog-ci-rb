@@ -7,7 +7,7 @@ module Datadog
 
         @dd_env: String?
         @serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel)
-        @itr: Datadog::CI::ITR::Runner?
+        @test_optimisation: Datadog::CI::TestOptimisation::Component?
 
         def initialize: (
           api: Datadog::CI::Transport::Api::Base,
@@ -21,7 +21,7 @@ module Datadog
         def send_payload: (String encoded_payload) -> Datadog::CI::Transport::HTTP::ResponseDecorator
         def encode_events: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[String]
         def encode_span: (Datadog::Tracing::TraceSegment trace, Datadog::Tracing::Span span) -> String?
-        def itr: () -> Datadog::CI::ITR::Runner?
+        def itr: () -> Datadog::CI::TestOptimisation::Component?
       end
     end
   end

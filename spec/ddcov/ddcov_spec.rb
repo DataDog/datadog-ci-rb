@@ -5,7 +5,7 @@ require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
 
-RSpec.describe Datadog::CI::ITR::Coverage::DDCov do
+RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
   let(:ignored_path) { nil }
   let(:threading_mode) { :multi }
   subject { described_class.new(root: root, ignored_path: ignored_path, threading_mode: threading_mode) }

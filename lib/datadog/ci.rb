@@ -365,8 +365,8 @@ module Datadog
         components.test_visibility
       end
 
-      def itr_runner
-        components.itr
+      def test_optimisation
+        components.test_optimisation
       end
     end
   end

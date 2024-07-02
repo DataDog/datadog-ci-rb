@@ -2,9 +2,9 @@
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
-require_relative "../itr/runner"
-require_relative "../itr/coverage/transport"
-require_relative "../itr/coverage/writer"
+require_relative "../test_optimisation/component"
+require_relative "../test_optimisation/coverage/transport"
+require_relative "../test_optimisation/coverage/writer"
 require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/null_component"
@@ -21,10 +21,10 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :itr
+        attr_reader :test_visibility, :test_optimisation
 
         def initialize(settings)
-          @itr = nil
+          @test_optimisation = nil
           @test_visibility = TestVisibility::NullComponent.new
 
           # Activate CI mode if enabled
@@ -39,7 +39,7 @@ module Datadog
           super
 
           @test_visibility&.shutdown!
-          @itr&.shutdown!
+          @test_optimisation&.shutdown!
         end
 
         def activate_ci!(settings)
@@ -99,8 +99,8 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = trace_writer_options
 
-          # @type ivar @itr: Datadog::CI::ITR::Runner
-          @itr = ITR::Runner.new(
+          # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
+          @test_optimisation = TestOptimisation::Component.new(
             api: test_visibility_api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings),
@@ -111,8 +111,8 @@ module Datadog
           )
 
           @test_visibility = TestVisibility::Component.new(
+            test_optimisation: @test_optimisation,
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
-            itr: @itr,
             remote_settings_api: build_remote_settings_client(settings, test_visibility_api),
             git_tree_upload_worker: build_git_upload_worker(settings, test_visibility_api)
           )
@@ -169,8 +169,8 @@ module Datadog
         def build_coverage_writer(settings, api)
           return nil if api.nil?
 
-          ITR::Coverage::Writer.new(
-            transport: ITR::Coverage::Transport.new(api: api)
+          TestOptimisation::Coverage::Writer.new(
+            transport: TestOptimisation::Coverage::Transport.new(api: api)
           )
         end
 

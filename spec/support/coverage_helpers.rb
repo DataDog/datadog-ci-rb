@@ -26,7 +26,7 @@ module CoverageHelpers
   def setup_test_coverage_writer!
     # DEV `*_any_instance_of` has concurrency issues when running with parallelism (e.g. JRuby).
     # DEV Single object `allow` and `expect` work as intended with parallelism.
-    allow(Datadog::CI::ITR::Runner).to receive(:new).and_wrap_original do |method, **args, &block|
+    allow(Datadog::CI::TestOptimisation::Component).to receive(:new).and_wrap_original do |method, **args, &block|
       instance = method.call(**args, &block)
 
       write_lock = Mutex.new
@@ -44,7 +44,7 @@ module CoverageHelpers
   end
 
   def runner
-    Datadog::CI.send(:itr_runner)
+    Datadog::CI.send(:test_optimisation)
   end
 
   def expect_coverage_events_belong_to_session(test_session_span)

@@ -236,8 +236,8 @@ void Init_datadog_cov(void)
 {
   VALUE mDatadog = rb_define_module("Datadog");
   VALUE mCI = rb_define_module_under(mDatadog, "CI");
-  VALUE mITR = rb_define_module_under(mCI, "ITR");
-  VALUE mCoverage = rb_define_module_under(mITR, "Coverage");
+  VALUE mTestOptimisation = rb_define_module_under(mCI, "TestOptimisation");
+  VALUE mCoverage = rb_define_module_under(mTestOptimisation, "Coverage");
   VALUE cDatadogCov = rb_define_class_under(mCoverage, "DDCov", rb_cObject);
 
   rb_define_alloc_func(cDatadogCov, dd_cov_allocate);

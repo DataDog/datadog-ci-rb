@@ -100,7 +100,7 @@ module Datadog
         end
 
         def itr
-          @itr ||= Datadog::CI.send(:itr_runner)
+          @test_optimisation ||= Datadog::CI.send(:test_optimisation)
         end
       end
     end

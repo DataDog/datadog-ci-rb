@@ -8,7 +8,7 @@ require_relative "../utils/test_run"
 
 module Datadog
   module CI
-    module ITR
+    module TestOptimisation
       class Skippable
         class Response
           def initialize(http_response)

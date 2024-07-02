@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/itr/runner"
+require_relative "../../../../lib/datadog/ci/test_optimisation/component"
 
-RSpec.describe Datadog::CI::ITR::Runner do
+RSpec.describe Datadog::CI::TestOptimisation::Component do
   let(:itr_enabled) { true }
 
   let(:api) { double("api") }
@@ -58,9 +58,9 @@ RSpec.describe Datadog::CI::ITR::Runner do
       let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => true} }
       let(:skippable) do
         instance_double(
-          Datadog::CI::ITR::Skippable,
+          Datadog::CI::TestOptimisation::Skippable,
           fetch_skippable_tests: instance_double(
-            Datadog::CI::ITR::Skippable::Response,
+            Datadog::CI::TestOptimisation::Skippable::Response,
             correlation_id: "42",
             tests: Set.new(["suite.test."])
           )
@@ -68,7 +68,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       end
 
       before do
-        expect(Datadog::CI::ITR::Skippable).to receive(:new).and_return(skippable)
+        expect(Datadog::CI::TestOptimisation::Skippable).to receive(:new).and_return(skippable)
         configure
       end
 
@@ -127,7 +127,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       end
     end
 
-    context "when ITR is disabled" do
+    context "when TestOptimisation is disabled" do
       let(:remote_configuration) { {"itr_enabled" => false, "code_coverage" => false, "tests_skipping" => false} }
 
       it "does not start coverage" do
@@ -229,9 +229,9 @@ RSpec.describe Datadog::CI::ITR::Runner do
       let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => true} }
       let(:skippable) do
         instance_double(
-          Datadog::CI::ITR::Skippable,
+          Datadog::CI::TestOptimisation::Skippable,
           fetch_skippable_tests: instance_double(
-            Datadog::CI::ITR::Skippable::Response,
+            Datadog::CI::TestOptimisation::Skippable::Response,
             correlation_id: "42",
             tests: Set.new(["suite.test.", "suite2.test.", "suite.test3."])
           )
@@ -239,7 +239,7 @@ RSpec.describe Datadog::CI::ITR::Runner do
       end
 
       before do
-        expect(Datadog::CI::ITR::Skippable).to receive(:new).and_return(skippable)
+        expect(Datadog::CI::TestOptimisation::Skippable).to receive(:new).and_return(skippable)
 
         configure
       end
@@ -383,10 +383,10 @@ RSpec.describe Datadog::CI::ITR::Runner do
       end
     end
 
-    context "when ITR is disabled" do
+    context "when TestOptimisation is disabled" do
       let(:itr_enabled) { false }
 
-      it "does not add ITR tags to the session" do
+      it "does not add ITR/TestOptimisation tags to the session" do
         subject
 
         expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TESTS_SKIPPED)).to be_nil

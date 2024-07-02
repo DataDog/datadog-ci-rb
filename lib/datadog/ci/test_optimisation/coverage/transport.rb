@@ -5,7 +5,7 @@ require_relative "../../transport/event_platform_transport"
 
 module Datadog
   module CI
-    module ITR
+    module TestOptimisation
       module Coverage
         class Transport < Datadog::CI::Transport::EventPlatformTransport
           private

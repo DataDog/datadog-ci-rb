@@ -16,11 +16,11 @@ require_relative "skippable"
 
 module Datadog
   module CI
-    module ITR
+    module TestOptimisation
       # Intelligent test runner implementation
       # Integrates with backend to provide test impact analysis data and
       # skip tests that are not impacted by the changes
-      class Runner
+      class Component
         include Core::Utils::Forking
 
         attr_reader :correlation_id, :skippable_tests, :skipped_tests_count
@@ -57,11 +57,11 @@ module Datadog
           @skipped_tests_count = 0
           @mutex = Mutex.new
 
-          Datadog.logger.debug("ITR Runner initialized with enabled: #{@enabled}")
+          Datadog.logger.debug("TestOptimisation initialized with enabled: #{@enabled}")
         end
 
         def configure(remote_configuration, test_session:, git_tree_upload_worker:)
-          Datadog.logger.debug("Configuring ITR Runner with remote configuration: #{remote_configuration}")
+          Datadog.logger.debug("Configuring TestOptimisation with remote configuration: #{remote_configuration}")
 
           @enabled = Utils::Parsing.convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY, false)
@@ -83,7 +83,7 @@ module Datadog
 
           load_datadog_cov! if @code_coverage_enabled
 
-          Datadog.logger.debug("Configured ITR Runner with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
+          Datadog.logger.debug("Configured TestOptimisation with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
 
           fetch_skippable_tests(test_session: test_session, git_tree_upload_worker: git_tree_upload_worker)
         end
@@ -139,7 +139,7 @@ module Datadog
           skippable_test_id = Utils::TestRun.skippable_test_id(test.name, test.test_suite_name, test.parameters)
           if @skippable_tests.include?(skippable_test_id)
             if forked?
-              Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
+              Datadog.logger.warn { "Intelligent test runner is not supported for forking test runners yet" }
               return
             end
 
@@ -155,7 +155,7 @@ module Datadog
           return if !test.skipped? || !test.skipped_by_itr?
 
           if forked?
-            Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
+            Datadog.logger.warn { "Intelligent test runner is not supported for forking test runners yet" }
             return
           end
 
@@ -167,7 +167,7 @@ module Datadog
         def write_test_session_tags(test_session)
           return if !enabled?
 
-          Datadog.logger.debug { "Finished ITR session with test skipping enabled: #{@test_skipping_enabled}" }
+          Datadog.logger.debug { "Finished optimised session with test skipping enabled: #{@test_skipping_enabled}" }
           Datadog.logger.debug { "#{@skipped_tests_count} tests were skipped" }
 
           test_session.set_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, @skipped_tests_count.positive?.to_s)

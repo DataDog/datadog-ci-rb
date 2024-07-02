@@ -1,6 +1,6 @@
-require_relative "../../../../../lib/datadog/ci/itr/coverage/transport"
+require_relative "../../../../../lib/datadog/ci/test_optimisation/coverage/transport"
 
-RSpec.describe Datadog::CI::ITR::Coverage::Transport do
+RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
   subject do
     described_class.new(
       api: api,
@@ -16,7 +16,7 @@ RSpec.describe Datadog::CI::ITR::Coverage::Transport do
   let(:api) { spy(:api) }
 
   let(:event) do
-    Datadog::CI::ITR::Coverage::Event.new(
+    Datadog::CI::TestOptimisation::Coverage::Event.new(
       test_id: "1",
       test_suite_id: "2",
       test_session_id: "3",
@@ -49,7 +49,7 @@ RSpec.describe Datadog::CI::ITR::Coverage::Transport do
       let(:events) do
         [
           event,
-          Datadog::CI::ITR::Coverage::Event.new(
+          Datadog::CI::TestOptimisation::Coverage::Event.new(
             test_id: "4",
             test_suite_id: "5",
             test_session_id: "6",
@@ -78,7 +78,7 @@ RSpec.describe Datadog::CI::ITR::Coverage::Transport do
         let(:events) do
           [
             event,
-            Datadog::CI::ITR::Coverage::Event.new(
+            Datadog::CI::TestOptimisation::Coverage::Event.new(
               test_id: "4",
               test_suite_id: nil,
               test_session_id: "6",
@@ -135,13 +135,13 @@ RSpec.describe Datadog::CI::ITR::Coverage::Transport do
     context "when all events are invalid" do
       let(:events) do
         [
-          Datadog::CI::ITR::Coverage::Event.new(
+          Datadog::CI::TestOptimisation::Coverage::Event.new(
             test_id: "4",
             test_suite_id: "5",
             test_session_id: nil,
             coverage: {"file.rb" => true, "file2.rb" => true}
           ),
-          Datadog::CI::ITR::Coverage::Event.new(
+          Datadog::CI::TestOptimisation::Coverage::Event.new(
             test_id: "8",
             test_suite_id: nil,
             test_session_id: "6",

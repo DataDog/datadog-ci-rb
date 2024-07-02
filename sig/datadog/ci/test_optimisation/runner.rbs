@@ -1,7 +1,7 @@
 module Datadog
   module CI
-    module ITR
-      class Runner
+    module TestOptimisation
+      class Component
         include Datadog::Core::Utils::Forking
 
         @enabled: bool
@@ -9,7 +9,7 @@ module Datadog
         @code_coverage_enabled: bool
         @correlation_id: String?
         @skippable_tests: Set[String]
-        @coverage_writer: Datadog::CI::ITR::Coverage::Writer?
+        @coverage_writer: Datadog::CI::TestOptimisation::Coverage::Writer?
 
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
@@ -24,7 +24,7 @@ module Datadog
         attr_reader skipped_tests_count: Integer
         attr_reader correlation_id: String?
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::ITR::Coverage::Writer?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::TestOptimisation::Coverage::Writer?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool) -> void
 
         def configure: (Hash[String, untyped] remote_configuration, test_session: Datadog::CI::TestSession, git_tree_upload_worker: Datadog::CI::Worker) -> void
 
@@ -36,7 +36,7 @@ module Datadog
 
         def start_coverage: (Datadog::CI::Test test) -> void
 
-        def stop_coverage: (Datadog::CI::Test test) -> Datadog::CI::ITR::Coverage::Event?
+        def stop_coverage: (Datadog::CI::Test test) -> Datadog::CI::TestOptimisation::Coverage::Event?
 
         def mark_if_skippable: (Datadog::CI::Test test) -> void
 
@@ -48,11 +48,11 @@ module Datadog
 
         private
 
-        def coverage_collector: () -> Datadog::CI::ITR::Coverage::DDCov?
+        def coverage_collector: () -> Datadog::CI::TestOptimisation::Coverage::DDCov?
 
         def load_datadog_cov!: () -> void
 
-        def write: (Datadog::CI::ITR::Coverage::Event event) -> void
+        def write: (Datadog::CI::TestOptimisation::Coverage::Event event) -> void
 
         def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void
 
@@ -60,7 +60,7 @@ module Datadog
 
         def increment_skipped_tests_counter: () -> void
 
-        def code_coverage_mode: () -> Datadog::CI::ITR::Coverage::DDCov::threading_mode
+        def code_coverage_mode: () -> Datadog::CI::TestOptimisation::Coverage::DDCov::threading_mode
       end
     end
   end

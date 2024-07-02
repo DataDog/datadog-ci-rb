@@ -3,11 +3,11 @@ module Datadog
     module Configuration
       module Components : Datadog::Core::Configuration::Components
         @test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
-        @itr: Datadog::CI::ITR::Runner?
+        @test_optimisation: Datadog::CI::TestOptimisation::Component?
         @custom_configuration: Hash[String, String]
 
         attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
-        attr_reader itr: Datadog::CI::ITR::Runner?
+        attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component?
 
         def initialize: (untyped settings) -> void
 
@@ -21,7 +21,7 @@ module Datadog
 
         def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestVisibility::Transport?
 
-        def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::ITR::Coverage::Writer?
+        def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestOptimisation::Coverage::Writer?
 
         def build_git_upload_worker: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Worker
 
