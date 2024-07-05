@@ -71,7 +71,7 @@ const rb_data_type_t dd_cov_data_type = {
 static VALUE dd_cov_allocate(VALUE klass)
 {
   struct dd_cov_data *dd_cov_data;
-  VALUE obj = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
+  VALUE dd_cov = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
   dd_cov_data->coverage = rb_hash_new();
   dd_cov_data->root = NULL;
@@ -80,8 +80,9 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->ignored_path_len = 0;
   dd_cov_data->last_filename_ptr = 0;
   dd_cov_data->threading_mode = MULTI_THREADED_COVERAGE_MODE;
+  // dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, dd_cov);
 
-  return obj;
+  return dd_cov;
 }
 
 // DDCov methods

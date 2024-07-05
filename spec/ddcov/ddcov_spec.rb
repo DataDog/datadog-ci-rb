@@ -2,6 +2,7 @@
 
 require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
+require_relative "app/model/my_model"
 require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
 
@@ -276,6 +277,21 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
             )
           end
         end
+      end
+    end
+
+    context "root in app folder" do
+      let(:root) { absolute_path("app") }
+
+      it "tracks coverage for empty model" do
+        subject.start
+
+        MyModel.new
+        expect(calculator.add(1, 2)).to eq(3)
+
+        coverage = subject.stop
+        expect(coverage.size).to eq(1)
+        expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
       end
     end
   end
