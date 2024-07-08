@@ -216,11 +216,11 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
+  // careful: this part of tracepoint is running for each allocated object
   rb_trace_arg_t *tracearg = rb_tracearg_from_tracepoint(tracepoint_data);
   VALUE new_object = rb_tracearg_object(tracearg);
 
   enum ruby_value_type type = rb_type(new_object);
-
   if (type != RUBY_T_OBJECT)
   {
     return;
@@ -232,6 +232,11 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
+  // TODO: track that this klass is already covered
+
+  // this part of tracepoint is running once per class per test
+  // TODO: cache the source location per class for the whole test suite
+  // TODO: cache if the class is from app or not
   VALUE klass_name = rb_class_name(klass);
   if (klass_name == Qnil)
   {
@@ -239,14 +244,25 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
   }
 
   VALUE rb_module = rb_const_get_at(rb_cObject, rb_intern("Module"));
-  VALUE source_location = rb_funcall(rb_module, rb_intern("const_source_location"), 1, klass_name);
 
-  if (source_location == Qnil)
+  const char *klass_name_ptr = RSTRING_PTR(klass_name);
+  const long klass_name_len = RSTRING_LEN(klass_name);
+
+  // skip anonymous classes starting with "#<Class"
+  if (klass_name_len >= 2 && klass_name_ptr[0] == '#' && klass_name_ptr[1] == '<')
   {
     return;
   }
-  VALUE filename = RARRAY_AREF(source_location, 0);
+  printf("klass_name: %s\n", RSTRING_PTR(klass_name));
 
+  VALUE source_location = rb_funcall(rb_module, rb_intern("const_source_location"), 1, klass_name);
+  if (source_location == Qnil || RARRAY_LEN(source_location) == 0)
+  {
+    return;
+  }
+
+  VALUE filename = RARRAY_AREF(source_location, 0);
+  printf("filename: %s\n", RSTRING_PTR(filename));
   if (filename == Qnil)
   {
     return;
