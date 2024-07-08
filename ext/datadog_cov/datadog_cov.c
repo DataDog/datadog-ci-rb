@@ -1,11 +1,15 @@
 #include <ruby.h>
 #include <ruby/debug.h>
 
+#include <stdbool.h>
+
 #define PROFILE_FRAMES_BUFFER_SIZE 1
 
 // threading modes
 #define SINGLE_THREADED_COVERAGE_MODE 0
 #define MULTI_THREADED_COVERAGE_MODE 1
+
+static void process_newobj_event(VALUE tracepoint_data, void *data);
 
 char *ruby_strndup(const char *str, size_t size)
 {
@@ -29,12 +33,29 @@ struct dd_cov_data
 
   VALUE coverage;
 
+  // Line tracepoint optimisation: cache last seen filename pointer to avoid
+  // unnecessary string comparison if we stay in the same file.
   uintptr_t last_filename_ptr;
 
+  // Line tracepoint can work in two modes: single threaded and multi threaded
+  //
+  // In single threaded mode line tracepoint will only cover the thread that started the coverage.
+  // This mode is useful for testing frameworks that run tests in multiple threads.
+  // Do not use single threaded mode for Rails applications unless you know that you
+  // don't run any background threads.
+  //
+  // In multi threaded mode line tracepoint will cover all threads. This mode is enabled by default
+  // and is recommended for most applications.
+  int threading_mode;
   // for single threaded mode: thread that is being covered
   VALUE th_covered;
 
-  int threading_mode;
+  // Heap allocation tracing is used to track test impact for objects that do not
+  // contain any methods that could be covered by line tracepoint.
+  //
+  // Allocation profiling works only in multi threaded mode.
+  bool allocation_profiling_enabled;
+  VALUE object_allocation_tracepoint; // Used to get allocation counts and allocation profiling
 };
 
 static void dd_cov_mark(void *ptr)
@@ -42,6 +63,7 @@ static void dd_cov_mark(void *ptr)
   struct dd_cov_data *dd_cov_data = ptr;
   rb_gc_mark_movable(dd_cov_data->coverage);
   rb_gc_mark_movable(dd_cov_data->th_covered);
+  rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
 }
 
 static void dd_cov_free(void *ptr)
@@ -57,6 +79,7 @@ static void dd_cov_compact(void *ptr)
   struct dd_cov_data *dd_cov_data = ptr;
   dd_cov_data->coverage = rb_gc_location(dd_cov_data->coverage);
   dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
+  dd_cov_data->object_allocation_tracepoint = rb_gc_location(dd_cov_data->object_allocation_tracepoint);
 }
 
 const rb_data_type_t dd_cov_data_type = {
@@ -80,7 +103,8 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->ignored_path_len = 0;
   dd_cov_data->last_filename_ptr = 0;
   dd_cov_data->threading_mode = MULTI_THREADED_COVERAGE_MODE;
-  // dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, dd_cov);
+  dd_cov_data->allocation_profiling_enabled = true;
+  dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, process_newobj_event, (void *)dd_cov);
 
   return dd_cov;
 }
@@ -125,6 +149,8 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
     dd_cov_data->ignored_path_len = RSTRING_LEN(rb_ignored_path);
     dd_cov_data->ignored_path = ruby_strndup(RSTRING_PTR(rb_ignored_path), dd_cov_data->ignored_path_len);
   }
+
+  dd_cov_data->allocation_profiling_enabled = (threading_mode == MULTI_THREADED_COVERAGE_MODE);
 
   return Qnil;
 }
@@ -179,6 +205,28 @@ static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self
   rb_hash_aset(dd_cov_data->coverage, filename, Qtrue);
 }
 
+static void process_newobj_event(VALUE tracepoint_data, void *data)
+{
+  VALUE self = (VALUE)data;
+  struct dd_cov_data *dd_cov_data;
+  TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
+
+  rb_trace_arg_t *tracearg = rb_tracearg_from_tracepoint(tracepoint_data);
+  VALUE new_object = rb_tracearg_object(tracearg);
+
+  enum ruby_value_type type = rb_type(new_object);
+
+  if (type != RUBY_T_OBJECT)
+  {
+    return;
+  }
+
+  VALUE klass = rb_class_of(new_object);
+  VALUE klass_name = rb_class_name(klass);
+
+  printf("New object of class %s\n", RSTRING_PTR(klass_name));
+}
+
 static VALUE dd_cov_start(VALUE self)
 {
 
@@ -199,6 +247,11 @@ static VALUE dd_cov_start(VALUE self)
   else
   {
     rb_add_event_hook(dd_cov_update_coverage, RUBY_EVENT_LINE, self);
+  }
+
+  if (dd_cov_data->allocation_profiling_enabled)
+  {
+    rb_tracepoint_enable(dd_cov_data->object_allocation_tracepoint);
   }
 
   return self;
@@ -223,6 +276,11 @@ static VALUE dd_cov_stop(VALUE self)
   else
   {
     rb_remove_event_hook(dd_cov_update_coverage);
+  }
+
+  if (dd_cov_data->object_allocation_tracepoint != Qnil)
+  {
+    rb_tracepoint_disable(dd_cov_data->object_allocation_tracepoint);
   }
 
   VALUE res = dd_cov_data->coverage;
