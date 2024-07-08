@@ -222,9 +222,34 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
   }
 
   VALUE klass = rb_class_of(new_object);
+  if (klass == Qnil)
+  {
+    return;
+  }
+
   VALUE klass_name = rb_class_name(klass);
+  if (klass_name == Qnil)
+  {
+    return;
+  }
 
   printf("New object of class %s\n", RSTRING_PTR(klass_name));
+
+  VALUE rb_module = rb_const_get_at(rb_cObject, rb_intern("Module"));
+  VALUE source_location = rb_funcall(rb_module, rb_intern("const_source_location"), 1, klass_name);
+
+  if (source_location == Qnil)
+  {
+    return;
+  }
+  VALUE filename = RARRAY_AREF(source_location, 0);
+
+  if (filename == Qnil)
+  {
+    return;
+  }
+
+  printf("New filename %s\n", RSTRING_PTR(filename));
 }
 
 static VALUE dd_cov_start(VALUE self)
