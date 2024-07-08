@@ -155,6 +155,25 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   return Qnil;
 }
 
+static void dd_store_covered_filename(struct dd_cov_data *dd_cov_data, VALUE filename)
+{
+  char *filename_ptr = RSTRING_PTR(filename);
+  // if the current filename is not located under the root, we skip it
+  if (strncmp(dd_cov_data->root, filename_ptr, dd_cov_data->root_len) != 0)
+  {
+    return;
+  }
+
+  // if ignored_path is provided and the current filename is located under the ignored_path, we skip it too
+  // this is useful for ignoring bundled gems location
+  if (dd_cov_data->ignored_path_len != 0 && strncmp(dd_cov_data->ignored_path, filename_ptr, dd_cov_data->ignored_path_len) == 0)
+  {
+    return;
+  }
+
+  rb_hash_aset(dd_cov_data->coverage, filename, Qtrue);
+}
+
 static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self, ID id, VALUE klass)
 {
   struct dd_cov_data *dd_cov_data;
@@ -188,21 +207,7 @@ static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self
     return;
   }
 
-  char *filename_ptr = RSTRING_PTR(filename);
-  // if the current filename is not located under the root, we skip it
-  if (strncmp(dd_cov_data->root, filename_ptr, dd_cov_data->root_len) != 0)
-  {
-    return;
-  }
-
-  // if ignored_path is provided and the current filename is located under the ignored_path, we skip it too
-  // this is useful for ignoring bundled gems location
-  if (dd_cov_data->ignored_path_len != 0 && strncmp(dd_cov_data->ignored_path, filename_ptr, dd_cov_data->ignored_path_len) == 0)
-  {
-    return;
-  }
-
-  rb_hash_aset(dd_cov_data->coverage, filename, Qtrue);
+  dd_store_covered_filename(dd_cov_data, filename);
 }
 
 static void process_newobj_event(VALUE tracepoint_data, void *data)
@@ -233,8 +238,6 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
-  printf("New object of class %s\n", RSTRING_PTR(klass_name));
-
   VALUE rb_module = rb_const_get_at(rb_cObject, rb_intern("Module"));
   VALUE source_location = rb_funcall(rb_module, rb_intern("const_source_location"), 1, klass_name);
 
@@ -249,7 +252,7 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
-  printf("New filename %s\n", RSTRING_PTR(filename));
+  dd_store_covered_filename(dd_cov_data, filename);
 }
 
 static VALUE dd_cov_start(VALUE self)
