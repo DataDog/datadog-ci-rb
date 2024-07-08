@@ -292,6 +292,12 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
         coverage = subject.stop
         expect(coverage.size).to eq(1)
         expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+
+        MyModel.new
+
+        subject.start
+        coverage = subject.stop
+        expect(coverage.size).to eq(0)
       end
     end
   end

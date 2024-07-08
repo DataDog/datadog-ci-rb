@@ -22,6 +22,9 @@ char *ruby_strndup(const char *str, size_t size)
   return dup;
 }
 
+// IDEA: cache the source location per class for the whole test suite - measure if it's faster
+// IDEA: cache if the class is from app or not - measure if it's faster
+
 // Data structure
 struct dd_cov_data
 {
@@ -50,12 +53,13 @@ struct dd_cov_data
   // for single threaded mode: thread that is being covered
   VALUE th_covered;
 
-  // Heap allocation tracing is used to track test impact for objects that do not
+  // Allocation tracing is used to track test impact for objects that do not
   // contain any methods that could be covered by line tracepoint.
   //
-  // Allocation profiling works only in multi threaded mode.
+  // Allocation tracing works only in multi threaded mode.
   bool allocation_profiling_enabled;
-  VALUE object_allocation_tracepoint; // Used to get allocation counts and allocation profiling
+  VALUE object_allocation_tracepoint;
+  VALUE classes_covered_by_allocation;
 };
 
 static void dd_cov_mark(void *ptr)
@@ -64,6 +68,7 @@ static void dd_cov_mark(void *ptr)
   rb_gc_mark_movable(dd_cov_data->coverage);
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
+  rb_gc_mark_movable(dd_cov_data->classes_covered_by_allocation);
 }
 
 static void dd_cov_free(void *ptr)
@@ -80,6 +85,7 @@ static void dd_cov_compact(void *ptr)
   dd_cov_data->coverage = rb_gc_location(dd_cov_data->coverage);
   dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
   dd_cov_data->object_allocation_tracepoint = rb_gc_location(dd_cov_data->object_allocation_tracepoint);
+  dd_cov_data->classes_covered_by_allocation = rb_gc_location(dd_cov_data->classes_covered_by_allocation);
 }
 
 const rb_data_type_t dd_cov_data_type = {
@@ -103,8 +109,10 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->ignored_path_len = 0;
   dd_cov_data->last_filename_ptr = 0;
   dd_cov_data->threading_mode = MULTI_THREADED_COVERAGE_MODE;
+
   dd_cov_data->allocation_profiling_enabled = true;
   dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, process_newobj_event, (void *)dd_cov);
+  dd_cov_data->classes_covered_by_allocation = rb_hash_new();
 
   return dd_cov;
 }
@@ -216,7 +224,7 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
-  // careful: this part of tracepoint is running for each allocated object
+  // careful: this part of tracepoint is running for each allocated object, make it fast
   rb_trace_arg_t *tracearg = rb_tracearg_from_tracepoint(tracepoint_data);
   VALUE new_object = rb_tracearg_object(tracearg);
 
@@ -232,18 +240,20 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
-  // TODO: track that this klass is already covered
+  VALUE class_covered = rb_hash_aref(dd_cov_data->classes_covered_by_allocation, klass);
+  if (class_covered == Qtrue)
+  {
+    return;
+  }
 
   // this part of tracepoint is running once per class per test
-  // TODO: cache the source location per class for the whole test suite
-  // TODO: cache if the class is from app or not
+  rb_hash_aset(dd_cov_data->classes_covered_by_allocation, klass, Qtrue);
+
   VALUE klass_name = rb_class_name(klass);
   if (klass_name == Qnil)
   {
     return;
   }
-
-  VALUE rb_module = rb_const_get_at(rb_cObject, rb_intern("Module"));
 
   const char *klass_name_ptr = RSTRING_PTR(klass_name);
   const long klass_name_len = RSTRING_LEN(klass_name);
@@ -253,16 +263,14 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
   {
     return;
   }
-  printf("klass_name: %s\n", RSTRING_PTR(klass_name));
 
-  VALUE source_location = rb_funcall(rb_module, rb_intern("const_source_location"), 1, klass_name);
+  VALUE source_location = rb_funcall(rb_cModule, rb_intern("const_source_location"), 1, klass_name);
   if (source_location == Qnil || RARRAY_LEN(source_location) == 0)
   {
     return;
   }
 
   VALUE filename = RARRAY_AREF(source_location, 0);
-  printf("filename: %s\n", RSTRING_PTR(filename));
   if (filename == Qnil)
   {
     return;
@@ -295,6 +303,7 @@ static VALUE dd_cov_start(VALUE self)
 
   if (dd_cov_data->allocation_profiling_enabled)
   {
+    dd_cov_data->classes_covered_by_allocation = rb_hash_new();
     rb_tracepoint_enable(dd_cov_data->object_allocation_tracepoint);
   }
 
