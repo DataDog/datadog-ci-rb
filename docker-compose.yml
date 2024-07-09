@@ -1,7 +1,8 @@
 services:
   # MRI
   datadog-ci-2.7:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:2.7.6-dd
+    image: ghcr.io/datadog/images-rb/engines/ruby:2.7
+    working_dir: /app
     command: /bin/bash
     env_file: ./.env
     environment: &common-environment
@@ -13,7 +14,8 @@ services:
       - .:/app
       - bundle-2.7:/usr/local/bundle
   datadog-ci-3.0:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:3.0.4-dd
+    image: ghcr.io/datadog/images-rb/engines/ruby:3.0
+    working_dir: /app
     command: /bin/bash
     env_file: ./.env
     environment: &common-environment-3x
@@ -24,7 +26,8 @@ services:
       - .:/app
       - bundle-3.0:/usr/local/bundle
   datadog-ci-3.1:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:3.1.2-dd
+    image: ghcr.io/datadog/images-rb/engines/ruby:3.1
+    working_dir: /app
     command: /bin/bash
     env_file: ./.env
     environment:
@@ -36,7 +39,8 @@ services:
       - .:/app
       - bundle-3.1:/usr/local/bundle
   datadog-ci-3.2:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:3.2.0-dd
+    image: ghcr.io/datadog/images-rb/engines/ruby:3.2
+    working_dir: /app
     command: /bin/bash
     env_file: ./.env
     environment:
@@ -48,7 +52,8 @@ services:
       - .:/app
       - bundle-3.2:/usr/local/bundle
   datadog-ci-3.3:
-    image: ghcr.io/datadog/dd-trace-rb/ruby:3.3.0-dd
+    image: ghcr.io/datadog/images-rb/engines/ruby:3.3
+    working_dir: /app
     command: /bin/bash
     env_file: ./.env
     environment:
@@ -61,7 +66,8 @@ services:
       - bundle-3.3:/usr/local/bundle
   # ADD NEW RUBIES HERE
   datadog-ci-jruby-9.4:
-    image: ghcr.io/datadog/dd-trace-rb/jruby:9.4.7.0-dd
+    image: ghcr.io/datadog/images-rb/engines/jruby:9.4
+    working_dir: /app
     command: /bin/bash
     env_file: ./.env
     environment:
