@@ -11,7 +11,7 @@
 
 static void process_newobj_event(VALUE tracepoint_data, void *data);
 
-char *ruby_strndup(const char *str, size_t size)
+static char *ruby_strndup(const char *str, size_t size)
 {
   char *dup;
 
@@ -22,8 +22,35 @@ char *ruby_strndup(const char *str, size_t size)
   return dup;
 }
 
-// IDEA: cache the source location per class for the whole test suite - measure if it's faster
-// IDEA: cache if the class is from app or not - measure if it's faster
+static VALUE just_return_nil(VALUE _not_used_self, VALUE _not_used_exception)
+{
+  return Qnil;
+}
+
+// Equivalent to Ruby "begin/rescue nil" call, where we call a C function and
+// swallow the exception if it occurs - const_source_location often fails with
+// exceptions for classes that .
+static VALUE rescue_nil(VALUE (*function_to_call_safely)(VALUE), VALUE function_to_call_safely_arg)
+{
+  return rb_rescue2(
+      function_to_call_safely,
+      function_to_call_safely_arg,
+      just_return_nil,
+      Qnil,
+      rb_eException, // rb_eException is the base class of all Ruby exceptions
+      0              // Required by API to be the last argument
+  );
+}
+
+static VALUE get_source_location(VALUE klass_name)
+{
+  return rb_funcall(rb_cObject, rb_intern("const_source_location"), 1, klass_name);
+}
+
+static VALUE safely_get_source_location(VALUE klass_name)
+{
+  return rescue_nil(get_source_location, klass_name);
+}
 
 // Data structure
 struct dd_cov_data
@@ -60,6 +87,7 @@ struct dd_cov_data
   bool allocation_profiling_enabled;
   VALUE object_allocation_tracepoint;
   VALUE classes_covered_by_allocation;
+  VALUE class_to_sourcefile_mapping;
 };
 
 static void dd_cov_mark(void *ptr)
@@ -69,6 +97,7 @@ static void dd_cov_mark(void *ptr)
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
   rb_gc_mark_movable(dd_cov_data->classes_covered_by_allocation);
+  rb_gc_mark_movable(dd_cov_data->class_to_sourcefile_mapping);
 }
 
 static void dd_cov_free(void *ptr)
@@ -182,7 +211,7 @@ static void dd_store_covered_filename(struct dd_cov_data *dd_cov_data, VALUE fil
   rb_hash_aset(dd_cov_data->coverage, filename, Qtrue);
 }
 
-static void dd_cov_update_coverage(rb_event_flag_t event, VALUE data, VALUE self, ID id, VALUE klass)
+static void process_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id, VALUE klass)
 {
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(data, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
@@ -229,25 +258,16 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
   VALUE new_object = rb_tracearg_object(tracearg);
 
   enum ruby_value_type type = rb_type(new_object);
-  if (type != RUBY_T_OBJECT)
+  if (type != RUBY_T_OBJECT && type != RUBY_T_STRUCT && type != RUBY_T_DATA)
   {
     return;
   }
 
   VALUE klass = rb_class_of(new_object);
-  if (klass == Qnil)
+  if (klass == Qnil || klass == 0)
   {
     return;
   }
-
-  VALUE class_covered = rb_hash_aref(dd_cov_data->classes_covered_by_allocation, klass);
-  if (class_covered == Qtrue)
-  {
-    return;
-  }
-
-  // this part of tracepoint is running once per class per test
-  rb_hash_aset(dd_cov_data->classes_covered_by_allocation, klass, Qtrue);
 
   VALUE klass_name = rb_class_name(klass);
   if (klass_name == Qnil)
@@ -255,16 +275,26 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
-  const char *klass_name_ptr = RSTRING_PTR(klass_name);
-  const long klass_name_len = RSTRING_LEN(klass_name);
+  VALUE class_covered = rb_hash_aref(dd_cov_data->classes_covered_by_allocation, klass_name);
+  if (class_covered == Qtrue)
+  {
+    return;
+  }
+  rb_hash_aset(dd_cov_data->classes_covered_by_allocation, klass_name, Qtrue);
 
-  // skip anonymous classes starting with "#<Class"
+  // this part of tracepoint is running once per class per test
+
+  // Skip anonymous classes starting with "#<Class".
+  // This small snippet improves performance for worst case by 20% for rubocop test suite: it allows
+  // us to skip the source location lookup that will always fail for anonymous classes.
+  const char *klass_name_ptr = RSTRING_PTR(klass_name);
+  const unsigned long klass_name_len = RSTRING_LEN(klass_name);
   if (klass_name_len >= 2 && klass_name_ptr[0] == '#' && klass_name_ptr[1] == '<')
   {
     return;
   }
 
-  VALUE source_location = rb_funcall(rb_cModule, rb_intern("const_source_location"), 1, klass_name);
+  VALUE source_location = safely_get_source_location(klass_name);
   if (source_location == Qnil || RARRAY_LEN(source_location) == 0)
   {
     return;
@@ -281,7 +311,6 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
 
 static VALUE dd_cov_start(VALUE self)
 {
-
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
@@ -293,12 +322,12 @@ static VALUE dd_cov_start(VALUE self)
   if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
   {
     VALUE thval = rb_thread_current();
-    rb_thread_add_event_hook(thval, dd_cov_update_coverage, RUBY_EVENT_LINE, self);
+    rb_thread_add_event_hook(thval, process_line_event, RUBY_EVENT_LINE, self);
     dd_cov_data->th_covered = thval;
   }
   else
   {
-    rb_add_event_hook(dd_cov_update_coverage, RUBY_EVENT_LINE, self);
+    rb_add_event_hook(process_line_event, RUBY_EVENT_LINE, self);
   }
 
   if (dd_cov_data->allocation_profiling_enabled)
@@ -323,12 +352,12 @@ static VALUE dd_cov_stop(VALUE self)
       rb_raise(rb_eRuntimeError, "Coverage was not started by this thread");
     }
 
-    rb_thread_remove_event_hook(dd_cov_data->th_covered, dd_cov_update_coverage);
+    rb_thread_remove_event_hook(dd_cov_data->th_covered, process_line_event);
     dd_cov_data->th_covered = Qnil;
   }
   else
   {
-    rb_remove_event_hook(dd_cov_update_coverage);
+    rb_remove_event_hook(process_line_event);
   }
 
   if (dd_cov_data->object_allocation_tracepoint != Qnil)

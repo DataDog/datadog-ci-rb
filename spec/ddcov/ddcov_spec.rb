@@ -299,6 +299,27 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
         coverage = subject.stop
         expect(coverage.size).to eq(0)
       end
+
+      it "does not break when encountering anonymous class or internal Ruby classes implemented in C" do
+        subject.start
+
+        MyModel.new
+        c = Class.new(Object) do
+        end
+        c.new
+
+        # Trying to get non-existing constant could caise freezing of Ruby process when
+        # not safely getting source location of the constant in NEWOBJ trcepoint.
+        begin
+          Object.const_get(:fdsfdsfdsfds)
+        rescue
+          nil
+        end
+
+        coverage = subject.stop
+        expect(coverage.size).to eq(1)
+        expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+      end
     end
   end
 end
