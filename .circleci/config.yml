@@ -33,7 +33,6 @@ test_containers:
     JRUBY_OPTS: --dev
   - &container_parameters_environment
     - *container_base_environment
-    - TEST_DATADOG_INTEGRATION: 1
     - COVERAGE_BASE_DIR: coverage
   - &container_base
     image: <<parameters.image>>

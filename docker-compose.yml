@@ -5,9 +5,8 @@ services:
     working_dir: /app
     command: /bin/bash
     env_file: ./.env
-    environment: &common-environment
+    environment:
       BUNDLE_GEMFILE: /app/Gemfile-2.7
-      TEST_DATADOG_INTEGRATION: 1
     stdin_open: true
     tty: true
     volumes:
@@ -18,7 +17,7 @@ services:
     working_dir: /app
     command: /bin/bash
     env_file: ./.env
-    environment: &common-environment-3x
+    environment:
       BUNDLE_GEMFILE: /app/Gemfile-3.0
     stdin_open: true
     tty: true
@@ -31,7 +30,6 @@ services:
     command: /bin/bash
     env_file: ./.env
     environment:
-      <<: *common-environment-3x
       BUNDLE_GEMFILE: /app/Gemfile-3.1
     stdin_open: true
     tty: true
@@ -44,7 +42,6 @@ services:
     command: /bin/bash
     env_file: ./.env
     environment:
-      <<: *common-environment-3x
       BUNDLE_GEMFILE: /app/Gemfile-3.2
     stdin_open: true
     tty: true
@@ -57,7 +54,6 @@ services:
     command: /bin/bash
     env_file: ./.env
     environment:
-      <<: *common-environment-3x
       BUNDLE_GEMFILE: /app/Gemfile-3.3
     stdin_open: true
     tty: true
@@ -71,7 +67,6 @@ services:
     command: /bin/bash
     env_file: ./.env
     environment:
-      <<: *common-environment
       BUNDLE_GEMFILE: /app/Gemfile-jruby-9.4
     stdin_open: true
     tty: true
