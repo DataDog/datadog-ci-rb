@@ -23,11 +23,9 @@ gem "cucumber", "~> 6"
 gem "activesupport", "< 7.1"
 
 group :check do
-
 end
 
 group :development do
-
 end
 
 gemspec path: "../"

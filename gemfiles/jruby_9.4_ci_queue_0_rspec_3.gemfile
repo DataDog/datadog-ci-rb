@@ -21,11 +21,9 @@ gem "simplecov-cobertura", "~> 2.1.0"
 gem "ci-queue", "~> 0"
 
 group :check do
-
 end
 
 group :development do
-
 end
 
 gemspec path: "../"

@@ -22,11 +22,9 @@ gem "simplecov-cobertura", "~> 2.1.0"
 gem "cucumber", "~> 7"
 
 group :check do
-
 end
 
 group :development do
-
 end
 
 gemspec path: "../"

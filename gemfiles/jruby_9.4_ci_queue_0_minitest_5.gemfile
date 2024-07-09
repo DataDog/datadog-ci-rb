@@ -23,11 +23,9 @@ gem "ci-queue", "~> 0"
 gem "minitest-reporters", "~> 1"
 
 group :check do
-
 end
 
 group :development do
-
 end
 
 gemspec path: "../"

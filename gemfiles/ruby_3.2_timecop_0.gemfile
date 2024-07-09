@@ -23,11 +23,9 @@ gem "timecop", "~> 0"
 gem "minitest", "~> 5"
 
 group :check do
-
 end
 
 group :development do
-
 end
 
 gemspec path: "../"

@@ -24,11 +24,9 @@ gem "selenium-webdriver", "~> 4"
 gem "cucumber", "~> 9"
 
 group :check do
-
 end
 
 group :development do
-
 end
 
 gemspec path: "../"

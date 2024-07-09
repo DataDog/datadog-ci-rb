@@ -22,11 +22,9 @@ gem "activesupport", "~> 4"
 gem "bigdecimal", "< 3.1.8"
 
 group :check do
-
 end
 
 group :development do
-
 end
 
 gemspec path: "../"

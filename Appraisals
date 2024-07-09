@@ -11,7 +11,7 @@ if %w[true y yes 1].include?(ENV["APPRAISAL_SKIP_BUNDLE_CHECK"])
   ::Appraisal::Appraisal.prepend(DisableBundleCheck)
 end
 
-alias original_appraise appraise
+alias_method :original_appraise, :appraise
 
 REMOVED_GEMS = {
   check: %w[rbs steep],

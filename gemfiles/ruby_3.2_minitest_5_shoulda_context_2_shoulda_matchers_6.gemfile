@@ -24,11 +24,9 @@ gem "shoulda-context", "~> 2"
 gem "shoulda-matchers", "~> 6"
 
 group :check do
-
 end
 
 group :development do
-
 end
 
 gemspec path: "../"
