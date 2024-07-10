@@ -32,7 +32,8 @@ module Datadog
           coverage_writer: nil,
           enabled: false,
           bundle_location: nil,
-          use_single_threaded_coverage: false
+          use_single_threaded_coverage: false,
+          use_allocation_tracing: true
         )
           @enabled = enabled
           @api = api
@@ -45,6 +46,7 @@ module Datadog
             bundle_location
           end
           @use_single_threaded_coverage = use_single_threaded_coverage
+          @use_allocation_tracing = use_allocation_tracing
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false

@@ -82,6 +82,12 @@ module Datadog
                 o.default false
               end
 
+              option :itr_test_impact_analysis_use_allocation_tracing do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_ITR_TEST_IMPACT_ANALYSIS_USE_ALLOCATION_TRACING
+                o.default true
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
