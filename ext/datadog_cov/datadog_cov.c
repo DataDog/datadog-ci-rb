@@ -3,14 +3,19 @@
 
 #include <stdbool.h>
 
+// This is a native extension that collects a list of Ruby files that were executed during the test run.
+// It is used to optimize the test suite by running only the tests that are affected by the changes.
+
 #define PROFILE_FRAMES_BUFFER_SIZE 1
 
 // threading modes
 #define SINGLE_THREADED_COVERAGE_MODE 0
 #define MULTI_THREADED_COVERAGE_MODE 1
 
+// functions declarations
 static void process_newobj_event(VALUE tracepoint_data, void *data);
 
+// utility functions
 static char *ruby_strndup(const char *str, size_t size)
 {
   char *dup;
@@ -42,26 +47,21 @@ static VALUE rescue_nil(VALUE (*function_to_call_safely)(VALUE), VALUE function_
   );
 }
 
-static VALUE get_source_location(VALUE klass_name)
-{
-  return rb_funcall(rb_cObject, rb_intern("const_source_location"), 1, klass_name);
-}
-
-static VALUE safely_get_source_location(VALUE klass_name)
-{
-  return rescue_nil(get_source_location, klass_name);
-}
-
 // Data structure
 struct dd_cov_data
 {
+  // Ruby hash with filenames impacted by the test.
+  VALUE impacted_files;
+
+  // Root is the path to the root folder of the project under test.
+  // Files located outside of the root are ignored.
   char *root;
   long root_len;
 
+  // Ignored path contains path to the folder where bundled gems are located if
+  // gems are installed in the project folder.
   char *ignored_path;
   long ignored_path_len;
-
-  VALUE coverage;
 
   // Line tracepoint optimisation: cache last seen filename pointer to avoid
   // unnecessary string comparison if we stay in the same file.
@@ -92,7 +92,7 @@ struct dd_cov_data
 static void dd_cov_mark(void *ptr)
 {
   struct dd_cov_data *dd_cov_data = ptr;
-  rb_gc_mark_movable(dd_cov_data->coverage);
+  rb_gc_mark_movable(dd_cov_data->impacted_files);
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
   rb_gc_mark_movable(dd_cov_data->classes_covered_by_allocation);
@@ -109,7 +109,7 @@ static void dd_cov_free(void *ptr)
 static void dd_cov_compact(void *ptr)
 {
   struct dd_cov_data *dd_cov_data = ptr;
-  dd_cov_data->coverage = rb_gc_location(dd_cov_data->coverage);
+  dd_cov_data->impacted_files = rb_gc_location(dd_cov_data->impacted_files);
   dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
   dd_cov_data->object_allocation_tracepoint = rb_gc_location(dd_cov_data->object_allocation_tracepoint);
   dd_cov_data->classes_covered_by_allocation = rb_gc_location(dd_cov_data->classes_covered_by_allocation);
@@ -129,7 +129,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   struct dd_cov_data *dd_cov_data;
   VALUE dd_cov = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
-  dd_cov_data->coverage = rb_hash_new();
+  dd_cov_data->impacted_files = rb_hash_new();
   dd_cov_data->root = NULL;
   dd_cov_data->root_len = 0;
   dd_cov_data->ignored_path = NULL;
@@ -144,59 +144,11 @@ static VALUE dd_cov_allocate(VALUE klass)
   return dd_cov;
 }
 
-// DDCov methods
-static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
-{
-  VALUE opt;
+// Helper functions (available in C only)
 
-  rb_scan_args(argc, argv, "10", &opt);
-  VALUE rb_root = rb_hash_lookup(opt, ID2SYM(rb_intern("root")));
-  if (!RTEST(rb_root))
-  {
-    rb_raise(rb_eArgError, "root is required");
-  }
-  VALUE rb_ignored_path = rb_hash_lookup(opt, ID2SYM(rb_intern("ignored_path")));
-
-  VALUE rb_threading_mode = rb_hash_lookup(opt, ID2SYM(rb_intern("threading_mode")));
-  int threading_mode;
-  if (rb_threading_mode == ID2SYM(rb_intern("multi")))
-  {
-    threading_mode = MULTI_THREADED_COVERAGE_MODE;
-  }
-  else if (rb_threading_mode == ID2SYM(rb_intern("single")))
-  {
-    threading_mode = SINGLE_THREADED_COVERAGE_MODE;
-  }
-  else
-  {
-    rb_raise(rb_eArgError, "threading mode is invalid");
-  }
-
-  VALUE rb_allocation_tracing_enabled = rb_hash_lookup(opt, ID2SYM(rb_intern("use_allocation_tracing")));
-  if (rb_allocation_tracing_enabled == Qtrue && threading_mode == SINGLE_THREADED_COVERAGE_MODE)
-  {
-    rb_raise(rb_eArgError, "allocation tracing is not supported in single threaded mode");
-  }
-
-  struct dd_cov_data *dd_cov_data;
-  TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
-
-  dd_cov_data->threading_mode = threading_mode;
-  dd_cov_data->root_len = RSTRING_LEN(rb_root);
-  dd_cov_data->root = ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
-
-  if (RTEST(rb_ignored_path))
-  {
-    dd_cov_data->ignored_path_len = RSTRING_LEN(rb_ignored_path);
-    dd_cov_data->ignored_path = ruby_strndup(RSTRING_PTR(rb_ignored_path), dd_cov_data->ignored_path_len);
-  }
-
-  dd_cov_data->allocation_tracing_enabled = (rb_allocation_tracing_enabled == Qtrue);
-
-  return Qnil;
-}
-
-static void dd_store_covered_filename(struct dd_cov_data *dd_cov_data, VALUE filename)
+// Checks if the filename is located under the root folder of the project (but not
+// in the ignored folder) and adds it to the impacted_files hash.
+static void record_impacted_file(struct dd_cov_data *dd_cov_data, VALUE filename)
 {
   char *filename_ptr = RSTRING_PTR(filename);
   // if the current filename is not located under the root, we skip it
@@ -212,9 +164,10 @@ static void dd_store_covered_filename(struct dd_cov_data *dd_cov_data, VALUE fil
     return;
   }
 
-  rb_hash_aset(dd_cov_data->coverage, filename, Qtrue);
+  rb_hash_aset(dd_cov_data->impacted_files, filename, Qtrue);
 }
 
+// Executed on RUBY_EVENT_LINE event and captures the filename from rb_profile_frames.
 static void process_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id, VALUE klass)
 {
   struct dd_cov_data *dd_cov_data;
@@ -248,9 +201,23 @@ static void process_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID
     return;
   }
 
-  dd_store_covered_filename(dd_cov_data, filename);
+  record_impacted_file(dd_cov_data, filename);
 }
 
+// Get source location for a given class name
+static VALUE get_source_location(VALUE klass_name)
+{
+  return rb_funcall(rb_cObject, rb_intern("const_source_location"), 1, klass_name);
+}
+
+// Get source location for a given class name and swallow any exceptions
+static VALUE safely_get_source_location(VALUE klass_name)
+{
+  return rescue_nil(get_source_location, klass_name);
+}
+
+// Executed on RUBY_INTERNAL_EVENT_NEWOBJ event and captures the source file for the
+// allocated object's class.
 static void process_newobj_event(VALUE tracepoint_data, void *data)
 {
   VALUE self = (VALUE)data;
@@ -310,9 +277,62 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
-  dd_store_covered_filename(dd_cov_data, filename);
+  record_impacted_file(dd_cov_data, filename);
 }
 
+// DDCov instance methods available in Ruby
+static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
+{
+  VALUE opt;
+
+  rb_scan_args(argc, argv, "10", &opt);
+  VALUE rb_root = rb_hash_lookup(opt, ID2SYM(rb_intern("root")));
+  if (!RTEST(rb_root))
+  {
+    rb_raise(rb_eArgError, "root is required");
+  }
+  VALUE rb_ignored_path = rb_hash_lookup(opt, ID2SYM(rb_intern("ignored_path")));
+
+  VALUE rb_threading_mode = rb_hash_lookup(opt, ID2SYM(rb_intern("threading_mode")));
+  int threading_mode;
+  if (rb_threading_mode == ID2SYM(rb_intern("multi")))
+  {
+    threading_mode = MULTI_THREADED_COVERAGE_MODE;
+  }
+  else if (rb_threading_mode == ID2SYM(rb_intern("single")))
+  {
+    threading_mode = SINGLE_THREADED_COVERAGE_MODE;
+  }
+  else
+  {
+    rb_raise(rb_eArgError, "threading mode is invalid");
+  }
+
+  VALUE rb_allocation_tracing_enabled = rb_hash_lookup(opt, ID2SYM(rb_intern("use_allocation_tracing")));
+  if (rb_allocation_tracing_enabled == Qtrue && threading_mode == SINGLE_THREADED_COVERAGE_MODE)
+  {
+    rb_raise(rb_eArgError, "allocation tracing is not supported in single threaded mode");
+  }
+
+  struct dd_cov_data *dd_cov_data;
+  TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
+
+  dd_cov_data->threading_mode = threading_mode;
+  dd_cov_data->root_len = RSTRING_LEN(rb_root);
+  dd_cov_data->root = ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
+
+  if (RTEST(rb_ignored_path))
+  {
+    dd_cov_data->ignored_path_len = RSTRING_LEN(rb_ignored_path);
+    dd_cov_data->ignored_path = ruby_strndup(RSTRING_PTR(rb_ignored_path), dd_cov_data->ignored_path_len);
+  }
+
+  dd_cov_data->allocation_tracing_enabled = (rb_allocation_tracing_enabled == Qtrue);
+
+  return Qnil;
+}
+
+// starts test impact collection, executed before the start of each test
 static VALUE dd_cov_start(VALUE self)
 {
   struct dd_cov_data *dd_cov_data;
@@ -323,6 +343,7 @@ static VALUE dd_cov_start(VALUE self)
     rb_raise(rb_eRuntimeError, "root is required");
   }
 
+  // add line tracepoint
   if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
   {
     VALUE thval = rb_thread_current();
@@ -334,6 +355,7 @@ static VALUE dd_cov_start(VALUE self)
     rb_add_event_hook(process_line_event, RUBY_EVENT_LINE, self);
   }
 
+  // add object allocation tracepoint
   if (dd_cov_data->allocation_tracing_enabled)
   {
     dd_cov_data->classes_covered_by_allocation = rb_hash_new();
@@ -343,11 +365,14 @@ static VALUE dd_cov_start(VALUE self)
   return self;
 }
 
+// stops test impact collection, executed after the end of each test
+// returns the hash with impacted files and resets the internal state
 static VALUE dd_cov_stop(VALUE self)
 {
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
+  // stop line tracepoint
   if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
   {
     VALUE thval = rb_thread_current();
@@ -364,14 +389,15 @@ static VALUE dd_cov_stop(VALUE self)
     rb_remove_event_hook(process_line_event);
   }
 
+  // stop object allocation tracepoint
   if (dd_cov_data->object_allocation_tracepoint != Qnil)
   {
     rb_tracepoint_disable(dd_cov_data->object_allocation_tracepoint);
   }
 
-  VALUE res = dd_cov_data->coverage;
+  VALUE res = dd_cov_data->impacted_files;
 
-  dd_cov_data->coverage = rb_hash_new();
+  dd_cov_data->impacted_files = rb_hash_new();
   dd_cov_data->last_filename_ptr = 0;
 
   return res;
