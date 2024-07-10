@@ -9,7 +9,16 @@ require_relative "calculator/code_with_❤️"
 RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
   let(:ignored_path) { nil }
   let(:threading_mode) { :multi }
-  subject { described_class.new(root: root, ignored_path: ignored_path, threading_mode: threading_mode) }
+  let(:use_allocation_tracing) { true }
+
+  subject do
+    described_class.new(
+      root: root,
+      ignored_path: ignored_path,
+      threading_mode: threading_mode,
+      use_allocation_tracing: use_allocation_tracing
+    )
+  end
 
   describe "code coverage collection" do
     let!(:calculator) { Calculator.new }
@@ -156,11 +165,16 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
 
       context "multi threaded execution" do
         def thread_local_cov
-          Thread.current[:datadog_ci_cov] ||= described_class.new(root: root, threading_mode: threading_mode)
+          Thread.current[:datadog_ci_cov] ||= described_class.new(
+            root: root,
+            threading_mode: threading_mode,
+            use_allocation_tracing: use_allocation_tracing
+          )
         end
 
         context "in single threaded coverage mode" do
           let(:threading_mode) { :single }
+          let(:use_allocation_tracing) { false }
 
           it "collects coverage for each thread separately" do
             t1_queue = Thread::Queue.new
@@ -203,6 +217,16 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
             end
 
             [t1, t2].each(&:join)
+          end
+
+          context "when allocation tracing is enabled" do
+            let(:use_allocation_tracing) { true }
+
+            it "raises an error" do
+              expect { thread_local_cov }.to(
+                raise_error(ArgumentError, "allocation tracing is not supported in single threaded mode")
+              )
+            end
           end
         end
 
@@ -283,42 +307,58 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
     context "root in app folder" do
       let(:root) { absolute_path("app") }
 
-      it "tracks coverage for empty model" do
-        subject.start
+      context "allocation tracing is enabled" do
+        it "tracks coverage for empty model" do
+          subject.start
 
-        MyModel.new
-        expect(calculator.add(1, 2)).to eq(3)
+          MyModel.new
+          expect(calculator.add(1, 2)).to eq(3)
 
-        coverage = subject.stop
-        expect(coverage.size).to eq(1)
-        expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+          coverage = subject.stop
+          expect(coverage.size).to eq(1)
+          expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
 
-        MyModel.new
+          MyModel.new
 
-        subject.start
-        coverage = subject.stop
-        expect(coverage.size).to eq(0)
+          subject.start
+          coverage = subject.stop
+          expect(coverage.size).to eq(0)
+        end
+
+        it "does not break when encountering anonymous class or internal Ruby classes implemented in C" do
+          subject.start
+
+          MyModel.new
+          c = Class.new(Object) do
+          end
+          c.new
+
+          # Trying to get non-existing constant could caise freezing of Ruby process when
+          # not safely getting source location of the constant in NEWOBJ trcepoint.
+          begin
+            Object.const_get(:fdsfdsfdsfds)
+          rescue
+            nil
+          end
+
+          coverage = subject.stop
+          expect(coverage.size).to eq(1)
+          expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+        end
       end
 
-      it "does not break when encountering anonymous class or internal Ruby classes implemented in C" do
-        subject.start
+      context "allocation tracing is disabled" do
+        let(:use_allocation_tracing) { false }
 
-        MyModel.new
-        c = Class.new(Object) do
+        it "does not track coverage for empty model" do
+          subject.start
+
+          MyModel.new
+          expect(calculator.add(1, 2)).to eq(3)
+
+          coverage = subject.stop
+          expect(coverage.size).to eq(0)
         end
-        c.new
-
-        # Trying to get non-existing constant could caise freezing of Ruby process when
-        # not safely getting source location of the constant in NEWOBJ trcepoint.
-        begin
-          Object.const_get(:fdsfdsfdsfds)
-        rescue
-          nil
-        end
-
-        coverage = subject.stop
-        expect(coverage.size).to eq(1)
-        expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
       end
     end
   end

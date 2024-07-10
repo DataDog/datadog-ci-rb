@@ -403,12 +403,15 @@ RSpec.describe "Minitest instrumentation" do
           Minitest::Runnable.reset
 
           require_relative "helpers/addition_helper"
+          require_relative "helpers/simple_model"
           class SomeTest < Minitest::Test
             def test_pass
               assert true
             end
 
             def test_pass_other
+              # make sure that allocating objects is covered
+              SimpleModel.new
               # add thread to test that code coverage is collected
               t = Thread.new do
                 AdditionHelper.add(1, 2)
@@ -504,6 +507,7 @@ RSpec.describe "Minitest instrumentation" do
           test_span = test_spans.find { |span| span.get_tag("test.name") == "test_pass_other" }
           cov_event = find_coverage_for_test(test_span)
           expect(cov_event.coverage.keys).to include(absolute_path("helpers/addition_helper.rb"))
+          expect(cov_event.coverage.keys).to include(absolute_path("helpers/simple_model.rb"))
         end
 
         context "when test optimisation skips tests" do

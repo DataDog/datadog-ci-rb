@@ -1,0 +1,2 @@
+class SimpleModel
+end

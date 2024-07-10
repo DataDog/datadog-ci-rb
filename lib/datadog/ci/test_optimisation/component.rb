@@ -191,7 +191,8 @@ module Datadog
           Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(
             root: Git::LocalRepository.root,
             ignored_path: @bundle_location,
-            threading_mode: code_coverage_mode
+            threading_mode: code_coverage_mode,
+            use_allocation_tracing: @use_allocation_tracing
           )
         end
 

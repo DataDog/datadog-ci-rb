@@ -84,10 +84,9 @@ struct dd_cov_data
   // contain any methods that could be covered by line tracepoint.
   //
   // Allocation tracing works only in multi threaded mode.
-  bool allocation_profiling_enabled;
+  bool allocation_tracing_enabled;
   VALUE object_allocation_tracepoint;
   VALUE classes_covered_by_allocation;
-  VALUE class_to_sourcefile_mapping;
 };
 
 static void dd_cov_mark(void *ptr)
@@ -97,7 +96,6 @@ static void dd_cov_mark(void *ptr)
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
   rb_gc_mark_movable(dd_cov_data->classes_covered_by_allocation);
-  rb_gc_mark_movable(dd_cov_data->class_to_sourcefile_mapping);
 }
 
 static void dd_cov_free(void *ptr)
@@ -139,7 +137,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->last_filename_ptr = 0;
   dd_cov_data->threading_mode = MULTI_THREADED_COVERAGE_MODE;
 
-  dd_cov_data->allocation_profiling_enabled = true;
+  dd_cov_data->allocation_tracing_enabled = true;
   dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, process_newobj_event, (void *)dd_cov);
   dd_cov_data->classes_covered_by_allocation = rb_hash_new();
 
@@ -174,6 +172,12 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
     rb_raise(rb_eArgError, "threading mode is invalid");
   }
 
+  VALUE rb_allocation_tracing_enabled = rb_hash_lookup(opt, ID2SYM(rb_intern("use_allocation_tracing")));
+  if (rb_allocation_tracing_enabled == Qtrue && threading_mode == SINGLE_THREADED_COVERAGE_MODE)
+  {
+    rb_raise(rb_eArgError, "allocation tracing is not supported in single threaded mode");
+  }
+
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
@@ -187,7 +191,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
     dd_cov_data->ignored_path = ruby_strndup(RSTRING_PTR(rb_ignored_path), dd_cov_data->ignored_path_len);
   }
 
-  dd_cov_data->allocation_profiling_enabled = (threading_mode == MULTI_THREADED_COVERAGE_MODE);
+  dd_cov_data->allocation_tracing_enabled = (rb_allocation_tracing_enabled == Qtrue);
 
   return Qnil;
 }
@@ -330,7 +334,7 @@ static VALUE dd_cov_start(VALUE self)
     rb_add_event_hook(process_line_event, RUBY_EVENT_LINE, self);
   }
 
-  if (dd_cov_data->allocation_profiling_enabled)
+  if (dd_cov_data->allocation_tracing_enabled)
   {
     dd_cov_data->classes_covered_by_allocation = rb_hash_new();
     rb_tracepoint_enable(dd_cov_data->object_allocation_tracepoint);
