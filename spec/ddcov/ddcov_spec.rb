@@ -334,7 +334,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
           c.new
 
           # Trying to get non-existing constant could caise freezing of Ruby process when
-          # not safely getting source location of the constant in NEWOBJ trcepoint.
+          # not safely getting source location of the constant in NEWOBJ tracepoint.
           begin
             Object.const_get(:fdsfdsfdsfds)
           rescue
