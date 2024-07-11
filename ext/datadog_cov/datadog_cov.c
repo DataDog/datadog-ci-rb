@@ -34,7 +34,7 @@ static VALUE just_return_nil(VALUE _not_used_self, VALUE _not_used_exception)
 
 // Equivalent to Ruby "begin/rescue nil" call, where we call a C function and
 // swallow the exception if it occurs - const_source_location often fails with
-// exceptions for classes that .
+// exceptions for classes that are defined in C or for anonymous classes.
 static VALUE rescue_nil(VALUE (*function_to_call_safely)(VALUE), VALUE function_to_call_safely_arg)
 {
   return rb_rescue2(
