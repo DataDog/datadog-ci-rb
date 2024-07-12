@@ -94,7 +94,7 @@ struct dd_cov_data
   // Allocation tracing works only in multi threaded mode.
   bool allocation_tracing_enabled;
   VALUE object_allocation_tracepoint;
-  st_table *klasses_table; // (VALUE) -> VALUE hash with class names that were covered by allocation
+  st_table *klasses_table; // { (VALUE) -> int } hashmap with class names that were covered by allocation during the test run
 };
 
 static void dd_cov_mark(void *ptr)
@@ -224,6 +224,7 @@ static VALUE safely_get_source_location(VALUE klass_name)
   return rescue_nil(get_source_location, klass_name);
 }
 
+// This function is called for each class that was instantiated during the test run.
 static int process_instantiated_klass(st_data_t key, st_data_t _value, st_data_t data)
 {
   VALUE klass = (VALUE)key;
@@ -262,8 +263,10 @@ static void on_newobj_event(VALUE tracepoint_data, void *data)
   rb_trace_arg_t *tracearg = rb_tracearg_from_tracepoint(tracepoint_data);
   VALUE new_object = rb_tracearg_object(tracearg);
 
+  // To keep things fast and practical, we only care about objects that extend
+  // either Object or Struct.
   enum ruby_value_type type = rb_type(new_object);
-  if (type != RUBY_T_OBJECT && type != RUBY_T_STRUCT && type != RUBY_T_DATA)
+  if (type != RUBY_T_OBJECT && type != RUBY_T_STRUCT)
   {
     return;
   }
@@ -282,6 +285,9 @@ static void on_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
+  // We use VALUE directly as a key for the hashmap
+  // Ruby itself does it too:
+  // https://github.com/ruby/ruby/blob/94b87084a689a3bc732dcaee744508a708223d6c/ext/objspace/object_tracing.c#L113
   if (st_lookup(dd_cov_data->klasses_table, (st_data_t)klass, 0))
   {
     return;
