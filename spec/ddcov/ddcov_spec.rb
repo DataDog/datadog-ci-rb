@@ -3,6 +3,7 @@
 require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
 require_relative "app/model/my_model"
+require_relative "app/model/my_struct"
 require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
 
@@ -329,6 +330,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
           subject.start
 
           MyModel.new
+          User.new("john doe", "johndoe@mail.test")
           c = Class.new(Object) do
           end
           c.new
@@ -342,8 +344,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
           end
 
           coverage = subject.stop
-          expect(coverage.size).to eq(1)
+          expect(coverage.size).to eq(2)
           expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+          expect(coverage.keys).to include(absolute_path("app/model/my_struct.rb"))
         end
       end
 

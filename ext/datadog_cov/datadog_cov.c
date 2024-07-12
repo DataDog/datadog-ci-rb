@@ -235,16 +235,6 @@ static int process_instantiated_klass(st_data_t key, st_data_t _value, st_data_t
     return ST_CONTINUE;
   }
 
-  // Skip anonymous classes starting with "#<Class".
-  // This small snippet improves performance for worst case by 20% for rubocop test suite: it allows
-  // us to skip the source location lookup that will always fail for anonymous classes.
-  const char *klass_name_ptr = RSTRING_PTR(klass_name);
-  const unsigned long klass_name_len = RSTRING_LEN(klass_name);
-  if (klass_name_len >= 2 && klass_name_ptr[0] == '#' && klass_name_ptr[1] == '<')
-  {
-    return ST_CONTINUE;
-  }
-
   VALUE source_location = safely_get_source_location(klass_name);
   if (source_location == Qnil || RARRAY_LEN(source_location) == 0)
   {
@@ -280,6 +270,14 @@ static void on_newobj_event(VALUE tracepoint_data, void *data)
 
   VALUE klass = rb_class_of(new_object);
   if (klass == Qnil || klass == 0)
+  {
+    return;
+  }
+  // Skip anonymous classes starting with "#<Class".
+  // it allows us to skip the source location lookup that will always fail
+  const char *name = rb_obj_classname(new_object);
+  const unsigned long klass_name_len = strlen(name);
+  if (klass_name_len >= 2 && name[0] == '#' && name[1] == '<')
   {
     return;
   }
