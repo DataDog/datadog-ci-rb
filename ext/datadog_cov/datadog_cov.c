@@ -1,5 +1,6 @@
 #include <ruby.h>
 #include <ruby/debug.h>
+#include <ruby/st.h>
 
 #include <stdbool.h>
 
@@ -13,7 +14,7 @@
 #define MULTI_THREADED_COVERAGE_MODE 1
 
 // functions declarations
-static void process_newobj_event(VALUE tracepoint_data, void *data);
+static void on_newobj_event(VALUE tracepoint_data, void *data);
 
 // utility functions
 static char *ruby_strndup(const char *str, size_t size)
@@ -45,6 +46,13 @@ static VALUE rescue_nil(VALUE (*function_to_call_safely)(VALUE), VALUE function_
       rb_eException, // rb_eException is the base class of all Ruby exceptions
       0              // Required by API to be the last argument
   );
+}
+
+static int mark_key_for_gc_i(st_data_t key, st_data_t _value, st_data_t _data)
+{
+  VALUE klass = (VALUE)key;
+  rb_gc_mark(klass);
+  return ST_CONTINUE;
 }
 
 // Data structure
@@ -86,7 +94,7 @@ struct dd_cov_data
   // Allocation tracing works only in multi threaded mode.
   bool allocation_tracing_enabled;
   VALUE object_allocation_tracepoint;
-  VALUE classes_covered_by_allocation;
+  st_table *klasses_table; // (VALUE) -> VALUE hash with class names that were covered by allocation
 };
 
 static void dd_cov_mark(void *ptr)
@@ -95,7 +103,7 @@ static void dd_cov_mark(void *ptr)
   rb_gc_mark_movable(dd_cov_data->impacted_files);
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
-  rb_gc_mark_movable(dd_cov_data->classes_covered_by_allocation);
+  st_foreach(dd_cov_data->klasses_table, mark_key_for_gc_i, 0);
 }
 
 static void dd_cov_free(void *ptr)
@@ -103,6 +111,7 @@ static void dd_cov_free(void *ptr)
   struct dd_cov_data *dd_cov_data = ptr;
   xfree(dd_cov_data->root);
   xfree(dd_cov_data->ignored_path);
+  st_free_table(dd_cov_data->klasses_table);
   xfree(dd_cov_data);
 }
 
@@ -112,7 +121,6 @@ static void dd_cov_compact(void *ptr)
   dd_cov_data->impacted_files = rb_gc_location(dd_cov_data->impacted_files);
   dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
   dd_cov_data->object_allocation_tracepoint = rb_gc_location(dd_cov_data->object_allocation_tracepoint);
-  dd_cov_data->classes_covered_by_allocation = rb_gc_location(dd_cov_data->classes_covered_by_allocation);
 }
 
 const rb_data_type_t dd_cov_data_type = {
@@ -129,7 +137,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   struct dd_cov_data *dd_cov_data;
   VALUE dd_cov = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
-  dd_cov_data->impacted_files = rb_hash_new();
+  dd_cov_data->impacted_files = Qnil;
   dd_cov_data->root = NULL;
   dd_cov_data->root_len = 0;
   dd_cov_data->ignored_path = NULL;
@@ -138,8 +146,8 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->threading_mode = MULTI_THREADED_COVERAGE_MODE;
 
   dd_cov_data->allocation_tracing_enabled = true;
-  dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, process_newobj_event, (void *)dd_cov);
-  dd_cov_data->classes_covered_by_allocation = rb_hash_new();
+  dd_cov_data->object_allocation_tracepoint = Qnil;
+  dd_cov_data->klasses_table = st_init_numtable();
 
   return dd_cov;
 }
@@ -168,7 +176,7 @@ static void record_impacted_file(struct dd_cov_data *dd_cov_data, VALUE filename
 }
 
 // Executed on RUBY_EVENT_LINE event and captures the filename from rb_profile_frames.
-static void process_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id, VALUE klass)
+static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id, VALUE klass)
 {
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(data, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
@@ -216,15 +224,51 @@ static VALUE safely_get_source_location(VALUE klass_name)
   return rescue_nil(get_source_location, klass_name);
 }
 
+static int process_instantiated_klass(st_data_t key, st_data_t _value, st_data_t data)
+{
+  VALUE klass = (VALUE)key;
+  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+
+  VALUE klass_name = rb_class_name(klass);
+  if (klass_name == Qnil)
+  {
+    return ST_CONTINUE;
+  }
+
+  // Skip anonymous classes starting with "#<Class".
+  // This small snippet improves performance for worst case by 20% for rubocop test suite: it allows
+  // us to skip the source location lookup that will always fail for anonymous classes.
+  const char *klass_name_ptr = RSTRING_PTR(klass_name);
+  const unsigned long klass_name_len = RSTRING_LEN(klass_name);
+  if (klass_name_len >= 2 && klass_name_ptr[0] == '#' && klass_name_ptr[1] == '<')
+  {
+    return ST_CONTINUE;
+  }
+
+  VALUE source_location = safely_get_source_location(klass_name);
+  if (source_location == Qnil || RARRAY_LEN(source_location) == 0)
+  {
+    return ST_CONTINUE;
+  }
+
+  VALUE filename = RARRAY_AREF(source_location, 0);
+  if (filename == Qnil)
+  {
+    return ST_CONTINUE;
+  }
+
+  record_impacted_file(dd_cov_data, filename);
+  return ST_CONTINUE;
+}
+
 // Executed on RUBY_INTERNAL_EVENT_NEWOBJ event and captures the source file for the
 // allocated object's class.
-static void process_newobj_event(VALUE tracepoint_data, void *data)
+static void on_newobj_event(VALUE tracepoint_data, void *data)
 {
   VALUE self = (VALUE)data;
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
-  // careful: this part of tracepoint is running for each allocated object, make it fast
   rb_trace_arg_t *tracearg = rb_tracearg_from_tracepoint(tracepoint_data);
   VALUE new_object = rb_tracearg_object(tracearg);
 
@@ -240,44 +284,12 @@ static void process_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
-  VALUE klass_name = rb_class_name(klass);
-  if (klass_name == Qnil)
+  if (st_lookup(dd_cov_data->klasses_table, (st_data_t)klass, 0))
   {
     return;
   }
 
-  VALUE class_covered = rb_hash_aref(dd_cov_data->classes_covered_by_allocation, klass_name);
-  if (class_covered == Qtrue)
-  {
-    return;
-  }
-  rb_hash_aset(dd_cov_data->classes_covered_by_allocation, klass_name, Qtrue);
-
-  // this part of tracepoint is running once per class per test
-
-  // Skip anonymous classes starting with "#<Class".
-  // This small snippet improves performance for worst case by 20% for rubocop test suite: it allows
-  // us to skip the source location lookup that will always fail for anonymous classes.
-  const char *klass_name_ptr = RSTRING_PTR(klass_name);
-  const unsigned long klass_name_len = RSTRING_LEN(klass_name);
-  if (klass_name_len >= 2 && klass_name_ptr[0] == '#' && klass_name_ptr[1] == '<')
-  {
-    return;
-  }
-
-  VALUE source_location = safely_get_source_location(klass_name);
-  if (source_location == Qnil || RARRAY_LEN(source_location) == 0)
-  {
-    return;
-  }
-
-  VALUE filename = RARRAY_AREF(source_location, 0);
-  if (filename == Qnil)
-  {
-    return;
-  }
-
-  record_impacted_file(dd_cov_data, filename);
+  st_insert(dd_cov_data->klasses_table, (st_data_t)klass, 1);
 }
 
 // DDCov instance methods available in Ruby
@@ -317,6 +329,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
+  dd_cov_data->impacted_files = rb_hash_new();
   dd_cov_data->threading_mode = threading_mode;
   dd_cov_data->root_len = RSTRING_LEN(rb_root);
   dd_cov_data->root = ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
@@ -328,6 +341,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   }
 
   dd_cov_data->allocation_tracing_enabled = (rb_allocation_tracing_enabled == Qtrue);
+  dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, (void *)self);
 
   return Qnil;
 }
@@ -347,18 +361,17 @@ static VALUE dd_cov_start(VALUE self)
   if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
   {
     VALUE thval = rb_thread_current();
-    rb_thread_add_event_hook(thval, process_line_event, RUBY_EVENT_LINE, self);
+    rb_thread_add_event_hook(thval, on_line_event, RUBY_EVENT_LINE, self);
     dd_cov_data->th_covered = thval;
   }
   else
   {
-    rb_add_event_hook(process_line_event, RUBY_EVENT_LINE, self);
+    rb_add_event_hook(on_line_event, RUBY_EVENT_LINE, self);
   }
 
   // add object allocation tracepoint
   if (dd_cov_data->allocation_tracing_enabled)
   {
-    dd_cov_data->classes_covered_by_allocation = rb_hash_new();
     rb_tracepoint_enable(dd_cov_data->object_allocation_tracepoint);
   }
 
@@ -381,12 +394,12 @@ static VALUE dd_cov_stop(VALUE self)
       rb_raise(rb_eRuntimeError, "Coverage was not started by this thread");
     }
 
-    rb_thread_remove_event_hook(dd_cov_data->th_covered, process_line_event);
+    rb_thread_remove_event_hook(dd_cov_data->th_covered, on_line_event);
     dd_cov_data->th_covered = Qnil;
   }
   else
   {
-    rb_remove_event_hook(process_line_event);
+    rb_remove_event_hook(on_line_event);
   }
 
   // stop object allocation tracepoint
@@ -394,6 +407,10 @@ static VALUE dd_cov_stop(VALUE self)
   {
     rb_tracepoint_disable(dd_cov_data->object_allocation_tracepoint);
   }
+
+  // process classes covered by allocation tracing
+  st_foreach(dd_cov_data->klasses_table, process_instantiated_klass, (st_data_t)dd_cov_data);
+  st_clear(dd_cov_data->klasses_table);
 
   VALUE res = dd_cov_data->impacted_files;
 
