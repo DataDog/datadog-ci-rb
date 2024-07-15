@@ -95,7 +95,6 @@ struct dd_cov_data
   // contain any methods that could be covered by line tracepoint.
   //
   // Allocation tracing works only in multi threaded mode.
-  bool allocation_tracing_enabled;
   VALUE object_allocation_tracepoint;
   st_table *klasses_table; // { (VALUE) -> int } hashmap with class names that were covered by allocation during the test run
 };
@@ -148,7 +147,6 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->last_filename_ptr = 0;
   dd_cov_data->threading_mode = multi;
 
-  dd_cov_data->allocation_tracing_enabled = true;
   dd_cov_data->object_allocation_tracepoint = Qnil;
   dd_cov_data->klasses_table = st_init_numtable();
 
@@ -347,8 +345,10 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
     dd_cov_data->ignored_path = ruby_strndup(RSTRING_PTR(rb_ignored_path), dd_cov_data->ignored_path_len);
   }
 
-  dd_cov_data->allocation_tracing_enabled = (rb_allocation_tracing_enabled == Qtrue);
-  dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, (void *)self);
+  if (rb_allocation_tracing_enabled == Qtrue)
+  {
+    dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, (void *)self);
+  }
 
   return Qnil;
 }
@@ -377,7 +377,7 @@ static VALUE dd_cov_start(VALUE self)
   }
 
   // add object allocation tracepoint
-  if (dd_cov_data->allocation_tracing_enabled)
+  if (dd_cov_data->object_allocation_tracepoint != Qnil)
   {
     rb_tracepoint_enable(dd_cov_data->object_allocation_tracepoint);
   }
