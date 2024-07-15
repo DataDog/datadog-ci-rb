@@ -290,9 +290,7 @@ static void on_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
-  VALUE self = (VALUE)data;
-  struct dd_cov_data *dd_cov_data;
-  TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
+  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
 
   // We use VALUE directly as a key for the hashmap
   // Ruby itself does it too:
@@ -349,7 +347,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
 
   if (rb_allocation_tracing_enabled == Qtrue)
   {
-    dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, (void *)self);
+    dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, (void *)dd_cov_data);
   }
 
   return Qnil;
