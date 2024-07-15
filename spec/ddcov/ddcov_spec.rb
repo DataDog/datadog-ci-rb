@@ -13,6 +13,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
   let(:use_allocation_tracing) { true }
 
   subject do
+    GC.start
     described_class.new(
       root: root,
       ignored_path: ignored_path,
@@ -334,6 +335,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
           c = Class.new(Object) do
           end
           c.new
+
+          if i % 1000 == 0
+            GC.start
+          end
 
           # Trying to get non-existing constant could caise freezing of Ruby process when
           # not safely getting source location of the constant in NEWOBJ tracepoint.

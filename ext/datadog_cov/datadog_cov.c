@@ -138,8 +138,9 @@ static VALUE dd_cov_allocate(VALUE klass)
 {
   struct dd_cov_data *dd_cov_data;
   VALUE dd_cov = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
+  rb_gc_start();
 
-  dd_cov_data->impacted_files = Qnil;
+  dd_cov_data->impacted_files = rb_hash_new();
   dd_cov_data->root = NULL;
   dd_cov_data->root_len = 0;
   dd_cov_data->ignored_path = NULL;
@@ -147,7 +148,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->last_filename_ptr = 0;
   dd_cov_data->threading_mode = multi;
 
-  dd_cov_data->object_allocation_tracepoint = Qnil;
+  dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, (void *)dd_cov);
   dd_cov_data->klasses_table = st_init_numtable();
 
   return dd_cov;
@@ -348,6 +349,10 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   if (rb_allocation_tracing_enabled == Qtrue)
   {
     dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, (void *)self);
+  }
+  else
+  {
+    dd_cov_data->object_allocation_tracepoint = Qnil;
   }
 
   return Qnil;
