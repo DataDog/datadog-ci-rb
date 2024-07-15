@@ -330,7 +330,6 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
           subject.start
 
           MyModel.new
-          User.new("john doe", "johndoe@mail.test")
           c = Class.new(Object) do
           end
           c.new
@@ -344,9 +343,38 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
           end
 
           coverage = subject.stop
-          expect(coverage.size).to eq(2)
+          expect(coverage.size).to eq(1)
           expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+        end
+
+        it "tracks coverage for structs" do
+          subject.start
+
+          User.new("john doe", "johndoe@mail.test")
+
+          coverage = subject.stop
+          expect(coverage.size).to eq(1)
           expect(coverage.keys).to include(absolute_path("app/model/my_struct.rb"))
+        end
+
+        context "Data structs available since Ruby 3.2" do
+          before do
+            if RUBY_VERSION < "3.2"
+              skip
+            else
+              require_relative "app/model/measure"
+            end
+          end
+
+          it "tracks coverage for Data structs" do
+            subject.start
+
+            Measure.new(100, "km")
+
+            coverage = subject.stop
+            expect(coverage.size).to eq(1)
+            expect(coverage.keys).to include(absolute_path("app/model/measure.rb"))
+          end
         end
       end
 
