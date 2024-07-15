@@ -10,8 +10,11 @@
 #define PROFILE_FRAMES_BUFFER_SIZE 1
 
 // threading modes
-#define SINGLE_THREADED_COVERAGE_MODE 0
-#define MULTI_THREADED_COVERAGE_MODE 1
+enum threading_mode
+{
+  single,
+  multi
+};
 
 // functions declarations
 static void on_newobj_event(VALUE tracepoint_data, void *data);
@@ -84,7 +87,7 @@ struct dd_cov_data
   //
   // In multi threaded mode line tracepoint will cover all threads. This mode is enabled by default
   // and is recommended for most applications.
-  int threading_mode;
+  enum threading_mode threading_mode;
   // for single threaded mode: thread that is being covered
   VALUE th_covered;
 
@@ -123,7 +126,7 @@ static void dd_cov_compact(void *ptr)
   dd_cov_data->object_allocation_tracepoint = rb_gc_location(dd_cov_data->object_allocation_tracepoint);
 }
 
-const rb_data_type_t dd_cov_data_type = {
+static const rb_data_type_t dd_cov_data_type = {
     .wrap_struct_name = "dd_cov",
     .function = {
         .dmark = dd_cov_mark,
@@ -143,7 +146,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->ignored_path = NULL;
   dd_cov_data->ignored_path_len = 0;
   dd_cov_data->last_filename_ptr = 0;
-  dd_cov_data->threading_mode = MULTI_THREADED_COVERAGE_MODE;
+  dd_cov_data->threading_mode = multi;
 
   dd_cov_data->allocation_tracing_enabled = true;
   dd_cov_data->object_allocation_tracepoint = Qnil;
@@ -310,14 +313,14 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   VALUE rb_ignored_path = rb_hash_lookup(opt, ID2SYM(rb_intern("ignored_path")));
 
   VALUE rb_threading_mode = rb_hash_lookup(opt, ID2SYM(rb_intern("threading_mode")));
-  int threading_mode;
+  enum threading_mode threading_mode;
   if (rb_threading_mode == ID2SYM(rb_intern("multi")))
   {
-    threading_mode = MULTI_THREADED_COVERAGE_MODE;
+    threading_mode = multi;
   }
   else if (rb_threading_mode == ID2SYM(rb_intern("single")))
   {
-    threading_mode = SINGLE_THREADED_COVERAGE_MODE;
+    threading_mode = single;
   }
   else
   {
@@ -325,7 +328,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   }
 
   VALUE rb_allocation_tracing_enabled = rb_hash_lookup(opt, ID2SYM(rb_intern("use_allocation_tracing")));
-  if (rb_allocation_tracing_enabled == Qtrue && threading_mode == SINGLE_THREADED_COVERAGE_MODE)
+  if (rb_allocation_tracing_enabled == Qtrue && threading_mode == single)
   {
     rb_raise(rb_eArgError, "allocation tracing is not supported in single threaded mode");
   }
@@ -362,7 +365,7 @@ static VALUE dd_cov_start(VALUE self)
   }
 
   // add line tracepoint
-  if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
+  if (dd_cov_data->threading_mode == single)
   {
     VALUE thval = rb_thread_current();
     rb_thread_add_event_hook(thval, on_line_event, RUBY_EVENT_LINE, self);
@@ -390,7 +393,7 @@ static VALUE dd_cov_stop(VALUE self)
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
   // stop line tracepoint
-  if (dd_cov_data->threading_mode == SINGLE_THREADED_COVERAGE_MODE)
+  if (dd_cov_data->threading_mode == single)
   {
     VALUE thval = rb_thread_current();
     if (!rb_equal(thval, dd_cov_data->th_covered))
