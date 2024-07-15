@@ -283,9 +283,9 @@ static void on_newobj_event(VALUE tracepoint_data, void *data)
   }
   // Skip anonymous classes starting with "#<Class".
   // it allows us to skip the source location lookup that will always fail
-  const char *name = rb_obj_classname(new_object);
-  const unsigned long klass_name_len = strlen(name);
-  if (klass_name_len >= 2 && name[0] == '#' && name[1] == '<')
+  //
+  // rb_mod_name returns nil for anonymous classes
+  if (rb_mod_name(klass) == Qnil)
   {
     return;
   }
