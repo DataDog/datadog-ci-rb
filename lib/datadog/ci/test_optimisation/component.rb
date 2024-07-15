@@ -71,7 +71,6 @@ module Datadog
           @test_skipping_enabled = @enabled && Utils::Parsing.convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY, false)
           )
-          @test_skipping_enabled = false
           @code_coverage_enabled = @enabled && Utils::Parsing.convert_to_bool(
             remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY, false)
           )
