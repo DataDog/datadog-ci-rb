@@ -31,24 +31,21 @@ static char *ruby_strndup(const char *str, size_t size)
   return dup;
 }
 
-static VALUE just_return_nil(VALUE _not_used_self, VALUE _not_used_exception)
-{
-  return Qnil;
-}
-
 // Equivalent to Ruby "begin/rescue nil" call, where we call a C function and
 // swallow the exception if it occurs - const_source_location often fails with
 // exceptions for classes that are defined in C or for anonymous classes.
 static VALUE rescue_nil(VALUE (*function_to_call_safely)(VALUE), VALUE function_to_call_safely_arg)
 {
-  return rb_rescue2(
-      function_to_call_safely,
-      function_to_call_safely_arg,
-      just_return_nil,
-      Qnil,
-      rb_eException, // rb_eException is the base class of all Ruby exceptions
-      0              // Required by API to be the last argument
-  );
+  int exception_state;
+  // rb_protect sets exception_state to non-zero if an exception occurs
+  // see https://github.com/ruby/ruby/blob/3219ecf4f659908674f534491d8934ba54e1143d/include/ruby/internal/intern/proc.h#L349
+  VALUE result = rb_protect(function_to_call_safely, function_to_call_safely_arg, &exception_state);
+  if (exception_state != 0)
+  {
+    return Qnil;
+  }
+
+  return result;
 }
 
 static int mark_key_for_gc_i(st_data_t key, st_data_t _value, st_data_t _data)
