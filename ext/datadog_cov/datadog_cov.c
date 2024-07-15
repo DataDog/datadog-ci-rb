@@ -54,6 +54,7 @@ static VALUE rescue_nil(VALUE (*function_to_call_safely)(VALUE), VALUE function_
 static int mark_key_for_gc_i(st_data_t key, st_data_t _value, st_data_t _data)
 {
   VALUE klass = (VALUE)key;
+  // mark klass link for GC as non-movable to avoid changing hashtable's keys
   rb_gc_mark(klass);
   return ST_CONTINUE;
 }
@@ -128,6 +129,7 @@ static void dd_cov_compact(void *ptr)
   dd_cov_data->impacted_files = rb_gc_location(dd_cov_data->impacted_files);
   dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
   dd_cov_data->object_allocation_tracepoint = rb_gc_location(dd_cov_data->object_allocation_tracepoint);
+  // keys for dd_cov_data->klasses_table are not moved by GC, so we don't need to update them
 }
 
 static const rb_data_type_t dd_cov_data_type = {
@@ -153,6 +155,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->threading_mode = multi;
 
   dd_cov_data->object_allocation_tracepoint = Qnil;
+  // numtable type is needed to store VALUE as a key
   dd_cov_data->klasses_table = st_init_numtable();
 
   return dd_cov;
@@ -262,10 +265,6 @@ static int process_instantiated_klass(st_data_t key, st_data_t _value, st_data_t
 // allocated object's class.
 static void on_newobj_event(VALUE tracepoint_data, void *data)
 {
-  VALUE self = (VALUE)data;
-  struct dd_cov_data *dd_cov_data;
-  TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
-
   rb_trace_arg_t *tracearg = rb_tracearg_from_tracepoint(tracepoint_data);
   VALUE new_object = rb_tracearg_object(tracearg);
 
@@ -291,14 +290,13 @@ static void on_newobj_event(VALUE tracepoint_data, void *data)
     return;
   }
 
+  VALUE self = (VALUE)data;
+  struct dd_cov_data *dd_cov_data;
+  TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
+
   // We use VALUE directly as a key for the hashmap
   // Ruby itself does it too:
   // https://github.com/ruby/ruby/blob/94b87084a689a3bc732dcaee744508a708223d6c/ext/objspace/object_tracing.c#L113
-  if (st_lookup(dd_cov_data->klasses_table, (st_data_t)klass, 0))
-  {
-    return;
-  }
-
   st_insert(dd_cov_data->klasses_table, (st_data_t)klass, 1);
 }
 
