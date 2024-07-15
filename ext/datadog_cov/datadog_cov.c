@@ -105,7 +105,12 @@ static void dd_cov_mark(void *ptr)
   rb_gc_mark_movable(dd_cov_data->impacted_files);
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
-  st_foreach(dd_cov_data->klasses_table, mark_key_for_gc_i, 0);
+
+  // if GC starts withing dd_cov_allocate() call, klasses_table might not be initialized yet
+  if (dd_cov_data->klasses_table != NULL)
+  {
+    st_foreach(dd_cov_data->klasses_table, mark_key_for_gc_i, 0);
+  }
 }
 
 static void dd_cov_free(void *ptr)
@@ -139,7 +144,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   struct dd_cov_data *dd_cov_data;
   VALUE dd_cov = TypedData_Make_Struct(klass, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
-  dd_cov_data->impacted_files = Qnil;
+  dd_cov_data->impacted_files = rb_hash_new();
   dd_cov_data->root = NULL;
   dd_cov_data->root_len = 0;
   dd_cov_data->ignored_path = NULL;
@@ -334,7 +339,6 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self)
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type, dd_cov_data);
 
-  dd_cov_data->impacted_files = rb_hash_new();
   dd_cov_data->threading_mode = threading_mode;
   dd_cov_data->root_len = RSTRING_LEN(rb_root);
   dd_cov_data->root = ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
