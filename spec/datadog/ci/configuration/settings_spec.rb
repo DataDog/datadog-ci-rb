@@ -349,6 +349,47 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#itr_test_impact_analysis_use_allocation_tracing" do
+        subject(:itr_test_impact_analysis_use_allocation_tracing) { settings.ci.itr_test_impact_analysis_use_allocation_tracing }
+
+        it { is_expected.to be true }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_ITR_TEST_IMPACT_ANALYSIS_USE_ALLOCATION_TRACING}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_ITR_TEST_IMPACT_ANALYSIS_USE_ALLOCATION_TRACING => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#itr_test_impact_analysis_use_allocation_tracing=" do
+        it "updates the #enabled setting" do
+          expect { settings.ci.itr_test_impact_analysis_use_allocation_tracing = false }
+            .to change { settings.ci.itr_test_impact_analysis_use_allocation_tracing }
+            .from(true)
+            .to(false)
+        end
+      end
+
       describe "#instrument" do
         let(:integration_name) { :fake }
 

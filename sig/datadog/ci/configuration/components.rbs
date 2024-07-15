@@ -13,6 +13,8 @@ module Datadog
 
         def activate_ci!: (untyped settings) -> untyped
 
+        def build_test_optimisation: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestOptimisation::Component
+
         def build_test_visibility_api: (untyped settings) -> Datadog::CI::Transport::Api::Base?
 
         def serializers_factory: (untyped settings) -> (singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel))

@@ -43,6 +43,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.ci.force_test_level_visibility = force_test_level_visibility
           settings.ci.agentless_url = agentless_url
           settings.ci.itr_enabled = itr_enabled
+          settings.ci.itr_code_coverage_use_single_threaded_mode = itr_code_coverage_use_single_threaded_mode
+          settings.ci.itr_test_impact_analysis_use_allocation_tracing = itr_test_impact_analysis_use_allocation_tracing
           settings.site = dd_site
           settings.api_key = api_key
 
@@ -97,6 +99,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:evp_proxy_v4_supported) { false }
         let(:itr_enabled) { false }
         let(:tracing_enabled) { true }
+        let(:itr_code_coverage_use_single_threaded_mode) { false }
+        let(:itr_test_impact_analysis_use_allocation_tracing) { true }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -249,6 +253,17 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                   it "creates test visibility component with ITR enabled" do
                     expect(components.test_visibility.itr_enabled?).to eq(true)
+                    expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(true)
+                  end
+
+                  context "when single threaded mode for line coverage is enabled" do
+                    let(:itr_code_coverage_use_single_threaded_mode) { true }
+
+                    it "logs a warning and disables allocation tracing for ITR" do
+                      expect(Datadog.logger).to have_received(:warn)
+
+                      expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(false)
+                    end
                   end
                 end
               end
