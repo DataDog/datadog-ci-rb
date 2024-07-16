@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [1.2.0] - 2024-07-16
+
+### Changed
+* Expand test impact analysis with allocation tracing ([#197][])
+
 ## [1.1.0] - 2024-07-01
 
 ### Added
@@ -272,7 +277,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.1.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.2.0...main
+[1.2.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0.beta6...v1.0.0
@@ -385,3 +391,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#189]: https://github.com/DataDog/datadog-ci-rb/issues/189
 [#190]: https://github.com/DataDog/datadog-ci-rb/issues/190
 [#193]: https://github.com/DataDog/datadog-ci-rb/issues/193
+[#197]: https://github.com/DataDog/datadog-ci-rb/issues/197
