@@ -2,8 +2,6 @@
 
 ## [1.2.0] - 2024-07-16
 
-> Please categorize the following changes:
-
 ### Changed
 * Expand test impact analysis with allocation tracing ([#197][])
 
