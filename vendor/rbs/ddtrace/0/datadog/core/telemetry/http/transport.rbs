@@ -1,0 +1,31 @@
+module Datadog
+  module Core
+    module Telemetry
+      module Http
+        class Transport
+          @adapter: Http::Adapters::Net
+
+          attr_reader host: String
+
+          attr_reader port: Integer
+
+          attr_reader ssl: bool
+
+          attr_reader path: String
+
+          attr_reader api_key: String?
+
+          def initialize: (host: String, port: Integer, path: String, ?ssl: bool, ?api_key: String?) -> void
+
+          def request: (request_type: String, payload: String) -> Datadog::Core::Telemetry::Http::Adapters::Net::response
+
+          private
+
+          def headers: (request_type: untyped, ?api_version: untyped) -> ::Hash[untyped, untyped]
+
+          def adapter: () -> Http::Adapters::Net
+        end
+      end
+    end
+  end
+end
