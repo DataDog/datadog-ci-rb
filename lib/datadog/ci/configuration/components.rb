@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "datadog/core/telemetry/ext"
+
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
 require_relative "../test_optimisation/component"
@@ -13,6 +15,7 @@ require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
 require_relative "../transport/remote_settings_api"
+require_relative "../utils/parsing"
 require_relative "../utils/test_run"
 require_relative "../worker"
 
@@ -61,7 +64,11 @@ module Datadog
           # Configure datadog gem for test visibility mode
 
           # Deactivate telemetry
-          settings.telemetry.enabled = false
+
+          # in development environment Datadog's telemetry is disabled by default
+          # for test visibility we want to enable it by default unless explicitly disabled
+          env_enabled_value = ENV[Core::Telemetry::Ext::ENV_ENABLED]
+          settings.telemetry.enabled = env_enabled_value.nil? || Utils::Parsing.convert_to_bool(env_enabled_value)
 
           # Test visibility uses its own remote settings
           settings.remote.enabled = false
