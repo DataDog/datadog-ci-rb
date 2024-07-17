@@ -70,6 +70,9 @@ module Datadog
           env_enabled_value = ENV[Core::Telemetry::Ext::ENV_ENABLED]
           settings.telemetry.enabled = env_enabled_value.nil? || Utils::Parsing.convert_to_bool(env_enabled_value)
 
+          # REMOVE THIS
+          # settings.telemetry.agentless_enabled = true
+
           # Test visibility uses its own remote settings
           settings.remote.enabled = false
 

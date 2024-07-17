@@ -79,6 +79,13 @@ module Datadog
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"
 
+        module EventType
+          TEST = "test"
+          SUITE = "suite"
+          MODULE = "module"
+          SESSION = "session"
+        end
+
         module Library
           BUILTIN = "builtin"
         end

@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module TestVisibility
+      class Telemetry
+        SPAN_TYPE_TO_TELEMETRY_EVENT_TYPE: ::Hash[String, String]
+
+        def event_created: (Datadog::CI::Span span) -> void
+
+        def event_finished: (Datadog::CI::Span span) -> void
+
+        private
+
+        def tags_from_span: (Datadog::CI::Span span) -> ::Hash[String, String]
+      end
+    end
+  end
+end

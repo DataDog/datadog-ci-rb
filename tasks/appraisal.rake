@@ -31,12 +31,12 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
 
   def docker(ruby_version, cmd)
     [
-      "docker-compose", "run",
+      "docker", "compose", "run",
       "--no-deps",                                   # don't start services
       "-e", "APPRAISAL_GROUP",                       # pass appraisal group if defined
       "-e", "APPRAISAL_SKIP_BUNDLE_CHECK",           # pass appraisal check skip if defined
       "--rm",                                        # clean up container
-      "datadog-ci-#{ruby_version}",                      # use specific ruby engine and version
+      "datadog-ci-#{ruby_version}",                  # use specific ruby engine and version
       "/bin/bash", "-c", "'#{cmd.join(" ")}'"        # call command in bash
     ]
   end
@@ -54,7 +54,7 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
       cmd << ["gem", "install", "bundler", "-v", bundler_version(ruby_version)] if bundler_version(ruby_version)
       cmd << [*bundle(ruby_version), "config", "without", "check"]
       cmd << [*bundle(ruby_version), "install"]
-      cmd << [*bundle(ruby_version), "exec", "appraisal", "generate"]
+      cmd << ["bundle", "exec", "appraisal", "generate"]
 
       cmd = cmd.map { |c| c << "&&" }.flatten.tap(&:pop)
 
@@ -73,8 +73,8 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
       cmd << ["gem", "install", "bundler", "-v", bundler_version(ruby_version)] if bundler_version(ruby_version)
       cmd << [*bundle(ruby_version), "config", "without", "check"]
       cmd << [*bundle(ruby_version), "install"]
-      cmd << [*bundle(ruby_version), "exec", "appraisal", "generate"]
-      cmd << [*bundle(ruby_version), "exec", "appraisal", "install"]
+      cmd << ["bundle", "exec", "appraisal", "generate"]
+      cmd << ["bundle", "exec", "appraisal", "install"]
 
       cmd = cmd.map { |c| c << "&&" }.flatten.tap(&:pop)
 
@@ -93,8 +93,8 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
       cmd << ["gem", "install", "bundler", "-v", bundler_version(ruby_version)] if bundler_version(ruby_version)
       cmd << [*bundle(ruby_version), "config", "without", "check"]
       cmd << [*bundle(ruby_version), "install"]
-      cmd << [*bundle(ruby_version), "exec", "appraisal", "generate"]
-      cmd << [*bundle(ruby_version), "exec", "appraisal", "update"]
+      cmd << ["bundle", "exec", "appraisal", "generate"]
+      cmd << ["bundle", "exec", "appraisal", "update"]
 
       cmd = cmd.map { |c| c << "&&" }.flatten.tap(&:pop)
 

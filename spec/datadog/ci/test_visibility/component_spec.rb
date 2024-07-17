@@ -408,6 +408,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           let(:tags) { {"test.framework" => "my-framework"} }
 
           it "starts git metadata upload" do
+            expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(["dcc6f4b112b1f4f21a22deae586f67dc637ba77e"])
             expect(Datadog::CI::Git::SearchCommits).to receive(:new).and_return(search_commits)
             expect(search_commits).to receive(:call) do |repo_url, commits|
               expect(repo_url).to eq("git@github.com:DataDog/datadog-ci-rb.git")

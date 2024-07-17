@@ -25,7 +25,7 @@ To start a development environment, choose a target Ruby version then run the fo
 cd ~/datadog-ci-rb
 
 # Create and start a Ruby 3.2 test environment with its dependencies
-docker-compose run --rm datadog-ci-3.2 /bin/bash
+docker compose run --rm datadog-ci-3.2 /bin/bash
 
 # Then inside the container (e.g. `root@2a73c6d8673e:/app`)...
 # Install the library dependencies

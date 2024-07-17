@@ -11,6 +11,7 @@ module Datadog
         @remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi
         @codeowners: Datadog::CI::Codeowners::Matcher
         @git_tree_upload_worker: Datadog::CI::Worker
+        @telemetry: Datadog::CI::TestVisibility::Telemetry
 
         attr_reader environment_tags: Hash[String, String]
         attr_reader test_suite_level_visibility_enabled: bool
@@ -92,11 +93,21 @@ module Datadog
 
         def validate_test_suite_level_visibility_correctness: (Datadog::CI::Test test) -> void
 
-        def on_test_finished: (Datadog::CI::Test test) -> void
+        def on_test_session_started: (Datadog::CI::TestSession test_session) -> void
+
+        def on_test_module_started: (Datadog::CI::TestModule test_module) -> void
+
+        def on_test_suite_started: (Datadog::CI::TestSuite test_suite) -> void
 
         def on_test_started: (Datadog::CI::Test test) -> void
 
         def on_test_session_finished: (Datadog::CI::TestSession test_session) -> void
+
+        def on_test_module_finished: (Datadog::CI::TestModule test_module) -> void
+
+        def on_test_suite_finished: (Datadog::CI::TestSuite test_suite) -> void
+
+        def on_test_finished: (Datadog::CI::Test test) -> void
       end
     end
   end

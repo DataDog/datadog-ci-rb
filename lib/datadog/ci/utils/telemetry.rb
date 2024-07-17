@@ -15,7 +15,7 @@ module Datadog
         end
 
         def self.telemetry
-          Datadog.send(:components).telemtry
+          Datadog.send(:components).telemetry
         end
       end
     end

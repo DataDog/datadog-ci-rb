@@ -8,6 +8,7 @@ require "rbconfig"
 
 require_relative "context/global"
 require_relative "context/local"
+require_relative "telemetry"
 
 require_relative "../codeowners/parser"
 require_relative "../contrib/contrib"
@@ -49,6 +50,8 @@ module Datadog
           @test_optimisation = test_optimisation
           @remote_settings_api = remote_settings_api
           @git_tree_upload_worker = git_tree_upload_worker
+
+          @telemetry = TestVisibility::Telemetry.new
         end
 
         def shutdown!
@@ -58,9 +61,6 @@ module Datadog
         def start_test_session(service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
-          Contrib.auto_instrument_on_session_start!
-
           @global_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(
               "test.session", build_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
@@ -68,10 +68,7 @@ module Datadog
             set_session_context(tags, tracer_span)
 
             test_session = build_test_session(tracer_span, tags)
-
-            @git_tree_upload_worker.perform(test_session.git_repository_url)
-            configure_library(test_session)
-
+            on_test_session_started(test_session)
             test_session
           end
         end
@@ -88,7 +85,9 @@ module Datadog
             )
             set_module_context(tags, tracer_span)
 
-            build_test_module(tracer_span, tags)
+            test_module = build_test_module(tracer_span, tags)
+            on_test_module_started(test_module)
+            test_module
           end
         end
 
@@ -105,7 +104,9 @@ module Datadog
             )
             set_suite_context(tags, span: tracer_span)
 
-            build_test_suite(tracer_span, tags)
+            test_suite = build_test_suite(tracer_span, tags)
+            on_test_suite_started(test_suite)
+            test_suite
           end
         end
 
@@ -202,10 +203,16 @@ module Datadog
         end
 
         def deactivate_test_module
+          test_module = active_test_module
+          on_test_module_finished(test_module) if test_module
+
           @global_context.deactivate_test_module!
         end
 
         def deactivate_test_suite(test_suite_name)
+          test_suite = active_test_suite(test_suite_name)
+          on_test_suite_finished(test_suite) if test_suite
+
           @global_context.deactivate_test_suite!(test_suite_name)
         end
 
@@ -402,19 +409,51 @@ module Datadog
           end
         end
 
-        # TODO: use kind of event system to notify about test finished?
-        def on_test_finished(test)
-          @test_optimisation.stop_coverage(test)
-          @test_optimisation.count_skipped_test(test)
+        # TODO: use kind of event system to notify about these events?
+        def on_test_session_started(test_session)
+          @telemetry.event_created(test_session)
+
+          # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
+          Contrib.auto_instrument_on_session_start!
+
+          @git_tree_upload_worker.perform(test_session.git_repository_url)
+          configure_library(test_session)
+        end
+
+        def on_test_module_started(test_module)
+          @telemetry.event_created(test_module)
+        end
+
+        def on_test_suite_started(test_suite)
+          @telemetry.event_created(test_suite)
         end
 
         def on_test_started(test)
+          @telemetry.event_created(test)
+
           @test_optimisation.mark_if_skippable(test)
           @test_optimisation.start_coverage(test)
         end
 
         def on_test_session_finished(test_session)
           @test_optimisation.write_test_session_tags(test_session)
+
+          @telemetry.event_finished(test_session)
+        end
+
+        def on_test_module_finished(test_module)
+          @telemetry.event_finished(test_module)
+        end
+
+        def on_test_suite_finished(test_suite)
+          @telemetry.event_finished(test_suite)
+        end
+
+        def on_test_finished(test)
+          @test_optimisation.stop_coverage(test)
+          @test_optimisation.count_skipped_test(test)
+
+          @telemetry.event_finished(test)
         end
       end
     end
