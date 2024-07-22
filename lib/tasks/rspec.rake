@@ -1,7 +1,7 @@
 namespace :datadog do
   namespace :ci do
     namespace :rspec do
-      task skippable_percentage: :environment do
+      task :skippable_percentage do
         require "rspec/core"
         require "datadog/ci"
 
@@ -29,7 +29,7 @@ namespace :datadog do
         print((test_optimisation.skipped_tests_count.to_f / test_optimisation.total_tests_count).floor(2))
       end
 
-      task skippable_percentage_estimate: :environment do
+      task :skippable_percentage_estimate do
         require "datadog/ci"
 
         if ENV["DD_SERVICE"].nil?
