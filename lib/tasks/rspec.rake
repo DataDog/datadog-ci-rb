@@ -25,8 +25,8 @@ namespace :datadog do
           Datadog.logger.error("RSpec dry-run failed with exit code #{exit_code}")
         end
 
-        itr = Datadog.send(:components).itr
-        print((itr.skipped_tests_count.to_f / itr.total_tests_count).floor(2))
+        test_optimisation = Datadog.send(:components).test_optimisation
+        print((test_optimisation.skipped_tests_count.to_f / test_optimisation.total_tests_count).floor(2))
       end
 
       task skippable_percentage_estimate: :environment do
@@ -47,9 +47,9 @@ namespace :datadog do
         test_session = Datadog::CI.start_test_session
         test_session&.finish
 
-        itr = Datadog.send(:components).itr
+        test_optimisation = Datadog.send(:components).test_optimisation
 
-        skippable_tests_count = itr.skippable_tests.count
+        skippable_tests_count = test_optimisation.skippable_tests.count
         estimated_tests_count = Dir["spec/**/*_spec.rb"].map { |path| File.read(path) }.join.scan(/(  it)|(  scenario)/).count
 
         result = [(skippable_tests_count.to_f / estimated_tests_count).floor(2), 0.99].min
