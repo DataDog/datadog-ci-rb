@@ -1,7 +1,7 @@
 namespace :datadog do
   namespace :ci do
     namespace :rspec do
-      task :skippable_percentage do
+      task skippable_percentage: :environment do
         require "rspec/core"
         require "datadog/ci"
 
@@ -10,6 +10,7 @@ namespace :datadog do
           c.ci.itr_enabled = true
           c.ci.discard_traces = true
           c.ci.instrument :rspec, dry_run_enabled: true
+          c.tracing.enabled = true
         end
 
         rspec_cli_options = %w[
@@ -28,7 +29,7 @@ namespace :datadog do
         print((itr.skipped_tests_count.to_f / itr.total_tests_count).floor(2))
       end
 
-      task :skippable_percentage_estimate do
+      task skippable_percentage_estimate: :environment do
         require "datadog/ci"
 
         if ENV["DD_SERVICE"].nil?
@@ -40,6 +41,7 @@ namespace :datadog do
           c.ci.enabled = true
           c.ci.itr_enabled = true
           c.ci.discard_traces = true
+          c.tracing.enabled = true
         end
 
         test_session = Datadog::CI.start_test_session
