@@ -23,7 +23,7 @@ module Datadog
       class Component
         include Core::Utils::Forking
 
-        attr_reader :correlation_id, :skippable_tests, :skipped_tests_count
+        attr_reader :correlation_id, :skippable_tests, :skipped_tests_count, :total_tests_count
 
         def initialize(
           dd_env:,
@@ -56,7 +56,9 @@ module Datadog
           @correlation_id = nil
           @skippable_tests = Set.new
 
+          @total_tests_count = 0
           @skipped_tests_count = 0
+
           @mutex = Mutex.new
 
           Datadog.logger.debug("TestOptimisation initialized with enabled: #{@enabled}")
@@ -154,14 +156,16 @@ module Datadog
         end
 
         def count_skipped_test(test)
-          return if !test.skipped? || !test.skipped_by_itr?
-
-          if forked?
-            Datadog.logger.warn { "Intelligent test runner is not supported for forking test runners yet" }
-            return
-          end
-
           @mutex.synchronize do
+            @total_tests_count += 1
+
+            return if !test.skipped? || !test.skipped_by_itr?
+
+            if forked?
+              Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
+              return
+            end
+
             @skipped_tests_count += 1
           end
         end
