@@ -4,15 +4,12 @@ module Datadog
       class Component
         @test_suite_level_visibility_enabled: bool
 
-        @environment_tags: Hash[String, String]
-        @local_context: Datadog::CI::TestVisibility::Context::Local
-        @global_context: Datadog::CI::TestVisibility::Context::Global
         @test_optimisation: Datadog::CI::TestOptimisation::Component
         @remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi
         @codeowners: Datadog::CI::Codeowners::Matcher
         @git_tree_upload_worker: Datadog::CI::Worker
+        @context: Datadog::CI::TestVisibility::Context
 
-        attr_reader environment_tags: Hash[String, String]
         attr_reader test_suite_level_visibility_enabled: bool
 
         def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, test_optimisation: Datadog::CI::TestOptimisation::Component, remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi, ?git_tree_upload_worker: Datadog::CI::Worker) -> void
@@ -53,42 +50,13 @@ module Datadog
 
         def configure_library: (Datadog::CI::TestSession test_session) -> void
 
-        def create_datadog_span: (String span_name, ?span_options: Hash[untyped, untyped], ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
-
-        def set_trace_origin: (Datadog::Tracing::TraceOperation trace) -> untyped
-
-        def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
-
-        def build_test_session: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSession
-
-        def build_test_module: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestModule
-
-        def build_test_suite: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSuite
-
-        def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
-
-        def build_span_options: (String? service_name, String type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
-
-        def set_initial_tags: (Datadog::CI::Span ci_span, Hash[untyped, untyped] tags) -> void
-
-        # the type (Datadog::CI::TestSession | Datadog::Tracing::SpanOperation) screams of wrong/mising abstraction
-        def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::Tracing::SpanOperation? test_session) -> void
-
-        def set_suite_context: (Hash[untyped, untyped] tags, ?span: Datadog::Tracing::SpanOperation, ?name: String) -> void
-
         def fix_test_suite!: (Datadog::CI::Test test) -> void
-
-        def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
 
         def set_codeowners: (Datadog::CI::Test test) -> void
 
         def null_span: () -> Datadog::CI::Span
 
         def skip_tracing: (?untyped block) -> untyped
-
-        def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
-
-        def set_inherited_globals: (Hash[untyped, untyped] tags) -> void
 
         def validate_test_suite_level_visibility_correctness: (Datadog::CI::Test test) -> void
 

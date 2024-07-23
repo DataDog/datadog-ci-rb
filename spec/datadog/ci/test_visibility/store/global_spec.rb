@@ -1,4 +1,8 @@
-RSpec.describe Datadog::CI::TestVisibility::Context::Global do
+# frozen_string_literal: true
+
+require_relative "../../../../../lib/datadog/ci/test_visibility/store/global"
+
+RSpec.describe Datadog::CI::TestVisibility::Store::Global do
   subject(:context) { described_class.new }
 
   let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: "test.session", service: "my-service") }
