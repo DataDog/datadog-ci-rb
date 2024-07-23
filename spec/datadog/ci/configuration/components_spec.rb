@@ -75,6 +75,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(settings.tracing.test_mode)
             .to receive(:async=).and_call_original
 
+          allow(settings.telemetry).to receive(:enabled=).and_call_original
+
           allow(Datadog.logger)
             .to receive(:debug)
 
@@ -143,6 +145,36 @@ RSpec.describe Datadog::CI::Configuration::Components do
             context "is disabled" do
               let(:agentless_enabled) { false }
 
+              context "when environment value for telemetry is not presetn" do
+                it "enables telemetry" do
+                  expect(settings.telemetry).to have_received(:enabled=).with(true)
+                end
+              end
+
+              context "when environment value for telemetry is present" do
+                around do |example|
+                  ClimateControl.modify(Datadog::Core::Telemetry::Ext::ENV_ENABLED => telemetry_enabled) do
+                    example.run
+                  end
+                end
+
+                context "when telemetry is explicitly disabled" do
+                  let(:telemetry_enabled) { "false" }
+
+                  it "disables telemetry" do
+                    expect(settings.telemetry).to have_received(:enabled=).with(false)
+                  end
+                end
+
+                context "when telemetry is explicitly enabled" do
+                  let(:telemetry_enabled) { "true" }
+
+                  it "enables telemetry" do
+                    expect(settings.telemetry).to have_received(:enabled=).with(true)
+                  end
+                end
+              end
+
               context "and when agent supports EVP proxy v2" do
                 let(:evp_proxy_v2_supported) { true }
 
@@ -204,6 +236,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
               context "when api key is set" do
                 let(:api_key) { "api_key" }
+
+                it "disables telemetry" do
+                  expect(settings.telemetry).to have_received(:enabled=).with(false)
+                end
 
                 it "sets async for test mode and constructs transport with CI intake API" do
                   expect(Datadog.logger).not_to have_received(:warn)

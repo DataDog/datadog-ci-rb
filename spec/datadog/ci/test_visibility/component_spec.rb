@@ -3,6 +3,20 @@
 require_relative "../../../../lib/datadog/ci/test_visibility/component"
 
 RSpec.describe Datadog::CI::TestVisibility::Component do
+  # spy on telemetry metrics emitted
+  before do
+    @metrics = {}
+
+    allow(Datadog::CI::Utils::Telemetry).to receive(:inc) do |metric_name, _count, _tags|
+      @metrics[:inc] ||= []
+      @metrics[:inc] << metric_name
+    end
+    allow(Datadog::CI::Utils::Telemetry).to receive(:distribution) do |metric_name, _value, _tags|
+      @metrics[:distribution] ||= []
+      @metrics[:distribution] << metric_name
+    end
+  end
+
   shared_examples_for "trace with ciapp-test origin" do
     let(:trace_under_test) { subject }
 
@@ -45,6 +59,14 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         expect(span_under_test).to have_test_tag(tag)
       end
       expect(span_under_test).to have_test_tag(:command, test_command)
+    end
+  end
+
+  shared_examples_for "emits telemetry metric" do |metric_type, metric_name|
+    it "emits telemetry metric with type #{metric_type} and name #{metric_name}" do
+      subject
+
+      expect(@metrics[metric_type]).to include(metric_name)
     end
   end
 
@@ -221,6 +243,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
                 trace
               end
             end
+            it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
           end
 
           context "when there is an active test session" do
@@ -377,6 +400,8 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
               trace
             end
           end
+          it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
+          it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_FINISHED
         end
       end
 
@@ -430,6 +455,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
             trace
           end
         end
+        it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
       end
 
       describe "#start_test_module" do
@@ -474,6 +500,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
               trace
             end
           end
+          it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
         end
 
         context "when there is an active test session" do
@@ -555,6 +582,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           it_behaves_like "span with environment tags"
           it_behaves_like "span with default tags"
           it_behaves_like "span with runtime tags"
+          it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
         end
 
         context "when test suite with given name is already started" do
@@ -653,6 +681,10 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
       end
 
       describe "#deactivate_test" do
+        before do
+          ci_test
+        end
+
         subject { test_visibility.deactivate_test }
 
         context "when there is no active test" do
@@ -669,6 +701,8 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
             expect(test_visibility.active_test).to be_nil
           end
+
+          it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_FINISHED
         end
       end
 
@@ -689,6 +723,8 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
             expect(test_visibility.active_test_session).to be_nil
           end
+
+          it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_FINISHED
         end
       end
 
@@ -709,6 +745,8 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
             expect(test_visibility.active_test_module).to be_nil
           end
+
+          it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_FINISHED
         end
       end
 
@@ -729,6 +767,8 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
             expect(test_visibility.active_test_suite("my suite")).to be_nil
           end
+
+          it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_FINISHED
         end
       end
     end

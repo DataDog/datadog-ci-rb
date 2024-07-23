@@ -407,7 +407,6 @@ module Datadog
           end
         end
 
-        # TODO: use kind of event system to notify about these events?
         def on_test_session_started(test_session)
           Telemetry.event_created(test_session)
 

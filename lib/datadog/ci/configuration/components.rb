@@ -63,15 +63,14 @@ module Datadog
 
           # Configure datadog gem for test visibility mode
 
-          # Deactivate telemetry
+          # Configure telemetry
 
           # in development environment Datadog's telemetry is disabled by default
           # for test visibility we want to enable it by default unless explicitly disabled
-          env_enabled_value = ENV[Core::Telemetry::Ext::ENV_ENABLED]
-          settings.telemetry.enabled = env_enabled_value.nil? || Utils::Parsing.convert_to_bool(env_enabled_value)
-
-          # REMOVE THIS
-          # settings.telemetry.agentless_enabled = true
+          # NOTE: before agentless mode is released, we only enable telemetry when running with Datadog Agent
+          env_telemetry_enabled = ENV[Core::Telemetry::Ext::ENV_ENABLED]
+          settings.telemetry.enabled = !settings.ci.agentless_mode_enabled &&
+            (env_telemetry_enabled.nil? || Utils::Parsing.convert_to_bool(env_telemetry_enabled))
 
           # Test visibility uses its own remote settings
           settings.remote.enabled = false
