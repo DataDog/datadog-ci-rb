@@ -50,8 +50,6 @@ module Datadog
           @test_optimisation = test_optimisation
           @remote_settings_api = remote_settings_api
           @git_tree_upload_worker = git_tree_upload_worker
-
-          @telemetry = TestVisibility::Telemetry.new
         end
 
         def shutdown!
@@ -411,7 +409,7 @@ module Datadog
 
         # TODO: use kind of event system to notify about these events?
         def on_test_session_started(test_session)
-          @telemetry.event_created(test_session)
+          Telemetry.event_created(test_session)
 
           # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
           Contrib.auto_instrument_on_session_start!
@@ -421,15 +419,15 @@ module Datadog
         end
 
         def on_test_module_started(test_module)
-          @telemetry.event_created(test_module)
+          Telemetry.event_created(test_module)
         end
 
         def on_test_suite_started(test_suite)
-          @telemetry.event_created(test_suite)
+          Telemetry.event_created(test_suite)
         end
 
         def on_test_started(test)
-          @telemetry.event_created(test)
+          Telemetry.event_created(test)
 
           @test_optimisation.mark_if_skippable(test)
           @test_optimisation.start_coverage(test)
@@ -438,22 +436,22 @@ module Datadog
         def on_test_session_finished(test_session)
           @test_optimisation.write_test_session_tags(test_session)
 
-          @telemetry.event_finished(test_session)
+          Telemetry.event_finished(test_session)
         end
 
         def on_test_module_finished(test_module)
-          @telemetry.event_finished(test_module)
+          Telemetry.event_finished(test_module)
         end
 
         def on_test_suite_finished(test_suite)
-          @telemetry.event_finished(test_suite)
+          Telemetry.event_finished(test_suite)
         end
 
         def on_test_finished(test)
           @test_optimisation.stop_coverage(test)
           @test_optimisation.count_skipped_test(test)
 
-          @telemetry.event_finished(test)
+          Telemetry.event_finished(test)
         end
       end
     end
