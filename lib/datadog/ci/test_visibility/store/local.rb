@@ -3,7 +3,7 @@
 module Datadog
   module CI
     module TestVisibility
-      module Context
+      module Store
         class Local
           def initialize
             @key = :datadog_ci_active_test

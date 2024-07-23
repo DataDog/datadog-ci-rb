@@ -3,7 +3,7 @@
 module Datadog
   module CI
     module TestVisibility
-      module Context
+      module Store
         # This context is shared between threads and represents the current test session and test module.
         class Global
           def initialize

@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Utils
+      module Telemetry
+        def self.inc: (String metric_name, Integer count, ?Datadog::Core::Telemetry::Metric::tags_input tags) -> void
+
+        def self.distribution: (String metric_name, Float value, ?Datadog::Core::Telemetry::Metric::tags_input tags) -> void
+
+        def self.telemetry: () -> Datadog::Core::Telemetry::Component
+      end
+    end
+  end
+end

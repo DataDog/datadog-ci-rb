@@ -8,7 +8,8 @@ module Datadog
     module Utils
       module Parsing
         def self.convert_to_bool(value)
-          value.to_s.downcase == "true"
+          normalized_value = value.to_s.downcase
+          normalized_value == "true" || normalized_value == "1"
         end
       end
     end

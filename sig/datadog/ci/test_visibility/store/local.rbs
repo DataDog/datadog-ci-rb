@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module TestVisibility
-      module Context
+      module Store
         class Local
           @key: Symbol
 

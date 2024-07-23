@@ -99,13 +99,11 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
     end
 
     context "with webmock" do
+      let(:hostname) { "127.0.0.1" }
+      let(:timeout) { 0.5 }
       let(:verb) { :post }
       let(:expected_error) do
-        if defined?(Socket::ResolutionError)
-          Socket::ResolutionError
-        else
-          SocketError
-        end
+        Errno::ECONNREFUSED
       end
 
       before { WebMock.enable! }
