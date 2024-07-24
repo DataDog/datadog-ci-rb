@@ -16,6 +16,8 @@ module Datadog
 
         private
 
+        def telemetry_endpoint_tag: () -> String
+
         def send_payload: (String payload) -> ::Datadog::CI::Transport::HTTP::ResponseDecorator
 
         def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)

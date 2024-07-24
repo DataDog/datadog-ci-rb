@@ -11,15 +11,16 @@ end
 # spy on telemetry metrics emitted
 RSpec.shared_context "Telemetry spy" do
   before do
-    @metrics = {}
+    @metrics = {
+      inc: [],
+      distribution: []
+    }
 
     allow(Datadog::CI::Utils::Telemetry).to receive(:inc) do |metric_name, count, tags|
-      @metrics[:inc] ||= []
       @metrics[:inc] << SpiedMetric.new(metric_name, count, tags)
     end
 
     allow(Datadog::CI::Utils::Telemetry).to receive(:distribution) do |metric_name, value, tags|
-      @metrics[:distribution] ||= []
       @metrics[:distribution] << SpiedMetric.new(metric_name, value, tags)
     end
   end

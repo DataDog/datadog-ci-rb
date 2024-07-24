@@ -63,6 +63,15 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
 
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
+
+      it "tags event with test_cycle endpoint" do
+        subject
+
+        expect(telemetry_metric(:distribution, "endpoint_payload.events_count")).to(
+          have_attributes(tags: {"endpoint" => "test_cycle"})
+        )
+      end
     end
 
     context "with dd_env defined" do
@@ -127,8 +136,8 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         end
       end
 
-      # telemetry reports the number of traces
-      it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
+      it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 4
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 4
 
       context "when some spans are broken" do
         let(:expected_events_count) { 3 }
@@ -161,6 +170,9 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
             "Errors: {\"start\"=>#<Set: {\"must be greater than or equal to 946684800000000000\"}>}"
           )
         end
+
+        it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 3
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 3
       end
 
       context "when chunking is used" do
@@ -174,6 +186,9 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
           expect(api).to have_received(:citestcycle_request).twice
           expect(responses.count).to eq(2)
         end
+
+        it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 4
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 3
       end
 
       context "when max_payload-size is too small" do

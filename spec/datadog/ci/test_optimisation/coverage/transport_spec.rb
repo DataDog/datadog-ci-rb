@@ -49,6 +49,15 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
       end
 
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
+
+      it "tags event with code_coverage endpoint" do
+        subject
+
+        expect(telemetry_metric(:distribution, "endpoint_payload.events_count")).to(
+          have_attributes(tags: {"endpoint" => "code_coverage"})
+        )
+      end
     end
 
     context "multiple events" do
@@ -84,6 +93,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
       end
 
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 2
 
       context "when some events are invalid" do
         let(:events) do
@@ -118,18 +128,24 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
             "coverage={\"file.rb\"=>true, \"file2.rb\"=>true}]"
           )
         end
+
+        it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
       end
 
       context "when chunking is used" do
         # one coverage event is approximately 75 bytes
         let(:max_payload_size) { 100 }
 
-        it "filters out invalid events" do
+        it "splits events based on size" do
           responses = subject
 
           expect(api).to have_received(:citestcov_request).twice
           expect(responses.count).to eq(2)
         end
+
+        it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
       end
 
       context "when max_payload-size is too small" do

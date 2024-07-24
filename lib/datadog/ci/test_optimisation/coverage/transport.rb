@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "event"
+require_relative "../../ext/telemetry"
 require_relative "../../transport/event_platform_transport"
 
 module Datadog
@@ -9,6 +10,10 @@ module Datadog
       module Coverage
         class Transport < Datadog::CI::Transport::EventPlatformTransport
           private
+
+          def telemetry_endpoint_tag
+            Ext::Telemetry::Endpoint::CODE_COVERAGE
+          end
 
           def send_payload(encoded_payload)
             api.citestcov_request(

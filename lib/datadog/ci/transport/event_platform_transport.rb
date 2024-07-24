@@ -25,13 +25,14 @@ module Datadog
           return [] if events.nil? || events.empty?
 
           Datadog.logger.debug { "[#{self.class.name}] Sending #{events.count} events..." }
-          Telemetry.events_enqueued_for_serialization(events.count)
 
           encoded_events = encode_events(events)
           if encoded_events.empty?
             Datadog.logger.debug { "[#{self.class.name}] Empty encoded events list, skipping send" }
             return []
           end
+
+          Telemetry.events_enqueued_for_serialization(encoded_events.count)
 
           responses = []
 
@@ -40,6 +41,7 @@ module Datadog
             Datadog.logger.debug do
               "[#{self.class.name}] Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
             end
+            Telemetry.endpoint_payload_events_count(chunk.count, telemetry_endpoint_tag)
 
             response = send_payload(encoded_payload)
 
@@ -50,6 +52,10 @@ module Datadog
         end
 
         private
+
+        def telemetry_endpoint_tag
+          raise NotImplementedError, "must be implemented by the subclass"
+        end
 
         def encoder
           Datadog::Core::Encoding::MsgpackEncoder

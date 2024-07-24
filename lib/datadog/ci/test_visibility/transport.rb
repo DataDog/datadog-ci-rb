@@ -3,6 +3,7 @@
 require "datadog/core/environment/identity"
 
 require_relative "serializers/factories/test_level"
+require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/event_platform_transport"
 
@@ -30,6 +31,10 @@ module Datadog
         end
 
         private
+
+        def telemetry_endpoint_tag
+          Ext::Telemetry::Endpoint::TEST_CYCLE
+        end
 
         def send_payload(encoded_payload)
           api.citestcycle_request(
