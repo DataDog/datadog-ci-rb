@@ -2,6 +2,7 @@
 
 require "datadog/core/environment/identity"
 require "datadog/core/telemetry/ext"
+require "datadog/core/telemetry/http/adapters/net"
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
@@ -14,6 +15,7 @@ require_relative "../test_visibility/null_component"
 require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
+require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
 require_relative "../transport/api/builder"
 require_relative "../transport/remote_settings_api"
 require_relative "../utils/identity"
@@ -262,8 +264,12 @@ module Datadog
           # patch gem's identity to report datadog-ci library version instead of datadog gem version
           Core::Environment::Identity.include(CI::Utils::Identity)
 
+          # patch gem's telemetry transport layer to use Net::HTTP instead of WebMock's Net::HTTP
+          Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
+
           # REMOVE BEFORE SUBMITTING FOR REVIEW
           # settings.telemetry.agentless_enabled = true
+          # settings.telemetry.shutdown_timeout_seconds = 60
         end
 
         def timecop?

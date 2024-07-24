@@ -58,10 +58,6 @@ module Datadog
 
             def inspect: () -> ::String
           end
-
-          private
-
-          def net_http_client: () -> singleton(::Net::HTTP)
         end
       end
     end
