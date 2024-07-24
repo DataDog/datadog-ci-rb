@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/core/environment/identity"
 require "datadog/core/telemetry/ext"
-require "datadog/core/telemetry/http/adapters/net"
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
@@ -261,11 +259,18 @@ module Datadog
 
           return unless settings.telemetry.enabled
 
-          # patch gem's identity to report datadog-ci library version instead of datadog gem version
-          Core::Environment::Identity.include(CI::Utils::Identity)
+          begin
+            require "datadog/core/environment/identity"
+            require "datadog/core/telemetry/http/adapters/net"
 
-          # patch gem's telemetry transport layer to use Net::HTTP instead of WebMock's Net::HTTP
-          Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
+            # patch gem's identity to report datadog-ci library version instead of datadog gem version
+            Core::Environment::Identity.include(CI::Utils::Identity)
+
+            # patch gem's telemetry transport layer to use Net::HTTP instead of WebMock's Net::HTTP
+            Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
+          rescue => e
+            Datadog.logger.warn("Failed to patch Datadog gem's telemetry layer: #{e}")
+          end
 
           # REMOVE BEFORE SUBMITTING FOR REVIEW
           # settings.telemetry.agentless_enabled = true
