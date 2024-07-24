@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Transport
+      module Telemetry
+        def self.events_enqueued_for_serialization: (Integer count) -> void
+      end
+    end
+  end
+end

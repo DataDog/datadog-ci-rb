@@ -3,19 +3,7 @@
 require_relative "../../../../lib/datadog/ci/test_visibility/component"
 
 RSpec.describe Datadog::CI::TestVisibility::Component do
-  # spy on telemetry metrics emitted
-  before do
-    @metrics = {}
-
-    allow(Datadog::CI::Utils::Telemetry).to receive(:inc) do |metric_name, _count, _tags|
-      @metrics[:inc] ||= []
-      @metrics[:inc] << metric_name
-    end
-    allow(Datadog::CI::Utils::Telemetry).to receive(:distribution) do |metric_name, _value, _tags|
-      @metrics[:distribution] ||= []
-      @metrics[:distribution] << metric_name
-    end
-  end
+  include_context "Telemetry spy"
 
   shared_examples_for "trace with ciapp-test origin" do
     let(:trace_under_test) { subject }
@@ -59,14 +47,6 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         expect(span_under_test).to have_test_tag(tag)
       end
       expect(span_under_test).to have_test_tag(:command, test_command)
-    end
-  end
-
-  shared_examples_for "emits telemetry metric" do |metric_type, metric_name|
-    it "emits telemetry metric with type #{metric_type} and name #{metric_name}" do
-      subject
-
-      expect(@metrics[metric_type]).to include(metric_name)
     end
   end
 

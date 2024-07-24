@@ -5,6 +5,8 @@ require "msgpack"
 require "datadog/core/encoding"
 require "datadog/core/chunker"
 
+require_relative "telemetry"
+
 module Datadog
   module CI
     module Transport
@@ -23,6 +25,7 @@ module Datadog
           return [] if events.nil? || events.empty?
 
           Datadog.logger.debug { "[#{self.class.name}] Sending #{events.count} events..." }
+          Telemetry.events_enqueued_for_serialization(events.count)
 
           encoded_events = encode_events(events)
           if encoded_events.empty?

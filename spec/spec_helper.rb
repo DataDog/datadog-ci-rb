@@ -22,6 +22,7 @@ require_relative "support/contexts/concurrency_test"
 require_relative "support/contexts/git_fixture"
 require_relative "support/contexts/extract_environment_tags"
 require_relative "support/contexts/msgpack_serializer"
+require_relative "support/contexts/telemetry_spy"
 
 require "rspec/collection_matchers"
 require "climate_control"

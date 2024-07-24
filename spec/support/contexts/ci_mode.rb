@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # CI mode shared context sets up the CI test_visibility and configures the CI mode for tracer like customers do.
 # Example usage:
 #

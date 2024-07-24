@@ -1,7 +1,9 @@
 require_relative "../../../../../lib/datadog/ci/test_optimisation/coverage/transport"
 
 RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
-  subject do
+  include_context "Telemetry spy"
+
+  subject(:transport) do
     described_class.new(
       api: api,
       max_payload_size: max_payload_size
@@ -26,8 +28,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
 
   describe "#send_events" do
     context "with a single event" do
+      subject { transport.send_events([event]) }
+
       it "sends correct payload" do
-        subject.send_events([event])
+        subject
 
         expect(api).to have_received(:citestcov_request) do |args|
           expect(args[:path]).to eq("/api/v2/citestcov")
@@ -43,9 +47,13 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
           expect(events.first["files"]).to eq([{"filename" => "file.rb"}])
         end
       end
+
+      it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
     end
 
     context "multiple events" do
+      subject { transport.send_events(events) }
+
       let(:events) do
         [
           event,
@@ -57,8 +65,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
           )
         ]
       end
+
       it "sends all events" do
-        subject.send_events(events)
+        subject
 
         expect(api).to have_received(:citestcov_request) do |args|
           payload = MessagePack.unpack(args[:payload])
@@ -74,6 +83,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         end
       end
 
+      it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
+
       context "when some events are invalid" do
         let(:events) do
           [
@@ -88,7 +99,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         end
 
         it "filters out invalid events" do
-          subject.send_events(events)
+          subject
 
           expect(api).to have_received(:citestcov_request) do |args|
             payload = MessagePack.unpack(args[:payload])
@@ -99,7 +110,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         end
 
         it "logs warning that events were filtered out" do
-          subject.send_events(events)
+          subject
 
           expect(Datadog.logger).to have_received(:warn).with(
             "citestcov event is invalid: [test_suite_id] is nil. " \
@@ -114,7 +125,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         let(:max_payload_size) { 100 }
 
         it "filters out invalid events" do
-          responses = subject.send_events(events)
+          responses = subject
 
           expect(api).to have_received(:citestcov_request).twice
           expect(responses.count).to eq(2)
@@ -125,7 +136,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         let(:max_payload_size) { 1 }
 
         it "does not send events that are larger than max size" do
-          subject.send_events(events)
+          subject
 
           expect(api).not_to have_received(:citestcov_request)
         end
