@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "datadog/core/environment/identity"
 require "datadog/core/telemetry/ext"
 
 require_relative "../ext/settings"
@@ -15,6 +16,7 @@ require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/api/builder"
 require_relative "../transport/remote_settings_api"
+require_relative "../utils/identity"
 require_relative "../utils/parsing"
 require_relative "../utils/test_run"
 require_relative "../worker"
@@ -62,15 +64,7 @@ module Datadog
           return unless settings.ci.enabled
 
           # Configure datadog gem for test visibility mode
-
-          # Configure telemetry
-
-          # in development environment Datadog's telemetry is disabled by default
-          # for test visibility we want to enable it by default unless explicitly disabled
-          # NOTE: before agentless mode is released, we only enable telemetry when running with Datadog Agent
-          env_telemetry_enabled = ENV[Core::Telemetry::Ext::ENV_ENABLED]
-          settings.telemetry.enabled = !settings.ci.agentless_mode_enabled &&
-            (env_telemetry_enabled.nil? || Utils::Parsing.convert_to_bool(env_telemetry_enabled))
+          configure_telemetry(settings)
 
           # Test visibility uses its own remote settings
           settings.remote.enabled = false
@@ -253,6 +247,23 @@ module Datadog
             "Agentless mode was enabled but DD_SITE is not set to one of the following: #{Ext::Settings::DD_SITE_ALLOWLIST.join(", ")}. " \
             "Please make sure to set valid site in DD_SITE environment variable"
           end
+        end
+
+        def configure_telemetry(settings)
+          # in development environment Datadog's telemetry is disabled by default
+          # for test visibility we want to enable it by default unless explicitly disabled
+          # NOTE: before agentless mode is released, we only enable telemetry when running with Datadog Agent
+          env_telemetry_enabled = ENV[Core::Telemetry::Ext::ENV_ENABLED]
+          settings.telemetry.enabled = !settings.ci.agentless_mode_enabled &&
+            (env_telemetry_enabled.nil? || Utils::Parsing.convert_to_bool(env_telemetry_enabled))
+
+          return unless settings.telemetry.enabled
+
+          # patch gem's identity to report datadog-ci library version instead of datadog gem version
+          Core::Environment::Identity.include(CI::Utils::Identity)
+
+          # REMOVE BEFORE SUBMITTING FOR REVIEW
+          # settings.telemetry.agentless_enabled = true
         end
 
         def timecop?

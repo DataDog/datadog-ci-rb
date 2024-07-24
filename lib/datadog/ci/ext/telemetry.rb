@@ -11,9 +11,6 @@ module Datadog
 
         METRIC_MANUAL_API_EVENTS = "manual_api_events"
 
-        METRIC_CODE_COVERAGE_STARTED = "code_coverage_started"
-        METRIC_CODE_COVERAGE_FINISHED = "code_coverage_finished"
-
         METRIC_EVENTS_ENQUEUED = "events_enqueued_for_serialization"
         METRIC_ENDPOINT_PAYLOAD_BYTES = "endpoint_payload.bytes"
         METRIC_ENDPOINT_PAYLOAD_REQUESTS = "endpoint_payload.requests"
@@ -52,6 +49,8 @@ module Datadog
         METRIC_ITR_UNSKIPPABLE = "itr_unskippable"
         METRIC_ITR_FORCED_RUN = "itr_forced_run"
 
+        METRIC_CODE_COVERAGE_STARTED = "code_coverage_started"
+        METRIC_CODE_COVERAGE_FINISHED = "code_coverage_finished"
         METRIC_CODE_COVERAGE_IS_EMPTY = "code_coverage.is_empty"
         METRIC_CODE_COVERAGE_FILES = "code_coverage.files"
         METRIC_CODE_COVERAGE_ERRORS = "code_coverage.errors"
