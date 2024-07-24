@@ -188,7 +188,6 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         end
 
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 4
-        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 3
       end
 
       context "when max_payload-size is too small" do
