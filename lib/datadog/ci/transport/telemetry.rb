@@ -58,6 +58,15 @@ module Datadog
           )
         end
 
+        def self.endpoint_payload_requests_errors(count, endpoint:, error_type:, status_code:)
+          tags = tags(endpoint: endpoint)
+
+          tags[Ext::Telemetry::TAG_ERROR_TYPE] = error_type if error_type
+          tags[Ext::Telemetry::TAG_STATUS_CODE] = status_code.to_s if status_code
+
+          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS_ERRORS, count, tags)
+        end
+
         def self.tags(endpoint:)
           {Ext::Telemetry::TAG_ENDPOINT => endpoint}
         end

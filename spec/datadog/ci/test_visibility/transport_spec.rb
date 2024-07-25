@@ -75,6 +75,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         end
 
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped", 1
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests_errors", 1
       end
 
       it "tags telemetry metric with test_cycle endpoint" do
@@ -161,6 +162,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         end
 
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped", 4
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests_errors", 1
       end
 
       context "when some spans are broken" do

@@ -134,4 +134,42 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
       subject
     end
   end
+
+  describe ".endpoint_payload_requests_errors" do
+    subject { described_class.endpoint_payload_requests_errors(count, endpoint: endpoint, error_type: error_type, status_code: status_code) }
+
+    let(:count) { 1 }
+    let(:endpoint) { "test_cycle" }
+    let(:error_type) { "error" }
+    let(:status_code) { 500 }
+
+    it "increments the endpoint payload requests errors metric" do
+      expect(Datadog::CI::Utils::Telemetry).to receive(:inc).with(
+        Datadog::CI::Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS_ERRORS,
+        count,
+        {
+          Datadog::CI::Ext::Telemetry::TAG_ENDPOINT => endpoint,
+          Datadog::CI::Ext::Telemetry::TAG_ERROR_TYPE => error_type,
+          Datadog::CI::Ext::Telemetry::TAG_STATUS_CODE => status_code
+        }
+      )
+
+      subject
+    end
+
+    context "when error type and status code are not provided" do
+      let(:error_type) { nil }
+      let(:status_code) { nil }
+
+      it "increments the endpoint payload requests errors metric without error type and status code tags" do
+        expect(Datadog::CI::Utils::Telemetry).to receive(:inc).with(
+          Datadog::CI::Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS_ERRORS,
+          count,
+          {Datadog::CI::Ext::Telemetry::TAG_ENDPOINT => endpoint}
+        )
+
+        subject
+      end
+    end
+  end
 end

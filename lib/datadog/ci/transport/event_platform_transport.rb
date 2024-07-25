@@ -66,6 +66,12 @@ module Datadog
             # HTTP layer could send events and exhausted retries (if any)
             unless response.ok?
               Telemetry.endpoint_payload_dropped(chunk.count, endpoint: telemetry_endpoint_tag)
+              Telemetry.endpoint_payload_requests_errors(
+                1,
+                endpoint: telemetry_endpoint_tag,
+                error_type: response.telemetry_error_type,
+                status_code: response.code
+              )
             end
 
             responses << response
