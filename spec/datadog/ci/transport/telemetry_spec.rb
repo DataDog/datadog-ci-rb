@@ -150,7 +150,7 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
         {
           Datadog::CI::Ext::Telemetry::TAG_ENDPOINT => endpoint,
           Datadog::CI::Ext::Telemetry::TAG_ERROR_TYPE => error_type,
-          Datadog::CI::Ext::Telemetry::TAG_STATUS_CODE => status_code
+          Datadog::CI::Ext::Telemetry::TAG_STATUS_CODE => status_code.to_s
         }
       )
 
