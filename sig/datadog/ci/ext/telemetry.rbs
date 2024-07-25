@@ -145,6 +145,8 @@ module Datadog
           NETWORK: "network"
 
           TIMEOUT: "timeout"
+
+          STATUS_CODE: "status_code"
         end
 
         module ExitCode

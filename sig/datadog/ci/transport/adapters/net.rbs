@@ -46,7 +46,7 @@ module Datadog
 
             def header: (String name) -> String?
 
-            def code: () -> Integer
+            def code: () -> Integer?
 
             def ok?: () -> bool
 
@@ -61,6 +61,8 @@ module Datadog
             def gzipped_body?: (String body) -> bool
 
             def gzipped_content?: () -> bool
+
+            def telemetry_error_type: () -> String?
 
             def trace_count: () -> 0
 

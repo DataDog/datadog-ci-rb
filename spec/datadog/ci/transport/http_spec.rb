@@ -119,6 +119,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         expect(response.payload).to eq("sample payload")
         expect(response.request_compressed).to eq(false)
         expect(response.request_size).to eq(payload.size)
+        expect(response.telemetry_error_type).to be_nil
       end
 
       context "when accepting gzipped response" do
@@ -161,6 +162,20 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     context "when request fails" do
       let(:request_options) { {backoff: 0} }
 
+      context "when server returns error status code" do
+        let(:net_http_response) { double("Net::HTTP::Response", code: 400, body: "error", "[]": nil) }
+
+        before do
+          expect(adapter).to receive(:call).and_return(http_response)
+        end
+
+        it "produces a response" do
+          expect(response).not_to be_ok
+          expect(response.code).to eq(400)
+          expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::STATUS_CODE)
+        end
+      end
+
       context "when succeeds after retries" do
         before do
           expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES).times
@@ -181,6 +196,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
         it "returns ErrorRsponse" do
           expect(response.error).to be_kind_of(Errno::ECONNRESET)
+          expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::NETWORK)
         end
       end
     end

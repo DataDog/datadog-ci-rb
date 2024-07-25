@@ -108,7 +108,7 @@ module Datadog
           end
 
           def code
-            600
+            nil
           end
 
           def inspect

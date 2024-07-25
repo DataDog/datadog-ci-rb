@@ -5,6 +5,7 @@ require "datadog/core/transport/ext"
 
 require_relative "net_http_client"
 require_relative "../gzip"
+require_relative "../../ext/telemetry"
 require_relative "../../ext/transport"
 
 module Datadog
@@ -89,7 +90,10 @@ module Datadog
             end
 
             def ok?
-              code.between?(200, 299)
+              http_code = code
+              return false if http_code.nil?
+
+              http_code.between?(200, 299)
             end
 
             def unsupported?
@@ -101,11 +105,17 @@ module Datadog
             end
 
             def client_error?
-              code.between?(400, 499)
+              http_code = code
+              return false if http_code.nil?
+
+              http_code.between?(400, 499)
             end
 
             def server_error?
-              code.between?(500, 599)
+              http_code = code
+              return false if http_code.nil?
+
+              http_code.between?(500, 599)
             end
 
             def gzipped_content?
@@ -124,6 +134,19 @@ module Datadog
 
             def error
               nil
+            end
+
+            def telemetry_error_type
+              return nil if ok?
+
+              case error
+              when nil
+                Ext::Telemetry::ErrorType::STATUS_CODE
+              when Timeout::Error
+                Ext::Telemetry::ErrorType::TIMEOUT
+              else
+                Ext::Telemetry::ErrorType::NETWORK
+              end
             end
 
             # compatibility with Datadog::Tracing transport layer

@@ -97,6 +97,7 @@ module Datadog
         module ErrorType
           NETWORK = "network"
           TIMEOUT = "timeout"
+          STATUS_CODE = "status_code"
         end
 
         module ExitCode
