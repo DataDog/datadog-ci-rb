@@ -6,6 +6,7 @@ require_relative "serializers/factories/test_level"
 require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/event_platform_transport"
+require_relative "../transport/telemetry"
 
 module Datadog
   module CI
@@ -51,21 +52,14 @@ module Datadog
 
         def encode_span(trace, span)
           serializer = serializers_factory.serializer(trace, span, options: {itr_correlation_id: itr&.correlation_id})
-
           if serializer.valid?
             encoded = encoder.encode(serializer)
-
-            if encoded.size > max_payload_size
-              # This single event is too large, we can't flush it
-              Datadog.logger.warn("Dropping test event. Payload too large: '#{span.inspect}'")
-              Datadog.logger.warn(encoded)
-
-              return nil
-            end
+            return nil if event_too_large?(span, encoded)
 
             encoded
           else
             Datadog.logger.warn("Invalid event skipped: #{serializer} Errors: #{serializer.validation_errors}")
+            CI::Transport::Telemetry.endpoint_payload_dropped(1, telemetry_endpoint_tag)
             nil
           end
         end

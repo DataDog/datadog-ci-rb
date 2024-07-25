@@ -3,6 +3,7 @@
 require_relative "event"
 require_relative "../../ext/telemetry"
 require_relative "../../transport/event_platform_transport"
+require_relative "../../transport/telemetry"
 
 module Datadog
   module CI
@@ -24,7 +25,10 @@ module Datadog
 
           def encode_events(events)
             events.filter_map do |event|
-              next unless event.valid?
+              unless event.valid?
+                CI::Transport::Telemetry.endpoint_payload_dropped(1, telemetry_endpoint_tag)
+                next
+              end
 
               encoded = encoder.encode(event)
               next if event_too_large?(event, encoded)

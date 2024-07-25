@@ -7,6 +7,10 @@ module Datadog
         def self.endpoint_payload_events_count: (Integer count, String endpoint) -> void
 
         def self.endpoint_payload_serialization_ms: (Float duration_ms, String endpoint) -> void
+
+        def self.endpoint_payload_dropped: (Integer count, String endpoint) -> void
+
+        def self.tagged_with_endpoint: (String endpoint) -> Hash[String, String]
       end
     end
   end

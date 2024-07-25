@@ -50,6 +50,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
 
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
 
       it "tags event with code_coverage endpoint" do
         subject
@@ -94,6 +95,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
 
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 2
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
 
       context "when some events are invalid" do
         let(:events) do
@@ -131,6 +133,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
 
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped", 1
       end
 
       context "when chunking is used" do
@@ -146,6 +150,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
 
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
       end
 
       context "when max_payload-size is too small" do
@@ -156,10 +161,14 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
 
           expect(api).not_to have_received(:citestcov_request)
         end
+
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped", 1
       end
     end
 
     context "when all events are invalid" do
+      subject { transport.send_events(events) }
+
       let(:events) do
         [
           Datadog::CI::TestOptimisation::Coverage::Event.new(
@@ -178,10 +187,12 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
       end
 
       it "does not send anything" do
-        subject.send_events(events)
+        subject
 
         expect(api).not_to have_received(:citestcov_request)
       end
+
+      it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped"
     end
   end
 end

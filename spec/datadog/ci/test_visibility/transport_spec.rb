@@ -66,7 +66,15 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
 
-      it "tags event with test_cycle endpoint" do
+      context "when HTTP response is not OK" do
+        before do
+          allow(api).to receive(:ok?).and_return(false)
+        end
+
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped", 1
+      end
+
+      it "tags telemetry metric with test_cycle endpoint" do
         subject
 
         expect(telemetry_metric(:distribution, "endpoint_payload.events_count")).to(
@@ -141,6 +149,14 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 4
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
 
+      context "when HTTP response is not OK" do
+        before do
+          allow(api).to receive(:ok?).and_return(false)
+        end
+
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped", 4
+      end
+
       context "when some spans are broken" do
         let(:expected_events_count) { 3 }
         let(:http_span) { spans.find { |span| span.type == "http" } }
@@ -176,6 +192,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 3
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 3
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped"
       end
 
       context "when chunking is used" do
@@ -183,7 +200,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         # ATTENTION: might break if more data is added to test spans in #produce_test_trace method
         let(:max_payload_size) { 2000 }
 
-        it "filters out invalid events" do
+        it "sends events in two chunks" do
           responses = subject
 
           expect(api).to have_received(:citestcycle_request).twice
@@ -205,10 +222,13 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
           expect(api).not_to have_received(:citestcycle_request)
         end
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped"
       end
     end
 
     context "when all events are invalid" do
+      subject { transport.send_events(traces) }
+
       before do
         produce_test_trace
 
@@ -216,10 +236,12 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
 
       it "does not send anything" do
-        subject.send_events(traces)
+        subject
 
         expect(api).not_to have_received(:citestcycle_request)
       end
+
+      it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped"
     end
   end
 end

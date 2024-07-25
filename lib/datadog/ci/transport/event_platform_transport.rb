@@ -51,6 +51,11 @@ module Datadog
 
             response = send_payload(encoded_payload)
 
+            # HTTP layer could send events and exhausted retries (if any)
+            unless response.ok?
+              Telemetry.endpoint_payload_dropped(chunk.count, telemetry_endpoint_tag)
+            end
+
             responses << response
           end
 
@@ -80,8 +85,13 @@ module Datadog
           return false unless encoded_event.size > max_payload_size
 
           # This single event is too large, we can't flush it
-          Datadog.logger.warn("[#{self.class.name}] Dropping coverage event. Payload too large: '#{event.inspect}'")
+          Datadog.logger.warn(
+            "[#{self.class.name}] Dropping test visibility event for endpoint [#{telemetry_endpoint_tag}]. " \
+            "Payload too large: '#{event.inspect}'"
+          )
           Datadog.logger.warn(encoded_event)
+
+          Telemetry.endpoint_payload_dropped(1, telemetry_endpoint_tag)
 
           true
         end
