@@ -37,7 +37,7 @@ module Datadog
             end
           end
 
-          Telemetry.endpoint_payload_serialization_ms(serialization_duration_ms, telemetry_endpoint_tag)
+          Telemetry.endpoint_payload_serialization_ms(serialization_duration_ms, endpoint: telemetry_endpoint_tag)
           Telemetry.events_enqueued_for_serialization(encoded_events.count)
 
           responses = []
@@ -47,13 +47,13 @@ module Datadog
             Datadog.logger.debug do
               "[#{self.class.name}] Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
             end
-            Telemetry.endpoint_payload_events_count(chunk.count, telemetry_endpoint_tag)
+            Telemetry.endpoint_payload_events_count(chunk.count, endpoint: telemetry_endpoint_tag)
 
             response = send_payload(encoded_payload)
 
             # HTTP layer could send events and exhausted retries (if any)
             unless response.ok?
-              Telemetry.endpoint_payload_dropped(chunk.count, telemetry_endpoint_tag)
+              Telemetry.endpoint_payload_dropped(chunk.count, endpoint: telemetry_endpoint_tag)
             end
 
             responses << response
@@ -91,7 +91,7 @@ module Datadog
           )
           Datadog.logger.warn(encoded_event)
 
-          Telemetry.endpoint_payload_dropped(1, telemetry_endpoint_tag)
+          Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
 
           true
         end

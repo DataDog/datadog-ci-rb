@@ -11,31 +11,31 @@ module Datadog
           Utils::Telemetry.inc(Ext::Telemetry::METRIC_EVENTS_ENQUEUED, count)
         end
 
-        def self.endpoint_payload_events_count(count, endpoint)
+        def self.endpoint_payload_events_count(count, endpoint:)
           Utils::Telemetry.distribution(
             Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_EVENTS_COUNT,
             count.to_f,
-            tagged_with_endpoint(endpoint)
+            tags(endpoint: endpoint)
           )
         end
 
-        def self.endpoint_payload_serialization_ms(duration_ms, endpoint)
+        def self.endpoint_payload_serialization_ms(duration_ms, endpoint:)
           Utils::Telemetry.distribution(
             Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_EVENTS_SERIALIZATION_MS,
             duration_ms,
-            tagged_with_endpoint(endpoint)
+            tags(endpoint: endpoint)
           )
         end
 
-        def self.endpoint_payload_dropped(count, endpoint)
+        def self.endpoint_payload_dropped(count, endpoint:)
           Utils::Telemetry.inc(
             Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_DROPPED,
             count,
-            tagged_with_endpoint(endpoint)
+            tags(endpoint: endpoint)
           )
         end
 
-        def self.tagged_with_endpoint(endpoint)
+        def self.tags(endpoint:)
           {Ext::Telemetry::TAG_ENDPOINT => endpoint}
         end
       end

@@ -59,7 +59,7 @@ module Datadog
             encoded
           else
             Datadog.logger.warn("Invalid event skipped: #{serializer} Errors: #{serializer.validation_errors}")
-            CI::Transport::Telemetry.endpoint_payload_dropped(1, telemetry_endpoint_tag)
+            CI::Transport::Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
             nil
           end
         end

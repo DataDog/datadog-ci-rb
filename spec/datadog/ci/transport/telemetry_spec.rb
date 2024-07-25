@@ -16,7 +16,7 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
   end
 
   describe ".endpoint_payload_events_count" do
-    subject { described_class.endpoint_payload_events_count(count, endpoint) }
+    subject { described_class.endpoint_payload_events_count(count, endpoint: endpoint) }
 
     let(:count) { 1 }
     let(:endpoint) { "test_cycle" }
@@ -33,7 +33,7 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
   end
 
   describe ".endpoint_payload_serialization_ms" do
-    subject { described_class.endpoint_payload_serialization_ms(duration_ms, endpoint) }
+    subject { described_class.endpoint_payload_serialization_ms(duration_ms, endpoint: endpoint) }
 
     let(:duration_ms) { 1.5 }
     let(:endpoint) { "test_cycle" }
@@ -50,7 +50,7 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
   end
 
   describe ".endpoint_payload_dropped" do
-    subject { described_class.endpoint_payload_dropped(count, endpoint) }
+    subject { described_class.endpoint_payload_dropped(count, endpoint: endpoint) }
 
     let(:count) { 1 }
     let(:endpoint) { "test_cycle" }

@@ -26,7 +26,7 @@ module Datadog
           def encode_events(events)
             events.filter_map do |event|
               unless event.valid?
-                CI::Transport::Telemetry.endpoint_payload_dropped(1, telemetry_endpoint_tag)
+                CI::Transport::Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
                 next
               end
 
