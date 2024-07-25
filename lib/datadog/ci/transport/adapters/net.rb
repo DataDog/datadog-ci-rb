@@ -64,6 +64,8 @@ module Datadog
             include Datadog::Core::Transport::Response
 
             attr_reader :http_response
+            # Stats for telemetry
+            attr_accessor :request_compressed, :request_size
 
             def initialize(http_response)
               @http_response = http_response
@@ -122,6 +124,11 @@ module Datadog
 
             def error
               nil
+            end
+
+            # compatibility with Datadog::Tracing transport layer
+            def trace_count
+              0
             end
 
             def inspect

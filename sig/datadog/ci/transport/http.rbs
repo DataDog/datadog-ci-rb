@@ -24,7 +24,7 @@ module Datadog
 
         def initialize: (host: String, port: Integer, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
 
-        def request: (?verb: String, payload: String, headers: Hash[String, String], path: String, ?retries: Integer, ?backoff: Integer, ?accept_compressed_response: bool) -> ResponseDecorator
+        def request: (?verb: String, payload: String, headers: Hash[String, String], path: String, ?retries: Integer, ?backoff: Integer, ?accept_compressed_response: bool) -> Datadog::CI::Transport::Adapters::Net::Response
 
         private
 
@@ -32,16 +32,7 @@ module Datadog
 
         def perform_http_call: (payload: String, headers: Hash[String, String], path: String, verb: String, ?retries: Integer, ?backoff: Integer) -> Datadog::CI::Transport::Adapters::Net::Response
 
-        class ResponseDecorator < ::SimpleDelegator
-          include Datadog::Core::Transport::Response
-
-          def initialize: (untyped anything) -> void
-          def trace_count: () -> Integer
-        end
-
         class ErrorResponse < Datadog::CI::Transport::Adapters::Net::Response
-          attr_reader error: StandardError?
-
           def initialize: (StandardError error) -> void
         end
       end

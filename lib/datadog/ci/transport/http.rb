@@ -53,14 +53,15 @@ module Datadog
               "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
           end
 
-          response = ResponseDecorator.new(
-            perform_http_call(path: path, payload: payload, headers: headers, verb: verb, retries: retries, backoff: backoff)
-          )
+          response = perform_http_call(path: path, payload: payload, headers: headers, verb: verb, retries: retries, backoff: backoff)
 
           Datadog.logger.debug do
             "Received server response: #{response.inspect}"
           end
 
+          # set some stats about the request
+          response.request_compressed = compress
+          response.request_size = payload.size
           response
         end
 
@@ -89,13 +90,6 @@ module Datadog
           @adapter ||= Datadog::CI::Transport::Adapters::Net.new(
             hostname: host, port: port, ssl: ssl, timeout_seconds: timeout
           )
-        end
-
-        # adds compatibility with Datadog::Tracing transport
-        class ResponseDecorator < ::SimpleDelegator
-          def trace_count
-            0
-          end
         end
 
         class ErrorResponse < Adapters::Net::Response

@@ -34,6 +34,12 @@ module Datadog
 
             attr_reader http_response: ::Net::HTTPResponse
 
+            attr_reader error: StandardError?
+
+            attr_accessor request_compressed: bool
+
+            attr_accessor request_size: Integer
+
             def initialize: (::Net::HTTPResponse http_response) -> void
 
             def payload: () -> String
@@ -55,6 +61,8 @@ module Datadog
             def gzipped_body?: (String body) -> bool
 
             def gzipped_content?: () -> bool
+
+            def trace_count: () -> 0
 
             def inspect: () -> ::String
           end

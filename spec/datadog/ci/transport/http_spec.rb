@@ -92,7 +92,8 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     let(:request_options) { {accept_compressed_response: false} }
 
     let(:response_payload) { "sample payload" }
-    let(:http_response) { double("http_response", code: 200, payload: response_payload) }
+    let(:net_http_response) { double("Net::HTTP::Response", code: 200, body: response_payload, "[]": nil) }
+    let(:http_response) { Datadog::CI::Transport::Adapters::Net::Response.new(net_http_response) }
 
     subject(:response) { transport.request(path: path, payload: payload, headers: headers, **request_options) }
 
@@ -112,17 +113,19 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       end
 
       it "produces a response" do
-        is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+        is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
 
         expect(response.code).to eq(200)
         expect(response.payload).to eq("sample payload")
+        expect(response.request_compressed).to eq(false)
+        expect(response.request_size).to eq(payload.size)
       end
 
       context "when accepting gzipped response" do
         let(:expected_headers) { {"Content-Type" => "application/json", "Accept-Encoding" => "gzip"} }
         let(:request_options) { {accept_compressed_response: true} }
 
-        it { is_expected.to be_a_kind_of(described_class::ResponseDecorator) }
+        it { is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response) }
       end
     end
 
@@ -147,9 +150,11 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       end
 
       it "produces a response" do
-        is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+        is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
 
         expect(response.code).to eq(200)
+        expect(response.request_compressed).to eq(true)
+        expect(response.request_size).to eq(expected_payload.size)
       end
     end
 
@@ -163,7 +168,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         end
 
         it "produces a response" do
-          is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+          is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
 
           expect(response.code).to eq(200)
         end
