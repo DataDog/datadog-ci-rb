@@ -12,13 +12,13 @@ module Datadog
 
         def initialize: (api: Datadog::CI::Transport::Api::Base, ?max_payload_size: Integer) -> void
 
-        def send_events: (Array[untyped] events) -> ::Array[Datadog::CI::Transport::HTTP::ResponseDecorator]
+        def send_events: (Array[untyped] events) -> ::Array[Datadog::CI::Transport::Adapters::Net::Response]
 
         private
 
         def telemetry_endpoint_tag: () -> String
 
-        def send_payload: (String payload) -> ::Datadog::CI::Transport::HTTP::ResponseDecorator
+        def send_payload: (String payload) -> ::Datadog::CI::Transport::Adapters::Net::Response
 
         def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
 
