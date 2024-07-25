@@ -65,4 +65,39 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
       subject
     end
   end
+
+  describe ".endpoint_payload_requests" do
+    subject { described_class.endpoint_payload_requests(count, endpoint: endpoint, compressed: compressed) }
+
+    let(:count) { 1 }
+    let(:endpoint) { "test_cycle" }
+    let(:compressed) { true }
+
+    it "increments the endpoint payload requests metric" do
+      expect(Datadog::CI::Utils::Telemetry).to receive(:inc).with(
+        Datadog::CI::Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS,
+        count,
+        {
+          Datadog::CI::Ext::Telemetry::TAG_ENDPOINT => endpoint,
+          Datadog::CI::Ext::Telemetry::TAG_REQUEST_COMPRESSED => "true"
+        }
+      )
+
+      subject
+    end
+
+    context "when not compressed" do
+      let(:compressed) { false }
+
+      it "incremenets metric without request compressed tag" do
+        expect(Datadog::CI::Utils::Telemetry).to receive(:inc).with(
+          Datadog::CI::Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS,
+          count,
+          {Datadog::CI::Ext::Telemetry::TAG_ENDPOINT => endpoint}
+        )
+
+        subject
+      end
+    end
+  end
 end

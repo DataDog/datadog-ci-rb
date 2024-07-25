@@ -65,6 +65,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+      it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
 
       context "when HTTP response is not OK" do
         before do
@@ -148,6 +149,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 4
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 4
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+      it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
 
       context "when HTTP response is not OK" do
         before do
@@ -193,6 +195,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 3
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped"
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
       end
 
       context "when chunking is used" do
@@ -210,6 +213,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 4
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count"
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
       end
 
       context "when max_payload-size is too small" do

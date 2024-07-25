@@ -51,6 +51,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+      it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
 
       it "tags event with code_coverage endpoint" do
         subject
@@ -96,6 +97,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 2
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+      it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
 
       context "when some events are invalid" do
         let(:events) do
@@ -135,6 +137,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped", 1
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
       end
 
       context "when chunking is used" do
@@ -151,6 +154,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
       end
 
       context "when max_payload-size is too small" do

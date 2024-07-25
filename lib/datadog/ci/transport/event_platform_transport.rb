@@ -37,8 +37,8 @@ module Datadog
             end
           end
 
-          Telemetry.endpoint_payload_serialization_ms(serialization_duration_ms, endpoint: telemetry_endpoint_tag)
           Telemetry.events_enqueued_for_serialization(encoded_events.count)
+          Telemetry.endpoint_payload_serialization_ms(serialization_duration_ms, endpoint: telemetry_endpoint_tag)
 
           responses = []
 
@@ -50,6 +50,11 @@ module Datadog
             Telemetry.endpoint_payload_events_count(chunk.count, endpoint: telemetry_endpoint_tag)
 
             response = send_payload(encoded_payload)
+
+            Telemetry.endpoint_payload_requests(
+              1,
+              endpoint: telemetry_endpoint_tag, compressed: response.request_compressed
+            )
 
             # HTTP layer could send events and exhausted retries (if any)
             unless response.ok?

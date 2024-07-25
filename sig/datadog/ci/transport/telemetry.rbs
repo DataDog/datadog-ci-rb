@@ -10,7 +10,9 @@ module Datadog
 
         def self.endpoint_payload_dropped: (Integer count, endpoint: String) -> void
 
-        def self.tags: (endpoint: String) -> Hash[String, String]
+        def self.endpoint_payload_requests: (Integer count, endpoint: String, compressed: bool) -> void
+
+        def self.tags: (endpoint: String, ?request_compressed: bool) -> Hash[String, String]
       end
     end
   end
