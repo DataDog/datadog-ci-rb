@@ -52,6 +52,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
       it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
 
       it "tags event with code_coverage endpoint" do
         subject
@@ -98,6 +99,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 2
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
       it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
 
       context "when some events are invalid" do
         let(:events) do
@@ -138,6 +140,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped", 1
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
       end
 
       context "when chunking is used" do
@@ -155,6 +158,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
       end
 
       context "when max_payload-size is too small" do

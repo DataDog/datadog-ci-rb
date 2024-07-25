@@ -49,12 +49,18 @@ module Datadog
             end
             Telemetry.endpoint_payload_events_count(chunk.count, endpoint: telemetry_endpoint_tag)
 
-            response = send_payload(encoded_payload)
+            response = nil
+            # @type var request_duration_ms: Float
+            request_duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+              response = send_payload(encoded_payload)
+            end
+            # @type var response: Datadog::CI::Transport::Adapters::Net::Response
 
             Telemetry.endpoint_payload_requests(
               1,
               endpoint: telemetry_endpoint_tag, compressed: response.request_compressed
             )
+            Telemetry.endpoint_payload_requests_ms(request_duration_ms, endpoint: telemetry_endpoint_tag)
 
             # HTTP layer could send events and exhausted retries (if any)
             unless response.ok?

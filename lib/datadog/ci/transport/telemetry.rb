@@ -36,20 +36,22 @@ module Datadog
         end
 
         def self.endpoint_payload_requests(count, endpoint:, compressed:)
-          Utils::Telemetry.inc(
-            Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS,
-            count,
-            tags(endpoint: endpoint, request_compressed: compressed)
+          tags = tags(endpoint: endpoint)
+          tags[Ext::Telemetry::TAG_REQUEST_COMPRESSED] = "true" if compressed
+
+          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS, count, tags)
+        end
+
+        def self.endpoint_payload_requests_ms(duration_ms, endpoint:)
+          Utils::Telemetry.distribution(
+            Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS_MS,
+            duration_ms,
+            tags(endpoint: endpoint)
           )
         end
 
-        def self.tags(endpoint:, request_compressed: false)
-          # @type var tags: Hash[String, String]
-          tags = {Ext::Telemetry::TAG_ENDPOINT => endpoint}
-
-          tags[Ext::Telemetry::TAG_REQUEST_COMPRESSED] = "true" if request_compressed
-
-          tags
+        def self.tags(endpoint:)
+          {Ext::Telemetry::TAG_ENDPOINT => endpoint}
         end
       end
     end

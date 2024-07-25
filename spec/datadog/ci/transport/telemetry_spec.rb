@@ -100,4 +100,21 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
       end
     end
   end
+
+  describe ".endpoint_payload_requests_ms" do
+    subject { described_class.endpoint_payload_requests_ms(duration_ms, endpoint: endpoint) }
+
+    let(:duration_ms) { 1.5 }
+    let(:endpoint) { "test_cycle" }
+
+    it "tracks the endpoint payload requests duration distribution" do
+      expect(Datadog::CI::Utils::Telemetry).to receive(:distribution).with(
+        Datadog::CI::Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS_MS,
+        duration_ms,
+        {Datadog::CI::Ext::Telemetry::TAG_ENDPOINT => endpoint}
+      )
+
+      subject
+    end
+  end
 end
