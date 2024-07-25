@@ -64,6 +64,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 1
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 1
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
 
       it "tags event with test_cycle endpoint" do
         subject
@@ -138,6 +139,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
       it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 4
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 4
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
 
       context "when some spans are broken" do
         let(:expected_events_count) { 3 }
@@ -173,6 +175,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 3
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 3
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
       end
 
       context "when chunking is used" do
@@ -188,6 +191,8 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         end
 
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 4
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count"
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
       end
 
       context "when max_payload-size is too small" do

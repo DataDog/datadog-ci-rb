@@ -4,6 +4,7 @@ require "msgpack"
 
 require "datadog/core/encoding"
 require "datadog/core/chunker"
+require "datadog/core/utils/time"
 
 require_relative "telemetry"
 
@@ -26,12 +27,17 @@ module Datadog
 
           Datadog.logger.debug { "[#{self.class.name}] Sending #{events.count} events..." }
 
-          encoded_events = encode_events(events)
-          if encoded_events.empty?
-            Datadog.logger.debug { "[#{self.class.name}] Empty encoded events list, skipping send" }
-            return []
+          encoded_events = []
+          # @type var serialization_duration_ms: Float
+          serialization_duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            encoded_events = encode_events(events)
+            if encoded_events.empty?
+              Datadog.logger.debug { "[#{self.class.name}] Empty encoded events list, skipping send" }
+              return []
+            end
           end
 
+          Telemetry.endpoint_payload_serialization_ms(serialization_duration_ms, telemetry_endpoint_tag)
           Telemetry.events_enqueued_for_serialization(encoded_events.count)
 
           responses = []

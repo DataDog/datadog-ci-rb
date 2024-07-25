@@ -18,6 +18,14 @@ module Datadog
             {Ext::Telemetry::TAG_ENDPOINT => endpoint}
           )
         end
+
+        def self.endpoint_payload_serialization_ms(duration_ms, endpoint)
+          Utils::Telemetry.distribution(
+            Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_EVENTS_SERIALIZATION_MS,
+            duration_ms,
+            {Ext::Telemetry::TAG_ENDPOINT => endpoint}
+          )
+        end
       end
     end
   end
