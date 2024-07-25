@@ -14,6 +14,8 @@ module Datadog
 
         def self.endpoint_payload_requests_ms: (Float duration_ms, endpoint: String) -> void
 
+        def self.endpoint_payload_bytes: (Integer | Float bytesize, endpoint: String) -> void
+
         def self.tags: (endpoint: String) -> Hash[String, String]
       end
     end

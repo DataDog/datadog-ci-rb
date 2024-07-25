@@ -50,6 +50,14 @@ module Datadog
           )
         end
 
+        def self.endpoint_payload_bytes(bytesize, endpoint:)
+          Utils::Telemetry.distribution(
+            Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_BYTES,
+            bytesize.to_f,
+            tags(endpoint: endpoint)
+          )
+        end
+
         def self.tags(endpoint:)
           {Ext::Telemetry::TAG_ENDPOINT => endpoint}
         end

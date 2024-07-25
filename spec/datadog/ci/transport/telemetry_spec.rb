@@ -117,4 +117,21 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
       subject
     end
   end
+
+  describe ".endpoint_payload_bytes" do
+    subject { described_class.endpoint_payload_bytes(bytesize, endpoint: endpoint) }
+
+    let(:bytesize) { 4 }
+    let(:endpoint) { "test_cycle" }
+
+    it "tracks the endpoint payload bytes distribution" do
+      expect(Datadog::CI::Utils::Telemetry).to receive(:distribution).with(
+        Datadog::CI::Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_BYTES,
+        bytesize.to_f,
+        {Datadog::CI::Ext::Telemetry::TAG_ENDPOINT => endpoint}
+      )
+
+      subject
+    end
+  end
 end

@@ -67,6 +67,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
       it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.bytes"
 
       context "when HTTP response is not OK" do
         before do
@@ -152,6 +153,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
       it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
       it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
+      it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.bytes"
 
       context "when HTTP response is not OK" do
         before do
@@ -199,6 +201,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped"
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.bytes"
       end
 
       context "when chunking is used" do
@@ -218,6 +221,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
         it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
         it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
+        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.bytes"
       end
 
       context "when max_payload-size is too small" do

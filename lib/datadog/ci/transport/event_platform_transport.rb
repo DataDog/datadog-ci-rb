@@ -61,6 +61,7 @@ module Datadog
               endpoint: telemetry_endpoint_tag, compressed: response.request_compressed
             )
             Telemetry.endpoint_payload_requests_ms(request_duration_ms, endpoint: telemetry_endpoint_tag)
+            Telemetry.endpoint_payload_bytes(response.request_size, endpoint: telemetry_endpoint_tag)
 
             # HTTP layer could send events and exhausted retries (if any)
             unless response.ok?

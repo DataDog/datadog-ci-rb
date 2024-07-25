@@ -61,7 +61,7 @@ module Datadog
 
           # set some stats about the request
           response.request_compressed = compress
-          response.request_size = payload.size
+          response.request_size = payload.bytesize
           response
         end
 
