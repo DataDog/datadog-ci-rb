@@ -271,10 +271,6 @@ module Datadog
           rescue => e
             Datadog.logger.warn("Failed to patch Datadog gem's telemetry layer: #{e}")
           end
-
-          # REMOVE BEFORE SUBMITTING FOR REVIEW
-          # settings.telemetry.agentless_enabled = true
-          # settings.telemetry.shutdown_timeout_seconds = 60
         end
 
         def timecop?
