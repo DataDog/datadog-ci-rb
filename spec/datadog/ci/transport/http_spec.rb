@@ -174,8 +174,8 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES + 1).times
         end
 
-        it "raises" do
-          expect { response }.to raise_error(Errno::ECONNRESET)
+        it "returns ErrorRsponse" do
+          expect(response.error).to be_kind_of(Errno::ECONNRESET)
         end
       end
     end

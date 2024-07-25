@@ -81,7 +81,7 @@ module Datadog
             )
           else
             Datadog.logger.error("Failed to send request after #{MAX_RETRIES} retries")
-            raise e
+            ErrorResponse.new(e)
           end
         end
 
@@ -95,6 +95,30 @@ module Datadog
         class ResponseDecorator < ::SimpleDelegator
           def trace_count
             0
+          end
+        end
+
+        class ErrorResponse < Adapters::Net::Response
+          def initialize(error)
+            @error = error
+          end
+
+          attr_reader :error
+
+          def payload
+            ""
+          end
+
+          def header(name)
+            nil
+          end
+
+          def code
+            600
+          end
+
+          def inspect
+            "ErrorResponse error:#{error}"
           end
         end
       end

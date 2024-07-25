@@ -48,4 +48,21 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
       subject
     end
   end
+
+  describe ".endpoint_payload_dropped" do
+    subject { described_class.endpoint_payload_dropped(count, endpoint) }
+
+    let(:count) { 1 }
+    let(:endpoint) { "test_cycle" }
+
+    it "increments the endpoint payload dropped metric" do
+      expect(Datadog::CI::Utils::Telemetry).to receive(:inc).with(
+        Datadog::CI::Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_DROPPED,
+        count,
+        {Datadog::CI::Ext::Telemetry::TAG_ENDPOINT => endpoint}
+      )
+
+      subject
+    end
+  end
 end

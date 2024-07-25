@@ -12,10 +12,10 @@ module Datadog
         METRIC_MANUAL_API_EVENTS = "manual_api_events"
 
         METRIC_EVENTS_ENQUEUED = "events_enqueued_for_serialization"
-        METRIC_ENDPOINT_PAYLOAD_BYTES = "endpoint_payload.bytes"
         METRIC_ENDPOINT_PAYLOAD_REQUESTS = "endpoint_payload.requests"
-        METRIC_ENDPOINT_PAYLOAD_REQUESTS_MS = "endpoint_payload.requests_ms"
         METRIC_ENDPOINT_PAYLOAD_REQUESTS_ERRORS = "endpoint_payload.requests_errors"
+        METRIC_ENDPOINT_PAYLOAD_REQUESTS_MS = "endpoint_payload.requests_ms"
+        METRIC_ENDPOINT_PAYLOAD_BYTES = "endpoint_payload.bytes"
         METRIC_ENDPOINT_PAYLOAD_EVENTS_COUNT = "endpoint_payload.events_count"
         METRIC_ENDPOINT_PAYLOAD_EVENTS_SERIALIZATION_MS = "endpoint_payload.events_serialization_ms"
         METRIC_ENDPOINT_PAYLOAD_DROPPED = "endpoint_payload.dropped"

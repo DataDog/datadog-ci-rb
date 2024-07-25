@@ -120,6 +120,10 @@ module Datadog
               first_bytes.b == Ext::Transport::GZIP_MAGIC_NUMBER
             end
 
+            def error
+              nil
+            end
+
             def inspect
               "#{super}, http_response:#{http_response}"
             end

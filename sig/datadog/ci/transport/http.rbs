@@ -38,6 +38,12 @@ module Datadog
           def initialize: (untyped anything) -> void
           def trace_count: () -> Integer
         end
+
+        class ErrorResponse < Datadog::CI::Transport::Adapters::Net::Response
+          attr_reader error: StandardError?
+
+          def initialize: (StandardError error) -> void
+        end
       end
     end
   end
