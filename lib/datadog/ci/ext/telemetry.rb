@@ -86,7 +86,7 @@ module Datadog
         end
 
         module Library
-          BUILTIN = "builtin"
+          CUSTOM = "custom"
         end
 
         module Endpoint
