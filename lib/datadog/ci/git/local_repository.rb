@@ -61,7 +61,15 @@ module Datadog
         end
 
         def self.git_repository_url
-          exec_git_command("git ls-remote --get-url")
+          Telemetry.git_command(Ext::Telemetry::Command::GET_REPOSITORY)
+          res = nil
+
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            res = exec_git_command("git ls-remote --get-url")
+          end
+
+          Telemetry.git_command_ms(Ext::Telemetry::Command::GET_REPOSITORY, duration_ms)
+          res
         rescue => e
           log_failure(e, "git repository url")
           telemetry_track_error(e, Ext::Telemetry::Command::GET_REPOSITORY)
@@ -83,7 +91,15 @@ module Datadog
         end
 
         def self.git_branch
-          exec_git_command("git rev-parse --abbrev-ref HEAD")
+          Telemetry.git_command(Ext::Telemetry::Command::GET_BRANCH)
+          res = nil
+
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            res = exec_git_command("git rev-parse --abbrev-ref HEAD")
+          end
+
+          Telemetry.git_command_ms(Ext::Telemetry::Command::GET_BRANCH, duration_ms)
+          res
         rescue => e
           log_failure(e, "git branch")
           telemetry_track_error(e, Ext::Telemetry::Command::GET_BRANCH)
@@ -131,9 +147,18 @@ module Datadog
 
         # returns maximum of 1000 latest commits in the last month
         def self.git_commits
-          output = exec_git_command("git log --format=%H -n 1000 --since=\"1 month ago\"")
+          Telemetry.git_command(Ext::Telemetry::Command::GET_LOCAL_COMMITS)
+
+          output = nil
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            output = exec_git_command("git log --format=%H -n 1000 --since=\"1 month ago\"")
+          end
+
+          Telemetry.git_command_ms(Ext::Telemetry::Command::GET_LOCAL_COMMITS, duration_ms)
+
           return [] if output.nil?
 
+          # @type var output: String
           output.split("\n")
         rescue => e
           log_failure(e, "git commits")
@@ -142,17 +167,26 @@ module Datadog
         end
 
         def self.git_commits_rev_list(included_commits:, excluded_commits:)
+          Telemetry.git_command(Ext::Telemetry::Command::GET_OBJECTS)
           included_commits = filter_invalid_commits(included_commits).join(" ")
           excluded_commits = filter_invalid_commits(excluded_commits).map! { |sha| "^#{sha}" }.join(" ")
 
-          exec_git_command(
-            "git rev-list " \
-            "--objects " \
-            "--no-object-names " \
-            "--filter=blob:none " \
-            "--since=\"1 month ago\" " \
-            "#{excluded_commits} #{included_commits}"
-          )
+          res = nil
+
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            res = exec_git_command(
+              "git rev-list " \
+              "--objects " \
+              "--no-object-names " \
+              "--filter=blob:none " \
+              "--since=\"1 month ago\" " \
+              "#{excluded_commits} #{included_commits}"
+            )
+          end
+
+          Telemetry.git_command_ms(Ext::Telemetry::Command::GET_OBJECTS, duration_ms)
+
+          res
         rescue => e
           log_failure(e, "git commits rev list")
           telemetry_track_error(e, Ext::Telemetry::Command::GET_OBJECTS)
@@ -167,10 +201,15 @@ module Datadog
 
           basename = SecureRandom.hex(4)
 
-          exec_git_command(
-            "git pack-objects --compression=9 --max-pack-size=3m #{path}/#{basename}",
-            stdin: commit_tree
-          )
+          Telemetry.git_command(Ext::Telemetry::Command::PACK_OBJECTS)
+
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            exec_git_command(
+              "git pack-objects --compression=9 --max-pack-size=3m #{path}/#{basename}",
+              stdin: commit_tree
+            )
+          end
+          Telemetry.git_command_ms(Ext::Telemetry::Command::PACK_OBJECTS, duration_ms)
 
           basename
         rescue => e
@@ -180,7 +219,15 @@ module Datadog
         end
 
         def self.git_shallow_clone?
-          exec_git_command("git rev-parse --is-shallow-repository") == "true"
+          Telemetry.git_command(Ext::Telemetry::Command::CHECK_SHALLOW)
+          res = false
+
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            res = exec_git_command("git rev-parse --is-shallow-repository") == "true"
+          end
+          Telemetry.git_command_ms(Ext::Telemetry::Command::CHECK_SHALLOW, duration_ms)
+
+          res
         rescue => e
           log_failure(e, "git shallow clone")
           telemetry_track_error(e, Ext::Telemetry::Command::CHECK_SHALLOW)
@@ -188,14 +235,22 @@ module Datadog
         end
 
         def self.git_unshallow
-          exec_git_command(
-            "git fetch " \
-            "--shallow-since=\"1 month ago\" " \
-            "--update-shallow " \
-            "--filter=\"blob:none\" " \
-            "--recurse-submodules=no " \
-            "$(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)"
-          )
+          Telemetry.git_command(Ext::Telemetry::Command::UNSHALLOW)
+          res = nil
+
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            res = exec_git_command(
+              "git fetch " \
+              "--shallow-since=\"1 month ago\" " \
+              "--update-shallow " \
+              "--filter=\"blob:none\" " \
+              "--recurse-submodules=no " \
+              "$(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)"
+            )
+          end
+          Telemetry.git_command_ms(Ext::Telemetry::Command::UNSHALLOW, duration_ms)
+
+          res
         rescue => e
           log_failure(e, "git unshallow")
           telemetry_track_error(e, Ext::Telemetry::Command::UNSHALLOW)
@@ -264,7 +319,7 @@ module Datadog
             when GitCommandExecutionError
               Telemetry.git_command_errors(command, exit_code: e.status&.to_i)
             else
-              Telemetry.git_command_errors(command, exit_code: -1)
+              Telemetry.git_command_errors(command, exit_code: -9000)
             end
           end
         end

@@ -105,6 +105,9 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     subject { described_class.git_repository_url }
 
     it { is_expected.to eq("git@github.com:DataDog/datadog-ci-rb.git") }
+
+    it_behaves_like "emits telemetry metric", :inc, "git.command", 1
+    it_behaves_like "emits telemetry metric", :distribution, "git.command_ms"
   end
 
   context "with git folder" do
@@ -138,6 +141,9 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
 
       it { is_expected.to eq("master") }
+
+      it_behaves_like "emits telemetry metric", :inc, "git.command", 1
+      it_behaves_like "emits telemetry metric", :distribution, "git.command_ms"
     end
 
     describe ".git_tag" do
@@ -189,6 +195,9 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       it "returns empty array as last commit was more than 1 month ago" do
         expect(subject).to eq([])
       end
+
+      it_behaves_like "emits telemetry metric", :inc, "git.command", 1
+      it_behaves_like "emits telemetry metric", :distribution, "git.command_ms"
     end
 
     describe ".git_commits_rev_list" do
@@ -202,6 +211,9 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
 
       it { is_expected.to be_nil }
+
+      it_behaves_like "emits telemetry metric", :inc, "git.command", 1
+      it_behaves_like "emits telemetry metric", :distribution, "git.command_ms"
     end
   end
 
