@@ -1,5 +1,6 @@
 RSpec.describe Datadog::CI do
   context "with test visibility stubbed" do
+    include_context "Telemetry spy"
     let(:test_visibility) { instance_double(Datadog::CI::TestVisibility::Component) }
 
     before do
@@ -26,6 +27,8 @@ RSpec.describe Datadog::CI do
       end
 
       it { is_expected.to be(ci_test) }
+
+      it_behaves_like "emits telemetry metric", :inc, "manual_api_events", 1
     end
 
     describe "::start_test" do
@@ -47,6 +50,8 @@ RSpec.describe Datadog::CI do
       end
 
       it { is_expected.to be(ci_test) }
+
+      it_behaves_like "emits telemetry metric", :inc, "manual_api_events", 1
     end
 
     describe "::trace" do
@@ -120,6 +125,8 @@ RSpec.describe Datadog::CI do
         end
 
         it { is_expected.to be(ci_test_session) }
+
+        it_behaves_like "emits telemetry metric", :inc, "manual_api_events", 1
       end
 
       context "when service is not provided" do
@@ -162,6 +169,8 @@ RSpec.describe Datadog::CI do
       end
 
       it { is_expected.to be(ci_test_module) }
+
+      it_behaves_like "emits telemetry metric", :inc, "manual_api_events", 1
     end
 
     describe "::active_test_module" do
@@ -188,6 +197,8 @@ RSpec.describe Datadog::CI do
       end
 
       it { is_expected.to be(ci_test_suite) }
+
+      it_behaves_like "emits telemetry metric", :inc, "manual_api_events", 1
     end
 
     describe "::active_test_suite" do

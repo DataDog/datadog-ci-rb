@@ -41,6 +41,11 @@ module Datadog
       # @return [Datadog::CI::TestSession] the active, running {Datadog::CI::TestSession}.
       # @return [nil] if test suite level visibility is disabled or CI mode is disabled.
       def start_test_session(service: Utils::Configuration.fetch_service_name("test"), tags: {})
+        Utils::Telemetry.inc(
+          Ext::Telemetry::METRIC_MANUAL_API_EVENTS,
+          1,
+          {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::SESSION}
+        )
         test_visibility.start_test_session(service: service, tags: tags)
       end
 
@@ -95,6 +100,12 @@ module Datadog
       # @return [Datadog::CI::TestModule] the active, running {Datadog::CI::TestModule}.
       # @return [nil] if test suite level visibility is disabled or CI mode is disabled.
       def start_test_module(test_module_name, service: nil, tags: {})
+        Utils::Telemetry.inc(
+          Ext::Telemetry::METRIC_MANUAL_API_EVENTS,
+          1,
+          {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::MODULE}
+        )
+
         test_visibility.start_test_module(test_module_name, service: service, tags: tags)
       end
 
@@ -147,6 +158,12 @@ module Datadog
       # @return [Datadog::CI::TestSuite] the active, running {Datadog::CI::TestSuite}.
       # @return [nil] if test suite level visibility is disabled or CI mode is disabled.
       def start_test_suite(test_suite_name, service: nil, tags: {})
+        Utils::Telemetry.inc(
+          Ext::Telemetry::METRIC_MANUAL_API_EVENTS,
+          1,
+          {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::SUITE}
+        )
+
         test_visibility.start_test_suite(test_suite_name, service: service, tags: tags)
       end
 
@@ -224,6 +241,12 @@ module Datadog
       # @yieldparam [Datadog::CI::Test] ci_test the newly created and active [Datadog::CI::Test]
       # @yieldparam [nil] if CI mode is disabled
       def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
+        Utils::Telemetry.inc(
+          Ext::Telemetry::METRIC_MANUAL_API_EVENTS,
+          1,
+          {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::TEST}
+        )
+
         test_visibility.trace_test(test_name, test_suite_name, service: service, tags: tags, &block)
       end
 
@@ -250,6 +273,11 @@ module Datadog
       # @return [Datadog::CI::Test] the active, unfinished {Datadog::CI::Test}.
       # @return [nil] if CI mode is disabled.
       def start_test(test_name, test_suite_name, service: nil, tags: {})
+        Utils::Telemetry.inc(
+          Ext::Telemetry::METRIC_MANUAL_API_EVENTS,
+          1,
+          {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::TEST}
+        )
         test_visibility.trace_test(test_name, test_suite_name, service: service, tags: tags)
       end
 
