@@ -53,7 +53,6 @@ module Datadog
         METRIC_CODE_COVERAGE_FINISHED = "code_coverage_finished"
         METRIC_CODE_COVERAGE_IS_EMPTY = "code_coverage.is_empty"
         METRIC_CODE_COVERAGE_FILES = "code_coverage.files"
-        METRIC_CODE_COVERAGE_ERRORS = "code_coverage.errors"
 
         METRIC_TEST_SESSION = "test_session"
 

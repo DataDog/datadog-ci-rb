@@ -25,10 +25,6 @@ module Datadog
           Utils::Telemetry.distribution(Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, count.to_f)
         end
 
-        def self.code_coverage_errors
-          Utils::Telemetry.inc(Ext::Telemetry::METRIC_CODE_COVERAGE_ERRORS, 1)
-        end
-
         def self.tags_for_test(test)
           {
             Ext::Telemetry::TAG_TEST_FRAMEWORK => test.get_tag(Ext::Test::TAG_FRAMEWORK),

@@ -3,6 +3,8 @@
 require_relative "../../../../lib/datadog/ci/test_optimisation/component"
 
 RSpec.describe Datadog::CI::TestOptimisation::Component do
+  include_context "Telemetry spy"
+
   let(:itr_enabled) { true }
 
   let(:api) { double("api") }
@@ -12,8 +14,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
-  subject(:runner) { described_class.new(api: api, dd_env: "dd_env", coverage_writer: writer, enabled: itr_enabled) }
-  let(:configure) { runner.configure(remote_configuration, test_session: test_session, git_tree_upload_worker: git_worker) }
+  subject(:component) { described_class.new(api: api, dd_env: "dd_env", coverage_writer: writer, enabled: itr_enabled) }
+  let(:configure) { component.configure(remote_configuration, test_session: test_session, git_tree_upload_worker: git_worker) }
 
   before do
     allow(writer).to receive(:write)
@@ -23,12 +25,12 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     context "when remote configuration call failed" do
       let(:remote_configuration) { {"itr_enabled" => false} }
 
-      it "configures the runner and test session" do
+      it "configures the component and test session" do
         configure
 
-        expect(runner.enabled?).to be false
-        expect(runner.skipping_tests?).to be false
-        expect(runner.code_coverage?).to be false
+        expect(component.enabled?).to be false
+        expect(component.skipping_tests?).to be false
+        expect(component.code_coverage?).to be false
       end
     end
 
@@ -39,10 +41,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
         configure
       end
 
-      it "configures the runner" do
-        expect(runner.enabled?).to be true
-        expect(runner.skipping_tests?).to be false
-        expect(runner.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
+      it "configures the component" do
+        expect(component.enabled?).to be true
+        expect(component.skipping_tests?).to be false
+        expect(component.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
       end
 
       it "sets test session tags" do
@@ -72,12 +74,12 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
         configure
       end
 
-      it "configures the runner" do
-        expect(runner.enabled?).to be true
-        expect(runner.skipping_tests?).to be true
+      it "configures the component" do
+        expect(component.enabled?).to be true
+        expect(component.skipping_tests?).to be true
 
-        expect(runner.correlation_id).to eq("42")
-        expect(runner.skippable_tests).to eq(Set.new(["suite.test."]))
+        expect(component.correlation_id).to eq("42")
+        expect(component.skippable_tests).to eq(Set.new(["suite.test."]))
 
         expect(git_worker).to have_received(:wait_until_done)
       end
@@ -86,29 +88,31 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     context "when remote configuration call returned correct response with strings instead of bools" do
       let(:remote_configuration) { {"itr_enabled" => "true", "code_coverage" => "true", "tests_skipping" => "false"} }
 
-      it "configures the runner" do
+      it "configures the component" do
         configure
 
-        expect(runner.enabled?).to be true
-        expect(runner.skipping_tests?).to be false
-        expect(runner.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
+        expect(component.enabled?).to be true
+        expect(component.skipping_tests?).to be false
+        expect(component.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
       end
     end
 
     context "when remote configuration call returns empty hash" do
       let(:remote_configuration) { {} }
 
-      it "configures the runner" do
+      it "configures the component" do
         configure
 
-        expect(runner.enabled?).to be false
-        expect(runner.skipping_tests?).to be false
-        expect(runner.code_coverage?).to be false
+        expect(component.enabled?).to be false
+        expect(component.skipping_tests?).to be false
+        expect(component.code_coverage?).to be false
       end
     end
   end
 
   describe "#start_coverage" do
+    subject { component.start_coverage(test_span) }
+
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
     let(:test_span) { Datadog::CI::Test.new(tracer_span) }
 
@@ -120,10 +124,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => false, "tests_skipping" => false} }
 
       it "does not start coverage" do
-        expect(runner).not_to receive(:coverage_collector)
+        expect(component).not_to receive(:coverage_collector)
 
-        runner.start_coverage(test_span)
-        expect(runner.stop_coverage(test_span)).to be_nil
+        subject
+        expect(component.stop_coverage(test_span)).to be_nil
       end
     end
 
@@ -131,10 +135,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       let(:remote_configuration) { {"itr_enabled" => false, "code_coverage" => false, "tests_skipping" => false} }
 
       it "does not start coverage" do
-        expect(runner).not_to receive(:coverage_collector)
+        expect(component).not_to receive(:coverage_collector)
 
-        runner.start_coverage(test_span)
-        expect(runner.stop_coverage(test_span)).to be_nil
+        subject
+        expect(component.stop_coverage(test_span)).to be_nil
       end
     end
 
@@ -146,13 +150,15 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it "starts coverage" do
-        expect(runner).to receive(:coverage_collector).twice.and_call_original
+        expect(component).to receive(:coverage_collector).twice.and_call_original
 
-        runner.start_coverage(test_span)
+        subject
         expect(1 + 1).to eq(2)
-        coverage_event = runner.stop_coverage(test_span)
+        coverage_event = component.stop_coverage(test_span)
         expect(coverage_event.coverage.size).to be > 0
       end
+
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_STARTED, 1
     end
 
     context "when JRuby and code coverage is enabled" do
@@ -163,16 +169,18 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it "disables code coverage" do
-        expect(runner).not_to receive(:coverage_collector)
-        expect(runner.code_coverage?).to be(false)
+        expect(component).not_to receive(:coverage_collector)
+        expect(component.code_coverage?).to be(false)
 
-        runner.start_coverage(test_span)
-        expect(runner.stop_coverage(test_span)).to be_nil
+        component.start_coverage(test_span)
+        expect(component.stop_coverage(test_span)).to be_nil
       end
     end
   end
 
   describe "#stop_coverage" do
+    subject { component.stop_coverage(test_span) }
+
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
     let(:test_span) { Datadog::CI::Test.new(tracer_span) }
     let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
@@ -187,27 +195,37 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       allow(test_span).to receive(:test_session_id).and_return(3)
     end
 
-    it "creates coverage event and writes it" do
-      runner.start_coverage(test_span)
-      expect(1 + 1).to eq(2)
-      expect(runner.stop_coverage(test_span)).not_to be_nil
-
-      expect(writer).to have_received(:write) do |event|
-        expect(event.test_id).to eq("1")
-        expect(event.test_suite_id).to eq("2")
-        expect(event.test_session_id).to eq("3")
-
-        expect(event.coverage.size).to be > 0
+    context "when coverage was collected" do
+      before do
+        component.start_coverage(test_span)
+        expect(1 + 1).to eq(2)
       end
+
+      it "creates coverage event and writes it" do
+        expect(subject).not_to be_nil
+
+        expect(writer).to have_received(:write) do |event|
+          expect(event.test_id).to eq("1")
+          expect(event.test_suite_id).to eq("2")
+          expect(event.test_session_id).to eq("3")
+
+          expect(event.coverage.size).to be > 0
+        end
+      end
+
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FINISHED, 1
+      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 5.0
     end
 
     context "when test is skipped" do
-      it "does not write coverage event" do
-        runner.start_coverage(test_span)
+      before do
+        component.start_coverage(test_span)
         expect(1 + 1).to eq(2)
         test_span.skipped!
+      end
 
-        expect(runner.stop_coverage(test_span)).to be_nil
+      it "does not write coverage event" do
+        expect(subject).to be_nil
         expect(writer).not_to have_received(:write)
       end
     end
@@ -216,14 +234,16 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       it "does not write coverage event" do
         expect(1 + 1).to eq(2)
 
-        expect(runner.stop_coverage(test_span)).to be_nil
+        expect(subject).to be_nil
         expect(writer).not_to have_received(:write)
       end
+
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_IS_EMPTY, 1
     end
   end
 
   describe "#mark_if_skippable" do
-    subject { runner.mark_if_skippable(test_span) }
+    subject { component.mark_if_skippable(test_span) }
 
     context "when skipping tests" do
       let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => true} }
@@ -294,7 +314,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
   end
 
   describe "#count_skipped_test" do
-    subject { runner.count_skipped_test(test_span) }
+    subject { component.count_skipped_test(test_span) }
 
     context "test is skipped by framework" do
       let(:test_span) do
@@ -305,7 +325,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
       it "does not increment skipped tests count" do
         expect { subject }
-          .not_to change { runner.skipped_tests_count }
+          .not_to change { component.skipped_tests_count }
       end
     end
 
@@ -318,7 +338,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
       it "increments skipped tests count" do
         expect { subject }
-          .to change { runner.skipped_tests_count }
+          .to change { component.skipped_tests_count }
           .from(0)
           .to(1)
       end
@@ -333,7 +353,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
       it "does not increment skipped tests count" do
         expect { subject }
-          .not_to change { runner.skipped_tests_count }
+          .not_to change { component.skipped_tests_count }
       end
     end
   end
@@ -346,10 +366,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     before do
-      runner.count_skipped_test(test_span)
+      component.count_skipped_test(test_span)
     end
 
-    subject { runner.write_test_session_tags(test_session_span) }
+    subject { component.write_test_session_tags(test_session_span) }
 
     let(:test_span) do
       Datadog::CI::Test.new(

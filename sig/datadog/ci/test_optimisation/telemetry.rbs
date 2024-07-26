@@ -10,8 +10,6 @@ module Datadog
 
         def self.code_coverage_files: (Integer count) -> void
 
-        def self.code_coverage_errors: () -> void
-
         def self.tags_for_test: (Datadog::CI::Test test) -> ::Hash[String, String]
       end
     end

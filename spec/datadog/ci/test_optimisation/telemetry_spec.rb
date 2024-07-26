@@ -82,15 +82,4 @@ RSpec.describe Datadog::CI::TestOptimisation::Telemetry do
 
     it { code_coverage_files }
   end
-
-  describe ".code_coverage_errors" do
-    subject(:code_coverage_errors) { described_class.code_coverage_errors }
-
-    before do
-      expect(Datadog::CI::Utils::Telemetry).to receive(:inc)
-        .with(Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_ERRORS, 1)
-    end
-
-    it { code_coverage_errors }
-  end
 end

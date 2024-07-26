@@ -13,6 +13,7 @@ require_relative "../utils/parsing"
 
 require_relative "coverage/event"
 require_relative "skippable"
+require_relative "telemetry"
 
 module Datadog
   module CI
@@ -104,15 +105,20 @@ module Datadog
 
         def start_coverage(test)
           return if !enabled? || !code_coverage?
-
+          Telemetry.code_coverage_started(test)
           coverage_collector&.start
         end
 
         def stop_coverage(test)
           return if !enabled? || !code_coverage?
 
+          Telemetry.code_coverage_finished(test)
+
           coverage = coverage_collector&.stop
-          return if coverage.nil? || coverage.empty?
+          if coverage.nil? || coverage.empty?
+            Telemetry.code_coverage_is_empty
+            return
+          end
 
           return if test.skipped?
 
@@ -120,6 +126,8 @@ module Datadog
 
           # cucumber's gherkin files are not covered by the code coverage collector
           ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
+
+          Telemetry.code_coverage_files(coverage.size)
 
           event = Coverage::Event.new(
             test_id: test.id.to_s,
