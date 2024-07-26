@@ -13,6 +13,7 @@ module Datadog
 
             def fetch_top_level_example_group: () -> Hash[Symbol, untyped]
             def datadog_configuration: () -> untyped
+            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
             def ci_queue?: () -> bool
           end
         end

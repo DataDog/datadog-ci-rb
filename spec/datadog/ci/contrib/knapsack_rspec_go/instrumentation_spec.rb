@@ -2,6 +2,14 @@ require "knapsack_pro"
 require "fileutils"
 
 RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the knapsack run like in rspec_go rake task" do
+  before do
+    # expect that public manual API isn't used
+    expect(Datadog::CI).to receive(:start_test_session).never
+    expect(Datadog::CI).to receive(:start_test_module).never
+    expect(Datadog::CI).to receive(:start_test_suite).never
+    expect(Datadog::CI).to receive(:start_test).never
+  end
+
   # Yields to a block in a new RSpec global context. All RSpec
   # test configuration and execution should be wrapped in this method.
   def with_new_rspec_environment

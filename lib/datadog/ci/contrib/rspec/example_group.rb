@@ -21,7 +21,7 @@ module Datadog
               return super unless top_level?
 
               suite_name = "#{description} at #{file_path}"
-              test_suite = Datadog::CI.start_test_suite(suite_name)
+              test_suite = test_visibility_component.start_test_suite(suite_name)
 
               success = super
               return success unless test_suite
@@ -43,6 +43,10 @@ module Datadog
 
             def datadog_configuration
               Datadog.configuration.ci[:rspec]
+            end
+
+            def test_visibility_component
+              Datadog.send(:components).test_visibility
             end
           end
         end

@@ -13,6 +13,8 @@ module Datadog
             private
 
             def datadog_configuration: () -> untyped
+
+            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
           end
         end
       end

@@ -3,6 +3,14 @@ require "fileutils"
 require "securerandom"
 
 RSpec.describe "RSpec instrumentation with Shopify's ci-queue runner" do
+  before do
+    # expect that public manual API isn't used
+    expect(Datadog::CI).to receive(:start_test_session).never
+    expect(Datadog::CI).to receive(:start_test_module).never
+    expect(Datadog::CI).to receive(:start_test_suite).never
+    expect(Datadog::CI).to receive(:start_test).never
+  end
+
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
   end
