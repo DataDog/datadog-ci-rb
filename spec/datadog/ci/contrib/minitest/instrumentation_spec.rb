@@ -10,6 +10,14 @@ module Kernel
 end
 
 RSpec.describe "Minitest instrumentation" do
+  before do
+    # expect that public manual API isn't used
+    expect(Datadog::CI).to receive(:start_test_session).never
+    expect(Datadog::CI).to receive(:start_test_module).never
+    expect(Datadog::CI).to receive(:start_test_suite).never
+    expect(Datadog::CI).to receive(:start_test).never
+  end
+
   context "without service name configured" do
     include_context "CI mode activated" do
       let(:integration_name) { :minitest }
@@ -78,7 +86,7 @@ RSpec.describe "Minitest instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(:source_start, "51")
+      expect(span).to have_test_tag(:source_start, "59")
       expect(span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"

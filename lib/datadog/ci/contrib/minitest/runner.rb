@@ -18,20 +18,24 @@ module Datadog
 
               return unless datadog_configuration[:enabled]
 
-              CI.start_test_session(
+              test_visibility_component.start_test_session(
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Minitest::Integration.version.to_s
                 },
                 service: datadog_configuration[:service_name]
               )
-              CI.start_test_module(Ext::FRAMEWORK)
+              test_visibility_component.start_test_module(Ext::FRAMEWORK)
             end
 
             private
 
             def datadog_configuration
               Datadog.configuration.ci[:minitest]
+            end
+
+            def test_visibility_component
+              Datadog.send(:components).test_visibility
             end
           end
         end
