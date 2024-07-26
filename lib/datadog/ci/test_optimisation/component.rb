@@ -170,6 +170,8 @@ module Datadog
           end
 
           @mutex.synchronize do
+            Telemetry.itr_skipped
+
             @skipped_tests_count += 1
           end
         end
