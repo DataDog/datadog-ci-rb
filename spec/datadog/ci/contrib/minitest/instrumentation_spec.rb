@@ -94,7 +94,7 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     it "creates spans for several tests" do
-      expect(Datadog::CI::Ext::Environment).to receive(:tags).never
+      expect(Datadog::CI::Ext::Environment).to receive(:tags).once.and_call_original
 
       num_tests = 20
 

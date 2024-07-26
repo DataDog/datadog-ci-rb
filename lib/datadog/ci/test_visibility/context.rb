@@ -8,6 +8,7 @@ require_relative "store/global"
 require_relative "store/local"
 
 require_relative "../ext/app_types"
+require_relative "../ext/environment"
 require_relative "../ext/test"
 
 require_relative "../span"
@@ -23,11 +24,9 @@ module Datadog
       # Its responsibility includes building domain models for test visibility as well.
       # Internally it uses Datadog::Tracing module to create spans.
       class Context
-        def initialize(environment_tags)
+        def initialize
           @local_context = Store::Local.new
           @global_context = Store::Global.new
-
-          @environment_tags = environment_tags
         end
 
         def start_test_session(service: nil, tags: {})
@@ -197,6 +196,8 @@ module Datadog
 
         # TAGGING
         def set_initial_tags(ci_span, tags)
+          @environment_tags ||= Ext::Environment.tags(ENV).freeze
+
           ci_span.set_default_tags
           ci_span.set_environment_runtime_tags
 
