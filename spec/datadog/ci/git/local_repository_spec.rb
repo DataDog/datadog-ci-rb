@@ -3,6 +3,8 @@
 require_relative "../../../../lib/datadog/ci/git/local_repository"
 
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
+  include_context "Telemetry spy"
+
   let(:environment_variables) { {} }
 
   def with_custom_git_environment
@@ -417,6 +419,49 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         end
 
         it { is_expected.to eq([]) }
+
+        it_behaves_like "emits telemetry metric", :inc, "git.command_errors", 1
+
+        it "tags error metric with command" do
+          subject
+
+          metric = telemetry_metric(:inc, "git.command_errors")
+          expect(metric.tags).to eq({"command" => "get_local_commits"})
+        end
+      end
+
+      context "returns exit code 1" do
+        before do
+          expect(Open3).to receive(:capture2e).and_return(["error", double(success?: false, to_i: 1)])
+        end
+
+        it { is_expected.to eq([]) }
+
+        it_behaves_like "emits telemetry metric", :inc, "git.command_errors", 1
+
+        it "tags error metric with command" do
+          subject
+
+          metric = telemetry_metric(:inc, "git.command_errors")
+          expect(metric.tags).to eq({"command" => "get_local_commits", "exit_code" => "1"})
+        end
+      end
+
+      context "git executable is missing" do
+        before do
+          expect(Open3).to receive(:capture2e).and_raise(Errno::ENOENT.new("no file or directoru"))
+        end
+
+        it { is_expected.to eq([]) }
+
+        it_behaves_like "emits telemetry metric", :inc, "git.command_errors", 1
+
+        it "tags error metric with command" do
+          subject
+
+          metric = telemetry_metric(:inc, "git.command_errors")
+          expect(metric.tags).to eq({"command" => "get_local_commits", "exit_code" => "missing"})
+        end
       end
     end
   end

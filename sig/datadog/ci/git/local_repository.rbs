@@ -2,6 +2,14 @@ module Datadog
   module CI
     module Git
       module LocalRepository
+        class GitCommandExecutionError < StandardError
+          attr_reader command: String
+          attr_reader output: String?
+          attr_reader status: Process::Status?
+
+          def initialize: (String message, output: String?, status: Process::Status?, command: String) -> void
+        end
+
         COMMAND_RETRY_COUNT: 3
 
         @root: String?
@@ -46,6 +54,8 @@ module Datadog
         def self.exec_git_command: (String ref, ?stdin: String?) -> String?
 
         def self.log_failure: (StandardError e, String action) -> void
+
+        def self.telemetry_track_error: (StandardError e, String command) -> void
       end
     end
   end

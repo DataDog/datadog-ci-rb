@@ -3,12 +3,25 @@
 require "open3"
 require "pathname"
 
+require_relative "../ext/telemetry"
+require_relative "telemetry"
 require_relative "user"
 
 module Datadog
   module CI
     module Git
       module LocalRepository
+        class GitCommandExecutionError < StandardError
+          attr_reader :output, :command, :status
+          def initialize(message, output:, command:, status:)
+            super(message)
+
+            @output = output
+            @command = command
+            @status = status
+          end
+        end
+
         COMMAND_RETRY_COUNT = 3
 
         def self.root
@@ -51,6 +64,7 @@ module Datadog
           exec_git_command("git ls-remote --get-url")
         rescue => e
           log_failure(e, "git repository url")
+          telemetry_track_error(e, Ext::Telemetry::Command::GET_REPOSITORY)
           nil
         end
 
@@ -72,6 +86,7 @@ module Datadog
           exec_git_command("git rev-parse --abbrev-ref HEAD")
         rescue => e
           log_failure(e, "git branch")
+          telemetry_track_error(e, Ext::Telemetry::Command::GET_BRANCH)
           nil
         end
 
@@ -122,6 +137,7 @@ module Datadog
           output.split("\n")
         rescue => e
           log_failure(e, "git commits")
+          telemetry_track_error(e, Ext::Telemetry::Command::GET_LOCAL_COMMITS)
           []
         end
 
@@ -139,6 +155,7 @@ module Datadog
           )
         rescue => e
           log_failure(e, "git commits rev list")
+          telemetry_track_error(e, Ext::Telemetry::Command::GET_OBJECTS)
           nil
         end
 
@@ -158,6 +175,7 @@ module Datadog
           basename
         rescue => e
           log_failure(e, "git generate packfiles")
+          telemetry_track_error(e, Ext::Telemetry::Command::PACK_OBJECTS)
           nil
         end
 
@@ -165,6 +183,7 @@ module Datadog
           exec_git_command("git rev-parse --is-shallow-repository") == "true"
         rescue => e
           log_failure(e, "git shallow clone")
+          telemetry_track_error(e, Ext::Telemetry::Command::CHECK_SHALLOW)
           false
         end
 
@@ -179,6 +198,7 @@ module Datadog
           )
         rescue => e
           log_failure(e, "git unshallow")
+          telemetry_track_error(e, Ext::Telemetry::Command::UNSHALLOW)
           nil
         end
 
@@ -209,7 +229,12 @@ module Datadog
             end
 
             if status.nil? || !status.success?
-              raise "Failed to run git command [#{cmd}] with input [#{stdin}] and output [#{out}]"
+              raise GitCommandExecutionError.new(
+                "Failed to run git command [#{cmd}] with input [#{stdin}] and output [#{out}]",
+                output: out,
+                command: cmd,
+                status: status
+              )
             end
 
             # Sometimes Encoding.default_external is somehow set to US-ASCII which breaks
@@ -230,6 +255,17 @@ module Datadog
             Datadog.logger.debug(
               "Unable to perform #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
             )
+          end
+
+          def telemetry_track_error(e, command)
+            case e
+            when Errno::ENOENT
+              Telemetry.git_command_errors(command, executable_missing: true)
+            when GitCommandExecutionError
+              Telemetry.git_command_errors(command, exit_code: e.status&.to_i)
+            else
+              Telemetry.git_command_errors(command, exit_code: -1)
+            end
           end
         end
       end
