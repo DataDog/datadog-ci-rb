@@ -3,6 +3,7 @@
 require_relative "../ext/telemetry"
 require_relative "../ext/test"
 require_relative "../utils/telemetry"
+require_relative "../test_visibility/telemetry"
 
 module Datadog
   module CI
@@ -25,10 +26,28 @@ module Datadog
           Utils::Telemetry.distribution(Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, count.to_f)
         end
 
+        def self.itr_skipped
+          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ITR_SKIPPED, 1, tags_for_itr_metrics)
+        end
+
+        def self.itr_forced_run
+          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ITR_FORCED_RUN, 1, tags_for_itr_metrics)
+        end
+
+        def self.itr_unskippable
+          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ITR_UNSKIPPABLE, 1, tags_for_itr_metrics)
+        end
+
         def self.tags_for_test(test)
           {
             Ext::Telemetry::TAG_TEST_FRAMEWORK => test.get_tag(Ext::Test::TAG_FRAMEWORK),
             Ext::Telemetry::TAG_LIBRARY => Ext::Telemetry::Library::CUSTOM
+          }
+        end
+
+        def self.tags_for_itr_metrics
+          {
+            Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::TEST
           }
         end
       end

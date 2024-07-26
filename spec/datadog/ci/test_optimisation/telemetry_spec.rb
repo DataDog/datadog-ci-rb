@@ -82,4 +82,55 @@ RSpec.describe Datadog::CI::TestOptimisation::Telemetry do
 
     it { code_coverage_files }
   end
+
+  describe ".itr_skipped" do
+    subject(:itr_skipped) { described_class.itr_skipped }
+
+    before do
+      expect(Datadog::CI::Utils::Telemetry).to receive(:inc)
+        .with(Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED, 1, expected_tags)
+    end
+
+    let(:expected_tags) do
+      {
+        Datadog::CI::Ext::Telemetry::TAG_EVENT_TYPE => Datadog::CI::Ext::Telemetry::EventType::TEST
+      }
+    end
+
+    it { itr_skipped }
+  end
+
+  describe ".itr_forced_run" do
+    subject(:itr_forced_run) { described_class.itr_forced_run }
+
+    before do
+      expect(Datadog::CI::Utils::Telemetry).to receive(:inc)
+        .with(Datadog::CI::Ext::Telemetry::METRIC_ITR_FORCED_RUN, 1, expected_tags)
+    end
+
+    let(:expected_tags) do
+      {
+        Datadog::CI::Ext::Telemetry::TAG_EVENT_TYPE => Datadog::CI::Ext::Telemetry::EventType::TEST
+      }
+    end
+
+    it { itr_forced_run }
+  end
+
+  describe ".itr_unskippable" do
+    subject(:itr_unskippable) { described_class.itr_unskippable }
+
+    before do
+      expect(Datadog::CI::Utils::Telemetry).to receive(:inc)
+        .with(Datadog::CI::Ext::Telemetry::METRIC_ITR_UNSKIPPABLE, 1, expected_tags)
+    end
+
+    let(:expected_tags) do
+      {
+        Datadog::CI::Ext::Telemetry::TAG_EVENT_TYPE => Datadog::CI::Ext::Telemetry::EventType::TEST
+      }
+    end
+
+    it { itr_unskippable }
+  end
 end
