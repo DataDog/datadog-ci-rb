@@ -50,6 +50,8 @@ module Datadog
           def ok?: (Cucumber::Core::Test::Result result, untyped strict) -> bool
 
           def configuration: () -> untyped
+
+          def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
         end
       end
     end

@@ -2,7 +2,9 @@
 
 require_relative "ci/version"
 require_relative "ci/utils/configuration"
+require_relative "ci/utils/telemetry"
 require_relative "ci/ext/app_types"
+require_relative "ci/ext/telemetry"
 
 require "datadog/core"
 
