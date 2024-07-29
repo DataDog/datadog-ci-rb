@@ -60,15 +60,36 @@ module Datadog
 
         def self.endpoint_payload_requests_errors(count, endpoint:, error_type:, status_code:)
           tags = tags(endpoint: endpoint)
-
-          tags[Ext::Telemetry::TAG_ERROR_TYPE] = error_type if error_type
-          tags[Ext::Telemetry::TAG_STATUS_CODE] = status_code.to_s if status_code
+          set_error_tags(tags, error_type: error_type, status_code: status_code)
 
           Utils::Telemetry.inc(Ext::Telemetry::METRIC_ENDPOINT_PAYLOAD_REQUESTS_ERRORS, count, tags)
         end
 
+        def self.api_requests(metric_name, count, compressed:)
+          tags = {}
+          tags[Ext::Telemetry::TAG_REQUEST_COMPRESSED] = "true" if compressed
+
+          Utils::Telemetry.inc(metric_name, count, tags)
+        end
+
+        def self.api_requests_ms(metric_name, duration_ms)
+          Utils::Telemetry.distribution(metric_name, duration_ms)
+        end
+
+        def self.api_requests_errors(metric_name, count, error_type:, status_code:)
+          tags = {}
+          set_error_tags(tags, error_type: error_type, status_code: status_code)
+
+          Utils::Telemetry.inc(metric_name, count, tags)
+        end
+
         def self.tags(endpoint:)
           {Ext::Telemetry::TAG_ENDPOINT => endpoint}
+        end
+
+        def self.set_error_tags(tags, error_type:, status_code:)
+          tags[Ext::Telemetry::TAG_ERROR_TYPE] = error_type if error_type
+          tags[Ext::Telemetry::TAG_STATUS_CODE] = status_code.to_s if status_code
         end
       end
     end
