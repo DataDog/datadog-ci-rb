@@ -3,8 +3,11 @@
 require "json"
 require "set"
 
+require_relative "../ext/telemetry"
 require_relative "../ext/transport"
+require_relative "../transport/telemetry"
 require_relative "../utils/git"
+require_relative "../utils/telemetry"
 
 module Datadog
   module CI
@@ -25,7 +28,23 @@ module Datadog
             path: Ext::Transport::DD_API_GIT_SEARCH_COMMITS_PATH,
             payload: request_payload(repository_url, commits)
           )
-          raise ApiError, "Failed to search commits: #{http_response.inspect}" unless http_response.ok?
+
+          Transport::Telemetry.api_requests(
+            Ext::Telemetry::METRIC_GIT_REQUESTS_SEARCH_COMMITS,
+            1,
+            compressed: http_response.request_compressed
+          )
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_SEARCH_COMMITS_MS, http_response.duration_ms)
+
+          unless http_response.ok?
+            Transport::Telemetry.api_requests_errors(
+              Ext::Telemetry::METRIC_GIT_REQUESTS_SEARCH_COMMITS_ERRORS,
+              1,
+              error_type: http_response.telemetry_error_type,
+              status_code: http_response.code
+            )
+            raise ApiError, "Failed to search commits: #{http_response.inspect}"
+          end
 
           response_payload = parse_json_response(http_response)
           extract_commits(response_payload)

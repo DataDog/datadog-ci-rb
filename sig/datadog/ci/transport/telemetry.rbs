@@ -18,7 +18,13 @@ module Datadog
 
         def self.endpoint_payload_requests_errors: (Integer count, endpoint: String, error_type: String?, status_code: Integer?) -> void
 
+        def self.api_requests: (String metric_name, Integer count, compressed: bool) -> void
+
+        def self.api_requests_errors: (String metric_name, Integer count, error_type: String?, status_code: Integer?) -> void
+
         def self.tags: (endpoint: String) -> Hash[String, String]
+
+        def self.set_error_tags: (Hash[String, String] tags, error_type: String?, status_code: Integer?) -> void
       end
     end
   end

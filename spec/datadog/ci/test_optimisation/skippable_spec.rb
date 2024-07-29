@@ -3,6 +3,8 @@
 require_relative "../../../../lib/datadog/ci/test_optimisation/skippable"
 
 RSpec.describe Datadog::CI::TestOptimisation::Skippable do
+  include_context "Telemetry spy"
+
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
   let(:config_tags) { {} }
@@ -10,6 +12,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
   subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
   describe "#fetch_skippable_tests" do
+    subject { client.fetch_skippable_tests(test_session) }
+
     let(:service) { "service" }
     let(:tracer_span) do
       Datadog::Tracing::SpanOperation.new("session", service: service).tap do |span|
@@ -30,7 +34,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
     let(:path) { Datadog::CI::Ext::Transport::DD_API_SKIPPABLE_TESTS_PATH }
 
     it "requests the skippable tests" do
-      client.fetch_skippable_tests(test_session)
+      subject
 
       expect(api).to have_received(:api_request) do |args|
         expect(args[:path]).to eq(path)
@@ -90,7 +94,11 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
                     }
                   }
                 ]
-              }.to_json
+              }.to_json,
+              request_compressed: false,
+              duration_ms: 1.2,
+              gzipped_content?: false,
+              response_size: 100
             )
           end
 
@@ -99,6 +107,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
             expect(response.correlation_id).to eq("correlation_id_123")
             expect(response.tests).to eq(Set.new(["test_suite_name.test_name.string"]))
           end
+
+          it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.request", 1
+          it_behaves_like "emits telemetry metric", :distribution, "itr_skippable_tests.request_ms"
+          it_behaves_like "emits telemetry metric", :distribution, "itr_skippable_tests.response_bytes"
         end
 
         context "when response is not OK" do
@@ -106,7 +118,13 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
             double(
               "http_response",
               ok?: false,
-              payload: ""
+              payload: "",
+              request_compressed: false,
+              duration_ms: 1.2,
+              gzipped_content?: false,
+              response_size: 100,
+              telemetry_error_type: nil,
+              code: 422
             )
           end
 
@@ -115,6 +133,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
             expect(response.correlation_id).to be_nil
             expect(response.tests).to be_empty
           end
+
+          it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.request_errors", 1
         end
 
         context "when response is OK but JSON is malformed" do
@@ -122,7 +142,11 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
             double(
               "http_response",
               ok?: true,
-              payload: "not json"
+              payload: "not json",
+              request_compressed: false,
+              duration_ms: 1.2,
+              gzipped_content?: false,
+              response_size: 100
             )
           end
 
@@ -155,7 +179,11 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
                     "runtime.architecture" => "amd64"
                   }
                 }
-              }.to_json
+              }.to_json,
+              request_compressed: false,
+              duration_ms: 1.2,
+              gzipped_content?: false,
+              response_size: 100
             )
           end
 
@@ -186,7 +214,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
       end
 
       it "requests the skippable tests with custom configurations" do
-        client.fetch_skippable_tests(test_session)
+        subject
 
         expect(api).to have_received(:api_request) do |args|
           data = JSON.parse(args[:payload])["data"]

@@ -3,6 +3,8 @@
 require "delegate"
 require "socket"
 
+require "datadog/core/utils/time"
+
 require_relative "gzip"
 require_relative "adapters/net"
 require_relative "../ext/transport"
@@ -39,29 +41,37 @@ module Datadog
           backoff: INITIAL_BACKOFF,
           accept_compressed_response: false
         )
-          if compress
-            headers[Ext::Transport::HEADER_CONTENT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
-            payload = Gzip.compress(payload)
-          end
+          response = nil
 
-          if accept_compressed_response
-            headers[Ext::Transport::HEADER_ACCEPT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
-          end
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            if compress
+              headers[Ext::Transport::HEADER_CONTENT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
+              payload = Gzip.compress(payload)
+            end
 
-          Datadog.logger.debug do
-            "Sending #{verb} request: host=#{host}; port=#{port}; ssl_enabled=#{ssl}; " \
-              "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
-          end
+            if accept_compressed_response
+              headers[Ext::Transport::HEADER_ACCEPT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
+            end
 
-          response = perform_http_call(path: path, payload: payload, headers: headers, verb: verb, retries: retries, backoff: backoff)
+            Datadog.logger.debug do
+              "Sending #{verb} request: host=#{host}; port=#{port}; ssl_enabled=#{ssl}; " \
+                "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
+            end
 
-          Datadog.logger.debug do
-            "Received server response: #{response.inspect}"
+            response = perform_http_call(path: path, payload: payload, headers: headers, verb: verb, retries: retries, backoff: backoff)
+
+            Datadog.logger.debug do
+              "Received server response: #{response.inspect}"
+            end
           end
+          # @type var response: Datadog::CI::Transport::Adapters::Net::Response
+          # @type var duration_ms: Float
 
           # set some stats about the request
           response.request_compressed = compress
           response.request_size = payload.bytesize
+          response.duration_ms = duration_ms
+
           response
         end
 

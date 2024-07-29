@@ -2,9 +2,12 @@
 
 require "json"
 
+require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../ext/test"
+require_relative "../transport/telemetry"
 require_relative "../utils/test_run"
+require_relative "../utils/telemetry"
 
 module Datadog
   module CI
@@ -74,6 +77,27 @@ module Datadog
             path: Ext::Transport::DD_API_SKIPPABLE_TESTS_PATH,
             payload: request_payload
           )
+
+          Transport::Telemetry.api_requests(
+            Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_REQUEST,
+            1,
+            compressed: http_response.request_compressed
+          )
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_REQUEST_MS, http_response.duration_ms)
+          Utils::Telemetry.distribution(
+            Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_BYTES,
+            http_response.response_size.to_f,
+            {Ext::Telemetry::TAG_RESPONSE_COMPRESSED => http_response.gzipped_content?.to_s}
+          )
+
+          unless http_response.ok?
+            Transport::Telemetry.api_requests_errors(
+              Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_REQUEST_ERRORS,
+              1,
+              error_type: http_response.telemetry_error_type,
+              status_code: http_response.code
+            )
+          end
 
           Response.new(http_response)
         end

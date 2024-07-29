@@ -17,7 +17,7 @@ module Datadog
 
         def request_payload: (String repository_url, Array[String] commits) -> String
 
-        def parse_json_response: (Datadog::Core::Transport::Response response) -> Hash[String, untyped]
+        def parse_json_response: (Datadog::CI::Transport::Adapters::Net::Response response) -> Hash[String, untyped]
 
         def extract_commits: (Hash[String, untyped] response) -> Set[String]
       end

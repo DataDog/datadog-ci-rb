@@ -1,11 +1,3 @@
-class SimpleDelegator
-  @decompressed_payload: String
-
-  def __getobj__: () -> Datadog::Core::Transport::Response
-  def gzipped?: (String payload) -> bool
-  def payload: () -> String
-end
-
 module Datadog
   module CI
     module Transport

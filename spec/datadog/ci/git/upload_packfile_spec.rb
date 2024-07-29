@@ -3,6 +3,7 @@
 require_relative "../../../../lib/datadog/ci/git/upload_packfile"
 
 RSpec.describe Datadog::CI::Git::UploadPackfile do
+  include_context "Telemetry spy"
   let(:api) { double("api") }
 
   subject(:upload_packfile) do
@@ -10,13 +11,14 @@ RSpec.describe Datadog::CI::Git::UploadPackfile do
   end
 
   describe "#call" do
+    subject { upload_packfile.call(filepath: filepath) }
     let(:filepath) { "nonexistent" }
 
     context "when the API is not configured" do
       let(:api) { nil }
 
       it "raises an error" do
-        expect { upload_packfile.call(filepath: filepath) }
+        expect { subject }
           .to raise_error(Datadog::CI::Git::UploadPackfile::ApiError, "test visibility API is not configured")
       end
     end
@@ -25,7 +27,9 @@ RSpec.describe Datadog::CI::Git::UploadPackfile do
       before do
         allow(api).to receive(:api_request).and_return(http_response)
       end
-      let(:http_response) { double("http_response", ok?: true) }
+      let(:http_response) do
+        double("http_response", ok?: true, request_compressed: true, duration_ms: 1.2, request_size: 452)
+      end
 
       context "when file does not exist" do
         let(:expected_error_message) do
@@ -37,7 +41,7 @@ RSpec.describe Datadog::CI::Git::UploadPackfile do
         end
 
         it "raises an error" do
-          expect { upload_packfile.call(filepath: filepath) }
+          expect { subject }
             .to raise_error(
               Datadog::CI::Git::UploadPackfile::ApiError,
               expected_error_message
@@ -58,11 +62,26 @@ RSpec.describe Datadog::CI::Git::UploadPackfile do
         end
 
         context "when the API request fails" do
-          let(:http_response) { double("http_response", ok?: false, inspect: "error message") }
+          let(:http_response) do
+            double(
+              "http_response",
+              ok?: false,
+              request_compressed: true,
+              duration_ms: 1.2,
+              request_size: 452,
+              inspect: "error message",
+              telemetry_error_type: "network",
+              code: nil
+            )
+          end
 
           it "raises an error" do
-            expect { upload_packfile.call(filepath: filepath) }
+            expect { subject }
               .to raise_error(Datadog::CI::Git::UploadPackfile::ApiError, "Failed to upload packfile: error message")
+
+            metric = telemetry_metric(:inc, "git_requests.objects_pack_errors")
+            expect(metric.value).to eq(1)
+            expect(metric.tags).to eq("error_type" => "network")
           end
         end
 
@@ -90,8 +109,12 @@ RSpec.describe Datadog::CI::Git::UploadPackfile do
               headers: {Datadog::CI::Ext::Transport::HEADER_CONTENT_TYPE => "multipart/form-data; boundary=boundary"}
             ).and_return(http_response)
 
-            upload_packfile.call(filepath: filepath)
+            subject
           end
+
+          it_behaves_like "emits telemetry metric", :inc, "git_requests.objects_pack"
+          it_behaves_like "emits telemetry metric", :distribution, "git_requests.objects_pack_ms"
+          it_behaves_like "emits telemetry metric", :distribution, "git_requests.objects_pack_bytes"
         end
       end
     end

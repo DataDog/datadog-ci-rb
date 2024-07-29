@@ -4,8 +4,11 @@ require "json"
 
 require "datadog/core/environment/identity"
 
+require_relative "../ext/telemetry"
 require_relative "../ext/transport"
+require_relative "../transport/telemetry"
 require_relative "../utils/parsing"
+require_relative "../utils/telemetry"
 
 module Datadog
   module CI
@@ -36,6 +39,14 @@ module Datadog
                 default_payload
             rescue JSON::ParserError => e
               Datadog.logger.error("Failed to parse settings response payload: #{e}. Payload was: #{resp.payload}")
+
+              Transport::Telemetry.api_requests_errors(
+                Ext::Telemetry::METRIC_GIT_REQUESTS_SETTINGS_ERRORS,
+                1,
+                error_type: "invalid_json",
+                status_code: nil
+              )
+
               @json = default_payload
             end
           end
@@ -69,7 +80,34 @@ module Datadog
             payload: request_payload
           )
 
-          Response.new(http_response)
+          Transport::Telemetry.api_requests(
+            Ext::Telemetry::METRIC_GIT_REQUESTS_SETTINGS,
+            1,
+            compressed: http_response.request_compressed
+          )
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_SETTINGS_MS, http_response.duration_ms)
+
+          unless http_response.ok?
+            Transport::Telemetry.api_requests_errors(
+              Ext::Telemetry::METRIC_GIT_REQUESTS_SETTINGS_ERRORS,
+              1,
+              error_type: http_response.telemetry_error_type,
+              status_code: http_response.code
+            )
+          end
+
+          response = Response.new(http_response)
+
+          Utils::Telemetry.inc(
+            Ext::Telemetry::METRIC_GIT_REQUESTS_SETTINGS_RESPONSE,
+            1,
+            {
+              Ext::Telemetry::TAG_COVERAGE_ENABLED => response.payload[Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY],
+              Ext::Telemetry::TAG_ITR_SKIP_ENABLED => response.payload[Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY]
+            }
+          )
+
+          response
         end
 
         private

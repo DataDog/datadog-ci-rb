@@ -3,10 +3,14 @@
 require_relative "../../../../lib/datadog/ci/git/search_commits"
 
 RSpec.describe Datadog::CI::Git::SearchCommits do
+  include_context "Telemetry spy"
+
   let(:api) { double("api") }
   subject(:search_commits) { described_class.new(api: api) }
 
   describe "#call" do
+    subject { search_commits.call(repository_url, commits) }
+
     let(:repository_url) { "https://datadoghq.com/git/test.git" }
     let(:commits) { ["c7f893648f656339f62fb7b4d8a6ecdf7d063835"] }
 
@@ -25,16 +29,32 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
       end
 
       context "when the API request fails" do
-        let(:http_response) { double("http_response", ok?: false, inspect: "error message") }
+        let(:http_response) do
+          double(
+            "http_response",
+            ok?: false,
+            inspect: "error message",
+            request_compressed: true,
+            duration_ms: 1.2,
+            telemetry_error_type: "network",
+            code: nil
+          )
+        end
 
         it "raises an error" do
-          expect { search_commits.call(repository_url, commits) }
+          expect { subject }
             .to raise_error(Datadog::CI::Git::SearchCommits::ApiError, "Failed to search commits: error message")
+
+          metric = telemetry_metric(:inc, "git_requests.search_commits_errors")
+          expect(metric.value).to eq(1)
+          expect(metric.tags).to eq("error_type" => "network")
         end
       end
 
       context "when the API request is successful" do
-        let(:http_response) { double("http_response", ok?: true, payload: response_payload) }
+        let(:http_response) do
+          double("http_response", ok?: true, payload: response_payload, request_compressed: true, duration_ms: 1.2)
+        end
         let(:response_payload) do
           {
             data: [
@@ -52,8 +72,11 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
             payload: "{\"meta\":{\"repository_url\":\"https://datadoghq.com/git/test.git\"},\"data\":[{\"id\":\"c7f893648f656339f62fb7b4d8a6ecdf7d063835\",\"type\":\"commit\"}]}"
           ).and_return(http_response)
 
-          expect(search_commits.call(repository_url, commits)).to eq(Set.new(["c7f893648f656339f62fb7b4d8a6ecdf7d063835"]))
+          expect(subject).to eq(Set.new(["c7f893648f656339f62fb7b4d8a6ecdf7d063835"]))
         end
+
+        it_behaves_like "emits telemetry metric", :inc, "git_requests.search_commits"
+        it_behaves_like "emits telemetry metric", :distribution, "git_requests.search_commits_ms"
 
         context "when the request contains an invalid commit SHA" do
           let(:commits) { ["INVALID_SHA", "c7f893648f656339f62fb7b4d8a6ecdf7d063835"] }
@@ -64,7 +87,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
               payload: "{\"meta\":{\"repository_url\":\"https://datadoghq.com/git/test.git\"},\"data\":[{\"id\":\"c7f893648f656339f62fb7b4d8a6ecdf7d063835\",\"type\":\"commit\"}]}"
             ).and_return(http_response)
 
-            expect(search_commits.call(repository_url, commits)).to eq(Set.new(["c7f893648f656339f62fb7b4d8a6ecdf7d063835"]))
+            expect(subject).to eq(Set.new(["c7f893648f656339f62fb7b4d8a6ecdf7d063835"]))
           end
         end
 
@@ -81,7 +104,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
           end
 
           it "raises an error" do
-            expect { search_commits.call(repository_url, commits) }
+            expect { subject }
               .to raise_error(
                 Datadog::CI::Git::SearchCommits::ApiError,
                 "Invalid commit type response {\"id\"=>\"c7f893648f656339f62fb7b4d8a6ecdf7d063835\", \"type\"=>\"invalid\"}"
@@ -102,7 +125,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
           end
 
           it "raises an error" do
-            expect { search_commits.call(repository_url, commits) }
+            expect { subject }
               .to raise_error(Datadog::CI::Git::SearchCommits::ApiError, "Invalid commit SHA response INVALID_SHA")
           end
         end
@@ -111,7 +134,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
           let(:response_payload) { "invalid json" }
 
           it "raises an error" do
-            expect { search_commits.call(repository_url, commits) }
+            expect { subject }
               .to raise_error(
                 Datadog::CI::Git::SearchCommits::ApiError,
                 "Failed to parse search commits response: unexpected token at 'invalid json'. Payload was: invalid json"
@@ -123,7 +146,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
           let(:response_payload) { {}.to_json }
 
           it "raises an error" do
-            expect { search_commits.call(repository_url, commits) }
+            expect { subject }
               .to raise_error(
                 Datadog::CI::Git::SearchCommits::ApiError,
                 "Malformed search commits response: key not found: \"data\". Payload was: {}"
@@ -143,7 +166,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
           end
 
           it "raises an error" do
-            expect { search_commits.call(repository_url, commits) }
+            expect { subject }
               .to raise_error(
                 Datadog::CI::Git::SearchCommits::ApiError,
                 "Invalid commit type response {\"id\"=>\"c7f893648f656339f62fb7b4d8a6ecdf7d063835\"}"

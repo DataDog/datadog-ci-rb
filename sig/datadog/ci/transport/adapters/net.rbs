@@ -40,6 +40,8 @@ module Datadog
 
             attr_accessor request_size: Integer
 
+            attr_accessor duration_ms: Float
+
             def initialize: (::Net::HTTPResponse http_response) -> void
 
             def payload: () -> String
@@ -63,6 +65,8 @@ module Datadog
             def gzipped_content?: () -> bool
 
             def telemetry_error_type: () -> String?
+
+            def response_size: () -> Integer
 
             def trace_count: () -> 0
 
