@@ -19,6 +19,8 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
       ["./spec/datadog/ci/contrib/knapsack_rspec/suite_under_test/some_test_rspec.rb"],
       []
     )
+    # raise to prevent Knapsack from running Kernel.exit(0)
+    allow(KnapsackPro::Report).to receive(:save_node_queue_to_api).and_raise(ArgumentError)
   end
 
   # Yields to a block in a new RSpec global context. All RSpec

@@ -39,6 +39,9 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the kn
       ["./spec/datadog/ci/contrib/knapsack_rspec_go/suite_under_test/some_test_rspec.rb"],
       []
     )
+
+    # raise to prevent Knapsack from running Kernel.exit(0)
+    allow(KnapsackPro::Report).to receive(:save_node_queue_to_api).and_raise(ArgumentError)
   end
 
   it "instruments this rspec session" do
