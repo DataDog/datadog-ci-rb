@@ -66,7 +66,7 @@ module Datadog
 
             attr_reader :http_response
             # Stats for telemetry
-            attr_accessor :request_compressed, :request_size
+            attr_accessor :duration_ms, :request_compressed, :request_size
 
             def initialize(http_response)
               @http_response = http_response
