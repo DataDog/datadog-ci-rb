@@ -45,7 +45,7 @@ module Datadog
             compressed: http_response.request_compressed
           )
           Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK_MS, http_response.duration_ms)
-          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK_BYTES, http_response.request_size)
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK_BYTES, http_response.request_size.to_f)
 
           unless http_response.ok?
             Transport::Telemetry.api_requests_errors(

@@ -81,6 +81,10 @@ module Datadog
               @decompressed_payload = Gzip.decompress(http_response.body)
             end
 
+            def response_size
+              http_response.body.bytesize
+            end
+
             def header(name)
               http_response[name]
             end

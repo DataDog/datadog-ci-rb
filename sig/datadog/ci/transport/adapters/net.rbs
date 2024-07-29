@@ -66,6 +66,8 @@ module Datadog
 
             def telemetry_error_type: () -> String?
 
+            def response_size: () -> Integer
+
             def trace_count: () -> 0
 
             def inspect: () -> ::String

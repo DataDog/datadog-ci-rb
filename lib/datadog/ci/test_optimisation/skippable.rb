@@ -75,6 +75,18 @@ module Datadog
             payload: request_payload
           )
 
+          Transport::Telemetry.api_requests(
+            Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_REQUEST,
+            1,
+            compressed: http_response.request_compressed
+          )
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_REQUEST_MS, http_response.duration_ms)
+          Utils::Telemetry.distribution(
+            Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_BYTES,
+            http_response.response_size.to_f,
+            {Ext::Telemetry::TAG_RESPONSE_COMPRESSED => http_response.gzipped_content?.to_s}
+          )
+
           Response.new(http_response)
         end
 

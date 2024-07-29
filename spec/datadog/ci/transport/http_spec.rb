@@ -119,6 +119,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         expect(response.payload).to eq("sample payload")
         expect(response.request_compressed).to eq(false)
         expect(response.request_size).to eq(payload.bytesize)
+        expect(response.response_size).to eq(response_payload.bytesize)
         expect(response.duration_ms).to be > 0
         expect(response.telemetry_error_type).to be_nil
       end
