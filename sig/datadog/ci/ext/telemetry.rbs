@@ -80,8 +80,6 @@ module Datadog
 
         METRIC_CODE_COVERAGE_FILES: "code_coverage.files"
 
-        METRIC_CODE_COVERAGE_ERRORS: "code_coverage.errors"
-
         METRIC_TEST_SESSION: "test_session"
 
         TAG_TEST_FRAMEWORK: "test_framework"
@@ -132,7 +130,7 @@ module Datadog
         end
 
         module Library
-          BUILTIN: "builtin"
+          CUSTOM: "custom"
         end
 
         module Endpoint
