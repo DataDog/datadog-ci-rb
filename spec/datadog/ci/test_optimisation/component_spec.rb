@@ -342,6 +342,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
           .from(0)
           .to(1)
       end
+
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED, 1
     end
 
     context "test is not skipped" do

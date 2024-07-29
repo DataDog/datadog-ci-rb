@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe Datadog::CI::Test do
+  include_context "Telemetry spy"
+
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true) }
   let(:test_visibility) { spy("test_visibility") }
   subject(:ci_test) { described_class.new(tracer_span) }
@@ -120,30 +122,35 @@ RSpec.describe Datadog::CI::Test do
   end
 
   describe "#itr_unskippable!" do
+    subject { ci_test.itr_unskippable! }
+
     context "when test is not skipped by ITR" do
       before do
         allow(ci_test).to receive(:skipped_by_itr?).and_return(false)
+        expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
       end
 
       it "sets unskippable tag" do
-        expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
-
-        ci_test.itr_unskippable!
+        subject
       end
+
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_UNSKIPPABLE, 1
     end
 
     context "when test is skipped by ITR" do
       before do
         allow(ci_test).to receive(:skipped_by_itr?).and_return(true)
-      end
-
-      it "sets unskippable tag, removes skipped by ITR tag, and sets forced run tag" do
         expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
         expect(tracer_span).to receive(:clear_tag).with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
         expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_FORCED_RUN, "true")
-
-        ci_test.itr_unskippable!
       end
+
+      it "sets unskippable tag, removes skipped by ITR tag, and sets forced run tag" do
+        subject
+      end
+
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_UNSKIPPABLE, 1
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_FORCED_RUN, 1
     end
   end
 
