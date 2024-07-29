@@ -122,7 +122,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
               request_compressed: false,
               duration_ms: 1.2,
               gzipped_content?: false,
-              response_size: 100
+              response_size: 100,
+              telemetry_error_type: nil,
+              code: 422
             )
           end
 
@@ -131,6 +133,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
             expect(response.correlation_id).to be_nil
             expect(response.tests).to be_empty
           end
+
+          it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.request_errors", 1
         end
 
         context "when response is OK but JSON is malformed" do

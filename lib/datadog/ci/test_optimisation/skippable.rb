@@ -87,6 +87,15 @@ module Datadog
             {Ext::Telemetry::TAG_RESPONSE_COMPRESSED => http_response.gzipped_content?.to_s}
           )
 
+          unless http_response.ok?
+            Transport::Telemetry.api_requests_errors(
+              Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_REQUEST_ERRORS,
+              1,
+              error_type: http_response.telemetry_error_type,
+              status_code: http_response.code
+            )
+          end
+
           Response.new(http_response)
         end
 
