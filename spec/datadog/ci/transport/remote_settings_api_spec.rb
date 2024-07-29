@@ -3,6 +3,8 @@
 require_relative "../../../../lib/datadog/ci/transport/remote_settings_api"
 
 RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
+  include_context "Telemetry spy"
+
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
   let(:config_tags) { {} }
@@ -10,6 +12,8 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
   subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
   describe "#fetch_library_settings" do
+    subject { client.fetch_library_settings(test_session) }
+
     let(:service) { "service" }
     let(:tracer_span) do
       Datadog::Tracing::SpanOperation.new("session", service: service).tap do |span|
@@ -30,7 +34,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
     let(:path) { Datadog::CI::Ext::Transport::DD_API_SETTINGS_PATH }
 
     it "requests the settings" do
-      client.fetch_library_settings(test_session)
+      subject
 
       expect(api).to have_received(:api_request) do |args|
         expect(args[:path]).to eq(path)
@@ -81,7 +85,9 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
                     "require_git" => require_git
                   }
                 }
-              }.to_json
+              }.to_json,
+              request_compressed: false,
+              duration_ms: 1.2
             )
           end
           let(:require_git) { false }
@@ -95,7 +101,14 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
               "require_git" => require_git
             })
             expect(response.require_git?).to be false
+
+            metric = telemetry_metric(:inc, "git_requests.settings_response")
+            expect(metric.tags).to eq("coverage_enabled" => true, "itrskip_enabled" => false)
           end
+
+          it_behaves_like "emits telemetry metric", :inc, "git_requests.settings", 1
+          it_behaves_like "emits telemetry metric", :distribution, "git_requests.settings_ms"
+          it_behaves_like "emits telemetry metric", :inc, "git_requests.settings_response"
 
           context "when git is required" do
             let(:require_git) { "True" }
@@ -111,7 +124,11 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
             double(
               "http_response",
               ok?: false,
-              payload: ""
+              payload: "",
+              request_compressed: false,
+              duration_ms: 1.2,
+              telemetry_error_type: "network",
+              code: nil
             )
           end
 
@@ -120,6 +137,8 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
             expect(response.payload).to eq("itr_enabled" => false)
             expect(response.require_git?).to be false
           end
+
+          it_behaves_like "emits telemetry metric", :inc, "git_requests.settings_errors", 1
         end
 
         context "when response is OK but JSON is malformed" do
@@ -127,7 +146,9 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
             double(
               "http_response",
               ok?: true,
-              payload: "not json"
+              payload: "not json",
+              request_compressed: false,
+              duration_ms: 1.2
             )
           end
 
@@ -135,10 +156,14 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
             expect(Datadog.logger).to receive(:error).with(/Failed to parse settings response payload/)
           end
 
-          it "parses the response" do
+          it "returns default response" do
             expect(response.ok?).to be true
             expect(response.payload).to eq("itr_enabled" => false)
             expect(response.require_git?).to be false
+
+            metric = telemetry_metric(:inc, "git_requests.settings_errors")
+            expect(metric.value).to eq(1)
+            expect(metric.tags).to eq("error_type" => "invalid_json")
           end
         end
 
@@ -154,7 +179,9 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
                   "itr_enabled" => true,
                   "require_git" => false
                 }
-              }.to_json
+              }.to_json,
+              request_compressed: false,
+              duration_ms: 1.2
             )
           end
 
@@ -181,7 +208,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
       let(:config_tags) { {"key" => "value"} }
 
       it "requests the settings" do
-        client.fetch_library_settings(test_session)
+        subject
 
         expect(api).to have_received(:api_request) do |args|
           data = JSON.parse(args[:payload])["data"]

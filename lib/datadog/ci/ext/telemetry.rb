@@ -71,9 +71,7 @@ module Datadog
         TAG_RESPONSE_COMPRESSED = "rs_compressed"
         TAG_COMMAND = "command"
         TAG_COVERAGE_ENABLED = "coverage_enabled"
-        TAG_ITR_ENABLED = "itr_enabled"
-        TAG_ITR_SKIP_ENABLED = "itr_skip_enabled"
-        TAG_REQUIRE_GIT = "require_git"
+        TAG_ITR_SKIP_ENABLED = "itrskip_enabled"
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"
 
