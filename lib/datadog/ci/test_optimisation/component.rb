@@ -5,11 +5,13 @@ require "pp"
 require "datadog/core/utils/forking"
 
 require_relative "../ext/test"
+require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 
 require_relative "../git/local_repository"
 
 require_relative "../utils/parsing"
+require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "skippable"
@@ -239,6 +241,8 @@ module Datadog
           Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
           Datadog.logger.debug { "Found #{@skippable_tests.count} skippable tests." }
           Datadog.logger.debug { "ITR correlation ID: #{@correlation_id}" }
+
+          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_TESTS, @skippable_tests.count)
         end
 
         def code_coverage_mode

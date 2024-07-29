@@ -64,7 +64,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
           fetch_skippable_tests: instance_double(
             Datadog::CI::TestOptimisation::Skippable::Response,
             correlation_id: "42",
-            tests: Set.new(["suite.test."])
+            tests: Set.new(["suite.test.", "suite.test2."])
           )
         )
       end
@@ -79,10 +79,12 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
         expect(component.skipping_tests?).to be true
 
         expect(component.correlation_id).to eq("42")
-        expect(component.skippable_tests).to eq(Set.new(["suite.test."]))
+        expect(component.skippable_tests).to eq(Set.new(["suite.test.", "suite.test2."]))
 
         expect(git_worker).to have_received(:wait_until_done)
       end
+
+      it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.response_tests", 2
     end
 
     context "when remote configuration call returned correct response with strings instead of bools" do

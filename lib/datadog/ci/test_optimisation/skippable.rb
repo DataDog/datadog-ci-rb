@@ -2,9 +2,12 @@
 
 require "json"
 
+require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../ext/test"
+require_relative "../transport/telemetry"
 require_relative "../utils/test_run"
+require_relative "../utils/telemetry"
 
 module Datadog
   module CI
