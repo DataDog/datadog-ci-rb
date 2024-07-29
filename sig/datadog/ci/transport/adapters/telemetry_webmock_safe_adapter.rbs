@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module Transport
+      module Adapters
+        module TelemetryWebmockSafeAdapter
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods : Datadog::Core::Telemetry::Http::Adapters::Net
+            def open: () { (?) -> untyped } -> untyped
+          end
+        end
+      end
+    end
+  end
+end

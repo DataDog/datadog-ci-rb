@@ -10,17 +10,17 @@ module Datadog
 
           def initialize: (agent_settings: Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings, ?path_prefix: String) -> void
 
-          def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
-          def citestcycle_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def citestcycle_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
-          def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
           def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
           private
 
-          def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
           def build_http_client: (Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings agent_settings, compress: bool) -> Datadog::CI::Transport::HTTP
 

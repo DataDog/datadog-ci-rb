@@ -92,7 +92,8 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     let(:request_options) { {accept_compressed_response: false} }
 
     let(:response_payload) { "sample payload" }
-    let(:http_response) { double("http_response", code: 200, payload: response_payload) }
+    let(:net_http_response) { double("Net::HTTP::Response", code: 200, body: response_payload, "[]": nil) }
+    let(:http_response) { Datadog::CI::Transport::Adapters::Net::Response.new(net_http_response) }
 
     subject(:response) { transport.request(path: path, payload: payload, headers: headers, **request_options) }
 
@@ -112,17 +113,20 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       end
 
       it "produces a response" do
-        is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+        is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
 
         expect(response.code).to eq(200)
         expect(response.payload).to eq("sample payload")
+        expect(response.request_compressed).to eq(false)
+        expect(response.request_size).to eq(payload.size)
+        expect(response.telemetry_error_type).to be_nil
       end
 
       context "when accepting gzipped response" do
         let(:expected_headers) { {"Content-Type" => "application/json", "Accept-Encoding" => "gzip"} }
         let(:request_options) { {accept_compressed_response: true} }
 
-        it { is_expected.to be_a_kind_of(described_class::ResponseDecorator) }
+        it { is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response) }
       end
     end
 
@@ -147,14 +151,30 @@ RSpec.describe Datadog::CI::Transport::HTTP do
       end
 
       it "produces a response" do
-        is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+        is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
 
         expect(response.code).to eq(200)
+        expect(response.request_compressed).to eq(true)
+        expect(response.request_size).to eq(expected_payload.size)
       end
     end
 
     context "when request fails" do
       let(:request_options) { {backoff: 0} }
+
+      context "when server returns error status code" do
+        let(:net_http_response) { double("Net::HTTP::Response", code: 400, body: "error", "[]": nil) }
+
+        before do
+          expect(adapter).to receive(:call).and_return(http_response)
+        end
+
+        it "produces a response" do
+          expect(response).not_to be_ok
+          expect(response.code).to eq(400)
+          expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::STATUS_CODE)
+        end
+      end
 
       context "when succeeds after retries" do
         before do
@@ -163,7 +183,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         end
 
         it "produces a response" do
-          is_expected.to be_a_kind_of(described_class::ResponseDecorator)
+          is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
 
           expect(response.code).to eq(200)
         end
@@ -174,8 +194,9 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES + 1).times
         end
 
-        it "raises" do
-          expect { response }.to raise_error(Errno::ECONNRESET)
+        it "returns ErrorRsponse" do
+          expect(response.error).to be_kind_of(Errno::ECONNRESET)
+          expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::NETWORK)
         end
       end
     end

@@ -5,7 +5,7 @@ module Datadog
         class Transport < Datadog::CI::Transport::EventPlatformTransport
           private
 
-          def send_payload: (String payload) -> ::Datadog::CI::Transport::HTTP::ResponseDecorator
+          def send_payload: (String payload) -> ::Datadog::CI::Transport::Adapters::Net::Response
 
           def encode_events: (Array[Datadog::CI::TestOptimisation::Coverage::Event] events) -> ::Array[String]
 

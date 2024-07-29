@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Transport
+      module Adapters
+        module NetHttpClient
+          def self.original_net_http: () -> singleton(Net::HTTP)
+        end
+      end
+    end
+  end
+end

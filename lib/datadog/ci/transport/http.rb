@@ -53,14 +53,15 @@ module Datadog
               "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
           end
 
-          response = ResponseDecorator.new(
-            perform_http_call(path: path, payload: payload, headers: headers, verb: verb, retries: retries, backoff: backoff)
-          )
+          response = perform_http_call(path: path, payload: payload, headers: headers, verb: verb, retries: retries, backoff: backoff)
 
           Datadog.logger.debug do
             "Received server response: #{response.inspect}"
           end
 
+          # set some stats about the request
+          response.request_compressed = compress
+          response.request_size = payload.bytesize
           response
         end
 
@@ -81,7 +82,7 @@ module Datadog
             )
           else
             Datadog.logger.error("Failed to send request after #{MAX_RETRIES} retries")
-            raise e
+            ErrorResponse.new(e)
           end
         end
 
@@ -91,10 +92,27 @@ module Datadog
           )
         end
 
-        # adds compatibility with Datadog::Tracing transport
-        class ResponseDecorator < ::SimpleDelegator
-          def trace_count
-            0
+        class ErrorResponse < Adapters::Net::Response
+          def initialize(error)
+            @error = error
+          end
+
+          attr_reader :error
+
+          def payload
+            ""
+          end
+
+          def header(name)
+            nil
+          end
+
+          def code
+            nil
+          end
+
+          def inspect
+            "ErrorResponse error:#{error}"
           end
         end
       end

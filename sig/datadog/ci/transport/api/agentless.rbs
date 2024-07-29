@@ -12,17 +12,17 @@ module Datadog
 
           def initialize: (api_key: String, citestcycle_url: String, api_url: String, citestcov_url: String) -> void
 
-          def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
-          def citestcycle_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def citestcycle_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
-          def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
-          def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
           private
 
-          def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String, ?accept_compressed_response: bool) -> Datadog::CI::Transport::HTTP::ResponseDecorator
+          def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String, ?accept_compressed_response: bool) -> Datadog::CI::Transport::Adapters::Net::Response
 
           def build_http_client: (String url, compress: bool) -> Datadog::CI::Transport::HTTP
 

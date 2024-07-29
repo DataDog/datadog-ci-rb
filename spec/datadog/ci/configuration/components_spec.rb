@@ -145,9 +145,17 @@ RSpec.describe Datadog::CI::Configuration::Components do
             context "is disabled" do
               let(:agentless_enabled) { false }
 
-              context "when environment value for telemetry is not presetn" do
+              context "when environment value for telemetry is not present" do
                 it "enables telemetry" do
                   expect(settings.telemetry).to have_received(:enabled=).with(true)
+                end
+
+                it "patches Core::Environment::Identity module to replace the library version" do
+                  expect(Datadog::Core::Environment::Identity.gem_datadog_version).to eq(Datadog::CI::VERSION::STRING)
+                end
+
+                it "patches Datadog::Core::Telemetry::Http::Adapters::Net" do
+                  expect(Datadog::Core::Telemetry::Http::Adapters::Net).to be < Datadog::CI::Transport::Adapters::TelemetryWebmockSafeAdapter
                 end
               end
 

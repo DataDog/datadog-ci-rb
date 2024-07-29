@@ -3,7 +3,9 @@
 require "datadog/core/transport/response"
 require "datadog/core/transport/ext"
 
+require_relative "net_http_client"
 require_relative "../gzip"
+require_relative "../../ext/telemetry"
 require_relative "../../ext/transport"
 
 module Datadog
@@ -26,7 +28,7 @@ module Datadog
           end
 
           def open(&block)
-            req = net_http_client.new(hostname, port)
+            req = NetHttpClient.original_net_http.new(hostname, port)
 
             req.use_ssl = ssl
             req.open_timeout = req.read_timeout = timeout
@@ -63,6 +65,8 @@ module Datadog
             include Datadog::Core::Transport::Response
 
             attr_reader :http_response
+            # Stats for telemetry
+            attr_accessor :request_compressed, :request_size
 
             def initialize(http_response)
               @http_response = http_response
@@ -86,7 +90,10 @@ module Datadog
             end
 
             def ok?
-              code.between?(200, 299)
+              http_code = code
+              return false if http_code.nil?
+
+              http_code.between?(200, 299)
             end
 
             def unsupported?
@@ -98,11 +105,17 @@ module Datadog
             end
 
             def client_error?
-              code.between?(400, 499)
+              http_code = code
+              return false if http_code.nil?
+
+              http_code.between?(400, 499)
             end
 
             def server_error?
-              code.between?(500, 599)
+              http_code = code
+              return false if http_code.nil?
+
+              http_code.between?(500, 599)
             end
 
             def gzipped_content?
@@ -119,17 +132,31 @@ module Datadog
               first_bytes.b == Ext::Transport::GZIP_MAGIC_NUMBER
             end
 
+            def error
+              nil
+            end
+
+            def telemetry_error_type
+              return nil if ok?
+
+              case error
+              when nil
+                Ext::Telemetry::ErrorType::STATUS_CODE
+              when Timeout::Error
+                Ext::Telemetry::ErrorType::TIMEOUT
+              else
+                Ext::Telemetry::ErrorType::NETWORK
+              end
+            end
+
+            # compatibility with Datadog::Tracing transport layer
+            def trace_count
+              0
+            end
+
             def inspect
               "#{super}, http_response:#{http_response}"
             end
-          end
-
-          private
-
-          def net_http_client
-            return ::Net::HTTP unless defined?(WebMock::HttpLibAdapters::NetHttpAdapter::OriginalNetHTTP)
-
-            WebMock::HttpLibAdapters::NetHttpAdapter::OriginalNetHTTP
           end
         end
       end

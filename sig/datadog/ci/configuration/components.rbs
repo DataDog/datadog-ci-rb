@@ -31,6 +31,8 @@ module Datadog
 
         def custom_configuration: (untyped settings) -> Hash[String, String]
 
+        def configure_telemetry: (untyped settings) -> void
+
         def timecop?: () -> bool
       end
     end

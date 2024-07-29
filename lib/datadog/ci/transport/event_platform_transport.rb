@@ -4,6 +4,9 @@ require "msgpack"
 
 require "datadog/core/encoding"
 require "datadog/core/chunker"
+require "datadog/core/utils/time"
+
+require_relative "telemetry"
 
 module Datadog
   module CI
@@ -24,11 +27,18 @@ module Datadog
 
           Datadog.logger.debug { "[#{self.class.name}] Sending #{events.count} events..." }
 
-          encoded_events = encode_events(events)
-          if encoded_events.empty?
-            Datadog.logger.debug { "[#{self.class.name}] Empty encoded events list, skipping send" }
-            return []
+          encoded_events = []
+          # @type var serialization_duration_ms: Float
+          serialization_duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            encoded_events = encode_events(events)
+            if encoded_events.empty?
+              Datadog.logger.debug { "[#{self.class.name}] Empty encoded events list, skipping send" }
+              return []
+            end
           end
+
+          Telemetry.events_enqueued_for_serialization(encoded_events.count)
+          Telemetry.endpoint_payload_serialization_ms(serialization_duration_ms, endpoint: telemetry_endpoint_tag)
 
           responses = []
 
@@ -37,8 +47,32 @@ module Datadog
             Datadog.logger.debug do
               "[#{self.class.name}] Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
             end
+            Telemetry.endpoint_payload_events_count(chunk.count, endpoint: telemetry_endpoint_tag)
 
-            response = send_payload(encoded_payload)
+            response = nil
+            # @type var request_duration_ms: Float
+            request_duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+              response = send_payload(encoded_payload)
+            end
+            # @type var response: Datadog::CI::Transport::Adapters::Net::Response
+
+            Telemetry.endpoint_payload_requests(
+              1,
+              endpoint: telemetry_endpoint_tag, compressed: response.request_compressed
+            )
+            Telemetry.endpoint_payload_requests_ms(request_duration_ms, endpoint: telemetry_endpoint_tag)
+            Telemetry.endpoint_payload_bytes(response.request_size, endpoint: telemetry_endpoint_tag)
+
+            # HTTP layer could send events and exhausted retries (if any)
+            unless response.ok?
+              Telemetry.endpoint_payload_dropped(chunk.count, endpoint: telemetry_endpoint_tag)
+              Telemetry.endpoint_payload_requests_errors(
+                1,
+                endpoint: telemetry_endpoint_tag,
+                error_type: response.telemetry_error_type,
+                status_code: response.code
+              )
+            end
 
             responses << response
           end
@@ -47,6 +81,10 @@ module Datadog
         end
 
         private
+
+        def telemetry_endpoint_tag
+          raise NotImplementedError, "must be implemented by the subclass"
+        end
 
         def encoder
           Datadog::Core::Encoding::MsgpackEncoder
@@ -65,8 +103,13 @@ module Datadog
           return false unless encoded_event.size > max_payload_size
 
           # This single event is too large, we can't flush it
-          Datadog.logger.warn("[#{self.class.name}] Dropping coverage event. Payload too large: '#{event.inspect}'")
+          Datadog.logger.warn(
+            "[#{self.class.name}] Dropping test visibility event for endpoint [#{telemetry_endpoint_tag}]. " \
+            "Payload too large: '#{event.inspect}'"
+          )
           Datadog.logger.warn(encoded_event)
+
+          Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
 
           true
         end
