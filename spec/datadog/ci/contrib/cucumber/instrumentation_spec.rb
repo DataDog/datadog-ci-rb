@@ -66,7 +66,9 @@ RSpec.describe "Cucumber formatter" do
       steps_file_for_run_path
     )
 
-    expect(Datadog::CI::Ext::Environment).to receive(:tags).never
+    # assert that environment tags are collected once per session
+    expect(Datadog::CI::Ext::Environment).to receive(:tags).once.and_call_original
+
     expect(kernel).to receive(:exit).with(expected_test_run_code)
 
     # do not use manual API

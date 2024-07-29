@@ -107,10 +107,6 @@ RSpec.describe Datadog::CI::Configuration::Components do
         context "is enabled" do
           let(:enabled) { true }
 
-          it "collects environment tags" do
-            expect(Datadog::CI::Ext::Environment).to have_received(:tags).with(ENV)
-          end
-
           context "when tracing is disabled" do
             let(:tracing_enabled) { false }
 
@@ -344,10 +340,6 @@ RSpec.describe Datadog::CI::Configuration::Components do
           it do
             expect(settings.tracing.test_mode)
               .to_not have_received(:writer_options=)
-          end
-
-          it "does not collect tags" do
-            expect(Datadog::CI::Ext::Environment).not_to have_received(:tags)
           end
         end
       end

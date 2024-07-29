@@ -8,7 +8,6 @@ require_relative "telemetry"
 require_relative "../codeowners/parser"
 require_relative "../contrib/contrib"
 require_relative "../ext/test"
-require_relative "../ext/environment"
 require_relative "../git/local_repository"
 
 require_relative "../worker"
@@ -28,7 +27,7 @@ module Datadog
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
-          @context = Context.new(Ext::Environment.tags(ENV).freeze)
+          @context = Context.new
           @codeowners = codeowners
           @test_optimisation = test_optimisation
           @remote_settings_api = remote_settings_api

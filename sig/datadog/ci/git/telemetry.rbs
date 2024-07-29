@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module Git
+      module Telemetry
+        def self.git_command: (String command) -> void
+
+        def self.git_command_errors: (String command, ?exit_code: Integer?, ?executable_missing: bool) -> void
+
+        def self.git_command_ms: (String command, untyped duration_ms) -> void
+
+        def self.tags_for_command: (String command) -> ::Hash[String, String]
+
+        def self.exit_code_for: (?exit_code: Integer?, ?executable_missing: bool) -> String?
+      end
+    end
+  end
+end

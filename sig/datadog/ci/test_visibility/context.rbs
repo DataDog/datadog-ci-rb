@@ -7,7 +7,7 @@ module Datadog
 
         @environment_tags: Hash[String, String]
 
-        def initialize: (Hash[String, String] environment_tags) -> void
+        def initialize: () -> void
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
