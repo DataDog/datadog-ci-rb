@@ -3,6 +3,8 @@
 require_relative "../../../../lib/datadog/ci/git/tree_uploader"
 
 RSpec.describe Datadog::CI::Git::TreeUploader do
+  include_context "Telemetry spy"
+
   let(:api) { double("api") }
   subject(:tree_uploader) { described_class.new(api: api) }
 
@@ -11,6 +13,8 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
   end
 
   describe "#call" do
+    subject { tree_uploader.call(repository_url) }
+
     let(:repository_url) { "https://datadoghq.com/git/test.git" }
     let(:latest_commits) { %w[c7f893648f656339f62fb7b4d8a6ecdf7d063835 13c988d4f15e06bcdd0b0af290086a3079cdadb0] }
     let(:head_commit) { "c7f893648f656339f62fb7b4d8a6ecdf7d063835" }
@@ -28,7 +32,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
       it "logs a debug message and aborts the git upload" do
         expect(Datadog.logger).to receive(:debug).with("API is not configured, aborting git upload")
 
-        tree_uploader.call(repository_url)
+        subject
       end
     end
 
@@ -43,7 +47,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
         it "logs a debug message and aborts the git upload" do
           expect(Datadog.logger).to receive(:debug).with("Got empty latest commits list, aborting git upload")
 
-          tree_uploader.call(repository_url)
+          subject
         end
       end
 
@@ -55,7 +59,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
         it "logs a debug message and aborts the git upload" do
           expect(Datadog.logger).to receive(:debug).with("SearchCommits failed with test error, aborting git upload")
 
-          tree_uploader.call(repository_url)
+          subject
         end
       end
 
@@ -65,7 +69,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
         it "logs a debug message and aborts the git upload" do
           expect(Datadog.logger).to receive(:debug).with("No new commits to upload")
 
-          tree_uploader.call(repository_url)
+          subject
         end
       end
 
@@ -88,7 +92,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
                 excluded_commits: backend_commits
               ).and_yield("packfile_path")
 
-              tree_uploader.call(repository_url)
+              subject
             end
           end
 
@@ -106,7 +110,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
                 excluded_commits: backend_commits
               ).and_yield("packfile_path")
 
-              tree_uploader.call(repository_url)
+              subject
             end
           end
         end
@@ -135,7 +139,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
             it "logs a debug message and aborts the git upload" do
               expect(Datadog.logger).to receive(:debug).with("Packfile upload failed with test error")
 
-              tree_uploader.call(repository_url)
+              subject
             end
           end
 
@@ -143,8 +147,10 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
             it "uploads the new commits" do
               expect(upload_packfile).to receive(:call).with(filepath: "packfile_path").and_return(nil)
 
-              tree_uploader.call(repository_url)
+              subject
             end
+
+            it_behaves_like "emits telemetry metric", :distribution, "git_requests.objects_pack_files", 1.0
           end
         end
       end

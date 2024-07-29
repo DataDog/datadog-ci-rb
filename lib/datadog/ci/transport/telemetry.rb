@@ -72,10 +72,6 @@ module Datadog
           Utils::Telemetry.inc(metric_name, count, tags)
         end
 
-        def self.api_requests_ms(metric_name, duration_ms)
-          Utils::Telemetry.distribution(metric_name, duration_ms)
-        end
-
         def self.api_requests_errors(metric_name, count, error_type:, status_code:)
           tags = {}
           set_error_tags(tags, error_type: error_type, status_code: status_code)

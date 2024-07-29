@@ -7,6 +7,7 @@ require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/telemetry"
 require_relative "../utils/git"
+require_relative "../utils/telemetry"
 
 module Datadog
   module CI
@@ -33,7 +34,7 @@ module Datadog
             1,
             compressed: http_response.request_compressed
           )
-          Transport::Telemetry.api_requests_ms(Ext::Telemetry::METRIC_GIT_REQUESTS_SEARCH_COMMITS_MS, http_response.duration_ms)
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_SEARCH_COMMITS_MS, http_response.duration_ms)
 
           unless http_response.ok?
             Transport::Telemetry.api_requests_errors(

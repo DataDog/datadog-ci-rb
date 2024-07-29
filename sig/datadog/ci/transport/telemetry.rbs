@@ -20,8 +20,6 @@ module Datadog
 
         def self.api_requests: (String metric_name, Integer count, compressed: bool) -> void
 
-        def self.api_requests_ms: (String metric_name, Float duration_ms) -> void
-
         def self.api_requests_errors: (String metric_name, Integer count, error_type: String?, status_code: Integer?) -> void
 
         def self.tags: (endpoint: String) -> Hash[String, String]

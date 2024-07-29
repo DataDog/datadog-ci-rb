@@ -3,6 +3,11 @@
 require "json"
 require "securerandom"
 
+require_relative "../ext/transport"
+require_relative "../ext/telemetry"
+require_relative "../transport/telemetry"
+require_relative "../utils/telemetry"
+
 module Datadog
   module CI
     module Git
@@ -34,7 +39,23 @@ module Datadog
             headers: {Ext::Transport::HEADER_CONTENT_TYPE => content_type}
           )
 
-          raise ApiError, "Failed to upload packfile: #{http_response.inspect}" unless http_response.ok?
+          Transport::Telemetry.api_requests(
+            Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK,
+            1,
+            compressed: http_response.request_compressed
+          )
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK_MS, http_response.duration_ms)
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK_BYTES, http_response.request_size)
+
+          unless http_response.ok?
+            Transport::Telemetry.api_requests_errors(
+              Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK_ERRORS,
+              1,
+              error_type: http_response.telemetry_error_type,
+              status_code: http_response.code
+            )
+            raise ApiError, "Failed to upload packfile: #{http_response.inspect}"
+          end
         end
 
         private

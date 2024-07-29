@@ -8,6 +8,9 @@ require_relative "search_commits"
 require_relative "upload_packfile"
 require_relative "packfiles"
 
+require_relative "../ext/telemetry"
+require_relative "../utils/telemetry"
+
 module Datadog
   module CI
     module Git
@@ -63,12 +66,16 @@ module Datadog
             head_commit_sha: head_commit,
             repository_url: repository_url
           )
+          packfiles_count = 0
           Packfiles.generate(included_commits: new_commits, excluded_commits: known_commits) do |filepath|
+            packfiles_count += 1
             uploader.call(filepath: filepath)
           rescue UploadPackfile::ApiError => e
             Datadog.logger.debug("Packfile upload failed with #{e}")
             break
           end
+
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK_FILES, packfiles_count.to_f)
         ensure
           Datadog.logger.debug("Git tree upload finished")
         end

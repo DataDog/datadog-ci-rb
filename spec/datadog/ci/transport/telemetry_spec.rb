@@ -200,17 +200,4 @@ RSpec.describe Datadog::CI::Transport::Telemetry do
       end
     end
   end
-
-  describe ".api_requests_ms" do
-    subject { described_class.api_requests_ms(metric_name, duration_ms) }
-
-    let(:metric_name) { "metric_name" }
-    let(:duration_ms) { 1.5 }
-
-    it "tracks the api requests duration distribution" do
-      expect(Datadog::CI::Utils::Telemetry).to receive(:distribution).with(metric_name, duration_ms)
-
-      subject
-    end
-  end
 end
