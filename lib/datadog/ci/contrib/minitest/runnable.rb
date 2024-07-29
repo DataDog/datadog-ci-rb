@@ -19,7 +19,7 @@ module Datadog
 
               test_suite_name = Helpers.test_suite_name(self, method)
 
-              test_suite = Datadog::CI.start_test_suite(test_suite_name)
+              test_suite = test_visibility_component.start_test_suite(test_suite_name)
 
               results = super
               return results unless test_suite
@@ -33,6 +33,10 @@ module Datadog
 
             def datadog_configuration
               Datadog.configuration.ci[:minitest]
+            end
+
+            def test_visibility_component
+              Datadog.send(:components).test_visibility
             end
           end
         end

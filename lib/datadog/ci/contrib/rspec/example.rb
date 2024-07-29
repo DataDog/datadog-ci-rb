@@ -34,10 +34,10 @@ module Datadog
 
               if ci_queue?
                 suite_name = "#{suite_name} (ci-queue running example [#{test_name}])"
-                test_suite_span = CI.start_test_suite(suite_name)
+                test_suite_span = test_visibility_component.start_test_suite(suite_name)
               end
 
-              CI.trace_test(
+              test_visibility_component.trace_test(
                 test_name,
                 suite_name,
                 tags: {
@@ -97,6 +97,10 @@ module Datadog
 
             def datadog_configuration
               Datadog.configuration.ci[:rspec]
+            end
+
+            def test_visibility_component
+              Datadog.send(:components).test_visibility
             end
 
             def ci_queue?

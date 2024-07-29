@@ -1,6 +1,14 @@
 require "time"
 
 RSpec.describe "RSpec hooks" do
+  before do
+    # expect that public manual API isn't used
+    expect(Datadog::CI).to receive(:start_test_session).never
+    expect(Datadog::CI).to receive(:start_test_module).never
+    expect(Datadog::CI).to receive(:start_test_suite).never
+    expect(Datadog::CI).to receive(:start_test).never
+  end
+
   # Yields to a block in a new RSpec global context. All RSpec
   # test configuration and execution should be wrapped in this method.
   def with_new_rspec_environment
@@ -109,7 +117,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "82")
+      expect(first_test_span).to have_test_tag(:source_start, "90")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"

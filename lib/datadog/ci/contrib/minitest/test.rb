@@ -26,12 +26,12 @@ module Datadog
                 test_suite_name = "#{test_suite_name} (#{name} concurrently)"
 
                 # for parallel execution we need to start a new test suite for each test
-                CI.start_test_suite(test_suite_name)
+                test_visibility_component.start_test_suite(test_suite_name)
               end
 
               source_file, line_number = method(name).source_location
 
-              test_span = CI.start_test(
+              test_span = test_visibility_component.trace_test(
                 name,
                 test_suite_name,
                 tags: {
@@ -47,7 +47,7 @@ module Datadog
             end
 
             def after_teardown
-              test_span = CI.active_test
+              test_span = test_visibility_component.active_test
               return super unless test_span
 
               finish_with_result(test_span, result_code)
@@ -76,6 +76,10 @@ module Datadog
 
             def datadog_configuration
               Datadog.configuration.ci[:minitest]
+            end
+
+            def test_visibility_component
+              Datadog.send(:components).test_visibility
             end
           end
 
