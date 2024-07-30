@@ -1,5 +1,18 @@
 ## [Unreleased]
 
+## [1.3.0] - 2024-07-30
+
+### Added
+
+* Add test_session metric ([#207][])
+* API metrics ([#206][])
+* git commands telemetry ([#205][])
+* implement ITR metrics for internal telemetry ([#204][])
+* Implement code coverage metrics for internal telemetry ([#203][])
+* Implement manual_api_events metric ([#202][])
+* HTTP transport metrics and minor telemetry tweaks ([#201][])
+* Send event_created and event_finished metrics for internal telemetry ([#200][])
+
 ## [1.2.0] - 2024-07-16
 
 ### Changed
@@ -277,7 +290,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.2.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.3.0...main
+[1.3.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.0...v1.0.1
@@ -392,3 +406,11 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#190]: https://github.com/DataDog/datadog-ci-rb/issues/190
 [#193]: https://github.com/DataDog/datadog-ci-rb/issues/193
 [#197]: https://github.com/DataDog/datadog-ci-rb/issues/197
+[#200]: https://github.com/DataDog/datadog-ci-rb/issues/200
+[#201]: https://github.com/DataDog/datadog-ci-rb/issues/201
+[#202]: https://github.com/DataDog/datadog-ci-rb/issues/202
+[#203]: https://github.com/DataDog/datadog-ci-rb/issues/203
+[#204]: https://github.com/DataDog/datadog-ci-rb/issues/204
+[#205]: https://github.com/DataDog/datadog-ci-rb/issues/205
+[#206]: https://github.com/DataDog/datadog-ci-rb/issues/206
+[#207]: https://github.com/DataDog/datadog-ci-rb/issues/207
