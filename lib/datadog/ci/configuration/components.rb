@@ -4,6 +4,8 @@ require "datadog/core/telemetry/ext"
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
+require_relative "../remote/component"
+require_relative "../remote/library_settings_client"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_optimisation/coverage/writer"
@@ -15,7 +17,6 @@ require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
 require_relative "../transport/api/builder"
-require_relative "../transport/remote_settings_api"
 require_relative "../utils/identity"
 require_relative "../utils/parsing"
 require_relative "../utils/test_run"
@@ -26,11 +27,13 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_optimisation
+        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote
 
         def initialize(settings)
           @test_optimisation = nil
           @test_visibility = TestVisibility::NullComponent.new
+          @git_tree_upload_worker = DummyWorker.new
+          @ci_remote = nil
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -45,6 +48,7 @@ module Datadog
 
           @test_visibility&.shutdown!
           @test_optimisation&.shutdown!
+          @git_tree_upload_worker&.stop
         end
 
         def activate_ci!(settings)
@@ -102,14 +106,14 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = trace_writer_options
 
+          @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
+          @ci_remote = Remote::Component.new(
+            library_settings_client: build_library_settings_client(settings, test_visibility_api)
+          )
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
-
           @test_visibility = TestVisibility::Component.new(
-            test_optimisation: @test_optimisation,
-            test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
-            remote_settings_api: build_remote_settings_client(settings, test_visibility_api),
-            git_tree_upload_worker: build_git_upload_worker(settings, test_visibility_api)
+            test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility
           )
         end
 
@@ -216,8 +220,8 @@ module Datadog
           end
         end
 
-        def build_remote_settings_client(settings, api)
-          Transport::RemoteSettingsApi.new(
+        def build_library_settings_client(settings, api)
+          Remote::LibrarySettingsClient.new(
             api: api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings)

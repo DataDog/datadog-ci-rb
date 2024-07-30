@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/transport/remote_settings_api"
+require_relative "../../../../lib/datadog/ci/remote/library_settings_client"
 
-RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
+RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
   include_context "Telemetry spy"
 
   let(:api) { spy("api") }
@@ -11,8 +11,8 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
 
   subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
-  describe "#fetch_library_settings" do
-    subject { client.fetch_library_settings(test_session) }
+  describe "#fetch" do
+    subject { client.fetch(test_session) }
 
     let(:service) { "service" }
     let(:tracer_span) do
@@ -62,7 +62,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
     end
 
     context "parsing response" do
-      subject(:response) { client.fetch_library_settings(test_session) }
+      subject(:response) { client.fetch(test_session) }
 
       context "when api is present" do
         before do
@@ -79,9 +79,9 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
                   "id" => "123",
                   "type" => Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE,
                   "attributes" => {
-                    "code_coverage" => true,
-                    "tests_skipping" => false,
-                    "itr_enabled" => true,
+                    "code_coverage" => "1",
+                    "tests_skipping" => "false",
+                    "itr_enabled" => "True",
                     "require_git" => require_git
                   }
                 }
@@ -95,15 +95,18 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
           it "parses the response" do
             expect(response.ok?).to be true
             expect(response.payload).to eq({
-              "code_coverage" => true,
-              "tests_skipping" => false,
-              "itr_enabled" => true,
+              "code_coverage" => "1",
+              "tests_skipping" => "false",
+              "itr_enabled" => "True",
               "require_git" => require_git
             })
             expect(response.require_git?).to be false
+            expect(response.itr_enabled?).to be true
+            expect(response.code_coverage_enabled?).to be true
+            expect(response.tests_skipping_enabled?).to be false
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
-            expect(metric.tags).to eq("coverage_enabled" => true, "itrskip_enabled" => false)
+            expect(metric.tags).to eq("coverage_enabled" => "true", "itrskip_enabled" => "false")
           end
 
           it_behaves_like "emits telemetry metric", :inc, "git_requests.settings", 1

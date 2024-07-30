@@ -50,25 +50,31 @@ RSpec.shared_context "CI mode activated" do
 
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return(test_command)
 
-    allow_any_instance_of(Datadog::CI::Transport::RemoteSettingsApi).to receive(:fetch_library_settings).and_return(
+    allow_any_instance_of(Datadog::CI::Remote::LibrarySettingsClient).to receive(:fetch).and_return(
       instance_double(
-        Datadog::CI::Transport::RemoteSettingsApi::Response,
+        Datadog::CI::Remote::LibrarySettings,
         payload: {
           "itr_enabled" => itr_enabled,
           "code_coverage" => code_coverage_enabled,
           "tests_skipping" => tests_skipping_enabled
         },
-        require_git?: require_git
+        require_git?: require_git,
+        itr_enabled?: itr_enabled,
+        code_coverage_enabled?: code_coverage_enabled,
+        tests_skipping_enabled?: tests_skipping_enabled
       ),
       # This is for the second call to fetch_library_settings
       instance_double(
-        Datadog::CI::Transport::RemoteSettingsApi::Response,
+        Datadog::CI::Remote::LibrarySettings,
         payload: {
           "itr_enabled" => itr_enabled,
           "code_coverage" => !code_coverage_enabled,
           "tests_skipping" => !tests_skipping_enabled
         },
-        require_git?: !require_git
+        require_git?: !require_git,
+        itr_enabled?: itr_enabled,
+        code_coverage_enabled?: !code_coverage_enabled,
+        tests_skipping_enabled?: !tests_skipping_enabled
       )
     )
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)

@@ -6,7 +6,6 @@ require "datadog/core/utils/forking"
 
 require_relative "../ext/test"
 require_relative "../ext/telemetry"
-require_relative "../ext/transport"
 
 require_relative "../git/local_repository"
 
@@ -65,24 +64,17 @@ module Datadog
           Datadog.logger.debug("TestOptimisation initialized with enabled: #{@enabled}")
         end
 
-        def configure(remote_configuration, test_session:, git_tree_upload_worker:)
+        def configure(remote_configuration, test_session)
+          return unless enabled?
+
           Datadog.logger.debug("Configuring TestOptimisation with remote configuration: #{remote_configuration}")
 
-          @enabled = Utils::Parsing.convert_to_bool(
-            remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY, false)
-          )
-          @test_skipping_enabled = @enabled && Utils::Parsing.convert_to_bool(
-            remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY, false)
-          )
-          @code_coverage_enabled = @enabled && Utils::Parsing.convert_to_bool(
-            remote_configuration.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY, false)
-          )
+          @enabled = remote_configuration.itr_enabled?
+          @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
+          @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled?
 
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
-          # currently we set this tag when ITR requires collecting code coverage
-          # this will change as soon as we implement total code coverage support in this library
           test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
-
           # we skip tests, not suites
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
 
@@ -90,7 +82,7 @@ module Datadog
 
           Datadog.logger.debug("Configured TestOptimisation with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
 
-          fetch_skippable_tests(test_session: test_session, git_tree_upload_worker: git_tree_upload_worker)
+          fetch_skippable_tests(test_session)
         end
 
         def enabled?
@@ -225,7 +217,7 @@ module Datadog
           coverage[absolute_test_source_file_path] = true
         end
 
-        def fetch_skippable_tests(test_session:, git_tree_upload_worker:)
+        def fetch_skippable_tests(test_session)
           return unless skipping_tests?
 
           # we can only request skippable tests if git metadata is already uploaded
@@ -247,6 +239,10 @@ module Datadog
 
         def code_coverage_mode
           @use_single_threaded_coverage ? :single : :multi
+        end
+
+        def git_tree_upload_worker
+          Datadog.send(:components).git_tree_upload_worker
         end
       end
     end
