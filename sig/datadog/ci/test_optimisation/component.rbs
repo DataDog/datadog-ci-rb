@@ -28,7 +28,7 @@ module Datadog
 
         def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::TestOptimisation::Coverage::Writer?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool) -> void
 
-        def configure: (Datadog::CI::Transport::RemoteSettingsApi::Response remote_configuration, Datadog::CI::TestSession test_session) -> void
+        def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 
         def enabled?: () -> bool
 

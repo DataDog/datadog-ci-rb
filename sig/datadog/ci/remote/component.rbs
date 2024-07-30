@@ -2,9 +2,10 @@ module Datadog
   module CI
     module Remote
       class Component
-        @library_settings_api: Datadog::CI::Transport::RemoteSettingsApi
+        @library_settings_client: Datadog::CI::Remote::LibrarySettingsClient
 
-        def initialize: (library_settings_api: Datadog::CI::Transport::RemoteSettingsApi) -> void
+        def initialize: (library_settings_client: Datadog::CI::Remote::LibrarySettingsClient) -> void
+
         def configure: (Datadog::CI::TestSession test_session) -> untyped
 
         private

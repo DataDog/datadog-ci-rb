@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Remote
+      class LibrarySettingsClient
+        @api: Datadog::CI::Transport::Api::Base?
+        @dd_env: String?
+        @config_tags: Hash[String, String]
+
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String]?) -> void
+
+        def fetch: (Datadog::CI::TestSession test_session) -> LibrarySettings
+
+        private
+
+        def payload: (Datadog::CI::TestSession test_session) -> String
+      end
+    end
+  end
+end

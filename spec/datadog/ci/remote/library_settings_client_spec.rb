@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/transport/remote_settings_api"
+require_relative "../../../../lib/datadog/ci/remote/library_settings_client"
 
-RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
+RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
   include_context "Telemetry spy"
 
   let(:api) { spy("api") }
@@ -11,8 +11,8 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
 
   subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
-  describe "#fetch_library_settings" do
-    subject { client.fetch_library_settings(test_session) }
+  describe "#fetch" do
+    subject { client.fetch(test_session) }
 
     let(:service) { "service" }
     let(:tracer_span) do
@@ -62,7 +62,7 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
     end
 
     context "parsing response" do
-      subject(:response) { client.fetch_library_settings(test_session) }
+      subject(:response) { client.fetch(test_session) }
 
       context "when api is present" do
         before do
