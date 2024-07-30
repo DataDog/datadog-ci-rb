@@ -198,9 +198,6 @@ module Datadog
 
         # TODO: move this to CI::Configuration::Remote
         def configure_library(test_session)
-          # this will change when EFD is implemented
-          return unless itr_enabled?
-
           remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
           # sometimes we can skip code coverage for default branch if there are no changes in the repository
           # backend needs git metadata uploaded for this test session to check if we can skip code coverage
