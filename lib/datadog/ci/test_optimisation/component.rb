@@ -66,6 +66,8 @@ module Datadog
         end
 
         def configure(remote_configuration, test_session:, git_tree_upload_worker:)
+          return unless enabled?
+
           Datadog.logger.debug("Configuring TestOptimisation with remote configuration: #{remote_configuration}")
 
           @enabled = Utils::Parsing.convert_to_bool(
