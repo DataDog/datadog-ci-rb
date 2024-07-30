@@ -79,9 +79,9 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
                   "id" => "123",
                   "type" => Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE,
                   "attributes" => {
-                    "code_coverage" => true,
-                    "tests_skipping" => false,
-                    "itr_enabled" => true,
+                    "code_coverage" => "1",
+                    "tests_skipping" => "false",
+                    "itr_enabled" => "True",
                     "require_git" => require_git
                   }
                 }
@@ -95,15 +95,18 @@ RSpec.describe Datadog::CI::Transport::RemoteSettingsApi do
           it "parses the response" do
             expect(response.ok?).to be true
             expect(response.payload).to eq({
-              "code_coverage" => true,
-              "tests_skipping" => false,
-              "itr_enabled" => true,
+              "code_coverage" => "1",
+              "tests_skipping" => "false",
+              "itr_enabled" => "True",
               "require_git" => require_git
             })
             expect(response.require_git?).to be false
+            expect(response.itr_enabled?).to be true
+            expect(response.code_coverage_enabled?).to be true
+            expect(response.tests_skipping_enabled?).to be false
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
-            expect(metric.tags).to eq("coverage_enabled" => true, "itrskip_enabled" => false)
+            expect(metric.tags).to eq("coverage_enabled" => "true", "itrskip_enabled" => "false")
           end
 
           it_behaves_like "emits telemetry metric", :inc, "git_requests.settings", 1

@@ -6,6 +6,11 @@ module Datadog
           @http_response: Datadog::CI::Transport::Adapters::Net::Response?
           @json: Hash[String, untyped]?
 
+          @require_git: bool
+          @itr_enabled: bool
+          @code_coverage_enabled: bool
+          @tests_skipping_enabled: bool
+
           def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
 
           def ok?: () -> bool
@@ -13,6 +18,12 @@ module Datadog
           def payload: () -> Hash[String, untyped]
 
           def require_git?: () -> bool
+
+          def itr_enabled?: () -> bool
+
+          def code_coverage_enabled?: () -> bool
+
+          def tests_skipping_enabled?: () -> bool
 
           private
 
