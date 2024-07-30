@@ -436,6 +436,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           end
         end
         it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
+        it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_TEST_SESSION
       end
 
       describe "#start_test_module" do
