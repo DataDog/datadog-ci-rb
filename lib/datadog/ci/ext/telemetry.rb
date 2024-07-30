@@ -112,20 +112,6 @@ module Datadog
         end
 
         module Provider
-          APPVEYOR = "appveyor"
-          AWS = "aws"
-          AZURE = "azp"
-          BITBUCKET = "bitbucket"
-          BITRISE = "bitrise"
-          BUDDYCI = "buddyci"
-          BUILDKITE = "buildkite"
-          CIRCLECI = "circleci"
-          CODEFRESH = "codefresh"
-          GITHUB = "githubactions"
-          GITLAB = "gitlab"
-          JENKINS = "jenkins"
-          TEAMCITY = "teamcity"
-          TRAVISCI = "travisci"
           UNSUPPORTED = "unsupported"
         end
       end

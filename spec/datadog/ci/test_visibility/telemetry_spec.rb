@@ -211,7 +211,7 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
     subject(:test_session_started) { described_class.test_session_started(test_session) }
 
     let(:provider_tag) { "github" }
-    let(:expected_provider_telemetry_tag) { Datadog::CI::Ext::Telemetry::Provider::GITHUB }
+    let(:expected_provider_telemetry_tag) { "github" }
 
     let(:test_session) do
       instance_double(
