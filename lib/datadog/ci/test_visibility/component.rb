@@ -218,8 +218,7 @@ module Datadog
 
           test_optimisation.configure(
             remote_configuration.payload,
-            test_session: test_session,
-            git_tree_upload_worker: git_tree_upload_worker
+            test_session: test_session
           )
         end
 

@@ -65,7 +65,7 @@ module Datadog
           Datadog.logger.debug("TestOptimisation initialized with enabled: #{@enabled}")
         end
 
-        def configure(remote_configuration, test_session:, git_tree_upload_worker:)
+        def configure(remote_configuration, test_session:)
           return unless enabled?
 
           Datadog.logger.debug("Configuring TestOptimisation with remote configuration: #{remote_configuration}")
@@ -92,7 +92,7 @@ module Datadog
 
           Datadog.logger.debug("Configured TestOptimisation with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
 
-          fetch_skippable_tests(test_session: test_session, git_tree_upload_worker: git_tree_upload_worker)
+          fetch_skippable_tests(test_session)
         end
 
         def enabled?
@@ -227,7 +227,7 @@ module Datadog
           coverage[absolute_test_source_file_path] = true
         end
 
-        def fetch_skippable_tests(test_session:, git_tree_upload_worker:)
+        def fetch_skippable_tests(test_session)
           return unless skipping_tests?
 
           # we can only request skippable tests if git metadata is already uploaded
@@ -249,6 +249,10 @@ module Datadog
 
         def code_coverage_mode
           @use_single_threaded_coverage ? :single : :multi
+        end
+
+        def git_tree_upload_worker
+          Datadog.send(:components).git_tree_upload_worker
         end
       end
     end

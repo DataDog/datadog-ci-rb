@@ -15,10 +15,11 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
   let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
   subject(:component) { described_class.new(api: api, dd_env: "dd_env", coverage_writer: writer, enabled: itr_enabled) }
-  let(:configure) { component.configure(remote_configuration, test_session: test_session, git_tree_upload_worker: git_worker) }
+  let(:configure) { component.configure(remote_configuration, test_session: test_session) }
 
   before do
     allow(writer).to receive(:write)
+    allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
   end
 
   describe "#configure" do
