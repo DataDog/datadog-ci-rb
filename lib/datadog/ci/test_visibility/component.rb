@@ -20,7 +20,6 @@ module Datadog
         attr_reader :test_suite_level_visibility_enabled
 
         def initialize(
-          test_optimisation:,
           remote_settings_api:,
           git_tree_upload_worker: DummyWorker.new,
           test_suite_level_visibility_enabled: false,
@@ -29,7 +28,6 @@ module Datadog
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
           @context = Context.new
           @codeowners = codeowners
-          @test_optimisation = test_optimisation
           @remote_settings_api = remote_settings_api
           @git_tree_upload_worker = git_tree_upload_worker
         end
@@ -136,7 +134,7 @@ module Datadog
         end
 
         def itr_enabled?
-          @test_optimisation.enabled?
+          test_optimisation.enabled?
         end
 
         private
@@ -171,12 +169,12 @@ module Datadog
 
           Telemetry.event_created(test)
 
-          @test_optimisation.mark_if_skippable(test)
-          @test_optimisation.start_coverage(test)
+          test_optimisation.mark_if_skippable(test)
+          test_optimisation.start_coverage(test)
         end
 
         def on_test_session_finished(test_session)
-          @test_optimisation.write_test_session_tags(test_session)
+          test_optimisation.write_test_session_tags(test_session)
 
           Telemetry.event_finished(test_session)
         end
@@ -190,8 +188,8 @@ module Datadog
         end
 
         def on_test_finished(test)
-          @test_optimisation.stop_coverage(test)
-          @test_optimisation.count_skipped_test(test)
+          test_optimisation.stop_coverage(test)
+          test_optimisation.count_skipped_test(test)
 
           Telemetry.event_finished(test)
         end
@@ -216,7 +214,7 @@ module Datadog
             end
           end
 
-          @test_optimisation.configure(
+          test_optimisation.configure(
             remote_configuration.payload,
             test_session: test_session,
             git_tree_upload_worker: @git_tree_upload_worker
@@ -275,6 +273,10 @@ module Datadog
               "Make sure that there is a test session running."
             end
           end
+        end
+
+        def test_optimisation
+          Datadog.send(:components).test_optimisation
         end
       end
     end

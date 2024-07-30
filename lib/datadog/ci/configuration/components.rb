@@ -106,7 +106,6 @@ module Datadog
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
 
           @test_visibility = TestVisibility::Component.new(
-            test_optimisation: @test_optimisation,
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             remote_settings_api: build_remote_settings_client(settings, test_visibility_api),
             git_tree_upload_worker: build_git_upload_worker(settings, test_visibility_api)

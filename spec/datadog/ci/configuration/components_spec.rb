@@ -77,6 +77,12 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
           allow(settings.telemetry).to receive(:enabled=).and_call_original
 
+          allow(Datadog::CI::Ext::Environment)
+            .to receive(:tags).and_return({})
+
+          logger = spy(:logger)
+          allow(Datadog).to receive(:logger).and_return(logger)
+
           allow(Datadog.logger)
             .to receive(:debug)
 
@@ -86,10 +92,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(Datadog.logger)
             .to receive(:error)
 
-          allow(Datadog::CI::Ext::Environment)
-            .to receive(:tags).and_return({})
-
           components
+
+          allow(Datadog).to receive(:components).and_return(components)
         end
 
         let(:api_key) { nil }
