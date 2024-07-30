@@ -21,7 +21,6 @@ module Datadog
 
         def initialize(
           remote_settings_api:,
-          git_tree_upload_worker: DummyWorker.new,
           test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse
         )
@@ -29,11 +28,6 @@ module Datadog
           @context = Context.new
           @codeowners = codeowners
           @remote_settings_api = remote_settings_api
-          @git_tree_upload_worker = git_tree_upload_worker
-        end
-
-        def shutdown!
-          @git_tree_upload_worker.stop
         end
 
         def start_test_session(service: nil, tags: {})
@@ -137,17 +131,25 @@ module Datadog
           test_optimisation.enabled?
         end
 
+        def shutdown!
+          # noop, there is no thread owned by test visibility component
+        end
+
         private
 
         # DOMAIN EVENTS
         def on_test_session_started(test_session)
-          Telemetry.event_created(test_session)
-          Telemetry.test_session_started(test_session)
+          # signal git tree upload worker to start uploading git metadata
+          git_tree_upload_worker.perform(test_session.git_repository_url)
 
           # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
           Contrib.auto_instrument_on_session_start!
 
-          @git_tree_upload_worker.perform(test_session.git_repository_url)
+          # sends internal telemetry events
+          Telemetry.test_session_started(test_session)
+          Telemetry.event_created(test_session)
+
+          # signal Remote::Component to configure the library
           configure_library(test_session)
         end
 
@@ -204,7 +206,7 @@ module Datadog
           # backend needs git metadata uploaded for this test session to check if we can skip code coverage
           if remote_configuration.require_git?
             Datadog.logger.debug { "Library configuration endpoint requires git upload to be finished, waiting..." }
-            @git_tree_upload_worker.wait_until_done
+            git_tree_upload_worker.wait_until_done
 
             Datadog.logger.debug { "Requesting library configuration again..." }
             remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
@@ -217,7 +219,7 @@ module Datadog
           test_optimisation.configure(
             remote_configuration.payload,
             test_session: test_session,
-            git_tree_upload_worker: @git_tree_upload_worker
+            git_tree_upload_worker: git_tree_upload_worker
           )
         end
 
@@ -277,6 +279,10 @@ module Datadog
 
         def test_optimisation
           Datadog.send(:components).test_optimisation
+        end
+
+        def git_tree_upload_worker
+          Datadog.send(:components).git_tree_upload_worker
         end
       end
     end

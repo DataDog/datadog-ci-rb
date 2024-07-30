@@ -4,10 +4,12 @@ module Datadog
       module Components : Datadog::Core::Configuration::Components
         @test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
         @test_optimisation: Datadog::CI::TestOptimisation::Component?
+        @git_tree_upload_worker: Datadog::CI::Worker
         @custom_configuration: Hash[String, String]
 
         attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
         attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component?
+        attr_reader git_tree_upload_worker: Datadog::CI::Worker
 
         def initialize: (untyped settings) -> void
 

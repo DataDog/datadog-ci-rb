@@ -6,12 +6,11 @@ module Datadog
 
         @remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi
         @codeowners: Datadog::CI::Codeowners::Matcher
-        @git_tree_upload_worker: Datadog::CI::Worker
         @context: Datadog::CI::TestVisibility::Context
 
         attr_reader test_suite_level_visibility_enabled: bool
 
-        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi, ?git_tree_upload_worker: Datadog::CI::Worker) -> void
+        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, remote_settings_api: Datadog::CI::Transport::RemoteSettingsApi) -> void
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
@@ -76,6 +75,8 @@ module Datadog
         def on_test_finished: (Datadog::CI::Test test) -> void
 
         def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
+
+        def git_tree_upload_worker: () -> Datadog::CI::Worker
       end
     end
   end

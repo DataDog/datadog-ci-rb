@@ -26,11 +26,12 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_optimisation
+        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker
 
         def initialize(settings)
           @test_optimisation = nil
           @test_visibility = TestVisibility::NullComponent.new
+          @git_tree_upload_worker = DummyWorker.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -45,6 +46,7 @@ module Datadog
 
           @test_visibility&.shutdown!
           @test_optimisation&.shutdown!
+          @git_tree_upload_worker&.stop
         end
 
         def activate_ci!(settings)
@@ -102,13 +104,14 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = trace_writer_options
 
+          @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
+
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
 
           @test_visibility = TestVisibility::Component.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
-            remote_settings_api: build_remote_settings_client(settings, test_visibility_api),
-            git_tree_upload_worker: build_git_upload_worker(settings, test_visibility_api)
+            remote_settings_api: build_remote_settings_client(settings, test_visibility_api)
           )
         end
 
