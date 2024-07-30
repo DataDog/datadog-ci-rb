@@ -18,23 +18,6 @@ module Datadog
           Ext::AppTypes::TYPE_TEST_SESSION => Ext::Telemetry::EventType::SESSION
         }.freeze
 
-        PROVIDER_TAG_TO_TELEMETRY_PROVIDER_TAG = {
-          Ext::Environment::Provider::APPVEYOR => Ext::Telemetry::Provider::APPVEYOR,
-          Ext::Environment::Provider::AWS => Ext::Telemetry::Provider::AWS,
-          Ext::Environment::Provider::AZURE => Ext::Telemetry::Provider::AZURE,
-          Ext::Environment::Provider::BITBUCKET => Ext::Telemetry::Provider::BITBUCKET,
-          Ext::Environment::Provider::BITRISE => Ext::Telemetry::Provider::BITRISE,
-          Ext::Environment::Provider::BUDDYCI => Ext::Telemetry::Provider::BUDDYCI,
-          Ext::Environment::Provider::BUILDKITE => Ext::Telemetry::Provider::BUILDKITE,
-          Ext::Environment::Provider::CIRCLECI => Ext::Telemetry::Provider::CIRCLECI,
-          Ext::Environment::Provider::CODEFRESH => Ext::Telemetry::Provider::CODEFRESH,
-          Ext::Environment::Provider::GITHUB => Ext::Telemetry::Provider::GITHUB,
-          Ext::Environment::Provider::GITLAB => Ext::Telemetry::Provider::GITLAB,
-          Ext::Environment::Provider::JENKINS => Ext::Telemetry::Provider::JENKINS,
-          Ext::Environment::Provider::TEAMCITY => Ext::Telemetry::Provider::TEAMCITY,
-          Ext::Environment::Provider::TRAVISCI => Ext::Telemetry::Provider::TRAVISCI
-        }.freeze
-
         def self.event_created(span)
           Utils::Telemetry.inc(Ext::Telemetry::METRIC_EVENT_CREATED, 1, event_tags_from_span(span))
         end
@@ -51,10 +34,9 @@ module Datadog
             1,
             {
               Ext::Telemetry::TAG_AUTO_INJECTED => "false", # ruby doesn't support auto injection yet
-              Ext::Telemetry::TAG_PROVIDER => PROVIDER_TAG_TO_TELEMETRY_PROVIDER_TAG.fetch(
-                test_session.get_tag(Ext::Environment::TAG_PROVIDER_NAME),
+              Ext::Telemetry::TAG_PROVIDER =>
+                test_session.get_tag(Ext::Environment::TAG_PROVIDER_NAME) ||
                 Ext::Telemetry::Provider::UNSUPPORTED
-              )
             }
           )
         end
