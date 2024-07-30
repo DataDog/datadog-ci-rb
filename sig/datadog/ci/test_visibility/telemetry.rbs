@@ -4,9 +4,13 @@ module Datadog
       module Telemetry
         SPAN_TYPE_TO_TELEMETRY_EVENT_TYPE: ::Hash[String, String]
 
+        PROVIDER_TAG_TO_TELEMETRY_PROVIDER_TAG: ::Hash[String, String]
+
         def self.event_created: (Datadog::CI::Span span) -> void
 
         def self.event_finished: (Datadog::CI::Span span) -> void
+
+        def self.test_session_started: (Datadog::CI::TestSession span) -> void
 
         def self.event_tags_from_span: (Datadog::CI::Span span) -> ::Hash[String, String]
 

@@ -17,7 +17,7 @@ module Datadog
             end
 
             def provider_name
-              "buildkite"
+              Provider::BUILDKITE
             end
 
             def job_url

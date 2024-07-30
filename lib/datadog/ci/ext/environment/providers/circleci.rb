@@ -17,7 +17,7 @@ module Datadog
             end
 
             def provider_name
-              "circleci"
+              Provider::CIRCLECI
             end
 
             def job_url

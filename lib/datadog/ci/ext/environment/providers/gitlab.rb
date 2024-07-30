@@ -15,7 +15,7 @@ module Datadog
             end
 
             def provider_name
-              "gitlab"
+              Provider::GITLAB
             end
 
             def job_name

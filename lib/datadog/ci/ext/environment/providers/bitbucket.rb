@@ -16,7 +16,7 @@ module Datadog
 
             # overridden methods
             def provider_name
-              "bitbucket"
+              Provider::BITBUCKET
             end
 
             def pipeline_id

@@ -17,7 +17,7 @@ module Datadog
             end
 
             def provider_name
-              "awscodepipeline"
+              Provider::AWS
             end
 
             def pipeline_id

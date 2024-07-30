@@ -19,7 +19,7 @@ module Datadog
             end
 
             def provider_name
-              "github"
+              Provider::GITHUB
             end
 
             def job_name

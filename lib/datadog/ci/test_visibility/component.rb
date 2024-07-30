@@ -144,6 +144,7 @@ module Datadog
         # DOMAIN EVENTS
         def on_test_session_started(test_session)
           Telemetry.event_created(test_session)
+          Telemetry.test_session_started(test_session)
 
           # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
           Contrib.auto_instrument_on_session_start!

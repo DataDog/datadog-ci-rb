@@ -17,7 +17,7 @@ module Datadog
             end
 
             def provider_name
-              "codefresh"
+              Provider::CODEFRESH
             end
 
             def job_name
