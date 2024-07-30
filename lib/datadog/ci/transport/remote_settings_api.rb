@@ -54,34 +54,32 @@ module Datadog
           def require_git?
             return @require_git if defined?(@require_git)
 
-            @require_git = Utils::Parsing.convert_to_bool(payload[Ext::Transport::DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY])
+            @require_git = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY)
           end
 
           def itr_enabled?
             return @itr_enabled if defined?(@itr_enabled)
 
-            @itr_enabled = Utils::Parsing.convert_to_bool(
-              payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY, false)
-            )
+            @itr_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY)
           end
 
           def code_coverage_enabled?
             return @code_coverage_enabled if defined?(@code_coverage_enabled)
 
-            @code_coverage_enabled = Utils::Parsing.convert_to_bool(
-              payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY, false)
-            )
+            @code_coverage_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY)
           end
 
           def tests_skipping_enabled?
             return @tests_skipping_enabled if defined?(@tests_skipping_enabled)
 
-            @tests_skipping_enabled = Utils::Parsing.convert_to_bool(
-              payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY, false)
-            )
+            @tests_skipping_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY)
           end
 
           private
+
+          def bool(key)
+            Utils::Parsing.convert_to_bool(payload.fetch(key, false))
+          end
 
           def default_payload
             Ext::Transport::DD_API_SETTINGS_RESPONSE_DEFAULT

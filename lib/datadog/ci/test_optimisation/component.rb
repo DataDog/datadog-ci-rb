@@ -64,7 +64,7 @@ module Datadog
           Datadog.logger.debug("TestOptimisation initialized with enabled: #{@enabled}")
         end
 
-        def configure(remote_configuration, test_session:)
+        def configure(remote_configuration, test_session)
           return unless enabled?
 
           Datadog.logger.debug("Configuring TestOptimisation with remote configuration: #{remote_configuration}")

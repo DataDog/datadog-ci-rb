@@ -27,6 +27,8 @@ module Datadog
 
           private
 
+          def bool: (String key) -> bool
+
           def default_payload: () -> Hash[String, untyped]
         end
 

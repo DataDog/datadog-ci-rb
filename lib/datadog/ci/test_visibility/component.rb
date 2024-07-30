@@ -216,10 +216,7 @@ module Datadog
             end
           end
 
-          test_optimisation.configure(
-            remote_configuration,
-            test_session: test_session
-          )
+          test_optimisation.configure(remote_configuration, test_session)
         end
 
         # HELPERS

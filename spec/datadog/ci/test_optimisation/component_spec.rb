@@ -28,7 +28,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
   let(:code_coverage_enabled) { true }
   let(:tests_skipping_enabled) { true }
 
-  let(:configure) { component.configure(remote_configuration, test_session: test_session) }
+  let(:configure) { component.configure(remote_configuration, test_session) }
 
   before do
     allow(writer).to receive(:write)
