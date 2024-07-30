@@ -1,0 +1,18 @@
+module Datadog
+  module CI
+    module Remote
+      class Component
+        @library_settings_api: Datadog::CI::Transport::RemoteSettingsApi
+
+        def initialize: (library_settings_api: Datadog::CI::Transport::RemoteSettingsApi) -> void
+        def configure: (Datadog::CI::TestSession test_session) -> untyped
+
+        private
+
+        def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
+
+        def git_tree_upload_worker: () -> Datadog::CI::Worker
+      end
+    end
+  end
+end

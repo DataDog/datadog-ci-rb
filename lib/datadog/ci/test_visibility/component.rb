@@ -20,14 +20,12 @@ module Datadog
         attr_reader :test_suite_level_visibility_enabled
 
         def initialize(
-          remote_settings_api:,
           test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
           @context = Context.new
           @codeowners = codeowners
-          @remote_settings_api = remote_settings_api
         end
 
         def start_test_session(service: nil, tags: {})
@@ -150,7 +148,7 @@ module Datadog
           Telemetry.event_created(test_session)
 
           # signal Remote::Component to configure the library
-          configure_library(test_session)
+          remote.configure(test_session)
         end
 
         def on_test_module_started(test_module)
@@ -165,8 +163,8 @@ module Datadog
           # sometimes test suite is not being assigned correctly
           # fix it by fetching the one single running test suite from the global context
           fix_test_suite!(test) if test.test_suite_id.nil?
-
           validate_test_suite_level_visibility_correctness(test)
+
           set_codeowners(test)
 
           Telemetry.event_created(test)
@@ -196,26 +194,6 @@ module Datadog
           Telemetry.event_finished(test)
         end
 
-        # TODO: move this to CI::Configuration::Remote
-        def configure_library(test_session)
-          remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
-          # sometimes we can skip code coverage for default branch if there are no changes in the repository
-          # backend needs git metadata uploaded for this test session to check if we can skip code coverage
-          if remote_configuration.require_git?
-            Datadog.logger.debug { "Library configuration endpoint requires git upload to be finished, waiting..." }
-            git_tree_upload_worker.wait_until_done
-
-            Datadog.logger.debug { "Requesting library configuration again..." }
-            remote_configuration = @remote_settings_api.fetch_library_settings(test_session)
-
-            if remote_configuration.require_git?
-              Datadog.logger.debug { "git metadata upload did not complete in time when configuring library" }
-            end
-          end
-
-          test_optimisation.configure(remote_configuration, test_session)
-        end
-
         # HELPERS
         def skip_tracing(block = nil)
           block&.call(nil)
@@ -228,6 +206,8 @@ module Datadog
         end
 
         def fix_test_suite!(test)
+          return unless test_suite_level_visibility_enabled
+
           test_suite = @context.single_active_test_suite
           unless test_suite
             Datadog.logger.debug do
@@ -276,6 +256,10 @@ module Datadog
 
         def git_tree_upload_worker
           Datadog.send(:components).git_tree_upload_worker
+        end
+
+        def remote
+          Datadog.send(:components).ci_remote
         end
       end
     end

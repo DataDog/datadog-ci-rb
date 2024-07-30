@@ -10,6 +10,10 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the kn
     expect(Datadog::CI).to receive(:start_test).never
   end
 
+  include_context "CI mode activated" do
+    let(:integration_name) { :rspec }
+  end
+
   # Yields to a block in a new RSpec global context. All RSpec
   # test configuration and execution should be wrapped in this method.
   def with_new_rspec_environment
