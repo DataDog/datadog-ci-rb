@@ -5,7 +5,9 @@ require_relative "../../../../lib/datadog/ci/test_optimisation/component"
 RSpec.describe Datadog::CI::TestOptimisation::Component do
   include_context "Telemetry spy"
 
-  let(:itr_enabled) { true }
+  subject(:component) { described_class.new(api: api, dd_env: "dd_env", coverage_writer: writer, enabled: local_itr_enabled) }
+
+  let(:local_itr_enabled) { true }
 
   let(:api) { double("api") }
   let(:writer) { spy("writer") }
@@ -14,7 +16,18 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
-  subject(:component) { described_class.new(api: api, dd_env: "dd_env", coverage_writer: writer, enabled: itr_enabled) }
+  let(:remote_configuration) do
+    double(
+      :remote_configuration,
+      itr_enabled?: itr_enabled,
+      code_coverage_enabled?: code_coverage_enabled,
+      tests_skipping_enabled?: tests_skipping_enabled
+    )
+  end
+  let(:itr_enabled) { true }
+  let(:code_coverage_enabled) { true }
+  let(:tests_skipping_enabled) { true }
+
   let(:configure) { component.configure(remote_configuration, test_session: test_session) }
 
   before do
@@ -23,10 +36,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
   end
 
   describe "#configure" do
-    context "when remote configuration call failed" do
-      let(:remote_configuration) { {"itr_enabled" => false} }
+    context "when ITR is disabled in remote configuration" do
+      let(:itr_enabled) { false }
 
-      it "configures the component and test session" do
+      it "disables the component" do
         configure
 
         expect(component.enabled?).to be false
@@ -36,7 +49,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when remote configuration call returned correct response without tests skipping" do
-      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
+      let(:tests_skipping_enabled) { false }
 
       before do
         configure
@@ -58,7 +71,6 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when remote configuration call returned correct response with tests skipping" do
-      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => true} }
       let(:skippable) do
         instance_double(
           Datadog::CI::TestOptimisation::Skippable,
@@ -72,6 +84,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
       before do
         expect(Datadog::CI::TestOptimisation::Skippable).to receive(:new).and_return(skippable)
+
         configure
       end
 
@@ -88,22 +101,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.response_tests", 2
     end
 
-    context "when remote configuration call returned correct response with strings instead of bools" do
-      let(:remote_configuration) { {"itr_enabled" => "true", "code_coverage" => "true", "tests_skipping" => "false"} }
+    context "when ITR is disabled locally" do
+      let(:local_itr_enabled) { false }
 
-      it "configures the component" do
-        configure
-
-        expect(component.enabled?).to be true
-        expect(component.skipping_tests?).to be false
-        expect(component.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
-      end
-    end
-
-    context "when remote configuration call returns empty hash" do
-      let(:remote_configuration) { {} }
-
-      it "configures the component" do
+      it "does not use remote configuration" do
         configure
 
         expect(component.enabled?).to be false
@@ -124,7 +125,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when code coverage is disabled" do
-      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => false, "tests_skipping" => false} }
+      let(:code_coverage_enabled) { false }
+      let(:tests_skipping_enabled) { false }
 
       it "does not start coverage" do
         expect(component).not_to receive(:coverage_collector)
@@ -135,7 +137,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when TestOptimisation is disabled" do
-      let(:remote_configuration) { {"itr_enabled" => false, "code_coverage" => false, "tests_skipping" => false} }
+      let(:itr_enabled) { false }
+      let(:code_coverage_enabled) { false }
+      let(:tests_skipping_enabled) { false }
 
       it "does not start coverage" do
         expect(component).not_to receive(:coverage_collector)
@@ -146,7 +150,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when code coverage is enabled" do
-      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
+      let(:tests_skipping_enabled) { false }
 
       before do
         skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
@@ -165,7 +169,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when JRuby and code coverage is enabled" do
-      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
+      let(:tests_skipping_enabled) { false }
 
       before do
         skip("Skipped for CRuby") unless PlatformHelpers.jruby?
@@ -186,7 +190,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
     let(:test_span) { Datadog::CI::Test.new(tracer_span) }
-    let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
+    let(:tests_skipping_enabled) { false }
 
     before do
       skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
@@ -249,7 +253,6 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     subject { component.mark_if_skippable(test_span) }
 
     context "when skipping tests" do
-      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => true} }
       let(:skippable) do
         instance_double(
           Datadog::CI::TestOptimisation::Skippable,
@@ -297,7 +300,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when not skipping tests" do
-      let(:remote_configuration) { {"itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false} }
+      let(:tests_skipping_enabled) { false }
 
       before do
         configure
@@ -409,7 +412,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when TestOptimisation is disabled" do
-      let(:itr_enabled) { false }
+      let(:local_itr_enabled) { false }
 
       it "does not add ITR/TestOptimisation tags to the session" do
         subject

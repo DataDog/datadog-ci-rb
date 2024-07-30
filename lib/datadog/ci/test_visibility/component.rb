@@ -217,7 +217,7 @@ module Datadog
           end
 
           test_optimisation.configure(
-            remote_configuration.payload,
+            remote_configuration,
             test_session: test_session
           )
         end
