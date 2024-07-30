@@ -15,7 +15,7 @@ module Datadog
             end
 
             def provider_name
-              "appveyor"
+              Provider::APPVEYOR
             end
 
             def pipeline_url

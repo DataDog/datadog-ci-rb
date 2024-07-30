@@ -15,7 +15,7 @@ module Datadog
             end
 
             def provider_name
-              "teamcity"
+              Provider::TEAMCITY
             end
 
             def job_name

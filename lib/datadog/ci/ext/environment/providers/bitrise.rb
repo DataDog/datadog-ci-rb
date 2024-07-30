@@ -15,7 +15,7 @@ module Datadog
             end
 
             def provider_name
-              "bitrise"
+              Provider::BITRISE
             end
 
             def pipeline_id

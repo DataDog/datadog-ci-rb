@@ -31,6 +31,23 @@ module Datadog
 
         PROVIDERS: ::Array[Array[String | Symbol]]
 
+        module Provider
+          APPVEYOR: "appveyor"
+          AWS: "awscodepipeline"
+          AZURE: "azurepipelines"
+          BITBUCKET: "bitbucket"
+          BITRISE: "bitrise"
+          BUDDYCI: "buddy"
+          BUILDKITE: "buildkite"
+          CIRCLECI: "circleci"
+          CODEFRESH: "codefresh"
+          GITHUB: "github"
+          GITLAB: "gitlab"
+          JENKINS: "jenkins"
+          TEAMCITY: "teamcity"
+          TRAVISCI: "travisci"
+        end
+
         def self?.tags: (untyped env) -> Hash[String, String]
 
         def self?.ensure_post_conditions: (Hash[String, String] tags) -> void

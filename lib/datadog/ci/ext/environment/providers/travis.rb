@@ -15,7 +15,7 @@ module Datadog
             end
 
             def provider_name
-              "travisci"
+              Provider::TRAVISCI
             end
 
             def job_url

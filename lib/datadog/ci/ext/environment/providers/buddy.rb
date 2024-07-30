@@ -15,7 +15,7 @@ module Datadog
             end
 
             def provider_name
-              "buddy"
+              Provider::BUDDYCI
             end
 
             def pipeline_id

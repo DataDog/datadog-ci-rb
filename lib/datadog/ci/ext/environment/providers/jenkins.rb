@@ -18,7 +18,7 @@ module Datadog
             end
 
             def provider_name
-              "jenkins"
+              Provider::JENKINS
             end
 
             def pipeline_id

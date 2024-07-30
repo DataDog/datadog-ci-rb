@@ -17,7 +17,7 @@ module Datadog
             end
 
             def provider_name
-              "azurepipelines"
+              Provider::AZURE
             end
 
             def pipeline_url

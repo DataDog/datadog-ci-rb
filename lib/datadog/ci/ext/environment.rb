@@ -23,6 +23,23 @@ module Datadog
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
 
+        module Provider
+          APPVEYOR = "appveyor"
+          AZURE = "azurepipelines"
+          AWS = "awscodepipeline"
+          BITBUCKET = "bitbucket"
+          BITRISE = "bitrise"
+          BUDDYCI = "buddy"
+          BUILDKITE = "buildkite"
+          CIRCLECI = "circleci"
+          CODEFRESH = "codefresh"
+          GITHUB = "github"
+          GITLAB = "gitlab"
+          JENKINS = "jenkins"
+          TEAMCITY = "teamcity"
+          TRAVISCI = "travisci"
+        end
+
         POSSIBLE_BUNDLE_LOCATIONS = %w[vendor/bundle .bundle].freeze
 
         module_function
