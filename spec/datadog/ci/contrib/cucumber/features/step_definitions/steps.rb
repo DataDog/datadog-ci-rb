@@ -1,5 +1,17 @@
 require_relative "helpers/helper"
 
+Before do
+  Datadog::CI.active_test.set_tag("cucumber_before_hook_executed", "true")
+end
+
+After do
+  Datadog::CI.active_test.set_tag("cucumber_after_hook_executed", "true")
+end
+
+AfterStep do
+  Datadog::CI.active_test.set_tag("cucumber_after_step_hook_executed", "true")
+end
+
 Then "datadog" do
   Helper.help?
 end
