@@ -236,6 +236,11 @@ RSpec.describe "Cucumber formatter" do
 
         itr_skipped_test = test_spans.find { |span| span.name == "cucumber scenario" }
         expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
+
+        # check that hooks are not executed for skipped tests
+        expect(itr_skipped_test.get_tag("cucumber_before_hook_executed")).to be_nil
+        expect(itr_skipped_test.get_tag("cucumber_after_hook_executed")).to be_nil
+        expect(itr_skipped_test.get_tag("cucumber_after_step_hook_executed")).to be_nil
       end
 
       it "sets session level tags" do

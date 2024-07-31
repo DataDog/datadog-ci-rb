@@ -3,13 +3,12 @@
 require "datadog/tracing/contrib/patcher"
 
 require_relative "instrumentation"
-require_relative "step"
 
 module Datadog
   module CI
     module Contrib
       module Cucumber
-        # Patcher enables patching of 'cucumber' module.
+        # Patches 'cucumber' gem.
         module Patcher
           include Datadog::Tracing::Contrib::Patcher
 
@@ -21,7 +20,6 @@ module Datadog
 
           def patch
             ::Cucumber::Runtime.include(Instrumentation)
-            ::Cucumber::Core::Test::Step.include(Datadog::CI::Contrib::Cucumber::Step)
           end
         end
       end

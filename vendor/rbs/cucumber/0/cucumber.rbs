@@ -9,6 +9,7 @@ end
 
 class Cucumber::Runtime
   def formatters: () -> untyped
+  def begin_scenario: (untyped test_case) -> void
 end
 
 module Cucumber::Formatter
@@ -23,6 +24,9 @@ class Cucumber::Core::Test::Result
   def undefined?: () -> bool
   def message: () -> String
   def exception: () -> untyped
+
+  class Skipped < StandardError
+  end
 end
 
 module Cucumber::Core::Test::Step

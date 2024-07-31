@@ -21,6 +21,14 @@ module Datadog
               @datadog_formatter ||= CI::Contrib::Cucumber::Formatter.new(@configuration)
               [@datadog_formatter] + existing_formatters
             end
+
+            def begin_scenario(test_case)
+              if Datadog::CI.active_test&.skipped_by_itr?
+                raise ::Cucumber::Core::Test::Result::Skipped, CI::Ext::Test::ITR_TEST_SKIP_REASON
+              end
+
+              super
+            end
           end
         end
       end
