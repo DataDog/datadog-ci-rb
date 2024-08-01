@@ -124,6 +124,9 @@ RSpec.describe "Cucumber formatter" do
         "[\"@test-owner\"]"
       )
 
+      # before hook was executed
+      expect(scenario_span.get_tag("cucumber_before_hook_executed")).not_to be_nil
+
       step_span = spans.find { |s| s.resource == "datadog" }
       expect(step_span.name).to eq("datadog")
 
@@ -336,7 +339,7 @@ RSpec.describe "Cucumber formatter" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans).to have(6).items
+      expect(test_suite_spans).to have(7).items
       expect(passing_test_suite).to have_pass_status
       expect(failing_test_suite).to have_fail_status
     end
@@ -446,6 +449,36 @@ RSpec.describe "Cucumber formatter" do
 
       expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
       expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+    end
+  end
+
+  context "executing flaky test scenario with Cucumber's built in retry mechanism" do
+    let(:max_retries_count) { 5 }
+
+    let(:expected_test_run_code) { 2 }
+    let(:feature_file_to_run) { "flaky.feature" }
+
+    let(:args) do
+      [
+        "--retry",
+        max_retries_count.to_s,
+        "-r",
+        steps_file_for_run_path,
+        features_path
+      ]
+    end
+
+    it "retries the test several times and correctly tracks result of every invocation" do
+      # 1 initial run of flaky test + 4 retries until pass + 1 passing test = 6 spans
+      expect(test_spans).to have(6).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(4).items # see FLAKY_TEST_FAILURES constant in steps.rb
+      expect(passed_spans).to have(2).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["very flaky scenario"]).to have(5).items
+      expect(test_spans_by_test_name["this scenario just passes"]).to have(1).item
     end
   end
 end

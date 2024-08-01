@@ -33,8 +33,9 @@ module Datadog
         TAG_ITR_UNSKIPPABLE = "test.itr.unskippable"
         TAG_ITR_FORCED_RUN = "test.itr.forced_run"
 
-        # Special internal tags, not sent to the backend.
-        # these tags are special and used to correlate tests with the test sessions, suites, and modules
+        # Internal tags, they are not sent to the backend.
+        # These tags are internal to this library and used to correlate tests with
+        # the test sessions, suites, and modules.
         TAG_TEST_SESSION_ID = "_test.session_id"
         TAG_TEST_MODULE_ID = "_test.module_id"
         TAG_TEST_SUITE_ID = "_test.suite_id"
@@ -58,7 +59,7 @@ module Datadog
         TAG_BROWSER_VERSION = "test.browser.version"
 
         # Tags for test retries
-        TAG_IS_RETRY = "test.is_retry"
+        TAG_IS_RETRY = "test.is_retry" # true if test was retried by datadog-ci library
 
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
