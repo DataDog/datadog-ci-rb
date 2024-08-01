@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module TestRetries
+      class Component
+        @retry_failed_tests_enabled: bool
+
+        @retry_failed_tests_max_attempts: Integer
+
+        DEFAULT_MAX_ATTEMPTS: Integer
+
+        attr_reader retry_failed_tests_enabled: bool
+
+        attr_reader retry_failed_tests_max_attempts: Integer
+
+        def initialize: () -> void
+
+        def configure: (Datadog::CI::Remote::LibrarySettings library_settings) -> void
+      end
+    end
+  end
+end
