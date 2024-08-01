@@ -8,7 +8,7 @@ module Datadog
       module Test
         CONTEXT_ORIGIN = "ciapp-test"
 
-        # Base test visibility tags
+        # Test visibility tags
         TAG_FRAMEWORK = "test.framework"
         TAG_FRAMEWORK_VERSION = "test.framework_version"
         TAG_NAME = "test.name"
@@ -23,7 +23,8 @@ module Datadog
         TAG_CODEOWNERS = "test.codeowners"
         TAG_PARAMETERS = "test.parameters"
 
-        # ITR tags
+        # Test optimisation tags
+        TAG_CODE_COVERAGE_ENABLED = "test.code_coverage.enabled"
         TAG_ITR_TEST_SKIPPING_ENABLED = "test.itr.tests_skipping.enabled"
         TAG_ITR_TEST_SKIPPING_TYPE = "test.itr.tests_skipping.type"
         TAG_ITR_TEST_SKIPPING_COUNT = "test.itr.tests_skipping.count"
@@ -32,10 +33,7 @@ module Datadog
         TAG_ITR_UNSKIPPABLE = "test.itr.unskippable"
         TAG_ITR_FORCED_RUN = "test.itr.forced_run"
 
-        # Code coverage tags
-        TAG_CODE_COVERAGE_ENABLED = "test.code_coverage.enabled"
-
-        # Special tags, not sent to the backend.
+        # Special internal tags, not sent to the backend.
         # these tags are special and used to correlate tests with the test sessions, suites, and modules
         TAG_TEST_SESSION_ID = "_test.session_id"
         TAG_TEST_MODULE_ID = "_test.module_id"
@@ -50,8 +48,7 @@ module Datadog
         TAG_RUNTIME_VERSION = "runtime.version"
 
         # Tags for browser tests
-        # true if Datadog RUM was detected in the page(s) loaded by Selenium
-        TAG_IS_RUM_ACTIVE = "test.is_rum_active"
+        TAG_IS_RUM_ACTIVE = "test.is_rum_active" # true if Datadog RUM was detected in the page(s) loaded by Selenium
         TAG_BROWSER_DRIVER = "test.browser.driver"
         # version of selenium driver used
         TAG_BROWSER_DRIVER_VERSION = "test.browser.driver_version"
@@ -59,6 +56,9 @@ module Datadog
         TAG_BROWSER_NAME = "test.browser.name"
         # version of the browser, if multiple browsers or multiple versions then this tag is empty
         TAG_BROWSER_VERSION = "test.browser.version"
+
+        # Tags for test retries
+        TAG_IS_RETRY = "test.is_retry"
 
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
@@ -68,8 +68,7 @@ module Datadog
         INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION].freeze
 
         # could be either "test" or "suite" depending on whether we skip individual tests or whole suites
-        # we use test skipping for Ruby
-        ITR_TEST_SKIPPING_MODE = "test"
+        ITR_TEST_SKIPPING_MODE = "test" # we always skip tests (not suites) in Ruby
         ITR_TEST_SKIP_REASON = "Skipped by Datadog's intelligent test runner"
         ITR_UNSKIPPABLE_OPTION = :datadog_itr_unskippable
 
