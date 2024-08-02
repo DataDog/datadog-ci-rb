@@ -88,6 +88,12 @@ module Datadog
                 o.default true
               end
 
+              option :retry_failed_tests_max_attempts do |o|
+                o.type :int
+                o.env CI::Ext::Settings::ENV_RETRY_FAILED_TESTS_MAX_ATTEMPTS
+                o.default 5
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

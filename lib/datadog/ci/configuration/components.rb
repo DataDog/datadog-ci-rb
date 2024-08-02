@@ -112,7 +112,9 @@ module Datadog
           @ci_remote = Remote::Component.new(
             library_settings_client: build_library_settings_client(settings, test_visibility_api)
           )
-          @test_retries = TestRetries::Component.new
+          @test_retries = TestRetries::Component.new(
+            retry_failed_tests_max_attempts: settings.ci.retry_failed_tests_max_attempts
+          )
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
           @test_visibility = TestVisibility::Component.new(

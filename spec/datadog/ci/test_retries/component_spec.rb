@@ -3,7 +3,8 @@ require_relative "../../../../lib/datadog/ci/test_retries/component"
 RSpec.describe Datadog::CI::TestRetries::Component do
   let(:library_settings) { instance_double(Datadog::CI::Remote::LibrarySettings) }
 
-  subject(:component) { described_class.new }
+  let(:retry_failed_tests_max_attempts) { 1 }
+  subject(:component) { described_class.new(retry_failed_tests_max_attempts: retry_failed_tests_max_attempts) }
 
   describe "#configure" do
     subject { component.configure(library_settings) }
@@ -36,6 +37,6 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   describe "#retry_failed_tests_max_attempts" do
     subject { component.retry_failed_tests_max_attempts }
 
-    it { is_expected.to eq(5) }
+    it { is_expected.to eq(retry_failed_tests_max_attempts) }
   end
 end
