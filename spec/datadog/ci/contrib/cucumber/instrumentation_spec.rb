@@ -5,6 +5,7 @@ require "securerandom"
 
 RSpec.describe "Cucumber formatter" do
   let(:cucumber_features_root) { File.join(__dir__, "features") }
+  let(:enable_retries) { false }
 
   before do
     allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(cucumber_features_root)
@@ -17,6 +18,7 @@ RSpec.describe "Cucumber formatter" do
     let(:itr_enabled) { true }
     let(:code_coverage_enabled) { true }
     let(:tests_skipping_enabled) { true }
+    let(:flaky_test_retries_enabled) { enable_retries }
     let(:bundle_path) { "step_definitions/helpers" }
   end
 
@@ -455,7 +457,6 @@ RSpec.describe "Cucumber formatter" do
   context "executing flaky test scenario with Cucumber's built in retry mechanism" do
     let(:max_retries_count) { 5 }
 
-    let(:expected_test_run_code) { 2 }
     let(:feature_file_to_run) { "flaky.feature" }
 
     let(:args) do
@@ -473,7 +474,35 @@ RSpec.describe "Cucumber formatter" do
       expect(test_spans).to have(6).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-      expect(failed_spans).to have(4).items # see FLAKY_TEST_FAILURES constant in steps.rb
+      expect(failed_spans).to have(4).items # see steps.rb
+      expect(passed_spans).to have(2).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["very flaky scenario"]).to have(5).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(4)
+
+      expect(test_spans_by_test_name["this scenario just passes"]).to have(1).item
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+    end
+  end
+
+  context "executing flaky test scenario with datadog-ci's failed test retries" do
+    let(:enable_retries) { true }
+    let(:feature_file_to_run) { "flaky.feature" }
+
+    it "retries the test several times and correctly tracks result of every invocation" do
+      # 1 initial run of flaky test + 4 retries until pass + 1 passing test = 6 spans
+      expect(test_spans).to have(6).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(4).items # see steps.rb
       expect(passed_spans).to have(2).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }

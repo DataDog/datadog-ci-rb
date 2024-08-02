@@ -6,7 +6,7 @@ module Datadog
   module CI
     module Contrib
       module Cucumber
-        # Instrumentation for Cucumber
+        # Instrumentation for Cucumber::Runtime class
         module Instrumentation
           def self.included(base)
             base.prepend(InstanceMethods)
