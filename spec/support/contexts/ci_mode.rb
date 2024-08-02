@@ -26,6 +26,7 @@ RSpec.shared_context "CI mode activated" do
   let(:require_git) { false }
   let(:bundle_path) { nil }
   let(:use_single_threaded_coverage) { false }
+  let(:flaky_test_retries_enabled) { false }
 
   let(:itr_correlation_id) { "itr_correlation_id" }
   let(:itr_skippable_tests) { [] }
@@ -61,7 +62,8 @@ RSpec.shared_context "CI mode activated" do
         require_git?: require_git,
         itr_enabled?: itr_enabled,
         code_coverage_enabled?: code_coverage_enabled,
-        tests_skipping_enabled?: tests_skipping_enabled
+        tests_skipping_enabled?: tests_skipping_enabled,
+        flaky_test_retries_enabled?: flaky_test_retries_enabled
       ),
       # This is for the second call to fetch_library_settings
       instance_double(
@@ -74,7 +76,8 @@ RSpec.shared_context "CI mode activated" do
         require_git?: !require_git,
         itr_enabled?: itr_enabled,
         code_coverage_enabled?: !code_coverage_enabled,
-        tests_skipping_enabled?: !tests_skipping_enabled
+        tests_skipping_enabled?: !tests_skipping_enabled,
+        flaky_test_retries_enabled?: flaky_test_retries_enabled
       )
     )
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)

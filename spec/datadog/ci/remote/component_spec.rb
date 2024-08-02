@@ -8,10 +8,12 @@ RSpec.describe Datadog::CI::Remote::Component do
   let(:library_settings_client) { instance_double(Datadog::CI::Remote::LibrarySettingsClient) }
   let(:git_tree_upload_worker) { instance_double(Datadog::CI::Worker) }
   let(:test_optimisation) { instance_double(Datadog::CI::TestOptimisation::Component) }
+  let(:test_retries) { instance_double(Datadog::CI::TestRetries::Component) }
 
   before do
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_tree_upload_worker)
     allow(Datadog.send(:components)).to receive(:test_optimisation).and_return(test_optimisation)
+    allow(Datadog.send(:components)).to receive(:test_retries).and_return(test_retries)
   end
 
   describe "#configure" do
@@ -32,6 +34,7 @@ RSpec.describe Datadog::CI::Remote::Component do
 
       before do
         expect(test_optimisation).to receive(:configure).with(library_configuration, test_session)
+        expect(test_retries).to receive(:configure).with(library_configuration)
       end
 
       it { subject }
@@ -46,6 +49,7 @@ RSpec.describe Datadog::CI::Remote::Component do
           .with(test_session).and_return(library_configuration)
 
         expect(test_optimisation).to receive(:configure).with(library_configuration, test_session)
+        expect(test_retries).to receive(:configure).with(library_configuration)
       end
 
       it { subject }

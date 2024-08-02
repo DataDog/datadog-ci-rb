@@ -9,6 +9,7 @@ require_relative "../remote/library_settings_client"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_optimisation/coverage/writer"
+require_relative "../test_retries/component"
 require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/null_component"
@@ -27,13 +28,14 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote
+        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries
 
         def initialize(settings)
           @test_optimisation = nil
           @test_visibility = TestVisibility::NullComponent.new
           @git_tree_upload_worker = DummyWorker.new
           @ci_remote = nil
+          @test_retries = nil
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -110,6 +112,7 @@ module Datadog
           @ci_remote = Remote::Component.new(
             library_settings_client: build_library_settings_client(settings, test_visibility_api)
           )
+          @test_retries = TestRetries::Component.new
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
           @test_visibility = TestVisibility::Component.new(

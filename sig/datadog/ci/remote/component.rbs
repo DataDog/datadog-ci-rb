@@ -12,6 +12,8 @@ module Datadog
 
         def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
 
+        def test_retries: () -> Datadog::CI::TestRetries::Component
+
         def git_tree_upload_worker: () -> Datadog::CI::Worker
       end
     end
