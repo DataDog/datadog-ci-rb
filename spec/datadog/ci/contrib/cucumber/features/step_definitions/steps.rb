@@ -1,6 +1,6 @@
 require_relative "helpers/helper"
 
-FLAKY_TEST_FAILURES = 4
+max_flaky_test_failures = 4
 flaky_test_executions = 0
 
 Before do
@@ -40,7 +40,7 @@ Then(/the result should be (-?\d+)/) do |res|
 end
 
 Then "flaky" do
-  if flaky_test_executions < FLAKY_TEST_FAILURES
+  if flaky_test_executions < max_flaky_test_failures
     flaky_test_executions += 1
     raise "Flaky test failure"
   end

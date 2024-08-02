@@ -42,6 +42,15 @@ module Datadog
         end
       end
 
+      # @internal
+      def any_passed?
+        synchronize do
+          @execution_stats_per_test.any? do |_, stats|
+            stats[Ext::Test::Status::PASS] > 0
+          end
+        end
+      end
+
       private
 
       def set_status_from_stats!

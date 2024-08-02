@@ -105,4 +105,42 @@ RSpec.describe Datadog::CI::TestSuite do
       end
     end
   end
+
+  describe "#any_passed?" do
+    subject { ci_test_suite.any_passed? }
+
+    context "when there are no tests" do
+      it { is_expected.to be false }
+    end
+
+    context "when there are tests that are skipped or failed" do
+      before do
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+        ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+        ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::SKIP)
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when there are passed tests" do
+      before do
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+        ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::PASS)
+        ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::SKIP)
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when test is passed after retry" do
+      before do
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::PASS)
+        ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+      end
+
+      it { is_expected.to be true }
+    end
+  end
 end

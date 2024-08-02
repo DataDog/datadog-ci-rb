@@ -5,6 +5,8 @@ module Datadog
 
       def record_test_result: (String test_id, String datadog_test_status) -> void
 
+      def any_passed?: () -> bool
+
       private
 
       def set_status_from_stats!: () -> void
