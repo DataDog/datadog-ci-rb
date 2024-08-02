@@ -142,7 +142,10 @@ module Datadog
       private
 
       def record_test_result(datadog_status)
-        test_suite&.record_test_result(datadog_status)
+        test_suite&.record_test_result(
+          Utils::TestRun.skippable_test_id(name, test_suite_name, parameters),
+          datadog_status
+        )
       end
     end
   end

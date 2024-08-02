@@ -20,7 +20,7 @@ module Datadog
 
             @current_test_suite = nil
 
-            @failed_tests_count = 0
+            @failed_test_suites_count = 0
 
             bind_events(config)
           end
@@ -46,10 +46,12 @@ module Datadog
           end
 
           def on_test_run_finished(event)
+            finish_current_test_suite
+
             if event.respond_to?(:success)
               finish_session(event.success)
             else
-              finish_session(@failed_tests_count.zero?)
+              finish_session(@failed_test_suites_count.zero?)
             end
           end
 
@@ -86,7 +88,6 @@ module Datadog
             return if test_span.nil?
 
             finish_span(test_span, event.result)
-            @failed_tests_count += 1 if test_span.failed?
           end
 
           def on_test_step_started(event)
@@ -128,8 +129,6 @@ module Datadog
           end
 
           def finish_session(result)
-            finish_current_test_suite
-
             test_session = test_visibility_component.active_test_session
             test_module = test_visibility_component.active_test_module
 
@@ -155,6 +154,7 @@ module Datadog
 
           def finish_current_test_suite
             @current_test_suite&.finish
+            @failed_test_suites_count += 1 if @current_test_suite&.failed?
 
             @current_test_suite = nil
           end

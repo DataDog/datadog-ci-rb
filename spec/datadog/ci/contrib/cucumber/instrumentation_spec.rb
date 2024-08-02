@@ -479,6 +479,11 @@ RSpec.describe "Cucumber formatter" do
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["very flaky scenario"]).to have(5).items
       expect(test_spans_by_test_name["this scenario just passes"]).to have(1).item
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
     end
   end
 end

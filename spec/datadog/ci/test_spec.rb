@@ -173,10 +173,14 @@ RSpec.describe Datadog::CI::Test do
       let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
 
       it "records the test result in the test suite" do
+        expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+        expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+        expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
         expect(tracer_span).to receive(:set_tag).with("test.status", "pass")
+
         ci_test.passed!
 
-        expect(test_suite).to have_received(:record_test_result).with("pass")
+        expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "pass")
       end
     end
 
@@ -198,11 +202,14 @@ RSpec.describe Datadog::CI::Test do
       let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
 
       it "records the test result in the test suite" do
+        expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+        expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+        expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
         expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
 
         ci_test.skipped!
 
-        expect(test_suite).to have_received(:record_test_result).with("skip")
+        expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "skip")
       end
     end
 
@@ -224,12 +231,15 @@ RSpec.describe Datadog::CI::Test do
       let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
 
       it "records the test result in the test suite" do
+        expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+        expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+        expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
         expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
         expect(tracer_span).to receive(:status=).with(1)
 
         ci_test.failed!
 
-        expect(test_suite).to have_received(:record_test_result).with("fail")
+        expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "fail")
       end
     end
 
