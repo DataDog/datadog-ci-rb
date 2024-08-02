@@ -51,6 +51,13 @@ module Datadog
         end
       end
 
+      # @internal
+      def test_executed?(test_id)
+        synchronize do
+          @execution_stats_per_test.key?(test_id)
+        end
+      end
+
       private
 
       def set_status_from_stats!
@@ -60,10 +67,13 @@ module Datadog
             acc[derive_test_status_from_execution_stats(stats)] += 1
           end
 
+          # test suite is considered failed if at least one test failed
           if test_suite_stats[Ext::Test::Status::FAIL] > 0
             failed!
+          # if there are no failures and no passes, it is skipped
           elsif test_suite_stats[Ext::Test::Status::PASS] == 0
             skipped!
+          # otherwise we consider it passed
           else
             passed!
           end

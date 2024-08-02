@@ -142,10 +142,14 @@ module Datadog
       private
 
       def record_test_result(datadog_status)
-        test_suite&.record_test_result(
-          Utils::TestRun.skippable_test_id(name, test_suite_name, parameters),
-          datadog_status
-        )
+        test_id = Utils::TestRun.skippable_test_id(name, test_suite_name, parameters)
+
+        # if this test was already executed in this test suite, mark it as retried
+        if test_suite&.test_executed?(test_id)
+          set_tag(Ext::Test::TAG_IS_RETRY, "true")
+        end
+
+        test_suite&.record_test_result(test_id, datadog_status)
       end
     end
   end

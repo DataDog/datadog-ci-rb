@@ -7,6 +7,8 @@ module Datadog
 
       def any_passed?: () -> bool
 
+      def test_executed?: (String test_id) -> bool
+
       private
 
       def set_status_from_stats!: () -> void

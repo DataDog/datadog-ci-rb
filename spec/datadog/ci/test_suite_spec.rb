@@ -143,4 +143,30 @@ RSpec.describe Datadog::CI::TestSuite do
       it { is_expected.to be true }
     end
   end
+
+  describe "#test_executed?" do
+    let(:test_id) { "t1" }
+    subject { ci_test_suite.test_executed?(test_id) }
+
+    context "when there are no tests" do
+      it { is_expected.to be false }
+    end
+
+    context "when there are some tests with different ids" do
+      before do
+        ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+        ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::SKIP)
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when this test was executed already" do
+      before do
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+      end
+
+      it { is_expected.to be true }
+    end
+  end
 end
