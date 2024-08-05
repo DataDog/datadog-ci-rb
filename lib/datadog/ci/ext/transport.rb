@@ -36,6 +36,7 @@ module Datadog
         DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY = "code_coverage"
         DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY = "tests_skipping"
         DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY = "require_git"
+        DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY = "flaky_test_retries_enabled"
         DD_API_SETTINGS_RESPONSE_DEFAULT = {DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY => false}.freeze
 
         DD_API_GIT_SEARCH_COMMITS_PATH = "/api/v2/git/repository/search_commits"

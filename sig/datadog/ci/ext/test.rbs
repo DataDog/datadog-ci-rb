@@ -86,6 +86,8 @@ module Datadog
 
         TAG_BROWSER_VERSION: "test.browser.version"
 
+        TAG_IS_RETRY: "test.is_retry"
+
         module Status
           PASS: "pass"
 

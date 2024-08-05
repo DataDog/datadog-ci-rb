@@ -82,7 +82,8 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
                     "code_coverage" => "1",
                     "tests_skipping" => "false",
                     "itr_enabled" => "True",
-                    "require_git" => require_git
+                    "require_git" => require_git,
+                    "flaky_test_retries_enabled" => "true"
                   }
                 }
               }.to_json,
@@ -98,12 +99,14 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
               "code_coverage" => "1",
               "tests_skipping" => "false",
               "itr_enabled" => "True",
-              "require_git" => require_git
+              "require_git" => require_git,
+              "flaky_test_retries_enabled" => "true"
             })
             expect(response.require_git?).to be false
             expect(response.itr_enabled?).to be true
             expect(response.code_coverage_enabled?).to be true
             expect(response.tests_skipping_enabled?).to be false
+            expect(response.flaky_test_retries_enabled?).to be true
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
             expect(metric.tags).to eq("coverage_enabled" => "true", "itrskip_enabled" => "false")

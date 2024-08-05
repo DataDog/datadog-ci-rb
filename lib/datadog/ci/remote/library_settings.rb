@@ -70,6 +70,12 @@ module Datadog
           @tests_skipping_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY)
         end
 
+        def flaky_test_retries_enabled?
+          return @flaky_test_retries_enabled if defined?(@flaky_test_retries_enabled)
+
+          @flaky_test_retries_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY)
+        end
+
         private
 
         def bool(key)

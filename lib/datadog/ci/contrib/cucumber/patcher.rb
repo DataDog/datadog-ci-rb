@@ -3,6 +3,7 @@
 require "datadog/tracing/contrib/patcher"
 
 require_relative "instrumentation"
+require_relative "configuration_override"
 
 module Datadog
   module CI
@@ -20,6 +21,7 @@ module Datadog
 
           def patch
             ::Cucumber::Runtime.include(Instrumentation)
+            ::Cucumber::Configuration.include(ConfigurationOverride)
           end
         end
       end

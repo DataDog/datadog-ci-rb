@@ -8,30 +8,6 @@ RSpec.describe Datadog::CI::TestSuite do
   before { allow_any_instance_of(described_class).to receive(:test_visibility).and_return(test_visibility) }
   subject(:ci_test_suite) { described_class.new(tracer_span) }
 
-  describe "#record_test_result" do
-    let(:failed_tests_count) { 2 }
-    let(:skipped_tests_count) { 3 }
-    let(:passed_tests_count) { 5 }
-
-    before do
-      failed_tests_count.times do
-        ci_test_suite.record_test_result(Datadog::CI::Ext::Test::Status::FAIL)
-      end
-      skipped_tests_count.times do
-        ci_test_suite.record_test_result(Datadog::CI::Ext::Test::Status::SKIP)
-      end
-      passed_tests_count.times do
-        ci_test_suite.record_test_result(Datadog::CI::Ext::Test::Status::PASS)
-      end
-    end
-
-    it "records the test results" do
-      expect(ci_test_suite.failed_tests_count).to eq(failed_tests_count)
-      expect(ci_test_suite.skipped_tests_count).to eq(skipped_tests_count)
-      expect(ci_test_suite.passed_tests_count).to eq(passed_tests_count)
-    end
-  end
-
   describe "#finish" do
     subject(:finish) { ci_test_suite.finish }
 
@@ -56,7 +32,9 @@ RSpec.describe Datadog::CI::TestSuite do
 
       context "and there are test failures" do
         before do
-          ci_test_suite.record_test_result(Datadog::CI::Ext::Test::Status::FAIL)
+          ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::PASS)
+          ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::FAIL)
         end
 
         it "sets the status to fail" do
@@ -73,7 +51,9 @@ RSpec.describe Datadog::CI::TestSuite do
 
       context "and there are only skipped tests" do
         before do
-          ci_test_suite.record_test_result(Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::SKIP)
         end
 
         it "sets the status to skip" do
@@ -89,10 +69,10 @@ RSpec.describe Datadog::CI::TestSuite do
 
       context "and there are some passed tests" do
         before do
-          2.times do
-            ci_test_suite.record_test_result(Datadog::CI::Ext::Test::Status::SKIP)
+          2.times do |i|
+            ci_test_suite.record_test_result("t#{i}", Datadog::CI::Ext::Test::Status::SKIP)
           end
-          ci_test_suite.record_test_result(Datadog::CI::Ext::Test::Status::PASS)
+          ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::PASS)
         end
 
         it "sets the status to pass" do
@@ -105,6 +85,88 @@ RSpec.describe Datadog::CI::TestSuite do
           expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
+
+      context "some tests were retried and succeeeded on retries" do
+        before do
+          ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+          ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::PASS)
+          ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+        end
+
+        it "sets the status to pass" do
+          expect(tracer_span).to receive(:set_tag).with(
+            Datadog::CI::Ext::Test::TAG_STATUS, Datadog::CI::Ext::Test::Status::PASS
+          )
+
+          finish
+
+          expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
+        end
+      end
+    end
+  end
+
+  describe "#any_passed?" do
+    subject { ci_test_suite.any_passed? }
+
+    context "when there are no tests" do
+      it { is_expected.to be false }
+    end
+
+    context "when there are tests that are skipped or failed" do
+      before do
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+        ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+        ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::SKIP)
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when there are passed tests" do
+      before do
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+        ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::PASS)
+        ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::SKIP)
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when test is passed after retry" do
+      before do
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::PASS)
+        ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+      end
+
+      it { is_expected.to be true }
+    end
+  end
+
+  describe "#test_executed?" do
+    let(:test_id) { "t1" }
+    subject { ci_test_suite.test_executed?(test_id) }
+
+    context "when there are no tests" do
+      it { is_expected.to be false }
+    end
+
+    context "when there are some tests with different ids" do
+      before do
+        ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+        ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::SKIP)
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when this test was executed already" do
+      before do
+        ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
+      end
+
+      it { is_expected.to be true }
     end
   end
 end

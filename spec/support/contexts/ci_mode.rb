@@ -26,6 +26,10 @@ RSpec.shared_context "CI mode activated" do
   let(:require_git) { false }
   let(:bundle_path) { nil }
   let(:use_single_threaded_coverage) { false }
+  let(:flaky_test_retries_enabled) { false }
+
+  let(:retry_failed_tests_max_attempts) { 5 }
+  let(:retry_failed_tests_total_limit) { 100 }
 
   let(:itr_correlation_id) { "itr_correlation_id" }
   let(:itr_skippable_tests) { [] }
@@ -61,7 +65,8 @@ RSpec.shared_context "CI mode activated" do
         require_git?: require_git,
         itr_enabled?: itr_enabled,
         code_coverage_enabled?: code_coverage_enabled,
-        tests_skipping_enabled?: tests_skipping_enabled
+        tests_skipping_enabled?: tests_skipping_enabled,
+        flaky_test_retries_enabled?: flaky_test_retries_enabled
       ),
       # This is for the second call to fetch_library_settings
       instance_double(
@@ -74,19 +79,31 @@ RSpec.shared_context "CI mode activated" do
         require_git?: !require_git,
         itr_enabled?: itr_enabled,
         code_coverage_enabled?: !code_coverage_enabled,
-        tests_skipping_enabled?: !tests_skipping_enabled
+        tests_skipping_enabled?: !tests_skipping_enabled,
+        flaky_test_retries_enabled?: flaky_test_retries_enabled
       )
     )
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
     allow_any_instance_of(Datadog::CI::TestOptimisation::Coverage::Transport).to receive(:send_events).and_return([])
 
     Datadog.configure do |c|
+      # library switch
       c.ci.enabled = ci_enabled
+
+      # test visibility
       c.ci.force_test_level_visibility = force_test_level_visibility
+
+      # test optimisation
       c.ci.itr_enabled = itr_enabled
       c.ci.git_metadata_upload_enabled = git_metadata_upload_enabled
       c.ci.itr_code_coverage_excluded_bundle_path = bundle_path
       c.ci.itr_code_coverage_use_single_threaded_mode = use_single_threaded_coverage
+
+      # test retries
+      c.ci.retry_failed_tests_max_attempts = retry_failed_tests_max_attempts
+      c.ci.retry_failed_tests_total_limit = retry_failed_tests_total_limit
+
+      # instrumentation
       unless integration_name == :no_instrument
         c.ci.instrument integration_name, integration_options
       end

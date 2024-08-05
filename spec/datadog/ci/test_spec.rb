@@ -167,16 +167,38 @@ RSpec.describe Datadog::CI::Test do
   end
 
   describe "#passed!" do
-    before { allow(ci_test).to receive(:test_suite).and_return(test_suite) }
+    before do
+      allow(ci_test).to receive(:test_suite).and_return(test_suite)
+      expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+      expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+      expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+    end
 
     context "when test suite is set" do
       let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
+      let(:test_executed) { false }
+
+      before do
+        expect(test_suite).to receive(:test_executed?).with("test suite name.test name.").and_return(test_executed)
+      end
 
       it "records the test result in the test suite" do
         expect(tracer_span).to receive(:set_tag).with("test.status", "pass")
+
         ci_test.passed!
 
-        expect(test_suite).to have_received(:record_test_result).with("pass")
+        expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "pass")
+      end
+
+      context "and when test was already executed" do
+        let(:test_executed) { true }
+
+        it "marks the test as retried" do
+          expect(tracer_span).to receive(:set_tag).with("test.is_retry", "true")
+          expect(tracer_span).to receive(:set_tag).with("test.status", "pass")
+
+          ci_test.passed!
+        end
       end
     end
 
@@ -192,17 +214,38 @@ RSpec.describe Datadog::CI::Test do
   end
 
   describe "#skipped!" do
-    before { allow(ci_test).to receive(:test_suite).and_return(test_suite) }
+    before do
+      allow(ci_test).to receive(:test_suite).and_return(test_suite)
+      expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+      expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+      expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+    end
 
     context "when test suite is set" do
       let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
+      let(:test_executed) { false }
+
+      before do
+        expect(test_suite).to receive(:test_executed?).with("test suite name.test name.").and_return(test_executed)
+      end
 
       it "records the test result in the test suite" do
         expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
 
         ci_test.skipped!
 
-        expect(test_suite).to have_received(:record_test_result).with("skip")
+        expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "skip")
+      end
+
+      context "and when test was already executed" do
+        let(:test_executed) { true }
+
+        it "marks the test as retried" do
+          expect(tracer_span).to receive(:set_tag).with("test.is_retry", "true")
+          expect(tracer_span).to receive(:set_tag).with("test.status", "skip")
+
+          ci_test.skipped!
+        end
       end
     end
 
@@ -218,10 +261,21 @@ RSpec.describe Datadog::CI::Test do
   end
 
   describe "#failed!" do
-    before { allow(ci_test).to receive(:test_suite).and_return(test_suite) }
+    before do
+      allow(ci_test).to receive(:test_suite).and_return(test_suite)
+
+      expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+      expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+      expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+    end
 
     context "when test suite is set" do
       let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
+      let(:test_executed) { false }
+
+      before do
+        expect(test_suite).to receive(:test_executed?).with("test suite name.test name.").and_return(test_executed)
+      end
 
       it "records the test result in the test suite" do
         expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
@@ -229,7 +283,19 @@ RSpec.describe Datadog::CI::Test do
 
         ci_test.failed!
 
-        expect(test_suite).to have_received(:record_test_result).with("fail")
+        expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "fail")
+      end
+
+      context "and when test was already executed" do
+        let(:test_executed) { true }
+
+        it "marks the test as retried" do
+          expect(tracer_span).to receive(:set_tag).with("test.is_retry", "true")
+          expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
+          expect(tracer_span).to receive(:status=).with(1)
+
+          ci_test.failed!
+        end
       end
     end
 

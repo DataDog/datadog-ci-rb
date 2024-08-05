@@ -1,5 +1,8 @@
 require_relative "helpers/helper"
 
+max_flaky_test_failures = 4
+flaky_test_executions = 0
+
 Before do
   Datadog::CI.active_test.set_tag("cucumber_before_hook_executed", "true")
 end
@@ -34,4 +37,11 @@ end
 
 Then(/the result should be (-?\d+)/) do |res|
   expect(@res).to eq(res.to_i)
+end
+
+Then "flaky" do
+  if flaky_test_executions < max_flaky_test_failures
+    flaky_test_executions += 1
+    raise "Flaky test failure"
+  end
 end

@@ -16,7 +16,9 @@ module Datadog
       def initialize(tracer_span)
         super
 
-        @test_suite_stats = Hash.new(0)
+        # counts how many times every test in this suite was executed with each status:
+        #   { "MySuite.mytest.a:1" => { "pass" => 3, "fail" => 2 } }
+        @execution_stats_per_test = {}
       end
 
       # Finishes this test suite.
@@ -33,42 +35,61 @@ module Datadog
       end
 
       # @internal
-      def record_test_result(datadog_test_status)
+      def record_test_result(test_id, datadog_test_status)
         synchronize do
-          @test_suite_stats[datadog_test_status] += 1
+          @execution_stats_per_test[test_id] ||= Hash.new(0)
+          @execution_stats_per_test[test_id][datadog_test_status] += 1
         end
       end
 
       # @internal
-      def passed_tests_count
+      def any_passed?
         synchronize do
-          @test_suite_stats[Ext::Test::Status::PASS]
+          @execution_stats_per_test.any? do |_, stats|
+            stats[Ext::Test::Status::PASS] > 0
+          end
         end
       end
 
       # @internal
-      def skipped_tests_count
+      def test_executed?(test_id)
         synchronize do
-          @test_suite_stats[Ext::Test::Status::SKIP]
-        end
-      end
-
-      # @internal
-      def failed_tests_count
-        synchronize do
-          @test_suite_stats[Ext::Test::Status::FAIL]
+          @execution_stats_per_test.key?(test_id)
         end
       end
 
       private
 
       def set_status_from_stats!
-        if failed_tests_count > 0
-          failed!
-        elsif passed_tests_count == 0
-          skipped!
+        synchronize do
+          # count how many tests passed, failed and skipped
+          test_suite_stats = @execution_stats_per_test.each_with_object(Hash.new(0)) do |(_test_id, stats), acc|
+            acc[derive_test_status_from_execution_stats(stats)] += 1
+          end
+
+          # test suite is considered failed if at least one test failed
+          if test_suite_stats[Ext::Test::Status::FAIL] > 0
+            failed!
+          # if there are no failures and no passes, it is skipped
+          elsif test_suite_stats[Ext::Test::Status::PASS] == 0
+            skipped!
+          # otherwise we consider it passed
+          else
+            passed!
+          end
+        end
+      end
+
+      def derive_test_status_from_execution_stats(test_execution_stats)
+        # test is passed if it passed at least once
+        if test_execution_stats[Ext::Test::Status::PASS] > 0
+          Ext::Test::Status::PASS
+        # if test was never passed, it is failed if it failed at least once
+        elsif test_execution_stats[Ext::Test::Status::FAIL] > 0
+          Ext::Test::Status::FAIL
+        # otherwise it is skipped
         else
-          passed!
+          Ext::Test::Status::SKIP
         end
       end
     end

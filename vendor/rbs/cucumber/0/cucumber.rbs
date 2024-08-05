@@ -12,6 +12,11 @@ class Cucumber::Runtime
   def begin_scenario: (untyped test_case) -> void
 end
 
+class Cucumber::Configuration
+  def retry_attempts: () -> Integer?
+  def retry_total_tests: () -> Integer?
+end
+
 module Cucumber::Formatter
 end
 

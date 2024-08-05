@@ -9,6 +9,7 @@ module Datadog
         @itr_enabled: bool
         @code_coverage_enabled: bool
         @tests_skipping_enabled: bool
+        @flaky_test_retries_enabled: bool
 
         def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
 
@@ -23,6 +24,8 @@ module Datadog
         def code_coverage_enabled?: () -> bool
 
         def tests_skipping_enabled?: () -> bool
+
+        def flaky_test_retries_enabled?: () -> bool
 
         private
 

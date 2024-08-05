@@ -28,12 +28,17 @@ module Datadog
           end
 
           test_optimisation.configure(library_configuration, test_session)
+          test_retries.configure(library_configuration)
         end
 
         private
 
         def test_optimisation
           Datadog.send(:components).test_optimisation
+        end
+
+        def test_retries
+          Datadog.send(:components).test_retries
         end
 
         def git_tree_upload_worker
