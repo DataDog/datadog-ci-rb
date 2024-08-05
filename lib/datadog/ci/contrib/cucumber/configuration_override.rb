@@ -21,7 +21,9 @@ module Datadog
             end
 
             def retry_total_tests
-              super
+              super if !datadog_test_retries_component&.retry_failed_tests_enabled
+
+              datadog_test_retries_component&.retry_failed_tests_total_limit
             end
 
             def datadog_test_retries_component
