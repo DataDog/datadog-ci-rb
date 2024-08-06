@@ -39,37 +39,41 @@ module Datadog
 
               result = nil
 
-              test_visibility_component.trace_test(
-                test_name,
-                suite_name,
-                tags: {
-                  CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
-                  CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
-                  CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s,
-                  CI::Ext::Test::TAG_PARAMETERS => Utils::TestRun.test_parameters(
-                    metadata: {"scoped_id" => metadata[:scoped_id]}
-                  )
-                },
-                service: datadog_configuration[:service_name]
-              ) do |test_span|
-                test_span&.itr_unskippable! if metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
+              test_retries_component.with_retries do |retry_callback|
+                test_visibility_component.trace_test(
+                  test_name,
+                  suite_name,
+                  tags: {
+                    CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
+                    CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
+                    CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
+                    CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s,
+                    CI::Ext::Test::TAG_PARAMETERS => Utils::TestRun.test_parameters(
+                      metadata: {"scoped_id" => metadata[:scoped_id]}
+                    )
+                  },
+                  service: datadog_configuration[:service_name]
+                ) do |test_span|
+                  test_span&.itr_unskippable! if metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
 
-                metadata[:skip] = CI::Ext::Test::ITR_TEST_SKIP_REASON if test_span&.skipped_by_itr?
+                  metadata[:skip] = CI::Ext::Test::ITR_TEST_SKIP_REASON if test_span&.skipped_by_itr?
 
-                result = super
+                  result = super
 
-                case execution_result.status
-                when :passed
-                  test_span&.passed!
-                when :failed
-                  test_span&.failed!(exception: execution_result.exception)
-                else
-                  # :pending or nil
-                  test_span&.skipped!(
-                    reason: execution_result.pending_message,
-                    exception: execution_result.pending_exception
-                  )
+                  case execution_result.status
+                  when :passed
+                    test_span&.passed!
+                  when :failed
+                    test_span&.failed!(exception: execution_result.exception)
+                  else
+                    # :pending or nil
+                    test_span&.skipped!(
+                      reason: execution_result.pending_message,
+                      exception: execution_result.pending_exception
+                    )
+                  end
+
+                  retry_callback.call(test_span)
                 end
               end
 
@@ -99,6 +103,10 @@ module Datadog
 
             def test_visibility_component
               Datadog.send(:components).test_visibility
+            end
+
+            def test_retries_component
+              Datadog.send(:components).test_retries
             end
 
             def ci_queue?
