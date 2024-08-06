@@ -37,6 +37,8 @@ module Datadog
                 test_suite_span = test_visibility_component.start_test_suite(suite_name)
               end
 
+              result = nil
+
               test_visibility_component.trace_test(
                 test_name,
                 suite_name,
@@ -60,24 +62,20 @@ module Datadog
                 case execution_result.status
                 when :passed
                   test_span&.passed!
-                  test_suite_span&.passed!
                 when :failed
                   test_span&.failed!(exception: execution_result.exception)
-                  test_suite_span&.failed!
                 else
                   # :pending or nil
                   test_span&.skipped!(
                     reason: execution_result.pending_message,
                     exception: execution_result.pending_exception
                   )
-
-                  test_suite_span&.skipped!
                 end
-
-                test_suite_span&.finish
-
-                result
               end
+
+              test_suite_span&.finish
+
+              result
             end
 
             private
