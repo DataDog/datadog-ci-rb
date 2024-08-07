@@ -9,7 +9,8 @@ module Datadog
             false
           end
 
-          def track_retry(test_span)
+          def record_retry(test_span)
+            test_span&.set_tag(Ext::Test::TAG_IS_RETRY, "true")
           end
         end
       end

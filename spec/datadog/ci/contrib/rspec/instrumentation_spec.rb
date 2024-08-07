@@ -31,6 +31,7 @@ RSpec.describe "RSpec hooks" do
     with_failed_test: false,
     with_shared_test: false,
     with_shared_context: false,
+    with_flaky_test: false,
     unskippable: {
       test: false,
       context: false,
@@ -41,6 +42,10 @@ RSpec.describe "RSpec hooks" do
     test_meta = unskippable[:test] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
     context_meta = unskippable[:context] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
     suite_meta = unskippable[:suite] ? {Datadog::CI::Ext::Test::ITR_UNSKIPPABLE_OPTION => true} : {}
+
+    max_flaky_test_failures = 4
+    flaky_test_failures = 0
+
     with_new_rspec_environment do
       spec = RSpec.describe "SomeTest", suite_meta do
         context "nested", context_meta do
@@ -63,6 +68,17 @@ RSpec.describe "RSpec hooks" do
           if with_shared_context
             require_relative "some_shared_context"
             include_context "Shared context"
+          end
+
+          if with_flaky_test
+            it "flaky" do
+              if flaky_test_failures < max_flaky_test_failures
+                flaky_test_failures += 1
+                expect(1 + 1).to eq(3)
+              else
+                expect(1 + 1).to eq(2)
+              end
+            end
           end
         end
       end
@@ -117,7 +133,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "90")
+      expect(first_test_span).to have_test_tag(:source_start, "106")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -798,6 +814,113 @@ RSpec.describe "RSpec hooks" do
 
       expect(test_session_span).to be_nil
       expect(test_spans).to be_empty
+    end
+  end
+
+  context "session with flaky spec and failed test retries enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:flaky_test_retries_enabled) { true }
+    end
+
+    it "retries test until it passes" do
+      rspec_session_run(with_flaky_test: true)
+
+      # 1 initial run of flaky test + 4 retries until pass + 1 passing test = 6 spans
+      expect(test_spans).to have(6).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(4).items # see steps.rb
+      expect(passed_spans).to have(2).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["nested flaky"]).to have(5).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(4)
+
+      expect(test_spans_by_test_name["nested foo"]).to have(1).item
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+    end
+  end
+
+  context "session with flaky spec and failed test retries enabled with insufficient retries limit" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:flaky_test_retries_enabled) { true }
+      let(:retry_failed_tests_max_attempts) { 3 }
+    end
+
+    it "retries test until it passes" do
+      rspec_session_run(with_flaky_test: true)
+
+      # 1 initial run of flaky test + 3 unsuccessful retries + 1 passing test = 5 spans
+      expect(test_spans).to have(5).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(4).items
+      expect(passed_spans).to have(1).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["nested flaky"]).to have(4).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(3)
+
+      expect(test_spans_by_test_name["nested foo"]).to have(1).item
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_fail_status
+
+      expect(test_session_span).to have_fail_status
+    end
+  end
+
+  context "session with flaky and failed specs and failed test retries enabled with low overall retries limit" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:flaky_test_retries_enabled) { true }
+      let(:retry_failed_tests_total_limit) { 1 }
+    end
+
+    it "retries failed test with no success and bails out of retrying flaky test" do
+      rspec_session_run(with_flaky_test: true, with_failed_test: true)
+
+      # 1 passing test + 1 failed test + 5 unsuccessful retries + 1 failed run of flaky test without retries = 8 spans
+      expect(test_spans).to have(8).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(7).items
+      expect(passed_spans).to have(1).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+
+      # it bailed out of retrying flaky test because global failed tests limit was exhausted already
+      expect(test_spans_by_test_name["nested flaky"]).to have(1).item
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(5)
+
+      # it retried failing test 5 times
+      expect(test_spans_by_test_name["nested fails"]).to have(6).items
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_fail_status
+
+      expect(test_session_span).to have_fail_status
     end
   end
 end

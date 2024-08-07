@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "strategy/no_retry"
+require_relative "strategy/retry_failed"
 
 module Datadog
   module CI
@@ -20,7 +21,6 @@ module Datadog
           @retry_failed_tests_max_attempts = retry_failed_tests_max_attempts
           @retry_failed_tests_total_limit = retry_failed_tests_total_limit
 
-          # TODO: increment in #build_strategy method if test failed and should be retried
           @retry_failed_tests_count = 0
         end
 
@@ -29,21 +29,41 @@ module Datadog
         end
 
         def with_retries(&block)
+          # @type var retry_strategy: Strategy::Base
           retry_strategy = nil
 
-          finished_proc = proc do |test_span|
+          test_finished_callback = lambda do |test_span|
             if retry_strategy.nil?
-              retry_strategy = Strategy::NoRetry.new
+              # we always run test at least once and after first pass create a correct retry strategy
+              retry_strategy = build_strategy(test_span)
             else
-              retry_strategy.track_retry(test_span)
+              # after each retry we record the result, strategy will decide if we should retry again
+              retry_strategy&.record_retry(test_span)
             end
           end
 
           loop do
-            yield finished_proc
+            yield test_finished_callback
 
             break unless retry_strategy&.should_retry?
           end
+        end
+
+        #  TODO: synchronize this! This object is shared between threads
+        def build_strategy(test_span)
+          if should_retry_failed_test?(test_span)
+            @retry_failed_tests_count += 1
+
+            Strategy::RetryFailed.new(max_attempts: @retry_failed_tests_max_attempts)
+          else
+            Strategy::NoRetry.new
+          end
+        end
+
+        private
+
+        def should_retry_failed_test?(test_span)
+          @retry_failed_tests_enabled && !!test_span&.failed? && @retry_failed_tests_count < @retry_failed_tests_total_limit
         end
       end
     end

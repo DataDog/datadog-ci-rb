@@ -13,6 +13,7 @@ RSpec.describe "RSpec instrumentation with Shopify's ci-queue runner" do
 
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
+    let(:flaky_test_retries_enabled) { true }
   end
 
   let(:run_id) { SecureRandom.random_number(2**64 - 1) }
@@ -85,8 +86,8 @@ RSpec.describe "RSpec instrumentation with Shopify's ci-queue runner" do
       ]
     )
 
-    # there is test span for every test case
-    expect(test_spans).to have(3).items
+    # there is test span for every test case + 5 retries
+    expect(test_spans).to have(8).items
     # each test span has its own test suite
     expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 3)
 

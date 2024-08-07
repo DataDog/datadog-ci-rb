@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module TestRetries
+      module Strategy
+        class Base
+          def should_retry?: () -> bool
+
+          def record_retry: (Datadog::CI::Test test_span) -> void
+        end
+      end
+    end
+  end
+end

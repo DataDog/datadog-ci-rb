@@ -37,8 +37,6 @@ module Datadog
                 test_suite_span = test_visibility_component.start_test_suite(suite_name)
               end
 
-              result = nil
-
               test_retries_component.with_retries do |retry_callback|
                 test_visibility_component.trace_test(
                   test_name,
@@ -58,7 +56,12 @@ module Datadog
 
                   metadata[:skip] = CI::Ext::Test::ITR_TEST_SKIP_REASON if test_span&.skipped_by_itr?
 
-                  result = super
+                  # before each run remove any previous exception
+                  @exception = nil
+                  # don't report test to RSpec::Core::Reporter until retries are done
+                  @skip_reporting = true
+
+                  super
 
                   case execution_result.status
                   when :passed
@@ -77,9 +80,23 @@ module Datadog
                 end
               end
 
+              # after retries are done, we can report the test to RSpec
+              @skip_reporting = false
+
               test_suite_span&.finish
 
-              result
+              # Finish spec with latest retry's result
+              # TODO: when implementing new test retries make sure to clean @exception before calling this method
+              # if test passed at least once
+              finish(reporter)
+            end
+
+            def finish(reporter)
+              # by default finish test but do not report it to RSpec::Core::Reporter
+              # it is going to be reported once after retries are done
+              return super unless @skip_reporting
+
+              super(::RSpec::Core::NullReporter)
             end
 
             private
