@@ -10,6 +10,7 @@ require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_optimisation/coverage/writer"
 require_relative "../test_retries/component"
+require_relative "../test_retries/null_component"
 require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/null_component"
@@ -35,7 +36,7 @@ module Datadog
           @test_visibility = TestVisibility::NullComponent.new
           @git_tree_upload_worker = DummyWorker.new
           @ci_remote = nil
-          @test_retries = nil
+          @test_retries = TestRetries::NullComponent.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled

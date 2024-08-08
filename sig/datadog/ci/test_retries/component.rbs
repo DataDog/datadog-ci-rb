@@ -8,9 +8,21 @@ module Datadog
 
         attr_reader retry_failed_tests_total_limit: Integer
 
+        attr_reader retry_failed_tests_count: Integer
+
+        @mutex: Thread::Mutex
+
         def initialize: (retry_failed_tests_max_attempts: Integer, retry_failed_tests_total_limit: Integer) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings) -> void
+
+        def with_retries: () { (untyped) -> void } -> void
+
+        def build_strategy: (Datadog::CI::Test test) -> Datadog::CI::TestRetries::Strategy::Base
+
+        private
+
+        def should_retry_failed_test?: (Datadog::CI::Test test) -> bool
       end
     end
   end

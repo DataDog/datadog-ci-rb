@@ -1,0 +1,25 @@
+module Datadog
+  module CI
+    module TestRetries
+      class NullComponent < Component
+        @retry_failed_tests_enabled: untyped
+
+        @retry_failed_tests_max_attempts: untyped
+
+        @retry_failed_tests_total_limit: untyped
+
+        attr_reader retry_failed_tests_enabled: untyped
+
+        attr_reader retry_failed_tests_max_attempts: untyped
+
+        attr_reader retry_failed_tests_total_limit: untyped
+
+        def initialize: () -> void
+
+        def configure: (untyped library_settings) -> nil
+
+        def with_retries: () { (untyped) -> untyped } -> untyped
+      end
+    end
+  end
+end

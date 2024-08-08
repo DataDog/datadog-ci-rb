@@ -13,6 +13,7 @@ RSpec.describe "RSpec instrumentation with Shopify's ci-queue runner" do
 
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
+    let(:flaky_test_retries_enabled) { true }
   end
 
   let(:run_id) { SecureRandom.random_number(2**64 - 1) }
@@ -20,7 +21,7 @@ RSpec.describe "RSpec instrumentation with Shopify's ci-queue runner" do
     RSpec::Core::ConfigurationOptions.new([
       "-Ispec/datadog/ci/contrib/ci_queue_rspec/suite_under_test",
       "--queue",
-      "list:.%2Fspec%2Fdatadog%2Fci%2Fcontrib%2Fci_queue_rspec%2Fsuite_under_test%2Fsome_test_rspec.rb%5B1%3A1%3A1%5D:.%2Fspec%2Fdatadog%2Fci%2Fcontrib%2Fci_queue_rspec%2Fsuite_under_test%2Fsome_test_rspec.rb%5B1%3A1%3A2%5D",
+      "list:.%2Fspec%2Fdatadog%2Fci%2Fcontrib%2Fci_queue_rspec%2Fsuite_under_test%2Fsome_test_rspec.rb%5B1%3A1%3A1%5D:.%2Fspec%2Fdatadog%2Fci%2Fcontrib%2Fci_queue_rspec%2Fsuite_under_test%2Fsome_test_rspec.rb%5B1%3A1%3A2%5D:.%2Fspec%2Fdatadog%2Fci%2Fcontrib%2Fci_queue_rspec%2Fsuite_under_test%2Fsome_test_rspec.rb%5B1%3A1%3A3%5D",
       "--require",
       "some_test_rspec.rb",
       "--build",
@@ -71,23 +72,24 @@ RSpec.describe "RSpec instrumentation with Shopify's ci-queue runner" do
     expect([test_session_span, test_module_span]).to all have_fail_status
 
     # test suite spans are created for each test as for parallel execution
-    expect(test_suite_spans).to have(2).items
+    expect(test_suite_spans).to have(3).items
     expect(test_suite_spans).to have_tag_values_no_order(
       :status,
-      [Datadog::CI::Ext::Test::Status::FAIL, Datadog::CI::Ext::Test::Status::PASS]
+      [Datadog::CI::Ext::Test::Status::FAIL, Datadog::CI::Ext::Test::Status::PASS, Datadog::CI::Ext::Test::Status::SKIP]
     )
     expect(test_suite_spans).to have_tag_values_no_order(
       :suite,
       [
         "SomeTest at ./spec/datadog/ci/contrib/ci_queue_rspec/suite_under_test/some_test_rspec.rb (ci-queue running example [nested fails])",
-        "SomeTest at ./spec/datadog/ci/contrib/ci_queue_rspec/suite_under_test/some_test_rspec.rb (ci-queue running example [nested foo])"
+        "SomeTest at ./spec/datadog/ci/contrib/ci_queue_rspec/suite_under_test/some_test_rspec.rb (ci-queue running example [nested foo])",
+        "SomeTest at ./spec/datadog/ci/contrib/ci_queue_rspec/suite_under_test/some_test_rspec.rb (ci-queue running example [nested is skipped])"
       ]
     )
 
-    # there is test span for every test case
-    expect(test_spans).to have(2).items
+    # there is test span for every test case + 5 retries
+    expect(test_spans).to have(8).items
     # each test span has its own test suite
-    expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 2)
+    expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 3)
 
     # every test span is connected to test module and test session
     expect(test_spans).to all have_test_tag(:test_module_id)
