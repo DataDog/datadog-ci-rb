@@ -55,6 +55,7 @@ module Datadog
         def build_strategy(test_span)
           @mutex.synchronize do
             if should_retry_failed_test?(test_span)
+              Datadog.logger.debug("Failed test retry starts")
               @retry_failed_tests_count += 1
 
               Strategy::RetryFailed.new(max_attempts: @retry_failed_tests_max_attempts)
