@@ -3,7 +3,7 @@ module Datadog
     module TestRetries
       module Strategy
         class RetryFailed < Base
-          @max_attempts: Integer
+          attr_reader max_attempts: Integer
 
           @attempts: Integer
 

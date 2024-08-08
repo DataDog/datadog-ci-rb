@@ -10,7 +10,8 @@ module Datadog
       # - retrying failed tests - improve success rate of CI pipelines
       # - retrying new tests - detect flaky tests as early as possible to prevent them from being merged
       class Component
-        attr_reader :retry_failed_tests_enabled, :retry_failed_tests_max_attempts, :retry_failed_tests_total_limit
+        attr_reader :retry_failed_tests_enabled, :retry_failed_tests_max_attempts,
+          :retry_failed_tests_total_limit, :retry_failed_tests_count
 
         def initialize(
           retry_failed_tests_max_attempts:,
@@ -20,8 +21,10 @@ module Datadog
           @retry_failed_tests_enabled = false
           @retry_failed_tests_max_attempts = retry_failed_tests_max_attempts
           @retry_failed_tests_total_limit = retry_failed_tests_total_limit
-
+          # counter that store the current number of failed tests retried
           @retry_failed_tests_count = 0
+
+          @mutex = Mutex.new
         end
 
         def configure(library_settings)
@@ -49,14 +52,15 @@ module Datadog
           end
         end
 
-        #  TODO: synchronize this! This object is shared between threads
         def build_strategy(test_span)
-          if should_retry_failed_test?(test_span)
-            @retry_failed_tests_count += 1
+          @mutex.synchronize do
+            if should_retry_failed_test?(test_span)
+              @retry_failed_tests_count += 1
 
-            Strategy::RetryFailed.new(max_attempts: @retry_failed_tests_max_attempts)
-          else
-            Strategy::NoRetry.new
+              Strategy::RetryFailed.new(max_attempts: @retry_failed_tests_max_attempts)
+            else
+              Strategy::NoRetry.new
+            end
           end
         end
 

@@ -34,8 +34,11 @@ module Datadog
 
               if ci_queue?
                 suite_name = "#{suite_name} (ci-queue running example [#{test_name}])"
-                test_suite_span = test_visibility_component.start_test_suite(suite_name)
+                ci_queue_test_span = test_visibility_component.start_test_suite(suite_name)
               end
+
+              # don't report test to RSpec::Core::Reporter until retries are done
+              @skip_reporting = true
 
               test_retries_component.with_retries do |retry_callback|
                 test_visibility_component.trace_test(
@@ -58,8 +61,6 @@ module Datadog
 
                   # before each run remove any previous exception
                   @exception = nil
-                  # don't report test to RSpec::Core::Reporter until retries are done
-                  @skip_reporting = true
 
                   super
 
@@ -83,7 +84,8 @@ module Datadog
               # after retries are done, we can report the test to RSpec
               @skip_reporting = false
 
-              test_suite_span&.finish
+              # this is a special case for ci-queue, we need to finish the test suite span
+              ci_queue_test_span&.finish
 
               # Finish spec with latest retry's result
               # TODO: when implementing new test retries make sure to clean @exception before calling this method

@@ -71,6 +71,9 @@ module Datadog
         end
 
         def flaky_test_retries_enabled?
+          # DO NOT COMMIT THIS LINE:
+          return true
+
           return @flaky_test_retries_enabled if defined?(@flaky_test_retries_enabled)
 
           @flaky_test_retries_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY)

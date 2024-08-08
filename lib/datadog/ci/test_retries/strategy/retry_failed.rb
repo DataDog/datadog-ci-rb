@@ -9,6 +9,8 @@ module Datadog
     module TestRetries
       module Strategy
         class RetryFailed < Base
+          attr_reader :max_attempts
+
           def initialize(max_attempts:)
             @max_attempts = max_attempts
 
