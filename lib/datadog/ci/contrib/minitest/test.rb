@@ -50,7 +50,7 @@ module Datadog
               test_span = test_visibility_component.active_test
               return super unless test_span
 
-              finish_with_result(test_span, result_code)
+              finish_with_result(test_span, result_code, Thread.current[:__dd_retry_callback])
               if Helpers.parallel?(self.class)
                 finish_with_result(test_span.test_suite, result_code)
               end
@@ -60,7 +60,7 @@ module Datadog
 
             private
 
-            def finish_with_result(span, result_code)
+            def finish_with_result(span, result_code, callback = nil)
               return unless span
 
               case result_code
@@ -71,6 +71,9 @@ module Datadog
               when "S"
                 span.skipped!(reason: failure.message)
               end
+
+              callback.call(span) if callback
+
               span.finish
             end
 

@@ -948,4 +948,47 @@ RSpec.describe "Minitest instrumentation" do
       )
     end
   end
+
+  context "with flaky test and test retries enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:flaky_test_retries_enabled) { true }
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Thread.current[:dd_coverage_collector] = nil
+
+      Minitest::Runnable.reset
+
+      require_relative "helpers/addition_helper"
+      class SomeTestWithThreads < Minitest::Test
+        def test_with_background_thread
+          # add thread to test that code coverage is collected
+          t = Thread.new do
+            AdditionHelper.add(1, 2)
+          end
+          t.join
+          assert true
+        end
+      end
+    end
+
+    it "does not cover the background thread" do
+      skip if PlatformHelpers.jruby?
+
+      expect(test_spans).to have(1).item
+      expect(coverage_events).to have(1).item
+
+      # expect that background thread is not covered
+      cov_event = find_coverage_for_test(first_test_span)
+      expect(cov_event.coverage.keys).not_to include(
+        absolute_path("helpers/addition_helper.rb")
+      )
+    end
+  end
 end
