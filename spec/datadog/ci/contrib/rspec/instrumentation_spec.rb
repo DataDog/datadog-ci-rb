@@ -46,9 +46,13 @@ RSpec.describe "RSpec hooks" do
     max_flaky_test_failures = 4
     flaky_test_failures = 0
 
+    current_let_value = 0
+
     with_new_rspec_environment do
       spec = RSpec.describe "SomeTest", suite_meta do
         context "nested", context_meta do
+          let(:let_value) { current_let_value += 1 }
+
           it "foo", test_meta do
             expect(1 + 1).to eq(2)
           end
@@ -72,6 +76,7 @@ RSpec.describe "RSpec hooks" do
 
           if with_flaky_test
             it "flaky" do
+              Datadog::CI.active_test&.set_tag("let_value", let_value)
               if flaky_test_failures < max_flaky_test_failures
                 flaky_test_failures += 1
                 expect(1 + 1).to eq(3)
@@ -133,7 +138,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "106")
+      expect(first_test_span).to have_test_tag(:source_start, "111")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -837,6 +842,10 @@ RSpec.describe "RSpec hooks" do
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["nested flaky"]).to have(5).items
+
+      # check that let values are cleared between retries
+      let_values = test_spans_by_test_name["nested flaky"].map { |span| span.get_tag("let_value") }
+      expect(let_values).to eq([1, 2, 3, 4, 5])
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
