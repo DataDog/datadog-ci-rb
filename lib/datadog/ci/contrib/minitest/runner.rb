@@ -32,12 +32,11 @@ module Datadog
               return super unless datadog_configuration[:enabled]
 
               result = nil
-              # retries here
-              test_retries_component.with_retries do |test_finished_callback|
-                Thread.current[:__dd_retry_callback] = test_finished_callback
 
+              test_retries_component.with_retries do
                 result = super
               end
+
               result
             end
 
