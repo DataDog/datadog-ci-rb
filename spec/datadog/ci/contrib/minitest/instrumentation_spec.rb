@@ -1128,4 +1128,66 @@ RSpec.describe "Minitest instrumentation" do
       expect(test_session_span).to have_fail_status
     end
   end
+
+  context "with flaky test, test retries enabled, and threading test runner" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:flaky_test_retries_enabled) { true }
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class ParallelFlakyTestSuite < Minitest::Test
+        parallelize_me!
+
+        @@max_flaky_test_failures = 4
+        @@flaky_test_failures = 0
+
+        def test_passed
+          assert true
+        end
+
+        def test_flaky
+          if @@flaky_test_failures < @@max_flaky_test_failures
+            @@flaky_test_failures += 1
+            assert 1 + 1 == 3
+          else
+            assert 1 + 1 == 2
+          end
+        end
+
+        def test_failed
+          assert 1 + 1 == 4
+        end
+      end
+    end
+
+    it "retries flaky test" do
+      # 1 initial run of flaky test + 4 retries until pass + 1 failed test run + 5 retries + 1 passing test = 12 spans
+      expect(test_spans).to have(12).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(10).items
+      expect(passed_spans).to have(2).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["test_flaky"]).to have(5).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(9)
+
+      expect(test_spans_by_test_name["test_passed"]).to have(1).item
+
+      expect(test_suite_spans).to have(12).items
+
+      expect(test_session_span).to have_fail_status
+    end
+  end
 end
