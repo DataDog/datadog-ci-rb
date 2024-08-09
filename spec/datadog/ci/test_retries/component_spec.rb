@@ -120,14 +120,30 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   end
 
   describe "#with_retries" do
+    include_context "CI mode activated" do
+      let(:flaky_test_retries_enabled) { true }
+    end
+
     let(:test_failed) { false }
-    let(:test_span) { instance_double(Datadog::CI::Test, failed?: test_failed, passed?: false, set_tag: true) }
+    let(:test_span) do
+      instance_double(
+        Datadog::CI::Test,
+        failed?: test_failed,
+        passed?: false,
+        set_tag: true,
+        get_tag: true,
+        skipped?: false,
+        type: "test"
+      )
+    end
 
     subject(:runs_count) do
       runs_count = 0
-      component.with_retries do |test_finished_callback|
+      component.with_retries do
         runs_count += 1
-        test_finished_callback.call(test_span)
+
+        # run callback manually
+        Datadog.send(:components).test_visibility.send(:on_test_finished, test_span)
       end
 
       runs_count
