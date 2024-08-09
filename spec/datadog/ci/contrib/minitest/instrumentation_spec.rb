@@ -965,30 +965,106 @@ RSpec.describe "Minitest instrumentation" do
 
       Minitest::Runnable.reset
 
-      require_relative "helpers/addition_helper"
-      class SomeTestWithThreads < Minitest::Test
-        def test_with_background_thread
-          # add thread to test that code coverage is collected
-          t = Thread.new do
-            AdditionHelper.add(1, 2)
-          end
-          t.join
+      class FlakyTestSuite < Minitest::Test
+        @@max_flaky_test_failures = 4
+        @@flaky_test_failures = 0
+
+        def test_passed
           assert true
+        end
+
+        def test_flaky
+          if @@flaky_test_failures < @@max_flaky_test_failures
+            @@flaky_test_failures += 1
+            assert 1 + 1 == 3
+          else
+            assert 1 + 1 == 2
+          end
         end
       end
     end
 
-    it "does not cover the background thread" do
-      skip if PlatformHelpers.jruby?
+    it "retries flaky test" do
+      # 1 initial run of flaky test + 4 retries until pass + 1 passing test = 6 spans
+      expect(test_spans).to have(6).items
 
-      expect(test_spans).to have(1).item
-      expect(coverage_events).to have(1).item
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(4).items # see steps.rb
+      expect(passed_spans).to have(2).items
 
-      # expect that background thread is not covered
-      cov_event = find_coverage_for_test(first_test_span)
-      expect(cov_event.coverage.keys).not_to include(
-        absolute_path("helpers/addition_helper.rb")
-      )
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["test_flaky"]).to have(5).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(4)
+
+      expect(test_spans_by_test_name["test_passed"]).to have(1).item
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+    end
+  end
+
+  context "with flaky test and test retries enabled with insufficient max retries" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:flaky_test_retries_enabled) { true }
+      let(:retry_failed_tests_max_attempts) { 3 }
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Thread.current[:dd_coverage_collector] = nil
+
+      Minitest::Runnable.reset
+
+      class FlakyTestSuite2 < Minitest::Test
+        @@max_flaky_test_failures = 4
+        @@flaky_test_failures = 0
+
+        def test_passed
+          assert true
+        end
+
+        def test_flaky
+          if @@flaky_test_failures < @@max_flaky_test_failures
+            @@flaky_test_failures += 1
+            assert 1 + 1 == 3
+          else
+            assert 1 + 1 == 2
+          end
+        end
+      end
+    end
+
+    it "retries flaky test" do
+      # 1 initial run of flaky test + 3 retries without success + 1 passing test = 5 spans
+      expect(test_spans).to have(5).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(4).items # see steps.rb
+      expect(passed_spans).to have(1).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["test_flaky"]).to have(4).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(3)
+
+      expect(test_spans_by_test_name["test_passed"]).to have(1).item
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_fail_status
+
+      expect(test_session_span).to have_fail_status
     end
   end
 end
