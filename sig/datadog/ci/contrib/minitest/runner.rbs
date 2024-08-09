@@ -10,11 +10,15 @@ module Datadog
 
             def init_plugins: (*untyped) -> (nil | untyped)
 
+            def run_one_method: (untyped klass, String method_name) -> untyped
+
             private
 
             def datadog_configuration: () -> untyped
 
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+
+            def test_retries_component: () -> Datadog::CI::TestRetries::Component
           end
         end
       end

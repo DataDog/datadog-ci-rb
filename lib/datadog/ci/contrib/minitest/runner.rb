@@ -28,6 +28,18 @@ module Datadog
               test_visibility_component.start_test_module(Ext::FRAMEWORK)
             end
 
+            def run_one_method(klass, method_name)
+              return super unless datadog_configuration[:enabled]
+
+              result = nil
+
+              test_retries_component.with_retries do
+                result = super
+              end
+
+              result
+            end
+
             private
 
             def datadog_configuration
@@ -36,6 +48,10 @@ module Datadog
 
             def test_visibility_component
               Datadog.send(:components).test_visibility
+            end
+
+            def test_retries_component
+              Datadog.send(:components).test_retries
             end
           end
         end

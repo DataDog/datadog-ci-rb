@@ -24,6 +24,10 @@ module Datadog
 
         def active_span: () -> nil
 
+        def set_test_finished_callback: (Proc callback) -> void
+
+        def remove_test_finished_callback: () -> void
+
         def shutdown!: () -> nil
 
         def itr_enabled?: () -> bool

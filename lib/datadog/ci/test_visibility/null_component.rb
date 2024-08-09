@@ -47,6 +47,12 @@ module Datadog
           false
         end
 
+        def set_test_finished_callback(_)
+        end
+
+        def remove_test_finished_callback
+        end
+
         private
 
         def skip_tracing(block = nil)

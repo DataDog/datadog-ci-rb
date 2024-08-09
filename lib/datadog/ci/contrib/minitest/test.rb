@@ -71,6 +71,7 @@ module Datadog
               when "S"
                 span.skipped!(reason: failure.message)
               end
+
               span.finish
             end
 

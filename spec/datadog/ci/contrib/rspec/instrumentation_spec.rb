@@ -837,7 +837,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_spans).to have(6).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-      expect(failed_spans).to have(4).items # see steps.rb
+      expect(failed_spans).to have(4).items
       expect(passed_spans).to have(2).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }

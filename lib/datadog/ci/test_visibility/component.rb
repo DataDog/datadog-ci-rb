@@ -19,6 +19,8 @@ module Datadog
       class Component
         attr_reader :test_suite_level_visibility_enabled
 
+        FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY = :__dd_test_finished_callback
+
         def initialize(
           test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse
@@ -125,6 +127,15 @@ module Datadog
           @context.deactivate_test_suite(test_suite_name)
         end
 
+        # sets fiber-local callback to be called when test is finished
+        def set_test_finished_callback(callback)
+          Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY] = callback
+        end
+
+        def remove_test_finished_callback
+          Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY] = nil
+        end
+
         def itr_enabled?
           test_optimisation.enabled?
         end
@@ -192,6 +203,8 @@ module Datadog
           test_optimisation.count_skipped_test(test)
 
           Telemetry.event_finished(test)
+
+          Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY]&.call(test)
         end
 
         # HELPERS

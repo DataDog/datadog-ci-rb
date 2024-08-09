@@ -45,11 +45,15 @@ module Datadog
             end
           end
 
+          test_visibility_component.set_test_finished_callback(test_finished_callback)
+
           loop do
-            yield test_finished_callback
+            yield
 
             break unless retry_strategy&.should_retry?
           end
+        ensure
+          test_visibility_component.remove_test_finished_callback
         end
 
         def build_strategy(test_span)
@@ -69,6 +73,10 @@ module Datadog
 
         def should_retry_failed_test?(test_span)
           @retry_failed_tests_enabled && !!test_span&.failed? && @retry_failed_tests_count < @retry_failed_tests_total_limit
+        end
+
+        def test_visibility_component
+          Datadog.send(:components).test_visibility
         end
       end
     end

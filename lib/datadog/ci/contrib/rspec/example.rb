@@ -40,7 +40,7 @@ module Datadog
               # don't report test to RSpec::Core::Reporter until retries are done
               @skip_reporting = true
 
-              test_retries_component.with_retries do |retry_callback|
+              test_retries_component.with_retries do
                 test_visibility_component.trace_test(
                   test_name,
                   suite_name,
@@ -76,8 +76,6 @@ module Datadog
                       exception: execution_result.pending_exception
                     )
                   end
-
-                  retry_callback.call(test_span)
                 end
               end
 

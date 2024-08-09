@@ -16,13 +16,15 @@ module Datadog
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings) -> void
 
-        def with_retries: () { (untyped) -> void } -> void
+        def with_retries: () { () -> void } -> void
 
         def build_strategy: (Datadog::CI::Test test) -> Datadog::CI::TestRetries::Strategy::Base
 
         private
 
         def should_retry_failed_test?: (Datadog::CI::Test test) -> bool
+
+        def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
       end
     end
   end

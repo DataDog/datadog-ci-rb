@@ -13,6 +13,7 @@ module Datadog
 
           module InstanceMethods : ::Minitest::Test
             include ::Minitest::Test::LifecycleHooks
+
             extend ClassMethods
 
             def before_setup: () -> (nil | untyped)
