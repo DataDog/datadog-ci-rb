@@ -951,8 +951,11 @@ RSpec.describe "RSpec hooks" do
     it "retries test until it passes" do
       rspec_session_run(with_canceled_test: true)
 
-      expect(test_spans).to have(1).item
-      expect(test_spans).to all have_pass_status
+      expect(test_spans).to have(2).items
+      test_spans.each do |test_span|
+        expect(test_span).not_to have_test_tag(:status, "fail")
+        expect(test_span.status).to eq(0)
+      end
     end
   end
 end
