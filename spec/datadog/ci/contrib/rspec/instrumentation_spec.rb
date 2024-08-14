@@ -32,6 +32,7 @@ RSpec.describe "RSpec hooks" do
     with_shared_test: false,
     with_shared_context: false,
     with_flaky_test: false,
+    with_canceled_test: false,
     unskippable: {
       test: false,
       context: false,
@@ -83,6 +84,14 @@ RSpec.describe "RSpec hooks" do
               else
                 expect(1 + 1).to eq(2)
               end
+            end
+          end
+
+          if with_canceled_test
+            it "canceled during execution" do
+              RSpec.world.wants_to_quit = true
+
+              expect(1 + 1).to eq(34)
             end
           end
         end
@@ -138,7 +147,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "111")
+      expect(first_test_span).to have_test_tag(:source_start, "120")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -930,6 +939,20 @@ RSpec.describe "RSpec hooks" do
       expect(test_suite_spans.first).to have_fail_status
 
       expect(test_session_span).to have_fail_status
+    end
+  end
+
+  context "session that is canceled during the test execution" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+    end
+
+    it "retries test until it passes" do
+      rspec_session_run(with_canceled_test: true)
+
+      expect(test_spans).to have(1).item
+      expect(test_spans).to all have_pass_status
     end
   end
 end
