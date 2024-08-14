@@ -1,5 +1,6 @@
 module RSpec
   def self.configuration: () -> RSpec::Core::Configuration
+  def self.world: () -> RSpec::Core::World
 end
 
 module RSpec::Core
@@ -45,4 +46,8 @@ end
 
 class RSpec::Core::Configuration
   def dry_run?: () -> bool
+end
+
+class RSpec::Core::World
+  def wants_to_quit: () -> bool
 end

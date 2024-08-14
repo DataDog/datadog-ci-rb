@@ -62,7 +62,12 @@ module Datadog
                   # before each run remove any previous exception
                   @exception = nil
 
-                  super
+                  result = super
+
+                  # In case when test job is canceled and RSpec is quitting we don't want to report the last test
+                  # before RSpec context unwinds. This test might have some unrelated errors that we don't want to
+                  # report.
+                  return result if ::RSpec.world.wants_to_quit
 
                   case execution_result.status
                   when :passed
