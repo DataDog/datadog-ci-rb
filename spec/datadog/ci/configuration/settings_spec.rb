@@ -222,7 +222,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       describe "#itr_enabled" do
         subject(:itr_enabled) { settings.ci.itr_enabled }
 
-        it { is_expected.to be false }
+        it { is_expected.to be true }
 
         context "when #{Datadog::CI::Ext::Settings::ENV_ITR_ENABLED}" do
           around do |example|
@@ -234,7 +234,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
           context "is not defined" do
             let(:enable) { nil }
 
-            it { is_expected.to be false }
+            it { is_expected.to be true }
           end
 
           context "is set to true" do
@@ -253,10 +253,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
       describe "#itr_enabled=" do
         it "updates the #enabled setting" do
-          expect { settings.ci.itr_enabled = true }
+          expect { settings.ci.itr_enabled = false }
             .to change { settings.ci.itr_enabled }
-            .from(false)
-            .to(true)
+            .from(true)
+            .to(false)
         end
       end
 

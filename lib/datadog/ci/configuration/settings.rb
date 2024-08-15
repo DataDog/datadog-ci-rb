@@ -59,7 +59,7 @@ module Datadog
               option :itr_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_ITR_ENABLED
-                o.default false
+                o.default true
               end
 
               option :git_metadata_upload_enabled do |o|
