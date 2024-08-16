@@ -390,6 +390,117 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#retry_failed_tests_enabled" do
+        subject(:retry_failed_tests_enabled) { settings.ci.retry_failed_tests_enabled }
+
+        it { is_expected.to be true }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_RETRY_FAILED_TESTS_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_RETRY_FAILED_TESTS_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#retry_failed_tests_enabled=" do
+        it "updates the #retry_failed_tests_enabled setting" do
+          expect { settings.ci.retry_failed_tests_enabled = false }
+            .to change { settings.ci.retry_failed_tests_enabled }
+            .from(true)
+            .to(false)
+        end
+      end
+
+      describe "#retry_failed_tests_max_attempts" do
+        subject(:retry_failed_tests_max_attempts) { settings.ci.retry_failed_tests_max_attempts }
+
+        it { is_expected.to eq 5 }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_RETRY_FAILED_TESTS_MAX_ATTEMPTS}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_RETRY_FAILED_TESTS_MAX_ATTEMPTS => attempts) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:attempts) { nil }
+
+            it { is_expected.to eq 5 }
+          end
+
+          context "is set to value" do
+            let(:attempts) { "10" }
+
+            it { is_expected.to eq attempts.to_i }
+          end
+        end
+      end
+
+      describe "#retry_failed_tests_max_attempts=" do
+        it "updates the #retry_failed_tests_max_attempts setting" do
+          expect { settings.ci.retry_failed_tests_max_attempts = 7 }
+            .to change { settings.ci.retry_failed_tests_max_attempts }
+            .from(5)
+            .to(7)
+        end
+      end
+
+      describe "#retry_failed_tests_total_limit" do
+        subject(:retry_failed_tests_total_limit) { settings.ci.retry_failed_tests_total_limit }
+
+        it { is_expected.to eq 1000 }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_RETRY_FAILED_TESTS_TOTAL_LIMIT}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_RETRY_FAILED_TESTS_TOTAL_LIMIT => attempts) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:attempts) { nil }
+
+            it { is_expected.to eq 1000 }
+          end
+
+          context "is set to value" do
+            let(:attempts) { "10" }
+
+            it { is_expected.to eq attempts.to_i }
+          end
+        end
+      end
+
+      describe "#retry_failed_tests_total_limit=" do
+        it "updates the #retry_failed_tests_total_limit setting" do
+          expect { settings.ci.retry_failed_tests_total_limit = 42 }
+            .to change { settings.ci.retry_failed_tests_total_limit }
+            .from(1000)
+            .to(42)
+        end
+      end
+
       describe "#instrument" do
         let(:integration_name) { :fake }
 
