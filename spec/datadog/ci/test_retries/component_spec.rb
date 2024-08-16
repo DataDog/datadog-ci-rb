@@ -2,11 +2,14 @@ require_relative "../../../../lib/datadog/ci/test_retries/component"
 
 RSpec.describe Datadog::CI::TestRetries::Component do
   let(:library_settings) { instance_double(Datadog::CI::Remote::LibrarySettings) }
+
+  let(:retry_failed_tests_enabled) { true }
   let(:retry_failed_tests_max_attempts) { 1 }
   let(:retry_failed_tests_total_limit) { 12 }
 
   subject(:component) do
     described_class.new(
+      retry_failed_tests_enabled: retry_failed_tests_enabled,
       retry_failed_tests_max_attempts: retry_failed_tests_max_attempts,
       retry_failed_tests_total_limit: retry_failed_tests_total_limit
     )
@@ -33,6 +36,20 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       end
 
       it "disables retrying failed tests" do
+        subject
+
+        expect(component.retry_failed_tests_enabled).to be false
+      end
+    end
+
+    context "when flaky test retries are disabled in local settings" do
+      let(:retry_failed_tests_enabled) { false }
+
+      before do
+        allow(library_settings).to receive(:flaky_test_retries_enabled?).and_return(true)
+      end
+
+      it "disables retrying failed tests even if it's enabled remotely" do
         subject
 
         expect(component.retry_failed_tests_enabled).to be false

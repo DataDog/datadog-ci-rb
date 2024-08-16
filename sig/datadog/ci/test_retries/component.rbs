@@ -12,7 +12,7 @@ module Datadog
 
         @mutex: Thread::Mutex
 
-        def initialize: (retry_failed_tests_max_attempts: Integer, retry_failed_tests_total_limit: Integer) -> void
+        def initialize: (retry_failed_tests_enabled: bool, retry_failed_tests_max_attempts: Integer, retry_failed_tests_total_limit: Integer) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings) -> void
 

@@ -14,11 +14,11 @@ module Datadog
           :retry_failed_tests_total_limit, :retry_failed_tests_count
 
         def initialize(
+          retry_failed_tests_enabled:,
           retry_failed_tests_max_attempts:,
           retry_failed_tests_total_limit:
         )
-          # enabled only by remote settings
-          @retry_failed_tests_enabled = false
+          @retry_failed_tests_enabled = retry_failed_tests_enabled
           @retry_failed_tests_max_attempts = retry_failed_tests_max_attempts
           @retry_failed_tests_total_limit = retry_failed_tests_total_limit
           # counter that store the current number of failed tests retried
@@ -28,7 +28,7 @@ module Datadog
         end
 
         def configure(library_settings)
-          @retry_failed_tests_enabled = library_settings.flaky_test_retries_enabled?
+          @retry_failed_tests_enabled &&= library_settings.flaky_test_retries_enabled?
         end
 
         def with_retries(&block)
