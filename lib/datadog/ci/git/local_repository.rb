@@ -238,23 +238,42 @@ module Datadog
           Telemetry.git_command(Ext::Telemetry::Command::UNSHALLOW)
           res = nil
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = exec_git_command(
-              "git fetch " \
-              "--shallow-since=\"1 month ago\" " \
-              "--update-shallow " \
-              "--filter=\"blob:none\" " \
-              "--recurse-submodules=no " \
-              "$(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)"
-            )
-          end
-          Telemetry.git_command_ms(Ext::Telemetry::Command::UNSHALLOW, duration_ms)
+          unshallow_command =
+            "git fetch " \
+            "--shallow-since=\"1 month ago\" " \
+            "--update-shallow " \
+            "--filter=\"blob:none\" " \
+            "--recurse-submodules=no " \
+            "$(git config --default origin --get clone.defaultRemoteName)"
 
+          unshallow_remotes = [
+            "$(git rev-parse HEAD)",
+            "$(git rev-parse --abbrev-ref --symbolic-full-name @{upstream})",
+            nil
+          ]
+
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            unshallow_remotes.each do |remote|
+              unshallowing_errored = false
+
+              res =
+                begin
+                  exec_git_command(
+                    "#{unshallow_command} #{remote}"
+                  )
+                rescue => e
+                  log_failure(e, "git unshallow")
+                  telemetry_track_error(e, Ext::Telemetry::Command::UNSHALLOW)
+                  unshallowing_errored = true
+                  nil
+                end
+
+              break unless unshallowing_errored
+            end
+          end
+
+          Telemetry.git_command_ms(Ext::Telemetry::Command::UNSHALLOW, duration_ms)
           res
-        rescue => e
-          log_failure(e, "git unshallow")
-          telemetry_track_error(e, Ext::Telemetry::Command::UNSHALLOW)
-          nil
         end
 
         # makes .exec_git_command private to make sure that this method
