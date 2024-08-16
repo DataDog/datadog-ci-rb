@@ -57,7 +57,7 @@ def self.with_cucumber_gem(versions:)
       end
 
       # ruby 3.4 extracts more parts of stdlib into gems
-      if Gem::Version.new("3.4") <= RUBY_VERSION && (4..6).cover?(v)
+      if Gem::Version.new("3.4") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby") && (4..6).cover?(v)
         gem "base64"
         gem "mutex_m"
       end
@@ -121,7 +121,7 @@ def self.with_active_support_gem(versions: 7)
         gem "bigdecimal", "< 3.1.8"
       end
       # ruby 3.4 extracts more parts of stdlib into gems
-      if Gem::Version.new("3.4") <= RUBY_VERSION && (4..6).cover?(activesupport_v)
+      if Gem::Version.new("3.4") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby") && (4..6).cover?(activesupport_v)
         gem "base64"
         gem "mutex_m"
         gem "drb"
