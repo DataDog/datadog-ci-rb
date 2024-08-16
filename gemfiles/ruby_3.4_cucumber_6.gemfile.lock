@@ -20,6 +20,7 @@ GEM
       rake
       thor (>= 0.14.0)
     ast (2.4.2)
+    base64 (0.2.0)
     bigdecimal (3.1.8)
     builder (3.3.0)
     climate_control (1.2.0)
@@ -89,6 +90,7 @@ GEM
     minitest (5.25.0)
     msgpack (1.7.2)
     multi_test (0.1.2)
+    mutex_m (0.2.0)
     os (1.1.4)
     parallel (1.26.2)
     parser (3.3.4.2)
@@ -190,9 +192,11 @@ PLATFORMS
 DEPENDENCIES
   activesupport (< 7.1)
   appraisal
+  base64
   climate_control
   cucumber (~> 6)
   datadog-ci!
+  mutex_m
   os
   pimpmychangelog (>= 0.1.2)
   pry

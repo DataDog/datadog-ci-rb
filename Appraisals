@@ -54,6 +54,15 @@ def self.with_cucumber_gem(versions:)
       if v == 9 && RUBY_ENGINE.include?("jruby")
         gem "bigdecimal", "< 3.1.8"
       end
+
+      ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
+      # ruby 3.4 extracts more parts of stdlib into gems
+      if ruby_version >= Gem::Version.new("3.4")
+        if (4..6).cover?(v)
+          gem "base64"
+          gem "mutex_m"
+        end
+      end
     end
   end
 end
