@@ -17,6 +17,7 @@ REMOVED_GEMS = {
   check: %w[rbs steep],
   development: %w[ruby-lsp ruby-lsp-rspec debug irb]
 }
+RUBY_VERSION = Gem::Version.new(RUBY_ENGINE_VERSION)
 
 def appraise(group, &block)
   # Specify the environment variable APPRAISAL_GROUP to load only a specific appraisal group.
@@ -55,13 +56,10 @@ def self.with_cucumber_gem(versions:)
         gem "bigdecimal", "< 3.1.8"
       end
 
-      ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
       # ruby 3.4 extracts more parts of stdlib into gems
-      if ruby_version >= Gem::Version.new("3.4")
-        if (4..6).cover?(v)
-          gem "base64"
-          gem "mutex_m"
-        end
+      if Gem::Version.new("3.4") <= RUBY_VERSION && (4..6).cover?(v)
+        gem "base64"
+        gem "mutex_m"
       end
     end
   end
@@ -122,6 +120,12 @@ def self.with_active_support_gem(versions: 7)
       if RUBY_ENGINE.include?("jruby")
         gem "bigdecimal", "< 3.1.8"
       end
+      # ruby 3.4 extracts more parts of stdlib into gems
+      if Gem::Version.new("3.4") <= RUBY_VERSION && (4..6).cover?(activesupport_v)
+        gem "base64"
+        gem "mutex_m"
+        gem "drb"
+      end
     end
   end
 end
@@ -160,18 +164,17 @@ def self.with_timecop_gem(timecop_versions: 0)
   end
 end
 
-ruby_version = Gem::Version.new(RUBY_ENGINE_VERSION)
-major, minor, = ruby_version.segments
+major, minor, = RUBY_VERSION.segments
 
 with_minitest_gem
 with_rspec_gem
 with_cucumber_gem(versions: 3..9)
 with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
-with_minitest_shoulda_context_gem if ruby_version >= Gem::Version.new("3.1")
+with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_active_support_gem(versions: 4..7)
 with_knapsack_pro_rspec_gem
-with_selenium_gem if ruby_version >= Gem::Version.new("3.0")
+with_selenium_gem if Gem::Version.new("3.0") <= RUBY_VERSION
 with_timecop_gem
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
