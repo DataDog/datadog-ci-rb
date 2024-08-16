@@ -114,6 +114,7 @@ module Datadog
             library_settings_client: build_library_settings_client(settings, test_visibility_api)
           )
           @test_retries = TestRetries::Component.new(
+            retry_failed_tests_enabled: settings.ci.retry_failed_tests_enabled,
             retry_failed_tests_max_attempts: settings.ci.retry_failed_tests_max_attempts,
             retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit
           )

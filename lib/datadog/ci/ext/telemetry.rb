@@ -62,6 +62,7 @@ module Datadog
         TAG_IS_UNSUPPORTED_CI = "is_unsupported_ci"
         TAG_BROWSER_DRIVER = "browser_driver"
         TAG_IS_RUM = "is_rum"
+        TAG_IS_RETRY = "is_retry"
         TAG_LIBRARY = "library"
         TAG_ENDPOINT = "endpoint"
         TAG_ERROR_TYPE = "error_type"

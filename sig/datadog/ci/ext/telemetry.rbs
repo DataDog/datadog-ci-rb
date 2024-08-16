@@ -94,6 +94,8 @@ module Datadog
 
         TAG_IS_RUM: "is_rum"
 
+        TAG_IS_RETRY: "is_retry"
+
         TAG_LIBRARY: "library"
 
         TAG_ENDPOINT: "endpoint"
