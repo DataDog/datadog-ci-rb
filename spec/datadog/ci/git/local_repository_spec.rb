@@ -305,10 +305,34 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           with_clone_git_dir { described_class.git_commits }
         end
 
-        it "unshallows the repository" do
-          expect(subject).to be_truthy
-          # additional commits plus the initial commit
-          expect(commits.size).to eq(commits_count + 1)
+        context "successful from the first try" do
+          before do
+            expect(Open3).to receive(:capture2e).and_call_original.at_most(2).times
+          end
+
+          it "unshallows the repository" do
+            expect(subject).to be_truthy
+            # additional commits plus the initial commit
+            expect(commits.size).to eq(commits_count + 1)
+          end
+        end
+
+        context "when unshallow command fails" do
+          before do
+            allow(Open3).to receive(:capture2e).and_call_original
+            allow(Open3).to receive(:capture2e)
+              .with("git fetch --shallow-since=\"1 month ago\" --update-shallow --filter=\"blob:none\" --recurse-submodules=no $(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)", stdin_data: nil)
+              .and_return(["error", double(success?: false, to_i: 1)])
+          end
+
+          it "still unshallows the repository using the fallback command" do
+            expect(subject).to be_truthy
+            # additional commits plus the initial commit
+            expect(commits.size).to eq(commits_count + 1)
+          end
+
+          # it signals error to the telemetry
+          it_behaves_like "emits telemetry metric", :inc, "git.command_errors", 1
         end
       end
     end
