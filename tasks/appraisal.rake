@@ -140,6 +140,7 @@ RUBY_VERSIONS = [
   "3.1",
   "3.2",
   "3.3",
+  "3.4", # ADD NEW RUBIES HERE
   "jruby-9.4"
 ].freeze
 
@@ -148,5 +149,6 @@ FORCE_BUNDLER_VERSION = {
   "3.0" => "2.3.26",
   "3.1" => "2.3.26",
   "3.2" => "2.3.26",
-  "3.3" => "2.4.19"
+  "3.3" => "2.4.19",
+  "3.4" => "2.5.17", # ADD NEW RUBIES HERE
 }.freeze
