@@ -50,6 +50,13 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
           negotiation = double(:negotiation)
 
+          telemetry_double = instance_double(
+            Datadog::Core::Telemetry::Component,
+            emit_closing!: nil,
+            stop!: nil
+          )
+          allow(Datadog::Core::Telemetry::Component).to receive(:build).and_return(telemetry_double)
+
           allow(Datadog::Core::Remote::Negotiation)
             .to receive(:new)
             .and_return(negotiation)
@@ -76,6 +83,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
             .to receive(:async=).and_call_original
 
           allow(settings.telemetry).to receive(:enabled=).and_call_original
+          allow(settings.telemetry).to receive(:agentless_enabled=).and_call_original
 
           allow(Datadog::CI::Ext::Environment)
             .to receive(:tags).and_return({})
@@ -246,8 +254,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
               context "when api key is set" do
                 let(:api_key) { "api_key" }
 
-                it "disables telemetry" do
-                  expect(settings.telemetry).to have_received(:enabled=).with(false)
+                it "enables telemetry by default" do
+                  expect(settings.telemetry).to have_received(:enabled=).with(true)
+                  expect(settings.telemetry).to have_received(:agentless_enabled=).with(true)
                 end
 
                 it "sets async for test mode and constructs transport with CI intake API" do

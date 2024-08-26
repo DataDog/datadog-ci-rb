@@ -266,10 +266,12 @@ module Datadog
           # for test visibility we want to enable it by default unless explicitly disabled
           # NOTE: before agentless mode is released, we only enable telemetry when running with Datadog Agent
           env_telemetry_enabled = ENV[Core::Telemetry::Ext::ENV_ENABLED]
-          settings.telemetry.enabled = !settings.ci.agentless_mode_enabled &&
-            (env_telemetry_enabled.nil? || Utils::Parsing.convert_to_bool(env_telemetry_enabled))
+          settings.telemetry.enabled = env_telemetry_enabled.nil? || Utils::Parsing.convert_to_bool(env_telemetry_enabled)
 
           return unless settings.telemetry.enabled
+
+          settings.telemetry.agentless_enabled = true if settings.ci.agentless_mode_enabled
+          settings.telemetry.shutdown_timeout_seconds = 60.0
 
           begin
             require "datadog/core/environment/identity"
