@@ -1,5 +1,24 @@
 ## [Unreleased]
 
+## [1.4.0] - 2024-08-26
+
+### Added
+
+* Auto test retries for cucumber ([#212][])
+* Auto test retries for RSpec ([#213][])
+* Auto test retries for minitest ([#214][])
+* implement auto test retries RFC ([#219][])
+
+### Changed
+
+* Skip Before/After hooks in cucumber when scenario is skipped by intelligent test runner ([#211][])
+* gem datadog 2.3 is now minimal required version ([#220][])
+* Enable agentless telemetry when library is running in agentless mode ([#221][])
+* Add Ruby 3.4 to the testing matrix ([#217][])
+* add different fallbacks for unshallowing remotes ([#218][])
+* make itr_enabled config parameter true by default ([#216][])
+* RSpec - don't report test errors if rspec process is quitting ([#215][])
+
 ## [1.3.0] - 2024-07-30
 
 ### Added
@@ -290,7 +309,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.3.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.0...main
+[1.4.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.0.1...v1.1.0
@@ -414,3 +434,14 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#205]: https://github.com/DataDog/datadog-ci-rb/issues/205
 [#206]: https://github.com/DataDog/datadog-ci-rb/issues/206
 [#207]: https://github.com/DataDog/datadog-ci-rb/issues/207
+[#211]: https://github.com/DataDog/datadog-ci-rb/issues/211
+[#212]: https://github.com/DataDog/datadog-ci-rb/issues/212
+[#213]: https://github.com/DataDog/datadog-ci-rb/issues/213
+[#214]: https://github.com/DataDog/datadog-ci-rb/issues/214
+[#215]: https://github.com/DataDog/datadog-ci-rb/issues/215
+[#216]: https://github.com/DataDog/datadog-ci-rb/issues/216
+[#217]: https://github.com/DataDog/datadog-ci-rb/issues/217
+[#218]: https://github.com/DataDog/datadog-ci-rb/issues/218
+[#219]: https://github.com/DataDog/datadog-ci-rb/issues/219
+[#220]: https://github.com/DataDog/datadog-ci-rb/issues/220
+[#221]: https://github.com/DataDog/datadog-ci-rb/issues/221
