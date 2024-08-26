@@ -41,7 +41,7 @@ Gem::Specification.new do |spec|
 
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "datadog", "~> 2.2"
+  spec.add_dependency "datadog", "~> 2.3"
   spec.add_dependency "msgpack"
 
   spec.extensions = ["ext/datadog_cov/extconf.rb"]
