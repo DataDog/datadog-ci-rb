@@ -12,6 +12,7 @@ Learn more on our [official website](https://docs.datadoghq.com/tests/) and chec
 
 - [Test Visibility](https://docs.datadoghq.com/tests/) - collect metrics and results for your tests
 - [Intelligent test runner](https://docs.datadoghq.com/intelligent_test_runner/) - save time by selectively running only tests affected by code changes
+- [Auto test retries](https://docs.datadoghq.com/tests/auto_test_retries/?tab=ruby) - retrying failing tests up to N times to avoid failing your build due to flaky tests
 - [Search and manage CI tests](https://docs.datadoghq.com/tests/search/)
 - [Enhance developer workflows](https://docs.datadoghq.com/tests/developer_workflows)
 - [Flaky test management](https://docs.datadoghq.com/tests/guides/flaky_test_management/)
