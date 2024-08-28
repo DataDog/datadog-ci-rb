@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.4.1] - 2024-08-28
+
+### Fixed
+
+* fix datadog_cov crash when doing allocation profiling ([#224][])
+
 ## [1.4.0] - 2024-08-26
 
 ### Added
@@ -309,7 +315,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.1...main
+[1.4.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.1.0...v1.2.0
@@ -445,3 +452,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#219]: https://github.com/DataDog/datadog-ci-rb/issues/219
 [#220]: https://github.com/DataDog/datadog-ci-rb/issues/220
 [#221]: https://github.com/DataDog/datadog-ci-rb/issues/221
+[#224]: https://github.com/DataDog/datadog-ci-rb/issues/224
