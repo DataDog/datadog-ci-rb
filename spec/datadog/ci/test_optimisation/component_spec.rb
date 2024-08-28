@@ -235,6 +235,21 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
         expect(subject).to be_nil
         expect(writer).not_to have_received(:write)
       end
+
+      it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_IS_EMPTY
+    end
+
+    context "when test is skipped and coverage is not collected" do
+      before do
+        test_span.skipped!
+      end
+
+      it "does not write coverage event" do
+        expect(subject).to be_nil
+        expect(writer).not_to have_received(:write)
+      end
+
+      it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_IS_EMPTY
     end
 
     context "when coverage was not collected" do
@@ -333,6 +348,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
         expect { subject }
           .not_to change { component.skipped_tests_count }
       end
+
+      it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED
     end
 
     context "test is skipped by ITR" do
@@ -363,6 +380,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
         expect { subject }
           .not_to change { component.skipped_tests_count }
       end
+
+      it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED
     end
   end
 

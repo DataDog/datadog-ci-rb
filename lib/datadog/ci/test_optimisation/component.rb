@@ -99,6 +99,7 @@ module Datadog
 
         def start_coverage(test)
           return if !enabled? || !code_coverage?
+
           Telemetry.code_coverage_started(test)
           coverage_collector&.start
         end
@@ -109,12 +110,14 @@ module Datadog
           Telemetry.code_coverage_finished(test)
 
           coverage = coverage_collector&.stop
+
+          # if test was skipped, we discard coverage data
+          return if test.skipped?
+
           if coverage.nil? || coverage.empty?
             Telemetry.code_coverage_is_empty
             return
           end
-
-          return if test.skipped?
 
           test_source_file = test.source_file
 

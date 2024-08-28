@@ -70,6 +70,12 @@ module Datadog
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
 
+      # Returns "true" if test span represents a retry.
+      # @return [Boolean] true if this test is a retry, false otherwise.
+      def is_retry?
+        get_tag(Ext::Test::TAG_IS_RETRY) == "true"
+      end
+
       # Marks this test as unskippable by the intelligent test runner.
       # This must be done before the test execution starts.
       #
