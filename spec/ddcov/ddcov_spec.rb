@@ -3,6 +3,7 @@
 require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
 require_relative "app/model/my_model"
+require_relative "app/model/my_model_❤️"
 require_relative "app/model/my_struct"
 require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
@@ -355,6 +356,93 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
           coverage = subject.stop
           expect(coverage.size).to eq(1)
           expect(coverage.keys).to include(absolute_path("app/model/my_struct.rb"))
+        end
+
+        it "tracks coverage for objects defined with emojis" do
+          subject.start
+
+          MyModel❤️.new
+
+          coverage = subject.stop
+          expect(coverage.size).to eq(1)
+          expect(coverage.keys).to include(absolute_path("app/model/my_model_❤️.rb"))
+        end
+
+        context "Object.const_source_location is redefined in tests" do
+          context "returns invalid values" do
+            before do
+              allow(Object).to receive(:const_source_location).and_return([-1, -1])
+            end
+
+            it "does not break" do
+              subject.start
+
+              User.new("john doe", "johndoe@mail.test")
+
+              coverage = subject.stop
+              expect(coverage.size).to eq(0)
+            end
+          end
+
+          context "returns nil" do
+            before do
+              allow(Object).to receive(:const_source_location).and_return(nil)
+            end
+
+            it "does not break" do
+              subject.start
+
+              User.new("john doe", "johndoe@mail.test")
+
+              coverage = subject.stop
+              expect(coverage.size).to eq(0)
+            end
+          end
+
+          context "returns empty array" do
+            before do
+              allow(Object).to receive(:const_source_location).and_return([])
+            end
+
+            it "does not break" do
+              subject.start
+
+              User.new("john doe", "johndoe@mail.test")
+
+              coverage = subject.stop
+              expect(coverage.size).to eq(0)
+            end
+          end
+
+          context "returns empty nested array" do
+            before do
+              allow(Object).to receive(:const_source_location).and_return([[]])
+            end
+
+            it "does not break" do
+              subject.start
+
+              User.new("john doe", "johndoe@mail.test")
+
+              coverage = subject.stop
+              expect(coverage.size).to eq(0)
+            end
+          end
+
+          context "raises" do
+            before do
+              allow(Object).to receive(:const_source_location).and_raise(StandardError)
+            end
+
+            it "does not break" do
+              subject.start
+
+              User.new("john doe", "johndoe@mail.test")
+
+              coverage = subject.stop
+              expect(coverage.size).to eq(0)
+            end
+          end
         end
 
         context "Data structs available since Ruby 3.2" do

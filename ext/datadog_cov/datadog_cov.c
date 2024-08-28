@@ -249,7 +249,7 @@ static int process_instantiated_klass(st_data_t key, st_data_t _value, st_data_t
   }
 
   VALUE filename = RARRAY_AREF(source_location, 0);
-  if (filename == Qnil)
+  if (filename == Qnil || !RB_TYPE_P(filename, T_STRING))
   {
     return ST_CONTINUE;
   }
