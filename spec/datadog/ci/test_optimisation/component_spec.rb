@@ -166,6 +166,19 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_STARTED, 1
+
+      context "when test is a retry" do
+        before do
+          test_span.set_tag(Datadog::CI::Ext::Test::TAG_IS_RETRY, "true")
+        end
+
+        it "does not start coverage" do
+          expect(component).not_to receive(:coverage_collector)
+
+          subject
+          expect(component.stop_coverage(test_span)).to be_nil
+        end
+      end
     end
 
     context "when JRuby and code coverage is enabled" do

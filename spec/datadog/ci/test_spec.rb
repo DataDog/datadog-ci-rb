@@ -322,4 +322,24 @@ RSpec.describe Datadog::CI::Test do
       expect(ci_test.parameters).to eq(parameters)
     end
   end
+
+  describe "#is_retry?" do
+    subject(:is_retry) { ci_test.is_retry? }
+
+    context "when tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_RETRY).and_return("true")
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_RETRY).and_return(nil) }
+
+      it { is_expected.to be false }
+    end
+  end
 end

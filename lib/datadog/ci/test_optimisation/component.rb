@@ -99,12 +99,15 @@ module Datadog
 
         def start_coverage(test)
           return if !enabled? || !code_coverage?
+          return if test.is_retry?
+
           Telemetry.code_coverage_started(test)
           coverage_collector&.start
         end
 
         def stop_coverage(test)
           return if !enabled? || !code_coverage?
+          return if test.is_retry?
 
           Telemetry.code_coverage_finished(test)
 
