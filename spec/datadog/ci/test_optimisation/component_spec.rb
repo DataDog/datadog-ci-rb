@@ -234,7 +234,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FINISHED, 1
-      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 5.0
+      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 6.0
     end
 
     context "when test is skipped" do
@@ -252,11 +252,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_IS_EMPTY
     end
 
-    context "when test is skipped and coverage is empty" do
+    context "when test is skipped and coverage is not collected" do
       before do
-        allow_any_instance_of(Datadog::CI::TestOptimisation::Coverage::DDCov).to receive(:stop).and_return(nil)
-
-        component.start_coverage(test_span)
         test_span.skipped!
       end
 
