@@ -38,6 +38,15 @@ RSpec.shared_context "Telemetry spy" do
     end
   end
 
+  shared_examples_for "emits no metric" do |metric_type, metric_name|
+    it "emits no :#{metric_type} metric #{metric_name}" do
+      subject
+
+      metric = telemetry_metric(metric_type, metric_name)
+      expect(metric).to be_nil
+    end
+  end
+
   def telemetry_metric(type, name)
     @metrics[type].find { |m| m.name == name }
   end
