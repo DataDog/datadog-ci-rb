@@ -501,6 +501,47 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#retry_new_tests_enabled" do
+        subject(:retry_new_tests_enabled) { settings.ci.retry_new_tests_enabled }
+
+        it { is_expected.to be true }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_RETRY_NEW_TESTS_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_RETRY_NEW_TESTS_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#retry_new_tests_enabled=" do
+        it "updates the #retry_failed_tests_enabled setting" do
+          expect { settings.ci.retry_new_tests_enabled = false }
+            .to change { settings.ci.retry_new_tests_enabled }
+            .from(true)
+            .to(false)
+        end
+      end
+
       describe "#instrument" do
         let(:integration_name) { :fake }
 
