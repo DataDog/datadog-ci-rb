@@ -10,6 +10,8 @@ module Datadog
 
         attr_reader retry_failed_tests_count: Integer
 
+        attr_reader retry_new_tests_enabled: bool
+
         @mutex: Thread::Mutex
 
         def initialize: (retry_failed_tests_enabled: bool, retry_failed_tests_max_attempts: Integer, retry_failed_tests_total_limit: Integer) -> void

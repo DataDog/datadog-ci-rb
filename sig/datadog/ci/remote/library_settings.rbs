@@ -10,6 +10,7 @@ module Datadog
         @code_coverage_enabled: bool
         @tests_skipping_enabled: bool
         @flaky_test_retries_enabled: bool
+        @early_flake_detection_enabled: bool
 
         def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
 
@@ -27,9 +28,9 @@ module Datadog
 
         def flaky_test_retries_enabled?: () -> bool
 
-        private
+        def early_flake_detection_enabled?: () -> bool
 
-        def bool: (String key) -> bool
+        private
 
         def default_payload: () -> Hash[String, untyped]
       end

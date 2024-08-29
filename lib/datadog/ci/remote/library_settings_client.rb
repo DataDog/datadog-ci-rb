@@ -58,7 +58,8 @@ module Datadog
             1,
             {
               Ext::Telemetry::TAG_COVERAGE_ENABLED => library_settings.code_coverage_enabled?.to_s,
-              Ext::Telemetry::TAG_ITR_SKIP_ENABLED => library_settings.tests_skipping_enabled?.to_s
+              Ext::Telemetry::TAG_ITR_SKIP_ENABLED => library_settings.tests_skipping_enabled?.to_s,
+              Ext::Telemetry::TAG_EARLY_FLAKE_DETECTION_ENABLED => library_settings.early_flake_detection_enabled?.to_s
             }
           )
 

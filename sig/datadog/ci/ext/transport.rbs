@@ -50,6 +50,8 @@ module Datadog
 
         DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY: "flaky_test_retries_enabled"
 
+        DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY: "early_flake_detection"
+
         DD_API_SETTINGS_RESPONSE_DEFAULT: Hash[String, untyped]
 
         DD_API_GIT_SEARCH_COMMITS_PATH: "/api/v2/git/repository/search_commits"

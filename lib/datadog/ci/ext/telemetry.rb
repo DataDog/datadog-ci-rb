@@ -73,6 +73,7 @@ module Datadog
         TAG_COMMAND = "command"
         TAG_COVERAGE_ENABLED = "coverage_enabled"
         TAG_ITR_SKIP_ENABLED = "itrskip_enabled"
+        TAG_EARLY_FLAKE_DETECTION_ENABLED = "early_flake_detection_enabled"
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"
 
