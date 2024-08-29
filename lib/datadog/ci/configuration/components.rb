@@ -116,7 +116,8 @@ module Datadog
           @test_retries = TestRetries::Component.new(
             retry_failed_tests_enabled: settings.ci.retry_failed_tests_enabled,
             retry_failed_tests_max_attempts: settings.ci.retry_failed_tests_max_attempts,
-            retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit
+            retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit,
+            retry_new_tests_enabled: settings.ci.retry_new_tests_enabled
           )
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)

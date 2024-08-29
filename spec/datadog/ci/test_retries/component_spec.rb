@@ -12,6 +12,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:retry_failed_tests_enabled) { true }
   let(:retry_failed_tests_max_attempts) { 1 }
   let(:retry_failed_tests_total_limit) { 12 }
+  let(:retry_new_tests_enabled) { true }
 
   let(:remote_flaky_test_retries_enabled) { false }
   let(:remote_early_flake_detection_enabled) { false }
@@ -20,7 +21,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     described_class.new(
       retry_failed_tests_enabled: retry_failed_tests_enabled,
       retry_failed_tests_max_attempts: retry_failed_tests_max_attempts,
-      retry_failed_tests_total_limit: retry_failed_tests_total_limit
+      retry_failed_tests_total_limit: retry_failed_tests_total_limit,
+      retry_new_tests_enabled: retry_new_tests_enabled
     )
   end
 
@@ -58,7 +60,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       end
     end
 
-    context "when early flake detecion is enabled" do
+    context "when early flake detection is enabled" do
       let(:remote_early_flake_detection_enabled) { true }
 
       it "enables retrying failed tests" do
@@ -68,10 +70,21 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       end
     end
 
-    context "when early flake detecion is disabled" do
+    context "when early flake detection is disabled" do
       let(:remote_early_flake_detection_enabled) { false }
 
       it "disables retrying failed tests" do
+        subject
+
+        expect(component.retry_new_tests_enabled).to be false
+      end
+    end
+
+    context "when early flake detection is disabled in local settings" do
+      let(:retry_new_tests_enabled) { false }
+      let(:remote_early_flake_detection_enabled) { true }
+
+      it "disables retrying failed tests even if it's enabled remotely" do
         subject
 
         expect(component.retry_new_tests_enabled).to be false

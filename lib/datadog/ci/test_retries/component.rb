@@ -17,7 +17,8 @@ module Datadog
         def initialize(
           retry_failed_tests_enabled:,
           retry_failed_tests_max_attempts:,
-          retry_failed_tests_total_limit:
+          retry_failed_tests_total_limit:,
+          retry_new_tests_enabled:
         )
           @retry_failed_tests_enabled = retry_failed_tests_enabled
           @retry_failed_tests_max_attempts = retry_failed_tests_max_attempts
@@ -25,7 +26,7 @@ module Datadog
           # counter that store the current number of failed tests retried
           @retry_failed_tests_count = 0
 
-          @retry_new_tests_enabled = true
+          @retry_new_tests_enabled = retry_new_tests_enabled
 
           @mutex = Mutex.new
         end
