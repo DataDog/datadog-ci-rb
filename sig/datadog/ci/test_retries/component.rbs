@@ -12,6 +12,8 @@ module Datadog
 
         attr_reader retry_new_tests_enabled: bool
 
+        attr_reader retry_new_tests_duration_thresholds: Datadog::CI::Remote::SlowTestRetries?
+
         @mutex: Thread::Mutex
 
         def initialize: (retry_failed_tests_enabled: bool, retry_failed_tests_max_attempts: Integer, retry_failed_tests_total_limit: Integer, retry_new_tests_enabled: bool) -> void

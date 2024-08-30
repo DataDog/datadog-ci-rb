@@ -32,6 +32,16 @@ RSpec.shared_context "CI mode activated" do
   let(:retry_failed_tests_max_attempts) { 5 }
   let(:retry_failed_tests_total_limit) { 100 }
 
+  let(:slow_test_retries_payload) do
+    {
+      "5s" => 10,
+      "10s" => 5,
+      "30s" => 3,
+      "10m" => 2
+    }
+  end
+  let(:slow_test_retries) { Datadog::CI::Remote::SlowTestRetries.new(slow_test_retries_payload) }
+
   let(:itr_correlation_id) { "itr_correlation_id" }
   let(:itr_skippable_tests) { [] }
 
@@ -68,7 +78,8 @@ RSpec.shared_context "CI mode activated" do
         code_coverage_enabled?: code_coverage_enabled,
         tests_skipping_enabled?: tests_skipping_enabled,
         flaky_test_retries_enabled?: flaky_test_retries_enabled,
-        early_flake_detection_enabled?: early_flake_detection_enabled
+        early_flake_detection_enabled?: early_flake_detection_enabled,
+        slow_test_retries: slow_test_retries
       ),
       # This is for the second call to fetch_library_settings
       instance_double(
@@ -83,7 +94,8 @@ RSpec.shared_context "CI mode activated" do
         code_coverage_enabled?: !code_coverage_enabled,
         tests_skipping_enabled?: !tests_skipping_enabled,
         flaky_test_retries_enabled?: flaky_test_retries_enabled,
-        early_flake_detection_enabled?: early_flake_detection_enabled
+        early_flake_detection_enabled?: early_flake_detection_enabled,
+        slow_test_retries: slow_test_retries
       )
     )
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
