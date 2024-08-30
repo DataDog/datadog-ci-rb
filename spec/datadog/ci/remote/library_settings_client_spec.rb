@@ -116,6 +116,14 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
             expect(response.tests_skipping_enabled?).to be false
             expect(response.flaky_test_retries_enabled?).to be true
             expect(response.early_flake_detection_enabled?).to be true
+            expect(response.slow_test_retries.entries).to eq(
+              [
+                Datadog::CI::Remote::SlowTestRetries::Entry.new(5.0, 10),
+                Datadog::CI::Remote::SlowTestRetries::Entry.new(10.0, 5),
+                Datadog::CI::Remote::SlowTestRetries::Entry.new(30.0, 3),
+                Datadog::CI::Remote::SlowTestRetries::Entry.new(300.0, 2)
+              ]
+            )
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
             expect(metric.tags).to eq(

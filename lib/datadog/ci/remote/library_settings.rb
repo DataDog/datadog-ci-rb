@@ -7,6 +7,8 @@ require_relative "../ext/transport"
 require_relative "../transport/telemetry"
 require_relative "../utils/parsing"
 
+require_relative "slow_test_retries"
+
 module Datadog
   module CI
     module Remote
@@ -96,6 +98,16 @@ module Datadog
               Ext::Transport::DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY,
               {}
             ).fetch("enabled", false)
+          )
+        end
+
+        def slow_test_retries
+          return @slow_test_retries if defined?(@slow_test_retries)
+
+          @slow_test_retries = SlowTestRetries.new(
+            payload
+              .fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY, {})
+              .fetch("slow_test_retries", {})
           )
         end
 

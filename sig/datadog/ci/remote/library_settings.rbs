@@ -11,6 +11,7 @@ module Datadog
         @tests_skipping_enabled: bool
         @flaky_test_retries_enabled: bool
         @early_flake_detection_enabled: bool
+        @slow_test_retries: Datadog::CI::Remote::SlowTestRetries
 
         def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
 
@@ -29,6 +30,8 @@ module Datadog
         def flaky_test_retries_enabled?: () -> bool
 
         def early_flake_detection_enabled?: () -> bool
+
+        def slow_test_retries: () -> Datadog::CI::Remote::SlowTestRetries
 
         private
 

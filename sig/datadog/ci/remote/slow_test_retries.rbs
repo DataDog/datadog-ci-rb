@@ -1,0 +1,27 @@
+module Datadog
+  module CI
+    module Remote
+      class SlowTestRetries
+        attr_reader entries: Enumerable[Entry]
+
+        class Entry
+          attr_accessor duration: Float
+
+          attr_accessor max_attempts: Integer
+
+          def initialize: (Float duration, Integer max_attempts) -> void
+        end
+
+        DURATION_MEASURES: Hash[String, Integer]
+
+        def initialize: (Hash[String, String | Integer] payload) -> void
+
+        def max_attempts_for_duration: (Float duration) -> Integer
+
+        private
+
+        def parse: (Hash[String, String | Integer] payload) -> Enumerable[Entry]
+      end
+    end
+  end
+end
