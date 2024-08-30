@@ -50,6 +50,9 @@ module Datadog
         DD_API_SKIPPABLE_TESTS_PATH = "/api/v2/ci/tests/skippable"
         DD_API_SKIPPABLE_TESTS_TYPE = "test_params"
 
+        DD_API_UNIQUE_TESTS_PATH = "/api/v2/ci/libraries/tests"
+        DD_API_UNIQUE_TESTS_TYPE = "ci_app_libraries_tests_request"
+
         CONTENT_TYPE_MESSAGEPACK = "application/msgpack"
         CONTENT_TYPE_JSON = "application/json"
         CONTENT_TYPE_MULTIPART_FORM_DATA = "multipart/form-data"

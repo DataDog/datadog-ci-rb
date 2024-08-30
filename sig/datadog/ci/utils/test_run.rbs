@@ -6,7 +6,7 @@ module Datadog
 
         def self.command: () -> String
 
-        def self.skippable_test_id: (String test_name, String? test_suite, ?String? parameters) -> String
+        def self.datadog_test_id: (String test_name, String? test_suite, ?String? parameters) -> String
 
         def self.test_parameters: (?arguments: Hash[untyped, untyped], ?metadata: Hash[untyped, untyped]) -> String
 

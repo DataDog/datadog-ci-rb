@@ -54,6 +54,12 @@ module Datadog
         METRIC_CODE_COVERAGE_IS_EMPTY = "code_coverage.is_empty"
         METRIC_CODE_COVERAGE_FILES = "code_coverage.files"
 
+        METRIC_EFD_UNIQUE_TESTS_REQUEST = "early_flake_detection.request"
+        METRIC_EFD_UNIQUE_TESTS_REQUEST_MS = "early_flake_detection.request_ms"
+        METRIC_EFD_UNIQUE_TESTS_REQUEST_ERRORS = "early_flake_detection.request_errors"
+        METRIC_EFD_UNIQUE_TESTS_RESPONSE_BYTES = "early_flake_detection.response_bytes"
+        METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS = "early_flake_detection.response_tests"
+
         METRIC_TEST_SESSION = "test_session"
 
         TAG_TEST_FRAMEWORK = "test_framework"

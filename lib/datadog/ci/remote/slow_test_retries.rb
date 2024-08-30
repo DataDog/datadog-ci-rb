@@ -34,7 +34,7 @@ module Datadog
             return entry.max_attempts if duration < entry.duration
           end
 
-          1
+          0
         end
 
         private

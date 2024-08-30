@@ -67,7 +67,7 @@ RSpec.describe Datadog::CI::Remote::SlowTestRetries do
     context "when the duration is more than 10 minutes" do
       let(:duration) { 600.1 }
 
-      it { is_expected.to eq(1) }
+      it { is_expected.to eq(0) }
     end
   end
 end

@@ -36,7 +36,7 @@ module Datadog
                 next unless test_data["type"] == Ext::Test::ITR_TEST_SKIPPING_MODE
 
                 attrs = test_data["attributes"] || {}
-                res << Utils::TestRun.skippable_test_id(attrs["name"], attrs["suite"], attrs["parameters"])
+                res << Utils::TestRun.datadog_test_id(attrs["name"], attrs["suite"], attrs["parameters"])
               end
 
             res

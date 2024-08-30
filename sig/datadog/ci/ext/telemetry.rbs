@@ -70,6 +70,16 @@ module Datadog
 
         METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_TESTS: "itr_skippable_tests.response_tests"
 
+        METRIC_EFD_UNIQUE_TESTS_REQUEST: "early_flake_detection.request"
+
+        METRIC_EFD_UNIQUE_TESTS_REQUEST_MS: "early_flake_detection.request_ms"
+
+        METRIC_EFD_UNIQUE_TESTS_REQUEST_ERRORS: "early_flake_detection.request_errors"
+
+        METRIC_EFD_UNIQUE_TESTS_RESPONSE_BYTES: "early_flake_detection.response_bytes"
+
+        METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS: "early_flake_detection.response_tests"
+
         METRIC_ITR_SKIPPED: "itr_skipped"
 
         METRIC_ITR_UNSKIPPABLE: "itr_unskippable"

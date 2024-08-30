@@ -7,8 +7,8 @@ RSpec.describe ::Datadog::CI::Utils::TestRun do
     it { is_expected.to eq("#{$0} #{ARGV.join(" ")}") }
   end
 
-  describe ".skippable_test_id" do
-    subject { described_class.skippable_test_id(test_name, suite, parameters) }
+  describe ".datadog_test_id" do
+    subject { described_class.datadog_test_id(test_name, suite, parameters) }
 
     let(:test_name) { "test_name" }
     let(:suite) { "suite" }

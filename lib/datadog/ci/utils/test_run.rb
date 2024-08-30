@@ -10,7 +10,7 @@ module Datadog
           @command = "#{$0} #{ARGV.join(" ")}"
         end
 
-        def self.skippable_test_id(test_name, suite, parameters = nil)
+        def self.datadog_test_id(test_name, suite, parameters = nil)
           "#{suite}.#{test_name}.#{parameters}"
         end
 
