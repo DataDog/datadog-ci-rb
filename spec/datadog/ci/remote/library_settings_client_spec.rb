@@ -124,6 +124,7 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
                 Datadog::CI::Remote::SlowTestRetries::Entry.new(300.0, 2)
               ]
             )
+            expect(response.faulty_session_threshold).to eq(30)
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
             expect(metric.tags).to eq(

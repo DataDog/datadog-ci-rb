@@ -106,6 +106,14 @@ module Datadog
           )
         end
 
+        def faulty_session_threshold
+          return @faulty_session_threshold if defined?(@faulty_session_threshold)
+
+          @faulty_session_threshold = early_flake_detection_payload.fetch(
+            Ext::Transport::DD_API_SETTINGS_RESPONSE_FAULTY_SESSION_THRESHOLD_KEY, 0
+          )
+        end
+
         private
 
         def early_flake_detection_payload
