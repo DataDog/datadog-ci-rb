@@ -94,10 +94,7 @@ module Datadog
           return @early_flake_detection_enabled if defined?(@early_flake_detection_enabled)
 
           @early_flake_detection_enabled = Utils::Parsing.convert_to_bool(
-            payload.fetch(
-              Ext::Transport::DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY,
-              {}
-            ).fetch("enabled", false)
+            early_flake_detection_payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ENABLED_KEY, false)
           )
         end
 
@@ -105,13 +102,18 @@ module Datadog
           return @slow_test_retries if defined?(@slow_test_retries)
 
           @slow_test_retries = SlowTestRetries.new(
-            payload
-              .fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY, {})
-              .fetch("slow_test_retries", {})
+            early_flake_detection_payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_SLOW_TEST_RETRIES_KEY, {})
           )
         end
 
         private
+
+        def early_flake_detection_payload
+          payload.fetch(
+            Ext::Transport::DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY,
+            {}
+          )
+        end
 
         def default_payload
           Ext::Transport::DD_API_SETTINGS_RESPONSE_DEFAULT

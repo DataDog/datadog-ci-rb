@@ -35,6 +35,8 @@ module Datadog
 
         private
 
+        def early_flake_detection_payload: () -> Hash[String, untyped]
+
         def default_payload: () -> Hash[String, untyped]
       end
     end
