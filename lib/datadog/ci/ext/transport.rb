@@ -39,7 +39,7 @@ module Datadog
         DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY = "flaky_test_retries_enabled"
         DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY = "early_flake_detection"
         DD_API_SETTINGS_RESPONSE_ENABLED_KEY = "enabled"
-        DD_API_SETTINGS_RESPONSE_SLOW_TEST_RETRIES_KEY = "early_flake_detection"
+        DD_API_SETTINGS_RESPONSE_SLOW_TEST_RETRIES_KEY = "slow_test_retries"
         DD_API_SETTINGS_RESPONSE_FAULTY_SESSION_THRESHOLD_KEY = "faulty_session_threshold"
         DD_API_SETTINGS_RESPONSE_DEFAULT = {DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY => false}.freeze
 
