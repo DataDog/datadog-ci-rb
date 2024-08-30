@@ -18,7 +18,8 @@ module Datadog
           retry_failed_tests_enabled:,
           retry_failed_tests_max_attempts:,
           retry_failed_tests_total_limit:,
-          retry_new_tests_enabled:
+          retry_new_tests_enabled:,
+          unique_tests_client:
         )
           @retry_failed_tests_enabled = retry_failed_tests_enabled
           @retry_failed_tests_max_attempts = retry_failed_tests_max_attempts
@@ -29,6 +30,8 @@ module Datadog
           @retry_new_tests_enabled = retry_new_tests_enabled
           @retry_new_tests_duration_thresholds = nil
           @retry_new_tests_percentage_limit = 0
+
+          @unique_tests_client = unique_tests_client
 
           @mutex = Mutex.new
         end
