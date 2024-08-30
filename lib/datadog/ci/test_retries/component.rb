@@ -12,7 +12,7 @@ module Datadog
       class Component
         attr_reader :retry_failed_tests_enabled, :retry_failed_tests_max_attempts,
           :retry_failed_tests_total_limit, :retry_failed_tests_count,
-          :retry_new_tests_enabled, :retry_new_tests_duration_thresholds
+          :retry_new_tests_enabled, :retry_new_tests_duration_thresholds, :retry_new_tests_percentage_limit
 
         def initialize(
           retry_failed_tests_enabled:,
@@ -28,6 +28,7 @@ module Datadog
 
           @retry_new_tests_enabled = retry_new_tests_enabled
           @retry_new_tests_duration_thresholds = nil
+          @retry_new_tests_percentage_limit = 0
 
           @mutex = Mutex.new
         end
@@ -38,8 +39,9 @@ module Datadog
 
           return unless @retry_new_tests_enabled
 
-          # setup retrying new tests
+          # configure retrying new tests
           @retry_new_tests_duration_thresholds = library_settings.slow_test_retries
+          @retry_new_tests_percentage_limit = library_settings.faulty_session_threshold
         end
 
         def with_retries(&block)

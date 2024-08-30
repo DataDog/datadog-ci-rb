@@ -6,7 +6,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       Datadog::CI::Remote::LibrarySettings,
       flaky_test_retries_enabled?: remote_flaky_test_retries_enabled,
       early_flake_detection_enabled?: remote_early_flake_detection_enabled,
-      slow_test_retries: slow_test_retries
+      slow_test_retries: slow_test_retries,
+      faulty_session_threshold: retry_new_tests_percentage_limit
     )
   end
 
@@ -14,6 +15,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:retry_failed_tests_max_attempts) { 1 }
   let(:retry_failed_tests_total_limit) { 12 }
   let(:retry_new_tests_enabled) { true }
+  let(:retry_new_tests_percentage_limit) { 30 }
 
   let(:remote_flaky_test_retries_enabled) { false }
   let(:remote_early_flake_detection_enabled) { false }
@@ -76,6 +78,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
         expect(component.retry_new_tests_enabled).to be true
         expect(component.retry_new_tests_duration_thresholds.max_attempts_for_duration(1.2)).to eq(10)
+        expect(component.retry_new_tests_percentage_limit).to eq(retry_new_tests_percentage_limit)
       end
     end
 

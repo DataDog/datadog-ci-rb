@@ -28,6 +28,7 @@ RSpec.shared_context "CI mode activated" do
   let(:use_single_threaded_coverage) { false }
   let(:flaky_test_retries_enabled) { false }
   let(:early_flake_detection_enabled) { false }
+  let(:faulty_session_threshold) { 30 }
 
   let(:retry_failed_tests_max_attempts) { 5 }
   let(:retry_failed_tests_total_limit) { 100 }
@@ -79,7 +80,8 @@ RSpec.shared_context "CI mode activated" do
         tests_skipping_enabled?: tests_skipping_enabled,
         flaky_test_retries_enabled?: flaky_test_retries_enabled,
         early_flake_detection_enabled?: early_flake_detection_enabled,
-        slow_test_retries: slow_test_retries
+        slow_test_retries: slow_test_retries,
+        faulty_session_threshold: faulty_session_threshold
       ),
       # This is for the second call to fetch_library_settings
       instance_double(
@@ -95,7 +97,8 @@ RSpec.shared_context "CI mode activated" do
         tests_skipping_enabled?: !tests_skipping_enabled,
         flaky_test_retries_enabled?: flaky_test_retries_enabled,
         early_flake_detection_enabled?: early_flake_detection_enabled,
-        slow_test_retries: slow_test_retries
+        slow_test_retries: slow_test_retries,
+        faulty_session_threshold: faulty_session_threshold
       )
     )
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
