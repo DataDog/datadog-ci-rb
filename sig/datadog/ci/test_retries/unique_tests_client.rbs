@@ -1,0 +1,36 @@
+module Datadog
+  module CI
+    module TestRetries
+      class UniqueTestsClient
+        @api: Datadog::CI::Transport::Api::Base?
+        @dd_env: String?
+        @config_tags: Hash[String, String]
+
+        class Response
+          @http_response: Datadog::CI::Transport::Adapters::Net::Response?
+          @json: Hash[String, untyped]?
+
+          def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
+
+          def ok?: () -> bool
+
+          def correlation_id: () -> String?
+
+          def tests: () -> Set[String]
+
+          private
+
+          def payload: () -> Hash[String, untyped]
+        end
+
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String]) -> void
+
+        def fetch_unique_tests: (Datadog::CI::TestSession test_session) -> Response
+
+        private
+
+        def payload: (Datadog::CI::TestSession test_session) -> String
+      end
+    end
+  end
+end
