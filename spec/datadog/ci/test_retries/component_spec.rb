@@ -4,6 +4,8 @@ require_relative "../../../../lib/datadog/ci/test_retries/component"
 require_relative "../../../../lib/datadog/ci/test_retries/unique_tests_client"
 
 RSpec.describe Datadog::CI::TestRetries::Component do
+  include_context "Telemetry spy"
+
   let(:library_settings) do
     instance_double(
       Datadog::CI::Remote::LibrarySettings,
@@ -107,6 +109,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
           expect(component.retry_new_tests_duration_thresholds.max_attempts_for_duration(1.2)).to eq(10)
           expect(component.retry_new_tests_percentage_limit).to eq(retry_new_tests_percentage_limit)
         end
+
+        it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 2
       end
     end
 

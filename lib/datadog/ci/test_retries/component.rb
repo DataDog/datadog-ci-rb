@@ -3,6 +3,9 @@
 require_relative "strategy/no_retry"
 require_relative "strategy/retry_failed"
 
+require_relative "../ext/telemetry"
+require_relative "../utils/telemetry"
+
 module Datadog
   module CI
     module TestRetries
@@ -54,6 +57,11 @@ module Datadog
           if @retry_new_tests_unique_tests_set.empty?
             @retry_new_tests_enabled = false
             @retry_new_tests_fault_reason = "unique tests set is empty"
+          else
+            Utils::Telemetry.distribution(
+              Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
+              @retry_new_tests_unique_tests_set.size.to_f
+            )
           end
         end
 
