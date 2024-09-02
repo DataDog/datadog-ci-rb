@@ -16,13 +16,17 @@ module Datadog
 
         attr_reader retry_new_tests_percentage_limit: Integer
 
+        attr_reader retry_new_tests_unique_tests_set: Set[String]
+
+        attr_reader retry_new_tests_fault_reason: String?
+
         @mutex: Thread::Mutex
 
         @unique_tests_client: Datadog::CI::TestRetries::UniqueTestsClient
 
         def initialize: (retry_failed_tests_enabled: bool, retry_failed_tests_max_attempts: Integer, retry_failed_tests_total_limit: Integer, retry_new_tests_enabled: bool, unique_tests_client: TestRetries::UniqueTestsClient) -> void
 
-        def configure: (Datadog::CI::Remote::LibrarySettings library_settings) -> void
+        def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
         def with_retries: () { () -> void } -> void
 

@@ -68,7 +68,7 @@ module Datadog
 
         def fetch_unique_tests(test_session)
           api = @api
-          return Response.new(nil) unless api
+          return Set.new unless api
 
           request_payload = payload(test_session)
           Datadog.logger.debug("Fetching unique known tests with request: #{request_payload}")
@@ -99,7 +99,7 @@ module Datadog
             )
           end
 
-          Response.new(http_response)
+          Response.new(http_response).tests
         end
 
         private

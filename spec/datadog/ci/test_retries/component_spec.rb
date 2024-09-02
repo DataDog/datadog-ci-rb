@@ -23,7 +23,13 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:remote_flaky_test_retries_enabled) { false }
   let(:remote_early_flake_detection_enabled) { false }
 
-  let(:unique_tests_client) { instance_double(Datadog::CI::TestRetries::UniqueTestsClient) }
+  let(:unique_tests_set) { Set.new(["test1", "test2"]) }
+  let(:unique_tests_client) do
+    instance_double(
+      Datadog::CI::TestRetries::UniqueTestsClient,
+      fetch_unique_tests: unique_tests_set
+    )
+  end
 
   let(:slow_test_retries) do
     instance_double(
@@ -31,6 +37,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       max_attempts_for_duration: 10
     )
   end
+
+  let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
+  let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
   subject(:component) do
     described_class.new(
@@ -43,7 +52,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   end
 
   describe "#configure" do
-    subject { component.configure(library_settings) }
+    subject { component.configure(library_settings, test_session) }
 
     context "when flaky test retries are enabled" do
       let(:remote_flaky_test_retries_enabled) { true }
@@ -79,12 +88,25 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     context "when early flake detection is enabled" do
       let(:remote_early_flake_detection_enabled) { true }
 
-      it "enables retrying new tests" do
-        subject
+      context "when unique tests set is empty" do
+        let(:unique_tests_set) { Set.new }
 
-        expect(component.retry_new_tests_enabled).to be true
-        expect(component.retry_new_tests_duration_thresholds.max_attempts_for_duration(1.2)).to eq(10)
-        expect(component.retry_new_tests_percentage_limit).to eq(retry_new_tests_percentage_limit)
+        it "disables retrying new tests and adds fault reason" do
+          subject
+
+          expect(component.retry_new_tests_enabled).to be false
+          expect(component.retry_new_tests_fault_reason).to eq("unique tests set is empty")
+        end
+      end
+
+      context "when unique tests set is not empty" do
+        it "enables retrying new tests" do
+          subject
+
+          expect(component.retry_new_tests_enabled).to be true
+          expect(component.retry_new_tests_duration_thresholds.max_attempts_for_duration(1.2)).to eq(10)
+          expect(component.retry_new_tests_percentage_limit).to eq(retry_new_tests_percentage_limit)
+        end
       end
     end
 
@@ -129,7 +151,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     let(:test_span) { instance_double(Datadog::CI::Test, failed?: test_failed) }
 
     before do
-      component.configure(library_settings)
+      component.configure(library_settings, test_session)
     end
 
     context "when retry failed tests is enabled" do
@@ -218,7 +240,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
 
     before do
-      component.configure(library_settings)
+      component.configure(library_settings, test_session)
     end
 
     context "when no retries strategy is used" do

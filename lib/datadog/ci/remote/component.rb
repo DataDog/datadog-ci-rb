@@ -28,7 +28,7 @@ module Datadog
           end
 
           test_optimisation.configure(library_configuration, test_session)
-          test_retries.configure(library_configuration)
+          test_retries.configure(library_configuration, test_session)
         end
 
         private

@@ -96,8 +96,7 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
           end
 
           it "parses the response" do
-            expect(response.ok?).to be true
-            expect(response.tests).to eq(Set.new(["AdminControllerTest.test_new.", "AdminControllerTest.test_index.", "AdminControllerTest.test_create."]))
+            expect(response).to eq(Set.new(["AdminControllerTest.test_new.", "AdminControllerTest.test_index.", "AdminControllerTest.test_create."]))
           end
 
           it_behaves_like "emits telemetry metric", :inc, "early_flake_detection.request", 1
@@ -121,8 +120,7 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
           end
 
           it "parses the response" do
-            expect(response.ok?).to be false
-            expect(response.tests).to be_empty
+            expect(response).to be_empty
           end
 
           it_behaves_like "emits telemetry metric", :inc, "early_flake_detection.request_errors", 1
@@ -146,8 +144,7 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
           end
 
           it "parses the response" do
-            expect(response.ok?).to be true
-            expect(response.tests).to be_empty
+            expect(response).to be_empty
           end
         end
 
@@ -178,8 +175,7 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
           end
 
           it "parses the response" do
-            expect(response.ok?).to be true
-            expect(response.tests).to be_empty
+            expect(response).to be_empty
           end
         end
       end
@@ -188,8 +184,7 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
         let(:api) { nil }
 
         it "returns an empty response" do
-          expect(response.ok?).to be false
-          expect(response.tests).to be_empty
+          expect(response).to be_empty
         end
       end
     end

@@ -12,7 +12,8 @@ module Datadog
       class Component
         attr_reader :retry_failed_tests_enabled, :retry_failed_tests_max_attempts,
           :retry_failed_tests_total_limit, :retry_failed_tests_count,
-          :retry_new_tests_enabled, :retry_new_tests_duration_thresholds, :retry_new_tests_percentage_limit
+          :retry_new_tests_enabled, :retry_new_tests_duration_thresholds, :retry_new_tests_percentage_limit,
+          :retry_new_tests_unique_tests_set, :retry_new_tests_fault_reason
 
         def initialize(
           retry_failed_tests_enabled:,
@@ -30,13 +31,16 @@ module Datadog
           @retry_new_tests_enabled = retry_new_tests_enabled
           @retry_new_tests_duration_thresholds = nil
           @retry_new_tests_percentage_limit = 0
+          @retry_new_tests_unique_tests_set = Set.new
+          # indicates that retrying new tests failed and was disabled
+          @retry_new_tests_fault_reason = nil
 
           @unique_tests_client = unique_tests_client
 
           @mutex = Mutex.new
         end
 
-        def configure(library_settings)
+        def configure(library_settings, test_session)
           @retry_failed_tests_enabled &&= library_settings.flaky_test_retries_enabled?
           @retry_new_tests_enabled &&= library_settings.early_flake_detection_enabled?
 
@@ -45,6 +49,12 @@ module Datadog
           # configure retrying new tests
           @retry_new_tests_duration_thresholds = library_settings.slow_test_retries
           @retry_new_tests_percentage_limit = library_settings.faulty_session_threshold
+          @retry_new_tests_unique_tests_set = @unique_tests_client.fetch_unique_tests(test_session)
+
+          if @retry_new_tests_unique_tests_set.empty?
+            @retry_new_tests_enabled = false
+            @retry_new_tests_fault_reason = "unique tests set is empty"
+          end
         end
 
         def with_retries(&block)
