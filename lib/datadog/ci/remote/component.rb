@@ -29,7 +29,7 @@ module Datadog
             end
           end
 
-          # configure different components in parallel because they might
+          # configure different components in parallel because they might block on HTTP requests
           configuration_workers = [
             Worker.new { test_optimisation.configure(library_configuration, test_session) },
             Worker.new { test_retries.configure(library_configuration, test_session) }
