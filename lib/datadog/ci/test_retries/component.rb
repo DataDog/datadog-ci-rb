@@ -57,6 +57,8 @@ module Datadog
           if @retry_new_tests_unique_tests_set.empty?
             @retry_new_tests_enabled = false
             @retry_new_tests_fault_reason = "unique tests set is empty"
+
+            Datadog.logger.debug("Unique tests set is empty, retrying new tests disabled")
           else
             Utils::Telemetry.distribution(
               Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,

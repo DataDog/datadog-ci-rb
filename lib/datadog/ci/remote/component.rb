@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../worker"
+
 module Datadog
   module CI
     module Remote
@@ -27,8 +29,17 @@ module Datadog
             end
           end
 
-          test_optimisation.configure(library_configuration, test_session)
-          test_retries.configure(library_configuration, test_session)
+          # configure different components in parallel because they might
+          configuration_workers = [
+            Worker.new { test_optimisation.configure(library_configuration, test_session) },
+            Worker.new { test_retries.configure(library_configuration, test_session) }
+          ]
+
+          # launch configuration workers
+          configuration_workers.each(&:perform)
+
+          # block until all workers are done (or 60 seconds has passed)
+          configuration_workers.each(&:wait_until_done)
         end
 
         private
