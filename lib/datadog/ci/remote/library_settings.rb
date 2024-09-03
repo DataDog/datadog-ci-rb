@@ -7,6 +7,8 @@ require_relative "../ext/transport"
 require_relative "../transport/telemetry"
 require_relative "../utils/parsing"
 
+require_relative "slow_test_retries"
+
 module Datadog
   module CI
     module Remote
@@ -49,37 +51,76 @@ module Datadog
         def require_git?
           return @require_git if defined?(@require_git)
 
-          @require_git = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY)
+          @require_git = Utils::Parsing.convert_to_bool(
+            payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY, false)
+          )
         end
 
         def itr_enabled?
           return @itr_enabled if defined?(@itr_enabled)
 
-          @itr_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY)
+          @itr_enabled = Utils::Parsing.convert_to_bool(
+            payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY, false)
+          )
         end
 
         def code_coverage_enabled?
           return @code_coverage_enabled if defined?(@code_coverage_enabled)
 
-          @code_coverage_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY)
+          @code_coverage_enabled = Utils::Parsing.convert_to_bool(
+            payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_CODE_COVERAGE_KEY, false)
+          )
         end
 
         def tests_skipping_enabled?
           return @tests_skipping_enabled if defined?(@tests_skipping_enabled)
 
-          @tests_skipping_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY)
+          @tests_skipping_enabled = Utils::Parsing.convert_to_bool(
+            payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY, false)
+          )
         end
 
         def flaky_test_retries_enabled?
           return @flaky_test_retries_enabled if defined?(@flaky_test_retries_enabled)
 
-          @flaky_test_retries_enabled = bool(Ext::Transport::DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY)
+          @flaky_test_retries_enabled = Utils::Parsing.convert_to_bool(
+            payload.fetch(
+              Ext::Transport::DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY, false
+            )
+          )
+        end
+
+        def early_flake_detection_enabled?
+          return @early_flake_detection_enabled if defined?(@early_flake_detection_enabled)
+
+          @early_flake_detection_enabled = Utils::Parsing.convert_to_bool(
+            early_flake_detection_payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ENABLED_KEY, false)
+          )
+        end
+
+        def slow_test_retries
+          return @slow_test_retries if defined?(@slow_test_retries)
+
+          @slow_test_retries = SlowTestRetries.new(
+            early_flake_detection_payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_SLOW_TEST_RETRIES_KEY, {})
+          )
+        end
+
+        def faulty_session_threshold
+          return @faulty_session_threshold if defined?(@faulty_session_threshold)
+
+          @faulty_session_threshold = early_flake_detection_payload.fetch(
+            Ext::Transport::DD_API_SETTINGS_RESPONSE_FAULTY_SESSION_THRESHOLD_KEY, 0
+          )
         end
 
         private
 
-        def bool(key)
-          Utils::Parsing.convert_to_bool(payload.fetch(key, false))
+        def early_flake_detection_payload
+          payload.fetch(
+            Ext::Transport::DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY,
+            {}
+          )
         end
 
         def default_payload

@@ -11,6 +11,7 @@ require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_optimisation/coverage/writer"
 require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
+require_relative "../test_retries/unique_tests_client"
 require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/null_component"
@@ -116,7 +117,9 @@ module Datadog
           @test_retries = TestRetries::Component.new(
             retry_failed_tests_enabled: settings.ci.retry_failed_tests_enabled,
             retry_failed_tests_max_attempts: settings.ci.retry_failed_tests_max_attempts,
-            retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit
+            retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit,
+            retry_new_tests_enabled: settings.ci.retry_new_tests_enabled,
+            unique_tests_client: build_unique_tests_client(settings, test_visibility_api)
           )
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
@@ -230,6 +233,14 @@ module Datadog
 
         def build_library_settings_client(settings, api)
           Remote::LibrarySettingsClient.new(
+            api: api,
+            dd_env: settings.env,
+            config_tags: custom_configuration(settings)
+          )
+        end
+
+        def build_unique_tests_client(settings, api)
+          TestRetries::UniqueTestsClient.new(
             api: api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings)

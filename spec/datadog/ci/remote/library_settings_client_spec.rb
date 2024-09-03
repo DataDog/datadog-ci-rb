@@ -70,6 +70,26 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
         end
 
         context "when response is OK" do
+          let(:attributes) do
+            {
+              "code_coverage" => "1",
+              "tests_skipping" => "false",
+              "itr_enabled" => "True",
+              "require_git" => require_git,
+              "flaky_test_retries_enabled" => "true",
+              "early_flake_detection" => {
+                "enabled" => "true",
+                "slow_test_retries" => {
+                  "5s" => 10,
+                  "10s" => 5,
+                  "30s" => 3,
+                  "5m" => 2
+                },
+                "faulty_session_threshold" => 30
+              }
+            }
+          end
+
           let(:http_response) do
             double(
               "http_response",
@@ -78,13 +98,7 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
                 "data" => {
                   "id" => "123",
                   "type" => Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE,
-                  "attributes" => {
-                    "code_coverage" => "1",
-                    "tests_skipping" => "false",
-                    "itr_enabled" => "True",
-                    "require_git" => require_git,
-                    "flaky_test_retries_enabled" => "true"
-                  }
+                  "attributes" => attributes
                 }
               }.to_json,
               request_compressed: false,
@@ -95,21 +109,27 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
 
           it "parses the response" do
             expect(response.ok?).to be true
-            expect(response.payload).to eq({
-              "code_coverage" => "1",
-              "tests_skipping" => "false",
-              "itr_enabled" => "True",
-              "require_git" => require_git,
-              "flaky_test_retries_enabled" => "true"
-            })
+            expect(response.payload).to eq(attributes)
             expect(response.require_git?).to be false
             expect(response.itr_enabled?).to be true
             expect(response.code_coverage_enabled?).to be true
             expect(response.tests_skipping_enabled?).to be false
             expect(response.flaky_test_retries_enabled?).to be true
+            expect(response.early_flake_detection_enabled?).to be true
+            expect(response.slow_test_retries.entries).to eq(
+              [
+                Datadog::CI::Remote::SlowTestRetries::Entry.new(5.0, 10),
+                Datadog::CI::Remote::SlowTestRetries::Entry.new(10.0, 5),
+                Datadog::CI::Remote::SlowTestRetries::Entry.new(30.0, 3),
+                Datadog::CI::Remote::SlowTestRetries::Entry.new(300.0, 2)
+              ]
+            )
+            expect(response.faulty_session_threshold).to eq(30)
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
-            expect(metric.tags).to eq("coverage_enabled" => "true", "itrskip_enabled" => "false")
+            expect(metric.tags).to eq(
+              "coverage_enabled" => "true", "itrskip_enabled" => "false", "early_flake_detection_enabled" => "true"
+            )
           end
 
           it_behaves_like "emits telemetry metric", :inc, "git_requests.settings", 1

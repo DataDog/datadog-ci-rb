@@ -106,6 +106,12 @@ module Datadog
                 o.default 1000
               end
 
+              option :retry_new_tests_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_RETRY_NEW_TESTS_ENABLED
+                o.default true
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

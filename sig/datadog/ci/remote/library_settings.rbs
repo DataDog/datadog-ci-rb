@@ -10,6 +10,9 @@ module Datadog
         @code_coverage_enabled: bool
         @tests_skipping_enabled: bool
         @flaky_test_retries_enabled: bool
+        @early_flake_detection_enabled: bool
+        @slow_test_retries: Datadog::CI::Remote::SlowTestRetries
+        @faulty_session_threshold: Integer
 
         def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
 
@@ -27,9 +30,15 @@ module Datadog
 
         def flaky_test_retries_enabled?: () -> bool
 
+        def early_flake_detection_enabled?: () -> bool
+
+        def slow_test_retries: () -> Datadog::CI::Remote::SlowTestRetries
+
+        def faulty_session_threshold: () -> Integer
+
         private
 
-        def bool: (String key) -> bool
+        def early_flake_detection_payload: () -> Hash[String, untyped]
 
         def default_payload: () -> Hash[String, untyped]
       end

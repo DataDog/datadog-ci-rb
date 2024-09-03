@@ -37,6 +37,10 @@ module Datadog
         DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY = "tests_skipping"
         DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY = "require_git"
         DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY = "flaky_test_retries_enabled"
+        DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY = "early_flake_detection"
+        DD_API_SETTINGS_RESPONSE_ENABLED_KEY = "enabled"
+        DD_API_SETTINGS_RESPONSE_SLOW_TEST_RETRIES_KEY = "slow_test_retries"
+        DD_API_SETTINGS_RESPONSE_FAULTY_SESSION_THRESHOLD_KEY = "faulty_session_threshold"
         DD_API_SETTINGS_RESPONSE_DEFAULT = {DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY => false}.freeze
 
         DD_API_GIT_SEARCH_COMMITS_PATH = "/api/v2/git/repository/search_commits"
@@ -45,6 +49,9 @@ module Datadog
 
         DD_API_SKIPPABLE_TESTS_PATH = "/api/v2/ci/tests/skippable"
         DD_API_SKIPPABLE_TESTS_TYPE = "test_params"
+
+        DD_API_UNIQUE_TESTS_PATH = "/api/v2/ci/libraries/tests"
+        DD_API_UNIQUE_TESTS_TYPE = "ci_app_libraries_tests_request"
 
         CONTENT_TYPE_MESSAGEPACK = "application/msgpack"
         CONTENT_TYPE_JSON = "application/json"

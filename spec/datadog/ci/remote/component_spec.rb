@@ -34,7 +34,7 @@ RSpec.describe Datadog::CI::Remote::Component do
 
       before do
         expect(test_optimisation).to receive(:configure).with(library_configuration, test_session)
-        expect(test_retries).to receive(:configure).with(library_configuration)
+        expect(test_retries).to receive(:configure).with(library_configuration, test_session)
       end
 
       it { subject }
@@ -49,7 +49,7 @@ RSpec.describe Datadog::CI::Remote::Component do
           .with(test_session).and_return(library_configuration)
 
         expect(test_optimisation).to receive(:configure).with(library_configuration, test_session)
-        expect(test_retries).to receive(:configure).with(library_configuration)
+        expect(test_retries).to receive(:configure).with(library_configuration, test_session)
       end
 
       it { subject }
