@@ -71,7 +71,9 @@ module Datadog
           # @type var retry_strategy: Strategy::Base
           retry_strategy = nil
 
-          test_finished_callback = lambda do |test_span|
+          test_finished_callback = lambda do |tracer_span|
+            test_span = Datadog::CI::Test.new(tracer_span)
+
             if retry_strategy.nil?
               # we always run test at least once and after first pass create a correct retry strategy
               retry_strategy = build_strategy(test_span)
@@ -81,6 +83,7 @@ module Datadog
             end
           end
 
+          # TODO: is there a better way to let test_visibility_component know that we are running under retries component?
           test_visibility_component.set_test_finished_callback(test_finished_callback)
 
           loop do

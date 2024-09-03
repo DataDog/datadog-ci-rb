@@ -57,6 +57,14 @@ module Datadog
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
           if block
             @context.trace_test(test_name, test_suite_name, service: service, tags: tags) do |test|
+              # subscribe on test stop event
+              if test_finished_callback
+                events = test.tracer_span.send(:events)
+                events.after_stop.subscribe do |event|
+                  test_finished_callback&.call(event)
+                end
+              end
+
               on_test_started(test)
               res = block.call(test)
               on_test_finished(test)
@@ -127,7 +135,12 @@ module Datadog
           @context.deactivate_test_suite(test_suite_name)
         end
 
-        # sets fiber-local callback to be called when test is finished
+        # sets fiber-local callback to be called after test is finished
+
+        def test_finished_callback
+          Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY]
+        end
+
         def set_test_finished_callback(callback)
           Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY] = callback
         end
@@ -203,8 +216,6 @@ module Datadog
           test_optimisation.count_skipped_test(test)
 
           Telemetry.event_finished(test)
-
-          Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY]&.call(test)
         end
 
         # HELPERS
