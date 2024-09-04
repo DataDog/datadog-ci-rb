@@ -13,6 +13,8 @@ module Datadog
       # - retrying failed tests - improve success rate of CI pipelines
       # - retrying new tests - detect flaky tests as early as possible to prevent them from being merged
       class Component
+        FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY = :__dd_current_retry_strategy
+
         attr_reader :retry_failed_tests_enabled, :retry_failed_tests_max_attempts,
           :retry_failed_tests_total_limit, :retry_failed_tests_count,
           :retry_new_tests_enabled, :retry_new_tests_duration_thresholds, :retry_new_tests_percentage_limit,
@@ -68,29 +70,15 @@ module Datadog
         end
 
         def with_retries(&block)
-          # @type var retry_strategy: Strategy::Base
-          retry_strategy = nil
-
-          test_finished_callback = lambda do |test_span|
-            if retry_strategy.nil?
-              # we always run test at least once and after first pass create a correct retry strategy
-              retry_strategy = build_strategy(test_span)
-            else
-              # after each retry we record the result, strategy will decide if we should retry again
-              retry_strategy&.record_retry(test_span)
-            end
-          end
-
-          # TODO: is there a better way to let test_visibility_component know that we are running under retries component?
-          test_visibility_component.set_test_finished_callback(test_finished_callback)
+          self.current_retry_strategy = nil
 
           loop do
             yield
 
-            break unless retry_strategy&.should_retry?
+            break unless current_retry_strategy&.should_retry?
           end
         ensure
-          test_visibility_component.remove_test_finished_callback
+          self.current_retry_strategy = nil
         end
 
         def build_strategy(test_span)
@@ -106,7 +94,29 @@ module Datadog
           end
         end
 
+        def record_test_finished(test_span)
+          if current_retry_strategy.nil?
+            # we always run test at least once and after the first pass create a correct retry strategy
+            self.current_retry_strategy = build_strategy(test_span)
+          else
+            # after each retry we record the result, strategy will decide if we should retry again
+            current_retry_strategy&.record_retry(test_span)
+          end
+        end
+
+        def record_test_span_duration(tracer_span)
+          # noop
+        end
+
         private
+
+        def current_retry_strategy
+          Thread.current[FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY]
+        end
+
+        def current_retry_strategy=(strategy)
+          Thread.current[FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY] = strategy
+        end
 
         def should_retry_failed_test?(test_span)
           @retry_failed_tests_enabled && !!test_span&.failed? && @retry_failed_tests_count < @retry_failed_tests_total_limit

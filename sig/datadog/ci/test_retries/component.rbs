@@ -2,6 +2,8 @@ module Datadog
   module CI
     module TestRetries
       class Component
+        FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY: Symbol
+
         attr_reader retry_failed_tests_enabled: bool
 
         attr_reader retry_failed_tests_max_attempts: Integer
@@ -32,7 +34,15 @@ module Datadog
 
         def build_strategy: (Datadog::CI::Test test) -> Datadog::CI::TestRetries::Strategy::Base
 
+        def record_test_finished: (Datadog::CI::Test test) -> void
+
+        def record_test_span_duration: (Datadog::Tracing::SpanOperation span) -> void
+
         private
+
+        def current_retry_strategy: () -> Datadog::CI::TestRetries::Strategy::Base?
+
+        def current_retry_strategy=: (Datadog::CI::TestRetries::Strategy::Base? strategy) -> void
 
         def should_retry_failed_test?: (Datadog::CI::Test test) -> bool
 
