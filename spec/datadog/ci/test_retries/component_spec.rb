@@ -152,7 +152,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     subject { component.build_strategy(test_span) }
 
     let(:test_failed) { false }
-    let(:test_span) { instance_double(Datadog::CI::Test, failed?: test_failed) }
+    let(:test_span) { instance_double(Datadog::CI::Test, failed?: test_failed, name: "test", test_suite_name: "suite") }
 
     before do
       component.configure(library_settings, test_session)
@@ -227,7 +227,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         set_tag: true,
         get_tag: true,
         skipped?: false,
-        type: "test"
+        type: "test",
+        name: "mytest",
+        test_suite_name: "mysuite"
       )
     end
 

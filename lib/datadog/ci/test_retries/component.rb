@@ -2,6 +2,7 @@
 
 require_relative "strategy/no_retry"
 require_relative "strategy/retry_failed"
+require_relative "strategy/retry_new"
 
 require_relative "../ext/telemetry"
 require_relative "../utils/telemetry"
@@ -17,7 +18,8 @@ module Datadog
 
         attr_reader :retry_failed_tests_enabled, :retry_failed_tests_max_attempts,
           :retry_failed_tests_total_limit, :retry_failed_tests_count,
-          :retry_new_tests_enabled, :retry_new_tests_duration_thresholds, :retry_new_tests_percentage_limit,
+          :retry_new_tests_enabled, :retry_new_tests_duration_thresholds,
+          :retry_new_tests_percentage_limit,
           :retry_new_tests_unique_tests_set, :retry_new_tests_fault_reason
 
         def initialize(
@@ -83,7 +85,11 @@ module Datadog
 
         def build_strategy(test_span)
           @mutex.synchronize do
-            if should_retry_failed_test?(test_span)
+            if should_retry_new_test?(test_span)
+              Datadog.logger.debug("New test retry starts")
+
+              Strategy::RetryNew.new(duration_thresholds: @retry_new_tests_duration_thresholds)
+            elsif should_retry_failed_test?(test_span)
               Datadog.logger.debug("Failed test retry starts")
               @retry_failed_tests_count += 1
 
@@ -105,7 +111,7 @@ module Datadog
         end
 
         def record_test_span_duration(tracer_span)
-          # noop
+          current_retry_strategy&.record_duration(tracer_span.duration)
         end
 
         private
@@ -119,11 +125,27 @@ module Datadog
         end
 
         def should_retry_failed_test?(test_span)
-          @retry_failed_tests_enabled && !!test_span&.failed? && @retry_failed_tests_count < @retry_failed_tests_total_limit
+          if @retry_failed_tests_count >= @retry_failed_tests_total_limit
+            @retry_failed_tests_enabled = false
+          end
+
+          @retry_failed_tests_enabled && !!test_span&.failed?
+        end
+
+        def should_retry_new_test?(test_span)
+          # TODO: check if EFD is faulty here
+
+          @retry_new_tests_enabled && is_new_test?(test_span)
         end
 
         def test_visibility_component
           Datadog.send(:components).test_visibility
+        end
+
+        def is_new_test?(test_span)
+          test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)
+
+          @retry_new_tests_unique_tests_set.include?(test_id)
         end
       end
     end

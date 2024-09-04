@@ -14,7 +14,7 @@ module Datadog
 
         attr_reader retry_new_tests_enabled: bool
 
-        attr_reader retry_new_tests_duration_thresholds: Datadog::CI::Remote::SlowTestRetries?
+        attr_reader retry_new_tests_duration_thresholds: Datadog::CI::Remote::SlowTestRetries
 
         attr_reader retry_new_tests_percentage_limit: Integer
 
@@ -45,6 +45,10 @@ module Datadog
         def current_retry_strategy=: (Datadog::CI::TestRetries::Strategy::Base? strategy) -> void
 
         def should_retry_failed_test?: (Datadog::CI::Test test) -> bool
+
+        def should_retry_new_test?: (Datadog::CI::Test test) -> bool
+
+        def is_new_test?: (Datadog::CI::Test test) -> bool
 
         def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
       end
