@@ -41,6 +41,8 @@ module Datadog
 
         def deactivate_test_suite: (String test_suite_name) -> void
 
+        def test_finished_callback: () -> Proc?
+
         def set_test_finished_callback: (Proc callback) -> void
 
         def remove_test_finished_callback: () -> void
@@ -78,6 +80,10 @@ module Datadog
         def on_test_suite_finished: (Datadog::CI::TestSuite test_suite) -> void
 
         def on_test_finished: (Datadog::CI::Test test) -> void
+
+        def on_after_test_span_finished: (Datadog::Tracing::SpanOperation span) -> void
+
+        def subscribe_to_after_stop_event: (Datadog::Tracing::SpanOperation span) -> void
 
         def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
 

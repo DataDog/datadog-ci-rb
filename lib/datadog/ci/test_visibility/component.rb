@@ -57,13 +57,7 @@ module Datadog
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
           if block
             @context.trace_test(test_name, test_suite_name, service: service, tags: tags) do |test|
-              # subscribe on test stop event
-              if test_finished_callback
-                events = test.tracer_span.send(:events)
-                events.after_stop.subscribe do |event|
-                  test_finished_callback&.call(event)
-                end
-              end
+              subscribe_to_after_stop_event(test.tracer_span)
 
               on_test_started(test)
               res = block.call(test)
@@ -72,6 +66,7 @@ module Datadog
             end
           else
             test = @context.trace_test(test_name, test_suite_name, service: service, tags: tags)
+            subscribe_to_after_stop_event(test.tracer_span)
             on_test_started(test)
             test
           end
@@ -216,11 +211,25 @@ module Datadog
           test_optimisation.count_skipped_test(test)
 
           Telemetry.event_finished(test)
+
+          test_finished_callback&.call(test)
+        end
+
+        def on_after_test_span_finished(tracer_span)
+          # noop
         end
 
         # HELPERS
         def skip_tracing(block = nil)
           block&.call(nil)
+        end
+
+        def subscribe_to_after_stop_event(tracer_span)
+          events = tracer_span.send(:events)
+
+          events.after_stop.subscribe do |span|
+            on_after_test_span_finished(span)
+          end
         end
 
         def set_codeowners(test)

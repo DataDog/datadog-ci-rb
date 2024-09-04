@@ -71,9 +71,7 @@ module Datadog
           # @type var retry_strategy: Strategy::Base
           retry_strategy = nil
 
-          test_finished_callback = lambda do |tracer_span|
-            test_span = Datadog::CI::Test.new(tracer_span)
-
+          test_finished_callback = lambda do |test_span|
             if retry_strategy.nil?
               # we always run test at least once and after first pass create a correct retry strategy
               retry_strategy = build_strategy(test_span)
