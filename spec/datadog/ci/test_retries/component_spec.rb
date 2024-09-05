@@ -21,6 +21,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:retry_failed_tests_total_limit) { 12 }
   let(:retry_new_tests_enabled) { true }
   let(:retry_new_tests_percentage_limit) { 30 }
+  let(:retry_new_tests_max_attempts) { 5 }
 
   let(:remote_flaky_test_retries_enabled) { false }
   let(:remote_early_flake_detection_enabled) { false }
@@ -36,7 +37,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:slow_test_retries) do
     instance_double(
       Datadog::CI::Remote::SlowTestRetries,
-      max_attempts_for_duration: 10
+      max_attempts_for_duration: retry_new_tests_max_attempts
     )
   end
 
@@ -106,7 +107,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
           subject
 
           expect(component.retry_new_tests_enabled).to be true
-          expect(component.retry_new_tests_duration_thresholds.max_attempts_for_duration(1.2)).to eq(10)
+          expect(component.retry_new_tests_duration_thresholds.max_attempts_for_duration(1.2)).to eq(retry_new_tests_max_attempts)
           expect(component.retry_new_tests_percentage_limit).to eq(retry_new_tests_percentage_limit)
         end
 
@@ -218,12 +219,18 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       let(:flaky_test_retries_enabled) { true }
     end
 
-    let(:test_failed) { false }
+    let(:component) do
+      Datadog.send(:components).test_retries
+    end
+
+    let(:tracer_span) do
+      instance_double(Datadog::Tracing::SpanOperation, duration: 1.2)
+    end
     let(:test_span) do
       instance_double(
         Datadog::CI::Test,
         failed?: test_failed,
-        passed?: false,
+        passed?: !test_failed,
         set_tag: true,
         get_tag: true,
         skipped?: false,
@@ -232,14 +239,16 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         test_suite_name: "mysuite"
       )
     end
+    let(:test_failed) { false }
 
     subject(:runs_count) do
       runs_count = 0
       component.with_retries do
         runs_count += 1
 
-        # run callback manually
+        # run callbacks manually
         Datadog.send(:components).test_visibility.send(:on_test_finished, test_span)
+        Datadog.send(:components).test_visibility.send(:on_after_test_span_finished, tracer_span)
       end
 
       runs_count
@@ -253,7 +262,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       it { is_expected.to eq(1) }
     end
 
-    context "when retried failed tests strategy is used" do
+    context "when retry failed tests strategy is used" do
       let(:remote_flaky_test_retries_enabled) { true }
 
       context "when test span is failed" do
@@ -267,6 +276,23 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         let(:test_failed) { false }
 
         it { is_expected.to eq(1) }
+      end
+    end
+
+    context "when retry new test strategy is used" do
+      let(:remote_early_flake_detection_enabled) { true }
+      let(:unique_tests_set) { Set.new(["mysuite.mytest."]) }
+
+      it { is_expected.to eq(11) }
+
+      context "when test duration increases" do
+        let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
+        before do
+          allow(tracer_span).to receive(:duration).and_return(5.1, 10.1, 30.1, 600.1)
+        end
+
+        # 5.1s (5 retries) -> 10.1s (3 retries) -> 30.1s (2 retries) -> done => 3 executions in total
+        it { is_expected.to eq(3) }
       end
     end
   end

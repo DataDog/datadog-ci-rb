@@ -32,7 +32,7 @@ module Datadog
           def record_duration(duration)
             @max_attempts = @duration_thresholds.max_attempts_for_duration(duration)
 
-            Datadog.logger.debug { "Recorded test duration of [#{@duration}], new Max Attempts value is [#{@max_attempts}]" }
+            Datadog.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
           end
         end
       end
