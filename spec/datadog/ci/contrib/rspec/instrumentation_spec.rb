@@ -958,4 +958,62 @@ RSpec.describe "RSpec hooks" do
       end
     end
   end
+
+  context "session with early flake detection enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
+    end
+
+    it "retries the new test 10 times" do
+      rspec_session_run(with_failed_test: true)
+
+      # 1 passing test + 10 new test retries + 1 failed test run = 12 spans
+      expect(test_spans).to have(12).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(1).items
+      expect(passed_spans).to have(11).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+
+      # it retried the new test 10 times
+      expect(test_spans_by_test_name["nested foo"]).to have(11).item
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(10)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_fail_status
+
+      expect(test_session_span).to have_fail_status
+    end
+
+    context "when test is slower than 5 seconds" do
+      before do
+        allow_any_instance_of(Datadog::Tracing::SpanOperation).to receive(:duration).and_return(6.0)
+      end
+
+      it "retries the new test 5 times" do
+        rspec_session_run(with_failed_test: true)
+
+        # 1 passing test + 5 new test retries + 1 failed test run = 12 spans
+        expect(test_spans).to have(7).items
+
+        test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+        # it retried the new test 5 times
+        expect(test_spans_by_test_name["nested foo"]).to have(6).item
+
+        # count how many spans were marked as retries
+        retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+        expect(retries_count).to eq(5)
+
+        expect(test_suite_spans).to have(1).item
+        expect(test_session_span).to have_fail_status
+      end
+    end
+  end
 end
