@@ -20,8 +20,6 @@ module Datadog
 
         attr_reader retry_new_tests_unique_tests_set: Set[String]
 
-        attr_reader retry_new_tests_fault_reason: String?
-
         @mutex: Thread::Mutex
 
         @unique_tests_client: Datadog::CI::TestRetries::UniqueTestsClient

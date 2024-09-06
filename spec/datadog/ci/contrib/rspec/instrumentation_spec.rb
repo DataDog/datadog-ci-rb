@@ -994,6 +994,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_suite_spans.first).to have_fail_status
 
       expect(test_session_span).to have_fail_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
 
     context "when test is slower than 5 seconds" do
@@ -1004,7 +1005,7 @@ RSpec.describe "RSpec hooks" do
       it "retries the new test 5 times" do
         rspec_session_run(with_failed_test: true)
 
-        # 1 passing test + 5 new test retries + 1 failed test run = 12 spans
+        # 1 passing test + 5 new test retries + 1 failed test run = 7 spans
         expect(test_spans).to have(7).items
 
         test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
@@ -1021,7 +1022,66 @@ RSpec.describe "RSpec hooks" do
 
         expect(test_suite_spans).to have(1).item
         expect(test_session_span).to have_fail_status
+        expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
       end
+    end
+
+    context "when test is slower than 10 minutes" do
+      before do
+        allow_any_instance_of(Datadog::Tracing::SpanOperation).to receive(:duration).and_return(601.0)
+      end
+
+      it "doesn't retry the new test" do
+        rspec_session_run(with_failed_test: true)
+
+        # 1 passing test + 1 failed test run = 2 spans
+        expect(test_spans).to have(2).items
+
+        test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+        # it retried the new test 0 times
+        expect(test_spans_by_test_name["nested foo"]).to have(1).item
+
+        # count how many spans were marked as retries
+        retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+        expect(retries_count).to eq(0)
+
+        # count how many tests were marked as new
+        new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+        expect(new_tests_count).to eq(1)
+
+        expect(test_suite_spans).to have(1).item
+        expect(test_session_span).to have_fail_status
+        expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+      end
+    end
+  end
+
+  context "session with early flake detection enabled but unique tests set is empty" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:early_flake_detection_enabled) { true }
+    end
+
+    it "retries the new test 10 times and the flaky test until it passes" do
+      rspec_session_run
+
+      expect(test_spans).to have(1).item
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(0)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(0)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+      expect(test_session_span).to have_test_tag(:early_flake_abort_reason, "faulty")
     end
   end
 
@@ -1061,6 +1121,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_suite_spans.first).to have_pass_status
 
       expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
 
@@ -1107,6 +1168,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_suite_spans.first).to have_pass_status
 
       expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
 end

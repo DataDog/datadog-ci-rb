@@ -19,8 +19,7 @@ module Datadog
         attr_reader :retry_failed_tests_enabled, :retry_failed_tests_max_attempts,
           :retry_failed_tests_total_limit, :retry_failed_tests_count,
           :retry_new_tests_enabled, :retry_new_tests_duration_thresholds,
-          :retry_new_tests_percentage_limit,
-          :retry_new_tests_unique_tests_set, :retry_new_tests_fault_reason
+          :retry_new_tests_percentage_limit, :retry_new_tests_unique_tests_set
 
         def initialize(
           retry_failed_tests_enabled:,
@@ -39,9 +38,6 @@ module Datadog
           @retry_new_tests_duration_thresholds = nil
           @retry_new_tests_percentage_limit = 0
           @retry_new_tests_unique_tests_set = Set.new
-          # indicates that retrying new tests failed and was disabled
-          @retry_new_tests_fault_reason = nil
-
           @unique_tests_client = unique_tests_client
 
           @mutex = Mutex.new
@@ -53,6 +49,9 @@ module Datadog
 
           return unless @retry_new_tests_enabled
 
+          # mark early flake detection enabled for test session
+          test_session.set_tag(Ext::Test::TAG_EARLY_FLAKE_ENABLED, "true")
+
           # configure retrying new tests
           @retry_new_tests_duration_thresholds = library_settings.slow_test_retries
           @retry_new_tests_percentage_limit = library_settings.faulty_session_threshold
@@ -60,7 +59,8 @@ module Datadog
 
           if @retry_new_tests_unique_tests_set.empty?
             @retry_new_tests_enabled = false
-            @retry_new_tests_fault_reason = "unique tests set is empty"
+
+            test_session.set_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
 
             Datadog.logger.debug("Unique tests set is empty, retrying new tests disabled")
           else

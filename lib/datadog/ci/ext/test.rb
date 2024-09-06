@@ -58,9 +58,11 @@ module Datadog
         # version of the browser, if multiple browsers or multiple versions then this tag is empty
         TAG_BROWSER_VERSION = "test.browser.version"
 
-        # Tags for test retries
+        # Tags for retries
         TAG_IS_RETRY = "test.is_retry" # true if test was retried by datadog-ci library
         TAG_IS_NEW = "test.is_new" # true if test was marked as new by new test retries (early flake detection)
+        TAG_EARLY_FLAKE_ENABLED = "test.early_flake.enabled" # true if early flake detection is enabled
+        TAG_EARLY_FLAKE_ABORT_REASON = "test.early_flake.abort_reason" # reason why early flake detection was aborted
 
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
@@ -73,6 +75,8 @@ module Datadog
         ITR_TEST_SKIPPING_MODE = "test" # we always skip tests (not suites) in Ruby
         ITR_TEST_SKIP_REASON = "Skipped by Datadog's intelligent test runner"
         ITR_UNSKIPPABLE_OPTION = :datadog_itr_unskippable
+
+        EARLY_FLAKE_FAULTY = "faulty"
 
         # test status as recognized by Datadog
         module Status

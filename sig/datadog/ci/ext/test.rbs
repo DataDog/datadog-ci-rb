@@ -90,6 +90,12 @@ module Datadog
 
         TAG_IS_NEW: "test.is_new"
 
+        TAG_EARLY_FLAKE_ENABLED: "test.early_flake.enabled"
+
+        TAG_EARLY_FLAKE_ABORT_REASON: "test.early_flake.abort_reason"
+
+        EARLY_FLAKE_FAULTY: "faulty"
+
         module Status
           PASS: "pass"
 
