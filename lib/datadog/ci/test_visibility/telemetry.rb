@@ -58,6 +58,15 @@ module Datadog
           # set is_retry tag if span represents a retried test
           tags[Ext::Telemetry::TAG_IS_RETRY] = "true" if span.get_tag(Ext::Test::TAG_IS_RETRY)
 
+          # is_new
+          tags[Ext::Telemetry::TAG_IS_NEW] = "true" if span.get_tag(Ext::Test::TAG_IS_NEW)
+
+          # session-level tag - early_flake_detection_abort_reason
+          early_flake_detection_abort_reason = span.get_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON)
+          if early_flake_detection_abort_reason
+            tags[Ext::Telemetry::TAG_EARLY_FLAKE_DETECTION_ABORT_REASON] = early_flake_detection_abort_reason
+          end
+
           tags
         end
 

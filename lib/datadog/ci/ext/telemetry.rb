@@ -69,6 +69,7 @@ module Datadog
         TAG_BROWSER_DRIVER = "browser_driver"
         TAG_IS_RUM = "is_rum"
         TAG_IS_RETRY = "is_retry"
+        TAG_IS_NEW = "is_new"
         TAG_LIBRARY = "library"
         TAG_ENDPOINT = "endpoint"
         TAG_ERROR_TYPE = "error_type"
@@ -80,6 +81,7 @@ module Datadog
         TAG_COVERAGE_ENABLED = "coverage_enabled"
         TAG_ITR_SKIP_ENABLED = "itrskip_enabled"
         TAG_EARLY_FLAKE_DETECTION_ENABLED = "early_flake_detection_enabled"
+        TAG_EARLY_FLAKE_DETECTION_ABORT_REASON = "early_flake_detection_abort_reason"
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"
 
