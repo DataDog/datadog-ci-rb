@@ -20,7 +20,6 @@ require_relative "../test_visibility/serializers/factories/test_suite_level"
 require_relative "../test_visibility/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
 require_relative "../transport/api/builder"
-require_relative "../utils/identity"
 require_relative "../utils/parsing"
 require_relative "../utils/test_run"
 require_relative "../worker"
@@ -285,11 +284,7 @@ module Datadog
           settings.telemetry.shutdown_timeout_seconds = 60.0
 
           begin
-            require "datadog/core/environment/identity"
             require "datadog/core/telemetry/http/adapters/net"
-
-            # patch gem's identity to report datadog-ci library version instead of datadog gem version
-            Core::Environment::Identity.include(CI::Utils::Identity)
 
             # patch gem's telemetry transport layer to use Net::HTTP instead of WebMock's Net::HTTP
             Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
