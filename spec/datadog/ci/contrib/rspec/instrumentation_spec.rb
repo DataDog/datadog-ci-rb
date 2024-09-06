@@ -982,9 +982,13 @@ RSpec.describe "RSpec hooks" do
       # it retried the new test 10 times
       expect(test_spans_by_test_name["nested foo"]).to have(11).item
 
-      # count how many spans were marked as retries
+      # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(11)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
@@ -1010,6 +1014,10 @@ RSpec.describe "RSpec hooks" do
         # count how many spans were marked as retries
         retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
         expect(retries_count).to eq(5)
+
+        # count how many tests were marked as new
+        new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+        expect(new_tests_count).to eq(6)
 
         expect(test_suite_spans).to have(1).item
         expect(test_session_span).to have_fail_status
@@ -1044,6 +1052,10 @@ RSpec.describe "RSpec hooks" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(14)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(11)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
@@ -1086,6 +1098,10 @@ RSpec.describe "RSpec hooks" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(20)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(22)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status

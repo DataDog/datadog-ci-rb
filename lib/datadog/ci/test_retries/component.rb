@@ -88,7 +88,7 @@ module Datadog
             if should_retry_new_test?(test_span)
               Datadog.logger.debug("New test retry starts")
 
-              Strategy::RetryNew.new(duration_thresholds: @retry_new_tests_duration_thresholds)
+              Strategy::RetryNew.new(test_span, duration_thresholds: @retry_new_tests_duration_thresholds)
             elsif should_retry_failed_test?(test_span)
               Datadog.logger.debug("Failed test retry starts")
               @retry_failed_tests_count += 1

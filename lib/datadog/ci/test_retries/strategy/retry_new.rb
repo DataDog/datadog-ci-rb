@@ -10,11 +10,13 @@ module Datadog
       module Strategy
         # retry every new test up to 10 times (early flake detection)
         class RetryNew < Base
-          def initialize(duration_thresholds:)
+          def initialize(test_span, duration_thresholds:)
             @duration_thresholds = duration_thresholds
             @attempts = 0
             # will be changed based on test span duration
             @max_attempts = 10
+
+            mark_new_test(test_span)
           end
 
           def should_retry?
@@ -25,6 +27,7 @@ module Datadog
             super
 
             @attempts += 1
+            mark_new_test(test_span)
 
             Datadog.logger.debug { "Retry Attempts [#{@attempts} / #{@max_attempts}]" }
           end
@@ -33,6 +36,12 @@ module Datadog
             @max_attempts = @duration_thresholds.max_attempts_for_duration(duration)
 
             Datadog.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
+          end
+
+          private
+
+          def mark_new_test(test_span)
+            test_span.set_tag(Ext::Test::TAG_IS_NEW, "true")
           end
         end
       end

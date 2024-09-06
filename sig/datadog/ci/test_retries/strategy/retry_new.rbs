@@ -8,7 +8,11 @@ module Datadog
           @attempts: Integer
           @max_attempts: Integer
 
-          def initialize: (duration_thresholds: Datadog::CI::Remote::SlowTestRetries) -> void
+          def initialize: (Datadog::CI::Test test_span, duration_thresholds: Datadog::CI::Remote::SlowTestRetries) -> void
+
+          private
+
+          def mark_new_test: (Datadog::CI::Test test_span) -> void
         end
       end
     end

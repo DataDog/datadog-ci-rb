@@ -60,6 +60,7 @@ module Datadog
 
         # Tags for test retries
         TAG_IS_RETRY = "test.is_retry" # true if test was retried by datadog-ci library
+        TAG_IS_NEW = "test.is_new" # true if test was marked as new by new test retries (early flake detection)
 
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"

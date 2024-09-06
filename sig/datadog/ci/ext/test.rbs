@@ -88,6 +88,8 @@ module Datadog
 
         TAG_IS_RETRY: "test.is_retry"
 
+        TAG_IS_NEW: "test.is_new"
+
         module Status
           PASS: "pass"
 
