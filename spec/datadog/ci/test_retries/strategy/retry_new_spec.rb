@@ -10,11 +10,12 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
       "10m" => 2
     })
   }
-  subject(:strategy) { described_class.new(duration_thresholds: duration_thresholds) }
+  let(:test_span) { double(:test_span, set_tag: true) }
+
+  subject(:strategy) { described_class.new(test_span, duration_thresholds: duration_thresholds) }
 
   describe "#should_retry?" do
     subject { strategy.should_retry? }
-    let(:test_span) { double(:test_span, set_tag: true) }
 
     context "when max attempts haven't been reached yet" do
       it { is_expected.to be true }
