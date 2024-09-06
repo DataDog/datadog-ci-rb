@@ -1016,4 +1016,81 @@ RSpec.describe "RSpec hooks" do
       end
     end
   end
+
+  context "session with early flake detection enabled and retrying failed tests enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
+
+      let(:flaky_test_retries_enabled) { true }
+    end
+
+    it "retries the new test 10 times and the flaky test until it passes" do
+      rspec_session_run(with_flaky_test: true)
+
+      # 1 initial run of flaky test + 4 retries until pass + 1 passing new test + 10 new test retries = 16 spans
+      expect(test_spans).to have(16).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(4).items
+      expect(passed_spans).to have(12).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["nested flaky"]).to have(5).items
+      expect(test_spans_by_test_name["nested foo"]).to have(11).item
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(14)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+    end
+  end
+
+  context "session with early flake detection enabled and retrying failed tests enabled and flaky test is new" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:unique_tests_set) do
+        Set.new(
+          [
+            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.",
+            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested flaky."
+          ]
+        )
+      end
+
+      let(:flaky_test_retries_enabled) { true }
+    end
+
+    it "retries both tests 10 times" do
+      rspec_session_run(with_flaky_test: true)
+
+      # 1 initial run of flaky test + 10 retries + 1 passing new test + 10 new test retries = 22 spans
+      expect(test_spans).to have(22).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(4).items
+      expect(passed_spans).to have(18).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["nested flaky"]).to have(11).items
+      expect(test_spans_by_test_name["nested foo"]).to have(11).item
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(20)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+    end
+  end
 end
