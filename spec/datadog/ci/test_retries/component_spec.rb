@@ -94,11 +94,11 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       context "when unique tests set is empty" do
         let(:unique_tests_set) { Set.new }
 
-        it "disables retrying new tests and adds fault reason" do
+        it "disables retrying new tests and adds fault reason to the test session" do
           subject
 
           expect(component.retry_new_tests_enabled).to be false
-          expect(component.retry_new_tests_fault_reason).to eq("unique tests set is empty")
+          expect(test_session.get_tag("test.early_flake.abort_reason")).to eq("faulty")
         end
       end
 
@@ -224,7 +224,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
 
     let(:tracer_span) do
-      instance_double(Datadog::Tracing::SpanOperation, duration: 1.2)
+      instance_double(Datadog::Tracing::SpanOperation, duration: 1.2, set_tag: true)
     end
     let(:test_span) do
       instance_double(
@@ -286,7 +286,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       it { is_expected.to eq(11) }
 
       context "when test duration increases" do
-        let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation) }
+        let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, set_tag: true) }
         before do
           allow(tracer_span).to receive(:duration).and_return(5.1, 10.1, 30.1, 600.1)
         end
