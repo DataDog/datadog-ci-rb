@@ -8,6 +8,8 @@ module Datadog
     module Contrib
       module Minitest
         module Runner
+          DD_ESTIMATED_TESTS_PER_SUITE = 5
+
           def self.included(base)
             base.singleton_class.prepend(ClassMethods)
           end
@@ -18,12 +20,15 @@ module Datadog
 
               return unless datadog_configuration[:enabled]
 
+              # minitest does not store the total number of tests, so we can't pass it to the test session
+              # instead, we use the number of test suites * DD_ESTIMATED_TESTS_PER_SUITE as a rough estimate
               test_visibility_component.start_test_session(
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Minitest::Integration.version.to_s
                 },
-                service: datadog_configuration[:service_name]
+                service: datadog_configuration[:service_name],
+                total_tests_count: (DD_ESTIMATED_TESTS_PER_SUITE * ::Minitest::Runnable.runnables.size).to_i
               )
               test_visibility_component.start_test_module(Ext::FRAMEWORK)
             end
