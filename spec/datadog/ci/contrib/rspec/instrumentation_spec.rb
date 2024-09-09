@@ -1129,7 +1129,7 @@ RSpec.describe "RSpec hooks" do
     end
   end
 
-  context "session with early flake detection enabled and retrying failed tests enabled and flaky test is new" do
+  context "session with early flake detection enabled and retrying failed tests enabled and both tests are new" do
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }
 
@@ -1174,6 +1174,52 @@ RSpec.describe "RSpec hooks" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+    end
+  end
+
+  context "session with early flake detection enabled and both tests are new and faulty percentage is reached" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:faulty_session_threshold) { 30 }
+      let(:unique_tests_set) do
+        Set.new(
+          [
+            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."
+          ]
+        )
+      end
+    end
+
+    it "retries first test only and then bails out of retrying new tests" do
+      rspec_session_run(with_flaky_test: true)
+
+      # 1 initial run of passing test + 10 retries + 1 flaky test = 12 spans
+      expect(test_spans).to have(12).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(1).items
+      expect(passed_spans).to have(11).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["nested flaky"]).to have(1).item
+      expect(test_spans_by_test_name["nested foo"]).to have(11).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(10)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(11)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_fail_status
+
+      expect(test_session_span).to have_fail_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+      expect(test_session_span).to have_test_tag(:early_flake_abort_reason, "faulty")
     end
   end
 end
