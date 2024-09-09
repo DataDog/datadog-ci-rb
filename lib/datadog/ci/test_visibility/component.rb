@@ -28,10 +28,12 @@ module Datadog
           @codeowners = codeowners
         end
 
-        def start_test_session(service: nil, tags: {})
+        def start_test_session(service: nil, tags: {}, total_tests_count: 0)
           return skip_tracing unless test_suite_level_visibility_enabled
 
           test_session = @context.start_test_session(service: service, tags: tags)
+          test_session.total_tests_count = total_tests_count
+
           on_test_session_started(test_session)
           test_session
         end

@@ -20,6 +20,10 @@ module Datadog
 
         attr_reader retry_new_tests_unique_tests_set: Set[String]
 
+        attr_reader retry_new_tests_total_tests_count: Integer
+
+        attr_reader retry_new_tests_count: Integer
+
         @mutex: Thread::Mutex
 
         @unique_tests_client: Datadog::CI::TestRetries::UniqueTestsClient
@@ -49,6 +53,8 @@ module Datadog
         def is_new_test?: (Datadog::CI::Test test) -> bool
 
         def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+
+        def mark_test_session_faulty: (Datadog::CI::TestSession? test_session) -> void
       end
     end
   end

@@ -42,7 +42,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   end
 
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
-  let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
+  let(:test_session) { Datadog::CI::TestSession.new(tracer_span).tap { |test_session| test_session.total_tests_count = 30 } }
 
   subject(:component) do
     described_class.new(
@@ -281,7 +281,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
     context "when retry new test strategy is used" do
       let(:remote_early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["mysuite.mytest."]) }
+      let(:unique_tests_set) { Set.new(["mysuite.mytest2."]) }
 
       it { is_expected.to eq(11) }
 

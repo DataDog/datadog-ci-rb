@@ -114,6 +114,10 @@ RSpec.describe "RSpec hooks" do
       let(:integration_options) { {service_name: "lspec"} }
     end
 
+    before do
+      Datadog.send(:components).test_visibility.start_test_session
+    end
+
     it "creates span for example" do
       spec = with_new_rspec_environment do
         RSpec.describe "some test" do
@@ -147,7 +151,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "120")
+      expect(first_test_span).to have_test_tag(:source_start, "124")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -155,7 +159,7 @@ RSpec.describe "RSpec hooks" do
     end
 
     it "creates spans for several examples" do
-      expect(Datadog::CI::Ext::Environment).to receive(:tags).once.and_call_original
+      expect(Datadog::CI::Ext::Environment).to receive(:tags).never
 
       num_examples = 20
       with_new_rspec_environment do
@@ -964,7 +968,7 @@ RSpec.describe "RSpec hooks" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
+      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails."]) }
     end
 
     it "retries the new test 10 times" do
@@ -1090,7 +1094,7 @@ RSpec.describe "RSpec hooks" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
+      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested flaky."]) }
 
       let(:flaky_test_retries_enabled) { true }
     end
@@ -1130,11 +1134,12 @@ RSpec.describe "RSpec hooks" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
+      # avoid bailing out of EFD
+      let(:faulty_session_threshold) { 75 }
       let(:unique_tests_set) do
         Set.new(
           [
-            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.",
-            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested flaky."
+            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."
           ]
         )
       end
