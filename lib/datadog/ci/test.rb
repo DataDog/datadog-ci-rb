@@ -145,11 +145,18 @@ module Datadog
         get_tag(Ext::Test::TAG_PARAMETERS)
       end
 
+      # @internal
+      def any_retry_passed?
+        !!test_suite&.any_test_retry_passed?(test_id)
+      end
+
       private
 
-      def record_test_result(datadog_status)
-        test_id = Utils::TestRun.datadog_test_id(name, test_suite_name, parameters)
+      def test_id
+        @test_id ||= Utils::TestRun.datadog_test_id(name, test_suite_name, parameters)
+      end
 
+      def record_test_result(datadog_status)
         # if this test was already executed in this test suite, mark it as retried
         if test_suite&.test_executed?(test_id)
           set_tag(Ext::Test::TAG_IS_RETRY, "true")

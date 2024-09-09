@@ -9,6 +9,8 @@ module Datadog
 
       def test_executed?: (String test_id) -> bool
 
+      def any_test_retry_passed?: (String) -> bool
+
       private
 
       def set_status_from_stats!: () -> void

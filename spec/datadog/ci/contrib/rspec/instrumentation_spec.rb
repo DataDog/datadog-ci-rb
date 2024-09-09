@@ -33,6 +33,7 @@ RSpec.describe "RSpec hooks" do
     with_shared_context: false,
     with_flaky_test: false,
     with_canceled_test: false,
+    with_flaky_test_that_fails_once: false,
     unskippable: {
       test: false,
       context: false,
@@ -46,6 +47,9 @@ RSpec.describe "RSpec hooks" do
 
     max_flaky_test_failures = 4
     flaky_test_failures = 0
+
+    max_flaky_test_that_fails_once_passes = 10
+    flaky_test_that_fails_once_passes = 0
 
     current_let_value = 0
 
@@ -83,6 +87,17 @@ RSpec.describe "RSpec hooks" do
                 expect(1 + 1).to eq(3)
               else
                 expect(1 + 1).to eq(2)
+              end
+            end
+          end
+
+          if with_flaky_test_that_fails_once
+            it "flaky that fails once" do
+              if flaky_test_that_fails_once_passes < max_flaky_test_that_fails_once_passes
+                flaky_test_that_fails_once_passes += 1
+                expect(1 + 1).to eq(2)
+              else
+                expect(1 + 1).to eq(3)
               end
             end
           end
@@ -151,7 +166,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "124")
+      expect(first_test_span).to have_test_tag(:source_start, "139")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -1220,6 +1235,44 @@ RSpec.describe "RSpec hooks" do
       expect(test_session_span).to have_fail_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
       expect(test_session_span).to have_test_tag(:early_flake_abort_reason, "faulty")
+    end
+  end
+
+  context "session with early flake detection enabled and test fails on last retry" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
+    end
+
+    it "retries the new test 10 times" do
+      rspec_session_run(with_flaky_test_that_fails_once: true)
+
+      # 1 passing test + 1 flaky test run + 10 new test retries = 12 spans
+      expect(test_spans).to have(12).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(1).items
+      expect(passed_spans).to have(11).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["nested foo"]).to have(1).item
+      expect(test_spans_by_test_name["nested flaky that fails once"]).to have(11).items
+
+      # count how many tests were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(10)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(11)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
 end

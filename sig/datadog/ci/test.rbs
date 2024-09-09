@@ -1,6 +1,8 @@
 module Datadog
   module CI
     class Test < Span
+      @test_id: String
+
       def finish: () -> void
       def test_suite: () -> Datadog::CI::TestSuite?
       def test_suite_id: () -> String?
@@ -12,9 +14,11 @@ module Datadog
       def source_file: () -> String?
       def parameters: () -> String?
       def is_retry?: () -> bool
+      def any_retry_passed?: () -> bool
 
       private
 
+      def test_id: () -> String
       def record_test_result: (String datadog_status) -> void
     end
   end
