@@ -27,7 +27,8 @@ module Datadog
       # ```
       # Datadog::CI.start_test_session(
       #   service: "my-web-site-tests",
-      #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" }
+      #   tags: { Datadog::CI::Ext::Test::TAG_FRAMEWORK => "my-test-framework" },
+      #   total_tests_count: 100
       # )
       #
       # # Somewhere else after test run has ended
@@ -38,15 +39,16 @@ module Datadog
       #
       # @param [String] service the service name for this session (optional, defaults to DD_SERVICE or repository name)
       # @param [Hash<String,String>] tags extra tags which should be added to the test session.
+      # @param [Integer] total_tests_count the total number of tests in the test session (optional, defaults to 0) - it is used to limit the number of new tests retried within session if early flake detection is enabled
       # @return [Datadog::CI::TestSession] the active, running {Datadog::CI::TestSession}.
       # @return [nil] if test suite level visibility is disabled or CI mode is disabled.
-      def start_test_session(service: Utils::Configuration.fetch_service_name("test"), tags: {})
+      def start_test_session(service: Utils::Configuration.fetch_service_name("test"), tags: {}, total_tests_count: 0)
         Utils::Telemetry.inc(
           Ext::Telemetry::METRIC_MANUAL_API_EVENTS,
           1,
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::SESSION}
         )
-        test_visibility.start_test_session(service: service, tags: tags)
+        test_visibility.start_test_session(service: service, tags: tags, total_tests_count: total_tests_count)
       end
 
       # The active, unfinished test session.

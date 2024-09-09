@@ -16,13 +16,14 @@ module Datadog
       class Component
         FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY = :__dd_current_retry_strategy
 
+        DEFAULT_TOTAL_TESTS_COUNT = 100
+
         # there are clearly 2 different concepts mixed here, we should split them into separate components
         # (high level strategies?) in the subsequent PR
         attr_reader :retry_failed_tests_enabled, :retry_failed_tests_max_attempts,
           :retry_failed_tests_total_limit, :retry_failed_tests_count,
-          :retry_new_tests_enabled, :retry_new_tests_duration_thresholds,
-          :retry_new_tests_percentage_limit, :retry_new_tests_total_tests_count, :retry_new_tests_count,
-          :retry_new_tests_unique_tests_set
+          :retry_new_tests_enabled, :retry_new_tests_duration_thresholds, :retry_new_tests_unique_tests_set,
+          :retry_new_tests_total_limit, :retry_new_tests_count
 
         def initialize(
           retry_failed_tests_enabled:,
@@ -39,11 +40,12 @@ module Datadog
 
           @retry_new_tests_enabled = retry_new_tests_enabled
           @retry_new_tests_duration_thresholds = nil
-          @retry_new_tests_total_tests_count = 0
-          @retry_new_tests_count = 0
-          @retry_new_tests_percentage_limit = 0
           @retry_new_tests_unique_tests_set = Set.new
           @unique_tests_client = unique_tests_client
+          # total maximum number of new tests to retry (will be set based on the total number of tests in the session)
+          @retry_new_tests_total_limit = 0
+          # counter thate stores the current number of new tests retried
+          @retry_new_tests_count = 0
 
           @mutex = Mutex.new
         end
@@ -59,9 +61,21 @@ module Datadog
 
           # configure retrying new tests
           @retry_new_tests_duration_thresholds = library_settings.slow_test_retries
-          @retry_new_tests_percentage_limit = library_settings.faulty_session_threshold
           @retry_new_tests_unique_tests_set = @unique_tests_client.fetch_unique_tests(test_session)
-          @retry_new_tests_total_tests_count = test_session.total_tests_count.to_i
+
+          percentage_limit = library_settings.faulty_session_threshold
+          tests_count = test_session.total_tests_count.to_i
+          if tests_count.zero?
+            Datadog.logger.debug do
+              "Total tests count is zero, using default value for the total number of tests: [#{DEFAULT_TOTAL_TESTS_COUNT}]"
+            end
+
+            tests_count = DEFAULT_TOTAL_TESTS_COUNT
+          end
+          @retry_new_tests_total_limit = (tests_count * percentage_limit / 100.0).ceil
+          Datadog.logger.debug do
+            "Retry new tests total limit is [#{@retry_new_tests_total_limit}] (#{percentage_limit}%) of #{tests_count}"
+          end
 
           if @retry_new_tests_unique_tests_set.empty?
             @retry_new_tests_enabled = false
@@ -139,10 +153,9 @@ module Datadog
         end
 
         def should_retry_new_test?(test_span)
-          if @retry_new_tests_count > @retry_new_tests_total_tests_count * @retry_new_tests_percentage_limit / 100.0
+          if @retry_new_tests_count >= @retry_new_tests_total_limit
             Datadog.logger.debug do
-              "Retry new tests limit reached: [#{@retry_new_tests_count}] out of [#{@retry_new_tests_total_tests_count}] " \
-              "with percentage limit [#{@retry_new_tests_percentage_limit}]"
+              "Retry new tests limit reached: [#{@retry_new_tests_count}] out of [#{@retry_new_tests_total_limit}]"
             end
             @retry_new_tests_enabled = false
             mark_test_session_faulty(Datadog::CI.active_test_session)

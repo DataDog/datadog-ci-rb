@@ -121,7 +121,9 @@ RSpec.describe Datadog::CI do
         subject(:start_test_session) { described_class.start_test_session(service: service) }
 
         before do
-          allow(test_visibility).to receive(:start_test_session).with(service: service, tags: {}).and_return(ci_test_session)
+          allow(test_visibility).to receive(:start_test_session).with(
+            service: service, tags: {}, total_tests_count: 0
+          ).and_return(ci_test_session)
         end
 
         it { is_expected.to be(ci_test_session) }
@@ -136,12 +138,38 @@ RSpec.describe Datadog::CI do
           before do
             allow(Datadog.configuration).to receive(:service_without_fallback).and_return("configured-service")
             allow(test_visibility).to receive(:start_test_session).with(
-              service: "configured-service", tags: {}
+              service: "configured-service", tags: {}, total_tests_count: 0
             ).and_return(ci_test_session)
           end
 
           it { is_expected.to be(ci_test_session) }
         end
+
+        context "when service is not configured on library level" do
+          before do
+            allow(Datadog.configuration).to receive(:service_without_fallback).and_return(nil)
+            allow(test_visibility).to receive(:start_test_session).with(
+              service: "datadog-ci-rb", tags: {}, total_tests_count: 0
+            ).and_return(ci_test_session)
+          end
+
+          it { is_expected.to be(ci_test_session) }
+        end
+      end
+
+      context "when total_tests_count is provided" do
+        let(:total_tests_count) { 42 }
+        subject(:start_test_session) { described_class.start_test_session(total_tests_count: total_tests_count) }
+
+        before do
+          allow(test_visibility).to receive(:start_test_session).with(
+            service: "datadog-ci-rb", tags: {}, total_tests_count: total_tests_count
+          ).and_return(ci_test_session)
+        end
+
+        it { is_expected.to be(ci_test_session) }
+
+        it_behaves_like "emits telemetry metric", :inc, "manual_api_events", 1
       end
     end
 

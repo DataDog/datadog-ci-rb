@@ -23,6 +23,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:retry_new_tests_percentage_limit) { 30 }
   let(:retry_new_tests_max_attempts) { 5 }
 
+  let(:session_total_tests_count) { 30 }
+
   let(:remote_flaky_test_retries_enabled) { false }
   let(:remote_early_flake_detection_enabled) { false }
 
@@ -42,7 +44,11 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   end
 
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
-  let(:test_session) { Datadog::CI::TestSession.new(tracer_span).tap { |test_session| test_session.total_tests_count = 30 } }
+  let(:test_session) do
+    Datadog::CI::TestSession.new(tracer_span).tap do |test_session|
+      test_session.total_tests_count = session_total_tests_count
+    end
+  end
 
   subject(:component) do
     described_class.new(
@@ -108,7 +114,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
           expect(component.retry_new_tests_enabled).to be true
           expect(component.retry_new_tests_duration_thresholds.max_attempts_for_duration(1.2)).to eq(retry_new_tests_max_attempts)
-          expect(component.retry_new_tests_percentage_limit).to eq(retry_new_tests_percentage_limit)
+          # 30% of 30 tests = 9
+          expect(component.retry_new_tests_total_limit).to eq(9)
         end
 
         it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 2

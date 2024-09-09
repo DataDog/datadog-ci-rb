@@ -4,6 +4,8 @@ module Datadog
       class Component
         FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY: Symbol
 
+        DEFAULT_TOTAL_TESTS_COUNT: 100
+
         attr_reader retry_failed_tests_enabled: bool
 
         attr_reader retry_failed_tests_max_attempts: Integer
@@ -16,11 +18,9 @@ module Datadog
 
         attr_reader retry_new_tests_duration_thresholds: Datadog::CI::Remote::SlowTestRetries
 
-        attr_reader retry_new_tests_percentage_limit: Integer
-
         attr_reader retry_new_tests_unique_tests_set: Set[String]
 
-        attr_reader retry_new_tests_total_tests_count: Integer
+        attr_reader retry_new_tests_total_limit: Integer
 
         attr_reader retry_new_tests_count: Integer
 
