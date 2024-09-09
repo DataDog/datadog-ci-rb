@@ -25,6 +25,7 @@ module Datadog
                 },
                 service: datadog_configuration[:service_name]
               )
+              test_session&.total_tests_count = ::RSpec.world.example_count
 
               test_module = test_visibility_component.start_test_module(Ext::FRAMEWORK)
 

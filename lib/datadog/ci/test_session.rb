@@ -12,6 +12,8 @@ module Datadog
     #
     # @public_api
     class TestSession < ConcurrentSpan
+      attr_accessor :total_tests_count
+
       # Finishes the current test session.
       # @return [void]
       def finish
