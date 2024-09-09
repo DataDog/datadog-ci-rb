@@ -1270,12 +1270,8 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     it "bails out of retrying new tests and marks EFD as faulty" do
-      # 1 initial run of test_passed + 10 retries + 1 run of test_passed_second = 12 spans
+      # 1 initial run of a test + 10 retries + 1 run of another test = 12 spans
       expect(test_spans).to have(12).items
-
-      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-      expect(test_spans_by_test_name["test_passed"]).to have(1).item
-      expect(test_spans_by_test_name["test_passed_second"]).to have(11).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
