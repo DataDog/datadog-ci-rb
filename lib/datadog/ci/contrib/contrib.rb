@@ -5,6 +5,34 @@ require_relative "integration"
 module Datadog
   module CI
     module Contrib
+      def self.auto_instrument!
+        p "auto_instrument!"
+        Datadog.logger.debug("Auto instrumenting all integrations...")
+
+        Integration.registry.each do |name, integration|
+          next unless integration.auto_instrument?
+
+          p name
+
+          Datadog.logger.debug "#{name} is allowed to be auto instrumented"
+
+          patch_results = integration.patch
+          if patch_results == true
+            Datadog.logger.debug("#{name} is patched")
+          else
+            Datadog.logger.debug("#{name} is not patched (#{patch_results})")
+
+            integration.requires.each do |require_path|
+              Datadog.logger.debug("Registering on require hook for #{require_path}...")
+
+              ::Kernel.on_require(require_path) do
+                integration.configure_datadog
+              end
+            end
+          end
+        end
+      end
+
       # This method auto instruments all test libraries (ex: selenium-webdriver).
       # It is intended to be called when test session starts to add additional capabilities to test visibility.
       #

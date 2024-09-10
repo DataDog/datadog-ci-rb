@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+
+rubyopts = [
+  "-rdatadog/ci/auto_instrument"
+]
+
+existing_rubyopt = ENV["RUBYOPT"]
+
+ENV["RUBYOPT"] = existing_rubyopt ? "#{existing_rubyopt} #{rubyopts.join(" ")}" : rubyopts.join(" ")
+
+p ENV["RUBYOPT"]
+p ARGV
+
+::Kernel.exec(*ARGV)

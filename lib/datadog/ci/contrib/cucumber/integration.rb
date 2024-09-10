@@ -28,9 +28,19 @@ module Datadog
             super && version >= MINIMUM_VERSION
           end
 
-          # test environments should not auto instrument test libraries
+          def requires
+            ["cucumber"]
+          end
+
           def auto_instrument?
-            false
+            true
+          end
+
+          def configure_datadog
+            Datadog.configure do |c|
+              c.tracing.enabled = true
+              c.instrument :cucumber
+            end
           end
 
           def new_configuration

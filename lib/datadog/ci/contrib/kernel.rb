@@ -1,0 +1,44 @@
+module Datadog
+  module CI
+    module Contrib
+      module Kernel
+        def require(name)
+          just_loaded = super
+
+          @@dd_instance.require(name) if just_loaded
+
+          just_loaded
+        end
+
+        def on_require(gem, &block)
+          @@dd_instance.on_require(gem, &block)
+        end
+
+        class Instance
+          def initialize
+            @on_require = {}
+          end
+
+          def require(name)
+            if @on_require.include?(name)
+              p "Gem '#{name}' loaded. Invoking callback."
+              Datadog.logger.debug { "Gem '#{name}' loaded. Invoking callback." }
+
+              @on_require[name].call
+            end
+          rescue => e
+            Datadog.logger.debug do
+              "Failed to execute callback for gem '#{name}': #{e.class.name} #{e.message} at #{Array(e.backtrace).join("\n")}"
+            end
+          end
+
+          def on_require(gem, &block)
+            @on_require[gem] = block
+          end
+        end
+
+        @@dd_instance = Instance.new
+      end
+    end
+  end
+end

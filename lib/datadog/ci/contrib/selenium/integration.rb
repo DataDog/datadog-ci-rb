@@ -31,7 +31,7 @@ module Datadog
 
           # additional instrumentations for test helpers are auto instrumented on test session start
           def auto_instrument?
-            true
+            false
           end
 
           def new_configuration
