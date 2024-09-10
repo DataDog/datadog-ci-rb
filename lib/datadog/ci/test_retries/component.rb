@@ -61,6 +61,10 @@ module Datadog
 
           # configure retrying new tests
           @retry_new_tests_duration_thresholds = library_settings.slow_test_retries
+          Datadog.logger.debug do
+            "Slow test retries thresholds: #{@retry_new_tests_duration_thresholds}"
+          end
+
           @retry_new_tests_unique_tests_set = @unique_tests_client.fetch_unique_tests(test_session)
 
           percentage_limit = library_settings.faulty_session_threshold
@@ -72,6 +76,7 @@ module Datadog
 
             tests_count = DEFAULT_TOTAL_TESTS_COUNT
           end
+
           @retry_new_tests_total_limit = (tests_count * percentage_limit / 100.0).ceil
           Datadog.logger.debug do
             "Retry new tests total limit is [#{@retry_new_tests_total_limit}] (#{percentage_limit}%) of #{tests_count}"
@@ -81,13 +86,15 @@ module Datadog
             @retry_new_tests_enabled = false
             mark_test_session_faulty(test_session)
 
-            Datadog.logger.debug("Unique tests set is empty, retrying new tests disabled")
-          else
-            Utils::Telemetry.distribution(
-              Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
-              @retry_new_tests_unique_tests_set.size.to_f
+            Datadog.logger.warn(
+              "Disabling early flake detection because there is no known tests (possible reason: no test runs in default branch)"
             )
           end
+
+          Utils::Telemetry.distribution(
+            Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
+            @retry_new_tests_unique_tests_set.size.to_f
+          )
         end
 
         def with_retries(&block)
@@ -105,12 +112,16 @@ module Datadog
         def build_strategy(test_span)
           @mutex.synchronize do
             if should_retry_new_test?(test_span)
-              Datadog.logger.debug("New test retry starts")
+              Datadog.logger.debug do
+                "#{test_span.name} is new, will be retried"
+              end
               @retry_new_tests_count += 1
 
               Strategy::RetryNew.new(test_span, duration_thresholds: @retry_new_tests_duration_thresholds)
             elsif should_retry_failed_test?(test_span)
-              Datadog.logger.debug("Failed test retry starts")
+              Datadog.logger.debug do
+                "#{test_span.name} failed, will be retried"
+              end
               @retry_failed_tests_count += 1
 
               Strategy::RetryFailed.new(max_attempts: @retry_failed_tests_max_attempts)
@@ -146,6 +157,9 @@ module Datadog
 
         def should_retry_failed_test?(test_span)
           if @retry_failed_tests_count >= @retry_failed_tests_total_limit
+            Datadog.logger.debug do
+              "Retry failed tests limit reached: [#{@retry_failed_tests_count}] out of [#{@retry_new_tests_total_limit}]"
+            end
             @retry_failed_tests_enabled = false
           end
 
@@ -171,7 +185,15 @@ module Datadog
         def is_new_test?(test_span)
           test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)
 
-          !@retry_new_tests_unique_tests_set.include?(test_id)
+          result = !@retry_new_tests_unique_tests_set.include?(test_id)
+
+          if result
+            Datadog.logger.debug do
+              "#{test_id} is found in the unique tests set"
+            end
+          end
+
+          result
         end
 
         def mark_test_session_faulty(test_session)

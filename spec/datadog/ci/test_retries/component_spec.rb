@@ -106,6 +106,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
           expect(component.retry_new_tests_enabled).to be false
           expect(test_session.get_tag("test.early_flake.abort_reason")).to eq("faulty")
         end
+
+        it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 0
       end
 
       context "when unique tests set is not empty" do
