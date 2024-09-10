@@ -51,6 +51,10 @@ module Datadog
               return super unless test_span
 
               finish_with_result(test_span, result_code)
+
+              # remove failures if test passed at least once on retries
+              self.failures = [] if test_span.any_retry_passed?
+
               if Helpers.parallel?(self.class)
                 finish_with_result(test_span.test_suite, result_code)
               end
