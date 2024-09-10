@@ -106,6 +106,8 @@ module Datadog
 
         TAG_IS_RETRY: "is_retry"
 
+        TAG_IS_NEW: "is_new"
+
         TAG_LIBRARY: "library"
 
         TAG_ENDPOINT: "endpoint"
@@ -127,6 +129,8 @@ module Datadog
         TAG_ITR_SKIP_ENABLED: "itrskip_enabled"
 
         TAG_EARLY_FLAKE_DETECTION_ENABLED: "early_flake_detection_enabled"
+
+        TAG_EARLY_FLAKE_DETECTION_ABORT_REASON: "early_flake_detection_abort_reason"
 
         TAG_PROVIDER: "provider"
 

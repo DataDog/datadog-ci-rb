@@ -23,7 +23,8 @@ module Datadog
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s
                 },
-                service: datadog_configuration[:service_name]
+                service: datadog_configuration[:service_name],
+                total_tests_count: ::RSpec.world.example_count
               )
 
               test_module = test_visibility_component.start_test_module(Ext::FRAMEWORK)

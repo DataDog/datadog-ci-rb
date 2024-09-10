@@ -18,7 +18,8 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
           type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION,
           tags: {
             Datadog::CI::Ext::Test::TAG_FRAMEWORK => "rspec",
-            Datadog::CI::Ext::Environment::TAG_PROVIDER_NAME => "gha"
+            Datadog::CI::Ext::Environment::TAG_PROVIDER_NAME => "gha",
+            Datadog::CI::Ext::Test::TAG_EARLY_FLAKE_ENABLED => "true"
           }
         )
       end
@@ -27,6 +28,31 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
         {
           Datadog::CI::Ext::Telemetry::TAG_EVENT_TYPE => Datadog::CI::Ext::Telemetry::EventType::SESSION,
           Datadog::CI::Ext::Telemetry::TAG_TEST_FRAMEWORK => "rspec"
+        }
+      end
+
+      it { event_created }
+    end
+
+    context "test session span with faulty EFD" do
+      let(:span) do
+        Datadog::Tracing::SpanOperation.new(
+          "test_session",
+          type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION,
+          tags: {
+            Datadog::CI::Ext::Test::TAG_FRAMEWORK => "rspec",
+            Datadog::CI::Ext::Environment::TAG_PROVIDER_NAME => "gha",
+            Datadog::CI::Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON => "faulty",
+            Datadog::CI::Ext::Test::TAG_EARLY_FLAKE_ENABLED => "true"
+          }
+        )
+      end
+
+      let(:expected_tags) do
+        {
+          Datadog::CI::Ext::Telemetry::TAG_EVENT_TYPE => Datadog::CI::Ext::Telemetry::EventType::SESSION,
+          Datadog::CI::Ext::Telemetry::TAG_TEST_FRAMEWORK => "rspec",
+          Datadog::CI::Ext::Telemetry::TAG_EARLY_FLAKE_DETECTION_ABORT_REASON => "faulty"
         }
       end
 
@@ -159,7 +185,7 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
     context "test suite span" do
       let(:span) do
         Datadog::Tracing::SpanOperation.new(
-          "test_session",
+          "test_suite",
           type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE,
           tags: {
             Datadog::CI::Ext::Test::TAG_FRAMEWORK => "rspec",
@@ -181,7 +207,7 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
     context "test span with codeowners" do
       let(:span) do
         Datadog::Tracing::SpanOperation.new(
-          "test_session",
+          "test",
           type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
           tags: {
             Datadog::CI::Ext::Test::TAG_FRAMEWORK => "rspec",
@@ -206,10 +232,10 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
       it { event_finished }
     end
 
-    context "test span with retry" do
+    context "test span with retry and new test" do
       let(:span) do
         Datadog::Tracing::SpanOperation.new(
-          "test_session",
+          "test",
           type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
           tags: {
             Datadog::CI::Ext::Test::TAG_FRAMEWORK => "rspec",
@@ -217,7 +243,8 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
             Datadog::CI::Ext::Test::TAG_CODEOWNERS => "@owner",
             Datadog::CI::Ext::Test::TAG_IS_RUM_ACTIVE => "true",
             Datadog::CI::Ext::Test::TAG_BROWSER_DRIVER => "selenium",
-            Datadog::CI::Ext::Test::TAG_IS_RETRY => "true"
+            Datadog::CI::Ext::Test::TAG_IS_RETRY => "true",
+            Datadog::CI::Ext::Test::TAG_IS_NEW => "true"
           }
         )
       end
@@ -229,7 +256,8 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
           Datadog::CI::Ext::Telemetry::TAG_HAS_CODEOWNER => "true",
           Datadog::CI::Ext::Telemetry::TAG_IS_RUM => "true",
           Datadog::CI::Ext::Telemetry::TAG_BROWSER_DRIVER => "selenium",
-          Datadog::CI::Ext::Telemetry::TAG_IS_RETRY => "true"
+          Datadog::CI::Ext::Telemetry::TAG_IS_RETRY => "true",
+          Datadog::CI::Ext::Telemetry::TAG_IS_NEW => "true"
         }
       end
 

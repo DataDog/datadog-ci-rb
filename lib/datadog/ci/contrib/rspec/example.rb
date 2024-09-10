@@ -64,9 +64,9 @@ module Datadog
 
                   result = super
 
-                  # In case when test job is canceled and RSpec is quitting we don't want to report the last test
+                  # When test job is canceled and RSpec is quitting we don't want to report the last test
                   # before RSpec context unwinds. This test might have some unrelated errors that we don't want to
-                  # report.
+                  # see in Datadog.
                   return result if ::RSpec.world.wants_to_quit
 
                   case execution_result.status
@@ -74,6 +74,8 @@ module Datadog
                     test_span&.passed!
                   when :failed
                     test_span&.failed!(exception: execution_result.exception)
+                    # if any of the retries passed, we don't fail the test run
+                    @exception = nil if test_span&.any_retry_passed?
                   else
                     # :pending or nil
                     test_span&.skipped!(
@@ -84,21 +86,20 @@ module Datadog
                 end
               end
 
-              # after retries are done, we can report the test to RSpec
-              @skip_reporting = false
-
               # this is a special case for ci-queue, we need to finish the test suite span
               ci_queue_test_span&.finish
 
-              # Finish spec with latest retry's result
-              # TODO: when implementing new test retries make sure to clean @exception before calling this method
-              # if test passed at least once
+              # after retries are done, we can finally report the test to RSpec
+              @skip_reporting = false
               finish(reporter)
             end
 
             def finish(reporter)
-              # by default finish test but do not report it to RSpec::Core::Reporter
-              # it is going to be reported once after retries are done
+              # By default finish test but do not report it to RSpec::Core::Reporter
+              # it is going to be reported once after retries are done.
+              #
+              # We need to do this because RSpec breaks when we try to report the same example multiple times with different
+              # results.
               return super unless @skip_reporting
 
               super(::RSpec::Core::NullReporter)

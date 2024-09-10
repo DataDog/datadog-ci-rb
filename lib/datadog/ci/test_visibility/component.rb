@@ -19,8 +19,6 @@ module Datadog
       class Component
         attr_reader :test_suite_level_visibility_enabled
 
-        FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY = :__dd_test_finished_callback
-
         def initialize(
           test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse
@@ -30,10 +28,12 @@ module Datadog
           @codeowners = codeowners
         end
 
-        def start_test_session(service: nil, tags: {})
+        def start_test_session(service: nil, tags: {}, total_tests_count: 0)
           return skip_tracing unless test_suite_level_visibility_enabled
 
           test_session = @context.start_test_session(service: service, tags: tags)
+          test_session.total_tests_count = total_tests_count
+
           on_test_session_started(test_session)
           test_session
         end
@@ -57,6 +57,8 @@ module Datadog
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
           if block
             @context.trace_test(test_name, test_suite_name, service: service, tags: tags) do |test|
+              subscribe_to_after_stop_event(test.tracer_span)
+
               on_test_started(test)
               res = block.call(test)
               on_test_finished(test)
@@ -64,6 +66,7 @@ module Datadog
             end
           else
             test = @context.trace_test(test_name, test_suite_name, service: service, tags: tags)
+            subscribe_to_after_stop_event(test.tracer_span)
             on_test_started(test)
             test
           end
@@ -125,15 +128,6 @@ module Datadog
           on_test_suite_finished(test_suite) if test_suite
 
           @context.deactivate_test_suite(test_suite_name)
-        end
-
-        # sets fiber-local callback to be called when test is finished
-        def set_test_finished_callback(callback)
-          Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY] = callback
-        end
-
-        def remove_test_finished_callback
-          Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY] = nil
         end
 
         def itr_enabled?
@@ -204,12 +198,24 @@ module Datadog
 
           Telemetry.event_finished(test)
 
-          Thread.current[FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY]&.call(test)
+          test_retries.record_test_finished(test)
+        end
+
+        def on_after_test_span_finished(tracer_span)
+          test_retries.record_test_span_duration(tracer_span)
         end
 
         # HELPERS
         def skip_tracing(block = nil)
           block&.call(nil)
+        end
+
+        def subscribe_to_after_stop_event(tracer_span)
+          events = tracer_span.send(:events)
+
+          events.after_stop.subscribe do |span|
+            on_after_test_span_finished(span)
+          end
         end
 
         def set_codeowners(test)
@@ -265,6 +271,10 @@ module Datadog
 
         def test_optimisation
           Datadog.send(:components).test_optimisation
+        end
+
+        def test_retries
+          Datadog.send(:components).test_retries
         end
 
         def git_tree_upload_worker

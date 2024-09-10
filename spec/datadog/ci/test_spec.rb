@@ -169,9 +169,9 @@ RSpec.describe Datadog::CI::Test do
   describe "#passed!" do
     before do
       allow(ci_test).to receive(:test_suite).and_return(test_suite)
-      expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
-      expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
-      expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+      allow(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+      allow(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+      allow(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
     end
 
     context "when test suite is set" do
@@ -216,9 +216,9 @@ RSpec.describe Datadog::CI::Test do
   describe "#skipped!" do
     before do
       allow(ci_test).to receive(:test_suite).and_return(test_suite)
-      expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
-      expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
-      expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+      allow(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+      allow(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+      allow(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
     end
 
     context "when test suite is set" do
@@ -264,9 +264,9 @@ RSpec.describe Datadog::CI::Test do
     before do
       allow(ci_test).to receive(:test_suite).and_return(test_suite)
 
-      expect(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
-      expect(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
-      expect(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+      allow(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+      allow(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+      allow(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
     end
 
     context "when test suite is set" do

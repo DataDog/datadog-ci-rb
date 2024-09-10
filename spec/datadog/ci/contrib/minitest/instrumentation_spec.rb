@@ -1190,4 +1190,165 @@ RSpec.describe "Minitest instrumentation" do
       expect(test_session_span).to have_fail_status
     end
   end
+
+  context "with one new test and new test retries enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:unique_tests_set) { Set.new(["TestSuiteWithNewTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_passed."]) }
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class TestSuiteWithNewTest < Minitest::Test
+        def test_passed
+          assert true
+        end
+
+        def test_passed_second
+          assert true
+        end
+      end
+    end
+
+    it "retries new test" do
+      # 1 initial run of test_passed + 1 run of test_passed_second + 10 retries = 12 spans
+      expect(test_spans).to have(12).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["test_passed"]).to have(1).item
+      expect(test_spans_by_test_name["test_passed_second"]).to have(11).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(10)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(11)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+      expect(test_session_span).to_not have_test_tag(:early_flake_abort_reason)
+    end
+  end
+
+  context "when all tests are new" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:unique_tests_set) { Set.new(["TestSuiteWithNewTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.no_such_test."]) }
+      let(:faulty_session_threshold) { 10 }
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class TestSuiteWithFaultyEFDTest < Minitest::Test
+        def test_passed
+          assert true
+        end
+
+        def test_passed_second
+          assert true
+        end
+      end
+    end
+
+    it "bails out of retrying new tests and marks EFD as faulty" do
+      # 1 initial run of a test + 10 retries + 1 run of another test = 12 spans
+      expect(test_spans).to have(12).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(10)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(11)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+      expect(test_session_span).to have_test_tag(:early_flake_abort_reason, "faulty")
+    end
+  end
+
+  context "with new test retries enabled and there is a test that fails once on the last retry" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:unique_tests_set) { Set.new(["FlakyTestThatFailsOnceSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_passed."]) }
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class FlakyTestThatFailsOnceSuite < Minitest::Test
+        @@max_flaky_test_passes = 10
+        @@flaky_test_passes = 0
+
+        def test_passed
+          assert true
+        end
+
+        def test_flaky
+          if @@flaky_test_passes < @@max_flaky_test_passes
+            @@flaky_test_passes += 1
+            assert 1 + 1 == 2
+          else
+            assert 1 + 1 == 3
+          end
+        end
+      end
+    end
+
+    it "does not fail the build" do
+      # 1 initial run of new test + 10 retries + 1 passing test = 12 spans
+      expect(test_spans).to have(12).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(1).items
+      expect(passed_spans).to have(11).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["test_flaky"]).to have(11).item
+      expect(test_spans_by_test_name["test_passed"]).to have(1).item
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(10)
+
+      # count how many tests were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(11)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+    end
+  end
 end

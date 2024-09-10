@@ -7,8 +7,6 @@ module Datadog
         @codeowners: Datadog::CI::Codeowners::Matcher
         @context: Datadog::CI::TestVisibility::Context
 
-        FIBER_LOCAL_TEST_FINISHED_CALLBACK_KEY: Symbol
-
         attr_reader test_suite_level_visibility_enabled: bool
 
         def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher) -> void
@@ -17,7 +15,7 @@ module Datadog
 
         def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession
+        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped], ?total_tests_count: Integer) -> Datadog::CI::TestSession
 
         def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestModule
 
@@ -40,10 +38,6 @@ module Datadog
         def deactivate_test_module: () -> void
 
         def deactivate_test_suite: (String test_suite_name) -> void
-
-        def set_test_finished_callback: (Proc callback) -> void
-
-        def remove_test_finished_callback: () -> void
 
         def itr_enabled?: () -> bool
 
@@ -79,7 +73,13 @@ module Datadog
 
         def on_test_finished: (Datadog::CI::Test test) -> void
 
+        def on_after_test_span_finished: (Datadog::Tracing::SpanOperation span) -> void
+
+        def subscribe_to_after_stop_event: (Datadog::Tracing::SpanOperation span) -> void
+
         def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
+
+        def test_retries: () -> Datadog::CI::TestRetries::Component
 
         def git_tree_upload_worker: () -> Datadog::CI::Worker
 

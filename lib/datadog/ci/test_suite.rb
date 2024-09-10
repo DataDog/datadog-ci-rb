@@ -52,6 +52,14 @@ module Datadog
       end
 
       # @internal
+      def any_test_retry_passed?(test_id)
+        synchronize do
+          stats = @execution_stats_per_test[test_id]
+          stats && stats[Ext::Test::Status::PASS] > 0
+        end
+      end
+
+      # @internal
       def test_executed?(test_id)
         synchronize do
           @execution_stats_per_test.key?(test_id)
