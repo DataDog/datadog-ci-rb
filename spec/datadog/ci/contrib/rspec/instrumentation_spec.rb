@@ -1244,6 +1244,9 @@ RSpec.describe "RSpec hooks" do
 
       let(:early_flake_detection_enabled) { true }
       let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
     end
 
     it "retries the new test 10 times" do
@@ -1270,6 +1273,50 @@ RSpec.describe "RSpec hooks" do
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+    end
+  end
+
+  context "session with early flake detection and ITR enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:faulty_session_threshold) { 30 }
+      let(:unique_tests_set) do
+        Set.new(
+          [
+            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."
+          ]
+        )
+      end
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      let(:tests_skipping_enabled) { true }
+      let(:itr_skippable_tests) do
+        Set.new([
+          'SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{"arguments":{},"metadata":{"scoped_id":"1:1:1"}}'
+        ])
+      end
+    end
+
+    it "retries first test only and then bails out of retrying new tests" do
+      rspec_session_run
+
+      # 1 test skipped by ITR
+      expect(test_spans).to have(1).items
+      test_span = test_spans.first
+
+      expect(test_span).to have_skip_status
+      expect(test_span).not_to have_test_tag(:is_retry)
+      # skipped test is not marked as new
+      expect(test_span).not_to have_test_tag(:is_new)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_skip_status
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")

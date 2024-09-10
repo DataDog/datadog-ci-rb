@@ -161,7 +161,7 @@ module Datadog
             mark_test_session_faulty(Datadog::CI.active_test_session)
           end
 
-          @retry_new_tests_enabled && is_new_test?(test_span)
+          @retry_new_tests_enabled && !test_span.skipped? && is_new_test?(test_span)
         end
 
         def test_visibility_component
