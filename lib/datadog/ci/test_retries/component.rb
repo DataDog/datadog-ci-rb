@@ -62,7 +62,7 @@ module Datadog
           # configure retrying new tests
           @retry_new_tests_duration_thresholds = library_settings.slow_test_retries
           Datadog.logger.debug do
-            "Slow test retries thresholds: #{@retry_new_tests_duration_thresholds}"
+            "Slow test retries thresholds: #{@retry_new_tests_duration_thresholds.entries}"
           end
 
           @retry_new_tests_unique_tests_set = @unique_tests_client.fetch_unique_tests(test_session)
@@ -91,6 +91,9 @@ module Datadog
             )
           end
 
+          Datadog.logger.debug do
+            "Found [#{@retry_new_tests_unique_tests_set.size}] known unique tests"
+          end
           Utils::Telemetry.distribution(
             Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
             @retry_new_tests_unique_tests_set.size.to_f
@@ -189,7 +192,7 @@ module Datadog
 
           if result
             Datadog.logger.debug do
-              "#{test_id} is found in the unique tests set"
+              "#{test_id} is not found in the unique tests set, it is a new test"
             end
           end
 
