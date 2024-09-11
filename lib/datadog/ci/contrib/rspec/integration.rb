@@ -22,7 +22,9 @@ module Datadog
 
           def self.loaded?
             !defined?(::RSpec).nil? && !defined?(::RSpec::Core).nil? &&
-              !defined?(::RSpec::Core::Example).nil?
+              !defined?(::RSpec::Core::Example).nil? &&
+              !defined?(::RSpec::Core::Runner).nil? &&
+              !defined?(::RSpec::Core::ExampleGroup).nil?
           end
 
           def self.compatible?
@@ -30,7 +32,7 @@ module Datadog
           end
 
           def requires
-            ["rspec/core"]
+            ["rspec"]
           end
 
           # TODO: rename the following 2 methods: the difference is not about auto or on session start:

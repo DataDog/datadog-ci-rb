@@ -21,7 +21,8 @@ module Datadog
           end
 
           def self.loaded?
-            !defined?(::Minitest).nil?
+            !defined?(::Minitest).nil? && !defined?(::Minitest::Runnable).nil? && !defined?(::Minitest::Test).nil? &&
+              !defined?(::Minitest::CompositeReporter).nil?
           end
 
           def self.compatible?

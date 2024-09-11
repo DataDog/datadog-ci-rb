@@ -21,7 +21,7 @@ module Datadog
           end
 
           def self.loaded?
-            !defined?(::Cucumber).nil? && !defined?(::Cucumber::Runtime).nil?
+            !defined?(::Cucumber).nil? && !defined?(::Cucumber::Runtime).nil? && !defined?(::Cucumber::Configuration).nil?
           end
 
           def self.compatible?

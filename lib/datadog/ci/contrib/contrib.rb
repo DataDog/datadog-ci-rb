@@ -23,12 +23,16 @@ module Datadog
             integration.requires.each do |require_path|
               Datadog.logger.debug("Registering on require hook for #{require_path}...")
 
-              ::Kernel.on_require(require_path) do
+              ::Datadog::CI::Contrib.on_require(require_path) do
                 configure_ci_with_framework(name)
               end
+
+              ::Datadog::CI::Contrib.register(require_path, integration)
             end
           end
         end
+
+        Datadog::CI::Contrib.enable_trace_requires
       end
 
       def self.configure_ci_with_framework(framework)
