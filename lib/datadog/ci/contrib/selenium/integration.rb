@@ -29,9 +29,13 @@ module Datadog
             super && version >= MINIMUM_VERSION
           end
 
-          # additional instrumentations for test helpers are auto instrumented on test session start
           def auto_instrument?
             false
+          end
+
+          # additional instrumentations for test helpers are instrumented on test session start
+          def instrument_on_session_start?
+            true
           end
 
           def new_configuration

@@ -40,7 +40,6 @@ RSpec.describe "gem release process" do
             |\.circleci
             |\.github
             |\.vscode
-            | bin
             |gemfiles
             |integration
             |tasks

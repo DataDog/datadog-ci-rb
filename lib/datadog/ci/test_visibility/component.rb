@@ -146,7 +146,7 @@ module Datadog
           git_tree_upload_worker.perform(test_session.git_repository_url)
 
           # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
-          Contrib.auto_instrument_on_session_start!
+          Contrib.instrument_on_session_start!
 
           # sends internal telemetry events
           Telemetry.test_session_started(test_session)

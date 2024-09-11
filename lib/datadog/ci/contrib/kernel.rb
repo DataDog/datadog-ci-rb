@@ -21,7 +21,6 @@ module Datadog
 
           def require(name)
             if @on_require.include?(name)
-              p "Gem '#{name}' loaded. Invoking callback."
               Datadog.logger.debug { "Gem '#{name}' loaded. Invoking callback." }
 
               @on_require[name].call

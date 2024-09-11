@@ -38,6 +38,10 @@ class FakeIntegration
     false
   end
 
+  def instrument_on_session_start?
+    false
+  end
+
   def patcher
     Patcher
   end

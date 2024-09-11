@@ -30,18 +30,17 @@ module Datadog
           end
 
           def requires
-            ["rspec"]
+            ["rspec/core"]
           end
 
+          # TODO: rename the following 2 methods: the difference is not about auto or on session start:
+          # the difference is that the first one is for test frameworks, the second one is for additional libraries
           def auto_instrument?
             true
           end
 
-          def configure_datadog
-            Datadog.configure do |c|
-              c.tracing.enabled = true
-              c.instrument :rspec
-            end
+          def instrument_on_session_start?
+            false
           end
 
           def new_configuration

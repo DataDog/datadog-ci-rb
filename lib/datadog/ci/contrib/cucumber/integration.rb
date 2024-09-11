@@ -36,11 +36,8 @@ module Datadog
             true
           end
 
-          def configure_datadog
-            Datadog.configure do |c|
-              c.tracing.enabled = true
-              c.instrument :cucumber
-            end
+          def instrument_on_session_start?
+            false
           end
 
           def new_configuration

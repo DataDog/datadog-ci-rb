@@ -57,7 +57,7 @@ RSpec.describe Datadog::CI::Contrib::Cucumber::Integration do
   describe "#auto_instrument?" do
     subject(:auto_instrument?) { integration.auto_instrument? }
 
-    it { is_expected.to be(false) }
+    it { is_expected.to be(true) }
   end
 
   describe "#configuration" do
