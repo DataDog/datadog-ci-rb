@@ -5,6 +5,8 @@ require_relative "integration"
 module Datadog
   module CI
     module Contrib
+      @@auto_instrumented_integrations = {}
+
       def self.auto_instrument!
         Datadog.logger.debug("Auto instrumenting all integrations...")
 
@@ -20,19 +22,42 @@ module Datadog
           else
             Datadog.logger.debug("#{name} is not loaded yet")
 
-            integration.requires.each do |require_path|
-              Datadog.logger.debug("Registering on require hook for #{require_path}...")
+            Datadog.logger.debug("Registering on require hook for #{name}...")
 
-              ::Datadog::CI::Contrib.on_require(require_path) do
-                configure_ci_with_framework(name)
-              end
-
-              ::Datadog::CI::Contrib.register(require_path, integration)
-            end
+            @@auto_instrumented_integrations[name] = integration
           end
         end
 
-        Datadog::CI::Contrib.enable_trace_requires
+        enable_trace_requires
+      end
+
+      def self.enable_trace_requires
+        @@trp = TracePoint.new(:script_compiled) do |tp|
+          on_require(tp.instruction_sequence.path)
+        end
+
+        @@trp.enable
+      end
+
+      def self.disable_trace_requires
+        @@trp.disable
+      end
+
+      def self.on_require(path)
+        Datadog.logger.debug { "Path: #{path}" }
+        @@auto_instrumented_integrations.each do |gem_name, integration|
+          if path.include?(gem_name.to_s) && integration.class.loaded?
+            Datadog.logger.debug { "Gem '#{gem_name}' loaded. Configuring integration." }
+
+            Contrib.disable_trace_requires
+
+            configure_ci_with_framework(gem_name)
+          end
+        end
+      rescue => e
+        Datadog.logger.debug do
+          "Failed to execute callback for gem: #{e.class.name} #{e.message} at #{Array(e.backtrace).join("\n")}"
+        end
       end
 
       def self.configure_ci_with_framework(framework)

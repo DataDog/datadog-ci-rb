@@ -31,10 +31,6 @@ module Datadog
             super && version >= MINIMUM_VERSION
           end
 
-          def requires
-            ["rspec"]
-          end
-
           # TODO: rename the following 2 methods: the difference is not about auto or on session start:
           # the difference is that the first one is for test frameworks, the second one is for additional libraries
           def auto_instrument?

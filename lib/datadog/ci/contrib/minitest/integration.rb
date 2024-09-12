@@ -29,10 +29,6 @@ module Datadog
             super && version >= MINIMUM_VERSION
           end
 
-          def requires
-            ["minitest"]
-          end
-
           def auto_instrument?
             true
           end
