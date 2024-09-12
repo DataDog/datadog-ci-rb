@@ -66,15 +66,19 @@ module Datadog
         end
 
         def configure(remote_configuration, test_session)
-          ::Coverage.start(lines: true)
-          ::Coverage.suspend
-          @enabled = true
+          @covered_files = Set.new
+          @trace = TracePoint.new(:line) do |tp|
+            next unless tp.path.start_with?(Git::LocalRepository.root)
+            @covered_files.add(tp.path)
+          end
+
+          @enabled = false
           return unless enabled?
 
           Datadog.logger.debug("Configuring TestOptimisation with remote configuration: #{remote_configuration}")
 
           @enabled = remote_configuration.itr_enabled?
-          @enabled = true
+          @enabled = false
           @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
           @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled?
 
@@ -105,7 +109,7 @@ module Datadog
         end
 
         def start_coverage(test)
-          ::Coverage.resume
+          @trace.enable
           return if !enabled? || !code_coverage?
 
           Telemetry.code_coverage_started(test)
@@ -113,14 +117,12 @@ module Datadog
         end
 
         def stop_coverage(test)
-          ::Coverage.suspend
+          @trace.disable
 
-          coverage_hash = ::Coverage.result(clear: true, stop: false)
-          # we need to filter out files that have no lines that were executed
-          impacted_files = coverage_hash.filter do |_path, coverage|
-            coverage[:lines].any? { |execution_count| !execution_count.nil? && execution_count > 0 }
-          end.keys
-          p impacted_files
+          result = @covered_files
+          @covered_files = Set.new
+          # p result
+          # result
 
           return if !enabled? || !code_coverage?
 
