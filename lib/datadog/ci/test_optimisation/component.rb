@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "pp"
+require "coverage"
 
 require "datadog/core/utils/forking"
 
@@ -65,13 +66,19 @@ module Datadog
         end
 
         def configure(remote_configuration, test_session)
+          ::Coverage.start(lines: true)
+          ::Coverage.suspend
+          @enabled = true
           return unless enabled?
 
           Datadog.logger.debug("Configuring TestOptimisation with remote configuration: #{remote_configuration}")
 
           @enabled = remote_configuration.itr_enabled?
+          @enabled = true
           @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
           @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled?
+
+          @code_coverage_enabled = true
 
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
           test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
@@ -98,6 +105,7 @@ module Datadog
         end
 
         def start_coverage(test)
+          ::Coverage.resume
           return if !enabled? || !code_coverage?
 
           Telemetry.code_coverage_started(test)
@@ -105,6 +113,15 @@ module Datadog
         end
 
         def stop_coverage(test)
+          ::Coverage.suspend
+
+          coverage_hash = ::Coverage.result(clear: true, stop: false)
+          # we need to filter out files that have no lines that were executed
+          impacted_files = coverage_hash.filter do |_path, coverage|
+            coverage[:lines].any? { |execution_count| !execution_count.nil? && execution_count > 0 }
+          end.keys
+          p impacted_files
+
           return if !enabled? || !code_coverage?
 
           Telemetry.code_coverage_finished(test)
@@ -125,6 +142,8 @@ module Datadog
           ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
 
           Telemetry.code_coverage_files(coverage.size)
+
+          p coverage
 
           event = Coverage::Event.new(
             test_id: test.id.to_s,
