@@ -40,6 +40,12 @@ module Datadog
           def mark_test_session_faulty: (Datadog::CI::TestSession? test_session) -> void
 
           def is_new_test?: (Datadog::CI::Test test_span) -> bool
+
+          def set_max_attempts_thresholds: (Datadog::CI::Remote::LibrarySettings) -> void
+
+          def calculate_total_retries_limit: (Datadog::CI::Remote::LibrarySettings, Datadog::CI::TestSession) -> void
+
+          def fetch_known_unique_tests: (Datadog::CI::TestSession) -> void
         end
       end
     end

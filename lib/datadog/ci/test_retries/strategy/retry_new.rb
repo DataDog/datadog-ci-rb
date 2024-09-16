@@ -48,46 +48,9 @@ module Datadog
             # mark early flake detection enabled for test session
             test_session.set_tag(Ext::Test::TAG_EARLY_FLAKE_ENABLED, "true")
 
-            # parse the max attempts threshlods for each test duration
-            @max_attempts_thresholds = library_settings.slow_test_retries
-            Datadog.logger.debug do
-              "Slow test retries thresholds: #{@max_attempts_thresholds.entries}"
-            end
-
-            # calculate what would be the total limit of new tests to retry
-            percentage_limit = library_settings.faulty_session_threshold
-            tests_count = test_session.total_tests_count.to_i
-            if tests_count.zero?
-              Datadog.logger.debug do
-                "Total tests count is zero, using default value for the total number of tests: [#{DEFAULT_TOTAL_TESTS_COUNT}]"
-              end
-
-              tests_count = DEFAULT_TOTAL_TESTS_COUNT
-            end
-            @total_limit = (tests_count * percentage_limit / 100.0).ceil
-            Datadog.logger.debug do
-              "Retry new tests total limit is [#{@total_limit}] (#{percentage_limit}%) of #{tests_count}"
-            end
-
-            # fetch a set of known unique tests
-            @unique_tests_set = @unique_tests_client.fetch_unique_tests(test_session)
-            if @unique_tests_set.empty?
-              @enabled = false
-              mark_test_session_faulty(test_session)
-
-              Datadog.logger.warn(
-                "Disabling early flake detection because there are no known tests (possible reason: no test runs in default branch)"
-              )
-            end
-
-            # report how many unique tests were found
-            Datadog.logger.debug do
-              "Found [#{@unique_tests_set.size}] known unique tests"
-            end
-            Utils::Telemetry.distribution(
-              Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
-              @unique_tests_set.size.to_f
-            )
+            set_max_attempts_thresholds(library_settings)
+            calculate_total_retries_limit(library_settings, test_session)
+            fetch_known_unique_tests(test_session)
           end
 
           def build_driver(test_span)
@@ -117,6 +80,50 @@ module Datadog
             end
 
             result
+          end
+
+          def set_max_attempts_thresholds(library_settings)
+            @max_attempts_thresholds = library_settings.slow_test_retries
+            Datadog.logger.debug do
+              "Slow test retries thresholds: #{@max_attempts_thresholds.entries}"
+            end
+          end
+
+          def calculate_total_retries_limit(library_settings, test_session)
+            percentage_limit = library_settings.faulty_session_threshold
+            tests_count = test_session.total_tests_count.to_i
+            if tests_count.zero?
+              Datadog.logger.debug do
+                "Total tests count is zero, using default value for the total number of tests: [#{DEFAULT_TOTAL_TESTS_COUNT}]"
+              end
+
+              tests_count = DEFAULT_TOTAL_TESTS_COUNT
+            end
+            @total_limit = (tests_count * percentage_limit / 100.0).ceil
+            Datadog.logger.debug do
+              "Retry new tests total limit is [#{@total_limit}] (#{percentage_limit}%) of #{tests_count}"
+            end
+          end
+
+          def fetch_known_unique_tests(test_session)
+            @unique_tests_set = @unique_tests_client.fetch_unique_tests(test_session)
+            if @unique_tests_set.empty?
+              @enabled = false
+              mark_test_session_faulty(test_session)
+
+              Datadog.logger.warn(
+                "Disabling early flake detection because there are no known tests (possible reason: no test runs in default branch)"
+              )
+            end
+
+            # report how many unique tests were found
+            Datadog.logger.debug do
+              "Found [#{@unique_tests_set.size}] known unique tests"
+            end
+            Utils::Telemetry.distribution(
+              Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
+              @unique_tests_set.size.to_f
+            )
           end
         end
       end
