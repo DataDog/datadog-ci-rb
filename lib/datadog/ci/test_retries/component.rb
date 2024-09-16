@@ -159,6 +159,8 @@ module Datadog
         end
 
         def should_retry_failed_test?(test_span)
+          return false unless @retry_failed_tests_enabled
+
           if @retry_failed_tests_count >= @retry_failed_tests_total_limit
             Datadog.logger.debug do
               "Retry failed tests limit reached: [#{@retry_failed_tests_count}] out of [#{@retry_new_tests_total_limit}]"
@@ -166,10 +168,12 @@ module Datadog
             @retry_failed_tests_enabled = false
           end
 
-          @retry_failed_tests_enabled && !!test_span&.failed?
+          !!test_span&.failed?
         end
 
         def should_retry_new_test?(test_span)
+          return false unless @retry_new_tests_enabled
+
           if @retry_new_tests_count >= @retry_new_tests_total_limit
             Datadog.logger.debug do
               "Retry new tests limit reached: [#{@retry_new_tests_count}] out of [#{@retry_new_tests_total_limit}]"
@@ -178,7 +182,7 @@ module Datadog
             mark_test_session_faulty(Datadog::CI.active_test_session)
           end
 
-          @retry_new_tests_enabled && !test_span.skipped? && is_new_test?(test_span)
+          !test_span.skipped? && is_new_test?(test_span)
         end
 
         def test_visibility_component
