@@ -1,0 +1,47 @@
+module Datadog
+  module CI
+    module TestRetries
+      module Strategy
+        class RetryNew < Base
+          @enabled: bool
+
+          @unique_tests_set: Set[String]
+
+          @total_limit: Integer
+
+          @retried_count: Integer
+
+          @unique_tests_client: Datadog::CI::TestRetries::UniqueTestsClient
+
+          @max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries
+
+          DEFAULT_TOTAL_TESTS_COUNT: 100
+
+          attr_reader enabled: bool
+
+          attr_reader max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries
+
+          attr_reader unique_tests_set: Set[String]
+
+          attr_reader total_limit: Integer
+
+          attr_reader retried_count: Integer
+
+          def initialize: (enabled: bool, unique_tests_client: Datadog::CI::TestRetries::UniqueTestsClient) -> void
+
+          def covers?: (Datadog::CI::Test test_span) -> bool
+
+          def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
+
+          def build_driver: (Datadog::CI::Test test_span) -> Datadog::CI::TestRetries::Driver::Base
+
+          private
+
+          def mark_test_session_faulty: (Datadog::CI::TestSession? test_session) -> void
+
+          def is_new_test?: (Datadog::CI::Test test_span) -> bool
+        end
+      end
+    end
+  end
+end

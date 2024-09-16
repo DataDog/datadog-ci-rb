@@ -3,12 +3,12 @@ module Datadog
     module TestRetries
       module Driver
         class RetryNew < Base
-          @duration_thresholds: Datadog::CI::Remote::SlowTestRetries
+          @max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries
 
           @attempts: Integer
           @max_attempts: Integer
 
-          def initialize: (Datadog::CI::Test test_span, duration_thresholds: Datadog::CI::Remote::SlowTestRetries) -> void
+          def initialize: (Datadog::CI::Test test_span, max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries) -> void
 
           private
 

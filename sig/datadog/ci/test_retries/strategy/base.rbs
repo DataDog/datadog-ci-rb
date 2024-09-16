@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module TestRetries
+      module Strategy
+        class Base
+          def covers?: (Datadog::CI::Test test_span) -> bool
+
+          def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
+
+          def build_driver: (Datadog::CI::Test test_span) -> Datadog::CI::TestRetries::Driver::Base
+        end
+      end
+    end
+  end
+end

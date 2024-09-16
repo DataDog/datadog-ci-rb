@@ -39,7 +39,6 @@ module Datadog
           @retry_failed_tests_count = 0
 
           @retry_new_tests_enabled = retry_new_tests_enabled
-          @retry_new_tests_duration_thresholds = nil
           @retry_new_tests_unique_tests_set = Set.new
           @unique_tests_client = unique_tests_client
           # total maximum number of new tests to retry (will be set based on the total number of tests in the session)
@@ -120,7 +119,7 @@ module Datadog
               end
               @retry_new_tests_count += 1
 
-              Driver::RetryNew.new(test_span, duration_thresholds: @retry_new_tests_duration_thresholds)
+              Driver::RetryNew.new(test_span, max_attempts_thresholds: @retry_new_tests_duration_thresholds)
             elsif should_retry_failed_test?(test_span)
               Datadog.logger.debug do
                 "#{test_span.name} failed, will be retried"

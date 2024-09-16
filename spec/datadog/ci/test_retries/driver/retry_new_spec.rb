@@ -2,7 +2,7 @@ require_relative "../../../../../lib/datadog/ci/test_retries/driver/retry_new"
 
 RSpec.describe Datadog::CI::TestRetries::Driver::RetryNew do
   let(:max_attempts) { 10 }
-  let(:duration_thresholds) {
+  let(:max_attempts_thresholds) {
     Datadog::CI::Remote::SlowTestRetries.new({
       "5s" => 10,
       "10s" => 5,
@@ -12,7 +12,7 @@ RSpec.describe Datadog::CI::TestRetries::Driver::RetryNew do
   }
   let(:test_span) { double(:test_span, set_tag: true) }
 
-  subject(:driver) { described_class.new(test_span, duration_thresholds: duration_thresholds) }
+  subject(:driver) { described_class.new(test_span, max_attempts_thresholds: max_attempts_thresholds) }
 
   describe "#should_retry?" do
     subject { driver.should_retry? }
