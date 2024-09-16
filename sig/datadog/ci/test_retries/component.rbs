@@ -2,7 +2,7 @@ module Datadog
   module CI
     module TestRetries
       class Component
-        FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY: Symbol
+        FIBER_LOCAL_CURRENT_RETRY_DRIVER_KEY: Symbol
 
         DEFAULT_TOTAL_TESTS_COUNT: 100
 
@@ -36,7 +36,7 @@ module Datadog
 
         def with_retries: () { () -> void } -> void
 
-        def build_strategy: (Datadog::CI::Test test) -> Datadog::CI::TestRetries::Driver::Base
+        def build_driver: (Datadog::CI::Test test) -> Datadog::CI::TestRetries::Driver::Base
 
         def record_test_finished: (Datadog::CI::Test test) -> void
 
@@ -44,9 +44,9 @@ module Datadog
 
         private
 
-        def current_retry_strategy: () -> Datadog::CI::TestRetries::Driver::Base?
+        def current_retry_driver: () -> Datadog::CI::TestRetries::Driver::Base?
 
-        def current_retry_strategy=: (Datadog::CI::TestRetries::Driver::Base? strategy) -> void
+        def current_retry_driver=: (Datadog::CI::TestRetries::Driver::Base? driver) -> void
 
         def should_retry_failed_test?: (Datadog::CI::Test test) -> bool
 

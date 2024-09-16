@@ -18,7 +18,7 @@ module Datadog
       # - retrying failed tests - improve success rate of CI pipelines
       # - retrying new tests - detect flaky tests as early as possible to prevent them from being merged
       class Component
-        FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY = :__dd_current_retry_strategy
+        FIBER_LOCAL_CURRENT_RETRY_DRIVER_KEY = :__dd_current_retry_driver
 
         DEFAULT_TOTAL_TESTS_COUNT = 100
 
@@ -120,18 +120,18 @@ module Datadog
         end
 
         def with_retries(&block)
-          self.current_retry_strategy = nil
+          self.current_retry_driver = nil
 
           loop do
             yield
 
-            break unless current_retry_strategy&.should_retry?
+            break unless current_retry_driver&.should_retry?
           end
         ensure
-          self.current_retry_strategy = nil
+          self.current_retry_driver = nil
         end
 
-        def build_strategy(test_span)
+        def build_driver(test_span)
           @mutex.synchronize do
             if should_retry_new_test?(test_span)
               Datadog.logger.debug do
@@ -154,27 +154,27 @@ module Datadog
         end
 
         def record_test_finished(test_span)
-          if current_retry_strategy.nil?
-            # we always run test at least once and after the first pass create a correct retry strategy
-            self.current_retry_strategy = build_strategy(test_span)
+          if current_retry_driver.nil?
+            # we always run test at least once and after the first pass create a correct retry driver
+            self.current_retry_driver = build_driver(test_span)
           else
-            # after each retry we record the result, strategy will decide if we should retry again
-            current_retry_strategy&.record_retry(test_span)
+            # after each retry we record the result, the driver will decide if we should retry again
+            current_retry_driver&.record_retry(test_span)
           end
         end
 
         def record_test_span_duration(tracer_span)
-          current_retry_strategy&.record_duration(tracer_span.duration)
+          current_retry_driver&.record_duration(tracer_span.duration)
         end
 
         private
 
-        def current_retry_strategy
-          Thread.current[FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY]
+        def current_retry_driver
+          Thread.current[FIBER_LOCAL_CURRENT_RETRY_DRIVER_KEY]
         end
 
-        def current_retry_strategy=(strategy)
-          Thread.current[FIBER_LOCAL_CURRENT_RETRY_STRATEGY_KEY] = strategy
+        def current_retry_driver=(driver)
+          Thread.current[FIBER_LOCAL_CURRENT_RETRY_DRIVER_KEY] = driver
         end
 
         def should_retry_failed_test?(test_span)
