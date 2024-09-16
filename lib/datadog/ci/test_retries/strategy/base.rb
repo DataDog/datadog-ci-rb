@@ -6,11 +6,11 @@ module Datadog
   module CI
     module TestRetries
       module Strategy
-        # Strategies are mojor subcomponents of the retry mechanism. They are responsible for
+        # Strategies are subcomponents of the retry mechanism. They are responsible for
         # determining which tests should be retried and how.
         class Base
           def covers?(test_span)
-            false
+            true
           end
 
           def configure(_library_settings, _test_session)

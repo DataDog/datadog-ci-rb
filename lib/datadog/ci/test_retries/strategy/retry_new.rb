@@ -108,7 +108,7 @@ module Datadog
           def is_new_test?(test_span)
             test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)
 
-            result = !@retry_new_tests_unique_tests_set.include?(test_id)
+            result = !@unique_tests_set.include?(test_id)
 
             if result
               Datadog.logger.debug do

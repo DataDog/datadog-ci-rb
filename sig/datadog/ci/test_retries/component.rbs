@@ -4,29 +4,7 @@ module Datadog
       class Component
         FIBER_LOCAL_CURRENT_RETRY_DRIVER_KEY: Symbol
 
-        DEFAULT_TOTAL_TESTS_COUNT: 100
-
-        attr_reader retry_failed_tests_enabled: bool
-
-        attr_reader retry_failed_tests_max_attempts: Integer
-
-        attr_reader retry_failed_tests_total_limit: Integer
-
-        attr_reader retry_failed_tests_count: Integer
-
-        attr_reader retry_new_tests_enabled: bool
-
-        attr_reader retry_new_tests_duration_thresholds: Datadog::CI::Remote::SlowTestRetries
-
-        attr_reader retry_new_tests_unique_tests_set: Set[String]
-
-        attr_reader retry_new_tests_total_limit: Integer
-
-        attr_reader retry_new_tests_count: Integer
-
         @mutex: Thread::Mutex
-
-        @unique_tests_client: Datadog::CI::TestRetries::UniqueTestsClient
 
         @retry_strategies: Array[Datadog::CI::TestRetries::Strategy::Base]
 
@@ -47,14 +25,6 @@ module Datadog
         def current_retry_driver: () -> Datadog::CI::TestRetries::Driver::Base?
 
         def current_retry_driver=: (Datadog::CI::TestRetries::Driver::Base? driver) -> void
-
-        def should_retry_failed_test?: (Datadog::CI::Test test) -> bool
-
-        def should_retry_new_test?: (Datadog::CI::Test test) -> bool
-
-        def is_new_test?: (Datadog::CI::Test test) -> bool
-
-        def mark_test_session_faulty: (Datadog::CI::TestSession? test_session) -> void
       end
     end
   end
