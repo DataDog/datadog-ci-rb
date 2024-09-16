@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../driver/no_retry"
+require_relative "base"
+
+require_relative "../driver/retry_new"
 
 module Datadog
   module CI

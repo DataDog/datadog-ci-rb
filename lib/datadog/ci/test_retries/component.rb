@@ -4,6 +4,10 @@ require_relative "driver/no_retry"
 require_relative "driver/retry_failed"
 require_relative "driver/retry_new"
 
+require_relative "strategy/no_retry"
+require_relative "strategy/retry_failed"
+require_relative "strategy/retry_new"
+
 require_relative "../ext/telemetry"
 require_relative "../utils/telemetry"
 
@@ -32,6 +36,22 @@ module Datadog
           retry_new_tests_enabled:,
           unique_tests_client:
         )
+          no_retries_strategy = Strategy::NoRetry.new
+
+          retry_failed_strategy = Strategy::RetryFailed.new(
+            enabled: retry_failed_tests_enabled,
+            max_attempts: retry_failed_tests_max_attempts,
+            total_limit: retry_failed_tests_total_limit
+          )
+
+          retry_new_strategy = Strategy::RetryNew.new(
+            enabled: retry_new_tests_enabled,
+            unique_tests_client: unique_tests_client
+          )
+
+          # order is important, we should try to retry new tests first
+          @retry_strategies = [retry_new_strategy, retry_failed_strategy, no_retries_strategy]
+
           @retry_failed_tests_enabled = retry_failed_tests_enabled
           @retry_failed_tests_max_attempts = retry_failed_tests_max_attempts
           @retry_failed_tests_total_limit = retry_failed_tests_total_limit
