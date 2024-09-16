@@ -178,7 +178,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
           let(:retry_failed_tests_total_limit) { 1 }
 
           it "creates RetryFailed strategy" do
-            expect(subject).to be_a(Datadog::CI::TestRetries::Strategy::RetryFailed)
+            expect(subject).to be_a(Datadog::CI::TestRetries::Driver::RetryFailed)
             expect(subject.max_attempts).to eq(retry_failed_tests_max_attempts)
           end
         end
@@ -190,7 +190,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
             component.build_strategy(test_span)
           end
 
-          it { is_expected.to be_a(Datadog::CI::TestRetries::Strategy::NoRetry) }
+          it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
         end
 
         context "when failed tests retry limit is reached with multithreading test runner" do
@@ -206,7 +206,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
           end
 
           it "correctly exhausts failed tests limit" do
-            is_expected.to be_a(Datadog::CI::TestRetries::Strategy::NoRetry)
+            is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry)
           end
         end
       end
@@ -214,12 +214,12 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       context "when test span is passed" do
         let(:test_failed) { false }
 
-        it { is_expected.to be_a(Datadog::CI::TestRetries::Strategy::NoRetry) }
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
       end
     end
 
     context "when retry failed tests is disabled" do
-      it { is_expected.to be_a(Datadog::CI::TestRetries::Strategy::NoRetry) }
+      it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
     end
   end
 

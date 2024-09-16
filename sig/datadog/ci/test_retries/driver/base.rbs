@@ -1,9 +1,13 @@
 module Datadog
   module CI
     module TestRetries
-      module Strategy
-        class NoRetry < Base
+      module Driver
+        class Base
+          def should_retry?: () -> bool
+
           def record_retry: (Datadog::CI::Test test_span) -> void
+
+          def record_duration: (Float duration) -> void
         end
       end
     end

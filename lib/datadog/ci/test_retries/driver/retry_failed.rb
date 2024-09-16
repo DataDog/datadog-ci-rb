@@ -7,7 +7,7 @@ require_relative "../../ext/test"
 module Datadog
   module CI
     module TestRetries
-      module Strategy
+      module Driver
         class RetryFailed < Base
           attr_reader :max_attempts
 

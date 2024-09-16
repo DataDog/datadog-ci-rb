@@ -34,7 +34,7 @@ module Datadog
 
         def with_retries: () { () -> void } -> void
 
-        def build_strategy: (Datadog::CI::Test test) -> Datadog::CI::TestRetries::Strategy::Base
+        def build_strategy: (Datadog::CI::Test test) -> Datadog::CI::TestRetries::Driver::Base
 
         def record_test_finished: (Datadog::CI::Test test) -> void
 
@@ -42,9 +42,9 @@ module Datadog
 
         private
 
-        def current_retry_strategy: () -> Datadog::CI::TestRetries::Strategy::Base?
+        def current_retry_strategy: () -> Datadog::CI::TestRetries::Driver::Base?
 
-        def current_retry_strategy=: (Datadog::CI::TestRetries::Strategy::Base? strategy) -> void
+        def current_retry_strategy=: (Datadog::CI::TestRetries::Driver::Base? strategy) -> void
 
         def should_retry_failed_test?: (Datadog::CI::Test test) -> bool
 

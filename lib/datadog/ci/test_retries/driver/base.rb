@@ -3,7 +3,9 @@
 module Datadog
   module CI
     module TestRetries
-      module Strategy
+      module Driver
+        # Driver is the class responsible for the current test retry mechanism.
+        # It receives signals about each retry execution and steers the current retry strategy.
         class Base
           def should_retry?
             false

@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module TestRetries
-      module Strategy
+      module Driver
         class RetryNew < Base
           @duration_thresholds: Datadog::CI::Remote::SlowTestRetries
 

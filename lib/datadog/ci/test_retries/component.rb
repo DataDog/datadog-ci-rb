@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "strategy/no_retry"
-require_relative "strategy/retry_failed"
-require_relative "strategy/retry_new"
+require_relative "driver/no_retry"
+require_relative "driver/retry_failed"
+require_relative "driver/retry_new"
 
 require_relative "../ext/telemetry"
 require_relative "../utils/telemetry"
@@ -120,16 +120,16 @@ module Datadog
               end
               @retry_new_tests_count += 1
 
-              Strategy::RetryNew.new(test_span, duration_thresholds: @retry_new_tests_duration_thresholds)
+              Driver::RetryNew.new(test_span, duration_thresholds: @retry_new_tests_duration_thresholds)
             elsif should_retry_failed_test?(test_span)
               Datadog.logger.debug do
                 "#{test_span.name} failed, will be retried"
               end
               @retry_failed_tests_count += 1
 
-              Strategy::RetryFailed.new(max_attempts: @retry_failed_tests_max_attempts)
+              Driver::RetryFailed.new(max_attempts: @retry_failed_tests_max_attempts)
             else
-              Strategy::NoRetry.new
+              Driver::NoRetry.new
             end
           end
         end

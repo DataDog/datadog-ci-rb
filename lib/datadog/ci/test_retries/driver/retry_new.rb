@@ -7,7 +7,7 @@ require_relative "../../ext/test"
 module Datadog
   module CI
     module TestRetries
-      module Strategy
+      module Driver
         # retry every new test up to 10 times (early flake detection)
         class RetryNew < Base
           def initialize(test_span, duration_thresholds:)
