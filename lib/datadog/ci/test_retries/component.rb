@@ -185,10 +185,6 @@ module Datadog
           @retry_new_tests_enabled && !test_span.skipped? && is_new_test?(test_span)
         end
 
-        def test_visibility_component
-          Datadog.send(:components).test_visibility
-        end
-
         def is_new_test?(test_span)
           test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)
 

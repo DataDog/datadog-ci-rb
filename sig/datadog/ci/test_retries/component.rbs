@@ -52,8 +52,6 @@ module Datadog
 
         def is_new_test?: (Datadog::CI::Test test) -> bool
 
-        def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
-
         def mark_test_session_faulty: (Datadog::CI::TestSession? test_session) -> void
       end
     end
