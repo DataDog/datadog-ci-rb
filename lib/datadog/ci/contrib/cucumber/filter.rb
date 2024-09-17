@@ -7,8 +7,8 @@ module Datadog
         class Filter < ::Cucumber::Core::Filter.new(:configuration)
           def test_case(test_case)
             test_retries_component.reset_retries! unless test_case_seen[test_case]
-
             test_case_seen[test_case] = true
+
             configuration.on_event(:test_case_finished) do |event|
               next unless retry_required?(test_case, event)
 

@@ -630,6 +630,7 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_suite_spans.first).to have_pass_status
 
       expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
 end
