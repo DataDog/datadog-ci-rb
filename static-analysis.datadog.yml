@@ -6,13 +6,16 @@ rulesets:
     rules:
       symbols-as-keys:
         ignore:
-          - '**'
+          - "**"
       hash-fetch:
         ignore:
-          - '**'
+          - "**"
       percent-w:
         ignore:
-          - '**'
+          - "**"
       no-optional-hash-params:
         ignore:
-          - '**'
+          - "**"
+      literal-hash-array:
+        ignore:
+          - "**"
