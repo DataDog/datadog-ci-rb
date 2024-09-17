@@ -43,5 +43,7 @@ Then "flaky" do
   if flaky_test_executions < max_flaky_test_failures
     flaky_test_executions += 1
     raise "Flaky test failure"
+  else
+    flaky_test_executions = 0
   end
 end

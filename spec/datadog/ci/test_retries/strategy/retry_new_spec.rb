@@ -1,40 +1,106 @@
 require_relative "../../../../../lib/datadog/ci/test_retries/strategy/retry_new"
 
 RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
-  let(:max_attempts) { 10 }
-  let(:duration_thresholds) {
-    Datadog::CI::Remote::SlowTestRetries.new({
-      "5s" => 10,
-      "10s" => 5,
-      "30s" => 3,
-      "10m" => 2
-    })
-  }
-  let(:test_span) { double(:test_span, set_tag: true) }
+  include_context "Telemetry spy"
 
-  subject(:strategy) { described_class.new(test_span, duration_thresholds: duration_thresholds) }
+  let(:enabled) { true }
 
-  describe "#should_retry?" do
-    subject { strategy.should_retry? }
+  let(:unique_tests_set) { Set.new(["test1", "test2"]) }
+  let(:unique_tests_client) do
+    instance_double(
+      Datadog::CI::TestRetries::UniqueTestsClient,
+      fetch_unique_tests: unique_tests_set
+    )
+  end
 
-    context "when max attempts haven't been reached yet" do
-      it { is_expected.to be true }
-    end
+  let(:remote_early_flake_detection_enabled) { false }
+  let(:percentage_limit) { 30 }
+  let(:max_attempts) { 5 }
 
-    context "when the max attempts have been reached" do
-      before { max_attempts.times { strategy.record_retry(test_span) } }
+  let(:slow_test_retries) do
+    instance_double(
+      Datadog::CI::Remote::SlowTestRetries,
+      max_attempts_for_duration: max_attempts
+    )
+  end
 
-      it { is_expected.to be false }
+  let(:session_total_tests_count) { 30 }
+
+  let(:library_settings) do
+    instance_double(
+      Datadog::CI::Remote::LibrarySettings,
+      early_flake_detection_enabled?: remote_early_flake_detection_enabled,
+      slow_test_retries: slow_test_retries,
+      faulty_session_threshold: percentage_limit
+    )
+  end
+
+  let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
+  let(:test_session) do
+    Datadog::CI::TestSession.new(tracer_span).tap do |test_session|
+      test_session.total_tests_count = session_total_tests_count
     end
   end
 
-  describe "#record_duration" do
-    subject { strategy.record_duration(duration) }
+  subject(:strategy) do
+    described_class.new(
+      enabled: enabled,
+      unique_tests_client: unique_tests_client
+    )
+  end
 
-    let(:duration) { 5 }
+  describe "#configure" do
+    subject { strategy.configure(library_settings, test_session) }
 
-    it "updates the max attempts based on the duration" do
-      expect { subject }.to change { strategy.instance_variable_get(:@max_attempts) }.from(10).to(5)
+    context "when early flake detection is enabled" do
+      let(:remote_early_flake_detection_enabled) { true }
+
+      context "when unique tests set is empty" do
+        let(:unique_tests_set) { Set.new }
+
+        it "disables retrying new tests and adds fault reason to the test session" do
+          subject
+
+          expect(strategy.enabled).to be false
+          expect(test_session.get_tag("test.early_flake.abort_reason")).to eq("faulty")
+        end
+
+        it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 0
+      end
+
+      context "when unique tests set is not empty" do
+        it "enables retrying new tests" do
+          subject
+
+          expect(strategy.enabled).to be true
+          expect(strategy.max_attempts_thresholds.max_attempts_for_duration(1.2)).to eq(max_attempts)
+          # 30% of 30 tests = 9
+          expect(strategy.total_limit).to eq(9)
+        end
+
+        it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 2
+      end
+    end
+
+    context "when early flake detection is disabled" do
+      let(:remote_early_flake_detection_enabled) { false }
+
+      it "disables retrying new tests" do
+        subject
+
+        expect(strategy.enabled).to be false
+      end
+    end
+
+    context "when early flake detection is disabled in local settings" do
+      let(:enabled) { false }
+      let(:remote_early_flake_detection_enabled) { true }
+
+      it "disables retrying new tests even if it's enabled remotely" do
+        subject
+
+        expect(strategy.enabled).to be false
+      end
     end
   end
 end

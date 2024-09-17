@@ -1,0 +1,20 @@
+module Datadog
+  module CI
+    module TestRetries
+      module Driver
+        class RetryNew < Base
+          @max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries
+
+          @attempts: Integer
+          @max_attempts: Integer
+
+          def initialize: (Datadog::CI::Test test_span, max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries) -> void
+
+          private
+
+          def mark_new_test: (Datadog::CI::Test test_span) -> void
+        end
+      end
+    end
+  end
+end

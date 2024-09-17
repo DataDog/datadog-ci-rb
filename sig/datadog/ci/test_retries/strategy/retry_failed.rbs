@@ -3,17 +3,29 @@ module Datadog
     module TestRetries
       module Strategy
         class RetryFailed < Base
+          @enabled: bool
+
+          @max_attempts: Integer
+
+          @total_limit: Integer
+
+          @retried_count: Integer
+
+          attr_reader enabled: bool
+
           attr_reader max_attempts: Integer
 
-          @attempts: Integer
+          attr_reader total_limit: Integer
 
-          @passed_once: bool
+          attr_reader retried_count: Integer
 
-          def initialize: (max_attempts: Integer) -> void
+          def initialize: (enabled: bool, max_attempts: Integer, total_limit: Integer) -> void
 
-          def should_retry?: () -> bool
+          def covers?: (Datadog::CI::Test test_span) -> bool
 
-          def record_retry: (Datadog::CI::Test test_span) -> void
+          def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
+
+          def build_driver: (Datadog::CI::Test test_span) -> Datadog::CI::TestRetries::Driver::Base
         end
       end
     end

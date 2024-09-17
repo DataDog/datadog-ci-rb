@@ -60,106 +60,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     )
   end
 
-  describe "#configure" do
-    subject { component.configure(library_settings, test_session) }
-
-    context "when flaky test retries are enabled" do
-      let(:remote_flaky_test_retries_enabled) { true }
-
-      it "enables retrying failed tests" do
-        subject
-
-        expect(component.retry_failed_tests_enabled).to be true
-      end
-    end
-
-    context "when flaky test retries are disabled" do
-      let(:remote_flaky_test_retries_enabled) { false }
-
-      it "disables retrying failed tests" do
-        subject
-
-        expect(component.retry_failed_tests_enabled).to be false
-      end
-    end
-
-    context "when flaky test retries are disabled in local settings" do
-      let(:retry_failed_tests_enabled) { false }
-      let(:remote_flaky_test_retries_enabled) { true }
-
-      it "disables retrying failed tests even if it's enabled remotely" do
-        subject
-
-        expect(component.retry_failed_tests_enabled).to be false
-      end
-    end
-
-    context "when early flake detection is enabled" do
-      let(:remote_early_flake_detection_enabled) { true }
-
-      context "when unique tests set is empty" do
-        let(:unique_tests_set) { Set.new }
-
-        it "disables retrying new tests and adds fault reason to the test session" do
-          subject
-
-          expect(component.retry_new_tests_enabled).to be false
-          expect(test_session.get_tag("test.early_flake.abort_reason")).to eq("faulty")
-        end
-
-        it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 0
-      end
-
-      context "when unique tests set is not empty" do
-        it "enables retrying new tests" do
-          subject
-
-          expect(component.retry_new_tests_enabled).to be true
-          expect(component.retry_new_tests_duration_thresholds.max_attempts_for_duration(1.2)).to eq(retry_new_tests_max_attempts)
-          # 30% of 30 tests = 9
-          expect(component.retry_new_tests_total_limit).to eq(9)
-        end
-
-        it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 2
-      end
-    end
-
-    context "when early flake detection is disabled" do
-      let(:remote_early_flake_detection_enabled) { false }
-
-      it "disables retrying new tests" do
-        subject
-
-        expect(component.retry_new_tests_enabled).to be false
-      end
-    end
-
-    context "when early flake detection is disabled in local settings" do
-      let(:retry_new_tests_enabled) { false }
-      let(:remote_early_flake_detection_enabled) { true }
-
-      it "disables retrying new tests even if it's enabled remotely" do
-        subject
-
-        expect(component.retry_new_tests_enabled).to be false
-      end
-    end
-  end
-
-  describe "#retry_failed_tests_max_attempts" do
-    subject { component.retry_failed_tests_max_attempts }
-
-    it { is_expected.to eq(retry_failed_tests_max_attempts) }
-  end
-
-  describe "#retry_failed_tests_total_limit" do
-    subject { component.retry_failed_tests_total_limit }
-
-    it { is_expected.to eq(retry_failed_tests_total_limit) }
-  end
-
-  describe "#build_strategy" do
-    subject { component.build_strategy(test_span) }
+  describe "#build_driver" do
+    subject { component.build_driver(test_span) }
 
     let(:test_failed) { false }
     let(:test_span) { instance_double(Datadog::CI::Test, failed?: test_failed, name: "test", test_suite_name: "suite") }
@@ -178,7 +80,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
           let(:retry_failed_tests_total_limit) { 1 }
 
           it "creates RetryFailed strategy" do
-            expect(subject).to be_a(Datadog::CI::TestRetries::Strategy::RetryFailed)
+            expect(subject).to be_a(Datadog::CI::TestRetries::Driver::RetryFailed)
             expect(subject.max_attempts).to eq(retry_failed_tests_max_attempts)
           end
         end
@@ -187,10 +89,10 @@ RSpec.describe Datadog::CI::TestRetries::Component do
           let(:retry_failed_tests_total_limit) { 1 }
 
           before do
-            component.build_strategy(test_span)
+            component.build_driver(test_span)
           end
 
-          it { is_expected.to be_a(Datadog::CI::TestRetries::Strategy::NoRetry) }
+          it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
         end
 
         context "when failed tests retry limit is reached with multithreading test runner" do
@@ -199,14 +101,14 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
           before do
             threads = (1..threads_count).map do
-              Thread.new { component.build_strategy(test_span) }
+              Thread.new { component.build_driver(test_span) }
             end
 
             threads.each(&:join)
           end
 
           it "correctly exhausts failed tests limit" do
-            is_expected.to be_a(Datadog::CI::TestRetries::Strategy::NoRetry)
+            is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry)
           end
         end
       end
@@ -214,12 +116,12 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       context "when test span is passed" do
         let(:test_failed) { false }
 
-        it { is_expected.to be_a(Datadog::CI::TestRetries::Strategy::NoRetry) }
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
       end
     end
 
     context "when retry failed tests is disabled" do
-      it { is_expected.to be_a(Datadog::CI::TestRetries::Strategy::NoRetry) }
+      it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
     end
   end
 

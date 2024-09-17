@@ -3,11 +3,11 @@ module Datadog
     module TestRetries
       module Strategy
         class Base
-          def should_retry?: () -> bool
+          def covers?: (Datadog::CI::Test test_span) -> bool
 
-          def record_retry: (Datadog::CI::Test test_span) -> void
+          def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
-          def record_duration: (Float duration) -> void
+          def build_driver: (Datadog::CI::Test test_span) -> Datadog::CI::TestRetries::Driver::Base
         end
       end
     end

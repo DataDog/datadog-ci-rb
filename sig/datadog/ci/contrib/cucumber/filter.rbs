@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Contrib
+      module Cucumber
+        class Filter < ::Cucumber::Core::Filter
+          @test_case_seen: untyped
+
+          @test_retries_component: untyped
+
+          def test_case: (untyped test_case) -> untyped
+
+          private
+
+          def retry_required?: (untyped test_case, untyped event) -> (false | untyped)
+
+          def test_case_seen: () -> untyped
+
+          def test_retries_component: () -> untyped
+        end
+      end
+    end
+  end
+end

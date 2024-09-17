@@ -2,46 +2,128 @@
 
 require_relative "base"
 
-require_relative "../../ext/test"
+require_relative "../driver/retry_new"
 
 module Datadog
   module CI
     module TestRetries
       module Strategy
-        # retry every new test up to 10 times (early flake detection)
         class RetryNew < Base
-          def initialize(test_span, duration_thresholds:)
-            @duration_thresholds = duration_thresholds
-            @attempts = 0
-            # will be changed based on test span duration
-            @max_attempts = 10
+          DEFAULT_TOTAL_TESTS_COUNT = 100
 
-            mark_new_test(test_span)
+          attr_reader :enabled, :max_attempts_thresholds, :unique_tests_set, :total_limit, :retried_count
+
+          def initialize(
+            enabled:,
+            unique_tests_client:
+          )
+            @enabled = enabled
+            @unique_tests_set = Set.new
+            # total maximum number of new tests to retry (will be set based on the total number of tests in the session)
+            @total_limit = 0
+            @retried_count = 0
+
+            @unique_tests_client = unique_tests_client
           end
 
-          def should_retry?
-            @attempts < @max_attempts
+          def covers?(test_span)
+            return false unless @enabled
+
+            if @retried_count >= @total_limit
+              Datadog.logger.debug do
+                "Retry new tests limit reached: [#{@retried_count}] out of [#{@total_limit}]"
+              end
+              @enabled = false
+              mark_test_session_faulty(Datadog::CI.active_test_session)
+            end
+
+            @enabled && !test_span.skipped? && is_new_test?(test_span)
           end
 
-          def record_retry(test_span)
-            super
+          def configure(library_settings, test_session)
+            @enabled &&= library_settings.early_flake_detection_enabled?
 
-            @attempts += 1
-            mark_new_test(test_span)
+            return unless @enabled
 
-            Datadog.logger.debug { "Retry Attempts [#{@attempts} / #{@max_attempts}]" }
+            # mark early flake detection enabled for test session
+            test_session.set_tag(Ext::Test::TAG_EARLY_FLAKE_ENABLED, "true")
+
+            set_max_attempts_thresholds(library_settings)
+            calculate_total_retries_limit(library_settings, test_session)
+            fetch_known_unique_tests(test_session)
           end
 
-          def record_duration(duration)
-            @max_attempts = @duration_thresholds.max_attempts_for_duration(duration)
+          def build_driver(test_span)
+            Datadog.logger.debug do
+              "#{test_span.name} is new, will be retried"
+            end
+            @retried_count += 1
 
-            Datadog.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
+            Driver::RetryNew.new(test_span, max_attempts_thresholds: @max_attempts_thresholds)
           end
 
           private
 
-          def mark_new_test(test_span)
-            test_span.set_tag(Ext::Test::TAG_IS_NEW, "true")
+          def mark_test_session_faulty(test_session)
+            test_session&.set_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
+          end
+
+          def is_new_test?(test_span)
+            test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)
+
+            result = !@unique_tests_set.include?(test_id)
+
+            if result
+              Datadog.logger.debug do
+                "#{test_id} is not found in the unique tests set, it is a new test"
+              end
+            end
+
+            result
+          end
+
+          def set_max_attempts_thresholds(library_settings)
+            @max_attempts_thresholds = library_settings.slow_test_retries
+            Datadog.logger.debug do
+              "Slow test retries thresholds: #{@max_attempts_thresholds.entries}"
+            end
+          end
+
+          def calculate_total_retries_limit(library_settings, test_session)
+            percentage_limit = library_settings.faulty_session_threshold
+            tests_count = test_session.total_tests_count.to_i
+            if tests_count.zero?
+              Datadog.logger.debug do
+                "Total tests count is zero, using default value for the total number of tests: [#{DEFAULT_TOTAL_TESTS_COUNT}]"
+              end
+
+              tests_count = DEFAULT_TOTAL_TESTS_COUNT
+            end
+            @total_limit = (tests_count * percentage_limit / 100.0).ceil
+            Datadog.logger.debug do
+              "Retry new tests total limit is [#{@total_limit}] (#{percentage_limit}%) of #{tests_count}"
+            end
+          end
+
+          def fetch_known_unique_tests(test_session)
+            @unique_tests_set = @unique_tests_client.fetch_unique_tests(test_session)
+            if @unique_tests_set.empty?
+              @enabled = false
+              mark_test_session_faulty(test_session)
+
+              Datadog.logger.warn(
+                "Disabling early flake detection because there are no known tests (possible reason: no test runs in default branch)"
+              )
+            end
+
+            # report how many unique tests were found
+            Datadog.logger.debug do
+              "Found [#{@unique_tests_set.size}] known unique tests"
+            end
+            Utils::Telemetry.distribution(
+              Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
+              @unique_tests_set.size.to_f
+            )
           end
         end
       end

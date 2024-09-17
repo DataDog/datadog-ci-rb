@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module TestRetries
+      module Driver
+        class RetryFailed < Base
+          attr_reader max_attempts: Integer
+
+          @attempts: Integer
+
+          @passed_once: bool
+
+          def initialize: (max_attempts: Integer) -> void
+
+          def should_retry?: () -> bool
+
+          def record_retry: (Datadog::CI::Test test_span) -> void
+        end
+      end
+    end
+  end
+end

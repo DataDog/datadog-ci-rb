@@ -6,6 +6,7 @@ require_relative "ci/utils/telemetry"
 require_relative "ci/ext/app_types"
 require_relative "ci/ext/telemetry"
 
+require "datadog"
 require "datadog/core"
 
 module Datadog

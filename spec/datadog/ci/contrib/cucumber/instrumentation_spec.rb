@@ -3,11 +3,14 @@ require "fileutils"
 require "cucumber"
 require "securerandom"
 
-RSpec.describe "Cucumber formatter" do
+RSpec.describe "Cucumber instrumentation" do
   let(:cucumber_features_root) { File.join(__dir__, "features") }
-  let(:enable_retries) { false }
+  let(:enable_retries_failed) { false }
   let(:single_test_retries_count) { 5 }
   let(:total_test_retries_limit) { 100 }
+
+  let(:enable_retries_new) { false }
+  let(:unique_tests) { Set.new }
 
   before do
     allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(cucumber_features_root)
@@ -21,9 +24,12 @@ RSpec.describe "Cucumber formatter" do
     let(:code_coverage_enabled) { true }
     let(:tests_skipping_enabled) { true }
 
-    let(:flaky_test_retries_enabled) { enable_retries }
+    let(:flaky_test_retries_enabled) { enable_retries_failed }
     let(:retry_failed_tests_max_attempts) { single_test_retries_count }
     let(:retry_failed_tests_total_limit) { total_test_retries_limit }
+
+    let(:early_flake_detection_enabled) { enable_retries_new }
+    let(:unique_tests_set) { unique_tests }
 
     let(:bundle_path) { "step_definitions/helpers" }
   end
@@ -477,19 +483,24 @@ RSpec.describe "Cucumber formatter" do
     end
 
     it "retries the test several times and correctly tracks result of every invocation" do
-      # 1 initial run of flaky test + 4 retries until pass + 1 passing test = 6 spans
-      expect(test_spans).to have(6).items
+      # 1 initial run of flaky test + 4 retries until pass + 1 passing test + 1 other flaky + 4 retries until pass = 11 spans
+      expect(test_spans).to have(11).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-      expect(failed_spans).to have(4).items # see steps.rb
-      expect(passed_spans).to have(2).items
+      expect(failed_spans).to have(8).items # see steps.rb
+      expect(passed_spans).to have(3).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["very flaky scenario"]).to have(5).items
+      expect(test_spans_by_test_name["another flaky scenario"]).to have(5).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(4)
+      expect(retries_count).to eq(8)
+
+      # count how many spans were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(0)
 
       expect(test_spans_by_test_name["this scenario just passes"]).to have(1).item
 
@@ -501,23 +512,28 @@ RSpec.describe "Cucumber formatter" do
   end
 
   context "executing flaky test scenario with datadog-ci's failed test retries" do
-    let(:enable_retries) { true }
+    let(:enable_retries_failed) { true }
     let(:feature_file_to_run) { "flaky.feature" }
 
     it "retries the test several times and correctly tracks result of every invocation" do
-      # 1 initial run of flaky test + 4 retries until pass + 1 passing test = 6 spans
-      expect(test_spans).to have(6).items
+      # 1 initial run of flaky test + 4 retries until pass + 1 passing test + 1 other flaky + 4 retries = 11 spans
+      expect(test_spans).to have(11).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-      expect(failed_spans).to have(4).items # see steps.rb
-      expect(passed_spans).to have(2).items
+      expect(failed_spans).to have(8).items # see steps.rb
+      expect(passed_spans).to have(3).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["very flaky scenario"]).to have(5).items
+      expect(test_spans_by_test_name["another flaky scenario"]).to have(5).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(4)
+      expect(retries_count).to eq(8)
+
+      # count how many spans were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(0)
 
       expect(test_spans_by_test_name["this scenario just passes"]).to have(1).item
 
@@ -532,13 +548,17 @@ RSpec.describe "Cucumber formatter" do
       let(:expected_test_run_code) { 2 }
 
       it "retries the test once" do
-        # 1 initial run of flaky test + 1 retry + 1 passing = 3 spans
-        expect(test_spans).to have(3).items
+        # 1 initial run of flaky test + 1 retry + 1 passing + 1 other flaky + 1 retry = 5 spans
+        expect(test_spans).to have(5).items
         retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-        expect(retries_count).to eq(1)
+        expect(retries_count).to eq(2)
+
+        # count how many spans were marked as new
+        new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+        expect(new_tests_count).to eq(0)
 
         failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-        expect(failed_spans).to have(2).items
+        expect(failed_spans).to have(4).items
         expect(passed_spans).to have(1).items
 
         expect(test_suite_spans).to have(1).item
@@ -548,29 +568,69 @@ RSpec.describe "Cucumber formatter" do
       end
     end
 
-    context "when total limit of failed tests to retry is zero" do
-      before do
-        skip("cucumber-ruby earlier than 9.0.0 does not support total test retries limit") unless cucumber_9_or_above
-      end
-
-      let(:total_test_retries_limit) { 0 }
+    context "when total limit of failed tests to retry is 1" do
+      let(:total_test_retries_limit) { 1 }
       let(:expected_test_run_code) { 2 }
 
       it "does not retry the test" do
-        # 1 initial run of flaky test + 1 passing = 2 spans
-        expect(test_spans).to have(2).items
+        # 1 initial run of flaky test + 4 retries + 1 passing + 1 failed run of flaky test = 7 spans
+        expect(test_spans).to have(7).items
         retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-        expect(retries_count).to eq(0)
+        expect(retries_count).to eq(4)
+
+        # count how many spans were marked as new
+        new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+        expect(new_tests_count).to eq(0)
 
         failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-        expect(failed_spans).to have(1).items
-        expect(passed_spans).to have(1).items
+        expect(failed_spans).to have(5).items
+        expect(passed_spans).to have(2).items
 
         expect(test_suite_spans).to have(1).item
         expect(test_suite_spans.first).to have_fail_status
 
         expect(test_session_span).to have_fail_status
       end
+    end
+  end
+
+  context "executing a feature with Datadog's new test retries aka early flake detection" do
+    let(:feature_file_to_run) { "passing.feature" }
+    let(:enable_retries_new) { true }
+    let(:unique_tests) do
+      Set.new(
+        [
+          "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature.pending scenario.",
+          "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature.skipped scenario."
+        ]
+      )
+    end
+
+    it "retries passing test and doesn't retry undefined test" do
+      # 1 initial run of passing test + 10 retries + 3 skipped tests = 14 spans
+      expect(test_spans).to have(14).items
+
+      skipped_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
+      expect(skipped_spans).to have(3).items # see steps.rb
+      expect(passed_spans).to have(11).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["cucumber scenario"]).to have(11).items
+      expect(test_spans_by_test_name["undefined scenario"]).to have(1).item
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(10)
+
+      # count how many spans were marked as new
+      new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
+      expect(new_tests_count).to eq(11)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
 end
