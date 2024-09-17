@@ -20,6 +20,10 @@ module Datadog
 
         def record_test_span_duration: (Datadog::Tracing::SpanOperation span) -> void
 
+        def reset_retries!: () -> void
+
+        def should_retry?: () -> bool
+
         private
 
         def current_retry_driver: () -> Datadog::CI::TestRetries::Driver::Base?

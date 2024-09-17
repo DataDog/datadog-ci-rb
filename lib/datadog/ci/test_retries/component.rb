@@ -53,15 +53,15 @@ module Datadog
         end
 
         def with_retries(&block)
-          self.current_retry_driver = nil
+          reset_retries!
 
           loop do
             yield
 
-            break unless current_retry_driver&.should_retry?
+            break unless should_retry?
           end
         ensure
-          self.current_retry_driver = nil
+          reset_retries!
         end
 
         def build_driver(test_span)
@@ -87,6 +87,15 @@ module Datadog
 
         def record_test_span_duration(tracer_span)
           current_retry_driver&.record_duration(tracer_span.duration)
+        end
+
+        # this API is targeted on Cucumber instrumentation or any other that cannot leverage #with_retries method
+        def reset_retries!
+          self.current_retry_driver = nil
+        end
+
+        def should_retry?
+          !!current_retry_driver&.should_retry?
         end
 
         private
