@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [1.5.0] - 2024-09-18
+
+### Added
+* Retry new tests - parse remote configuration and fetch unique known tests ([#227][])
+* early flake detection support for rspec and minitest ([#229][])
+* Early flake detection support for Cucumber ([#231][])
+
+### Fixed
+* Minor telemetry fixes ([#226][])
+
 ## [1.4.1] - 2024-08-28
 
 ### Fixed
@@ -315,7 +325,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.5.0...main
+[1.5.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.2.0...v1.3.0
@@ -453,3 +464,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#220]: https://github.com/DataDog/datadog-ci-rb/issues/220
 [#221]: https://github.com/DataDog/datadog-ci-rb/issues/221
 [#224]: https://github.com/DataDog/datadog-ci-rb/issues/224
+[#226]: https://github.com/DataDog/datadog-ci-rb/issues/226
+[#227]: https://github.com/DataDog/datadog-ci-rb/issues/227
+[#229]: https://github.com/DataDog/datadog-ci-rb/issues/229
+[#231]: https://github.com/DataDog/datadog-ci-rb/issues/231
