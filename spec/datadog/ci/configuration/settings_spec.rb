@@ -98,6 +98,41 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#test_session_name" do
+        subject(:test_session_name) { settings.ci.test_session_name }
+
+        it { is_expected.to be nil }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_TEST_SESSION_NAME}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_TEST_SESSION_NAME => test_session_name) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:test_session_name) { nil }
+
+            it { is_expected.to be nil }
+          end
+
+          context "is set to some value" do
+            let(:test_session_name) { "knapsack-pro-circle-ci-runner-1" }
+
+            it { is_expected.to eq test_session_name }
+          end
+        end
+      end
+
+      describe "#test_session_name=" do
+        it "updates the #test_session_name setting" do
+          expect { settings.ci.test_session_name = "rspec" }
+            .to change { settings.ci.test_session_name }
+            .from(nil)
+            .to("rspec")
+        end
+      end
+
       describe "#agentless_mode_enabled" do
         subject(:agentless_mode_enabled) { settings.ci.agentless_mode_enabled }
 
@@ -166,7 +201,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       end
 
       describe "#agentless_url=" do
-        it "updates the #enabled setting" do
+        it "updates the #agentless_url setting" do
           expect { settings.ci.agentless_url = "example.com" }
             .to change { settings.ci.agentless_url }
             .from(nil)
