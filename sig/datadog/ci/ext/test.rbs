@@ -96,6 +96,8 @@ module Datadog
 
         EARLY_FLAKE_FAULTY: "faulty"
 
+        METADATA_TAG_TEST_SESSION_NAME: "test_session.name"
+
         module Status
           PASS: "pass"
 

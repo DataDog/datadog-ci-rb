@@ -48,6 +48,11 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
           expect(metadata).to include("runtime-id", "library_version")
           expect(metadata["language"]).to eq("ruby")
 
+          Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
+            type_metadata = payload["metadata"][type]
+            expect(type_metadata).to include("test_session.name" => "dummy")
+          end
+
           events = payload["events"]
           expect(events.count).to eq(1)
           expect(events.first["content"]["resource"]).to include("calculator_tests")

@@ -68,6 +68,9 @@ module Datadog
         TAG_SPAN_KIND = "span.kind"
         SPAN_KIND_TEST = "test"
 
+        # common tags that are serialized directly in msgpack header in metadata field
+        METADATA_TAG_TEST_SESSION_NAME = "test_session.name"
+
         # tags that are common for the whole session and can be inherited from the test session
         INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION].freeze
 
