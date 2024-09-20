@@ -276,6 +276,10 @@ module Datadog
 
         def override_logical_test_session_name!(test_session)
           @logical_test_session_name = test_session.test_command
+          ci_job_name = test_session.ci_job_name
+          if ci_job_name
+            @logical_test_session_name = "#{ci_job_name}-#{@logical_test_session_name}"
+          end
         end
 
         def test_optimisation

@@ -436,10 +436,26 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         end
 
         context "without logical test session name set" do
-          it "uses the test command" do
-            subject
+          context "without CI job name available" do
+            it "uses the test command" do
+              subject
 
-            expect(test_visibility.logical_test_session_name).to eq(test_command)
+              expect(test_visibility.logical_test_session_name).to eq(test_command)
+            end
+          end
+
+          context "with CI job name available" do
+            let(:ci_job_name) { "my-ci-job" }
+
+            before do
+              allow_any_instance_of(Datadog::CI::TestSession).to receive(:ci_job_name).and_return(ci_job_name)
+            end
+
+            it "uses the CI job name and test command" do
+              subject
+
+              expect(test_visibility.logical_test_session_name).to eq("#{ci_job_name}-#{test_command}")
+            end
           end
         end
 
