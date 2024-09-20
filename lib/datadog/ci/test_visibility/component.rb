@@ -17,15 +17,17 @@ module Datadog
     module TestVisibility
       # Common behavior for CI tests
       class Component
-        attr_reader :test_suite_level_visibility_enabled
+        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name
 
         def initialize(
           test_suite_level_visibility_enabled: false,
-          codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse
+          codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse,
+          logical_test_session_name: nil
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
           @context = Context.new
           @codeowners = codeowners
+          @logical_test_session_name = logical_test_session_name
         end
 
         def start_test_session(service: nil, tags: {}, total_tests_count: 0)
@@ -152,6 +154,9 @@ module Datadog
           Telemetry.test_session_started(test_session)
           Telemetry.event_created(test_session)
 
+          # sets logical test session name if none provided by the user
+          override_logical_test_session_name!(test_session) if logical_test_session_name.nil?
+
           # signal Remote::Component to configure the library
           remote.configure(test_session)
         end
@@ -267,6 +272,10 @@ module Datadog
               "Make sure that there is a test session running."
             end
           end
+        end
+
+        def override_logical_test_session_name!(test_session)
+          @logical_test_session_name = Utils::TestRun.command
         end
 
         def test_optimisation

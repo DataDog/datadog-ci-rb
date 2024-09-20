@@ -14,6 +14,7 @@ RSpec.shared_context "CI mode activated" do
   include CoverageHelpers
 
   let(:test_command) { "command" }
+  let(:logical_test_session_name) { nil }
   let(:integration_name) { :no_instrument }
   let(:integration_options) { {} }
 
@@ -123,6 +124,9 @@ RSpec.shared_context "CI mode activated" do
       # test retries
       c.ci.retry_failed_tests_max_attempts = retry_failed_tests_max_attempts
       c.ci.retry_failed_tests_total_limit = retry_failed_tests_total_limit
+
+      # logical test session name
+      c.ci.test_session_name = logical_test_session_name
 
       # instrumentation
       unless integration_name == :no_instrument

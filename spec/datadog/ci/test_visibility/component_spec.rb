@@ -425,6 +425,24 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           end
         end
 
+        context "with logical test session name set" do
+          let(:logical_test_session_name) { "my-logical-test-session" }
+
+          it "sets the logical test session name" do
+            subject
+
+            expect(test_visibility.logical_test_session_name).to eq(logical_test_session_name)
+          end
+        end
+
+        context "without logical test session name set" do
+          it "uses the test command" do
+            subject
+
+            expect(test_visibility.logical_test_session_name).to eq(test_command)
+          end
+        end
+
         it_behaves_like "span with environment tags"
         it_behaves_like "span with default tags"
         it_behaves_like "span with runtime tags"

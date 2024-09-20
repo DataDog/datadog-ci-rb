@@ -9,7 +9,9 @@ module Datadog
 
         attr_reader test_suite_level_visibility_enabled: bool
 
-        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher) -> void
+        attr_reader logical_test_session_name: String?
+
+        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?) -> void
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
@@ -76,6 +78,8 @@ module Datadog
         def on_after_test_span_finished: (Datadog::Tracing::SpanOperation span) -> void
 
         def subscribe_to_after_stop_event: (Datadog::Tracing::SpanOperation span) -> void
+
+        def override_logical_test_session_name!: (Datadog::CI::TestSession test_session) -> void
 
         def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
 
