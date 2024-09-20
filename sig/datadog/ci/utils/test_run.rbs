@@ -3,6 +3,7 @@ module Datadog
     module Utils
       module TestRun
         self.@command: String
+        self.@virtual_cpu_count: Integer
 
         def self.command: () -> String
 
@@ -11,7 +12,13 @@ module Datadog
         def self.test_parameters: (?arguments: Hash[untyped, untyped], ?metadata: Hash[untyped, untyped]) -> String
 
         def self.custom_configuration: (Hash[String, String]? env_tags) -> Hash[String, String]
+
+        def self.virtual_cpu_count: () -> Integer
       end
     end
   end
+end
+
+module Etc
+  def self.nprocessors: () -> Integer
 end

@@ -71,6 +71,9 @@ module Datadog
         # common tags that are serialized directly in msgpack header in metadata field
         METADATA_TAG_TEST_SESSION_NAME = "test_session.name"
 
+        # internal metric with the number of virtual CPUs
+        METRIC_CPU_COUNT = "_dd.host.vcpu_count"
+
         # tags that are common for the whole session and can be inherited from the test session
         INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION].freeze
 

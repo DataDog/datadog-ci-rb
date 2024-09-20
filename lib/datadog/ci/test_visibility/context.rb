@@ -11,6 +11,8 @@ require_relative "../ext/app_types"
 require_relative "../ext/environment"
 require_relative "../ext/test"
 
+require_relative "../utils/test_run"
+
 require_relative "../span"
 require_relative "../test"
 require_relative "../test_session"
@@ -203,6 +205,8 @@ module Datadog
 
           ci_span.set_tags(tags)
           ci_span.set_tags(@environment_tags)
+
+          ci_span.set_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
         end
 
         # PROPAGATING CONTEXT FROM TOP-LEVEL TO THE LOWER LEVELS

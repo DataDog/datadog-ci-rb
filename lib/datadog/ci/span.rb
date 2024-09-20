@@ -114,6 +114,13 @@ module Datadog
         tracer_span.clear_tag(key)
       end
 
+      # Gets metric value by key.
+      # @param [String] key the key of the metric.
+      # @return [Numeric] value the value of the metric.
+      def get_metric(key)
+        tracer_span.get_metric(key)
+      end
+
       # Sets metric value by key.
       # @param [String] key the key of the metric.
       # @param [Numeric] value the value of the metric.

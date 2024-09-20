@@ -47,6 +47,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         expect(span_under_test).to have_test_tag(tag)
       end
       expect(span_under_test).to have_test_tag(:command, test_command)
+      expect(span_under_test.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to eq(Etc.nprocessors)
     end
   end
 
