@@ -58,4 +58,10 @@ RSpec.describe ::Datadog::CI::Utils::TestRun do
       it { is_expected.to eq({"tag1" => "value1", "tag2" => "value2"}) }
     end
   end
+
+  describe ".virtual_cpu_count" do
+    subject { described_class.virtual_cpu_count }
+
+    it { is_expected.to eq(::Etc.nprocessors) }
+  end
 end

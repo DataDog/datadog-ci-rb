@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "etc"
+
 module Datadog
   module CI
     module Utils
@@ -33,6 +35,12 @@ module Datadog
             res[tag.sub("test.configuration.", "")] = value
           end
           res
+        end
+
+        def self.virtual_cpu_count
+          return @virtual_cpu_count if defined?(@virtual_cpu_count)
+
+          @virtual_cpu_count = ::Etc.nprocessors
         end
       end
     end
