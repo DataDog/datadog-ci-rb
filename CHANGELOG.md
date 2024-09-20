@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.6.0] - 2024-09-20
+
+
+### Added
+* support logical names for test sessions ([#235][])
+* Send internal vCPU count metric ([#236][])
+
 ## [1.5.0] - 2024-09-18
 
 ### Added
@@ -325,7 +332,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.5.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.6.0...main
+[1.6.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.3.0...v1.4.0
@@ -468,3 +476,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#227]: https://github.com/DataDog/datadog-ci-rb/issues/227
 [#229]: https://github.com/DataDog/datadog-ci-rb/issues/229
 [#231]: https://github.com/DataDog/datadog-ci-rb/issues/231
+[#235]: https://github.com/DataDog/datadog-ci-rb/issues/235
+[#236]: https://github.com/DataDog/datadog-ci-rb/issues/236
