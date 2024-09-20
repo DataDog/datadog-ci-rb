@@ -49,7 +49,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestV2 do
         expect(meta["_test.session_id"]).to be_nil
         expect(meta["_test.module_id"]).to be_nil
 
-        expect(metrics).to eq({"_dd.top_level" => 1, "memory_allocations" => 16})
+        expect(metrics).to eq({"_dd.top_level" => 1, "memory_allocations" => 16, "_dd.host.vcpu_count" => Etc.nprocessors})
       end
     end
 

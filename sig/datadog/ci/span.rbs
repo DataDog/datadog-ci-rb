@@ -35,6 +35,8 @@ module Datadog
 
       def clear_tag: (String key) -> void
 
+      def get_metric: (String key) -> Numeric?
+
       def set_metric: (String key, untyped value) -> void
 
       def set_tags: (Hash[untyped, untyped] tags) -> void

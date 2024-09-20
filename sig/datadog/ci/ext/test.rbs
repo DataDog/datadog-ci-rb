@@ -98,6 +98,8 @@ module Datadog
 
         METADATA_TAG_TEST_SESSION_NAME: "test_session.name"
 
+        METRIC_CPU_COUNT: "_dd.host.vcpu_count"
+
         module Status
           PASS: "pass"
 
