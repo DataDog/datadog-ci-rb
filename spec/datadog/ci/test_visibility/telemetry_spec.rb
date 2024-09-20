@@ -274,7 +274,7 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
     let(:test_session) do
       instance_double(
         Datadog::CI::TestSession,
-        get_tag: provider_tag
+        ci_provider: provider_tag
       )
     end
 

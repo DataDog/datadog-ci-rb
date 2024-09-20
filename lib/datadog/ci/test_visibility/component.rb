@@ -275,7 +275,7 @@ module Datadog
         end
 
         def override_logical_test_session_name!(test_session)
-          @logical_test_session_name = Utils::TestRun.command
+          @logical_test_session_name = test_session.test_command
         end
 
         def test_optimisation

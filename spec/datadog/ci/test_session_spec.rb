@@ -43,6 +43,36 @@ RSpec.describe Datadog::CI::TestSession do
     it { is_expected.to eq("test command") }
   end
 
+  describe "#test_command" do
+    subject(:test_command) { ci_test_session.test_command }
+
+    before do
+      tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_COMMAND, "test command")
+    end
+
+    it { is_expected.to eq("test command") }
+  end
+
+  describe "#ci_provider" do
+    subject(:ci_provider) { ci_test_session.ci_provider }
+
+    before do
+      tracer_span.set_tag(Datadog::CI::Ext::Environment::TAG_PROVIDER_NAME, "ci provider")
+    end
+
+    it { is_expected.to eq("ci provider") }
+  end
+
+  describe "#ci_job_name" do
+    subject(:ci_job_name) { ci_test_session.ci_job_name }
+
+    before do
+      tracer_span.set_tag(Datadog::CI::Ext::Environment::TAG_JOB_NAME, "ci job name")
+    end
+
+    it { is_expected.to eq("ci job name") }
+  end
+
   describe "#skipping_tests?" do
     subject(:skipping_tests?) { ci_test_session.skipping_tests? }
 

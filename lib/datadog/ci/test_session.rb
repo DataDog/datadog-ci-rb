@@ -28,6 +28,24 @@ module Datadog
         get_tag(Ext::Test::TAG_COMMAND)
       end
 
+      # Return the test session's command used to run the tests
+      # @return [String] the command for this test session.
+      def test_command
+        get_tag(Ext::Test::TAG_COMMAND)
+      end
+
+      # Return the test session's CI provider name (e.g. "travis", "circleci", etc.)
+      # @return [String] the provider name for this test session.
+      def ci_provider
+        get_tag(Ext::Environment::TAG_PROVIDER_NAME)
+      end
+
+      # Return the test session's CI job name (e.g. "build", "test", etc.)
+      # @return [String] the job name for this test session.
+      def ci_job_name
+        get_tag(Ext::Environment::TAG_JOB_NAME)
+      end
+
       def skipping_tests?
         get_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED) == "true"
       end

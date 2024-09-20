@@ -5,6 +5,12 @@ module Datadog
       @inheritable_tags: Hash[untyped, untyped]
 
       def inheritable_tags: () -> Hash[untyped, untyped]
+
+      def test_command: () -> String?
+
+      def ci_provider: () -> String?
+
+      def ci_job_name: () -> String?
     end
   end
 end
