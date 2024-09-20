@@ -123,7 +123,8 @@ module Datadog
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
           @test_visibility = TestVisibility::Component.new(
-            test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility
+            test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
+            logical_test_session_name: settings.ci.test_session_name
           )
         end
 

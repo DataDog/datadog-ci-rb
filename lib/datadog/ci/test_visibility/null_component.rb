@@ -53,6 +53,13 @@ module Datadog
         def remove_test_finished_callback
         end
 
+        def test_suite_level_visibility_enabled
+          false
+        end
+
+        def logical_test_session_name
+        end
+
         private
 
         def skip_tracing(block = nil)

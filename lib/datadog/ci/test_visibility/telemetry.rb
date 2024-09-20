@@ -34,9 +34,7 @@ module Datadog
             1,
             {
               Ext::Telemetry::TAG_AUTO_INJECTED => "false", # ruby doesn't support auto injection yet
-              Ext::Telemetry::TAG_PROVIDER =>
-                test_session.get_tag(Ext::Environment::TAG_PROVIDER_NAME) ||
-                Ext::Telemetry::Provider::UNSUPPORTED
+              Ext::Telemetry::TAG_PROVIDER => test_session.ci_provider || Ext::Telemetry::Provider::UNSUPPORTED
             }
           )
         end

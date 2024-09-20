@@ -6,6 +6,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
   include_context "Telemetry spy"
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
+    let(:logical_test_session_name) { "logical_test_session_name" }
   end
 
   subject(:transport) do
@@ -47,6 +48,11 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
           metadata = payload["metadata"]["*"]
           expect(metadata).to include("runtime-id", "library_version")
           expect(metadata["language"]).to eq("ruby")
+
+          Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
+            type_metadata = payload["metadata"][type]
+            expect(type_metadata).to include("test_session.name" => logical_test_session_name)
+          end
 
           events = payload["events"]
           expect(events.count).to eq(1)

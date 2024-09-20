@@ -3,6 +3,7 @@
 require "datadog/core/environment/identity"
 
 require_relative "serializers/factories/test_level"
+require_relative "../ext/app_types"
 require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/event_platform_transport"
@@ -51,7 +52,12 @@ module Datadog
         end
 
         def encode_span(trace, span)
-          serializer = serializers_factory.serializer(trace, span, options: {itr_correlation_id: itr&.correlation_id})
+          serializer = serializers_factory.serializer(
+            trace,
+            span,
+            options: {itr_correlation_id: test_optimisation&.correlation_id}
+          )
+
           if serializer.valid?
             encoded = encoder.encode(serializer)
             return nil if event_too_large?(span, encoded)
@@ -75,7 +81,7 @@ module Datadog
           packer.write(1)
 
           packer.write("metadata")
-          packer.write_map_header(1)
+          packer.write_map_header(1 + Ext::AppTypes::CI_SPAN_TYPES.size)
 
           packer.write("*")
           metadata_fields_count = dd_env ? 4 : 3
@@ -95,11 +101,23 @@ module Datadog
           packer.write("library_version")
           packer.write(Datadog::CI::VERSION::STRING)
 
+          Ext::AppTypes::CI_SPAN_TYPES.each do |ci_span_type|
+            packer.write(ci_span_type)
+            packer.write_map_header(1)
+
+            packer.write(Ext::Test::METADATA_TAG_TEST_SESSION_NAME)
+            packer.write(test_visibility&.logical_test_session_name)
+          end
+
           packer.write("events")
         end
 
-        def itr
+        def test_optimisation
           @test_optimisation ||= Datadog::CI.send(:test_optimisation)
+        end
+
+        def test_visibility
+          @test_visibility ||= Datadog::CI.send(:test_visibility)
         end
       end
     end

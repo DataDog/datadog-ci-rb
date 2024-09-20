@@ -24,6 +24,11 @@ module Datadog
                 o.default false
               end
 
+              option :test_session_name do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Settings::ENV_TEST_SESSION_NAME
+              end
+
               option :agentless_mode_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_AGENTLESS_MODE_ENABLED
