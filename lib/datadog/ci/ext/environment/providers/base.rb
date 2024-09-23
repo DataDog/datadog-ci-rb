@@ -96,6 +96,10 @@ module Datadog
             def git_commit_sha
             end
 
+            def additional_tags
+              {}
+            end
+
             private
 
             def set_branch_and_tag

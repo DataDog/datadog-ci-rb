@@ -49,6 +49,11 @@ module Datadog
               Git::TAG_COMMIT_SHA => @provider.git_commit_sha
             }
 
+            # set additional tags if provider needs them
+            @provider.additional_tags.each do |key, value|
+              @tags[key] = value
+            end
+
             # Normalize Git references and filter sensitive data
             normalize_git!
             # Expand ~
