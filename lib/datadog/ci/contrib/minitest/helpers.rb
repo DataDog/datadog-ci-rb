@@ -6,7 +6,7 @@ module Datadog
       module Minitest
         module Helpers
           def self.test_suite_name(klass, method_name)
-            source_location = extract_source_location_from_class(klass)
+            source_location = extract_source_location_from_class(klass)&.first
             # if we are in anonymous class, fallback to the method source location
             if source_location.nil?
               source_location, = klass.instance_method(method_name).source_location
@@ -23,11 +23,11 @@ module Datadog
           end
 
           def self.extract_source_location_from_class(klass)
-            return nil if klass.nil? || klass.name.nil?
+            return [] if klass.nil? || klass.name.nil?
 
-            klass.const_source_location(klass.name)&.first
+            klass.const_source_location(klass.name)
           rescue
-            nil
+            []
           end
         end
       end
