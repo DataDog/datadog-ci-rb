@@ -967,7 +967,7 @@ RSpec.describe "RSpec hooks" do
       let(:integration_options) { {service_name: "lspec"} }
     end
 
-    it "retries test until it passes" do
+    it "does not report the test that failed when RSpec was quitting" do
       rspec_session_run(with_canceled_test: true)
 
       expect(test_spans).to have(2).items

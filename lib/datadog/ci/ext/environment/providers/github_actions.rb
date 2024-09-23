@@ -75,6 +75,30 @@ module Datadog
               }.reject { |_, v| v.nil? }.to_json
             end
 
+            def additional_tags
+              base_ref = env["GITHUB_BASE_REF"]
+              return {} if base_ref.nil? || base_ref.empty?
+
+              # @type var result: Hash[String, String]
+              result = {
+                Git::TAG_PULL_REQUEST_BASE_BRANCH => base_ref
+              }
+
+              event_path = env["GITHUB_EVENT_PATH"]
+              event_json = JSON.parse(File.read(event_path))
+
+              head_sha = event_json.dig("pull_request", "head", "sha")
+              result[Git::TAG_COMMIT_HEAD_SHA] = head_sha if head_sha
+
+              base_sha = event_json.dig("pull_request", "base", "sha")
+              result[Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA] = base_sha if base_sha
+
+              result
+            rescue => e
+              Datadog.logger.error("Failed to extract additional tags from GitHub Actions: #{e}")
+              {}
+            end
+
             private
 
             def github_server_url

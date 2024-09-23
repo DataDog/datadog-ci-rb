@@ -20,6 +20,11 @@ module Datadog
         TAG_COMMIT_MESSAGE = "git.commit.message"
         TAG_COMMIT_SHA = "git.commit.sha"
 
+        # additional tags that we use for github actions jobs with "pull_request" target
+        TAG_COMMIT_HEAD_SHA = "git.commit.head_sha"
+        TAG_PULL_REQUEST_BASE_BRANCH = "git.pull_request.base_branch"
+        TAG_PULL_REQUEST_BASE_BRANCH_SHA = "git.pull_request.base_branch_sha"
+
         ENV_REPOSITORY_URL = "DD_GIT_REPOSITORY_URL"
         ENV_COMMIT_SHA = "DD_GIT_COMMIT_SHA"
         ENV_BRANCH = "DD_GIT_BRANCH"
