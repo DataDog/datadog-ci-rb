@@ -166,6 +166,8 @@ module Datadog
         end
 
         def on_test_suite_started(test_suite)
+          # set_codeowners(test_suite)
+
           Telemetry.event_created(test_suite)
         end
 

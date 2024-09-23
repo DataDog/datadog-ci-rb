@@ -21,7 +21,13 @@ module Datadog
               return super unless top_level?
 
               suite_name = "#{description} at #{file_path}"
-              test_suite = test_visibility_component.start_test_suite(suite_name)
+              test_suite = test_visibility_component.start_test_suite(
+                suite_name,
+                tags: {
+                  CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
+                  CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
+                }
+              )
 
               success = super
               return success unless test_suite

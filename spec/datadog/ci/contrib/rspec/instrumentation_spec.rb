@@ -506,7 +506,7 @@ RSpec.describe "RSpec hooks" do
 
     context "with git root changed" do
       before do
-        expect(Datadog::CI::Git::LocalRepository).to receive(:root).and_return("#{Dir.pwd}/spec")
+        allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return("#{Dir.pwd}/spec")
       end
 
       it "provides source file path relative to git root" do
@@ -588,6 +588,13 @@ RSpec.describe "RSpec hooks" do
         :framework_version,
         Datadog::CI::Contrib::RSpec::Integration.version.to_s
       )
+
+      expect(first_test_suite_span).to have_test_tag(
+        :source_file,
+        "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
+      )
+      expect(first_test_suite_span).to have_test_tag(:source_start, "57")
+
       expect(first_test_suite_span).to have_pass_status
     end
 
