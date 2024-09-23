@@ -51,7 +51,7 @@ module Datadog
 
         def fix_test_suite!: (Datadog::CI::Test test) -> void
 
-        def set_codeowners: (Datadog::CI::Test test) -> void
+        def set_codeowners: (Datadog::CI::Span span) -> void
 
         def null_span: () -> Datadog::CI::Span
 

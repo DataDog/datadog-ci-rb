@@ -594,6 +594,10 @@ RSpec.describe "RSpec hooks" do
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
       expect(first_test_suite_span).to have_test_tag(:source_start, "57")
+      expect(first_test_suite_span).to have_test_tag(
+        :codeowners,
+        "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
+      )
 
       expect(first_test_suite_span).to have_pass_status
     end
