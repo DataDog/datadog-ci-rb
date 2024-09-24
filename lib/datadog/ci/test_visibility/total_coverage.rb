@@ -7,12 +7,26 @@ module Datadog
     module TestVisibility
       module TotalCoverage
         def self.extract_lines_pct(test_session)
-          return unless defined?(::SimpleCov)
-          return unless ::SimpleCov.running
-          return unless ::SimpleCov.respond_to?(:__dd_peek_result)
+          unless defined?(::SimpleCov)
+            Datadog.logger.debug("SimpleCov is not loaded, skipping code coverage extraction")
+            return
+          end
+
+          unless ::SimpleCov.running
+            Datadog.logger.debug("SimpleCov is not running, skipping code coverage extraction")
+            return
+          end
+
+          unless ::SimpleCov.respond_to?(:__dd_peek_result)
+            Datadog.logger.debug("SimpleCov is not patched, skipping code coverage extraction")
+            return
+          end
 
           result = ::SimpleCov.__dd_peek_result
-          return unless result
+          unless result
+            Datadog.logger.debug("SimpleCov result is nil, skipping code coverage extraction")
+            return
+          end
 
           test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_LINES_PCT, result.covered_percent)
         end

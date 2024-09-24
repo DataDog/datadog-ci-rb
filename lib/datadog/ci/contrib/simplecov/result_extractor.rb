@@ -13,7 +13,10 @@ module Datadog
 
           module ClassMethods
             def __dd_peek_result
-              return nil unless datadog_configuration[:enabled]
+              unless datadog_configuration[:enabled]
+                Datadog.logger.debug("SimpleCov instrumentation is disabled")
+                return nil
+              end
 
               result = ::SimpleCov::UselessResultsRemover.call(
                 ::SimpleCov::ResultAdapter.call(::Coverage.peek_result)

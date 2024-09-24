@@ -440,10 +440,14 @@ RSpec.describe "Minitest instrumentation" do
             Datadog::CI::Contrib::Minitest::Integration.version.to_s
           )
 
+          # ITR
           expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
           expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
           expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
           expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+
+          # Total code coverage
+          expect(test_session_span).to have_test_tag(:code_coverage_lines_pct)
 
           expect(test_session_span).to have_pass_status
         end
