@@ -31,4 +31,5 @@ target :lib do
   library "capybara"
   library "timecop"
   library "webmock"
+  library "simplecov"
 end

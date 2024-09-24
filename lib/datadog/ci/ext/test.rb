@@ -64,6 +64,9 @@ module Datadog
         TAG_EARLY_FLAKE_ENABLED = "test.early_flake.enabled" # true if early flake detection is enabled
         TAG_EARLY_FLAKE_ABORT_REASON = "test.early_flake.abort_reason" # reason why early flake detection was aborted
 
+        # Tags for total code coverage
+        TAG_CODE_COVERAGE_LINES_PCT = "test.code_coverage.lines_pct"
+
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
         SPAN_KIND_TEST = "test"

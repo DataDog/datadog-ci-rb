@@ -100,6 +100,8 @@ module Datadog
 
         METRIC_CPU_COUNT: "_dd.host.vcpu_count"
 
+        TAG_CODE_COVERAGE_LINES_PCT: "test.code_coverage.lines_pct"
+
         module Status
           PASS: "pass"
 

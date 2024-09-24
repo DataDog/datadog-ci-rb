@@ -4,6 +4,7 @@ require "rbconfig"
 
 require_relative "context"
 require_relative "telemetry"
+require_relative "total_coverage"
 
 require_relative "../codeowners/parser"
 require_relative "../contrib/contrib"
@@ -187,6 +188,8 @@ module Datadog
 
         def on_test_session_finished(test_session)
           test_optimisation.write_test_session_tags(test_session)
+
+          TotalCoverage.extract_lines_pct(test_session)
 
           Telemetry.event_finished(test_session)
         end
