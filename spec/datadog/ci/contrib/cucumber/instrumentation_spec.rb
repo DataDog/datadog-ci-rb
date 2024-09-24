@@ -209,6 +209,18 @@ RSpec.describe "Cucumber instrumentation" do
         :framework_version,
         Datadog::CI::Contrib::Cucumber::Integration.version.to_s
       )
+
+      expect(first_test_suite_span).to have_test_tag(
+        :source_file,
+        "passing.feature"
+      )
+      expect(first_test_suite_span).to have_test_tag(:source_start, "1")
+
+      expect(first_test_suite_span).to have_test_tag(
+        :codeowners,
+        "[\"@test-owner\"]"
+      )
+
       expect(first_test_suite_span).to have_pass_status
     end
 
