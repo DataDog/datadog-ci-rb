@@ -67,6 +67,8 @@ module Datadog
 
       def runtime_version: () -> String?
 
+      def source_file: () -> String?
+
       private
 
       def test_visibility: () -> Datadog::CI::TestVisibility::Component

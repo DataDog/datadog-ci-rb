@@ -38,6 +38,7 @@ module RSpec::Core::ExampleGroup
     def top_level?: () -> bool
     def file_path: () -> String
     def description: () -> String
+    def metadata: () -> untyped
   end
 end
 

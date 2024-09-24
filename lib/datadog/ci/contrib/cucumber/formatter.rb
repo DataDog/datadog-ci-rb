@@ -70,7 +70,12 @@ module Datadog
               tags[CI::Ext::Test::TAG_PARAMETERS] = Utils::TestRun.test_parameters(arguments: parameters)
             end
 
-            start_test_suite(test_suite_name) unless same_test_suite_as_current?(test_suite_name)
+            unless same_test_suite_as_current?(test_suite_name)
+              start_test_suite(
+                test_suite_name,
+                tags: test_suite_source_file_tags(event.test_case)
+              )
+            end
 
             test_span = test_visibility_component.trace_test(
               event.test_case.name,
@@ -146,10 +151,10 @@ module Datadog
             test_session.finish
           end
 
-          def start_test_suite(test_suite_name)
+          def start_test_suite(test_suite_name, tags: {})
             finish_current_test_suite
 
-            @current_test_suite = test_visibility_component.start_test_suite(test_suite_name)
+            @current_test_suite = test_visibility_component.start_test_suite(test_suite_name, tags: tags)
           end
 
           def finish_current_test_suite
@@ -200,6 +205,23 @@ module Datadog
 
           def test_visibility_component
             Datadog.send(:components).test_visibility
+          end
+
+          def test_suite_source_file_tags(test_case)
+            if test_case.respond_to?(:parent_locations)
+              # supported in cucumber >= 9.0
+              source_file = test_case.parent_locations.file
+              line_number = test_case.parent_locations.line.to_s
+            else
+              # fallback for cucumber < 9.0
+              source_file = test_case.location.file
+              line_number = "1"
+            end
+
+            {
+              CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(source_file),
+              CI::Ext::Test::TAG_SOURCE_START => line_number.to_s
+            }
           end
         end
       end

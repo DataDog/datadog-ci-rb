@@ -57,13 +57,6 @@ module Datadog
         get_tag(Ext::Test::TAG_TEST_SESSION_ID)
       end
 
-      # Source file path of the test relative to git repository root.
-      # @return [String] the source file path of the test
-      # @return [nil] if the source file path is not found
-      def source_file
-        get_tag(Ext::Test::TAG_SOURCE_FILE)
-      end
-
       # Returns "true" if the test is skipped by the intelligent test runner.
       # @return [Boolean] true if the test is skipped by the intelligent test runner, false otherwise.
       def skipped_by_itr?

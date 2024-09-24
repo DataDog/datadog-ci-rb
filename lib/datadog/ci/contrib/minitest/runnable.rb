@@ -18,8 +18,21 @@ module Datadog
               return super if method.nil?
 
               test_suite_name = Helpers.test_suite_name(self, method)
+              source_file, line_number = Helpers.extract_source_location_from_class(self)
 
-              test_suite = test_visibility_component.start_test_suite(test_suite_name)
+              test_suite_tags = if source_file
+                {
+                  CI::Ext::Test::TAG_SOURCE_FILE => (Git::LocalRepository.relative_to_root(source_file) if source_file),
+                  CI::Ext::Test::TAG_SOURCE_START => line_number&.to_s
+                }
+              else
+                {}
+              end
+
+              test_suite = test_visibility_component.start_test_suite(
+                test_suite_name,
+                tags: test_suite_tags
+              )
 
               results = super
               return results unless test_suite

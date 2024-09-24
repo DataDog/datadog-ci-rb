@@ -190,6 +190,13 @@ module Datadog
         tracer_span.get_tag(Ext::Test::TAG_RUNTIME_VERSION)
       end
 
+      # Source file path where the test or test suite defined (relative to git repository root).
+      # @return [String] the source file path of the test
+      # @return [nil] if the source file path is not found
+      def source_file
+        get_tag(Ext::Test::TAG_SOURCE_FILE)
+      end
+
       def set_environment_runtime_tags
         tracer_span.set_tag(Ext::Test::TAG_OS_ARCHITECTURE, ::RbConfig::CONFIG["host_cpu"])
         tracer_span.set_tag(Ext::Test::TAG_OS_PLATFORM, ::RbConfig::CONFIG["host_os"])

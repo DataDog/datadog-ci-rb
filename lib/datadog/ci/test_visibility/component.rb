@@ -166,6 +166,8 @@ module Datadog
         end
 
         def on_test_suite_started(test_suite)
+          set_codeowners(test_suite)
+
           Telemetry.event_created(test_suite)
         end
 
@@ -223,10 +225,10 @@ module Datadog
           end
         end
 
-        def set_codeowners(test)
-          source = test.source_file
+        def set_codeowners(span)
+          source = span.source_file
           owners = @codeowners.list_owners(source) if source
-          test.set_tag(Ext::Test::TAG_CODEOWNERS, owners) unless owners.nil?
+          span.set_tag(Ext::Test::TAG_CODEOWNERS, owners) unless owners.nil?
         end
 
         def fix_test_suite!(test)
