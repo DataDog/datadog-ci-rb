@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.7.0] - 2024-09-25
+
+### Added
+* Report total lines coverage percentage to Datadog ([#240][])
+* add source location info to test suites ([#239][])
+* Add pull_request extra tags for GitHub Actions ([#238][])
+
 ## [1.6.0] - 2024-09-20
 
 
@@ -332,7 +339,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.6.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.7.0...main
+[1.7.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.0...v1.4.1
@@ -478,3 +486,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#231]: https://github.com/DataDog/datadog-ci-rb/issues/231
 [#235]: https://github.com/DataDog/datadog-ci-rb/issues/235
 [#236]: https://github.com/DataDog/datadog-ci-rb/issues/236
+[#238]: https://github.com/DataDog/datadog-ci-rb/issues/238
+[#239]: https://github.com/DataDog/datadog-ci-rb/issues/239
+[#240]: https://github.com/DataDog/datadog-ci-rb/issues/240
