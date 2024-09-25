@@ -410,6 +410,7 @@ require_relative "ci/contrib/cucumber/integration"
 require_relative "ci/contrib/rspec/integration"
 require_relative "ci/contrib/minitest/integration"
 require_relative "ci/contrib/selenium/integration"
+require_relative "ci/contrib/simplecov/integration"
 
 # Configuration extensions
 require_relative "ci/configuration/extensions"

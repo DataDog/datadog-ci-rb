@@ -554,6 +554,9 @@ RSpec.describe "RSpec hooks" do
       expect(test_session_span).not_to have_test_tag(:itr_tests_skipped)
       expect(test_session_span).not_to have_test_tag(:itr_test_skipping_count)
 
+      # Total code coverage
+      expect(test_session_span).to have_test_tag(:code_coverage_lines_pct)
+
       expect(test_session_span).to have_pass_status
     end
 

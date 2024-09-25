@@ -1,0 +1,21 @@
+module SimpleCov
+  def self.running: () -> bool
+
+  def add_not_loaded_files: (untyped result) -> untyped
+
+  def self.__dd_peek_result: () -> SimpleCov::Result?
+end
+
+class SimpleCov::Result
+  def initialize: (untyped result) -> void
+
+  def covered_percent: () -> Float
+end
+
+class SimpleCov::UselessResultsRemover
+  def self.call: (untyped result) -> untyped
+end
+
+class SimpleCov::ResultAdapter
+  def self.call: (untyped result) -> untyped
+end

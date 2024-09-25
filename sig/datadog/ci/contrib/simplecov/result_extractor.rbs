@@ -1,0 +1,23 @@
+module Coverage
+  def self.peek_result: () -> untyped
+end
+
+module Datadog
+  module CI
+    module Contrib
+      module Simplecov
+        module ResultExtractor
+          def self.included: (untyped base) -> untyped
+
+          module ClassMethods
+            include ::SimpleCov
+
+            def __dd_peek_result: () -> ::SimpleCov::Result?
+
+            def datadog_configuration: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end
