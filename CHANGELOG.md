@@ -2,9 +2,6 @@
 
 ## [1.7.0] - 2024-09-25
 
-> Please categorize the following changes:
-
-
 ### Added
 * Report total lines coverage percentage to Datadog ([#240][])
 * add source location info to test suites ([#239][])
