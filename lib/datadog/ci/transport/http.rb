@@ -23,6 +23,7 @@ module Datadog
         DEFAULT_TIMEOUT = 30
         MAX_RETRIES = 3
         INITIAL_BACKOFF = 1
+        MAX_BACKOFF = 30
 
         def initialize(host:, port:, timeout: DEFAULT_TIMEOUT, ssl: true, compress: false)
           @host = host
@@ -78,21 +79,48 @@ module Datadog
         private
 
         def perform_http_call(path:, payload:, headers:, verb:, retries: MAX_RETRIES, backoff: INITIAL_BACKOFF)
-          adapter.call(
-            path: path, payload: payload, headers: headers, verb: verb
-          )
-        rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, SocketError, Net::HTTPBadResponse => e
-          Datadog.logger.debug("Failed to send request with #{e} (#{e.message})")
+          response = nil
 
-          if retries.positive?
+          begin
+            response = adapter.call(
+              path: path, payload: payload, headers: headers, verb: verb
+            )
+            return response if response.ok?
+
+            if response.code == 429
+              backoff = (response.header(Ext::Transport::HEADER_RATELIMIT_RESET) || 1).to_i
+
+              Datadog.logger.debug do
+                "Received rate limit response, retrying in #{backoff} seconds from X-RateLimit-Reset header"
+              end
+            elsif response.server_error?
+              Datadog.logger.debug { "Received server error response, retrying in #{backoff} seconds" }
+            else
+              return response
+            end
+          rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, SocketError, Net::HTTPBadResponse => e
+            Datadog.logger.debug { "Failed to send request with #{e} (#{e.message})" }
+
+            response = ErrorResponse.new(e)
+          end
+
+          if retries.positive? && backoff <= MAX_BACKOFF
             sleep(backoff)
 
             perform_http_call(
-              path: path, payload: payload, headers: headers, verb: verb, retries: retries - 1, backoff: backoff * 2
+              path: path,
+              payload: payload,
+              headers: headers,
+              verb: verb,
+              retries: retries - 1,
+              backoff: backoff * 2
             )
           else
-            Datadog.logger.error("Failed to send request after #{MAX_RETRIES} retries")
-            ErrorResponse.new(e)
+            Datadog.logger.error(
+              "Failed to send request after #{MAX_RETRIES - retries} retries (current backoff value #{backoff})"
+            )
+
+            response
           end
         end
 

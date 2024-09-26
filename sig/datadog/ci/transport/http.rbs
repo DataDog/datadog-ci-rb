@@ -13,6 +13,7 @@ module Datadog
         DEFAULT_TIMEOUT: 30
         MAX_RETRIES: 3
         INITIAL_BACKOFF: 1
+        MAX_BACKOFF: 30
 
         def initialize: (host: String, port: Integer, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
 

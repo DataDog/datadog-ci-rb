@@ -12,6 +12,7 @@ module Datadog
         HEADER_CONTENT_ENCODING = "Content-Encoding"
         HEADER_EVP_SUBDOMAIN = "X-Datadog-EVP-Subdomain"
         HEADER_CONTAINER_ID = "Datadog-Container-ID"
+        HEADER_RATELIMIT_RESET = "X-RateLimit-Reset"
 
         EVP_PROXY_V2_PATH_PREFIX = "/evp_proxy/v2/"
         EVP_PROXY_V4_PATH_PREFIX = "/evp_proxy/v4/"

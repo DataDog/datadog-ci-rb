@@ -164,7 +164,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     context "when request fails" do
       let(:request_options) { {backoff: 0} }
 
-      context "when server returns error status code" do
+      context "when server returns 400" do
         let(:net_http_response) { double("Net::HTTP::Response", code: 400, body: "error", "[]": nil) }
 
         before do
@@ -178,27 +178,106 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         end
       end
 
-      context "when succeeds after retries" do
-        before do
-          expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES).times
-          expect(adapter).to receive(:call).and_return(http_response)
+      context "when server returns 429" do
+        let(:no_backoff) { "0" }
+        let(:response_429_no_backoff) do
+          Datadog::CI::Transport::Adapters::Net::Response.new(
+            double("Net::HTTP::Response", code: 429, body: "error", "[]": no_backoff)
+          )
         end
 
-        it "produces a response" do
-          is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
+        context "when backoff increases" do
+          let(:high_backoff) { "31" }
+          let(:response_429_high_backoff) do
+            Datadog::CI::Transport::Adapters::Net::Response.new(
+              double("Net::HTTP::Response", code: 429, body: "error", "[]": high_backoff)
+            )
+          end
 
-          expect(response.code).to eq(200)
+          before do
+            expect(adapter).to receive(:call).and_return(response_429_no_backoff).once
+            expect(adapter).to receive(:call).and_return(response_429_high_backoff).once
+          end
+
+          it "retries until backoff is over 30, afterwards returns failed response" do
+            is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
+
+            expect(response.code).to eq(429)
+          end
+        end
+
+        context "when the call eventually succeeds" do
+          before do
+            expect(adapter).to(
+              receive(:call).and_return(response_429_no_backoff).exactly(described_class::MAX_RETRIES).times
+            )
+            expect(adapter).to receive(:call).and_return(http_response).once
+          end
+
+          it "produces a response" do
+            is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
+
+            expect(response.code).to eq(200)
+          end
         end
       end
 
-      context "when retries are exhausted" do
-        before do
-          expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES + 1).times
+      context "when server returns 503" do
+        let(:response_503) do
+          Datadog::CI::Transport::Adapters::Net::Response.new(
+            double("Net::HTTP::Response", code: 503, body: "error", "[]": nil)
+          )
         end
 
-        it "returns ErrorRsponse" do
-          expect(response.error).to be_kind_of(Errno::ECONNRESET)
-          expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::NETWORK)
+        context "when succeeds after retries" do
+          before do
+            expect(adapter).to receive(:call).and_return(response_503).exactly(described_class::MAX_RETRIES).times
+            expect(adapter).to receive(:call).and_return(http_response)
+          end
+
+          it "produces a response" do
+            is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
+
+            expect(response.code).to eq(200)
+          end
+        end
+
+        context "when retries are exhausted" do
+          before do
+            expect(adapter).to receive(:call).and_return(response_503).exactly(described_class::MAX_RETRIES + 1).times
+          end
+
+          it "returns failed response" do
+            is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
+
+            expect(response.code).to eq(503)
+          end
+        end
+      end
+
+      context "when network connection fails" do
+        context "when succeeds after retries" do
+          before do
+            expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES).times
+            expect(adapter).to receive(:call).and_return(http_response)
+          end
+
+          it "produces a response" do
+            is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
+
+            expect(response.code).to eq(200)
+          end
+        end
+
+        context "when retries are exhausted" do
+          before do
+            expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).exactly(described_class::MAX_RETRIES + 1).times
+          end
+
+          it "returns ErrorRsponse" do
+            expect(response.error).to be_kind_of(Errno::ECONNRESET)
+            expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::NETWORK)
+          end
         end
       end
     end
