@@ -86,7 +86,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
     context "when file paths are absolute" do
       let(:coverage) do
         {
-          absolute_path("./project/file.rb") => true
+          absolute_path("project/file.rb") => true
         }
       end
 
@@ -98,6 +98,45 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
             "span_id" => 1,
             "files" => [
               {"filename" => "spec/datadog/ci/test_optimisation/coverage/project/file.rb"}
+            ]
+          }
+        )
+      end
+    end
+
+    context "when file paths are relative" do
+      let(:current_folder) { File.basename(Dir.pwd) }
+
+      before do
+        if Datadog::CI::Git::LocalRepository.instance_variable_defined?(:@prefix_to_root)
+          Datadog::CI::Git::LocalRepository.remove_instance_variable(:@prefix_to_root)
+        end
+
+        new_root = Dir.pwd.gsub("/#{current_folder}", "")
+        new_root = "/" if new_root.empty?
+        allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(new_root)
+      end
+
+      after do
+        Datadog::CI::Git::LocalRepository.remove_instance_variable(:@prefix_to_root)
+      end
+
+      let(:coverage) do
+        {
+          "project/file.rb" => true,
+          "project/file2.rb" => true
+        }
+      end
+
+      it "converts all file paths to relative to the git root" do
+        expect(msgpack_json).to eq(
+          {
+            "test_session_id" => 3,
+            "test_suite_id" => 2,
+            "span_id" => 1,
+            "files" => [
+              {"filename" => "#{current_folder}/project/file.rb"},
+              {"filename" => "#{current_folder}/project/file2.rb"}
             ]
           }
         )
