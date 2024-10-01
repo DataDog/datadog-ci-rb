@@ -149,6 +149,10 @@ module Datadog
             nil
           end
 
+          def response_size
+            0
+          end
+
           def inspect
             "ErrorResponse error:#{error}"
           end
