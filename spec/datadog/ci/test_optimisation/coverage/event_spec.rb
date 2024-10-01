@@ -112,9 +112,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
           Datadog::CI::Git::LocalRepository.remove_instance_variable(:@prefix_to_root)
         end
 
-        allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(
-          Dir.pwd.gsub("/#{current_folder}", "")
-        )
+        new_root = Dir.pwd.gsub("/#{current_folder}", "")
+        new_root = "/" if new_root.empty?
+        allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(new_root)
       end
 
       after do
