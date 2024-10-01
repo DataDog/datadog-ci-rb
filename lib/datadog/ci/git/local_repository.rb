@@ -36,10 +36,32 @@ module Datadog
           root_path = root
           return path if root_path.nil?
 
-          path = Pathname.new(File.expand_path(path))
-          root_path = Pathname.new(root_path)
+          if File.absolute_path?(path)
+            res = path.gsub(root, "")
+            if res[0] == File::SEPARATOR
+              res = res[1..]
+            end
+          else
+            if @prefix && @prefix != ""
+              return "#{@prefix}#{path}"
+            end
 
-          path.relative_path_from(root_path).to_s
+            pathname = Pathname.new(File.expand_path(path))
+            root_path = Pathname.new(root_path)
+
+            # relative_path_from is an expensive function
+            res = pathname.relative_path_from(root_path).to_s
+
+            unless defined?(@prefix)
+              @prefix = if res.end_with?(path)
+                res&.gsub(path, "")
+              else
+                nil
+              end
+            end
+          end
+
+          res || ""
         end
 
         def self.repository_name

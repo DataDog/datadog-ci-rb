@@ -86,7 +86,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
     context "when file paths are absolute" do
       let(:coverage) do
         {
-          absolute_path("./project/file.rb") => true
+          absolute_path("project/file.rb") => true
         }
       end
 
