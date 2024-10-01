@@ -108,7 +108,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
       let(:current_folder) { File.basename(Dir.pwd) }
 
       before do
-        Datadog::CI::Git::LocalRepository.remove_instance_variable(:@prefix_to_root)
+        if Datadog::CI::Git::LocalRepository.instance_variable_defined?(:@prefix_to_root)
+          Datadog::CI::Git::LocalRepository.remove_instance_variable(:@prefix_to_root)
+        end
 
         allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(
           Dir.pwd.gsub("/#{current_folder}", "")
