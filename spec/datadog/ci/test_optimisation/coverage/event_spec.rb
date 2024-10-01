@@ -104,6 +104,41 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
       end
     end
 
+    context "when file paths are relative" do
+      before do
+        Datadog::CI::Git::LocalRepository.remove_instance_variable(:@prefix_to_root)
+
+        allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(
+          Dir.pwd.gsub("/datadog-ci-rb", "")
+        )
+      end
+
+      after do
+        Datadog::CI::Git::LocalRepository.remove_instance_variable(:@prefix_to_root)
+      end
+
+      let(:coverage) do
+        {
+          "project/file.rb" => true,
+          "project/file2.rb" => true
+        }
+      end
+
+      it "converts all file paths to relative to the git root" do
+        expect(msgpack_json).to eq(
+          {
+            "test_session_id" => 3,
+            "test_suite_id" => 2,
+            "span_id" => 1,
+            "files" => [
+              {"filename" => "datadog-ci-rb/project/file.rb"},
+              {"filename" => "datadog-ci-rb/project/file2.rb"}
+            ]
+          }
+        )
+      end
+    end
+
     context "coverage in lines format" do
       let(:coverage) { {"file.rb" => {1 => true, 2 => true, 3 => true}} }
 

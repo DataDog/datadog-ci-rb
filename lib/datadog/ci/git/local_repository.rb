@@ -30,6 +30,8 @@ module Datadog
           @root = git_root || Dir.pwd
         end
 
+        # ATTENTION: this function is running in a hot path
+        # and should be optimized for performance
         def self.relative_to_root(path)
           return "" if path.nil?
 
@@ -37,14 +39,17 @@ module Datadog
           return path if root_path.nil?
 
           if File.absolute_path?(path)
+            # prefix_index is where the root path ends in the given path
             prefix_index = root_path.size
 
-            # impossible case
+            # impossible case - absolute paths are returned from code coverage tool that always checks
+            # that root is a prefix of the path
             return "" if path.size < prefix_index
 
             prefix_index += 1 if path[prefix_index] == File::SEPARATOR
             res = path[prefix_index..]
           else
+            # prefix_to_root is a difference between the root path and the given path
             if @prefix_to_root == ""
               return path
             elsif @prefix_to_root
