@@ -105,11 +105,13 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
     end
 
     context "when file paths are relative" do
+      let(:current_folder) { File.basename(Dir.pwd) }
+
       before do
         Datadog::CI::Git::LocalRepository.remove_instance_variable(:@prefix_to_root)
 
         allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(
-          Dir.pwd.gsub("/datadog-ci-rb", "")
+          Dir.pwd.gsub("/#{current_folder}", "")
         )
       end
 
@@ -131,8 +133,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Event do
             "test_suite_id" => 2,
             "span_id" => 1,
             "files" => [
-              {"filename" => "datadog-ci-rb/project/file.rb"},
-              {"filename" => "datadog-ci-rb/project/file2.rb"}
+              {"filename" => "#{current_folder}/project/file.rb"},
+              {"filename" => "#{current_folder}/project/file2.rb"}
             ]
           }
         )
