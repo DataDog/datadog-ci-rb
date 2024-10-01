@@ -37,13 +37,18 @@ module Datadog
           return path if root_path.nil?
 
           if File.absolute_path?(path)
-            res = path.gsub(root, "")
-            if res[0] == File::SEPARATOR
-              res = res[1..]
-            end
+            prefix_index = root_path.size
+
+            # impossible case
+            return "" if path.size < prefix_index
+
+            prefix_index += 1 if path[prefix_index] == File::SEPARATOR
+            res = path[prefix_index..]
           else
-            if @prefix && @prefix != ""
-              return "#{@prefix}#{path}"
+            if @prefix_to_root == ""
+              return path
+            elsif @prefix_to_root
+              return File.join(@prefix_to_root, path)
             end
 
             pathname = Pathname.new(File.expand_path(path))
@@ -52,12 +57,8 @@ module Datadog
             # relative_path_from is an expensive function
             res = pathname.relative_path_from(root_path).to_s
 
-            unless defined?(@prefix)
-              @prefix = if res.end_with?(path)
-                res&.gsub(path, "")
-              else
-                nil
-              end
+            unless defined?(@prefix_to_root)
+              @prefix_to_root = res&.gsub(path, "") if res.end_with?(path)
             end
           end
 
