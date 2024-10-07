@@ -95,6 +95,9 @@ struct dd_cov_data
   // Allocation tracing works only in multi threaded mode.
   VALUE object_allocation_tracepoint;
   st_table *klasses_table; // { (VALUE) -> int } hashmap with class names that were covered by allocation during the test run
+
+  // Cache for Class -> source location mappings
+  VALUE klass_source_locations;
 };
 
 static void dd_cov_mark(void *ptr)
@@ -103,6 +106,7 @@ static void dd_cov_mark(void *ptr)
   rb_gc_mark_movable(dd_cov_data->impacted_files);
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
+  rb_gc_mark_movable(dd_cov_data->klass_source_locations);
 
   // if GC starts withing dd_cov_allocate() call, klasses_table might not be initialized yet
   if (dd_cov_data->klasses_table != NULL)
@@ -126,6 +130,7 @@ static void dd_cov_compact(void *ptr)
   dd_cov_data->impacted_files = rb_gc_location(dd_cov_data->impacted_files);
   dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
   dd_cov_data->object_allocation_tracepoint = rb_gc_location(dd_cov_data->object_allocation_tracepoint);
+  dd_cov_data->klass_source_locations = rb_gc_location(dd_cov_data->klass_source_locations);
   // keys for dd_cov_data->klasses_table are not moved by GC, so we don't need to update them
 }
 
@@ -154,6 +159,7 @@ static VALUE dd_cov_allocate(VALUE klass)
   dd_cov_data->object_allocation_tracepoint = Qnil;
   // numtable type is needed to store VALUE as a key
   dd_cov_data->klasses_table = st_init_numtable();
+  dd_cov_data->klass_source_locations = rb_hash_new();
 
   return dd_cov;
 }
@@ -236,25 +242,43 @@ static int process_instantiated_klass(st_data_t key, st_data_t _value, st_data_t
   VALUE klass = (VALUE)key;
   struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
 
-  VALUE klass_name = rb_class_name(klass);
-  if (klass_name == Qnil)
+  VALUE filename = rb_hash_aref(dd_cov_data->klass_source_locations, klass);
+  if (filename == Qnil)
+  {
+    VALUE klass_name = rb_class_name(klass);
+    if (klass_name == Qnil)
+    {
+      rb_hash_aset(dd_cov_data->klass_source_locations, klass, Qfalse);
+      return ST_CONTINUE;
+    }
+
+    VALUE source_location = safely_get_source_location(klass_name);
+    if (source_location == Qnil || RARRAY_LEN(source_location) == 0)
+    {
+      rb_hash_aset(dd_cov_data->klass_source_locations, klass, Qfalse);
+      return ST_CONTINUE;
+    }
+
+    filename = RARRAY_AREF(source_location, 0);
+    if (filename == Qnil || !RB_TYPE_P(filename, T_STRING))
+    {
+      rb_hash_aset(dd_cov_data->klass_source_locations, klass, Qfalse);
+      return ST_CONTINUE;
+    }
+
+    rb_hash_aset(dd_cov_data->klass_source_locations, klass, filename);
+  }
+
+  if (filename == Qfalse)
   {
     return ST_CONTINUE;
   }
 
-  VALUE source_location = safely_get_source_location(klass_name);
-  if (source_location == Qnil || RARRAY_LEN(source_location) == 0)
+  // double check that fileame is a string
+  if (RB_TYPE_P(filename, T_STRING))
   {
-    return ST_CONTINUE;
+    record_impacted_file(dd_cov_data, filename);
   }
-
-  VALUE filename = RARRAY_AREF(source_location, 0);
-  if (filename == Qnil || !RB_TYPE_P(filename, T_STRING))
-  {
-    return ST_CONTINUE;
-  }
-
-  record_impacted_file(dd_cov_data, filename);
   return ST_CONTINUE;
 }
 
