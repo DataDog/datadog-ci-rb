@@ -162,8 +162,6 @@ module Datadog
 
         def count_skipped_test(test)
           @mutex.synchronize do
-            Telemetry.itr_skipped
-
             @total_tests_count += 1
 
             return if !test.skipped? || !test.skipped_by_itr?
@@ -172,6 +170,8 @@ module Datadog
               Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
               return
             end
+
+            Telemetry.itr_skipped
 
             @skipped_tests_count += 1
           end
