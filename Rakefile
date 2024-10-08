@@ -159,6 +159,19 @@ namespace :spec do
     t.pattern = "spec/datadog/ci/git/**/*_spec.rb"
     t.rspec_opts = args.to_a.join(" ")
   end
+
+  # ddcov test impact analysis tool with memcheck
+  desc ""
+  if Gem.loaded_specs.key?("ruby_memcheck")
+    RubyMemcheck::RSpec::RakeTask.new(:ddcov_memcheck) do |t, args|
+      t.pattern = "spec/ddcov/**/*_spec.rb"
+      t.rspec_opts = args.to_a.join(" ")
+    end
+  else
+    task :ddcov_memcheck do
+      raise "Memcheck requires the ruby_memcheck gem to be installed"
+    end
+  end
 end
 
 desc "CI task; it runs all tests for current version of Ruby"
