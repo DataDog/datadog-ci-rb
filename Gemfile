@@ -33,12 +33,14 @@ gem "pimpmychangelog", ">= 0.1.2"
 gem "simplecov"
 gem "simplecov-cobertura", "~> 2.1.0"
 
-# type checking
+# type checks, memory checks, etc.
 group :check do
   if RUBY_VERSION >= "3.0.0" && RUBY_PLATFORM != "java"
     gem "rbs", "~> 3.5.0", require: false
     gem "steep", "~> 1.7.0", require: false
   end
+
+  gem "ruby_memcheck", ">= 3" if RUBY_VERSION >= "3.4.0" && RUBY_PLATFORM != "java"
 end
 
 # development dependencies for vscode integration and debugging

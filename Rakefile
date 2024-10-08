@@ -7,6 +7,19 @@ require "rspec/core/rake_task"
 require "yard"
 require "rake/extensiontask"
 
+if Gem.loaded_specs.key? "ruby_memcheck"
+  require "ruby_memcheck"
+  require "ruby_memcheck/rspec/rake_task"
+
+  RubyMemcheck.config(
+    # If there's an error, print the suppression for that error, to allow us to easily skip such an error if it's
+    # a false-positive / something in the VM we can't fix.
+    valgrind_generate_suppressions: true,
+    # This feature provides better quality data -- I couldn't get good output out of ruby_memcheck without it.
+    use_only_ruby_free_at_exit: true
+  )
+end
+
 RSpec::Core::RakeTask.new(:spec)
 
 Dir.glob("tasks/*.rake").each { |r| import r }
@@ -158,6 +171,19 @@ namespace :spec do
   RSpec::Core::RakeTask.new(:git) do |t, args|
     t.pattern = "spec/datadog/ci/git/**/*_spec.rb"
     t.rspec_opts = args.to_a.join(" ")
+  end
+
+  # ddcov test impact analysis tool with memcheck
+  desc ""
+  if Gem.loaded_specs.key?("ruby_memcheck")
+    RubyMemcheck::RSpec::RakeTask.new(:ddcov_memcheck) do |t, args|
+      t.pattern = "spec/ddcov/**/*_spec.rb"
+      t.rspec_opts = args.to_a.join(" ")
+    end
+  else
+    task :ddcov_memcheck do
+      raise "Memcheck requires the ruby_memcheck gem to be installed"
+    end
   end
 end
 
