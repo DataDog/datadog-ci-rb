@@ -7,6 +7,19 @@ require "rspec/core/rake_task"
 require "yard"
 require "rake/extensiontask"
 
+if Gem.loaded_specs.key? "ruby_memcheck"
+  require "ruby_memcheck"
+  require "ruby_memcheck/rspec/rake_task"
+
+  RubyMemcheck.config(
+    # If there's an error, print the suppression for that error, to allow us to easily skip such an error if it's
+    # a false-positive / something in the VM we can't fix.
+    valgrind_generate_suppressions: true,
+    # This feature provides better quality data -- I couldn't get good output out of ruby_memcheck without it.
+    use_only_ruby_free_at_exit: true
+  )
+end
+
 RSpec::Core::RakeTask.new(:spec)
 
 Dir.glob("tasks/*.rake").each { |r| import r }
