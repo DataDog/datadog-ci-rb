@@ -13,6 +13,7 @@ RSpec.describe "Minitest instrumentation" do
     Minitest::Runnable.reset
 
     Timecop.freeze(time_1990)
+    Timecop.mock_process_clock = true
 
     class SomeTest < Minitest::Test
       def test_pass
@@ -25,6 +26,9 @@ RSpec.describe "Minitest instrumentation" do
 
   it "does not set frozen time when setting start time for traces" do
     expect(first_test_span.start_time).not_to eq(time_1990)
+    expect(first_test_span.duration).not_to eq(0)
+
     expect(test_session_span.start_time).not_to eq(time_1990)
+    expect(test_session_span.duration).not_to eq(0)
   end
 end
