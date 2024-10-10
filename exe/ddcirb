@@ -1,43 +1,19 @@
 #!/usr/bin/env ruby
 
 require "optparse"
-require "rspec/core"
-require "datadog/ci"
+require "datadog/ci/test_optimisation/skippable_percentage"
 
 ddcirb_options = {}
 OptionParser.new do |opts|
-  opts.banner = "Usage: bundle exec ddcirb [options]"
+  opts.banner = "Usage: bundle exec ddcirb skippable-tests [options]"
 
   opts.on("-f", "--file FILENAME", "Output result to file FILENAME")
   opts.on("--rspec-opts=[OPTIONS]", "Command line options to pass to RSpec")
 end.parse!(into: ddcirb_options)
 
-Datadog.configure do |c|
-  c.ci.enabled = true
-  c.ci.itr_enabled = true
-  c.ci.discard_traces = true
-  c.ci.instrument :rspec, dry_run_enabled: true
-  c.tracing.enabled = true
-end
-
 additional_rspec_opts = (ddcirb_options[:"rspec-opts"] || "").split
 
-rspec_cli_options = additional_rspec_opts + %w[
-  --dry-run
-  spec
-]
-
-rspec_config_options = ::RSpec::Core::ConfigurationOptions.new(rspec_cli_options)
-devnull = File.new("/dev/null", "w")
-exit_code = ::RSpec::Core::Runner.new(rspec_config_options).run(devnull, devnull)
-
-if exit_code != 0
-  Datadog.logger.error("RSpec dry-run failed with exit code #{exit_code}")
-end
-
-test_optimisation = Datadog.send(:components).test_optimisation
-
-percentage_skipped = (test_optimisation.skipped_tests_count.to_f / test_optimisation.total_tests_count).floor(2)
+percentage_skipped = Datadog::CI::TestOptimisation::SkippablePercentage.new(rspec_cli_options: additional_rspec_opts).calculate
 
 if ddcirb_options[:file]
   File.write(ddcirb_options[:file], percentage_skipped)

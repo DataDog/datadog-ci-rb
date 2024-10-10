@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module TestOptimisation
+      class SkippablePercentage
+        @rspec_cli_options: Array[String]
+
+        def initialize: (?rspec_cli_options: Array[String]) -> void
+
+        def calculate: () -> untyped
+      end
+    end
+  end
+end

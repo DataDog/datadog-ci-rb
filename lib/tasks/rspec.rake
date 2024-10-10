@@ -2,31 +2,10 @@ namespace :datadog do
   namespace :ci do
     namespace :rspec do
       task :skippable_percentage do
-        require "rspec/core"
-        require "datadog/ci"
+        require "datadog/ci/test_optimisation/skippable_percentage"
 
-        Datadog.configure do |c|
-          c.ci.enabled = true
-          c.ci.itr_enabled = true
-          c.ci.discard_traces = true
-          c.ci.instrument :rspec, dry_run_enabled: true
-          c.tracing.enabled = true
-        end
-
-        rspec_cli_options = %w[
-          --dry-run
-          spec
-        ]
-        options = ::RSpec::Core::ConfigurationOptions.new(rspec_cli_options)
-        devnull = File.new("/dev/null", "w")
-        exit_code = ::RSpec::Core::Runner.new(options).run(devnull, devnull)
-
-        if exit_code != 0
-          Datadog.logger.error("RSpec dry-run failed with exit code #{exit_code}")
-        end
-
-        test_optimisation = Datadog.send(:components).test_optimisation
-        print((test_optimisation.skipped_tests_count.to_f / test_optimisation.total_tests_count).floor(2))
+        percentage_skipped = Datadog::CI::TestOptimisation::SkippablePercentage.new(rspec_cli_options: []).calculate
+        print(percentage_skipped)
       end
 
       task :skippable_percentage_estimate do
