@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module CLI
+      def self.exec: (String action) -> void
+
+      def self.exec_skippable_tests_percentage: () -> void
+    end
+  end
+end

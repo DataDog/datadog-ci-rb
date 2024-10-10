@@ -16,6 +16,7 @@ target :lib do
   library "tmpdir"
   library "fileutils"
   library "socket"
+  library "optparse"
 
   repo_path "vendor/rbs"
   library "ddtrace"
