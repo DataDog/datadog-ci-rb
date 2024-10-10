@@ -23,6 +23,9 @@ Gem::Specification.new do |spec|
   spec.homepage = "https://github.com/DataDog/datadog-ci-rb"
   spec.license = "BSD-3-Clause"
 
+  spec.bindir = "exe"
+  spec.executables = ["ddcirb"]
+
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["changelog_uri"] = "https://github.com/DataDog/datadog-ci-rb/blob/main/CHANGELOG.md"
   spec.metadata["homepage_uri"] = spec.homepage
@@ -36,6 +39,7 @@ Gem::Specification.new do |spec|
       README.md
       ext/**/*
       lib/**/*
+      exe/**/*
     ]].select { |fn| File.file?(fn) } # We don't want directories, only files
       .reject { |fn| fn.end_with?(".so", ".bundle") } # Exclude local native binary artifacts
 
@@ -43,6 +47,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "datadog", "~> 2.3"
   spec.add_dependency "msgpack"
+  spec.add_dependency "rake"
 
   spec.extensions = ["ext/datadog_cov/extconf.rb"]
 end

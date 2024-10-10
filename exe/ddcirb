@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require "datadog/ci/cli/cli"
+
+Datadog::CI::CLI.exec(ARGV.first)

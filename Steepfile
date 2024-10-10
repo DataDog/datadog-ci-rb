@@ -16,6 +16,7 @@ target :lib do
   library "tmpdir"
   library "fileutils"
   library "socket"
+  library "optparse"
 
   repo_path "vendor/rbs"
   library "ddtrace"
@@ -32,4 +33,5 @@ target :lib do
   library "timecop"
   library "webmock"
   library "simplecov"
+  library "rake"
 end
