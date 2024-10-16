@@ -1,7 +1,7 @@
 # Command line interface
 
 This library provides experimental command line interface `ddcirb` to get the percentage of the tests
-that will be skipped for the current test run.
+that will be skipped for the current test run (only when using RSpec).
 
 ## Usage
 
