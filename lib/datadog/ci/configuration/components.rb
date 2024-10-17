@@ -80,16 +80,8 @@ module Datadog
           # startup logs are useless for test visibility and create noise
           settings.diagnostics.startup_logs.enabled = false
 
-          # When timecop is present, Time.now is mocked and .now_without_mock_time is added on Time to
-          # get the current time without the mock.
-          if timecop?
-            settings.time_now_provider = -> do
-              Time.now_without_mock_time
-            rescue NoMethodError
-              # fallback to normal Time.now if Time.now_without_mock_time is not defined for any reason
-              Time.now
-            end
-          end
+          # timecop configuration
+          configure_time_providers(settings)
 
           # Configure Datadog::Tracing module
 
@@ -182,7 +174,6 @@ module Datadog
               # Tests are running without CI visibility enabled
               settings.ci.enabled = false
             end
-
           else
             Datadog.logger.debug("CI visibility configured to use agent transport via EVP proxy")
 
@@ -296,6 +287,29 @@ module Datadog
             Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
           rescue => e
             Datadog.logger.warn("Failed to patch Datadog gem's telemetry layer: #{e}")
+          end
+        end
+
+        # When timecop is present:
+        # - Time.now is mocked and .now_without_mock_time is added on Time to get the current time without the mock.
+        # - Process.clock_gettime is mocked and .clock_gettime_without_mock is added on Process to get the monotonic time without the mock.
+        def configure_time_providers(settings)
+          return unless timecop?
+
+          settings.time_now_provider = -> do
+            Time.now_without_mock_time
+          rescue NoMethodError
+            # fallback to normal Time.now if Time.now_without_mock_time is not defined for any reason
+            Time.now
+          end
+
+          if defined?(Process.clock_gettime_without_mock)
+            settings.get_time_provider = ->(unit = :float_second) do
+              ::Process.clock_gettime_without_mock(::Process::CLOCK_MONOTONIC, unit)
+            rescue NoMethodError
+              # fallback to normal Process.clock_gettime if Process.clock_gettime_without_mock is not defined for any reason
+              Process.clock_gettime(::Process::CLOCK_MONOTONIC, unit)
+            end
           end
         end
 

@@ -40,6 +40,8 @@ module Datadog
 
         def configure_telemetry: (untyped settings) -> void
 
+        def configure_time_providers: (untyped settings) -> void
+
         def timecop?: () -> bool
       end
     end

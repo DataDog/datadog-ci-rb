@@ -2,5 +2,9 @@ class Time
   def self.now_without_mock_time: () -> Time
 end
 
+module Process
+  def self.clock_gettime_without_mock: (untyped clock, untyped unit) -> Numeric
+end
+
 class Timecop
 end
