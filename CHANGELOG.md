@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [1.8.0] - 2024-10-17
+
+### Added
+* Add command line tool to compute a percentage of skippable tests for RSpec ([#194][])
+
+### Changed
+* Bump gem datadog dependency to 2.4 and update test dependencies ([#248][])
+* Optimise LocalRepository.relative_to_root helper to make test impact analysis faster ([#244][])
+* Retry HTTP requests on 429 and 5xx responses ([#243][])
+* Use correct monotonic clock time if Timecop.mock_process_clock is set ([#242][])
+
 ## [1.7.0] - 2024-09-25
 
 ### Added
@@ -339,7 +350,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.7.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.0...main
+[1.8.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.4.1...v1.5.0
@@ -459,6 +471,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#189]: https://github.com/DataDog/datadog-ci-rb/issues/189
 [#190]: https://github.com/DataDog/datadog-ci-rb/issues/190
 [#193]: https://github.com/DataDog/datadog-ci-rb/issues/193
+[#194]: https://github.com/DataDog/datadog-ci-rb/issues/194
 [#197]: https://github.com/DataDog/datadog-ci-rb/issues/197
 [#200]: https://github.com/DataDog/datadog-ci-rb/issues/200
 [#201]: https://github.com/DataDog/datadog-ci-rb/issues/201
@@ -489,3 +502,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#238]: https://github.com/DataDog/datadog-ci-rb/issues/238
 [#239]: https://github.com/DataDog/datadog-ci-rb/issues/239
 [#240]: https://github.com/DataDog/datadog-ci-rb/issues/240
+[#242]: https://github.com/DataDog/datadog-ci-rb/issues/242
+[#243]: https://github.com/DataDog/datadog-ci-rb/issues/243
+[#244]: https://github.com/DataDog/datadog-ci-rb/issues/244
+[#248]: https://github.com/DataDog/datadog-ci-rb/issues/248
