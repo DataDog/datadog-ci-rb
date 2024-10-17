@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module CLI
+      module Command
+        class SkippableTestsPercentage < Base
+          private
+
+          def build_action: () -> untyped
+
+          def command_options: (untyped opts) -> void
+        end
+      end
+    end
+  end
+end

@@ -9,24 +9,6 @@ RSpec.describe "RSpec hooks" do
     expect(Datadog::CI).to receive(:start_test).never
   end
 
-  # Yields to a block in a new RSpec global context. All RSpec
-  # test configuration and execution should be wrapped in this method.
-  def with_new_rspec_environment
-    old_configuration = ::RSpec.configuration
-    old_world = ::RSpec.world
-    ::RSpec.configuration = ::RSpec::Core::Configuration.new
-    ::RSpec.world = ::RSpec::Core::World.new
-
-    yield
-  ensure
-    ::RSpec.configuration = old_configuration
-    ::RSpec.world = old_world
-  end
-
-  def devnull
-    File.new("/dev/null", "w")
-  end
-
   def rspec_session_run(
     with_failed_test: false,
     with_shared_test: false,
@@ -166,7 +148,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "139")
+      expect(first_test_span).to have_test_tag(:source_start, "121")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -596,7 +578,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "57")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "39")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -851,16 +833,32 @@ RSpec.describe "RSpec hooks" do
   end
 
   context "with dry run" do
-    include_context "CI mode activated" do
-      let(:integration_name) { :rspec }
-      let(:integration_options) { {service_name: "lspec"} }
+    context "normal instrumentation" do
+      include_context "CI mode activated" do
+        let(:integration_name) { :rspec }
+        let(:integration_options) { {service_name: "lspec"} }
+      end
+
+      it "does not instrument test session" do
+        rspec_session_run(dry_run: true)
+
+        expect(test_session_span).to be_nil
+        expect(test_spans).to be_empty
+      end
     end
 
-    it "does not instrument test session" do
-      rspec_session_run(dry_run: true)
+    context "when dry run is enabled for rspec" do
+      include_context "CI mode activated" do
+        let(:integration_name) { :rspec }
+        let(:integration_options) { {service_name: "lspec", dry_run_enabled: true} }
+      end
 
-      expect(test_session_span).to be_nil
-      expect(test_spans).to be_empty
+      it "instruments test session" do
+        rspec_session_run(dry_run: true)
+
+        expect(test_session_span).not_to be_nil
+        expect(test_spans).not_to be_empty
+      end
     end
   end
 

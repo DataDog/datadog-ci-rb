@@ -106,6 +106,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
             expect(response.ok?).to be true
             expect(response.correlation_id).to eq("correlation_id_123")
             expect(response.tests).to eq(Set.new(["test_suite_name.test_name.string"]))
+            expect(response.error_message).to be_nil
           end
 
           it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.request", 1
@@ -118,7 +119,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
             double(
               "http_response",
               ok?: false,
-              payload: "",
+              payload: "not authorized",
               request_compressed: false,
               duration_ms: 1.2,
               gzipped_content?: false,
@@ -132,6 +133,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
             expect(response.ok?).to be false
             expect(response.correlation_id).to be_nil
             expect(response.tests).to be_empty
+            expect(response.error_message).to eq("Status code: 422, response: not authorized")
           end
 
           it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.request_errors", 1

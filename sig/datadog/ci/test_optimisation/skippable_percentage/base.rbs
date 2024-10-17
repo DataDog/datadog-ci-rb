@@ -1,0 +1,28 @@
+module Datadog
+  module CI
+    module TestOptimisation
+      module SkippablePercentage
+        class Base
+          attr_reader failed: bool
+
+          @verbose: bool
+          @spec_path: String
+
+          def initialize: (?verbose: bool, ?spec_path: ::String) -> void
+
+          def call: () -> Numeric
+
+          private
+
+          def validate_test_optimisation_state!: () -> void
+
+          def log: (String message) -> void
+
+          def error!: (String message) -> void
+
+          def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
+        end
+      end
+    end
+  end
+end

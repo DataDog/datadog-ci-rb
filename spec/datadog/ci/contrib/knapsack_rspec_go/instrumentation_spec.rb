@@ -14,24 +14,6 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the kn
     let(:integration_name) { :rspec }
   end
 
-  # Yields to a block in a new RSpec global context. All RSpec
-  # test configuration and execution should be wrapped in this method.
-  def with_new_rspec_environment
-    old_configuration = ::RSpec.configuration
-    old_world = ::RSpec.world
-    ::RSpec.configuration = ::RSpec::Core::Configuration.new
-    ::RSpec.world = ::RSpec::Core::World.new
-
-    yield
-  ensure
-    ::RSpec.configuration = old_configuration
-    ::RSpec.world = old_world
-  end
-
-  def devnull
-    File.new("/dev/null", "w")
-  end
-
   before do
     allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
       receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)

@@ -14,7 +14,7 @@ end
 alias original_appraise appraise
 
 REMOVED_GEMS = {
-  check: %w[rbs steep],
+  check: %w[rbs steep ruby_memcheck],
   development: %w[ruby-lsp ruby-lsp-rspec debug irb]
 }
 RUBY_VERSION = Gem::Version.new(RUBY_ENGINE_VERSION)

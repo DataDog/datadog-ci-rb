@@ -76,7 +76,7 @@ module Datadog
       # - tests that read files from disk
       # - tests that make network requests
       # - tests that call external processes
-      # - tests that use forking or threading
+      # - tests that use forking
       #
       # @return [void]
       def itr_unskippable!
