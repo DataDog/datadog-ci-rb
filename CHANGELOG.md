@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.8.1] - 2024-10-18
+
+
+### Fixed
+* Make --spec-path option available to skipped-tests-estimate cli command ([#250][])
+
 ## [1.8.0] - 2024-10-17
 
 ### Added
@@ -350,7 +356,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.1...main
+[1.8.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.5.0...v1.6.0
@@ -506,3 +513,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#243]: https://github.com/DataDog/datadog-ci-rb/issues/243
 [#244]: https://github.com/DataDog/datadog-ci-rb/issues/244
 [#248]: https://github.com/DataDog/datadog-ci-rb/issues/248
+[#250]: https://github.com/DataDog/datadog-ci-rb/issues/250
