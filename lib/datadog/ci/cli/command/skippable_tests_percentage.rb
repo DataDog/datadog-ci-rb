@@ -18,7 +18,6 @@ module Datadog
 
           def command_options(opts)
             opts.on("--rspec-opts=[OPTIONS]", "Command line options to pass to RSpec")
-            opts.on("--spec-path=[SPEC_PATH]", "Relative path to the spec directory, example: spec")
           end
         end
       end

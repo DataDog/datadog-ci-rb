@@ -27,6 +27,7 @@ module Datadog
 
               opts.on("-f", "--file FILENAME", "Output result to file FILENAME")
               opts.on("--verbose", "Verbose output to stdout")
+              opts.on("--spec-path=[SPEC_PATH]", "Relative path to the spec directory, example: spec")
 
               command_options(opts)
             end.parse!(into: ddcirb_options)
