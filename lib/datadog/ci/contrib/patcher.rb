@@ -13,14 +13,13 @@ module Datadog
         end
 
         # Prepended instance methods for all patchers
-        # @public_api
         module CommonMethods
           attr_accessor \
             :patch_error_result,
             :patch_successful
 
           def patch_name
-            name
+            (self.class != Class && self.class != Module) ? self.class.name : name
           end
 
           def patched?
