@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "datadog/tracing/contrib/patcher"
-
 require_relative "ext"
 require_relative "../../ext/test"
 require_relative "../../utils/parsing"

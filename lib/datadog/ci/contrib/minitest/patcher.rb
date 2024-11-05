@@ -11,7 +11,7 @@ module Datadog
       module Minitest
         # Patcher enables patching of 'minitest' module.
         module Patcher
-          include Datadog::Tracing::Contrib::Patcher
+          include Datadog::CI::Contrib::Patcher
 
           module_function
 

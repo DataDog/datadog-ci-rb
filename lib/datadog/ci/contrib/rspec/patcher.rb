@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/tracing/contrib/patcher"
+require_relative "../patcher"
 
 require_relative "example"
 require_relative "example_group"
@@ -12,7 +12,7 @@ module Datadog
       module RSpec
         # Patcher enables patching of 'rspec' module.
         module Patcher
-          include Datadog::Tracing::Contrib::Patcher
+          include Datadog::CI::Contrib::Patcher
 
           module_function
 
