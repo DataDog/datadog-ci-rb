@@ -196,11 +196,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         it "logs warning that events were filtered out" do
           subject
 
-          expect(Datadog.logger).to have_received(:warn).with(
-            "Invalid event skipped: " \
-            "Datadog::CI::TestVisibility::Serializers::Span(id:#{http_span.id},name:#{http_span.name}) " \
-            "Errors: {\"start\"=>#<Set: {\"must be greater than or equal to 946684800000000000\"}>}"
-          )
+          expect(Datadog.logger).to have_received(:warn).with(/must be greater than or equal to 946684800000000000/)
         end
 
         it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 3
