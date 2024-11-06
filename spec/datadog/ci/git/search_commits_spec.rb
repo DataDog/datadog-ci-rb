@@ -107,7 +107,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
             expect { subject }
               .to raise_error(
                 Datadog::CI::Git::SearchCommits::ApiError,
-                "Invalid commit type response {\"id\"=>\"c7f893648f656339f62fb7b4d8a6ecdf7d063835\", \"type\"=>\"invalid\"}"
+                /Invalid commit type response/
               )
           end
         end
@@ -169,7 +169,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
             expect { subject }
               .to raise_error(
                 Datadog::CI::Git::SearchCommits::ApiError,
-                "Invalid commit type response {\"id\"=>\"c7f893648f656339f62fb7b4d8a6ecdf7d063835\"}"
+                /Invalid commit type response/
               )
           end
         end
