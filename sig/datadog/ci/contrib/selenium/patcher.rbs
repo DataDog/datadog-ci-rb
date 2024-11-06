@@ -3,7 +3,7 @@ module Datadog
     module Contrib
       module Selenium
         module Patcher
-          include Datadog::Tracing::Contrib::Patcher
+          include Datadog::CI::Contrib::Patcher
 
           def self?.target_version: () -> untyped
 

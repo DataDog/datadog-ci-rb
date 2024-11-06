@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/tracing/contrib/patcher"
+require_relative "../patcher"
 
 require_relative "capybara_driver"
 require_relative "driver"
@@ -12,7 +12,7 @@ module Datadog
       module Selenium
         # Patcher enables patching of 'Selenium::WebDriver' module.
         module Patcher
-          include Datadog::Tracing::Contrib::Patcher
+          include Datadog::CI::Contrib::Patcher
 
           module_function
 

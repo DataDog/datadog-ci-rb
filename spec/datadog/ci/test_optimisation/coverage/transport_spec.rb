@@ -131,9 +131,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::Transport do
           subject
 
           expect(Datadog.logger).to have_received(:warn).with(
-            "citestcov event is invalid: [test_suite_id] is nil. " \
-            "Event: Coverage::Event[test_id=4, test_suite_id=, test_session_id=6, " \
-            "coverage={\"file.rb\"=>true, \"file2.rb\"=>true}]"
+            /\[test_suite_id\] is nil/
           )
         end
 

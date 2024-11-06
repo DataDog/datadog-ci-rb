@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/tracing/contrib/patcher"
+require_relative "../patcher"
 
 require_relative "result_extractor"
 
@@ -10,7 +10,7 @@ module Datadog
       module Simplecov
         # Patcher enables patching of 'SimpleCov' module.
         module Patcher
-          include Datadog::Tracing::Contrib::Patcher
+          include Datadog::CI::Contrib::Patcher
 
           module_function
 
