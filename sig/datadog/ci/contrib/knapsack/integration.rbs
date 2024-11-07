@@ -1,0 +1,30 @@
+module Datadog
+  module CI
+    module Contrib
+      module Knapsack
+        class Integration
+          extend Datadog::CI::Contrib::Integration::ClassMethods
+          include Datadog::CI::Contrib::Integration::InstanceMethods
+
+          class Configuration
+            def initialize: (bool enabled) -> void
+          end
+
+          MINIMUM_VERSION: Gem::Version
+
+          def self.version: () -> untyped
+
+          def self.loaded?: () -> bool
+
+          def self.compatible?: () -> bool
+
+          def auto_instrument?: () -> bool
+
+          def new_configuration: () -> Configuration
+
+          def patcher: () -> singleton(Patcher)
+        end
+      end
+    end
+  end
+end

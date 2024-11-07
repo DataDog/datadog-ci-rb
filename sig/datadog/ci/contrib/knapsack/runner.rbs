@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Contrib
+      module Knapsack
+        module Runner
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods
+            include ::KnapsackPro::Runners::Queue::RSpecRunner
+
+            def knapsack__run_specs: (untyped args) -> untyped
+
+            private
+
+            def datadog_configuration: () -> untyped
+
+            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+          end
+        end
+      end
+    end
+  end
+end
