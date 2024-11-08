@@ -657,7 +657,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:integration_name) { :not_existing }
 
             it "does not patch the integration" do
-              expect { instrument }.to raise_error(Datadog::CI::Configuration::Settings::InvalidIntegrationError)
+              expect { instrument }.to raise_error(Datadog::CI::Contrib::Instrumentation::InvalidIntegrationError)
             end
           end
 

@@ -13,7 +13,7 @@ module Datadog
           end
 
           module InstanceMethods
-            # TODO: this is coupled to RSpec integration being present
+            # TODO: this is coupled to RSpec integration being present, not sure if it's bad or not at this point
             def knapsack__run_specs(*args)
               return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
               return super unless datadog_configuration[:enabled]

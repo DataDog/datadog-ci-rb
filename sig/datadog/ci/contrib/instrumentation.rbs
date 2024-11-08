@@ -1,0 +1,14 @@
+module Datadog
+  module CI
+    module Contrib
+      module Instrumentation
+        class InvalidIntegrationError < StandardError
+        end
+
+        def self.instrument: (Symbol integration_name, ?::Hash[untyped, untyped] options) { (?) -> untyped } -> void
+
+        def self.fetch_integration: (Symbol name) -> untyped
+      end
+    end
+  end
+end
