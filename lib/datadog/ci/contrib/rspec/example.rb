@@ -3,6 +3,7 @@
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
 require_relative "../../utils/test_run"
+require_relative "../instrumentation"
 require_relative "ext"
 
 module Datadog
@@ -46,7 +47,7 @@ module Datadog
                   suite_name,
                   tags: {
                     CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                    CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s,
+                    CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
                     CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
                     CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s,
                     CI::Ext::Test::TAG_PARAMETERS => Utils::TestRun.test_parameters(
@@ -118,6 +119,10 @@ module Datadog
                 res = parent
               end
               res
+            end
+
+            def datadog_integration
+              CI::Contrib::Instrumentation.fetch_integration(:rspec)
             end
 
             def datadog_configuration

@@ -1,43 +1,38 @@
 module Datadog
   module CI
     module Contrib
-      module Integration
+      class Integration
         self.@registry: Hash[Symbol, untyped]
 
-        def self.included: (Module base) -> void
-
-        def self.register: (untyped integration, Symbol name) -> void
+        def self.inherited: (untyped) -> void
 
         def self.registry: () -> Hash[Symbol, untyped]
 
-        module ClassMethods
-          def register_as: (Symbol name) -> void
+        def self.integration_name: (Class) -> Symbol
 
-          def version: () -> Gem::Version?
+        def version: () -> untyped
 
-          def available?: () -> bool
+        def available?: () -> bool
 
-          def loaded?: () -> bool
+        def loaded?: () -> bool
 
-          def compatible?: () -> bool
+        def compatible?: () -> bool
 
-          def patchable?: () -> bool
-        end
+        def patchable?: () -> bool
 
-        module InstanceMethods
-          extend ClassMethods
-          @configuration: Datadog::CI::Contrib::Settings?
+        def configuration: () -> Datadog::CI::Contrib::Settings
 
-          def configuration: () -> Datadog::CI::Contrib::Settings
+        def configure: (?::Hash[Symbol, untyped] options) ?{ (Datadog::CI::Contrib::Settings) -> Datadog::CI::Contrib::Settings } -> Datadog::CI::Contrib::Settings
 
-          def configure: (?::Hash[Symbol, untyped] options) ?{ (Datadog::CI::Contrib::Settings) -> Datadog::CI::Contrib::Settings } -> Datadog::CI::Contrib::Settings
+        def enabled: () -> bool
 
-          def reset_configuration!: () -> void
+        def patcher: () -> Datadog::Tracing::Contrib::Patcher?
 
-          def patcher: () -> Datadog::Tracing::Contrib::Patcher?
+        def patch: () -> (bool | Hash[Symbol, bool])
 
-          def new_configuration: () -> Datadog::CI::Contrib::Settings
-        end
+        def auto_instrument?: () -> bool
+
+        def new_configuration: () -> Datadog::CI::Contrib::Settings
       end
     end
   end

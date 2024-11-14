@@ -5,8 +5,6 @@ module Datadog
         module Patcher
           include Datadog::CI::Contrib::Patcher
 
-          def self?.target_version: () -> untyped
-
           def self?.patch: () -> untyped
         end
       end

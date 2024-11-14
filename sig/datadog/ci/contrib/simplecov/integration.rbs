@@ -2,17 +2,14 @@ module Datadog
   module CI
     module Contrib
       module Simplecov
-        class Integration
-          extend Datadog::CI::Contrib::Integration::ClassMethods
-          include Datadog::CI::Contrib::Integration::InstanceMethods
-
+        class Integration < Datadog::CI::Contrib::Integration
           MINIMUM_VERSION: Gem::Version
 
-          def self.version: () -> untyped
+          def version: () -> untyped
 
-          def self.loaded?: () -> bool
+          def loaded?: () -> bool
 
-          def self.compatible?: () -> bool
+          def compatible?: () -> bool
 
           def auto_instrument?: () -> bool
 

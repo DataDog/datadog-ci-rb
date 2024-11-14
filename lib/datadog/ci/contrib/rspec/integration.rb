@@ -9,23 +9,19 @@ module Datadog
     module Contrib
       module RSpec
         # Description of RSpec integration
-        class Integration
-          include Datadog::CI::Contrib::Integration
-
+        class Integration < Contrib::Integration
           MINIMUM_VERSION = Gem::Version.new("3.0.0")
 
-          register_as :rspec
-
-          def self.version
+          def version
             Gem.loaded_specs["rspec-core"]&.version
           end
 
-          def self.loaded?
+          def loaded?
             !defined?(::RSpec).nil? && !defined?(::RSpec::Core).nil? &&
               !defined?(::RSpec::Core::Example).nil?
           end
 
-          def self.compatible?
+          def compatible?
             super && version >= MINIMUM_VERSION
           end
 

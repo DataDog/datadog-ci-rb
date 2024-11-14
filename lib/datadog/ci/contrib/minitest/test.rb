@@ -2,6 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
+require_relative "../instrumentation"
 require_relative "ext"
 require_relative "helpers"
 
@@ -36,7 +37,7 @@ module Datadog
                 test_suite_name,
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Minitest::Integration.version.to_s,
+                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
                   CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(source_file),
                   CI::Ext::Test::TAG_SOURCE_START => line_number.to_s
                 },
@@ -77,6 +78,10 @@ module Datadog
               end
 
               span.finish
+            end
+
+            def datadog_integration
+              CI::Contrib::Instrumentation.fetch_integration(:minitest)
             end
 
             def datadog_configuration

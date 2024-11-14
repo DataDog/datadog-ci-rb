@@ -9,36 +9,25 @@ module Datadog
       module Knapsack
         # Knapsack Pro test runner instrumentation
         # https://github.com/KnapsackPro/knapsack_pro-ruby
-        class Integration
-          include Datadog::CI::Contrib::Integration
-
-          Configuration = Struct.new(:enabled)
-
+        class Integration < Contrib::Integration
           MINIMUM_VERSION = Gem::Version.new("7.0.0")
 
-          register_as :knapsack
-
-          def self.version
+          def version
             Gem.loaded_specs["knapsack_pro"]&.version
           end
 
-          def self.loaded?
+          def loaded?
             !defined?(::KnapsackPro).nil? && !defined?(::KnapsackPro::Extensions::RSpecExtension).nil? &&
               !defined?(::KnapsackPro::Extensions::RSpecExtension::Runner).nil?
           end
 
-          def self.compatible?
+          def compatible?
             super && version >= MINIMUM_VERSION
           end
 
           # test environments should not auto instrument test libraries
           def auto_instrument?
             false
-          end
-
-          # TODO: not every integration needs a configuration
-          def new_configuration
-            Integration::Configuration.new(true)
           end
 
           def patcher

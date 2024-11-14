@@ -3,6 +3,7 @@
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
 require_relative "../../utils/test_run"
+require_relative "../instrumentation"
 require_relative "ext"
 
 module Datadog
@@ -38,9 +39,9 @@ module Datadog
             test_visibility_component.start_test_session(
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s
+                CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
               },
-              service: configuration[:service_name]
+              service: datadog_configuration[:service_name]
             )
             test_visibility_component.start_test_module(Ext::FRAMEWORK)
           end
@@ -61,7 +62,7 @@ module Datadog
             # @type var tags: Hash[String, String]
             tags = {
               CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-              CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::Cucumber::Integration.version.to_s,
+              CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
               CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(event.test_case.location.file),
               CI::Ext::Test::TAG_SOURCE_START => event.test_case.location.line.to_s
             }
@@ -81,7 +82,7 @@ module Datadog
               event.test_case.name,
               test_suite_name,
               tags: tags,
-              service: configuration[:service_name]
+              service: datadog_configuration[:service_name]
             )
             if event.test_case.match_tags?("@#{CI::Ext::Test::ITR_UNSKIPPABLE_OPTION}")
               test_span&.itr_unskippable!
@@ -199,7 +200,11 @@ module Datadog
             end
           end
 
-          def configuration
+          def datadog_integration
+            CI::Contrib::Instrumentation.fetch_integration(:cucumber)
+          end
+
+          def datadog_configuration
             Datadog.configuration.ci[:cucumber]
           end
 

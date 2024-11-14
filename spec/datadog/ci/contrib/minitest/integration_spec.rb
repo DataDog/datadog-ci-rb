@@ -4,7 +4,7 @@ RSpec.describe Datadog::CI::Contrib::Minitest::Integration do
   let(:integration) { described_class.new }
 
   describe ".version" do
-    subject(:version) { described_class.version }
+    subject(:version) { integration.version }
 
     context 'when the "minitest" gem is loaded' do
       include_context "loaded gems", "minitest" => described_class::MINIMUM_VERSION
@@ -18,7 +18,7 @@ RSpec.describe Datadog::CI::Contrib::Minitest::Integration do
   end
 
   describe ".loaded?" do
-    subject(:loaded?) { described_class.loaded? }
+    subject(:loaded?) { integration.loaded? }
 
     context "when Minitest is defined" do
       it { is_expected.to be true }
@@ -26,7 +26,7 @@ RSpec.describe Datadog::CI::Contrib::Minitest::Integration do
   end
 
   describe ".compatible?" do
-    subject(:compatible?) { described_class.compatible? }
+    subject(:compatible?) { integration.compatible? }
 
     context 'when "minitest" gem is loaded with a version' do
       context "that is less than the minimum" do

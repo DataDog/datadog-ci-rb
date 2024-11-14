@@ -10,6 +10,8 @@ module Kernel
 end
 
 RSpec.describe "Minitest instrumentation" do
+  let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:minitest) }
+
   before do
     # expect that public manual API isn't used
     expect(Datadog::CI).to receive(:start_test_session).never
@@ -77,7 +79,7 @@ RSpec.describe "Minitest instrumentation" do
       expect(span).to have_test_tag(:framework, "minitest")
       expect(span).to have_test_tag(
         :framework_version,
-        Datadog::CI::Contrib::Minitest::Integration.version.to_s
+        integration.version.to_s
       )
 
       expect(span).to have_pass_status
@@ -86,7 +88,7 @@ RSpec.describe "Minitest instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(:source_start, "59")
+      expect(span).to have_test_tag(:source_start, "61")
       expect(span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -437,7 +439,7 @@ RSpec.describe "Minitest instrumentation" do
           expect(test_session_span).to have_test_tag(:framework, "minitest")
           expect(test_session_span).to have_test_tag(
             :framework_version,
-            Datadog::CI::Contrib::Minitest::Integration.version.to_s
+            integration.version.to_s
           )
 
           # ITR
@@ -462,7 +464,7 @@ RSpec.describe "Minitest instrumentation" do
           expect(test_module_span).to have_test_tag(:framework, "minitest")
           expect(test_module_span).to have_test_tag(
             :framework_version,
-            Datadog::CI::Contrib::Minitest::Integration.version.to_s
+            integration.version.to_s
           )
           expect(test_module_span).to have_pass_status
         end
@@ -477,14 +479,14 @@ RSpec.describe "Minitest instrumentation" do
           expect(first_test_suite_span).to have_test_tag(:framework, "minitest")
           expect(first_test_suite_span).to have_test_tag(
             :framework_version,
-            Datadog::CI::Contrib::Minitest::Integration.version.to_s
+            integration.version.to_s
           )
 
           expect(first_test_suite_span).to have_test_tag(
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "415")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "417")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -507,7 +509,7 @@ RSpec.describe "Minitest instrumentation" do
           expect(first_test_span).to have_test_tag(:framework, "minitest")
           expect(first_test_span).to have_test_tag(
             :framework_version,
-            Datadog::CI::Contrib::Minitest::Integration.version.to_s
+            integration.version.to_s
           )
           expect(first_test_span).to have_pass_status
 

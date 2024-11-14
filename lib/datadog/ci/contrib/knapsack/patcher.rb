@@ -11,10 +11,6 @@ module Datadog
 
           module_function
 
-          def target_version
-            Integration.version
-          end
-
           def patch
             if ::RSpec::Core::Runner.ancestors.include?(::KnapsackPro::Extensions::RSpecExtension::Runner)
               # knapsack already patched rspec runner

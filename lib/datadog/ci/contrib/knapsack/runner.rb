@@ -2,6 +2,7 @@
 
 require_relative "../../../ext/test"
 require_relative "../ext"
+require_relative "../instrumentation"
 
 module Datadog
   module CI
@@ -21,7 +22,7 @@ module Datadog
               test_session = test_visibility_component.start_test_session(
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => CI::Contrib::RSpec::Ext::FRAMEWORK,
-                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s
+                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
                 },
                 service: datadog_configuration[:service_name]
               )
@@ -45,6 +46,10 @@ module Datadog
             end
 
             private
+
+            def datadog_integration
+              CI::Contrib::Instrumentation.fetch_integration(:rspec)
+            end
 
             def datadog_configuration
               Datadog.configuration.ci[:rspec]

@@ -16,10 +16,6 @@ module Datadog
 
           module_function
 
-          def target_version
-            Integration.version
-          end
-
           def patch
             ::Selenium::WebDriver::Driver.include(Driver)
             ::Selenium::WebDriver::Navigation.include(Navigation)

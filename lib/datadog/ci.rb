@@ -406,9 +406,16 @@ module Datadog
 end
 
 # Integrations
+
+# Test frameworks (manual instrumentation)
 require_relative "ci/contrib/cucumber/integration"
-require_relative "ci/contrib/rspec/integration"
 require_relative "ci/contrib/minitest/integration"
+require_relative "ci/contrib/rspec/integration"
+
+# Test runners (instrumented automatically when corresponding frameworks are instrumented)
+require_relative "ci/contrib/knapsack/integration"
+
+# Additional test libraries (auto instrumented later on test session start)
 require_relative "ci/contrib/selenium/integration"
 require_relative "ci/contrib/simplecov/integration"
 

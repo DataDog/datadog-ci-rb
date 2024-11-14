@@ -9,22 +9,18 @@ module Datadog
     module Contrib
       module Minitest
         # Description of Minitest integration
-        class Integration
-          include Datadog::CI::Contrib::Integration
-
+        class Integration < Contrib::Integration
           MINIMUM_VERSION = Gem::Version.new("5.0.0")
 
-          register_as :minitest
-
-          def self.version
+          def version
             Gem.loaded_specs["minitest"]&.version
           end
 
-          def self.loaded?
+          def loaded?
             !defined?(::Minitest).nil?
           end
 
-          def self.compatible?
+          def compatible?
             super && version >= MINIMUM_VERSION
           end
 

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../ext/test"
+require_relative "../instrumentation"
 require_relative "ext"
 
 module Datadog
@@ -21,7 +22,7 @@ module Datadog
               test_session = test_visibility_component.start_test_session(
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => CI::Contrib::RSpec::Integration.version.to_s
+                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
                 },
                 service: datadog_configuration[:service_name],
                 total_tests_count: ::RSpec.world.example_count
@@ -46,6 +47,10 @@ module Datadog
             end
 
             private
+
+            def datadog_integration
+              CI::Contrib::Instrumentation.fetch_integration(:rspec)
+            end
 
             def datadog_configuration
               Datadog.configuration.ci[:rspec]

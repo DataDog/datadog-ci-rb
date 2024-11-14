@@ -4,7 +4,7 @@ RSpec.describe Datadog::CI::Contrib::Cucumber::Integration do
   let(:integration) { described_class.new }
 
   describe ".version" do
-    subject(:version) { described_class.version }
+    subject(:version) { integration.version }
 
     context 'when the "cucumber" gem is loaded' do
       include_context "loaded gems", "cucumber" => described_class::MINIMUM_VERSION
@@ -18,7 +18,7 @@ RSpec.describe Datadog::CI::Contrib::Cucumber::Integration do
   end
 
   describe ".loaded?" do
-    subject(:loaded?) { described_class.loaded? }
+    subject(:loaded?) { integration.loaded? }
 
     context "when Cucumber::Runtime is defined" do
       before { stub_const("Cucumber::Runtime", Class.new) }
@@ -34,7 +34,7 @@ RSpec.describe Datadog::CI::Contrib::Cucumber::Integration do
   end
 
   describe ".compatible?" do
-    subject(:compatible?) { described_class.compatible? }
+    subject(:compatible?) { integration.compatible? }
 
     context 'when "cucumber" gem is loaded with a version' do
       context "that is less than the minimum" do

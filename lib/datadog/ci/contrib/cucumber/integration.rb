@@ -9,22 +9,18 @@ module Datadog
     module Contrib
       module Cucumber
         # Description of Cucumber integration
-        class Integration
-          include Datadog::CI::Contrib::Integration
-
+        class Integration < Contrib::Integration
           MINIMUM_VERSION = Gem::Version.new("3.0.0")
 
-          register_as :cucumber
-
-          def self.version
+          def version
             Gem.loaded_specs["cucumber"]&.version
           end
 
-          def self.loaded?
+          def loaded?
             !defined?(::Cucumber).nil? && !defined?(::Cucumber::Runtime).nil?
           end
 
-          def self.compatible?
+          def compatible?
             super && version >= MINIMUM_VERSION
           end
 

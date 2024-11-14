@@ -5,8 +5,6 @@ module Datadog
         module Patcher
           include Datadog::CI::Contrib::Patcher
 
-          def self?.target_version: () -> String
-
           def self?.patch: () -> void
 
           def self?.ci_queue?: () -> bool

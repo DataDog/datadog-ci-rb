@@ -8,6 +8,8 @@ module Datadog
           module InstanceMethods : ::Selenium::WebDriver::Navigation
             def to: (String url) -> void
 
+            def datadog_integration: () -> Datadog::CI::Contrib::Integration
+
             def datadog_configuration: () -> untyped
           end
         end

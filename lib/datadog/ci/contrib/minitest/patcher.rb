@@ -15,10 +15,6 @@ module Datadog
 
           module_function
 
-          def target_version
-            Integration.version
-          end
-
           def patch
             # test session start
             ::Minitest.include(Runner)

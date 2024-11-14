@@ -16,12 +16,9 @@ module Datadog
 
           module_function
 
-          def target_version
-            Integration.version
-          end
-
           def patch
             # ci-queue test runner instrumentation
+            # TODO: to be extracted in the next PR
             # https://github.com/Shopify/ci-queue
             if ci_queue?
               ::RSpec::Queue::Runner.include(Runner)

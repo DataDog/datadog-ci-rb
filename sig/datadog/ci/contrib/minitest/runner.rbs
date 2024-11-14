@@ -16,6 +16,8 @@ module Datadog
 
             private
 
+            def datadog_integration: () -> Datadog::CI::Contrib::Integration
+
             def datadog_configuration: () -> untyped
 
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component

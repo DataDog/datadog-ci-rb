@@ -2,6 +2,8 @@ require "knapsack_pro"
 require "fileutils"
 
 RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
+  let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
+
   before do
     # expect that public manual API isn't used
     expect(Datadog::CI).to receive(:start_test_session).never
@@ -39,6 +41,9 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
 
     # test session and module traced
     expect(test_session_span).not_to be_nil
+    expect(test_session_span).to have_test_tag(:framework, "rspec")
+    expect(test_session_span).to have_test_tag(:framework_version, integration.version.to_s)
+
     expect(test_module_span).not_to be_nil
 
     # test session and module are failed
