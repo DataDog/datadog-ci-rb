@@ -1,7 +1,7 @@
 require "knapsack_pro"
 require "fileutils"
 
-RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
+RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the knapsack run like in rspec_go rake task" do
   let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
 
   before do
@@ -12,15 +12,20 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
     expect(Datadog::CI).to receive(:start_test).never
   end
 
-  include_context "CI mode activated" do
-    let(:integration_name) { :rspec }
-  end
+  include_context "CI mode activated"
 
   before do
+    allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
+      receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
+    )
+
+    allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return("knapsack:queue:rspec")
+
     allow_any_instance_of(KnapsackPro::Runners::Queue::RSpecRunner).to receive(:test_file_paths).and_return(
       ["./spec/datadog/ci/contrib/knapsack_rspec/suite_under_test/some_test_rspec.rb"],
       []
     )
+
     # raise to prevent Knapsack from running Kernel.exit(0)
     allow(KnapsackPro::Report).to receive(:save_node_queue_to_api).and_raise(ArgumentError)
   end
@@ -28,12 +33,13 @@ RSpec.describe "RSpec instrumentation with Knapsack Pro runner in queue mode" do
   it "instruments this rspec session" do
     with_new_rspec_environment do
       ClimateControl.modify(
-        "KNAPSACK_PRO_CI_NODE_BUILD_ID" => "142",
+        "KNAPSACK_PRO_CI_NODE_BUILD_ID" => "144",
         "KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC" => "example_token",
-        "KNAPSACK_PRO_FIXED_QUEUE_SPLIT" => "true"
+        "KNAPSACK_PRO_FIXED_QUEUE_SPLIT" => "true",
+        "KNAPSACK_PRO_QUEUE_ID" => nil
       ) do
         KnapsackPro::Adapters::RSpecAdapter.bind
-        KnapsackPro::Runners::Queue::RSpecRunner.run("", devnull, devnull)
+        KnapsackPro::Runners::Queue::RSpecRunner.run("--require knapsack_helper", devnull, devnull)
       rescue ArgumentError
         # suppress invalid API key error
       end

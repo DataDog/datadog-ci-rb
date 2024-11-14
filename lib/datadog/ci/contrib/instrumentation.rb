@@ -13,13 +13,24 @@ module Datadog
           return unless integration.enabled
 
           patch_results = integration.patch
-          return if patch_results == true
+          if patch_results == true
+            # try to patch dependant integrations (for example knapsack that depends on rspec)
+            dependants = integration.dependants
+              .map { |name| fetch_integration(name) }
+              .filter { |integration| integration.patchable? }
 
-          error_message = <<-ERROR
+            Datadog.logger.debug("Found dependent integrations for #{integration_name}: #{dependants}")
+
+            dependants.each do |dependent_integration|
+              dependent_integration.patch
+            end
+          else
+            error_message = <<-ERROR
                   Available?: #{patch_results[:available]}, Loaded?: #{patch_results[:loaded]},
                   Compatible?: #{patch_results[:compatible]}, Patchable?: #{patch_results[:patchable]}"
-          ERROR
-          Datadog.logger.warn("Unable to patch #{integration_name} (#{error_message})")
+            ERROR
+            Datadog.logger.warn("Unable to patch #{integration_name} (#{error_message})")
+          end
         end
 
         def self.fetch_integration(name)

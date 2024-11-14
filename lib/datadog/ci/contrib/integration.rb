@@ -24,6 +24,13 @@ module Datadog
           @registry
         end
 
+        # List of integrations names that depend on this integration.
+        # Specify when you might need to automatically instrument other integrations (like test runner for the
+        # test framework).
+        def dependants
+          []
+        end
+
         # Version of the integration target code in the environment.
         #
         # This is the gem version, when the instrumentation target is a Ruby gem.

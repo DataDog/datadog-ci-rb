@@ -12,6 +12,10 @@ module Datadog
         class Integration < Contrib::Integration
           MINIMUM_VERSION = Gem::Version.new("3.0.0")
 
+          def dependants
+            %i[knapsack]
+          end
+
           def version
             Gem.loaded_specs["rspec-core"]&.version
           end

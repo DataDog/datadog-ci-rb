@@ -17,7 +17,8 @@ module Datadog
           end
 
           def loaded?
-            !defined?(::KnapsackPro).nil? && !defined?(::KnapsackPro::Extensions::RSpecExtension).nil? &&
+            !defined?(::KnapsackPro).nil? &&
+              !defined?(::KnapsackPro::Extensions::RSpecExtension).nil? &&
               !defined?(::KnapsackPro::Extensions::RSpecExtension::Runner).nil?
           end
 

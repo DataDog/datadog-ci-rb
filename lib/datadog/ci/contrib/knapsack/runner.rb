@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "../../../ext/test"
-require_relative "../ext"
+require_relative "../../ext/test"
+require_relative "../rspec/ext"
 require_relative "../instrumentation"
 
 module Datadog
