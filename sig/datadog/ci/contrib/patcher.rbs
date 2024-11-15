@@ -2,12 +2,12 @@ module Datadog
   module CI
     module Contrib
       module Patcher
-        def self.included: (untyped base) -> untyped
+        def self.included: (Class base) -> void
 
         module CommonMethods
-          attr_accessor patch_error_result: untyped
+          attr_accessor patch_error_result: Hash[Symbol, untyped]
 
-          attr_accessor patch_successful: untyped
+          attr_accessor patch_successful: bool
 
           def patch_name: () -> String?
 
@@ -17,13 +17,11 @@ module Datadog
 
           def patch: () -> void
 
-          def on_patch_error: (untyped e) -> untyped
-
-          def default_tags: () -> untyped
+          def on_patch_error: (StandardError e) -> Hash[Symbol, untyped]
 
           private
 
-          def patch_only_once: () -> untyped
+          def patch_only_once: () -> Datadog::Core::Utils::OnlyOnce
 
           @patch_only_once: Datadog::Core::Utils::OnlyOnce
         end

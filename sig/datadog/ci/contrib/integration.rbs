@@ -22,7 +22,7 @@ module Datadog
 
         def patcher: () -> Datadog::Tracing::Contrib::Patcher?
 
-        def patch: () -> (bool | Hash[Symbol, bool])
+        def patch: () -> Hash[Symbol, bool]
 
         def late_instrument?: () -> bool
 

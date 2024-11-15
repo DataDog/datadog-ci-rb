@@ -26,7 +26,7 @@ module Datadog
           return unless integration.enabled
 
           patch_results = integration.patch
-          if patch_results == true
+          if patch_results[:ok]
             # try to patch dependant integrations (for example knapsack that depends on rspec)
             dependants = integration.dependants
               .map { |name| fetch_integration(name) }
@@ -62,7 +62,7 @@ module Datadog
             Datadog.logger.debug "#{name} is allowed to be late instrumented"
 
             patch_results = integration.patch
-            if patch_results == true
+            if patch_results[:ok]
               Datadog.logger.debug("#{name} is patched")
             else
               Datadog.logger.debug("#{name} is not patched (#{patch_results})")

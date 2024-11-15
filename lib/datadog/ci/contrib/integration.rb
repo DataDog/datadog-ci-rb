@@ -97,6 +97,7 @@ module Datadog
           patcher_klass = patcher
           if !patchable? || patcher_klass.nil?
             return {
+              ok: false,
               available: available?,
               loaded: loaded?,
               compatible: compatible?,
@@ -105,7 +106,7 @@ module Datadog
           end
 
           patcher_klass.patch
-          true
+          {ok: true}
         end
 
         # Can the patch for this integration be applied automatically?
