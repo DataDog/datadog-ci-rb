@@ -31,7 +31,7 @@ module Fake
       true
     end
 
-    def auto_instrument?
+    def late_instrument?
       false
     end
 

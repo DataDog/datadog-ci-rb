@@ -16,6 +16,9 @@ module Datadog
           @registry[integration_name(integration_class)] = integration_class.new
         end
 
+        # Manual instrumentation of a specific integration.
+        #
+        # This method is called when user has `c.ci.instrument :integration_name` in their code.
         def self.instrument(integration_name, options = {}, &block)
           integration = fetch_integration(integration_name)
           integration.configure(options, &block)
@@ -40,6 +43,30 @@ module Datadog
                   Compatible?: #{patch_results[:compatible]}, Patchable?: #{patch_results[:patchable]}"
             ERROR
             Datadog.logger.warn("Unable to patch #{integration_name} (#{error_message})")
+          end
+        end
+
+        # This method instruments all additional test libraries (ex: selenium-webdriver) that need to be instrumented
+        # later in the test suite run.
+        #
+        # It is intended to be called when test session starts to add additional capabilities to test visibility.
+        #
+        # This method does not automatically instrument test frameworks (ex: RSpec, Cucumber, etc), it requires
+        # test framework to be already instrumented.
+        def self.instrument_on_session_start
+          Datadog.logger.debug("Instrumenting all late instrumented integrations...")
+
+          @registry.each do |name, integration|
+            next unless integration.late_instrument?
+
+            Datadog.logger.debug "#{name} is allowed to be late instrumented"
+
+            patch_results = integration.patch
+            if patch_results == true
+              Datadog.logger.debug("#{name} is patched")
+            else
+              Datadog.logger.debug("#{name} is not patched (#{patch_results})")
+            end
           end
         end
 

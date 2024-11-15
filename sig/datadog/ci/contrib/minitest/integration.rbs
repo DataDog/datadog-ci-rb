@@ -11,7 +11,7 @@ module Datadog
 
           def compatible?: () -> bool
 
-          def auto_instrument?: () -> false
+          def late_instrument?: () -> false
 
           def new_configuration: () -> untyped
 

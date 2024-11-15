@@ -110,8 +110,8 @@ module Datadog
 
         # Can the patch for this integration be applied automatically?
         # @return [Boolean] can the tracer activate this instrumentation without explicit user input?
-        def auto_instrument?
-          true
+        def late_instrument?
+          false
         end
 
         # Returns a new configuration object for this integration.

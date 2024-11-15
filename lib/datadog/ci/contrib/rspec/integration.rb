@@ -29,11 +29,6 @@ module Datadog
             super && version >= MINIMUM_VERSION
           end
 
-          # test environments should not auto instrument test libraries
-          def auto_instrument?
-            false
-          end
-
           def new_configuration
             Configuration::Settings.new
           end

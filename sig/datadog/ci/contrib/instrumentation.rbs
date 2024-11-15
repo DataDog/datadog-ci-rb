@@ -16,6 +16,8 @@ module Datadog
         def self.integration_name: (Class) -> Symbol
 
         def self.register_integration: (Class integration) -> void
+
+        def self.instrument_on_session_start: () -> void
       end
     end
   end

@@ -24,7 +24,7 @@ module Datadog
 
         def patch: () -> (bool | Hash[Symbol, bool])
 
-        def auto_instrument?: () -> bool
+        def late_instrument?: () -> bool
 
         def new_configuration: () -> Datadog::CI::Contrib::Settings
       end
