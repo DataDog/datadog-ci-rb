@@ -5,9 +5,17 @@ module Datadog
         class InvalidIntegrationError < StandardError
         end
 
+        self.@registry: Hash[Symbol, untyped]
+
+        def self.registry: () -> Hash[Symbol, untyped]
+
         def self.instrument: (Symbol integration_name, ?::Hash[untyped, untyped] options) { (?) -> untyped } -> void
 
         def self.fetch_integration: (Symbol name) -> untyped
+
+        def self.integration_name: (Class) -> Symbol
+
+        def self.register_integration: (Class integration) -> void
       end
     end
   end

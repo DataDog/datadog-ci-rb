@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "integration"
+require_relative "instrumentation"
 
 module Datadog
   module CI
@@ -13,7 +13,7 @@ module Datadog
       def self.auto_instrument_on_session_start!
         Datadog.logger.debug("Auto instrumenting all integrations...")
 
-        Integration.registry.each do |name, integration|
+        Instrumentation.registry.each do |name, integration|
           next unless integration.auto_instrument?
 
           Datadog.logger.debug "#{name} is allowed to be auto instrumented"

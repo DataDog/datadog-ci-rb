@@ -6,6 +6,16 @@ module Datadog
       module Instrumentation
         class InvalidIntegrationError < StandardError; end
 
+        @registry = {}
+
+        def self.registry
+          @registry
+        end
+
+        def self.register_integration(integration_class)
+          @registry[integration_name(integration_class)] = integration_class.new
+        end
+
         def self.instrument(integration_name, options = {}, &block)
           integration = fetch_integration(integration_name)
           integration.configure(options, &block)
@@ -34,8 +44,16 @@ module Datadog
         end
 
         def self.fetch_integration(name)
-          Datadog::CI::Contrib::Integration.registry[name] ||
+          @registry[name] ||
             raise(InvalidIntegrationError, "'#{name}' is not a valid integration.")
+        end
+
+        # take the parent module name and downcase it
+        # for example for Datadog::CI::Contrib::RSpec::Integration it will be :rspec
+        def self.integration_name(subclass)
+          result = subclass.name&.split("::")&.[](-2)&.downcase&.to_sym
+          raise "Integration name could not be derived for #{subclass}" if result.nil?
+          result
         end
       end
     end

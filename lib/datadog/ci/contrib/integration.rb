@@ -1,27 +1,14 @@
 # frozen_string_literal: true
 
 require_relative "settings"
+require_relative "instrumentation"
 
 module Datadog
   module CI
     module Contrib
       class Integration
-        @registry = {}
-
         def self.inherited(subclass)
-          @registry[integration_name(subclass)] = subclass.new
-        end
-
-        # take the parent module name and downcase it
-        # for example for Datadog::CI::Contrib::RSpec::Integration it will be :rspec
-        def self.integration_name(subclass)
-          result = subclass.name&.split("::")&.[](-2)&.downcase&.to_sym
-          raise "Integration name could not be derived for #{subclass}" if result.nil?
-          result
-        end
-
-        def self.registry
-          @registry
+          Instrumentation.register_integration(subclass)
         end
 
         # List of integrations names that depend on this integration.

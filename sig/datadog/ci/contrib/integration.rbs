@@ -2,13 +2,7 @@ module Datadog
   module CI
     module Contrib
       class Integration
-        self.@registry: Hash[Symbol, untyped]
-
         def self.inherited: (untyped) -> void
-
-        def self.registry: () -> Hash[Symbol, untyped]
-
-        def self.integration_name: (Class) -> Symbol
 
         def version: () -> untyped
 
