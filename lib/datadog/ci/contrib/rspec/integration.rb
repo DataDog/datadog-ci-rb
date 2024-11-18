@@ -13,7 +13,7 @@ module Datadog
           MINIMUM_VERSION = Gem::Version.new("3.0.0")
 
           def dependants
-            %i[knapsack]
+            %i[knapsack ciqueue]
           end
 
           def version
