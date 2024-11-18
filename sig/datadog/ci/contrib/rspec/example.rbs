@@ -12,6 +12,7 @@ module Datadog
             private
 
             def fetch_top_level_example_group: () -> Hash[Symbol, untyped]
+            def datadog_integration: () -> Datadog::CI::Contrib::Integration
             def datadog_configuration: () -> untyped
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
             def test_retries_component: () -> Datadog::CI::TestRetries::Component

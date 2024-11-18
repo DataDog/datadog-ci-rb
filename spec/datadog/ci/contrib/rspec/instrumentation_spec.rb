@@ -1,6 +1,8 @@
 require "time"
 
-RSpec.describe "RSpec hooks" do
+RSpec.describe "RSpec instrumentation" do
+  let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
+
   before do
     # expect that public manual API isn't used
     expect(Datadog::CI).to receive(:start_test_session).never
@@ -139,7 +141,7 @@ RSpec.describe "RSpec hooks" do
       expect(first_test_span).to have_test_tag(:framework, "rspec")
       expect(first_test_span).to have_test_tag(
         :framework_version,
-        Datadog::CI::Contrib::RSpec::Integration.version.to_s
+        integration.version.to_s
       )
 
       expect(first_test_span).to have_pass_status
@@ -148,7 +150,7 @@ RSpec.describe "RSpec hooks" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "121")
+      expect(first_test_span).to have_test_tag(:source_start, "123")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -525,7 +527,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_session_span).to have_test_tag(:framework, "rspec")
       expect(test_session_span).to have_test_tag(
         :framework_version,
-        Datadog::CI::Contrib::RSpec::Integration.version.to_s
+        integration.version.to_s
       )
 
       expect(test_session_span).not_to have_test_tag(:code_coverage_enabled)
@@ -554,7 +556,7 @@ RSpec.describe "RSpec hooks" do
       expect(test_module_span).to have_test_tag(:framework, "rspec")
       expect(test_module_span).to have_test_tag(
         :framework_version,
-        Datadog::CI::Contrib::RSpec::Integration.version.to_s
+        integration.version.to_s
       )
       expect(test_module_span).to have_pass_status
     end
@@ -571,14 +573,14 @@ RSpec.describe "RSpec hooks" do
       expect(first_test_suite_span).to have_test_tag(:framework, "rspec")
       expect(first_test_suite_span).to have_test_tag(
         :framework_version,
-        Datadog::CI::Contrib::RSpec::Integration.version.to_s
+        integration.version.to_s
       )
 
       expect(first_test_suite_span).to have_test_tag(
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "39")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "41")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"

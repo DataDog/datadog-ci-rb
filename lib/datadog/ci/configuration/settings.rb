@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "../contrib/instrumentation"
 require_relative "../ext/settings"
 require_relative "../utils/bundle"
 
@@ -8,8 +9,6 @@ module Datadog
     module Configuration
       # Adds CI behavior to ddtrace settings
       module Settings
-        InvalidIntegrationError = Class.new(StandardError)
-
         def self.extended(base)
           base = base.singleton_class unless base.is_a?(Class)
           add_settings!(base)
@@ -126,23 +125,11 @@ module Datadog
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
-                integration = fetch_integration(integration_name)
-                integration.configure(options, &block)
-
-                return unless integration.enabled
-
-                patch_results = integration.patch
-                next if patch_results == true
-
-                error_message = <<-ERROR
-                  Available?: #{patch_results[:available]}, Loaded?: #{patch_results[:loaded]},
-                  Compatible?: #{patch_results[:compatible]}, Patchable?: #{patch_results[:patchable]}"
-                ERROR
-                Datadog.logger.warn("Unable to patch #{integration_name} (#{error_message})")
+                Contrib::Instrumentation.instrument(integration_name, options, &block)
               end
 
               define_method(:[]) do |integration_name|
-                fetch_integration(integration_name).configuration
+                Contrib::Instrumentation.fetch_integration(integration_name).configuration
               end
 
               option :trace_flush
@@ -150,11 +137,6 @@ module Datadog
               option :writer_options do |o|
                 o.type :hash
                 o.default({})
-              end
-
-              define_method(:fetch_integration) do |name|
-                Datadog::CI::Contrib::Integration.registry[name] ||
-                  raise(InvalidIntegrationError, "'#{name}' is not a valid integration.")
               end
             end
           end

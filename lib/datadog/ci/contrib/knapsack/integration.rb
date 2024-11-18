@@ -1,31 +1,29 @@
 # frozen_string_literal: true
 
 require_relative "../integration"
-require_relative "configuration/settings"
 require_relative "patcher"
 
 module Datadog
   module CI
     module Contrib
-      module Cucumber
-        # Description of Cucumber integration
+      module Knapsack
+        # Knapsack Pro test runner instrumentation
+        # https://github.com/KnapsackPro/knapsack_pro-ruby
         class Integration < Contrib::Integration
-          MINIMUM_VERSION = Gem::Version.new("3.0.0")
+          MINIMUM_VERSION = Gem::Version.new("7.0.0")
 
           def version
-            Gem.loaded_specs["cucumber"]&.version
+            Gem.loaded_specs["knapsack_pro"]&.version
           end
 
           def loaded?
-            !defined?(::Cucumber).nil? && !defined?(::Cucumber::Runtime).nil?
+            !defined?(::KnapsackPro).nil? &&
+              !defined?(::KnapsackPro::Extensions::RSpecExtension).nil? &&
+              !defined?(::KnapsackPro::Extensions::RSpecExtension::Runner).nil?
           end
 
           def compatible?
             super && version >= MINIMUM_VERSION
-          end
-
-          def new_configuration
-            Configuration::Settings.new
           end
 
           def patcher

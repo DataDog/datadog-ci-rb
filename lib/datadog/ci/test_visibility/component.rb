@@ -7,7 +7,7 @@ require_relative "telemetry"
 require_relative "total_coverage"
 
 require_relative "../codeowners/parser"
-require_relative "../contrib/contrib"
+require_relative "../contrib/instrumentation"
 require_relative "../ext/test"
 require_relative "../git/local_repository"
 
@@ -149,7 +149,7 @@ module Datadog
           git_tree_upload_worker.perform(test_session.git_repository_url)
 
           # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
-          Contrib.auto_instrument_on_session_start!
+          Contrib::Instrumentation.instrument_on_session_start
 
           # sends internal telemetry events
           Telemetry.test_session_started(test_session)

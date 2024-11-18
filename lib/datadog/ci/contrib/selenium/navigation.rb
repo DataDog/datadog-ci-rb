@@ -43,7 +43,7 @@ module Datadog
               active_test.set_tag(CI::Ext::Test::TAG_BROWSER_DRIVER, "selenium")
               active_test.set_tag(
                 CI::Ext::Test::TAG_BROWSER_DRIVER_VERSION,
-                Integration.version
+                datadog_integration.version
               )
               active_test.set_tag(
                 CI::Ext::Test::TAG_BROWSER_NAME,
@@ -62,6 +62,10 @@ module Datadog
             end
 
             private
+
+            def datadog_integration
+              CI::Contrib::Instrumentation.fetch_integration(:selenium)
+            end
 
             def datadog_configuration
               Datadog.configuration.ci[:selenium]

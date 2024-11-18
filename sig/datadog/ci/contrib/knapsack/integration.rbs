@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module Contrib
-      module Minitest
+      module Knapsack
         class Integration < Datadog::CI::Contrib::Integration
           MINIMUM_VERSION: Gem::Version
 
@@ -11,11 +11,11 @@ module Datadog
 
           def compatible?: () -> bool
 
-          def late_instrument?: () -> false
+          def late_instrument?: () -> bool
 
-          def new_configuration: () -> untyped
+          def new_configuration: () -> Datadog::CI::Contrib::Settings
 
-          def patcher: () -> untyped
+          def patcher: () -> singleton(Patcher)
         end
       end
     end

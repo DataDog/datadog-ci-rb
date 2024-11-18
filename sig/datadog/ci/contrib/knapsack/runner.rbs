@@ -1,18 +1,14 @@
 module Datadog
   module CI
     module Contrib
-      module Minitest
+      module Knapsack
         module Runner
-          DD_ESTIMATED_TESTS_PER_SUITE: Integer
-
           def self.included: (untyped base) -> untyped
 
-          module ClassMethods
-            extend ::Minitest
+          module InstanceMethods
+            include ::KnapsackPro::Runners::Queue::RSpecRunner
 
-            def init_plugins: (*untyped) -> (nil | untyped)
-
-            def run_one_method: (untyped klass, String method_name) -> untyped
+            def knapsack__run_specs: (untyped args) -> untyped
 
             private
 
@@ -21,8 +17,6 @@ module Datadog
             def datadog_configuration: () -> untyped
 
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
-
-            def test_retries_component: () -> Datadog::CI::TestRetries::Component
           end
         end
       end

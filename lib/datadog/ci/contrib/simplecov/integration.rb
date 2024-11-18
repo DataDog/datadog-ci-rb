@@ -9,27 +9,23 @@ module Datadog
     module Contrib
       module Simplecov
         # Description of Simplecov integration
-        class Integration
-          include Datadog::CI::Contrib::Integration
-
+        class Integration < Contrib::Integration
           MINIMUM_VERSION = Gem::Version.new("0.18.0")
 
-          register_as :simplecov
-
-          def self.version
+          def version
             Gem.loaded_specs["simplecov"]&.version
           end
 
-          def self.loaded?
+          def loaded?
             !defined?(::SimpleCov).nil?
           end
 
-          def self.compatible?
+          def compatible?
             super && version >= MINIMUM_VERSION
           end
 
-          # additional instrumentations for test helpers are auto instrumented on test session start
-          def auto_instrument?
+          # additional instrumentations for test libraries are late instrumented on test session start
+          def late_instrument?
             true
           end
 

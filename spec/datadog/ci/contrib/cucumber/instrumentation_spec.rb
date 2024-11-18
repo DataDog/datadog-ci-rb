@@ -4,6 +4,7 @@ require "cucumber"
 require "securerandom"
 
 RSpec.describe "Cucumber instrumentation" do
+  let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:cucumber) }
   let(:cucumber_features_root) { File.join(__dir__, "features") }
   let(:enable_retries_failed) { false }
   let(:single_test_retries_count) { 5 }
@@ -34,9 +35,9 @@ RSpec.describe "Cucumber instrumentation" do
     let(:bundle_path) { "step_definitions/helpers" }
   end
 
-  let(:cucumber_9_or_above) { Gem::Version.new("9.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
-  let(:cucumber_8_or_above) { Gem::Version.new("8.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
-  let(:cucumber_4_or_above) { Gem::Version.new("4.0.0") <= Datadog::CI::Contrib::Cucumber::Integration.version }
+  let(:cucumber_9_or_above) { Gem::Version.new("9.0.0") <= integration.version }
+  let(:cucumber_8_or_above) { Gem::Version.new("8.0.0") <= integration.version }
+  let(:cucumber_4_or_above) { Gem::Version.new("4.0.0") <= integration.version }
 
   let(:run_id) { SecureRandom.random_number(2**64 - 1) }
   let(:steps_file_definition_path) { "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps.rb" }
@@ -121,10 +122,7 @@ RSpec.describe "Cucumber instrumentation" do
       expect(scenario_span).to have_test_tag(:type, "test")
 
       expect(scenario_span).to have_test_tag(:framework, "cucumber")
-      expect(scenario_span).to have_test_tag(
-        :framework_version,
-        Datadog::CI::Contrib::Cucumber::Integration.version.to_s
-      )
+      expect(scenario_span).to have_test_tag(:framework_version, integration.version.to_s)
 
       expect(scenario_span).to have_pass_status
 
@@ -174,10 +172,7 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_session_span.service).to eq("jalapenos")
       expect(test_session_span).to have_test_tag(:span_kind, "test")
       expect(test_session_span).to have_test_tag(:framework, "cucumber")
-      expect(test_session_span).to have_test_tag(
-        :framework_version,
-        Datadog::CI::Contrib::Cucumber::Integration.version.to_s
-      )
+      expect(test_session_span).to have_test_tag(:framework_version, integration.version.to_s)
       expect(test_session_span).to have_pass_status
 
       # ITR
@@ -198,7 +193,7 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_module_span).to have_test_tag(:framework, "cucumber")
       expect(test_module_span).to have_test_tag(
         :framework_version,
-        Datadog::CI::Contrib::Cucumber::Integration.version.to_s
+        integration.version.to_s
       )
       expect(test_module_span).to have_pass_status
     end
@@ -211,7 +206,7 @@ RSpec.describe "Cucumber instrumentation" do
       expect(first_test_suite_span).to have_test_tag(:framework, "cucumber")
       expect(first_test_suite_span).to have_test_tag(
         :framework_version,
-        Datadog::CI::Contrib::Cucumber::Integration.version.to_s
+        integration.version.to_s
       )
 
       expect(first_test_suite_span).to have_test_tag(

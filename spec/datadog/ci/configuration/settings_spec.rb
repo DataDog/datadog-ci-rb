@@ -1,45 +1,43 @@
 # frozen_string_literal: true
 
 # Dummy Integration
-class FakeIntegration
-  include Datadog::CI::Contrib::Integration
+module Fake
+  class Integration < Datadog::CI::Contrib::Integration
+    module Patcher
+      module_function
 
-  register_as :fake
+      def patched?
+        @patched
+      end
 
-  module Patcher
-    module_function
+      def patch
+        @patched = true
+      end
 
-    def patched?
-      @patched
+      def reset
+        @patched = nil
+      end
     end
 
-    def patch
-      @patched = true
+    def version
+      "0.1"
     end
 
-    def reset
-      @patched = nil
+    def loaded?
+      true
     end
-  end
 
-  def self.version
-    "0.1"
-  end
+    def compatible?
+      true
+    end
 
-  def self.loaded?
-    true
-  end
+    def late_instrument?
+      false
+    end
 
-  def self.compatible?
-    true
-  end
-
-  def self.auto_instrument?
-    false
-  end
-
-  def patcher
-    Patcher
+    def patcher
+      Patcher
+    end
   end
 end
 
@@ -580,7 +578,6 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       describe "#instrument" do
         let(:integration_name) { :fake }
 
-        let(:integration) { FakeIntegration.new }
         let(:enabled) { true }
 
         subject(:instrument) { settings.ci.instrument(integration_name, enabled: enabled) }
@@ -590,7 +587,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
 
         after do
-          FakeIntegration::Patcher.reset
+          Fake::Integration::Patcher.reset
         end
 
         context "ci enabled" do
@@ -598,14 +595,14 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
           context "when integration exists" do
             it "patches the integration" do
-              expect(FakeIntegration::Patcher).to receive(:patch)
+              expect(Fake::Integration::Patcher).to receive(:patch)
 
               instrument
             end
 
             context "when called multiple times" do
               it "does not patch the integration multiple times" do
-                expect(FakeIntegration::Patcher).to receive(:patch).and_call_original.once
+                expect(Fake::Integration::Patcher).to receive(:patch).and_call_original.once
 
                 instrument
                 instrument
@@ -613,30 +610,30 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             end
 
             context "when not loaded" do
-              before { allow(FakeIntegration).to receive(:loaded?).and_return(false) }
+              before { allow_any_instance_of(Fake::Integration).to receive(:loaded?).and_return(false) }
 
               it "does not patch the integration" do
-                expect(FakeIntegration::Patcher).to_not receive(:patch)
+                expect(Fake::Integration::Patcher).to_not receive(:patch)
 
                 instrument
               end
             end
 
             context "when not available" do
-              before { allow(FakeIntegration).to receive(:available?).and_return(false) }
+              before { allow_any_instance_of(Fake::Integration).to receive(:available?).and_return(false) }
 
               it "does not patch the integration" do
-                expect(FakeIntegration::Patcher).to_not receive(:patch)
+                expect(Fake::Integration::Patcher).to_not receive(:patch)
 
                 instrument
               end
             end
 
             context "when not compatible" do
-              before { allow(FakeIntegration).to receive(:compatible?).and_return(false) }
+              before { allow_any_instance_of(Fake::Integration).to receive(:compatible?).and_return(false) }
 
               it "does not patch the integration" do
-                expect(FakeIntegration::Patcher).to_not receive(:patch)
+                expect(Fake::Integration::Patcher).to_not receive(:patch)
 
                 instrument
               end
@@ -646,7 +643,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
               let(:enabled) { false }
 
               it "does not patch the integration" do
-                expect(FakeIntegration::Patcher).to_not receive(:patch)
+                expect(Fake::Integration::Patcher).to_not receive(:patch)
 
                 instrument
               end
@@ -657,7 +654,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:integration_name) { :not_existing }
 
             it "does not patch the integration" do
-              expect { instrument }.to raise_error(Datadog::CI::Configuration::Settings::InvalidIntegrationError)
+              expect { instrument }.to raise_error(Datadog::CI::Contrib::Instrumentation::InvalidIntegrationError)
             end
           end
 
@@ -665,7 +662,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:ci_enabled) { false }
 
             it "does not patch the integration" do
-              expect(FakeIntegration::Patcher).to_not receive(:patch)
+              expect(Fake::Integration::Patcher).to_not receive(:patch)
               instrument
             end
           end

@@ -9,28 +9,24 @@ module Datadog
     module Contrib
       module Selenium
         # Description of Selenium integration
-        class Integration
-          include Datadog::CI::Contrib::Integration
-
+        class Integration < Contrib::Integration
           MINIMUM_VERSION = Gem::Version.new("4.0.0")
 
-          register_as :selenium
-
-          def self.version
+          def version
             Gem.loaded_specs["selenium-webdriver"]&.version
           end
 
-          def self.loaded?
+          def loaded?
             !defined?(::Selenium).nil? && !defined?(::Selenium::WebDriver).nil? &&
               !defined?(::Selenium::WebDriver::Driver).nil?
           end
 
-          def self.compatible?
+          def compatible?
             super && version >= MINIMUM_VERSION
           end
 
-          # additional instrumentations for test helpers are auto instrumented on test session start
-          def auto_instrument?
+          # additional instrumentations for test libraries are late instrumented on test session start
+          def late_instrument?
             true
           end
 
