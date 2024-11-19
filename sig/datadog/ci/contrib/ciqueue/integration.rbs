@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Contrib
+      module Ciqueue
+        class Integration < Contrib::Integration
+          MINIMUM_VERSION: untyped
+
+          def version: () -> untyped
+
+          def loaded?: () -> bool
+
+          def compatible?: () -> bool
+
+          def patcher: () -> singleton(Patcher)
+        end
+      end
+    end
+  end
+end

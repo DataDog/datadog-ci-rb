@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Contrib
+      module Ciqueue
+        module Patcher
+          include Datadog::CI::Contrib::Patcher
+
+          def self?.patch: () -> void
+        end
+      end
+    end
+  end
+end

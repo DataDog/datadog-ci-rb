@@ -414,6 +414,7 @@ require_relative "ci/contrib/rspec/integration"
 
 # Test runners (instrumented automatically when corresponding frameworks are instrumented)
 require_relative "ci/contrib/knapsack/integration"
+require_relative "ci/contrib/ciqueue/integration"
 
 # Additional test libraries (auto instrumented later on test session start)
 require_relative "ci/contrib/selenium/integration"
