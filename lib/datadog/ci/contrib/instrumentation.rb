@@ -16,6 +16,46 @@ module Datadog
           @registry[integration_name(integration_class)] = integration_class.new
         end
 
+        # Auto instrumentation of all integrations.
+        #
+        # Registers a :script_compiled tracepoint to watch for new Ruby files being loaded.
+        # On every file load it checks if any of the integrations are patchable now.
+        # Only the integrations that are available in the environment are checked.
+        def self.auto_instrument
+          Datadog.logger.debug("Auto instrumenting all integrations...")
+
+          auto_instrumented_integrations = []
+          @registry.each do |name, integration|
+            # ignore integrations that are not in the Gemfile or have incompatible versions
+            next unless integration.compatible?
+
+            # late instrumented integrations will be patched when the test session starts
+            next if integration.late_instrument?
+
+            Datadog.logger.debug("#{name} should be auto instrumented")
+            auto_instrumented_integrations << integration
+          end
+
+          if auto_instrumented_integrations.empty?
+            Datadog.logger.warn(
+              "Auto instrumentation was requested, but no available integrations were found. " \
+              "Tests will be run without Datadog instrumentation."
+            )
+            nil
+          end
+
+          script_compiled_tracepoint = TracePoint.new(:script_compiled) do
+            auto_instrumented_integrations.each do |integration|
+              next unless integration.loaded?
+
+              Datadog.logger.debug("#{integration.class} is loaded")
+
+              patch_integration(integration)
+            end
+          end
+          script_compiled_tracepoint.enable
+        end
+
         # Manual instrumentation of a specific integration.
         #
         # This method is called when user has `c.ci.instrument :integration_name` in their code.
