@@ -41,7 +41,7 @@ module Datadog
               "Auto instrumentation was requested, but no available integrations were found. " \
               "Tests will be run without Datadog instrumentation."
             )
-            nil
+            return
           end
 
           script_compiled_tracepoint = TracePoint.new(:script_compiled) do

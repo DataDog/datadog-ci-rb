@@ -9,6 +9,8 @@ module Datadog
 
         def self.registry: () -> Hash[Symbol, untyped]
 
+        def self.auto_instrument: () -> void
+
         def self.instrument: (Symbol integration_name, ?::Hash[untyped, untyped] options) { (?) -> untyped } -> void
 
         def self.instrument_on_session_start: () -> void
