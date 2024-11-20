@@ -24,6 +24,8 @@ module Datadog
 
         def patch: () -> Hash[Symbol, bool]
 
+        def dependants: () -> Array[Symbol]
+
         def late_instrument?: () -> bool
 
         def new_configuration: () -> Datadog::CI::Contrib::Settings

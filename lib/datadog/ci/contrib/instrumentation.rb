@@ -21,29 +21,12 @@ module Datadog
         # This method is called when user has `c.ci.instrument :integration_name` in their code.
         def self.instrument(integration_name, options = {}, &block)
           integration = fetch_integration(integration_name)
+          # when manually instrumented, it might be configured via code
           integration.configure(options, &block)
 
           return unless integration.enabled
 
-          patch_results = integration.patch
-          if patch_results[:ok]
-            # try to patch dependant integrations (for example knapsack that depends on rspec)
-            dependants = integration.dependants
-              .map { |name| fetch_integration(name) }
-              .filter { |integration| integration.patchable? }
-
-            Datadog.logger.debug("Found dependent integrations for #{integration_name}: #{dependants}")
-
-            dependants.each do |dependent_integration|
-              dependent_integration.patch
-            end
-          else
-            error_message = <<-ERROR
-                  Available?: #{patch_results[:available]}, Loaded?: #{patch_results[:loaded]},
-                  Compatible?: #{patch_results[:compatible]}, Patchable?: #{patch_results[:patchable]}"
-            ERROR
-            Datadog.logger.warn("Unable to patch #{integration_name} (#{error_message})")
-          end
+          patch_integration(integration, with_dependencies: true)
         end
 
         # This method instruments all additional test libraries (ex: selenium-webdriver) that need to be instrumented
@@ -58,15 +41,11 @@ module Datadog
 
           @registry.each do |name, integration|
             next unless integration.late_instrument?
+            next unless integration.enabled
 
             Datadog.logger.debug "#{name} is allowed to be late instrumented"
 
-            patch_results = integration.patch
-            if patch_results[:ok]
-              Datadog.logger.debug("#{name} is patched")
-            else
-              Datadog.logger.debug("#{name} is not patched (#{patch_results})")
-            end
+            patch_integration(integration)
           end
         end
 
@@ -81,6 +60,30 @@ module Datadog
           result = subclass.name&.split("::")&.[](-2)&.downcase&.to_sym
           raise "Integration name could not be derived for #{subclass}" if result.nil?
           result
+        end
+
+        def self.patch_integration(integration, with_dependencies: false)
+          patch_results = integration.patch
+
+          if patch_results[:ok]
+            Datadog.logger.debug("#{integration.class} is patched")
+
+            return unless with_dependencies
+
+            # try to patch dependant integrations (for example knapsack that depends on rspec)
+            dependants = integration.dependants
+              .map { |name| fetch_integration(name) }
+              .filter { |integration| integration.patchable? }
+
+            Datadog.logger.debug("Found dependent integrations for #{integration.class}: #{dependants}")
+
+            dependants.each do |dependent_integration|
+              patch_integration(dependent_integration, with_dependencies: true)
+            end
+
+          else
+            Datadog.logger.debug("Attention: #{integration.class} is not patched (#{patch_results})")
+          end
         end
       end
     end

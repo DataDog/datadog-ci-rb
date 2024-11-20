@@ -11,13 +11,16 @@ module Datadog
 
         def self.instrument: (Symbol integration_name, ?::Hash[untyped, untyped] options) { (?) -> untyped } -> void
 
+        def self.instrument_on_session_start: () -> void
+
         def self.fetch_integration: (Symbol name) -> untyped
 
         def self.integration_name: (Class) -> Symbol
 
         def self.register_integration: (Class integration) -> void
 
-        def self.instrument_on_session_start: () -> void
+        def self.patch_integration: (Contrib::Integration integration, ?with_dependencies: bool) -> void
+
       end
     end
   end
