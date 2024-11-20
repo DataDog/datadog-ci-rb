@@ -20,7 +20,9 @@ module Datadog
 
         def enabled: () -> bool
 
-        def patcher: () -> Datadog::Tracing::Contrib::Patcher?
+        def patcher: () -> untyped
+
+        def patched?: () -> bool?
 
         def patch: () -> Hash[Symbol, bool]
 

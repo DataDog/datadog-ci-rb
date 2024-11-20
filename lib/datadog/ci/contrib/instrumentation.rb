@@ -46,6 +46,7 @@ module Datadog
 
           script_compiled_tracepoint = TracePoint.new(:script_compiled) do
             auto_instrumented_integrations.each do |integration|
+              next if integration.patched?
               next unless integration.loaded?
 
               Datadog.logger.debug("#{integration.class} is loaded")
