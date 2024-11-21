@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "datadog/core/utils/only_once"
+
 module Datadog
   module CI
     module Contrib
@@ -24,18 +26,7 @@ module Datadog
         def self.auto_instrument
           Datadog.logger.debug("Auto instrumenting all integrations...")
 
-          auto_instrumented_integrations = []
-          @registry.each do |name, integration|
-            # ignore integrations that are not in the Gemfile or have incompatible versions
-            next unless integration.compatible?
-
-            # late instrumented integrations will be patched when the test session starts
-            next if integration.late_instrument?
-
-            Datadog.logger.debug("#{name} should be auto instrumented")
-            auto_instrumented_integrations << integration
-          end
-
+          auto_instrumented_integrations = fetch_auto_instrumented_integrations
           if auto_instrumented_integrations.empty?
             Datadog.logger.warn(
               "Auto instrumentation was requested, but no available integrations were found. " \
@@ -44,14 +35,25 @@ module Datadog
             return
           end
 
-          script_compiled_tracepoint = TracePoint.new(:script_compiled) do
+          script_compiled_tracepoint = TracePoint.new(:script_compiled) do |tp|
+            all_patched = true
+
             auto_instrumented_integrations.each do |integration|
               next if integration.patched?
+
+              all_patched = false
               next unless integration.loaded?
 
-              Datadog.logger.debug("#{integration.class} is loaded")
+              auto_configure_datadog
 
+              Datadog.logger.debug("#{integration.class} is loaded")
               patch_integration(integration)
+            end
+
+            if all_patched
+              Datadog.logger.debug("All expected integrations are patched, disabling the script_compiled tracepoint")
+
+              tp.disable
             end
           end
           script_compiled_tracepoint.enable
@@ -125,6 +127,33 @@ module Datadog
           else
             Datadog.logger.debug("Attention: #{integration.class} is not patched (#{patch_results})")
           end
+        end
+
+        def self.fetch_auto_instrumented_integrations
+          @registry.filter_map do |name, integration|
+            # ignore integrations that are not in the Gemfile or have incompatible versions
+            next unless integration.compatible?
+
+            # late instrumented integrations will be patched when the test session starts
+            next if integration.late_instrument?
+
+            Datadog.logger.debug("#{name} should be auto instrumented")
+            integration
+          end
+        end
+
+        def self.auto_configure_datadog
+          configure_once.run do
+            Datadog.logger.debug("Applying Datadog configuration in CI mode...")
+            Datadog.configure do |c|
+              c.ci.enabled = true
+              c.tracing.enabled = true
+            end
+          end
+        end
+
+        def self.configure_once
+          @configure_once ||= Datadog::Core::Utils::OnlyOnce.new
         end
       end
     end

@@ -7,6 +7,8 @@ module Datadog
 
         self.@registry: Hash[Symbol, untyped]
 
+        self.@configure_once: Datadog::Core::Utils::OnlyOnce
+
         def self.registry: () -> Hash[Symbol, untyped]
 
         def self.auto_instrument: () -> void
@@ -23,6 +25,11 @@ module Datadog
 
         def self.patch_integration: (Contrib::Integration integration, ?with_dependencies: bool) -> void
 
+        def self.fetch_auto_instrumented_integrations: () -> Array[Contrib::Integration]
+
+        def self.auto_configure_datadog: () -> void
+
+        def self.configure_once: () -> Datadog::Core::Utils::OnlyOnce
       end
     end
   end
