@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "datadog/core/utils/only_once"
-require "datadog/core/telemetry/logger"
 
 module Datadog
   module CI
@@ -42,7 +41,6 @@ module Datadog
           # @param e [Exception]
           def on_patch_error(e)
             Datadog.logger.error("Failed to apply #{patch_name} patch. Cause: #{e} Location: #{Array(e.backtrace).first}")
-            Datadog::Core::Telemetry::Logger.report(e, description: "Failed to apply #{patch_name} patch")
 
             @patch_error_result = {
               type: e.class.name,
