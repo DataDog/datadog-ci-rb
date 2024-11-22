@@ -35,25 +35,30 @@ module Datadog
             return
           end
 
+          # note that `Kernel.require` might be called from a different thread, so
+          # there is a possibility of concurrent execution of this tracepoint
+          mutex = Mutex.new
           script_compiled_tracepoint = TracePoint.new(:script_compiled) do |tp|
             all_patched = true
 
-            auto_instrumented_integrations.each do |integration|
-              next if integration.patched?
+            mutex.synchronize do
+              auto_instrumented_integrations.each do |integration|
+                next if integration.patched?
 
-              all_patched = false
-              next unless integration.loaded?
+                all_patched = false
+                next unless integration.loaded?
 
-              auto_configure_datadog
+                auto_configure_datadog
 
-              Datadog.logger.debug("#{integration.class} is loaded")
-              patch_integration(integration)
-            end
+                Datadog.logger.debug("#{integration.class} is loaded")
+                patch_integration(integration)
+              end
 
-            if all_patched
-              Datadog.logger.debug("All expected integrations are patched, disabling the script_compiled tracepoint")
+              if all_patched
+                Datadog.logger.debug("All expected integrations are patched, disabling the script_compiled tracepoint")
 
-              tp.disable
+                tp.disable
+              end
             end
           end
           script_compiled_tracepoint.enable
@@ -152,6 +157,7 @@ module Datadog
           end
         end
 
+        # This is not thread safe, it is synchronized by the caller in the tracepoint
         def self.configure_once
           @configure_once ||= Datadog::Core::Utils::OnlyOnce.new
         end
