@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module CLI
-      def self.exec: (String action) -> void
+      def self.exec: (String action, ?Array[String] args) -> void
     end
   end
 end

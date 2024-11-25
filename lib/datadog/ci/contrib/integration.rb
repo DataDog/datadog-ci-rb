@@ -93,9 +93,7 @@ module Datadog
 
         # @!visibility private
         def patch
-          # @type var patcher_klass: untyped
-          patcher_klass = patcher
-          if !patchable? || patcher_klass.nil?
+          if !patchable? || patcher.nil?
             return {
               ok: false,
               available: available?,
@@ -105,8 +103,12 @@ module Datadog
             }
           end
 
-          patcher_klass.patch
+          patcher.patch
           {ok: true}
+        end
+
+        def patched?
+          patcher&.patched?
         end
 
         # Can the patch for this integration be applied automatically?

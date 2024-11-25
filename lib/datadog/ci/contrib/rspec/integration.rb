@@ -22,7 +22,9 @@ module Datadog
 
           def loaded?
             !defined?(::RSpec).nil? && !defined?(::RSpec::Core).nil? &&
-              !defined?(::RSpec::Core::Example).nil?
+              !defined?(::RSpec::Core::Example).nil? &&
+              !defined?(::RSpec::Core::Runner).nil? &&
+              !defined?(::RSpec::Core::ExampleGroup).nil?
           end
 
           def compatible?

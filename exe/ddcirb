@@ -2,4 +2,6 @@
 
 require "datadog/ci/cli/cli"
 
-Datadog::CI::CLI.exec(ARGV.first)
+command = ARGV.shift
+
+Datadog::CI::CLI.exec(command, ARGV)

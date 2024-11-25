@@ -17,7 +17,7 @@ module Datadog
           end
 
           def loaded?
-            !defined?(::Cucumber).nil? && !defined?(::Cucumber::Runtime).nil?
+            !defined?(::Cucumber).nil? && !defined?(::Cucumber::Runtime).nil? && !defined?(::Cucumber::Configuration).nil?
           end
 
           def compatible?

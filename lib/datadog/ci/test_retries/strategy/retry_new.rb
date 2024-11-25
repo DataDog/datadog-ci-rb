@@ -101,7 +101,7 @@ module Datadog
             end
             @total_limit = (tests_count * percentage_limit / 100.0).ceil
             Datadog.logger.debug do
-              "Retry new tests total limit is [#{@total_limit}] (#{percentage_limit}%) of #{tests_count}"
+              "Retry new tests total limit is [#{@total_limit}] (#{percentage_limit}% of #{tests_count})"
             end
           end
 

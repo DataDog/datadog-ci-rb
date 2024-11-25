@@ -58,6 +58,9 @@ TEST_METADATA = {
   "minitest" => {
     "minitest-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby"
   },
+  "minitest_auto_instrument" => {
+    "minitest-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ❌ jruby"
+  },
   "activesupport" => {
     "activesupport-4" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby",
     "activesupport-5" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby",
@@ -74,6 +77,9 @@ TEST_METADATA = {
     "minitest-5-shoulda-context-2-shoulda-matchers-6" => "❌ 2.7 / ❌ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby"
   },
   "knapsack_rspec" => {
+    "knapsack_pro-7-rspec-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ❌ jruby"
+  },
+  "knapsack_auto_instrument" => {
     "knapsack_pro-7-rspec-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ❌ jruby"
   },
   "selenium" => {
@@ -149,10 +155,12 @@ namespace :spec do
     rspec
     minitest
     minitest_shoulda_context
+    minitest_auto_instrument
     activesupport
     ci_queue_minitest
     ci_queue_rspec
     knapsack_rspec
+    knapsack_auto_instrument
     selenium timecop
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
