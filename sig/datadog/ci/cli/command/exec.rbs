@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module CLI
+      module Command
+        class Exec < Base
+          @args: Array[String]
+
+          def initialize: (Array[String] args) -> void
+
+          def exec: () -> void
+        end
+      end
+    end
+  end
+end

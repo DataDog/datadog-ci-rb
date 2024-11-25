@@ -36,6 +36,7 @@ RSpec.describe Datadog::CI::CLI do
           Usage: bundle exec ddcirb [command] [options]. Available commands:
             skippable-tests - calculates the exact percentage of skipped tests and prints it to stdout or file
             skippable-tests-estimate - estimates the percentage of skipped tests and prints it to stdout or file
+            exec YOUR_TEST_COMMAND - automatically instruments your test command with Datadog and executes it
         USAGE
       end
     end
