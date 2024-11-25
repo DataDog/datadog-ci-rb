@@ -79,6 +79,9 @@ TEST_METADATA = {
   "knapsack_rspec" => {
     "knapsack_pro-7-rspec-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ❌ jruby"
   },
+  "knapsack_auto_instrument" => {
+    "knapsack_pro-7-rspec-3" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ❌ jruby"
+  },
   "selenium" => {
     "selenium-4-capybara-3" => "❌ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ❌ 3.4 / ✅ jruby"
   },
@@ -157,6 +160,7 @@ namespace :spec do
     ci_queue_minitest
     ci_queue_rspec
     knapsack_rspec
+    knapsack_auto_instrument
     selenium timecop
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
