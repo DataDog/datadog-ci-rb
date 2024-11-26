@@ -2,7 +2,6 @@
 
 ## [1.9.0] - 2024-11-26
 
-
 ### Added
 
 * Auto instrumentation ([#259][])
