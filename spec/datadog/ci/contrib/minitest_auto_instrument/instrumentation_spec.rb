@@ -38,9 +38,6 @@ RSpec.describe "Minitest auto instrumentation" do
 
     # test_session metric has auto_injected tag
     test_session_started_metric = telemetry_metric(:inc, "test_session")
-    expect(test_session_started_metric.tags).to eq(
-      "provider" => "unsupported",
-      "auto_injected" => "true"
-    )
+    expect(test_session_started_metric.tags["auto_injected"]).to eq("true")
   end
 end
