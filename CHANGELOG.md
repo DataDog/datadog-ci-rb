@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.9.0] - 2024-11-26
+
+
+### Added
+
+* Auto instrumentation ([#259][])
+
 ## [1.8.1] - 2024-10-18
 
 
@@ -356,7 +363,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.9.0...main
+[1.9.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.6.0...v1.7.0
@@ -514,3 +522,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#244]: https://github.com/DataDog/datadog-ci-rb/issues/244
 [#248]: https://github.com/DataDog/datadog-ci-rb/issues/248
 [#250]: https://github.com/DataDog/datadog-ci-rb/issues/250
+[#259]: https://github.com/DataDog/datadog-ci-rb/issues/259
