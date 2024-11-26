@@ -9,6 +9,7 @@ module Datadog
         class InvalidIntegrationError < StandardError; end
 
         @registry = {}
+        @auto_instrumented = false
 
         def self.registry
           @registry
@@ -18,6 +19,10 @@ module Datadog
           @registry[integration_name(integration_class)] = integration_class.new
         end
 
+        def self.auto_instrumented?
+          @auto_instrumented
+        end
+
         # Auto instrumentation of all integrations.
         #
         # Registers a :script_compiled tracepoint to watch for new Ruby files being loaded.
@@ -25,6 +30,7 @@ module Datadog
         # Only the integrations that are available in the environment are checked.
         def self.auto_instrument
           Datadog.logger.debug("Auto instrumenting all integrations...")
+          @auto_instrumented = true
 
           auto_instrumented_integrations = fetch_auto_instrumented_integrations
           if auto_instrumented_integrations.empty?

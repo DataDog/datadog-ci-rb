@@ -7,11 +7,15 @@ module Datadog
 
         self.@registry: Hash[Symbol, untyped]
 
+        self.@auto_instrumented: bool
+
         self.@configure_once: Datadog::Core::Utils::OnlyOnce
 
         def self.registry: () -> Hash[Symbol, untyped]
 
         def self.auto_instrument: () -> void
+
+        def self.auto_instrumented?: () -> bool
 
         def self.instrument: (Symbol integration_name, ?::Hash[untyped, untyped] options) { (?) -> untyped } -> void
 

@@ -404,6 +404,8 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     context "run minitest suite" do
+      include_context "Telemetry spy"
+
       before do
         Minitest.run([])
       end
@@ -452,6 +454,10 @@ RSpec.describe "Minitest instrumentation" do
           expect(test_session_span).to have_test_tag(:code_coverage_lines_pct)
 
           expect(test_session_span).to have_pass_status
+
+          # test_session metric has auto_injected false
+          test_session_started_metric = telemetry_metric(:inc, "test_session")
+          expect(test_session_started_metric.tags["auto_injected"]).to eq("false")
         end
 
         it "creates a test module span" do
@@ -486,7 +492,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "417")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "419")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
