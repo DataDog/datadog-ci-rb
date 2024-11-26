@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "../contrib/instrumentation"
 require_relative "../ext/app_types"
 require_relative "../ext/environment"
 require_relative "../ext/telemetry"
@@ -33,7 +34,7 @@ module Datadog
             Ext::Telemetry::METRIC_TEST_SESSION,
             1,
             {
-              Ext::Telemetry::TAG_AUTO_INJECTED => "false", # ruby doesn't support auto injection yet
+              Ext::Telemetry::TAG_AUTO_INJECTED => Contrib::Instrumentation.auto_instrumented?.to_s,
               Ext::Telemetry::TAG_PROVIDER => test_session.ci_provider || Ext::Telemetry::Provider::UNSUPPORTED
             }
           )

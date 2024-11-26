@@ -2,6 +2,7 @@ RSpec.describe "Minitest auto instrumentation" do
   include_context "CI mode activated" do
     let(:integration_name) { :no_instrument }
   end
+  include_context "Telemetry spy"
 
   before do
     require_relative "../../../../../lib/datadog/ci/auto_instrument"
@@ -34,5 +35,12 @@ RSpec.describe "Minitest auto instrumentation" do
     expect(test_spans).to have_unique_tag_values_count(:test_session_id, 1)
     expect(test_spans).to have_unique_tag_values_count(:test_module_id, 1)
     expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 1)
+
+    # test_session metric has auto_injected tag
+    test_session_started_metric = telemetry_metric(:inc, "test_session")
+    expect(test_session_started_metric.tags).to eq(
+      "provider" => "unsupported",
+      "auto_injected" => "true"
+    )
   end
 end
