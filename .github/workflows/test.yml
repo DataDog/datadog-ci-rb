@@ -20,11 +20,23 @@ jobs:
         - name: ruby
           version: '3.2'
           alias: ruby-32
+        - name: ruby
+          version: '3.1'
+          alias: ruby-31
+        - name: ruby
+          version: '3.0'
+          alias: ruby-30
+        - name: ruby
+          version: '2.7'
+          alias: ruby-27
     container:
       image: ghcr.io/datadog/images-rb/engines/${{ matrix.engine.name }}:${{ matrix.engine.version }}
     outputs:
       ruby-33-matrix: "${{ steps.set-matrix.outputs.ruby-33 }}"
       ruby-32-matrix: "${{ steps.set-matrix.outputs.ruby-32 }}"
+      ruby-31-matrix: "${{ steps.set-matrix.outputs.ruby-31 }}"
+      ruby-30-matrix: "${{ steps.set-matrix.outputs.ruby-30 }}"
+      ruby-27-matrix: "${{ steps.set-matrix.outputs.ruby-27 }}"
     steps:
     - uses: actions/checkout@v4
     - run: bundle install
@@ -86,6 +98,75 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: bundled-lock-${{ github.run_id }}-ruby-32
+    - run: bundle install && bundle exec rake compile_ext
+    - name: Test ${{ matrix.task }} with ${{ matrix.gemfile }}
+      run: bundle exec rake spec:${{ matrix.task }}
+  test-ruby-31:
+    name: 'ruby-3.1: ${{ matrix.task }} (${{ matrix.group }})'
+    needs:
+    - compute_tasks
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: "${{ fromJSON(needs.compute_tasks.outputs.ruby-31-matrix) }}"
+    container:
+      image: ghcr.io/datadog/images-rb/engines/ruby:3.1
+      env:
+        BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure Git
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    - uses: actions/download-artifact@v4
+      with:
+        name: bundled-lock-${{ github.run_id }}-ruby-31
+    - run: bundle install && bundle exec rake compile_ext
+    - name: Test ${{ matrix.task }} with ${{ matrix.gemfile }}
+      run: bundle exec rake spec:${{ matrix.task }}
+  test-ruby-30:
+    name: 'ruby-3.0: ${{ matrix.task }} (${{ matrix.group }})'
+    needs:
+    - compute_tasks
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: "${{ fromJSON(needs.compute_tasks.outputs.ruby-30-matrix) }}"
+    container:
+      image: ghcr.io/datadog/images-rb/engines/ruby:3.0
+      env:
+        BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure Git
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    - uses: actions/download-artifact@v4
+      with:
+        name: bundled-lock-${{ github.run_id }}-ruby-30
+    - run: bundle install && bundle exec rake compile_ext
+    - name: Test ${{ matrix.task }} with ${{ matrix.gemfile }}
+      run: bundle exec rake spec:${{ matrix.task }}
+  test-ruby-27:
+    name: 'ruby-2.7: ${{ matrix.task }} (${{ matrix.group }})'
+    needs:
+    - compute_tasks
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: "${{ fromJSON(needs.compute_tasks.outputs.ruby-27-matrix) }}"
+    container:
+      image: ghcr.io/datadog/images-rb/engines/ruby:2.7
+      env:
+        BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure Git
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    - uses: actions/download-artifact@v4
+      with:
+        name: bundled-lock-${{ github.run_id }}-ruby-27
     - run: bundle install && bundle exec rake compile_ext
     - name: Test ${{ matrix.task }} with ${{ matrix.gemfile }}
       run: bundle exec rake spec:${{ matrix.task }}

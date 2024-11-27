@@ -12,9 +12,9 @@ namespace :github do
       runtimes = [
         "ruby:3.3",
         "ruby:3.2",
-        # "ruby:3.1",
-        # "ruby:3.0",
-        # "ruby:2.7",
+        "ruby:3.1",
+        "ruby:3.0",
+        "ruby:2.7",
         # "jruby:9.4",
       ].map do |runtime|
         engine, version = runtime.split(':')
