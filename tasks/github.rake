@@ -10,6 +10,7 @@ namespace :github do
       ubuntu = "ubuntu-22.04"
 
       runtimes = [
+        "ruby:3.4",
         "ruby:3.3",
         "ruby:3.2",
         "ruby:3.1",
