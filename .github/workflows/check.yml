@@ -6,8 +6,20 @@ on:
     # The branches below must be a subset of the branches above
     branches: [main]
 jobs:
-  check:
-    name: Check types
+  lint:
+    name: Lint
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - name: Install dependencies
+        run: bundle install
+      - run: bundle exec standardrb
+
+  typecheck:
+    name: Type checking
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4

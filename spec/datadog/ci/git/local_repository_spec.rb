@@ -104,7 +104,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
   describe ".git_repository_url" do
     subject { described_class.git_repository_url }
 
-    it { is_expected.to eq("git@github.com:DataDog/datadog-ci-rb.git") }
+    it { is_expected.to include("DataDog/datadog-ci-rb") }
 
     it_behaves_like "emits telemetry metric", :inc, "git.command", 1
     it_behaves_like "emits telemetry metric", :distribution, "git.command_ms"

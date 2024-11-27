@@ -20,21 +20,6 @@ if Gem.loaded_specs.key? "ruby_memcheck"
   )
 end
 
-RSpec::Core::RakeTask.new(:spec)
-
-Dir.glob("tasks/*.rake").each { |r| import r }
-
-YARD::Rake::YardocTask.new(:docs) do |t|
-  # Options defined in `.yardopts` are read first, then merged with
-  # options defined here.
-  #
-  # It's recommended to define options in `.yardopts` instead of here,
-  # as `.yardopts` can be read by external YARD tools, like the
-  # hot-reload YARD server `yard server --reload`.
-
-  t.options += ["--title", "datadog-ci #{Datadog::CI::VERSION} documentation"]
-end
-
 # ADD NEW RUBIES HERE
 TEST_METADATA = {
   "main" => {
@@ -89,6 +74,21 @@ TEST_METADATA = {
     "timecop-0" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby"
   }
 }
+
+RSpec::Core::RakeTask.new(:spec)
+
+Dir.glob("tasks/*.rake").each { |r| import r }
+
+YARD::Rake::YardocTask.new(:docs) do |t|
+  # Options defined in `.yardopts` are read first, then merged with
+  # options defined here.
+  #
+  # It's recommended to define options in `.yardopts` instead of here,
+  # as `.yardopts` can be read by external YARD tools, like the
+  # hot-reload YARD server `yard server --reload`.
+
+  t.options += ["--title", "datadog-ci #{Datadog::CI::VERSION} documentation"]
+end
 
 namespace :test do
   task all: TEST_METADATA.map { |k, _| "test:#{k}" }

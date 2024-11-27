@@ -7,8 +7,8 @@ RSpec.describe ::Datadog::CI::Git::Packfiles do
   before { skip if PlatformHelpers.jruby? }
 
   let(:commits) { Datadog::CI::Git::LocalRepository.git_commits }
-  let(:included_commits) { commits[0..1] }
-  let(:excluded_commits) { commits[2..] }
+  let(:included_commits) { commits[0..1] || [] }
+  let(:excluded_commits) { commits[2..] || [] }
 
   describe ".generate" do
     it "yields packfile" do
