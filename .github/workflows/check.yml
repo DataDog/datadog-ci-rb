@@ -16,7 +16,7 @@ jobs:
           ruby-version: '3.3'
       - name: Install dependencies
         run: bundle install
-      - run: bundle exec rake standard
+      - run: bundle exec standardrb
 
   typecheck:
     name: Type checking
