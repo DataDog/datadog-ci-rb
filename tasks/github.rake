@@ -16,7 +16,7 @@ namespace :github do
         "ruby:3.1",
         "ruby:3.0",
         "ruby:2.7",
-        # "jruby:9.4",
+        "jruby:9.4",
       ].map do |runtime|
         engine, version = runtime.split(':')
         runtime_alias = "#{engine}-#{version.gsub('.', '')}"

@@ -32,6 +32,9 @@ jobs:
         - name: ruby
           version: '2.7'
           alias: ruby-27
+        - name: jruby
+          version: '9.4'
+          alias: jruby-94
     container:
       image: ghcr.io/datadog/images-rb/engines/${{ matrix.engine.name }}:${{ matrix.engine.version }}
     outputs:
@@ -41,6 +44,7 @@ jobs:
       ruby-31-matrix: "${{ steps.set-matrix.outputs.ruby-31 }}"
       ruby-30-matrix: "${{ steps.set-matrix.outputs.ruby-30 }}"
       ruby-27-matrix: "${{ steps.set-matrix.outputs.ruby-27 }}"
+      jruby-94-matrix: "${{ steps.set-matrix.outputs.jruby-94 }}"
     steps:
     - uses: actions/checkout@v4
     - run: bundle install
@@ -194,6 +198,29 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: bundled-lock-${{ github.run_id }}-ruby-27
+    - run: bundle install && bundle exec rake compile_ext
+    - name: Test ${{ matrix.task }} with ${{ matrix.gemfile }}
+      run: bundle exec rake spec:${{ matrix.task }}
+  test-jruby-94:
+    name: 'jruby-9.4: ${{ matrix.task }} (${{ matrix.group }})'
+    needs:
+    - compute_tasks
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: "${{ fromJSON(needs.compute_tasks.outputs.jruby-94-matrix) }}"
+    container:
+      image: ghcr.io/datadog/images-rb/engines/jruby:9.4
+      env:
+        BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
+    steps:
+    - uses: actions/checkout@v4
+    - name: Configure Git
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    - uses: actions/download-artifact@v4
+      with:
+        name: bundled-lock-${{ github.run_id }}-jruby-94
     - run: bundle install && bundle exec rake compile_ext
     - name: Test ${{ matrix.task }} with ${{ matrix.gemfile }}
       run: bundle exec rake spec:${{ matrix.task }}
