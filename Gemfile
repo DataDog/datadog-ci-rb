@@ -31,7 +31,6 @@ gem "pimpmychangelog", ">= 0.1.2"
 
 # coverage
 gem "simplecov"
-gem "simplecov-cobertura", "~> 2.1.0"
 
 # type checks, memory checks, etc.
 group :check do
