@@ -2,6 +2,7 @@ require "time"
 
 RSpec.describe "RSpec instrumentation" do
   let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
+  let(:before_all_spy) { spy(:before_all, call: nil) }
 
   before do
     # expect that public manual API isn't used
@@ -36,9 +37,14 @@ RSpec.describe "RSpec instrumentation" do
     flaky_test_that_fails_once_passes = 0
 
     current_let_value = 0
+    before_all_spy_local = before_all_spy
 
     with_new_rspec_environment do
       spec = RSpec.describe "SomeTest", suite_meta do
+        before(:all) do
+          before_all_spy_local.call
+        end
+
         context "nested", context_meta do
           let(:let_value) { current_let_value += 1 }
 
@@ -150,7 +156,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "123")
+      expect(first_test_span).to have_test_tag(:source_start, "129")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -580,7 +586,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "41")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "43")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -783,6 +789,12 @@ RSpec.describe "RSpec instrumentation" do
 
         expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
         expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 2)
+      end
+
+      it "does not run context hooks" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(before_all_spy).not_to have_received(:call)
       end
 
       context "but some tests are unskippable" do
