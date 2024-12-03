@@ -29,6 +29,9 @@ module Datadog
                 }
               )
 
+              # try skipping the whole example group
+              metadata[:skip] = true
+
               success = super
               return success unless test_suite
 
