@@ -757,6 +757,12 @@ RSpec.describe "RSpec instrumentation" do
         expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
       end
 
+      it "runs context hooks" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(before_all_spy).to have_received(:call)
+      end
+
       it "sends test session level tags" do
         rspec_session_run(with_failed_test: true)
 
