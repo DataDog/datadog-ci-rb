@@ -45,6 +45,8 @@ module Datadog
 
         def stop_coverage: (Datadog::CI::Test test) -> Datadog::CI::TestOptimisation::Coverage::Event?
 
+        def skippable?: (Datadog::CI::Test test) -> bool
+
         def mark_if_skippable: (Datadog::CI::Test test) -> void
 
         def count_skipped_test: (Datadog::CI::Test test) -> void

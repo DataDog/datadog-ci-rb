@@ -30,7 +30,10 @@ module Datadog
               )
 
               # try skipping the whole example group
-              metadata[:skip] = true
+              # all_skipped = descendant_filtered_examples.all? do |example|
+              # end
+              all_skipped = false
+              metadata[:skip] = true if all_skipped
 
               success = super
               return success unless test_suite

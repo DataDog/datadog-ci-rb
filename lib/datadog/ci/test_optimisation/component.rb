@@ -144,11 +144,16 @@ module Datadog
           event
         end
 
+        def skippable?(test)
+          return false if !enabled? || !skipping_tests?
+
+          @skippable_tests.include?(test.datadog_test_id)
+        end
+
         def mark_if_skippable(test)
           return if !enabled? || !skipping_tests?
 
-          datadog_test_id = Utils::TestRun.datadog_test_id(test.name, test.test_suite_name, test.parameters)
-          if @skippable_tests.include?(datadog_test_id)
+          if skippable?(test)
             if forked?
               Datadog.logger.warn { "Intelligent test runner is not supported for forking test runners yet" }
               return
@@ -156,9 +161,9 @@ module Datadog
 
             test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
-            Datadog.logger.debug { "Marked test as skippable: #{datadog_test_id}" }
+            Datadog.logger.debug { "Marked test as skippable: #{test.datadog_test_id}" }
           else
-            Datadog.logger.debug { "Test is not skippable: #{datadog_test_id}" }
+            Datadog.logger.debug { "Test is not skippable: #{test.datadog_test_id}" }
           end
         end
 
