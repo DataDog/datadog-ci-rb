@@ -21,7 +21,7 @@ module Datadog
               return super unless top_level?
 
               suite_name = "#{description} at #{file_path}"
-              test_suite = test_visibility_component.start_test_suite(
+              test_suite = test_visibility_component&.start_test_suite(
                 suite_name,
                 tags: {
                   CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
@@ -29,11 +29,8 @@ module Datadog
                 }
               )
 
-              # try skipping the whole example group
-              # all_skipped = descendant_filtered_examples.all? do |example|
-              # end
-              all_skipped = false
-              metadata[:skip] = true if all_skipped
+              # skip the context hooks if all descendant example are going to be skipped
+              metadata[:skip] = true if all_examples_skipped_by_datadog?
 
               success = super
               return success unless test_suite
@@ -53,12 +50,22 @@ module Datadog
 
             private
 
+            def all_examples_skipped_by_datadog?
+              descendant_filtered_examples.all? do |example|
+                !example.datadog_unskippable? && test_optimisation_component&.skippable?(example)
+              end
+            end
+
             def datadog_configuration
               Datadog.configuration.ci[:rspec]
             end
 
             def test_visibility_component
               Datadog.send(:components).test_visibility
+            end
+
+            def test_optimisation_component
+              Datadog.send(:components).test_optimisation
             end
           end
         end

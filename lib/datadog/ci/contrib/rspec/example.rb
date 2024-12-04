@@ -89,6 +89,18 @@ module Datadog
               super(::RSpec::Core::NullReporter)
             end
 
+            def datadog_test_id
+              @datadog_test_id ||= Utils::TestRun.datadog_test_id(
+                datadog_test_name,
+                datadog_test_suite_name,
+                datadog_test_parameters
+              )
+            end
+
+            def datadog_unskippable?
+              !!metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
+            end
+
             private
 
             def fetch_top_level_example_group
@@ -149,10 +161,6 @@ module Datadog
               @datadog_test_parameters = Utils::TestRun.test_parameters(
                 metadata: {"scoped_id" => metadata[:scoped_id]}
               )
-            end
-
-            def datadog_unskippable?
-              !!metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
             end
 
             def test_visibility_component
