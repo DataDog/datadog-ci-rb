@@ -17,6 +17,11 @@ module Datadog
         get_tag(Ext::Test::TAG_NAME)
       end
 
+      # @return [String] the test id according to Datadog's test impact analysis.
+      def datadog_test_id
+        @datadog_test_id ||= Utils::TestRun.datadog_test_id(name, test_suite_name, parameters)
+      end
+
       # Finishes the current test.
       # @return [void]
       def finish
@@ -140,22 +145,18 @@ module Datadog
 
       # @internal
       def any_retry_passed?
-        !!test_suite&.any_test_retry_passed?(test_id)
+        !!test_suite&.any_test_retry_passed?(datadog_test_id)
       end
 
       private
 
-      def test_id
-        @test_id ||= Utils::TestRun.datadog_test_id(name, test_suite_name, parameters)
-      end
-
       def record_test_result(datadog_status)
         # if this test was already executed in this test suite, mark it as retried
-        if test_suite&.test_executed?(test_id)
+        if test_suite&.test_executed?(datadog_test_id)
           set_tag(Ext::Test::TAG_IS_RETRY, "true")
         end
 
-        test_suite&.record_test_result(test_id, datadog_status)
+        test_suite&.record_test_result(datadog_test_id, datadog_status)
       end
     end
   end

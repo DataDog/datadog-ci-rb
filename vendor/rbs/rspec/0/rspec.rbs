@@ -46,6 +46,7 @@ module RSpec::Core::ExampleGroup
     def file_path: () -> String
     def description: () -> String
     def metadata: () -> untyped
+    def descendant_filtered_examples: () -> Array[untyped]
   end
 end
 

@@ -12,9 +12,13 @@ module Datadog
 
             private
 
+            def all_examples_skipped_by_datadog?: () -> bool
+
             def datadog_configuration: () -> untyped
 
-            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component?
+
+            def test_optimisation_component: () -> Datadog::CI::TestOptimisation::Component?
           end
         end
       end
