@@ -7,6 +7,12 @@ module Datadog
           module InstanceMethods : ::RSpec::Core::Example
             @skip_reporting: bool
 
+            @datadog_test_suite_description: String
+
+            @datadog_test_name: String
+            @datadog_test_suite_name: String
+            @datadog_test_parameters: String
+
             def run: (untyped example_group_instance, untyped reporter) -> untyped
 
             private
@@ -17,6 +23,11 @@ module Datadog
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
             def test_retries_component: () -> Datadog::CI::TestRetries::Component
             def ci_queue?: () -> bool
+
+            def datadog_test_suite_description: () -> String
+            def datadog_test_name: () -> String
+            def datadog_test_suite_name: () -> String
+            def datadog_test_parameters: () -> String
           end
         end
       end
