@@ -5,7 +5,7 @@ on:
 
 jobs:
   build_and_run_integration_test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         ruby_image:
