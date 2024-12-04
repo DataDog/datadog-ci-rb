@@ -818,6 +818,20 @@ RSpec.describe "RSpec instrumentation" do
         expect(before_context_spy).not_to have_received(:call)
       end
 
+      it "runs top-level hook when there is a test not skipped by datadog, but it skips hooks for the context where all tests are skipped" do
+        rspec_session_run(with_failed_test: true, with_test_outside_context: true)
+
+        expect(before_all_spy).to have_received(:call)
+        expect(before_context_spy).not_to have_received(:call)
+      end
+
+      it "runs context hook if any test is marked unskippable" do
+        rspec_session_run(with_failed_test: true, unskippable: {test: true})
+
+        expect(before_all_spy).to have_received(:call)
+        expect(before_context_spy).to have_received(:call)
+      end
+
       context "but some tests are unskippable" do
         context "when a test is unskippable" do
           it "runs the test and adds forced run tag" do
