@@ -28,6 +28,7 @@ module Datadog
             def datadog_test_name: () -> String
             def datadog_test_suite_name: () -> String
             def datadog_test_parameters: () -> String
+            def datadog_unskippable?: () -> bool
           end
         end
       end

@@ -39,7 +39,7 @@ module Datadog
                   },
                   service: datadog_configuration[:service_name]
                 ) do |test_span|
-                  test_span&.itr_unskippable! if metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
+                  test_span&.itr_unskippable! if datadog_unskippable?
 
                   metadata[:skip] = CI::Ext::Test::ITR_TEST_SKIP_REASON if test_span&.skipped_by_itr?
 
@@ -149,6 +149,10 @@ module Datadog
               @datadog_test_parameters = Utils::TestRun.test_parameters(
                 metadata: {"scoped_id" => metadata[:scoped_id]}
               )
+            end
+
+            def datadog_unskippable?
+              !!metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
             end
 
             def test_visibility_component
