@@ -18,6 +18,13 @@ module Datadog
             def run(reporter = ::RSpec::Core::NullReporter)
               return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
               return super unless datadog_configuration[:enabled]
+
+              # skip the context hooks if all descendant example are going to be skipped
+              # IMPORTANT: must happen before top_level? check because skipping hooks must happen
+              # even if it is a nested context
+              metadata[:skip] = true if all_examples_skipped_by_datadog?
+
+              # return early because we create Datadog::CI::TestSuite only for top-level example groups
               return super unless top_level?
 
               suite_name = "#{description} at #{file_path}"
@@ -28,9 +35,6 @@ module Datadog
                   CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
                 }
               )
-
-              # skip the context hooks if all descendant example are going to be skipped
-              metadata[:skip] = true if all_examples_skipped_by_datadog?
 
               success = super
               return success unless test_suite

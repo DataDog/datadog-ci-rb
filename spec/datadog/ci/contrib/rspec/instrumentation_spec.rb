@@ -3,6 +3,7 @@ require "time"
 RSpec.describe "RSpec instrumentation" do
   let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
   let(:before_all_spy) { spy(:before_all, call: nil) }
+  let(:before_context_spy) { spy(:before_context, call: nil) }
 
   before do
     # expect that public manual API isn't used
@@ -19,6 +20,7 @@ RSpec.describe "RSpec instrumentation" do
     with_flaky_test: false,
     with_canceled_test: false,
     with_flaky_test_that_fails_once: false,
+    with_test_outside_context: false,
     unskippable: {
       test: false,
       context: false,
@@ -38,6 +40,7 @@ RSpec.describe "RSpec instrumentation" do
 
     current_let_value = 0
     before_all_spy_local = before_all_spy
+    before_context_spy_local = before_context_spy
 
     with_new_rspec_environment do
       spec = RSpec.describe "SomeTest", suite_meta do
@@ -46,6 +49,10 @@ RSpec.describe "RSpec instrumentation" do
         end
 
         context "nested", context_meta do
+          before(:all) do
+            before_context_spy_local.call
+          end
+
           let(:let_value) { current_let_value += 1 }
 
           it "foo", test_meta do
@@ -98,6 +105,12 @@ RSpec.describe "RSpec instrumentation" do
 
               expect(1 + 1).to eq(34)
             end
+          end
+        end
+
+        if with_test_outside_context
+          it "is outside of context" do
+            expect(1 + 1).to eq(2)
           end
         end
       end
@@ -156,7 +169,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "129")
+      expect(first_test_span).to have_test_tag(:source_start, "142")
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -586,7 +599,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "43")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "46")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -761,6 +774,7 @@ RSpec.describe "RSpec instrumentation" do
         rspec_session_run(with_failed_test: true)
 
         expect(before_all_spy).to have_received(:call)
+        expect(before_context_spy).to have_received(:call)
       end
 
       it "sends test session level tags" do
@@ -801,6 +815,7 @@ RSpec.describe "RSpec instrumentation" do
         rspec_session_run(with_failed_test: true)
 
         expect(before_all_spy).not_to have_received(:call)
+        expect(before_context_spy).not_to have_received(:call)
       end
 
       context "but some tests are unskippable" do
