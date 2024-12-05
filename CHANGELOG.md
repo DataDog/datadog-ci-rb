@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.10.0] - 2024-12-05
+
+### Added
+
+* Skip before(:all) context hooks when all examples are skipped ([#262][])
+
 ## [1.9.0] - 2024-11-26
 
 ### Added
@@ -362,7 +368,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.9.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.10.0...main
+[1.10.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.7.0...v1.8.0
@@ -522,3 +529,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#248]: https://github.com/DataDog/datadog-ci-rb/issues/248
 [#250]: https://github.com/DataDog/datadog-ci-rb/issues/250
 [#259]: https://github.com/DataDog/datadog-ci-rb/issues/259
+[#262]: https://github.com/DataDog/datadog-ci-rb/issues/262
