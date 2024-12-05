@@ -121,17 +121,7 @@ namespace :test do
         end
 
         command = "#{command} '[#{spec_arguments}]'" if spec_arguments
-
-        total_executors = ENV.key?("CIRCLE_NODE_TOTAL") ? ENV["CIRCLE_NODE_TOTAL"].to_i : nil
-        current_executor = ENV.key?("CIRCLE_NODE_INDEX") ? ENV["CIRCLE_NODE_INDEX"].to_i : nil
-
-        if total_executors && current_executor && total_executors > 1
-          @execution_count ||= 0
-          @execution_count += 1
-          sh(command) if @execution_count % total_executors == current_executor
-        else
-          sh(command)
-        end
+        sh(command)
       end
     end
   end
