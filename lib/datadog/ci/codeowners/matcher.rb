@@ -42,7 +42,7 @@ module Datadog
 
           File.open(codeowners_file_path, "r") do |f|
             f.each_line do |line|
-              line.strip!
+              line.strip!&.sub!(/#.*$/, "")
 
               next if line.empty?
               next if comment?(line)

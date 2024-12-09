@@ -41,7 +41,7 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           <<-CODEOWNERS
             # Comment line
             /path/to/*.rb @owner3
-            /path/to/file.rb @owner1 @owner2
+            /path/to/file.rb @owner1 @owner2 #This is an inline comment.
           CODEOWNERS
         end
 
