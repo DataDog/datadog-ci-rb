@@ -56,5 +56,5 @@ group :development do
   gem "pimpmychangelog", ">= 0.1.2"
 
   # irb is updated earlier that way
-  gem "irb"
+  gem "irb" if RUBY_PLATFORM != "java"
 end
