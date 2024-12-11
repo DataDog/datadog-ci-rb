@@ -13,10 +13,13 @@ end
 
 alias original_appraise appraise
 
-REMOVED_GEMS = {
-  check: %w[rbs steep ruby_memcheck],
-  development: %w[ruby-lsp ruby-lsp-rspec debug irb]
-}
+require "bundler"
+
+definition = Bundler.definition
+GEMS_TO_REMOVE = Hash.new { |hash, key| hash[key] = definition.dependencies_for([key]).map(&:name) }
+
+[:development, :check].each { |g| GEMS_TO_REMOVE[g] }
+
 RUBY_VERSION = Gem::Version.new(RUBY_ENGINE_VERSION)
 
 def appraise(group, &block)
@@ -25,7 +28,7 @@ def appraise(group, &block)
     original_appraise(group) do
       instance_exec(&block)
 
-      REMOVED_GEMS.each do |group_name, gems|
+      GEMS_TO_REMOVE.each do |group_name, gems|
         group(group_name) do
           gems.each do |gem_name|
             remove_gem gem_name
