@@ -653,9 +653,9 @@ RSpec.describe "Minitest instrumentation" do
             :suite,
             [
               "SomeSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
-              "in context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
-              "in context::deeper context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
-              "in other context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+              "SomeSpec::in context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
+              "SomeSpec::in context::deeper context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
+              "SomeSpec::in other context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
             ]
           )
         end
@@ -909,7 +909,7 @@ RSpec.describe "Minitest instrumentation" do
           Set.new(
             [
               "SomeUnskippableSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_0001_does not fail.",
-              "in context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_0001_does not fail."
+              "SomeUnskippableSpec::in context at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_0001_does not fail."
             ]
           )
         end
