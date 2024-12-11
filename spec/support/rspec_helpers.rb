@@ -16,6 +16,6 @@ module RSpecHelpers
   end
 
   def devnull
-    File.new("/dev/null", "w")
+    File.new(File::NULL, "w")
   end
 end

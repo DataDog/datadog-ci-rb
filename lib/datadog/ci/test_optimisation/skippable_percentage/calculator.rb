@@ -66,7 +66,7 @@ module Datadog
             cli_options_array = @rspec_cli_options + ["--dry-run", @spec_path]
 
             rspec_config_options = ::RSpec::Core::ConfigurationOptions.new(cli_options_array)
-            devnull = File.new("/dev/null", "w")
+            devnull = File.new(File::NULL, "w")
             out = @verbose ? $stdout : devnull
             err = @verbose ? $stderr : devnull
 
