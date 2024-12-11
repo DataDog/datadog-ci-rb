@@ -12,6 +12,7 @@ gem "appraisal"
 gem "climate_control"
 gem "webmock"
 gem "rake"
+gem "yard"
 gem "os"
 gem "cucumber", "~> 7"
 

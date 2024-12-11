@@ -14,7 +14,7 @@ gem "rake-compiler"
 # coverage
 gem "simplecov"
 
-# test
+# build&test
 gem "rspec"
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
@@ -22,6 +22,7 @@ gem "appraisal"
 gem "climate_control"
 gem "webmock"
 gem "rake"
+gem "yard"
 
 # platform helpers
 gem "os"
@@ -50,7 +51,6 @@ group :development do
   end
 
   # docs and release
-  gem "yard"
   gem "redcarpet" if RUBY_PLATFORM != "java"
   gem "webrick"
   gem "pimpmychangelog", ">= 0.1.2"
