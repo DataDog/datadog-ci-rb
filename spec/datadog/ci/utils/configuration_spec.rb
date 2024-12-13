@@ -38,4 +38,24 @@ RSpec.describe ::Datadog::CI::Utils::Configuration do
       end
     end
   end
+
+  describe ".service_name_provided_by_user?" do
+    subject { described_class.service_name_provided_by_user? }
+
+    before do
+      allow(::Datadog.configuration).to receive(:service_without_fallback).and_return(service)
+    end
+
+    context "when service is set in Datadog config" do
+      let(:service) { "service_without_fallback" }
+
+      it { is_expected.to be true }
+    end
+
+    context "when service is not set" do
+      let(:service) { nil }
+
+      it { is_expected.to be false }
+    end
+  end
 end

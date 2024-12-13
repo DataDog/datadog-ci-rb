@@ -3,6 +3,8 @@ module Datadog
     module Utils
       module Configuration
         def self.fetch_service_name: (String default) -> String
+
+        def self.service_name_provided_by_user?: () -> bool
       end
     end
   end
