@@ -13,6 +13,7 @@ require_relative "../coverage_helpers"
 RSpec.shared_context "CI mode activated" do
   include CoverageHelpers
 
+  let(:service_name) { nil }
   let(:test_command) { "command" }
   let(:logical_test_session_name) { nil }
   let(:integration_name) { :no_instrument }
@@ -109,6 +110,10 @@ RSpec.shared_context "CI mode activated" do
     allow_any_instance_of(Datadog::CI::TestRetries::UniqueTestsClient).to receive(:fetch_unique_tests).and_return(unique_tests_set)
 
     Datadog.configure do |c|
+      if service_name
+        c.service = service_name
+      end
+
       # library switch
       c.ci.enabled = ci_enabled
 
