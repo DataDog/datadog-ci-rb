@@ -74,6 +74,9 @@ module Datadog
         # common tags that are serialized directly in msgpack header in metadata field
         METADATA_TAG_TEST_SESSION_NAME = "test_session.name"
 
+        # internal tag indicating if datadog service was configured by the user
+        TAG_USER_PROVIDED_TEST_SERVICE = "_dd.test.is_user_provided_service"
+
         # internal metric with the number of virtual CPUs
         METRIC_CPU_COUNT = "_dd.host.vcpu_count"
 
