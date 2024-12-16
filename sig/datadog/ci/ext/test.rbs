@@ -98,6 +98,8 @@ module Datadog
 
         METADATA_TAG_TEST_SESSION_NAME: "test_session.name"
 
+        TAG_USER_PROVIDED_TEST_SERVICE: "_dd.test.is_user_provided_service"
+
         METRIC_CPU_COUNT: "_dd.host.vcpu_count"
 
         TAG_CODE_COVERAGE_LINES_PCT: "test.code_coverage.lines_pct"
