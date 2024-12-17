@@ -69,6 +69,7 @@ module Datadog
         TAG_BROWSER_DRIVER = "browser_driver"
         TAG_IS_RUM = "is_rum"
         TAG_IS_RETRY = "is_retry"
+        TAG_EARLY_FLAKE_DETECTION_ABORT_REASON = "early_flake_detection_abort_reason"
         TAG_IS_NEW = "is_new"
         TAG_LIBRARY = "library"
         TAG_ENDPOINT = "endpoint"
@@ -78,12 +79,18 @@ module Datadog
         TAG_REQUEST_COMPRESSED = "rq_compressed"
         TAG_RESPONSE_COMPRESSED = "rs_compressed"
         TAG_COMMAND = "command"
+        # tags for git_requests.settings_response metric
         TAG_COVERAGE_ENABLED = "coverage_enabled"
+        TAG_ITR_ENABLED = "itr_enabled"
         TAG_ITR_SKIP_ENABLED = "itrskip_enabled"
+        TAG_REQUIRE_GIT = "require_git"
         TAG_EARLY_FLAKE_DETECTION_ENABLED = "early_flake_detection_enabled"
-        TAG_EARLY_FLAKE_DETECTION_ABORT_REASON = "early_flake_detection_abort_reason"
+        TAG_FLAKY_TEST_RETRIES_ENABLED = "flaky_test_retries_enabled"
+        # tags for test_session metric
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"
+        TAG_AGENTLESS_LOG_SUBMISSION_ENABLED = "agentless_log_submission_enabled"
+        TAG_FAIL_FAST_TEST_ORDER_ENABLED = "fail_fast_test_order_enabled"
 
         module EventType
           TEST = "test"

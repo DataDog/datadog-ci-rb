@@ -5,14 +5,13 @@ require_relative "../../../../lib/datadog/ci/remote/library_settings_client"
 RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
   include_context "Telemetry spy"
 
-  let(:api) { spy("api") }
   let(:dd_env) { "ci" }
   let(:config_tags) { {} }
 
   subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
   describe "#fetch" do
-    subject { client.fetch(test_session) }
+    subject(:response) { client.fetch(test_session) }
 
     let(:service) { "service" }
     let(:tracer_span) do
@@ -31,82 +30,82 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
     end
     let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
 
-    let(:path) { Datadog::CI::Ext::Transport::DD_API_SETTINGS_PATH }
-
-    it "requests the settings" do
-      subject
-
-      expect(api).to have_received(:api_request) do |args|
-        expect(args[:path]).to eq(path)
-
-        data = JSON.parse(args[:payload])["data"]
-
-        expect(data["id"]).to eq(Datadog::Core::Environment::Identity.id)
-        expect(data["type"]).to eq(Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE)
-
-        attributes = data["attributes"]
-        expect(attributes["service"]).to eq(service)
-        expect(attributes["env"]).to eq(dd_env)
-        expect(attributes["test_level"]).to eq("test")
-        expect(attributes["repository_url"]).to eq("repository_url")
-        expect(attributes["branch"]).to eq("branch")
-        expect(attributes["sha"]).to eq("commit_sha")
-
-        configurations = attributes["configurations"]
-        expect(configurations["os.platform"]).to eq("platform")
-        expect(configurations["os.architecture"]).to eq("arch")
-        expect(configurations["os.version"]).to eq("version")
-        expect(configurations["runtime.name"]).to eq("runtime_name")
-        expect(configurations["runtime.version"]).to eq("runtime_version")
+    context "when api is present" do
+      let(:api) { spy("api") }
+      before do
+        allow(api).to receive(:api_request).and_return(http_response)
       end
-    end
 
-    context "parsing response" do
-      subject(:response) { client.fetch(test_session) }
+      let(:attributes) do
+        {
+          "code_coverage" => "1",
+          "tests_skipping" => "false",
+          "itr_enabled" => "True",
+          "require_git" => require_git,
+          "flaky_test_retries_enabled" => "true",
+          "early_flake_detection" => {
+            "enabled" => "true",
+            "slow_test_retries" => {
+              "5s" => 10,
+              "10s" => 5,
+              "30s" => 3,
+              "5m" => 2
+            },
+            "faulty_session_threshold" => 30
+          }
+        }
+      end
 
-      context "when api is present" do
-        before do
-          allow(api).to receive(:api_request).and_return(http_response)
-        end
-
-        context "when response is OK" do
-          let(:attributes) do
-            {
-              "code_coverage" => "1",
-              "tests_skipping" => "false",
-              "itr_enabled" => "True",
-              "require_git" => require_git,
-              "flaky_test_retries_enabled" => "true",
-              "early_flake_detection" => {
-                "enabled" => "true",
-                "slow_test_retries" => {
-                  "5s" => 10,
-                  "10s" => 5,
-                  "30s" => 3,
-                  "5m" => 2
-                },
-                "faulty_session_threshold" => 30
-              }
+      let(:http_response) do
+        double(
+          "http_response",
+          ok?: true,
+          payload: {
+            "data" => {
+              "id" => "123",
+              "type" => Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE,
+              "attributes" => attributes
             }
-          end
+          }.to_json,
+          request_compressed: false,
+          duration_ms: 1.2
+        )
+      end
 
-          let(:http_response) do
-            double(
-              "http_response",
-              ok?: true,
-              payload: {
-                "data" => {
-                  "id" => "123",
-                  "type" => Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE,
-                  "attributes" => attributes
-                }
-              }.to_json,
-              request_compressed: false,
-              duration_ms: 1.2
-            )
-          end
-          let(:require_git) { false }
+      let(:require_git) { false }
 
+      let(:path) { Datadog::CI::Ext::Transport::DD_API_SETTINGS_PATH }
+
+      it "requests the settings" do
+        subject
+
+        expect(api).to have_received(:api_request) do |args|
+          expect(args[:path]).to eq(path)
+
+          data = JSON.parse(args[:payload])["data"]
+
+          expect(data["id"]).to eq(Datadog::Core::Environment::Identity.id)
+          expect(data["type"]).to eq(Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE)
+
+          attributes = data["attributes"]
+          expect(attributes["service"]).to eq(service)
+          expect(attributes["env"]).to eq(dd_env)
+          expect(attributes["test_level"]).to eq("test")
+          expect(attributes["repository_url"]).to eq("repository_url")
+          expect(attributes["branch"]).to eq("branch")
+          expect(attributes["sha"]).to eq("commit_sha")
+
+          configurations = attributes["configurations"]
+          expect(configurations["os.platform"]).to eq("platform")
+          expect(configurations["os.architecture"]).to eq("arch")
+          expect(configurations["os.version"]).to eq("version")
+          expect(configurations["runtime.name"]).to eq("runtime_name")
+          expect(configurations["runtime.version"]).to eq("runtime_version")
+        end
+      end
+
+      context "parsing response" do
+        context "when response is OK" do
           it "parses the response" do
             expect(response.ok?).to be true
             expect(response.payload).to eq(attributes)
@@ -128,7 +127,12 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
             expect(metric.tags).to eq(
-              "coverage_enabled" => "true", "itrskip_enabled" => "false", "early_flake_detection_enabled" => "true"
+              "coverage_enabled" => "true",
+              "itr_enabled" => "true",
+              "itrskip_enabled" => "false",
+              "early_flake_detection_enabled" => "true",
+              "flaky_test_retries_enabled" => "true",
+              "require_git" => "false"
             )
           end
 
@@ -141,6 +145,22 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
 
             it "parses the response" do
               expect(response.require_git?).to be true
+            end
+          end
+
+          context "with custom configuration" do
+            let(:config_tags) { {"key" => "value"} }
+
+            it "requests the settings" do
+              subject
+
+              expect(api).to have_received(:api_request) do |args|
+                data = JSON.parse(args[:payload])["data"]
+
+                attributes = data["attributes"]
+                configurations = attributes["configurations"]
+                expect(configurations["custom"]).to eq("key" => "value")
+              end
             end
           end
         end
@@ -218,31 +238,15 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
           end
         end
       end
-
-      context "when there is no api" do
-        let(:api) { nil }
-
-        it "returns an empty response" do
-          expect(response.ok?).to be false
-          expect(response.payload).to eq("itr_enabled" => false)
-          expect(response.require_git?).to be false
-        end
-      end
     end
 
-    context "with custom configuration" do
-      let(:config_tags) { {"key" => "value"} }
+    context "when there is no api" do
+      let(:api) { nil }
 
-      it "requests the settings" do
-        subject
-
-        expect(api).to have_received(:api_request) do |args|
-          data = JSON.parse(args[:payload])["data"]
-
-          attributes = data["attributes"]
-          configurations = attributes["configurations"]
-          expect(configurations["custom"]).to eq("key" => "value")
-        end
+      it "returns an empty response" do
+        expect(response.ok?).to be false
+        expect(response.payload).to eq("itr_enabled" => false)
+        expect(response.require_git?).to be false
       end
     end
   end
