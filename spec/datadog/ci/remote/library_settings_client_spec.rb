@@ -131,7 +131,8 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
               "itr_enabled" => "true",
               "itrskip_enabled" => "false",
               "early_flake_detection_enabled" => "true",
-              "flaky_test_retries_enabled" => "true"
+              "flaky_test_retries_enabled" => "true",
+              "require_git" => "false"
             )
           end
 
