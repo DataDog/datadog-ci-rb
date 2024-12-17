@@ -138,6 +138,10 @@ module Datadog
 
         TAG_AUTO_INJECTED: "auto_injected"
 
+        TAG_AGENTLESS_LOG_SUBMISSION_ENABLED: "agentless_log_submission_enabled"
+
+        TAG_FAIL_FAST_TEST_ORDER_ENABLED: "fail_fast_test_order_enabled"
+
         module EventType
           TEST: "test"
           SUITE: "suite"

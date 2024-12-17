@@ -83,8 +83,11 @@ module Datadog
         TAG_EARLY_FLAKE_DETECTION_ENABLED = "early_flake_detection_enabled"
         TAG_FLAKY_TEST_RETRIES_ENABLED = "flaky_test_retries_enabled"
         TAG_EARLY_FLAKE_DETECTION_ABORT_REASON = "early_flake_detection_abort_reason"
+        # tags for test_session metric
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"
+        TAG_AGENTLESS_LOG_SUBMISSION_ENABLED = "agentless_log_submission_enabled"
+        TAG_FAIL_FAST_TEST_ORDER_ENABLED = "fail_fast_test_order_enabled"
 
         module EventType
           TEST = "test"
