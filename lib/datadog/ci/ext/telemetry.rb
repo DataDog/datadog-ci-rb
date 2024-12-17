@@ -81,6 +81,7 @@ module Datadog
         TAG_COVERAGE_ENABLED = "coverage_enabled"
         TAG_ITR_SKIP_ENABLED = "itrskip_enabled"
         TAG_EARLY_FLAKE_DETECTION_ENABLED = "early_flake_detection_enabled"
+        TAG_FLAKY_TEST_RETRIES_ENABLED = "flaky_test_retries_enabled"
         TAG_EARLY_FLAKE_DETECTION_ABORT_REASON = "early_flake_detection_abort_reason"
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"

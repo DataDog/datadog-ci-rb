@@ -128,7 +128,10 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
             expect(metric.tags).to eq(
-              "coverage_enabled" => "true", "itrskip_enabled" => "false", "early_flake_detection_enabled" => "true"
+              "coverage_enabled" => "true",
+              "itrskip_enabled" => "false",
+              "early_flake_detection_enabled" => "true",
+              "flaky_test_retries_enabled" => "true"
             )
           end
 
