@@ -93,6 +93,8 @@ module Datadog
           def to_integer: (String? value) -> Integer?
 
           def content_fields_count: () -> Integer
+
+          def test_visibility: () -> Datadog::CI::TestVisibility::Component
         end
       end
     end

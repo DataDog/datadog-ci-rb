@@ -25,7 +25,7 @@ module Datadog
       # Return the test session's name which is equal to test command used
       # @return [String] the command for this test session.
       def name
-        get_tag(Ext::Test::TAG_COMMAND)
+        test_visibility.logical_test_session_name || "test_session"
       end
 
       # Return the test session's command used to run the tests

@@ -31,7 +31,7 @@ module Datadog
           end
 
           def resource
-            "#{@span.get_tag(Ext::Test::TAG_FRAMEWORK)}.test_session.#{@span.get_tag(Ext::Test::TAG_COMMAND)}"
+            "#{@span.get_tag(Ext::Test::TAG_FRAMEWORK)}.test_session.#{test_visibility.logical_test_session_name}"
           end
 
           private

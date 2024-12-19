@@ -38,6 +38,23 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
 
         expect(meta["_test.session_id"]).to be_nil
       end
+
+      context "logical test session name is provided" do
+        let(:logical_test_session_name) { "logical_test_session_name" }
+        before do
+          expect_any_instance_of(Datadog::CI::TestVisibility::Component).to(
+            receive(:logical_test_session_name).and_return(logical_test_session_name)
+          )
+        end
+
+        it "uses logical test session name as part of span's resource instead of command" do
+          expect(content).to include(
+            {
+              "resource" => "rspec.test_session.#{logical_test_session_name}"
+            }
+          )
+        end
+      end
     end
 
     context "trace a failed test" do

@@ -2,7 +2,7 @@
 
 RSpec.describe Datadog::CI::TestSession do
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
-  let(:test_visibility) { spy("test_visibility") }
+  let(:test_visibility) { spy("test_visibility", logical_test_session_name: "my_test_session") }
 
   before { allow_any_instance_of(described_class).to receive(:test_visibility).and_return(test_visibility) }
   subject(:ci_test_session) { described_class.new(tracer_span) }
@@ -36,11 +36,7 @@ RSpec.describe Datadog::CI::TestSession do
   describe "#name" do
     subject(:name) { ci_test_session.name }
 
-    before do
-      tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_COMMAND, "test command")
-    end
-
-    it { is_expected.to eq("test command") }
+    it { is_expected.to eq("my_test_session") }
   end
 
   describe "#test_command" do
