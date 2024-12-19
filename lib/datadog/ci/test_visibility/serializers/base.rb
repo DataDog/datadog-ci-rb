@@ -238,6 +238,10 @@ module Datadog
           def to_integer(value)
             value&.to_i
           end
+
+          def test_visibility
+            @test_visibility ||= Datadog::CI.send(:test_visibility)
+          end
         end
       end
     end
