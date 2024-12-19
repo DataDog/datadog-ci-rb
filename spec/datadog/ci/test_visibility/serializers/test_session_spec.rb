@@ -13,6 +13,13 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
         produce_test_session_trace
       end
 
+      let(:logical_test_session_name) { "logical_test_session_name" }
+      before do
+        expect_any_instance_of(Datadog::CI::TestVisibility::Component).to(
+          receive(:logical_test_session_name).and_return(logical_test_session_name)
+        )
+      end
+
       it "serializes test event to messagepack" do
         expect_event_header(type: Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
 
@@ -22,7 +29,7 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
             "name" => "rspec.test_session",
             "service" => "rspec-test-suite",
             "type" => Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION,
-            "resource" => "rspec.test_session.#{test_command}"
+            "resource" => "rspec.test_session.#{logical_test_session_name}"
           }
         )
 
@@ -37,23 +44,6 @@ RSpec.describe Datadog::CI::TestVisibility::Serializers::TestSession do
         )
 
         expect(meta["_test.session_id"]).to be_nil
-      end
-
-      context "logical test session name is provided" do
-        let(:logical_test_session_name) { "logical_test_session_name" }
-        before do
-          expect_any_instance_of(Datadog::CI::TestVisibility::Component).to(
-            receive(:logical_test_session_name).and_return(logical_test_session_name)
-          )
-        end
-
-        it "uses logical test session name as part of span's resource instead of command" do
-          expect(content).to include(
-            {
-              "resource" => "rspec.test_session.#{logical_test_session_name}"
-            }
-          )
-        end
       end
     end
 
