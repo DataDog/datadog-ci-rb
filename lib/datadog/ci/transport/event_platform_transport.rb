@@ -11,7 +11,7 @@ module Datadog
   module CI
     module Transport
       class EventPlatformTransport
-        DEFAULT_MAX_PAYLOAD_SIZE = 4 * 1024 * 1024
+        DEFAULT_MAX_PAYLOAD_SIZE = 4.5 * 1024 * 1024
 
         attr_reader :api,
           :max_payload_size

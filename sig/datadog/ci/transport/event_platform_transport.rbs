@@ -2,15 +2,15 @@ module Datadog
   module CI
     module Transport
       class EventPlatformTransport
-        DEFAULT_MAX_PAYLOAD_SIZE: Integer
+        DEFAULT_MAX_PAYLOAD_SIZE: Numeric
 
         attr_reader api: Datadog::CI::Transport::Api::Base
-        attr_reader max_payload_size: Integer
+        attr_reader max_payload_size: Numeric
 
         @api: Datadog::CI::Transport::Api::Base
-        @max_payload_size: Integer
+        @max_payload_size: Numeric
 
-        def initialize: (api: Datadog::CI::Transport::Api::Base, ?max_payload_size: Integer) -> void
+        def initialize: (api: Datadog::CI::Transport::Api::Base, ?max_payload_size: Numeric) -> void
 
         def send_events: (Array[untyped] events) -> ::Array[Datadog::CI::Transport::Adapters::Net::Response]
 
