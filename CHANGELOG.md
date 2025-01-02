@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [1.11.0] - 2025-01-02
+
+### Changed
+
+* bump maximum Ruby version to 3.4 ([#275][])
+* Use logical test session name as part of test session span's resource instead of test command ([#271][])
+
+### Fixed
+
+* set the max payload size for events to 4.5MB ([#272][])
+* Fix inline comments handling when parsing CODEOWNERS files ([#267][])
+
 ## [1.10.0] - 2024-12-05
 
 ### Added
@@ -368,7 +380,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.10.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.11.0...main
+[1.11.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.0...v1.8.1
@@ -530,3 +543,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#250]: https://github.com/DataDog/datadog-ci-rb/issues/250
 [#259]: https://github.com/DataDog/datadog-ci-rb/issues/259
 [#262]: https://github.com/DataDog/datadog-ci-rb/issues/262
+[#267]: https://github.com/DataDog/datadog-ci-rb/issues/267
+[#271]: https://github.com/DataDog/datadog-ci-rb/issues/271
+[#272]: https://github.com/DataDog/datadog-ci-rb/issues/272
+[#275]: https://github.com/DataDog/datadog-ci-rb/issues/275
