@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: "${{ github.ref != 'refs/heads/master' }}"
 jobs:
   compute_tasks:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -67,7 +67,7 @@ jobs:
     name: 'ruby-3.4: ${{ matrix.task }} (${{ matrix.group }})'
     needs:
     - compute_tasks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -90,7 +90,7 @@ jobs:
     name: 'ruby-3.3: ${{ matrix.task }} (${{ matrix.group }})'
     needs:
     - compute_tasks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -113,7 +113,7 @@ jobs:
     name: 'ruby-3.2: ${{ matrix.task }} (${{ matrix.group }})'
     needs:
     - compute_tasks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -136,7 +136,7 @@ jobs:
     name: 'ruby-3.1: ${{ matrix.task }} (${{ matrix.group }})'
     needs:
     - compute_tasks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -159,7 +159,7 @@ jobs:
     name: 'ruby-3.0: ${{ matrix.task }} (${{ matrix.group }})'
     needs:
     - compute_tasks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -182,7 +182,7 @@ jobs:
     name: 'ruby-2.7: ${{ matrix.task }} (${{ matrix.group }})'
     needs:
     - compute_tasks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -205,7 +205,7 @@ jobs:
     name: 'jruby-9.4: ${{ matrix.task }} (${{ matrix.group }})'
     needs:
     - compute_tasks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:

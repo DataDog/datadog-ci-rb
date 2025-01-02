@@ -7,7 +7,7 @@ on:
 
 jobs:
   push:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     permissions:
       contents: write
@@ -21,5 +21,5 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-          ruby-version: '3.3'
+          ruby-version: '3.4'
       - uses: rubygems/release-gem@v1
