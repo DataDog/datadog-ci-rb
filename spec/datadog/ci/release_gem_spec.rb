@@ -1,5 +1,14 @@
 RSpec.describe "gem release process" do
   context "datadog-ci.gemspec" do
+    context "maximum Ruby version" do
+      it "is the same as for gem datadog" do
+        datadog_version = ::Datadog::VERSION::MAXIMUM_RUBY_VERSION
+        datadog_ci_version = ::Datadog::CI::VERSION::MAXIMUM_RUBY_VERSION
+
+        expect(datadog_ci_version).to eq(datadog_version)
+      end
+    end
+
     context "files" do
       subject(:files) { Gem::Specification.load("datadog-ci.gemspec").files }
 
