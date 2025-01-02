@@ -7,7 +7,7 @@ require_relative 'appraisal_conversion'
 namespace :github do
   namespace :actions do
     task :test_template do |t|
-      ubuntu = "ubuntu-22.04"
+      ubuntu = "ubuntu-24.04"
 
       runtimes = [
         "ruby:3.4",
