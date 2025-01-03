@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "datadog/core/telemetry/logging"
+
 require_relative "git"
 require_relative "environment/extractor"
 
@@ -73,6 +75,7 @@ module Datadog
           return if !repo_url.nil? && !repo_url.empty?
 
           Datadog.logger.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
+          Core::Telemetry::Logger.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
         end
 
         def validate_git_sha(git_sha)
@@ -89,6 +92,7 @@ module Datadog
           end
 
           Datadog.logger.error(message)
+          Core::Telemetry::Logger.error(message)
         end
       end
     end

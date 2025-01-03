@@ -2,6 +2,7 @@
 
 require "json"
 
+require "datadog/core/telemetry/logging"
 require "datadog/core/utils/url"
 
 require_relative "base"
@@ -96,6 +97,8 @@ module Datadog
               result
             rescue => e
               Datadog.logger.error("Failed to extract additional tags from GitHub Actions: #{e}")
+              Core::Telemetry::Logger.report(e, description: "Failed to extract additional tags from GitHub Actions")
+
               {}
             end
 
