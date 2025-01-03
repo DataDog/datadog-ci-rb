@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "datadog/core/telemetry/ext"
-require "datadog/core/telemetry/logging"
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
@@ -63,7 +62,6 @@ module Datadog
               "NOTE: if you didn't disable tracing intentionally, add `c.tracing.enabled = true` to " \
               "your Datadog.configure block."
             )
-            Core::Telemetry::Logger.error("Tracing is disabled => test optimization is disabled")
             settings.ci.enabled = false
             return
           end
@@ -172,7 +170,6 @@ module Datadog
                 "Agentless mode was enabled but DD_API_KEY is not set: CI visibility is disabled. " \
                 "Please make sure to set valid api key in DD_API_KEY environment variable"
               end
-              Core::Telemetry::Logger.error("DD_API_KEY not set => test optimization is disabled")
 
               # Tests are running without CI visibility enabled
               settings.ci.enabled = false
