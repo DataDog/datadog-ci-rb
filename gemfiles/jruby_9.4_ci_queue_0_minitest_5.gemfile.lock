@@ -15,28 +15,28 @@ GEM
       bundler
       rake
       thor (>= 0.14.0)
-    bigdecimal (3.1.8-java)
+    bigdecimal (3.1.9-java)
     builder (3.3.0)
-    ci-queue (0.60.0)
+    ci-queue (0.62.0)
       logger
     climate_control (1.2.0)
     crack (1.0.0)
       bigdecimal
       rexml
-    datadog (2.8.0)
-      datadog-ruby_core_source (~> 3.3)
+    datadog (2.9.0)
+      datadog-ruby_core_source (~> 3.3, >= 3.3.7)
       libdatadog (~> 14.3.1.1.0)
       libddwaf (~> 1.18.0.0.0)
       msgpack
-    datadog-ruby_core_source (3.3.6)
+    datadog-ruby_core_source (3.3.7)
     diff-lcs (1.5.1)
     docile (1.4.1)
-    ffi (1.17.0-java)
+    ffi (1.17.1-java)
     hashdiff (1.1.2)
     libdatadog (14.3.1.1.0)
     libddwaf (1.18.0.0.0-java)
       ffi (~> 1.0)
-    logger (1.6.2)
+    logger (1.6.5)
     minitest (5.25.4)
     minitest-reporters (1.7.1)
       ansi
@@ -47,9 +47,9 @@ GEM
     os (1.1.4)
     public_suffix (6.0.1)
     rake (13.2.1)
-    rake-compiler (1.2.8)
+    rake-compiler (1.2.9)
       rake
-    rexml (3.3.9)
+    rexml (3.4.0)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
