@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "datadog/core/environment/identity"
+require "datadog/core/telemetry/logging"
+require "datadog/core/utils/only_once"
 
 require_relative "serializers/factories/test_level"
 require_relative "../ext/app_types"
@@ -14,6 +16,10 @@ module Datadog
     module TestVisibility
       class Transport < Datadog::CI::Transport::EventPlatformTransport
         attr_reader :serializers_factory, :dd_env
+
+        def self.log_once
+          @log_once ||= Datadog::Core::Utils::OnlyOnce.new
+        end
 
         def initialize(
           api:,
@@ -64,8 +70,15 @@ module Datadog
 
             encoded
           else
-            Datadog.logger.warn("Invalid event skipped: #{serializer} Errors: #{serializer.validation_errors}")
+            message = "Invalid event skipped: #{serializer} Errors: #{serializer.validation_errors}"
+            Datadog.logger.warn(message)
             CI::Transport::Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
+
+            # log invalid message once as error to internal telemetry
+            self.class.log_once.run do
+              Core::Telemetry::Logger.error(message)
+            end
+
             nil
           end
         end

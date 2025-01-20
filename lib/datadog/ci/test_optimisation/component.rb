@@ -2,6 +2,7 @@
 
 require "pp"
 
+require "datadog/core/telemetry/logging"
 require "datadog/core/utils/forking"
 
 require_relative "../ext/test"
@@ -224,6 +225,7 @@ module Datadog
           Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
+          Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")
 
           @code_coverage_enabled = false
         end
