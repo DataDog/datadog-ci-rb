@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Contrib
+      module Cuprite
+        module Patcher
+          include Datadog::CI::Contrib::Patcher
+
+          def self?.patch: () -> untyped
+        end
+      end
+    end
+  end
+end

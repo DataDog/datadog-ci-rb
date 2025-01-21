@@ -418,6 +418,7 @@ require_relative "ci/contrib/ciqueue/integration"
 
 # Additional test libraries (auto instrumented later on test session start)
 require_relative "ci/contrib/selenium/integration"
+require_relative "ci/contrib/cuprite/integration"
 require_relative "ci/contrib/simplecov/integration"
 
 # Configuration extensions

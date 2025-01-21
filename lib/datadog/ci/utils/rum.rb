@@ -20,7 +20,7 @@ module Datadog
           Utils::Parsing.convert_to_bool(is_rum_active_script_result)
         end
 
-        def self.stop_rum_session(script_executor)
+        def self.stop_rum_session(script_executor, rum_flush_wait_millis: 500)
           config = Datadog.configuration.ci[:selenium]
           if is_rum_active?(script_executor)
             Datadog::CI.active_test&.set_tag(

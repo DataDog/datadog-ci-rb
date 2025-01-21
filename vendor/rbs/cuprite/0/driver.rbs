@@ -1,0 +1,34 @@
+module Capybara
+end
+
+module Capybara::Cuprite
+end
+
+module Ferrum
+end
+
+class Ferrum::Browser
+  def version: () -> String
+
+  def options: () -> Ferrum::Browser::Options
+end
+
+class Ferrum::Browser::Options
+  def browser_name: () -> String
+end
+
+module Capybara::Cuprite::Driver
+  def visit: (String url) -> untyped
+
+  def reset!: () -> void
+
+  def quit: () -> void
+
+  def set_cookie: (String name, String value, ?Hash[Symbol, untyped] options) -> void
+
+  def remove_cookie: (String name, ?Hash[Symbol, untyped] options) -> void
+
+  def execute_script: (String script, ?untyped args) -> untyped
+
+  def browser: () -> Ferrum::Browser
+end

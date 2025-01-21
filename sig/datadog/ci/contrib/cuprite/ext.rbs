@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Contrib
+      module Cuprite
+        module Ext
+          ENV_ENABLED: "DD_CIVISIBILITY_CUPRITE_ENABLED"
+        end
+      end
+    end
+  end
+end

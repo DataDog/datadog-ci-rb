@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Contrib
+      module Cuprite
+        class Integration < Contrib::Integration
+          MINIMUM_VERSION: Gem::Version
+
+          def version: () -> untyped
+
+          def loaded?: () -> bool
+
+          def compatible?: () -> bool
+
+          def late_instrument?: () -> true
+
+          def new_configuration: () -> untyped
+
+          def patcher: () -> untyped
+        end
+      end
+    end
+  end
+end

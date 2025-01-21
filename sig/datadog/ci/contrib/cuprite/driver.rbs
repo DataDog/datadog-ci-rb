@@ -1,0 +1,29 @@
+module Datadog
+  module CI
+    module Contrib
+      module Cuprite
+        module Driver
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods
+            include Capybara::Cuprite::Driver
+
+            def visit: (untyped url) -> untyped
+
+            def reset!: () -> untyped
+
+            def quit: () -> untyped
+
+            private
+
+            def datadog_integration: () -> untyped
+
+            def datadog_configuration: () -> untyped
+
+            def datadog_end_rum_session: () -> (nil | untyped)
+          end
+        end
+      end
+    end
+  end
+end
