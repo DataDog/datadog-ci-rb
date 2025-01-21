@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Utils
+      module RUM
+        def self.is_rum_active?: (untyped script_executor) -> bool
+
+        def self.stop_rum_session: (untyped script_executor) -> void
+      end
+    end
+  end
+end

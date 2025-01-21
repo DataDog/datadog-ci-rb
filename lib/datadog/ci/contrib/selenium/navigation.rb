@@ -2,7 +2,7 @@
 
 require_relative "../patcher"
 
-require_relative "ext"
+require_relative "../../ext/rum"
 require_relative "../../ext/test"
 
 module Datadog
@@ -32,7 +32,7 @@ module Datadog
               return result unless active_test
 
               # Set the test's trace id as a cookie in browser session
-              cookie_hash = {name: Ext::COOKIE_TEST_EXECUTION_ID, value: active_test.trace_id.to_s}
+              cookie_hash = {name: CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID, value: active_test.trace_id.to_s}
               Datadog.logger.debug { "[Selenium] Setting cookie: #{cookie_hash}" }
               @bridge.manage.add_cookie(cookie_hash)
 
