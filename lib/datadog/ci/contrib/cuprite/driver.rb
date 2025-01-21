@@ -44,8 +44,8 @@ module Datadog
               # set the tags specific to the browser test
               active_test.set_tag(CI::Ext::Test::TAG_BROWSER_DRIVER, "cuprite")
               active_test.set_tag(CI::Ext::Test::TAG_BROWSER_DRIVER_VERSION, datadog_integration.version)
-              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_NAME, browser.options.browser_name)
-              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_VERSION, browser.version)
+              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_NAME, browser.options.browser_name || "chrome")
+              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_VERSION, browser.version.product)
 
               result
             end
