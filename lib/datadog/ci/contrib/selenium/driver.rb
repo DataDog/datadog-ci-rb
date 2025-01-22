@@ -22,7 +22,7 @@ module Datadog
 
               Datadog.logger.debug("[Selenium] Driver quit event")
 
-              Utils::RUM.stop_rum_session(@bridge)
+              Utils::RUM.stop_rum_session(@bridge, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
               Datadog.logger.debug("[Selenium] RUM session stopped, deleting cookie")
               @bridge.manage.delete_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)

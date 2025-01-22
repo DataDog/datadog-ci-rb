@@ -11,6 +11,8 @@ class Ferrum::Browser
   def version: () -> Ferrum::Browser::VersionInfo
 
   def options: () -> Ferrum::Browser::Options
+
+  def evaluate_func: (String script) -> String
 end
 
 class Ferrum::Browser::Options

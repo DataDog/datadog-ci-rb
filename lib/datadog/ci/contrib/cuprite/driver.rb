@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "script_executor"
 require_relative "../patcher"
 
 require_relative "../../ext/rum"
@@ -51,12 +52,16 @@ module Datadog
             end
 
             def reset!
+              Datadog.logger.debug("[Cuprite] Driver reset! event")
+
               datadog_end_rum_session
 
               super
             end
 
             def quit
+              Datadog.logger.debug("[Cuprite] Driver quit event")
+
               datadog_end_rum_session
 
               super
@@ -75,11 +80,10 @@ module Datadog
             def datadog_end_rum_session
               return unless datadog_configuration[:enabled]
 
-              Datadog.logger.debug("[Cuprite] Driver quit event")
+              executor = ScriptExecutor.new(browser)
+              Utils::RUM.stop_rum_session(executor, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
-              Utils::RUM.stop_rum_session(self)
-
-              Datadog.logger.debug("[Cuprite] RUM session stopped, deleting cookie")
+              Datadog.logger.debug("[Cuprite] Deleting Datadog cookie")
               remove_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)
             end
           end

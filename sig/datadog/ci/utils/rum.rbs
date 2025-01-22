@@ -4,7 +4,7 @@ module Datadog
       module RUM
         def self.is_rum_active?: (untyped script_executor) -> bool
 
-        def self.stop_rum_session: (untyped script_executor) -> void
+        def self.stop_rum_session: (untyped script_executor, ?rum_flush_wait_millis: Integer) -> void
       end
     end
   end

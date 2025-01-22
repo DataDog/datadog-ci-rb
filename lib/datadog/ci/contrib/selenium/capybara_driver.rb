@@ -22,7 +22,7 @@ module Datadog
 
               Datadog.logger.debug("[Selenium] Capybara session reset event")
 
-              Utils::RUM.stop_rum_session(@browser)
+              Utils::RUM.stop_rum_session(@browser, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
               Datadog.logger.debug("[Selenium] RUM session stopped, deleting cookie")
               @browser.manage.delete_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)
