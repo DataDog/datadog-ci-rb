@@ -58,7 +58,6 @@ RSpec.describe "Browser tests with selenium" do
   let(:visited_urls) { [] }
 
   before do
-    # expect(kernel).to receive(:exit).with(expected_test_run_code)
     expect(Selenium::WebDriver::Remote::Bridge).to receive(:new).and_return(bridge)
     allow(bridge).to receive(:execute_script) do |script|
       executed_scripts << script
