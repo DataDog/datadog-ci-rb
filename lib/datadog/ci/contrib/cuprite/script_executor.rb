@@ -12,7 +12,7 @@ module Datadog
             CI::Ext::RUM::SCRIPT_IS_RUM_ACTIVE => "function() { #{CI::Ext::RUM::SCRIPT_IS_RUM_ACTIVE}; }",
             CI::Ext::RUM::SCRIPT_STOP_RUM_SESSION => <<~JS
               function() {
-                #{CI::Ext::RUM::SCRIPT_STOP_RUM_SESSION};
+                #{CI::Ext::RUM::SCRIPT_STOP_RUM_SESSION}
               }
             JS
           }.freeze
