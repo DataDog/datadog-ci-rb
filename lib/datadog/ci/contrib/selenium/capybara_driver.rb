@@ -2,9 +2,9 @@
 
 require_relative "../patcher"
 
-require_relative "ext"
-require_relative "rum"
+require_relative "../../ext/rum"
 require_relative "../../ext/test"
+require_relative "../../utils/rum"
 
 module Datadog
   module CI
@@ -22,10 +22,10 @@ module Datadog
 
               Datadog.logger.debug("[Selenium] Capybara session reset event")
 
-              RUM.stop_rum_session(@browser)
+              Utils::RUM.stop_rum_session(@browser, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
               Datadog.logger.debug("[Selenium] RUM session stopped, deleting cookie")
-              @browser.manage.delete_cookie(Ext::COOKIE_TEST_EXECUTION_ID)
+              @browser.manage.delete_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)
             rescue ::Selenium::WebDriver::Error::WebDriverError => e
               Datadog.logger.debug("[Selenium] Error while resetting Capybara session: #{e.message}")
             ensure

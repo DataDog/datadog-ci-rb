@@ -58,7 +58,6 @@ RSpec.describe "Browser tests with selenium" do
   let(:visited_urls) { [] }
 
   before do
-    # expect(kernel).to receive(:exit).with(expected_test_run_code)
     expect(Selenium::WebDriver::Remote::Bridge).to receive(:new).and_return(bridge)
     allow(bridge).to receive(:execute_script) do |script|
       executed_scripts << script
@@ -78,12 +77,12 @@ RSpec.describe "Browser tests with selenium" do
     expect(visited_urls).to eq(["http://www.example.com", "about:blank"])
     expect(executed_scripts).to eq(
       [
-        Datadog::CI::Contrib::Selenium::Ext::SCRIPT_IS_RUM_ACTIVE,
-        Datadog::CI::Contrib::Selenium::Ext::SCRIPT_STOP_RUM_SESSION,
+        Datadog::CI::Ext::RUM::SCRIPT_IS_RUM_ACTIVE,
+        Datadog::CI::Ext::RUM::SCRIPT_STOP_RUM_SESSION,
         "window.sessionStorage.clear()",
         "window.localStorage.clear()",
-        Datadog::CI::Contrib::Selenium::Ext::SCRIPT_IS_RUM_ACTIVE,
-        Datadog::CI::Contrib::Selenium::Ext::SCRIPT_STOP_RUM_SESSION
+        Datadog::CI::Ext::RUM::SCRIPT_IS_RUM_ACTIVE,
+        Datadog::CI::Ext::RUM::SCRIPT_STOP_RUM_SESSION
       ]
     )
 

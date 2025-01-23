@@ -10,9 +10,9 @@ require_relative "../../../ext/rum"
 module Datadog
   module CI
     module Contrib
-      module Selenium
+      module Cuprite
         module Configuration
-          # Custom settings for the Selenium integration
+          # Custom settings for the Cuprite integration
           # @public_api
           class Settings < Datadog::CI::Contrib::Settings
             option :enabled do |o|

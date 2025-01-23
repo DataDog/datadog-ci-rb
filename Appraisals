@@ -167,6 +167,19 @@ def self.with_timecop_gem(timecop_versions: 0)
   end
 end
 
+def self.with_cuprite_gem(cuprite_versions: 0, capybara_versions: 3)
+  Array(cuprite_versions).each do |cuprite_v|
+    Array(capybara_versions).each do |capybara_v|
+      appraise "cuprite-#{cuprite_v}-capybara-#{capybara_v}" do
+        gem "capybara", "~> #{capybara_v}"
+        gem "cuprite", "~> #{cuprite_v}"
+
+        gem "cucumber", "~> 9"
+      end
+    end
+  end
+end
+
 major, minor, = RUBY_VERSION.segments
 
 with_minitest_gem
@@ -179,6 +192,7 @@ with_active_support_gem(versions: 4..7)
 with_knapsack_pro_rspec_gem
 with_selenium_gem if Gem::Version.new("3.0") <= RUBY_VERSION
 with_timecop_gem
+with_cuprite_gem if Gem::Version.new("3.0") <= RUBY_VERSION
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
