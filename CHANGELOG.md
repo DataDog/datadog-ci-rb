@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.12.0] - 2025-01-23
+
+### Added
+
+* Add Datadog RUM integration support for browser tests with cuprite driver ([#283][])
+
 ## [1.11.0] - 2025-01-02
 
 ### Changed
@@ -380,7 +386,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.11.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.12.0...main
+[1.12.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.8.1...v1.9.0
@@ -547,3 +554,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#271]: https://github.com/DataDog/datadog-ci-rb/issues/271
 [#272]: https://github.com/DataDog/datadog-ci-rb/issues/272
 [#275]: https://github.com/DataDog/datadog-ci-rb/issues/275
+[#283]: https://github.com/DataDog/datadog-ci-rb/issues/283
