@@ -86,6 +86,7 @@ module Datadog
         TAG_REQUIRE_GIT = "require_git"
         TAG_EARLY_FLAKE_DETECTION_ENABLED = "early_flake_detection_enabled"
         TAG_FLAKY_TEST_RETRIES_ENABLED = "flaky_test_retries_enabled"
+        TAG_KNOWN_TESTS_ENABLED = "known_tests_enabled"
         # tags for test_session metric
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"

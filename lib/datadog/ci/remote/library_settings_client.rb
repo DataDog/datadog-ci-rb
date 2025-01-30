@@ -62,7 +62,8 @@ module Datadog
               Ext::Telemetry::TAG_EARLY_FLAKE_DETECTION_ENABLED => library_settings.early_flake_detection_enabled?.to_s,
               Ext::Telemetry::TAG_FLAKY_TEST_RETRIES_ENABLED => library_settings.flaky_test_retries_enabled?.to_s,
               Ext::Telemetry::TAG_ITR_ENABLED => library_settings.itr_enabled?.to_s,
-              Ext::Telemetry::TAG_REQUIRE_GIT => library_settings.require_git?.to_s
+              Ext::Telemetry::TAG_REQUIRE_GIT => library_settings.require_git?.to_s,
+              Ext::Telemetry::TAG_KNOWN_TESTS_ENABLED => library_settings.known_tests_enabled?.to_s
             }
           )
 
