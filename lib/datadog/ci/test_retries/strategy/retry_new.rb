@@ -41,7 +41,7 @@ module Datadog
           end
 
           def configure(library_settings, test_session)
-            @enabled &&= library_settings.early_flake_detection_enabled?
+            @enabled &&= library_settings.early_flake_detection_enabled? && library_settings.known_tests_enabled?
 
             return unless @enabled
 
@@ -111,9 +111,7 @@ module Datadog
               @enabled = false
               mark_test_session_faulty(test_session)
 
-              Datadog.logger.warn(
-                "Disabling early flake detection because there are no known tests (possible reason: no test runs in default branch)"
-              )
+              Datadog.logger.warn("Disabling early flake detection because there are no tests known to Datadog")
             end
 
             # report how many unique tests were found

@@ -14,6 +14,7 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
   end
 
   let(:remote_early_flake_detection_enabled) { false }
+  let(:known_tests_enabled) { true }
   let(:percentage_limit) { 30 }
   let(:max_attempts) { 5 }
 
@@ -31,7 +32,8 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
       Datadog::CI::Remote::LibrarySettings,
       early_flake_detection_enabled?: remote_early_flake_detection_enabled,
       slow_test_retries: slow_test_retries,
-      faulty_session_threshold: percentage_limit
+      faulty_session_threshold: percentage_limit,
+      known_tests_enabled?: known_tests_enabled
     )
   end
 
@@ -79,6 +81,16 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
         end
 
         it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 2
+
+        context "when known tests are disabled" do
+          let(:known_tests_enabled) { false }
+
+          it "disables retrying new tests" do
+            subject
+
+            expect(strategy.enabled).to be false
+          end
+        end
       end
     end
 

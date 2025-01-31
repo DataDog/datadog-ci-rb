@@ -11,6 +11,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       Datadog::CI::Remote::LibrarySettings,
       flaky_test_retries_enabled?: remote_flaky_test_retries_enabled,
       early_flake_detection_enabled?: remote_early_flake_detection_enabled,
+      known_tests_enabled?: remote_known_tests_enabled,
       slow_test_retries: slow_test_retries,
       faulty_session_threshold: retry_new_tests_percentage_limit
     )
@@ -27,6 +28,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
   let(:remote_flaky_test_retries_enabled) { false }
   let(:remote_early_flake_detection_enabled) { false }
+  let(:remote_known_tests_enabled) { true }
 
   let(:unique_tests_set) { Set.new(["test1", "test2"]) }
   let(:unique_tests_client) do
@@ -64,7 +66,18 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     subject { component.build_driver(test_span) }
 
     let(:test_failed) { false }
-    let(:test_span) { instance_double(Datadog::CI::Test, failed?: test_failed, name: "test", test_suite_name: "suite") }
+    let(:test_skipped) { false }
+
+    let(:test_span) do
+      instance_double(
+        Datadog::CI::Test,
+        name: "test",
+        test_suite_name: "suite",
+        failed?: test_failed,
+        skipped?: test_skipped,
+        set_tag: nil
+      )
+    end
 
     before do
       component.configure(library_settings, test_session)
@@ -120,7 +133,39 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       end
     end
 
-    context "when retry failed tests is disabled" do
+    context "when retry new tests is enabled" do
+      let(:remote_early_flake_detection_enabled) { true }
+
+      context "when test is new" do
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::RetryNew) }
+
+        context "when test is skipped" do
+          let(:test_skipped) { true }
+
+          it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+        end
+
+        context "when known tests are disabled" do
+          let(:remote_known_tests_enabled) { false }
+
+          it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+        end
+
+        context "when unique tests set is empty" do
+          let(:unique_tests_set) { Set.new }
+
+          it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+        end
+      end
+
+      context "when test is not new" do
+        let(:unique_tests_set) { Set.new(["suite.test."]) }
+
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+      end
+    end
+
+    context "no retries are enabled" do
       it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
     end
   end

@@ -158,7 +158,8 @@ module Datadog
           # sets logical test session name if none provided by the user
           override_logical_test_session_name!(test_session) if logical_test_session_name.nil?
 
-          # signal Remote::Component to configure the library
+          # Signal Remote::Component to configure the library.
+          # Note that it will call this component back (unfortunate circular dependency).
           remote.configure(test_session)
         end
 
@@ -181,6 +182,8 @@ module Datadog
           set_codeowners(test)
 
           Telemetry.event_created(test)
+
+          # mark_if_new(test)
 
           test_optimisation.mark_if_skippable(test)
           test_optimisation.start_coverage(test)
