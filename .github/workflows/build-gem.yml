@@ -27,8 +27,8 @@ jobs:
     name: Build gem (${{ matrix.type }})
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@v1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: ruby/setup-ruby@8711a86ab6f9aa72890da4123b2ef7283b6b22b6 # v1.217.0
         with:
           ruby-version: '3.4'
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
@@ -120,7 +120,7 @@ jobs:
       - name: List gem
         run: |
           find pkg
-      - uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@8711a86ab6f9aa72890da4123b2ef7283b6b22b6 # v1.217.0
         with:
           ruby-version: '3.4'
       - name: Install gem
