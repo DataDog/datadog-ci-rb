@@ -7,11 +7,18 @@ module Datadog
         @codeowners: Datadog::CI::Codeowners::Matcher
         @context: Datadog::CI::TestVisibility::Context
 
+        @known_tests: Set[String]
+        @known_tests_client: Datadog::CI::TestVisibility::KnownTests
+
         attr_reader test_suite_level_visibility_enabled: bool
 
         attr_reader logical_test_session_name: String?
 
-        def initialize: (?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?) -> void
+        attr_reader known_tests: Set[String]
+
+        def initialize: (known_tests_client: Datadog::CI::TestVisibility::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?) -> void
+
+        def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
@@ -80,6 +87,12 @@ module Datadog
         def subscribe_to_after_stop_event: (Datadog::Tracing::SpanOperation span) -> void
 
         def override_logical_test_session_name!: (Datadog::CI::TestSession test_session) -> void
+
+        def mark_test_as_new: (Datadog::CI::Test test_span) -> void
+
+        def fetch_known_tests: (Datadog::CI::TestSession) -> void
+
+        def new_test?: (Datadog::CI::Test test_span) -> bool
 
         def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
 

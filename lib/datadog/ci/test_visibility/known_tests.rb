@@ -10,9 +10,9 @@ require_relative "../utils/test_run"
 
 module Datadog
   module CI
-    module TestRetries
-      # fetch a list of unique known tests from the backend
-      class UniqueTestsClient
+    module TestVisibility
+      # fetches and stores a list of known tests from the backend
+      class KnownTests
         class Response
           def initialize(http_response)
             @http_response = http_response
@@ -66,7 +66,7 @@ module Datadog
           @config_tags = config_tags
         end
 
-        def fetch_unique_tests(test_session)
+        def fetch(test_session)
           api = @api
           return Set.new unless api
 
@@ -78,7 +78,7 @@ module Datadog
             payload: request_payload
           )
 
-          Transport::Telemetry.api_requests(
+          CI::Transport::Telemetry.api_requests(
             Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_REQUEST,
             1,
             compressed: http_response.request_compressed
@@ -91,7 +91,7 @@ module Datadog
           )
 
           unless http_response.ok?
-            Transport::Telemetry.api_requests_errors(
+            CI::Transport::Telemetry.api_requests_errors(
               Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_REQUEST_ERRORS,
               1,
               error_type: http_response.telemetry_error_type,

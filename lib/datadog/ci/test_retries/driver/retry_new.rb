@@ -15,8 +15,6 @@ module Datadog
             @attempts = 0
             # will be changed based on test span duration
             @max_attempts = 10
-
-            mark_new_test(test_span)
           end
 
           def should_retry?
@@ -27,7 +25,6 @@ module Datadog
             super
 
             @attempts += 1
-            mark_new_test(test_span)
 
             Datadog.logger.debug { "Retry Attempts [#{@attempts} / #{@max_attempts}]" }
           end
@@ -36,12 +33,6 @@ module Datadog
             @max_attempts = @max_attempts_thresholds.max_attempts_for_duration(duration)
 
             Datadog.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
-          end
-
-          private
-
-          def mark_new_test(test_span)
-            test_span.set_tag(Ext::Test::TAG_IS_NEW, "true")
           end
         end
       end

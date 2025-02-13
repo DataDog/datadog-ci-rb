@@ -24,8 +24,7 @@ module Datadog
           retry_failed_tests_enabled:,
           retry_failed_tests_max_attempts:,
           retry_failed_tests_total_limit:,
-          retry_new_tests_enabled:,
-          unique_tests_client:
+          retry_new_tests_enabled:
         )
           no_retries_strategy = Strategy::NoRetry.new
 
@@ -36,8 +35,7 @@ module Datadog
           )
 
           retry_new_strategy = Strategy::RetryNew.new(
-            enabled: retry_new_tests_enabled,
-            unique_tests_client: unique_tests_client
+            enabled: retry_new_tests_enabled
           )
 
           # order is important, we should try to retry new tests first

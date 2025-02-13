@@ -4,11 +4,14 @@ module Datadog
       module Minitest
         module Test
           module ClassMethods
+            @datadog_itr_unskippable_suite: bool
+            @datadog_itr_unskippable_tests: Array[String]
+
             def datadog_itr_unskippable: (untyped args) -> void
 
             def dd_suite_unskippable?: () -> bool
 
-            def dd_test_unskippable?: (String? test_name) -> bool
+            def dd_test_unskippable?: (String test_name) -> bool
           end
 
           module InstanceMethods : ::Minitest::Test

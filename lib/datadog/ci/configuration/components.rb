@@ -110,14 +110,14 @@ module Datadog
             retry_failed_tests_enabled: settings.ci.retry_failed_tests_enabled,
             retry_failed_tests_max_attempts: settings.ci.retry_failed_tests_max_attempts,
             retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit,
-            retry_new_tests_enabled: settings.ci.retry_new_tests_enabled,
-            unique_tests_client: build_unique_tests_client(settings, test_visibility_api)
+            retry_new_tests_enabled: settings.ci.retry_new_tests_enabled
           )
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
           @test_visibility = TestVisibility::Component.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
-            logical_test_session_name: settings.ci.test_session_name
+            logical_test_session_name: settings.ci.test_session_name,
+            known_tests_client: build_known_tests_client(settings, test_visibility_api)
           )
         end
 
@@ -235,8 +235,8 @@ module Datadog
           )
         end
 
-        def build_unique_tests_client(settings, api)
-          TestRetries::UniqueTestsClient.new(
+        def build_known_tests_client(settings, api)
+          TestVisibility::KnownTests.new(
             api: api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings)

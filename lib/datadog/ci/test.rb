@@ -74,6 +74,12 @@ module Datadog
         get_tag(Ext::Test::TAG_IS_RETRY) == "true"
       end
 
+      # Returns "true" if this span represents a test that wasn't known to Datadog before.
+      # @return [Boolean] true if this test is a new one, false otherwise.
+      def is_new?
+        get_tag(Ext::Test::TAG_IS_NEW) == "true"
+      end
+
       # Marks this test as unskippable by the intelligent test runner.
       # This must be done before the test execution starts.
       #

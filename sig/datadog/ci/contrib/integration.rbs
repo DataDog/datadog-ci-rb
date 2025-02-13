@@ -2,6 +2,8 @@ module Datadog
   module CI
     module Contrib
       class Integration
+        @configuration: Datadog::CI::Contrib::Settings
+
         def self.inherited: (untyped) -> void
 
         def version: () -> untyped

@@ -14,6 +14,7 @@ module Datadog
       def itr_unskippable!: () -> void
       def parameters: () -> String?
       def is_retry?: () -> bool
+      def is_new?: () -> bool
       def any_retry_passed?: () -> bool
 
       private
