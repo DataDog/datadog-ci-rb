@@ -5,14 +5,6 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
 
   let(:enabled) { true }
 
-  let(:unique_tests_set) { Set.new(["test1", "test2"]) }
-  let(:unique_tests_client) do
-    instance_double(
-      Datadog::CI::TestRetries::UniqueTestsClient,
-      fetch_unique_tests: unique_tests_set
-    )
-  end
-
   let(:remote_early_flake_detection_enabled) { false }
   let(:known_tests_enabled) { true }
   let(:percentage_limit) { 30 }
@@ -46,8 +38,7 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
 
   subject(:strategy) do
     described_class.new(
-      enabled: enabled,
-      unique_tests_client: unique_tests_client
+      enabled: enabled
     )
   end
 
@@ -57,39 +48,22 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
     context "when early flake detection is enabled" do
       let(:remote_early_flake_detection_enabled) { true }
 
-      context "when unique tests set is empty" do
-        let(:unique_tests_set) { Set.new }
+      it "enables retrying new tests" do
+        subject
 
-        it "disables retrying new tests and adds fault reason to the test session" do
+        expect(strategy.enabled).to be true
+        expect(strategy.max_attempts_thresholds.max_attempts_for_duration(1.2)).to eq(max_attempts)
+        # 30% of 30 tests = 9
+        expect(strategy.total_limit).to eq(9)
+      end
+
+      context "when known tests are disabled" do
+        let(:known_tests_enabled) { false }
+
+        it "disables retrying new tests" do
           subject
 
           expect(strategy.enabled).to be false
-          expect(test_session.get_tag("test.early_flake.abort_reason")).to eq("faulty")
-        end
-
-        it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 0
-      end
-
-      context "when unique tests set is not empty" do
-        it "enables retrying new tests" do
-          subject
-
-          expect(strategy.enabled).to be true
-          expect(strategy.max_attempts_thresholds.max_attempts_for_duration(1.2)).to eq(max_attempts)
-          # 30% of 30 tests = 9
-          expect(strategy.total_limit).to eq(9)
-        end
-
-        it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 2
-
-        context "when known tests are disabled" do
-          let(:known_tests_enabled) { false }
-
-          it "disables retrying new tests" do
-            subject
-
-            expect(strategy.enabled).to be false
-          end
         end
       end
     end
