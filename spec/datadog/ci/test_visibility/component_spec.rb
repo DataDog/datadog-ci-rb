@@ -5,6 +5,15 @@ require_relative "../../../../lib/datadog/ci/test_visibility/component"
 RSpec.describe Datadog::CI::TestVisibility::Component do
   include_context "Telemetry spy"
 
+  # let(:unique_tests_set) { Set.new(["test1", "test2"]) }
+  # let(:unique_tests_client) do
+  #   instance_double(
+  #     Datadog::CI::TestRetries::UniqueTestsClient,
+  #     fetch_unique_tests: unique_tests_set
+  #   )
+  # end
+  #       it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 2
+
   shared_examples_for "trace with ciapp-test origin" do
     let(:trace_under_test) { subject }
 

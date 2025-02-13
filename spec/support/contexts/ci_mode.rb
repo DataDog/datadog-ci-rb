@@ -30,7 +30,7 @@ RSpec.shared_context "CI mode activated" do
   let(:use_single_threaded_coverage) { false }
   let(:flaky_test_retries_enabled) { false }
   let(:early_flake_detection_enabled) { false }
-  let(:known_tests_enabled) { true }
+  let(:known_tests_enabled) { early_flake_detection_enabled }
   let(:faulty_session_threshold) { 30 }
 
   let(:retry_failed_tests_max_attempts) { 5 }
@@ -57,7 +57,7 @@ RSpec.shared_context "CI mode activated" do
     )
   end
 
-  let(:unique_tests_set) { Set.new }
+  let(:known_tests) { Set.new }
 
   let(:test_visibility) { Datadog.send(:components).test_visibility }
 
@@ -110,7 +110,7 @@ RSpec.shared_context "CI mode activated" do
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
     allow_any_instance_of(Datadog::CI::TestOptimisation::Coverage::Transport).to receive(:send_events).and_return([])
 
-    allow_any_instance_of(Datadog::CI::TestRetries::UniqueTestsClient).to receive(:fetch_unique_tests).and_return(unique_tests_set)
+    allow_any_instance_of(Datadog::CI::TestVisibility::KnownTests::Response).to receive(:fetch).and_return(known_tests)
 
     Datadog.configure do |c|
       if service_name
