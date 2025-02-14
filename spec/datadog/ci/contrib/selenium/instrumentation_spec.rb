@@ -13,12 +13,13 @@ RSpec.describe "Browser tests with selenium" do
   end
 
   let(:manager) { spy("manager") }
+  let(:capabilities) { double("capabilities", browser_version: "mockversion", "[]": "mockcapabilities") }
   let(:bridge) do
     instance_double(
       Selenium::WebDriver::Remote::Bridge,
       create_session: nil,
       browser: "mockbrowser",
-      capabilities: double("capabilities", browser_version: "mockversion", "[]": "mockcapabilities"),
+      capabilities: capabilities,
       window_handles: ["window"],
       switch_to_window: true,
       manage: manager,
@@ -58,6 +59,7 @@ RSpec.describe "Browser tests with selenium" do
   let(:visited_urls) { [] }
 
   before do
+    allow(Selenium::WebDriver::LocalDriver).to receive(:initialize_local_driver).and_return([capabilities, "http://www.example.com"])
     expect(Selenium::WebDriver::Remote::Bridge).to receive(:new).and_return(bridge)
     allow(bridge).to receive(:execute_script) do |script|
       executed_scripts << script

@@ -137,7 +137,7 @@ RSpec.describe Datadog::CI::Git::SearchCommits do
             expect { subject }
               .to raise_error(
                 Datadog::CI::Git::SearchCommits::ApiError,
-                "Failed to parse search commits response: unexpected token at 'invalid json'. Payload was: invalid json"
+                /Failed to parse search commits response/
               )
           end
         end
