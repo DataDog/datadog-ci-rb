@@ -873,7 +873,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         expect(test_visibility.known_tests_enabled).to be true
       end
 
-      it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_tests", 2
+      it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_tests", 2
 
       context "and when known tests storage is empty" do
         let(:known_tests) { Set.new }

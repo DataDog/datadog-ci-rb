@@ -79,20 +79,20 @@ module Datadog
           )
 
           CI::Transport::Telemetry.api_requests(
-            Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_REQUEST,
+            Ext::Telemetry::METRIC_KNOWN_TESTS_REQUEST,
             1,
             compressed: http_response.request_compressed
           )
-          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_REQUEST_MS, http_response.duration_ms)
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_KNOWN_TESTS_REQUEST_MS, http_response.duration_ms)
           Utils::Telemetry.distribution(
-            Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_BYTES,
+            Ext::Telemetry::METRIC_KNOWN_TESTS_RESPONSE_BYTES,
             http_response.response_size.to_f,
             {Ext::Telemetry::TAG_RESPONSE_COMPRESSED => http_response.gzipped_content?.to_s}
           )
 
           unless http_response.ok?
             CI::Transport::Telemetry.api_requests_errors(
-              Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_REQUEST_ERRORS,
+              Ext::Telemetry::METRIC_KNOWN_TESTS_REQUEST_ERRORS,
               1,
               error_type: http_response.telemetry_error_type,
               status_code: http_response.code

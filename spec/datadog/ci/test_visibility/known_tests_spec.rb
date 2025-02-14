@@ -99,9 +99,9 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
             expect(response).to eq(Set.new(["AdminControllerTest.test_new.", "AdminControllerTest.test_index.", "AdminControllerTest.test_create."]))
           end
 
-          it_behaves_like "emits telemetry metric", :inc, "early_flake_detection.request", 1
-          it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.request_ms"
-          it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_bytes"
+          it_behaves_like "emits telemetry metric", :inc, "known_tests.request", 1
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.request_ms"
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_bytes"
         end
 
         context "when response is not OK" do
@@ -123,7 +123,7 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
             expect(response).to be_empty
           end
 
-          it_behaves_like "emits telemetry metric", :inc, "early_flake_detection.request_errors", 1
+          it_behaves_like "emits telemetry metric", :inc, "known_tests.request_errors", 1
         end
 
         context "when response is OK but JSON is malformed" do

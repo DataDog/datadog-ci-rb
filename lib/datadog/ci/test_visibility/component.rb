@@ -338,7 +338,7 @@ module Datadog
             "Found [#{@known_tests.size}] known tests"
           end
           Utils::Telemetry.distribution(
-            Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
+            Ext::Telemetry::METRIC_KNOWN_TESTS_RESPONSE_TESTS,
             @known_tests.size.to_f
           )
 
