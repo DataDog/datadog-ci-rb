@@ -34,6 +34,10 @@ module Datadog
 
             Datadog.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
           end
+
+          def retry_reason
+            Ext::Test::RetryReason::RETRY_NEW
+          end
         end
       end
     end

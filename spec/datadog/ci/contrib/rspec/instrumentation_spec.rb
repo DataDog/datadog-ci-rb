@@ -940,6 +940,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(4)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 4)
+
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -974,6 +978,10 @@ RSpec.describe "RSpec instrumentation" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(3)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 3)
 
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
@@ -1011,6 +1019,10 @@ RSpec.describe "RSpec instrumentation" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(5)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 5)
 
       # it retried failing test 5 times
       expect(test_spans_by_test_name["nested fails"]).to have(6).items
@@ -1066,6 +1078,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
+
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
@@ -1095,6 +1111,10 @@ RSpec.describe "RSpec instrumentation" do
         # count how many spans were marked as retries
         retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
         expect(retries_count).to eq(5)
+
+        # check retry reasons
+        retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+        expect(retry_reasons).to eq(["efd"] * 5)
 
         # count how many tests were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1193,6 +1213,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(14)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact.sort
+      expect(retry_reasons).to eq((["atr"] * 4) + (["efd"] * 10))
+
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
@@ -1241,6 +1265,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(20)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 20)
+
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(22)
@@ -1286,6 +1314,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
+
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(12)
@@ -1327,6 +1359,10 @@ RSpec.describe "RSpec instrumentation" do
       # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }

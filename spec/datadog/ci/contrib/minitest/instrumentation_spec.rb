@@ -1035,6 +1035,10 @@ RSpec.describe "Minitest instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(4)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 4)
+
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -1092,6 +1096,10 @@ RSpec.describe "Minitest instrumentation" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(3)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 3)
 
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
@@ -1160,6 +1168,10 @@ RSpec.describe "Minitest instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(5)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 5)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
 
@@ -1221,6 +1233,10 @@ RSpec.describe "Minitest instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(9)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 9)
+
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
       expect(test_suite_spans).to have(12).items
@@ -1266,6 +1282,10 @@ RSpec.describe "Minitest instrumentation" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1314,6 +1334,10 @@ RSpec.describe "Minitest instrumentation" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1377,6 +1401,10 @@ RSpec.describe "Minitest instrumentation" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }

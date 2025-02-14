@@ -30,6 +30,10 @@ module Datadog
 
             Datadog.logger.debug { "Retry Attempts [#{@attempts} / #{@max_attempts}], Passed: [#{@passed_once}]" }
           end
+
+          def retry_reason
+            Ext::Test::RetryReason::RETRY_FAILED
+          end
         end
       end
     end

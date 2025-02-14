@@ -509,6 +509,10 @@ RSpec.describe "Cucumber instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(8)
 
+      # Cucumber itself does not provide a way to track retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq([])
+
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(0)
@@ -542,6 +546,10 @@ RSpec.describe "Cucumber instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(8)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 8)
+
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(0)
@@ -563,6 +571,10 @@ RSpec.describe "Cucumber instrumentation" do
         expect(test_spans).to have(5).items
         retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
         expect(retries_count).to eq(2)
+
+        # check retry reasons
+        retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+        expect(retry_reasons).to eq(["atr"] * 2)
 
         # count how many spans were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -588,6 +600,10 @@ RSpec.describe "Cucumber instrumentation" do
         expect(test_spans).to have(7).items
         retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
         expect(retries_count).to eq(4)
+
+        # check retry reasons
+        retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+        expect(retry_reasons).to eq(["atr"] * 4)
 
         # count how many spans were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -632,6 +648,10 @@ RSpec.describe "Cucumber instrumentation" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
 
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
