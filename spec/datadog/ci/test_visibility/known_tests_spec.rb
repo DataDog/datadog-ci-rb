@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/test_retries/unique_tests_client"
+require_relative "../../../../lib/datadog/ci/test_visibility/known_tests"
 
-RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
+RSpec.describe Datadog::CI::TestVisibility::KnownTests do
   include_context "Telemetry spy"
 
   let(:api) { spy("api") }
@@ -11,8 +11,8 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
 
   subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
-  describe "#fetch_unique_tests" do
-    subject { client.fetch_unique_tests(test_session) }
+  describe "#fetch" do
+    subject { client.fetch(test_session) }
 
     let(:service) { "service" }
     let(:tracer_span) do
@@ -59,7 +59,7 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
     end
 
     context "parsing response" do
-      subject(:response) { client.fetch_unique_tests(test_session) }
+      subject(:response) { client.fetch(test_session) }
 
       context "when api is present" do
         before do

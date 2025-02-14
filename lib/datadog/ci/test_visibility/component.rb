@@ -18,7 +18,7 @@ module Datadog
     module TestVisibility
       # Common behavior for CI tests
       class Component
-        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name, :known_tests
+        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name, :known_tests, :known_tests_enabled
 
         def initialize(
           known_tests_client:,
@@ -30,11 +30,21 @@ module Datadog
           @context = Context.new
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
+
+          # "Known tests" feature fetches a list of all tests known to Datadog for this repository
+          # and uses this list to determine if a test is new or not. New tests are marked with "test.is_new" tag.
+          @known_tests_enabled = false
           @known_tests_client = known_tests_client
+          @known_tests = Set.new
         end
 
         def configure(library_configuration, test_session)
-          fetch_known_tests(test_session) if library_configuration.known_tests_enabled?
+          return unless test_suite_level_visibility_enabled
+
+          if library_configuration.known_tests_enabled?
+            @known_tests_enabled = true
+            fetch_known_tests(test_session)
+          end
         end
 
         def start_test_session(service: nil, tags: {}, total_tests_count: 0)
@@ -297,6 +307,8 @@ module Datadog
         end
 
         def new_test?(test_span)
+          return false unless @known_tests_enabled
+
           test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)
           result = !@known_tests.include?(test_id)
 
@@ -313,6 +325,8 @@ module Datadog
           @known_tests = @known_tests_client.fetch(test_session)
 
           if @known_tests.empty?
+            @known_tests_enabled = false
+
             # this adds unfortunate knowledge on EFD from Testvisibility, rethink this
             test_session&.set_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
 
@@ -327,6 +341,8 @@ module Datadog
             Ext::Telemetry::METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS,
             @known_tests.size.to_f
           )
+
+          @known_tests
         end
 
         def mark_test_as_new(test_span)

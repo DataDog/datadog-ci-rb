@@ -1044,7 +1044,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails."]) }
+      let(:known_tests) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails."]) }
     end
 
     it "retries the new test 10 times" do
@@ -1170,7 +1170,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested flaky."]) }
+      let(:known_tests) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested flaky."]) }
 
       let(:flaky_test_retries_enabled) { true }
     end
@@ -1212,7 +1212,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:early_flake_detection_enabled) { true }
       # avoid bailing out of EFD
       let(:faulty_session_threshold) { 75 }
-      let(:unique_tests_set) do
+      let(:known_tests) do
         Set.new(
           [
             "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."
@@ -1259,7 +1259,7 @@ RSpec.describe "RSpec instrumentation" do
 
       let(:early_flake_detection_enabled) { true }
       let(:faulty_session_threshold) { 30 }
-      let(:unique_tests_set) do
+      let(:known_tests) do
         Set.new(
           [
             "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."
@@ -1288,7 +1288,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(11)
+      expect(new_tests_count).to eq(12)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
@@ -1304,7 +1304,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
+      let(:known_tests) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
 
       let(:itr_enabled) { true }
       let(:code_coverage_enabled) { true }
@@ -1346,7 +1346,7 @@ RSpec.describe "RSpec instrumentation" do
 
       let(:early_flake_detection_enabled) { true }
       let(:faulty_session_threshold) { 30 }
-      let(:unique_tests_set) do
+      let(:known_tests) do
         Set.new(
           [
             "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."

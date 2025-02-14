@@ -1234,7 +1234,7 @@ RSpec.describe "Minitest instrumentation" do
       let(:integration_name) { :minitest }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["TestSuiteWithNewTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_passed."]) }
+      let(:known_tests) { Set.new(["TestSuiteWithNewTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_passed."]) }
     end
 
     before do
@@ -1285,7 +1285,7 @@ RSpec.describe "Minitest instrumentation" do
       let(:integration_name) { :minitest }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["TestSuiteWithNewTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.no_such_test."]) }
+      let(:known_tests) { Set.new(["TestSuiteWithNewTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.no_such_test."]) }
       let(:faulty_session_threshold) { 10 }
     end
 
@@ -1317,7 +1317,7 @@ RSpec.describe "Minitest instrumentation" do
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(11)
+      expect(new_tests_count).to eq(12)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
@@ -1333,7 +1333,7 @@ RSpec.describe "Minitest instrumentation" do
       let(:integration_name) { :minitest }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["FlakyTestThatFailsOnceSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_passed."]) }
+      let(:known_tests) { Set.new(["FlakyTestThatFailsOnceSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_passed."]) }
     end
 
     before do

@@ -110,7 +110,7 @@ RSpec.shared_context "CI mode activated" do
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
     allow_any_instance_of(Datadog::CI::TestOptimisation::Coverage::Transport).to receive(:send_events).and_return([])
 
-    allow_any_instance_of(Datadog::CI::TestVisibility::KnownTests::Response).to receive(:fetch).and_return(known_tests)
+    allow_any_instance_of(Datadog::CI::TestVisibility::KnownTests).to receive(:fetch).and_return(known_tests)
 
     Datadog.configure do |c|
       if service_name
