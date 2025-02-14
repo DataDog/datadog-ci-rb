@@ -54,11 +54,11 @@ module Datadog
         METRIC_CODE_COVERAGE_IS_EMPTY = "code_coverage.is_empty"
         METRIC_CODE_COVERAGE_FILES = "code_coverage.files"
 
-        METRIC_EFD_UNIQUE_TESTS_REQUEST = "early_flake_detection.request"
-        METRIC_EFD_UNIQUE_TESTS_REQUEST_MS = "early_flake_detection.request_ms"
-        METRIC_EFD_UNIQUE_TESTS_REQUEST_ERRORS = "early_flake_detection.request_errors"
-        METRIC_EFD_UNIQUE_TESTS_RESPONSE_BYTES = "early_flake_detection.response_bytes"
-        METRIC_EFD_UNIQUE_TESTS_RESPONSE_TESTS = "early_flake_detection.response_tests"
+        METRIC_KNOWN_TESTS_REQUEST = "known_tests.request"
+        METRIC_KNOWN_TESTS_REQUEST_MS = "known_tests.request_ms"
+        METRIC_KNOWN_TESTS_REQUEST_ERRORS = "known_tests.request_errors"
+        METRIC_KNOWN_TESTS_RESPONSE_BYTES = "known_tests.response_bytes"
+        METRIC_KNOWN_TESTS_RESPONSE_TESTS = "known_tests.response_tests"
 
         METRIC_TEST_SESSION = "test_session"
 
@@ -69,6 +69,7 @@ module Datadog
         TAG_BROWSER_DRIVER = "browser_driver"
         TAG_IS_RUM = "is_rum"
         TAG_IS_RETRY = "is_retry"
+        TAG_RETRY_REASON = "retry_reason"
         TAG_EARLY_FLAKE_DETECTION_ABORT_REASON = "early_flake_detection_abort_reason"
         TAG_IS_NEW = "is_new"
         TAG_LIBRARY = "library"
@@ -86,6 +87,7 @@ module Datadog
         TAG_REQUIRE_GIT = "require_git"
         TAG_EARLY_FLAKE_DETECTION_ENABLED = "early_flake_detection_enabled"
         TAG_FLAKY_TEST_RETRIES_ENABLED = "flaky_test_retries_enabled"
+        TAG_KNOWN_TESTS_ENABLED = "known_tests_enabled"
         # tags for test_session metric
         TAG_PROVIDER = "provider"
         TAG_AUTO_INJECTED = "auto_injected"

@@ -11,6 +11,7 @@ module Datadog
         @tests_skipping_enabled: bool
         @flaky_test_retries_enabled: bool
         @early_flake_detection_enabled: bool
+        @known_tests_enabled: bool
         @slow_test_retries: Datadog::CI::Remote::SlowTestRetries
         @faulty_session_threshold: Integer
 
@@ -31,6 +32,8 @@ module Datadog
         def flaky_test_retries_enabled?: () -> bool
 
         def early_flake_detection_enabled?: () -> bool
+
+        def known_tests_enabled?: () -> bool
 
         def slow_test_retries: () -> Datadog::CI::Remote::SlowTestRetries
 

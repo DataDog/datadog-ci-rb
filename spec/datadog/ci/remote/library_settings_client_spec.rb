@@ -43,6 +43,7 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
           "itr_enabled" => "True",
           "require_git" => require_git,
           "flaky_test_retries_enabled" => "true",
+          "known_tests_enabled" => "true",
           "early_flake_detection" => {
             "enabled" => "true",
             "slow_test_retries" => {
@@ -115,6 +116,7 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
             expect(response.tests_skipping_enabled?).to be false
             expect(response.flaky_test_retries_enabled?).to be true
             expect(response.early_flake_detection_enabled?).to be true
+            expect(response.known_tests_enabled?).to be true
             expect(response.slow_test_retries.entries).to eq(
               [
                 Datadog::CI::Remote::SlowTestRetries::Entry.new(5.0, 10),
@@ -132,6 +134,7 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
               "itrskip_enabled" => "false",
               "early_flake_detection_enabled" => "true",
               "flaky_test_retries_enabled" => "true",
+              "known_tests_enabled" => "true",
               "require_git" => "false"
             )
           end

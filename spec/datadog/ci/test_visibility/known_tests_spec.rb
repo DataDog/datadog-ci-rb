@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/test_retries/unique_tests_client"
+require_relative "../../../../lib/datadog/ci/test_visibility/known_tests"
 
-RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
+RSpec.describe Datadog::CI::TestVisibility::KnownTests do
   include_context "Telemetry spy"
 
   let(:api) { spy("api") }
@@ -11,8 +11,8 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
 
   subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
 
-  describe "#fetch_unique_tests" do
-    subject { client.fetch_unique_tests(test_session) }
+  describe "#fetch" do
+    subject { client.fetch(test_session) }
 
     let(:service) { "service" }
     let(:tracer_span) do
@@ -59,7 +59,7 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
     end
 
     context "parsing response" do
-      subject(:response) { client.fetch_unique_tests(test_session) }
+      subject(:response) { client.fetch(test_session) }
 
       context "when api is present" do
         before do
@@ -99,9 +99,9 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
             expect(response).to eq(Set.new(["AdminControllerTest.test_new.", "AdminControllerTest.test_index.", "AdminControllerTest.test_create."]))
           end
 
-          it_behaves_like "emits telemetry metric", :inc, "early_flake_detection.request", 1
-          it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.request_ms"
-          it_behaves_like "emits telemetry metric", :distribution, "early_flake_detection.response_bytes"
+          it_behaves_like "emits telemetry metric", :inc, "known_tests.request", 1
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.request_ms"
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_bytes"
         end
 
         context "when response is not OK" do
@@ -123,7 +123,7 @@ RSpec.describe Datadog::CI::TestRetries::UniqueTestsClient do
             expect(response).to be_empty
           end
 
-          it_behaves_like "emits telemetry metric", :inc, "early_flake_detection.request_errors", 1
+          it_behaves_like "emits telemetry metric", :inc, "known_tests.request_errors", 1
         end
 
         context "when response is OK but JSON is malformed" do

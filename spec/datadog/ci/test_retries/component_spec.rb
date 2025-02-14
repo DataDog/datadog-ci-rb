@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "../../../../lib/datadog/ci/test_retries/component"
-require_relative "../../../../lib/datadog/ci/test_retries/unique_tests_client"
 
 RSpec.describe Datadog::CI::TestRetries::Component do
   include_context "Telemetry spy"
@@ -11,6 +10,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       Datadog::CI::Remote::LibrarySettings,
       flaky_test_retries_enabled?: remote_flaky_test_retries_enabled,
       early_flake_detection_enabled?: remote_early_flake_detection_enabled,
+      known_tests_enabled?: remote_known_tests_enabled,
       slow_test_retries: slow_test_retries,
       faulty_session_threshold: retry_new_tests_percentage_limit
     )
@@ -27,14 +27,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
   let(:remote_flaky_test_retries_enabled) { false }
   let(:remote_early_flake_detection_enabled) { false }
-
-  let(:unique_tests_set) { Set.new(["test1", "test2"]) }
-  let(:unique_tests_client) do
-    instance_double(
-      Datadog::CI::TestRetries::UniqueTestsClient,
-      fetch_unique_tests: unique_tests_set
-    )
-  end
+  let(:remote_known_tests_enabled) { true }
 
   let(:slow_test_retries) do
     instance_double(
@@ -55,8 +48,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       retry_failed_tests_enabled: retry_failed_tests_enabled,
       retry_failed_tests_max_attempts: retry_failed_tests_max_attempts,
       retry_failed_tests_total_limit: retry_failed_tests_total_limit,
-      retry_new_tests_enabled: retry_new_tests_enabled,
-      unique_tests_client: unique_tests_client
+      retry_new_tests_enabled: retry_new_tests_enabled
     )
   end
 
@@ -64,7 +56,20 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     subject { component.build_driver(test_span) }
 
     let(:test_failed) { false }
-    let(:test_span) { instance_double(Datadog::CI::Test, failed?: test_failed, name: "test", test_suite_name: "suite") }
+    let(:test_skipped) { false }
+    let(:test_is_new) { false }
+
+    let(:test_span) do
+      instance_double(
+        Datadog::CI::Test,
+        name: "test",
+        test_suite_name: "suite",
+        failed?: test_failed,
+        skipped?: test_skipped,
+        is_new?: test_is_new,
+        set_tag: nil
+      )
+    end
 
     before do
       component.configure(library_settings, test_session)
@@ -120,7 +125,33 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       end
     end
 
-    context "when retry failed tests is disabled" do
+    context "when retry new tests is enabled" do
+      let(:remote_early_flake_detection_enabled) { true }
+
+      context "when test is new" do
+        let(:test_is_new) { true }
+
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::RetryNew) }
+
+        context "when test is skipped" do
+          let(:test_skipped) { true }
+
+          it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+        end
+
+        context "when known tests are disabled" do
+          let(:remote_known_tests_enabled) { false }
+
+          it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+        end
+      end
+
+      context "when test is not new" do
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+      end
+    end
+
+    context "no retries are enabled" do
       it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
     end
   end
@@ -142,6 +173,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         Datadog::CI::Test,
         failed?: test_failed,
         passed?: !test_failed,
+        is_new?: test_is_new,
         set_tag: true,
         get_tag: true,
         skipped?: false,
@@ -150,7 +182,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         test_suite_name: "mysuite"
       )
     end
+
     let(:test_failed) { false }
+    let(:test_is_new) { false }
 
     subject(:runs_count) do
       runs_count = 0
@@ -192,7 +226,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
     context "when retry new test strategy is used" do
       let(:remote_early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["mysuite.mytest2."]) }
+      let(:test_is_new) { true }
 
       it { is_expected.to eq(11) }
 

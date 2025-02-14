@@ -940,6 +940,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(4)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 4)
+
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -974,6 +978,10 @@ RSpec.describe "RSpec instrumentation" do
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(3)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 3)
 
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
@@ -1012,6 +1020,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(5)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["atr"] * 5)
+
       # it retried failing test 5 times
       expect(test_spans_by_test_name["nested fails"]).to have(6).items
 
@@ -1044,7 +1056,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails."]) }
+      let(:known_tests) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails."]) }
     end
 
     it "retries the new test 10 times" do
@@ -1065,6 +1077,10 @@ RSpec.describe "RSpec instrumentation" do
       # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1095,6 +1111,10 @@ RSpec.describe "RSpec instrumentation" do
         # count how many spans were marked as retries
         retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
         expect(retries_count).to eq(5)
+
+        # check retry reasons
+        retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+        expect(retry_reasons).to eq(["efd"] * 5)
 
         # count how many tests were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1170,7 +1190,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested flaky."]) }
+      let(:known_tests) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested flaky."]) }
 
       let(:flaky_test_retries_enabled) { true }
     end
@@ -1193,6 +1213,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(14)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact.sort
+      expect(retry_reasons).to eq((["atr"] * 4) + (["efd"] * 10))
+
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
@@ -1212,7 +1236,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:early_flake_detection_enabled) { true }
       # avoid bailing out of EFD
       let(:faulty_session_threshold) { 75 }
-      let(:unique_tests_set) do
+      let(:known_tests) do
         Set.new(
           [
             "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."
@@ -1241,6 +1265,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(20)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 20)
+
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(22)
@@ -1259,7 +1287,7 @@ RSpec.describe "RSpec instrumentation" do
 
       let(:early_flake_detection_enabled) { true }
       let(:faulty_session_threshold) { 30 }
-      let(:unique_tests_set) do
+      let(:known_tests) do
         Set.new(
           [
             "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."
@@ -1286,9 +1314,13 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
+
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(11)
+      expect(new_tests_count).to eq(12)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
@@ -1304,7 +1336,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:integration_name) { :rspec }
 
       let(:early_flake_detection_enabled) { true }
-      let(:unique_tests_set) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
+      let(:known_tests) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."]) }
 
       let(:itr_enabled) { true }
       let(:code_coverage_enabled) { true }
@@ -1328,6 +1360,10 @@ RSpec.describe "RSpec instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(10)
 
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["efd"] * 10)
+
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
@@ -1346,7 +1382,7 @@ RSpec.describe "RSpec instrumentation" do
 
       let(:early_flake_detection_enabled) { true }
       let(:faulty_session_threshold) { 30 }
-      let(:unique_tests_set) do
+      let(:known_tests) do
         Set.new(
           [
             "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested x."

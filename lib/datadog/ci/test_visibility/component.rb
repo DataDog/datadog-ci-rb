@@ -18,9 +18,10 @@ module Datadog
     module TestVisibility
       # Common behavior for CI tests
       class Component
-        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name
+        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name, :known_tests, :known_tests_enabled
 
         def initialize(
+          known_tests_client:,
           test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse,
           logical_test_session_name: nil
@@ -29,6 +30,21 @@ module Datadog
           @context = Context.new
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
+
+          # "Known tests" feature fetches a list of all tests known to Datadog for this repository
+          # and uses this list to determine if a test is new or not. New tests are marked with "test.is_new" tag.
+          @known_tests_enabled = false
+          @known_tests_client = known_tests_client
+          @known_tests = Set.new
+        end
+
+        def configure(library_configuration, test_session)
+          return unless test_suite_level_visibility_enabled
+
+          if library_configuration.known_tests_enabled?
+            @known_tests_enabled = true
+            fetch_known_tests(test_session)
+          end
         end
 
         def start_test_session(service: nil, tags: {}, total_tests_count: 0)
@@ -158,7 +174,8 @@ module Datadog
           # sets logical test session name if none provided by the user
           override_logical_test_session_name!(test_session) if logical_test_session_name.nil?
 
-          # signal Remote::Component to configure the library
+          # Signal Remote::Component to configure the library.
+          # Note that it will call this component back (unfortunate circular dependency).
           remote.configure(test_session)
         end
 
@@ -181,6 +198,8 @@ module Datadog
           set_codeowners(test)
 
           Telemetry.event_created(test)
+
+          mark_test_as_new(test) if new_test?(test)
 
           test_optimisation.mark_if_skippable(test)
           test_optimisation.start_coverage(test)
@@ -285,6 +304,49 @@ module Datadog
           if ci_job_name
             @logical_test_session_name = "#{ci_job_name}-#{@logical_test_session_name}"
           end
+        end
+
+        def new_test?(test_span)
+          return false unless @known_tests_enabled
+
+          test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)
+          result = !@known_tests.include?(test_id)
+
+          if result
+            Datadog.logger.debug do
+              "#{test_id} is not found in the known tests set, it is a new test"
+            end
+          end
+
+          result
+        end
+
+        def fetch_known_tests(test_session)
+          @known_tests = @known_tests_client.fetch(test_session)
+
+          if @known_tests.empty?
+            @known_tests_enabled = false
+
+            # this adds unfortunate knowledge on EFD from Testvisibility, rethink this
+            test_session&.set_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
+
+            Datadog.logger.warn("Empty set of tests known to Datadog")
+          end
+
+          # report how many known tests were found
+          Datadog.logger.debug do
+            "Found [#{@known_tests.size}] known tests"
+          end
+          Utils::Telemetry.distribution(
+            Ext::Telemetry::METRIC_KNOWN_TESTS_RESPONSE_TESTS,
+            @known_tests.size.to_f
+          )
+
+          @known_tests
+        end
+
+        def mark_test_as_new(test_span)
+          test_span.set_tag(Ext::Test::TAG_IS_NEW, "true")
         end
 
         def test_optimisation

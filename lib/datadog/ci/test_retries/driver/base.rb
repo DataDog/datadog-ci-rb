@@ -13,10 +13,15 @@ module Datadog
 
           def record_retry(test_span)
             test_span&.set_tag(Ext::Test::TAG_IS_RETRY, "true")
+            test_span&.set_tag(Ext::Test::TAG_RETRY_REASON, retry_reason)
           end
 
           # duration in float seconds
           def record_duration(duration)
+          end
+
+          def retry_reason
+            "unknown"
           end
         end
       end

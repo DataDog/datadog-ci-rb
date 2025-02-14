@@ -8,6 +8,8 @@ module Datadog
           def record_retry: (Datadog::CI::Test test_span) -> void
 
           def record_duration: (Float duration) -> void
+
+          def retry_reason: () -> String
         end
       end
     end

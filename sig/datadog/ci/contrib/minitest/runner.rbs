@@ -7,9 +7,7 @@ module Datadog
 
           def self.included: (untyped base) -> untyped
 
-          module ClassMethods
-            extend ::Minitest
-
+          module ClassMethods : ::Minitest
             def init_plugins: (*untyped) -> (nil | untyped)
 
             def run_one_method: (untyped klass, String method_name) -> untyped

@@ -5,13 +5,9 @@ module Datadog
         class RetryNew < Base
           @enabled: bool
 
-          @unique_tests_set: Set[String]
-
           @total_limit: Integer
 
           @retried_count: Integer
-
-          @unique_tests_client: Datadog::CI::TestRetries::UniqueTestsClient
 
           @max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries
 
@@ -21,13 +17,11 @@ module Datadog
 
           attr_reader max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries
 
-          attr_reader unique_tests_set: Set[String]
-
           attr_reader total_limit: Integer
 
           attr_reader retried_count: Integer
 
-          def initialize: (enabled: bool, unique_tests_client: Datadog::CI::TestRetries::UniqueTestsClient) -> void
+          def initialize: (enabled: bool) -> void
 
           def covers?: (Datadog::CI::Test test_span) -> bool
 
@@ -39,13 +33,9 @@ module Datadog
 
           def mark_test_session_faulty: (Datadog::CI::TestSession? test_session) -> void
 
-          def is_new_test?: (Datadog::CI::Test test_span) -> bool
-
           def set_max_attempts_thresholds: (Datadog::CI::Remote::LibrarySettings) -> void
 
           def calculate_total_retries_limit: (Datadog::CI::Remote::LibrarySettings, Datadog::CI::TestSession) -> void
-
-          def fetch_known_unique_tests: (Datadog::CI::TestSession) -> void
         end
       end
     end

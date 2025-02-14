@@ -88,6 +88,8 @@ module Datadog
 
         TAG_IS_RETRY: "test.is_retry"
 
+        TAG_RETRY_REASON: "test.retry_reason"
+
         TAG_IS_NEW: "test.is_new"
 
         TAG_EARLY_FLAKE_ENABLED: "test.early_flake.enabled"
@@ -118,6 +120,14 @@ module Datadog
           BROWSER: "browser"
 
           BENCHMARK: "benchmark"
+        end
+
+        module RetryReason
+          RETRY_NEW: "efd"
+
+          RETRY_FAILED: "atr"
+
+          RETRY_FLAKY_FIXED: "attempt_to_fix"
         end
       end
     end

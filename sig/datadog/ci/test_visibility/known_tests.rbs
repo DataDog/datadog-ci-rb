@@ -1,7 +1,7 @@
 module Datadog
   module CI
-    module TestRetries
-      class UniqueTestsClient
+    module TestVisibility
+      class KnownTests
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
         @config_tags: Hash[String, String]
@@ -25,7 +25,7 @@ module Datadog
 
         def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String]) -> void
 
-        def fetch_unique_tests: (Datadog::CI::TestSession test_session) -> Set[String]
+        def fetch: (Datadog::CI::TestSession test_session) -> Set[String]
 
         private
 

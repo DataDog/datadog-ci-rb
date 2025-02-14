@@ -834,4 +834,69 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
       end
     end
   end
+
+  describe "#configure" do
+    let(:test_visibility) do
+      described_class.new(
+        known_tests_client: known_tests_client,
+        test_suite_level_visibility_enabled: true
+      )
+    end
+
+    let(:known_tests) { Set.new(["test1", "test2"]) }
+    let(:known_tests_client) do
+      instance_double(
+        Datadog::CI::TestVisibility::KnownTests,
+        fetch: known_tests
+      )
+    end
+
+    let(:library_settings) do
+      instance_double(
+        Datadog::CI::Remote::LibrarySettings,
+        known_tests_enabled?: known_tests_enabled
+      )
+    end
+    let(:known_tests_enabled) { true }
+
+    let(:test_session) { instance_double(Datadog::CI::TestSession) }
+
+    subject { test_visibility.configure(library_settings, test_session) }
+
+    context "when known tests functionality is enabled" do
+      let(:known_tests_enabled) { true }
+
+      it "fetches known tests" do
+        subject
+
+        expect(test_visibility.known_tests).to eq(known_tests)
+        expect(test_visibility.known_tests_enabled).to be true
+      end
+
+      it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_tests", 2
+
+      context "and when known tests storage is empty" do
+        let(:known_tests) { Set.new }
+
+        it "disables known tests functionality" do
+          expect(test_session).to receive(:set_tag).with("test.early_flake.abort_reason", "faulty")
+
+          subject
+
+          expect(test_visibility.known_tests_enabled).to be false
+        end
+      end
+    end
+
+    context "when known tests functionality is disabled" do
+      let(:known_tests_enabled) { false }
+
+      it "does not fetch known tests" do
+        subject
+
+        expect(test_visibility.known_tests).to be_empty
+        expect(test_visibility.known_tests_enabled).to be false
+      end
+    end
+  end
 end

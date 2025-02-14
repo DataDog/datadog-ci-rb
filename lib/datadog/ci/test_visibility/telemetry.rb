@@ -54,8 +54,11 @@ module Datadog
           # codeowner tag
           tags[Ext::Telemetry::TAG_HAS_CODEOWNER] = "true" if span.get_tag(Ext::Test::TAG_CODEOWNERS)
 
-          # set is_retry tag if span represents a retried test
-          tags[Ext::Telemetry::TAG_IS_RETRY] = "true" if span.get_tag(Ext::Test::TAG_IS_RETRY)
+          # set is_retry and retry_reason tags if span represents a retried test
+          if span.get_tag(Ext::Test::TAG_IS_RETRY)
+            tags[Ext::Telemetry::TAG_IS_RETRY] = "true"
+            tags[Ext::Telemetry::TAG_RETRY_REASON] = span.get_tag(Ext::Test::TAG_RETRY_REASON)
+          end
 
           # is_new
           tags[Ext::Telemetry::TAG_IS_NEW] = "true" if span.get_tag(Ext::Test::TAG_IS_NEW)

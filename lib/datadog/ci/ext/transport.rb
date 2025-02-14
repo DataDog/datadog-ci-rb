@@ -38,6 +38,7 @@ module Datadog
         DD_API_SETTINGS_RESPONSE_TESTS_SKIPPING_KEY = "tests_skipping"
         DD_API_SETTINGS_RESPONSE_REQUIRE_GIT_KEY = "require_git"
         DD_API_SETTINGS_RESPONSE_FLAKY_TEST_RETRIES_KEY = "flaky_test_retries_enabled"
+        DD_API_SETTINGS_RESPONSE_KNOWN_TESTS_ENABLED_KEY = "known_tests_enabled"
         DD_API_SETTINGS_RESPONSE_EARLY_FLAKE_DETECTION_KEY = "early_flake_detection"
         DD_API_SETTINGS_RESPONSE_ENABLED_KEY = "enabled"
         DD_API_SETTINGS_RESPONSE_SLOW_TEST_RETRIES_KEY = "slow_test_retries"

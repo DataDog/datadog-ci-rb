@@ -22,6 +22,8 @@ module Datadog
           @start: Integer
           @duration: Integer
 
+          @test_visibility: Datadog::CI::TestVisibility::Component
+
           attr_reader trace: Datadog::Tracing::TraceSegment
           attr_reader span: Datadog::Tracing::Span
           attr_reader meta: Hash[untyped, untyped]

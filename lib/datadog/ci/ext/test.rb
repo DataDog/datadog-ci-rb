@@ -58,9 +58,12 @@ module Datadog
         # version of the browser, if multiple browsers or multiple versions then this tag is empty
         TAG_BROWSER_VERSION = "test.browser.version"
 
+        # known and new tests
+        TAG_IS_NEW = "test.is_new" # true if test is new (it was not known to Datadog before)
+
         # Tags for retries
         TAG_IS_RETRY = "test.is_retry" # true if test was retried by datadog-ci library
-        TAG_IS_NEW = "test.is_new" # true if test was marked as new by new test retries (early flake detection)
+        TAG_RETRY_REASON = "test.retry_reason" # reason why test was retried
         TAG_EARLY_FLAKE_ENABLED = "test.early_flake.enabled" # true if early flake detection is enabled
         TAG_EARLY_FLAKE_ABORT_REASON = "test.early_flake.abort_reason" # reason why early flake detection was aborted
 
@@ -102,6 +105,13 @@ module Datadog
           TEST = "test"
           BROWSER = "browser"
           BENCHMARK = "benchmark" # DEV: not used yet, will be used when benchmarks are supported
+        end
+
+        # possible reasons why a test was retried
+        module RetryReason
+          RETRY_NEW = "efd"
+          RETRY_FAILED = "atr"
+          RETRY_FLAKY_FIXED = "attempt_to_fix"
         end
       end
     end

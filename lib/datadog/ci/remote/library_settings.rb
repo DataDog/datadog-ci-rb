@@ -98,6 +98,14 @@ module Datadog
           )
         end
 
+        def known_tests_enabled?
+          return @known_tests_enabled if defined?(@known_tests_enabled)
+
+          @known_tests_enabled = Utils::Parsing.convert_to_bool(
+            payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_KNOWN_TESTS_ENABLED_KEY, false)
+          )
+        end
+
         def slow_test_retries
           return @slow_test_retries if defined?(@slow_test_retries)
 

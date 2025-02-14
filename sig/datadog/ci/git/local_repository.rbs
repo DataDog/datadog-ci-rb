@@ -12,8 +12,9 @@ module Datadog
 
         COMMAND_RETRY_COUNT: 3
 
-        @root: String?
-        @repository_name: String?
+        self.@root: String
+        self.@prefix_to_root: String
+        self.@repository_name: String
 
         def self.root: -> String
 
