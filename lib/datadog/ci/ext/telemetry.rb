@@ -69,6 +69,7 @@ module Datadog
         TAG_BROWSER_DRIVER = "browser_driver"
         TAG_IS_RUM = "is_rum"
         TAG_IS_RETRY = "is_retry"
+        TAG_RETRY_REASON = "retry_reason"
         TAG_EARLY_FLAKE_DETECTION_ABORT_REASON = "early_flake_detection_abort_reason"
         TAG_IS_NEW = "is_new"
         TAG_LIBRARY = "library"
