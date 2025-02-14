@@ -5,6 +5,9 @@ module Datadog
     module TestVisibility
       # Special test visibility component that does not record anything
       class NullComponent
+        def configure(_, _)
+        end
+
         def start_test_session(service: nil, tags: {}, total_tests_count: 0)
           skip_tracing
         end
