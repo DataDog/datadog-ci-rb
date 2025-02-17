@@ -33,7 +33,8 @@ module Datadog
           configuration_workers = [
             Worker.new { test_optimisation.configure(library_configuration, test_session) },
             Worker.new { test_retries.configure(library_configuration, test_session) },
-            Worker.new { test_visibility.configure(library_configuration, test_session) }
+            Worker.new { test_visibility.configure(library_configuration, test_session) },
+            Worker.new { test_management.configure(library_configuration, test_session) }
           ]
 
           # launch configuration workers
@@ -44,6 +45,10 @@ module Datadog
         end
 
         private
+
+        def test_management
+          Datadog.send(:components).test_management
+        end
 
         def test_visibility
           Datadog.send(:components).test_visibility
