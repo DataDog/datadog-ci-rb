@@ -7,6 +7,7 @@ require_relative "../git/tree_uploader"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
+require_relative "../test_management/null_component"
 require_relative "../test_management/tests_properties"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
@@ -40,7 +41,7 @@ module Datadog
           @git_tree_upload_worker = DummyWorker.new
           @ci_remote = nil
           @test_retries = TestRetries::NullComponent.new
-          @test_management = nil
+          @test_management = TestManagement::NullComponent.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -118,7 +119,6 @@ module Datadog
 
           @test_management = TestManagement::Component.new(
             enabled: settings.ci.test_management_enabled,
-            attempt_to_fix_retries_count: settings.ci.test_management_attempt_to_fix_retries_count,
             tests_properties_client: TestManagement::TestsProperties.new(api: test_visibility_api)
           )
 

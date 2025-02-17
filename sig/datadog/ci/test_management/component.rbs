@@ -4,8 +4,6 @@ module Datadog
       class Component
         @enabled: bool
 
-        @attempt_to_fix_retries_count: Integer
-
         @tests_properties_client: Datadog::CI::TestManagement::TestsProperties
 
         @tests_properties: Hash[String, Hash[String, bool]]
@@ -14,7 +12,7 @@ module Datadog
 
         attr_reader tests_properties: Hash[String, Hash[String, bool]]
 
-        def initialize: (enabled: bool, attempt_to_fix_retries_count: Integer, tests_properties_client: Datadog::CI::TestManagement::TestsProperties) -> void
+        def initialize: (enabled: bool, tests_properties_client: Datadog::CI::TestManagement::TestsProperties) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
       end

@@ -9,8 +9,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
     let(:test_management) do
       described_class.new(
         tests_properties_client: tests_properties_client,
-        enabled: true,
-        attempt_to_fix_retries_count: 20
+        enabled: true
       )
     end
 

@@ -14,13 +14,8 @@ module Datadog
       class Component
         attr_reader :enabled, :tests_properties
 
-        def initialize(
-          enabled:,
-          attempt_to_fix_retries_count:,
-          tests_properties_client:
-        )
+        def initialize(enabled:, tests_properties_client:)
           @enabled = enabled
-          @attempt_to_fix_retries_count = attempt_to_fix_retries_count
 
           @tests_properties_client = tests_properties_client
           @tests_properties = {}
