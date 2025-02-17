@@ -43,6 +43,8 @@ module Datadog
         DD_API_SETTINGS_RESPONSE_ENABLED_KEY = "enabled"
         DD_API_SETTINGS_RESPONSE_SLOW_TEST_RETRIES_KEY = "slow_test_retries"
         DD_API_SETTINGS_RESPONSE_FAULTY_SESSION_THRESHOLD_KEY = "faulty_session_threshold"
+        DD_API_SETTINGS_RESPONSE_TEST_MANAGEMENT_KEY = "test_management"
+        DD_API_SETTINGS_RESPONSE_ATTEMPT_TO_FIX_RETRIES_KEY = "attempt_to_fix_retries"
         DD_API_SETTINGS_RESPONSE_DEFAULT = {DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY => false}.freeze
 
         DD_API_GIT_SEARCH_COMMITS_PATH = "/api/v2/git/repository/search_commits"

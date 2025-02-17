@@ -122,7 +122,30 @@ module Datadog
           )
         end
 
+        def test_management_enabled?
+          return @test_management_enabled if defined?(@test_management_enabled)
+
+          @test_management_enabled = Utils::Parsing.convert_to_bool(
+            test_management_payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_ENABLED_KEY, false)
+          )
+        end
+
+        def attempt_to_fix_retries_count
+          return @attempt_to_fix_retries_count if defined?(@attempt_to_fix_retries_count)
+
+          @attempt_to_fix_retries_count = test_management_payload.fetch(
+            Ext::Transport::DD_API_SETTINGS_RESPONSE_ATTEMPT_TO_FIX_RETRIES_KEY, nil
+          )
+        end
+
         private
+
+        def test_management_payload
+          payload.fetch(
+            Ext::Transport::DD_API_SETTINGS_RESPONSE_TEST_MANAGEMENT_KEY,
+            {}
+          )
+        end
 
         def early_flake_detection_payload
           payload.fetch(
