@@ -125,7 +125,7 @@ module Datadog
           if settings.ci.itr_code_coverage_use_single_threaded_mode &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
             Datadog.logger.warn(
-              "Intelligent test runner: Single threaded coverage mode is incompatible with allocation tracing. " \
+              "Test Impact Analysis: Single threaded coverage mode is incompatible with allocation tracing. " \
               "Allocation tracing will be disabled. It means that test impact analysis will not be able to detect " \
               "instantiations of objects in your code, which is important for ActiveRecord models. " \
               "Please add your app/model folder to the list of tracked files or disable single threaded coverage mode."
@@ -137,7 +137,7 @@ module Datadog
           if RUBY_VERSION.start_with?("3.2.") && RUBY_VERSION < "3.2.3" &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
             Datadog.logger.warn(
-              "Intelligent test runner: Allocation tracing is not supported in Ruby versions 3.2.0, 3.2.1 and 3.2.2 and will be forcibly " \
+              "Test Impact Analysis: Allocation tracing is not supported in Ruby versions 3.2.0, 3.2.1 and 3.2.2 and will be forcibly " \
               "disabled. This is due to a VM bug that can lead to crashes (https://bugs.ruby-lang.org/issues/19482). " \
               "Please update your Ruby version or add your app/model folder to the list of tracked files." \
               "Set env variable DD_CIVISIBILITY_ITR_TEST_IMPACT_ANALYSIS_USE_ALLOCATION_TRACING to 0 to disable this warning."

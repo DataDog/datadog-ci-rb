@@ -62,8 +62,8 @@ module Datadog
         get_tag(Ext::Test::TAG_TEST_SESSION_ID)
       end
 
-      # Returns "true" if the test is skipped by the intelligent test runner.
-      # @return [Boolean] true if the test is skipped by the intelligent test runner, false otherwise.
+      # Returns "true" if the test is skipped by the Test Impact Analysis.
+      # @return [Boolean] true if the test is skipped by the Test Impact Analysis, false otherwise.
       def skipped_by_itr?
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
@@ -80,7 +80,7 @@ module Datadog
         get_tag(Ext::Test::TAG_IS_NEW) == "true"
       end
 
-      # Marks this test as unskippable by the intelligent test runner.
+      # Marks this test as unskippable by the Test Impact Analysis.
       # This must be done before the test execution starts.
       #
       # Examples of tests that should be unskippable:
