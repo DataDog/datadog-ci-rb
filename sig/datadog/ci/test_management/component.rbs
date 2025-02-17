@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module TestManagement
+      class Component
+        @enabled: bool
+
+        @attempt_to_fix_retries_count: Integer
+
+        def initialize: (enabled: bool, attempt_to_fix_retries_count: Integer) -> void
+
+        def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> nil
+      end
+    end
+  end
+end
