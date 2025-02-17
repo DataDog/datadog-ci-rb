@@ -575,6 +575,82 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#test_management_enabled" do
+        subject(:test_management_enabled) { settings.ci.test_management_enabled }
+
+        it { is_expected.to be true }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_TEST_MANAGEMENT_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_TEST_MANAGEMENT_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#test_management_enabled=" do
+        it "updates the #test_management_enabled setting" do
+          expect { settings.ci.test_management_enabled = false }
+            .to change { settings.ci.test_management_enabled }
+            .from(true)
+            .to(false)
+        end
+      end
+
+      describe "#test_management_attempt_to_fix_retries_count" do
+        subject(:test_management_attempt_to_fix_retries_count) { settings.ci.test_management_attempt_to_fix_retries_count }
+
+        it { is_expected.to eq 20 }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES => attempts) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:attempts) { nil }
+
+            it { is_expected.to eq 20 }
+          end
+
+          context "is set to value" do
+            let(:attempts) { "10" }
+
+            it { is_expected.to eq attempts.to_i }
+          end
+        end
+      end
+
+      describe "#test_management_attempt_to_fix_retries_count=" do
+        it "updates the #test_management_attempt_to_fix_retries_count setting" do
+          expect { settings.ci.test_management_attempt_to_fix_retries_count = 42 }
+            .to change { settings.ci.test_management_attempt_to_fix_retries_count }
+            .from(20)
+            .to(42)
+        end
+      end
+
       describe "#instrument" do
         let(:integration_name) { :fake }
 
