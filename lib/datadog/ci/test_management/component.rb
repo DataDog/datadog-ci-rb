@@ -18,6 +18,11 @@ module Datadog
         end
 
         def configure(library_settings, test_session)
+          @enabled ||= library_settings.test_management_enabled?
+
+          nil unless @enabled
+
+          # fetch test management tests properties from the backend here
         end
       end
     end

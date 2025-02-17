@@ -57,6 +57,9 @@ module Datadog
         DD_API_UNIQUE_TESTS_PATH = "/api/v2/ci/libraries/tests"
         DD_API_UNIQUE_TESTS_TYPE = "ci_app_libraries_tests_request"
 
+        DD_API_TEST_MANAGEMENT_TESTS_PATH = "/api/v2/test/libraries/test-management/tests"
+        DD_API_TEST_MANAGEMENT_TESTS_TYPE = "ci_app_libraries_tests_request"
+
         CONTENT_TYPE_MESSAGEPACK = "application/msgpack"
         CONTENT_TYPE_JSON = "application/json"
         CONTENT_TYPE_MULTIPART_FORM_DATA = "multipart/form-data"
