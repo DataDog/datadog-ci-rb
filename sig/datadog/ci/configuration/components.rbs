@@ -7,12 +7,14 @@ module Datadog
         @git_tree_upload_worker: Datadog::CI::Worker
         @ci_remote: Datadog::CI::Remote::Component
         @custom_configuration: Hash[String, String]
+        @test_management: Datadog::CI::TestManagement::Component
 
         attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
         attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component?
         attr_reader git_tree_upload_worker: Datadog::CI::Worker
         attr_reader ci_remote: Datadog::CI::Remote::Component
         attr_reader test_retries: Datadog::CI::TestRetries::Component
+        attr_reader test_management: Datadog::CI::TestManagement::Component
 
         def initialize: (untyped settings) -> void
 

@@ -6,6 +6,7 @@ require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
+require_relative "../test_management/component"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_optimisation/coverage/writer"
@@ -30,7 +31,7 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries
+        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries, :test_management
 
         def initialize(settings)
           @test_optimisation = nil
@@ -38,6 +39,7 @@ module Datadog
           @git_tree_upload_worker = DummyWorker.new
           @ci_remote = nil
           @test_retries = TestRetries::NullComponent.new
+          @test_management = nil
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -58,7 +60,7 @@ module Datadog
         def activate_ci!(settings)
           unless settings.tracing.enabled
             Datadog.logger.error(
-              "CI visibility requires tracing to be enabled. Disabling CI visibility. " \
+              "Test Optimization requires tracing to be enabled. Disabling Test Optimization. " \
               "NOTE: if you didn't disable tracing intentionally, add `c.tracing.enabled = true` to " \
               "your Datadog.configure block."
             )
@@ -112,6 +114,12 @@ module Datadog
             retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit,
             retry_new_tests_enabled: settings.ci.retry_new_tests_enabled
           )
+
+          @test_management = TestManagement::Component.new(
+            enabled: settings.ci.test_management_enabled,
+            attempt_to_fix_retries_count: settings.ci.test_management_attempt_to_fix_retries_count
+          )
+
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
           @test_visibility = TestVisibility::Component.new(
@@ -161,21 +169,21 @@ module Datadog
           if settings.ci.agentless_mode_enabled
             check_dd_site(settings)
 
-            Datadog.logger.debug("CI visibility configured to use agentless transport")
+            Datadog.logger.debug("Test Optimization configured to use agentless transport")
 
             api = Transport::Api::Builder.build_agentless_api(settings)
             if api.nil?
               Datadog.logger.error do
-                "DATADOG CONFIGURATION - CI VISIBILITY - ATTENTION - " \
-                "Agentless mode was enabled but DD_API_KEY is not set: CI visibility is disabled. " \
+                "DATADOG CONFIGURATION - TEST OPTIMIZATION - ATTENTION - " \
+                "Agentless mode was enabled but DD_API_KEY is not set: Test Optimization is disabled. " \
                 "Please make sure to set valid api key in DD_API_KEY environment variable"
               end
 
-              # Tests are running without CI visibility enabled
+              # Tests are running without Test Optimization enabled
               settings.ci.enabled = false
             end
           else
-            Datadog.logger.debug("CI visibility configured to use agent transport via EVP proxy")
+            Datadog.logger.debug("Test Optimization configured to use agent transport via EVP proxy")
 
             api = Transport::Api::Builder.build_evp_proxy_api(settings)
             if api.nil?
@@ -262,7 +270,7 @@ module Datadog
           return if Ext::Settings::DD_SITE_ALLOWLIST.include?(settings.site)
 
           Datadog.logger.warn do
-            "CI VISIBILITY CONFIGURATION " \
+            "TEST OPTIMIZATION CONFIGURATION " \
             "Agentless mode was enabled but DD_SITE is not set to one of the following: #{Ext::Settings::DD_SITE_ALLOWLIST.join(", ")}. " \
             "Please make sure to set valid site in DD_SITE environment variable"
           end

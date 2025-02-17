@@ -3,7 +3,7 @@
 module Datadog
   module CI
     module Ext
-      # Defines span types for CI visibility
+      # Defines span types for Test Optimization
       # @public_api
       module AppTypes
         TYPE_TEST = "test"
