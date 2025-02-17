@@ -7,7 +7,7 @@ require_relative "../git/tree_uploader"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
-require_relative "../test_management/test_properties"
+require_relative "../test_management/tests_properties"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_optimisation/coverage/writer"
@@ -118,7 +118,8 @@ module Datadog
 
           @test_management = TestManagement::Component.new(
             enabled: settings.ci.test_management_enabled,
-            attempt_to_fix_retries_count: settings.ci.test_management_attempt_to_fix_retries_count
+            attempt_to_fix_retries_count: settings.ci.test_management_attempt_to_fix_retries_count,
+            tests_properties_client: TestManagement::TestsProperties.new(api: test_visibility_api)
           )
 
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component

@@ -13,7 +13,7 @@ module Datadog
   module CI
     module TestManagement
       # fetches and stores a map of tests to their test management properties from the backend
-      class TestProperties
+      class TestsProperties
         class Response
           def initialize(http_response)
             @http_response = http_response

@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module TestManagement
-      class TestProperties
+      class TestsProperties
         @api: Datadog::CI::Transport::Api::Base?
 
         class Response

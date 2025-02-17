@@ -6,9 +6,17 @@ module Datadog
 
         @attempt_to_fix_retries_count: Integer
 
-        def initialize: (enabled: bool, attempt_to_fix_retries_count: Integer) -> void
+        @tests_properties_client: Datadog::CI::TestManagement::TestsProperties
 
-        def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> nil
+        @tests_properties: Hash[String, Hash[String, bool]]
+
+        attr_reader enabled: bool
+
+        attr_reader tests_properties: Hash[String, Hash[String, bool]]
+
+        def initialize: (enabled: bool, attempt_to_fix_retries_count: Integer, tests_properties_client: Datadog::CI::TestManagement::TestsProperties) -> void
+
+        def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
       end
     end
   end

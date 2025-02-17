@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/test_management/test_properties"
+require_relative "../../../../lib/datadog/ci/test_management/tests_properties"
 
-RSpec.describe Datadog::CI::TestManagement::TestProperties do
+RSpec.describe Datadog::CI::TestManagement::TestsProperties do
   include_context "Telemetry spy"
 
   let(:api) { spy("api") }
