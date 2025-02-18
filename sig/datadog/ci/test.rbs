@@ -16,6 +16,9 @@ module Datadog
       def is_retry?: () -> bool
       def is_new?: () -> bool
       def any_retry_passed?: () -> bool
+      def quarantined?: () -> bool
+      def disabled?: () -> bool
+      def should_ignore_failures?: () -> bool
 
       private
 

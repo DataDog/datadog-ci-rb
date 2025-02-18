@@ -342,4 +342,103 @@ RSpec.describe Datadog::CI::Test do
       it { is_expected.to be false }
     end
   end
+
+  describe "#quarantined?" do
+    subject(:quarantined) { ci_test.quarantined? }
+
+    context "when tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_QUARANTINED).and_return("true")
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_QUARANTINED).and_return(nil) }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#disabled?" do
+    subject(:disabled) { ci_test.disabled? }
+
+    context "when tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_TEST_DISABLED).and_return("true")
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_TEST_DISABLED).and_return(nil) }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#should_ignore_failures?" do
+    subject(:should_ignore_failures) { ci_test.should_ignore_failures? }
+
+    context "when quarantined" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when disabled" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when any retry passed" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:any_retry_passed?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when neither is true" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:any_retry_passed?).and_return(false)
+        )
+      end
+
+      it { is_expected.to be false }
+    end
+  end
 end

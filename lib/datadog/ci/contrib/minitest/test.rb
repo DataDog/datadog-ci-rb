@@ -53,8 +53,8 @@ module Datadog
 
               finish_with_result(test_span, result_code)
 
-              # remove failures if test passed at least once on retries
-              self.failures = [] if test_span.any_retry_passed?
+              # remove failures if test passed at least once on retries or quarantined
+              self.failures = [] if test_span.should_ignore_failures?
 
               if Helpers.parallel?(self.class)
                 finish_with_result(test_span.test_suite, result_code)

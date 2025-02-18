@@ -58,8 +58,8 @@ module Datadog
                     test_span&.passed!
                   when :failed
                     test_span&.failed!(exception: execution_result.exception)
-                    # if any of the retries passed, we don't fail the test run
-                    @exception = nil if test_span&.any_retry_passed?
+                    # if any of the retries passed or test is quarantined, we don't fail the test run
+                    @exception = nil if test_span&.should_ignore_failures?
                   else
                     # :pending or nil
                     test_span&.skipped!(

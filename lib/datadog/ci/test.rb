@@ -80,6 +80,27 @@ module Datadog
         get_tag(Ext::Test::TAG_IS_NEW) == "true"
       end
 
+      # Returns "true" if this test is quarantined by Datadog test management.
+      # @return [Boolean] true if this test is quarantined, false otherwise.
+      def quarantined?
+        get_tag(Ext::Test::TAG_IS_QUARANTINED) == "true"
+      end
+
+      # Returns "true" if this test is disabled by Datadog test management.
+      # @return [Boolean] true if this test is disabled, false otherwise.
+      def disabled?
+        get_tag(Ext::Test::TAG_IS_TEST_DISABLED) == "true"
+      end
+
+      # Returns true if Datadog decides to ignore failures of this test so that it doesn't fail the build.
+      # Possible reasons for ignoring failures:
+      # - test was auto retried and passed at least once
+      # - test is quarantined
+      # @return [Boolean] true if the failure of this test should be ignored by test framework.
+      def should_ignore_failures?
+        quarantined? || disabled? || any_retry_passed?
+      end
+
       # Marks this test as unskippable by the Test Impact Analysis.
       # This must be done before the test execution starts.
       #
