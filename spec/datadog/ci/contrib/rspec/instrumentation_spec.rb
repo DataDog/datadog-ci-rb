@@ -1419,4 +1419,37 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
+
+  context "session with test management enabled and failing test is quarantined" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails." => {
+            "quarantined" => true
+          }
+        }
+      end
+    end
+
+    it "runs failing test but ignores its failure" do
+      rspec_session_run(with_failed_test: true)
+
+      expect(test_spans).to have(2).items
+      quarantined_test_span = test_spans.find { |span| span.name == "nested fails" }
+
+      expect(quarantined_test_span).to have_fail_status
+      expect(quarantined_test_span).to have_test_tag(:is_quarantined)
+      expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
+      expect(quarantined_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
 end
