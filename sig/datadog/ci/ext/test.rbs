@@ -106,6 +106,18 @@ module Datadog
 
         TAG_CODE_COVERAGE_LINES_PCT: "test.code_coverage.lines_pct"
 
+        TAG_TEST_MANAGEMENT_ENABLED: "test.test_management.enabled"
+
+        TAG_IS_ATTEMPT_TO_FIX: "test.test_management.is_attempt_to_fix"
+
+        TAG_IS_TEST_DISABLED: "test.test_management.is_test_disabled"
+
+        TAG_IS_QUARANTINED: "test.test_management.is_quarantined"
+
+        TAG_HAS_FAILED_ALL_RETRIES: "test.has_failed_all_retries"
+
+        TAG_ATTEMPT_TO_FIX_PASSED: "test.test_management.attempt_to_fix_passed"
+
         module Status
           PASS: "pass"
 

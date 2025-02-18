@@ -70,6 +70,14 @@ module Datadog
         # Tags for total code coverage
         TAG_CODE_COVERAGE_LINES_PCT = "test.code_coverage.lines_pct"
 
+        # Tags for test managament
+        TAG_TEST_MANAGEMENT_ENABLED = "test.test_management.enabled" # true if test management is enabled, set on test_session_end event
+        TAG_IS_ATTEMPT_TO_FIX = "test.test_management.is_attempt_to_fix" # true if test is marked as "attempted to fix"
+        TAG_IS_TEST_DISABLED = "test.test_management.is_test_disabled" # true if test is marked as disabled in test management view
+        TAG_IS_QUARANTINED = "test.test_management.is_quarantined" # true if test is quarantined in test management view
+        TAG_HAS_FAILED_ALL_RETRIES = "test.has_failed_all_retries" # true if test was retried and none of the retries passed
+        TAG_ATTEMPT_TO_FIX_PASSED = "test.test_management.attempt_to_fix_passed" # true if test was marked as "attempted to fix" and all of the retries passed
+
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
         SPAN_KIND_TEST = "test"

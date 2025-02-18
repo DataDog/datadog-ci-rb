@@ -16,6 +16,9 @@ module Datadog
 
         def configure(_, _)
         end
+
+        def tag_test_from_properties(_)
+        end
       end
     end
   end
