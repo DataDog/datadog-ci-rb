@@ -264,10 +264,15 @@ RSpec.describe Datadog::CI::Test do
     before do
       allow(ci_test).to receive(:test_suite).and_return(test_suite)
 
+      allow(test_suite).to receive(:any_test_retry_passed?).and_return(false)
+
       allow(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
       allow(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
       allow(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+      allow(tracer_span).to receive(:get_tag).with("test.test_management.is_quarantined").and_return(is_quarantined)
+      allow(tracer_span).to receive(:get_tag).with("test.test_management.is_test_disabled").and_return(nil)
     end
+    let(:is_quarantined) { nil }
 
     context "when test suite is set" do
       let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
@@ -284,6 +289,19 @@ RSpec.describe Datadog::CI::Test do
         ci_test.failed!
 
         expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "fail")
+      end
+
+      context "and when test is quarantined" do
+        let(:is_quarantined) { "true" }
+
+        it "records the test result as passed" do
+          expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
+          expect(tracer_span).to receive(:status=).with(1)
+
+          ci_test.failed!
+
+          expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "pass")
+        end
       end
 
       context "and when test was already executed" do

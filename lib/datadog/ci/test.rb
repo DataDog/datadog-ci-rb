@@ -137,7 +137,12 @@ module Datadog
       def failed!(exception: nil)
         super
 
-        record_test_result(Ext::Test::Status::FAIL)
+        # if we should ignore failures, we consider this test to be passed
+        if should_ignore_failures?
+          record_test_result(Ext::Test::Status::PASS)
+        else
+          record_test_result(Ext::Test::Status::FAIL)
+        end
       end
 
       # Sets the status of the span to "skip".
