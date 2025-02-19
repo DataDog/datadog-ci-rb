@@ -1504,11 +1504,15 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
 
-    it "runs failing test but ignores its failure" do
+    it "runs the test and retries it" do
       rspec_session_run
 
       # 1 original execution and 12 retries (attempt_to_fix_retries_count)
       expect(test_spans).to have(attempt_to_fix_retries_count + 1).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(0).items
+      expect(passed_spans).to have(attempt_to_fix_retries_count + 1).items
 
       # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
@@ -1519,14 +1523,20 @@ RSpec.describe "RSpec instrumentation" do
       expect(retry_reasons).to eq(["attempt_to_fix"] * attempt_to_fix_retries_count)
 
       # count how many tests were marked as attempt_to_fix
-      new_tests_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
-      expect(new_tests_count).to eq(attempt_to_fix_retries_count + 1)
+      attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
+      expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
 
       # count how many tests were marked as disabled
-      new_tests_count = test_spans.count { |span| span.get_tag("test.test_management.is_test_disabled") == "true" }
-      expect(new_tests_count).to eq(attempt_to_fix_retries_count + 1)
+      disabled_count = test_spans.count { |span| span.get_tag("test.test_management.is_test_disabled") == "true" }
+      expect(disabled_count).to eq(attempt_to_fix_retries_count + 1)
 
       # later: check test.test_management.attempt_to_fix_passed tag on the last retry here
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
     end
   end
 end
