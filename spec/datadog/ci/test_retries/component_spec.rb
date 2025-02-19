@@ -12,7 +12,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       early_flake_detection_enabled?: remote_early_flake_detection_enabled,
       known_tests_enabled?: remote_known_tests_enabled,
       slow_test_retries: slow_test_retries,
-      faulty_session_threshold: retry_new_tests_percentage_limit
+      faulty_session_threshold: retry_new_tests_percentage_limit,
+      test_management_enabled?: remote_test_management_enabled,
+      attempt_to_fix_retries_count: remote_attempt_to_fix_retries_count
     )
   end
 
@@ -22,12 +24,16 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:retry_new_tests_enabled) { true }
   let(:retry_new_tests_percentage_limit) { 30 }
   let(:retry_new_tests_max_attempts) { 5 }
+  let(:retry_flaky_fixed_tests_enabled) { true }
+  let(:retry_flaky_fixed_tests_max_attempts) { 42 }
 
   let(:session_total_tests_count) { 30 }
 
   let(:remote_flaky_test_retries_enabled) { false }
   let(:remote_early_flake_detection_enabled) { false }
   let(:remote_known_tests_enabled) { true }
+  let(:remote_test_management_enabled) { false }
+  let(:remote_attempt_to_fix_retries_count) { 43 }
 
   let(:slow_test_retries) do
     instance_double(
@@ -48,7 +54,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       retry_failed_tests_enabled: retry_failed_tests_enabled,
       retry_failed_tests_max_attempts: retry_failed_tests_max_attempts,
       retry_failed_tests_total_limit: retry_failed_tests_total_limit,
-      retry_new_tests_enabled: retry_new_tests_enabled
+      retry_new_tests_enabled: retry_new_tests_enabled,
+      retry_flaky_fixed_tests_enabled: retry_flaky_fixed_tests_enabled,
+      retry_flaky_fixed_tests_max_attempts: retry_flaky_fixed_tests_max_attempts
     )
   end
 
@@ -58,6 +66,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     let(:test_failed) { false }
     let(:test_skipped) { false }
     let(:test_is_new) { false }
+    let(:test_attempt_to_fix) { false }
 
     let(:test_span) do
       instance_double(
@@ -67,6 +76,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         failed?: test_failed,
         skipped?: test_skipped,
         is_new?: test_is_new,
+        attempt_to_fix?: test_attempt_to_fix,
         set_tag: nil
       )
     end
@@ -151,6 +161,23 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       end
     end
 
+    context "when retry flaky fixed tests is enabled" do
+      let(:remote_test_management_enabled) { true }
+
+      context "when test is attempted to be fixed" do
+        let(:test_attempt_to_fix) { true }
+
+        it "uses RetryFlakyFixed strategy" do
+          expect(subject).to be_a(Datadog::CI::TestRetries::Driver::RetryFlakyFixed)
+          expect(subject.max_attempts).to eq(remote_attempt_to_fix_retries_count)
+        end
+      end
+
+      context "when test is not attempted to be fixed" do
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+      end
+    end
+
     context "no retries are enabled" do
       it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
     end
@@ -179,12 +206,14 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         skipped?: false,
         type: "test",
         name: "mytest",
-        test_suite_name: "mysuite"
+        test_suite_name: "mysuite",
+        attempt_to_fix?: test_attempt_to_fix
       )
     end
 
     let(:test_failed) { false }
     let(:test_is_new) { false }
+    let(:test_attempt_to_fix) { false }
 
     subject(:runs_count) do
       runs_count = 0
@@ -239,6 +268,13 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         # 5.1s (5 retries) -> 10.1s (3 retries) -> 30.1s (2 retries) -> done => 3 executions in total
         it { is_expected.to eq(3) }
       end
+    end
+
+    context "when retry flaky fixed test strategy is used" do
+      let(:remote_test_management_enabled) { true }
+      let(:test_attempt_to_fix) { true }
+
+      it { is_expected.to eq(remote_attempt_to_fix_retries_count + 1) }
     end
   end
 end
