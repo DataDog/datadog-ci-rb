@@ -1487,4 +1487,46 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
     end
   end
+
+  context "session with test management enabled and a test is both disabled and attempt_to_fix" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo." => {
+            "quarantined" => false,
+            "disabled" => true,
+            "attempt_to_fix" => true
+          }
+        }
+      end
+    end
+
+    it "runs failing test but ignores its failure" do
+      rspec_session_run
+
+      # 1 original execution and 12 retries (attempt_to_fix_retries_count)
+      expect(test_spans).to have(attempt_to_fix_retries_count + 1).items
+
+      # count how many tests were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(attempt_to_fix_retries_count)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["attempt_to_fix"] * attempt_to_fix_retries_count)
+
+      # count how many tests were marked as attempt_to_fix
+      new_tests_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
+      expect(new_tests_count).to eq(attempt_to_fix_retries_count + 1)
+
+      # count how many tests were marked as disabled
+      new_tests_count = test_spans.count { |span| span.get_tag("test.test_management.is_test_disabled") == "true" }
+      expect(new_tests_count).to eq(attempt_to_fix_retries_count + 1)
+
+      # later: check test.test_management.attempt_to_fix_passed tag on the last retry here
+    end
+  end
 end
