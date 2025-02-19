@@ -121,6 +121,12 @@ module Datadog
           RETRY_FAILED = "atr"
           RETRY_FLAKY_FIXED = "attempt_to_fix"
         end
+
+        # possible reasons why a test was skipped
+        module SkipReason
+          TEST_IMPACT_ANALYSIS = "Skipped by Datadog's Test Impact Analysis"
+          TEST_MANAGEMENT_DISABLED = "Flaky test is disabled by Datadog"
+        end
       end
     end
   end

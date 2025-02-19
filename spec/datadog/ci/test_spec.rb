@@ -459,4 +459,47 @@ RSpec.describe Datadog::CI::Test do
       it { is_expected.to be false }
     end
   end
+
+  describe "#datadog_skip_reason" do
+    subject(:datadog_skip_reason) { ci_test.datadog_skip_reason }
+
+    context "when skipped by ITR" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_itr?).and_return(true)
+        )
+      end
+
+      it { is_expected.to eq(Datadog::CI::Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS) }
+    end
+
+    context "when disabled" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_itr?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(true)
+        )
+      end
+
+      it { is_expected.to eq(Datadog::CI::Ext::Test::SkipReason::TEST_MANAGEMENT_DISABLED) }
+    end
+
+    context "when neither is true" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_itr?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+  end
 end

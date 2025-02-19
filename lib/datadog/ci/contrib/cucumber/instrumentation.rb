@@ -37,8 +37,11 @@ module Datadog
             end
 
             def begin_scenario(test_case)
-              if Datadog::CI.active_test&.skipped_by_itr?
-                raise ::Cucumber::Core::Test::Result::Skipped, CI::Ext::Test::ITR_TEST_SKIP_REASON
+              datadog_test = Datadog::CI.active_test
+
+              # special case for cucumber-ruby: we skip quarantined tests, thus for cucumber quarantined is the same as disabled
+              if datadog_test&.skipped_by_itr? || datadog_test&.quarantined?
+                raise ::Cucumber::Core::Test::Result::Skipped, datadog_test.datadog_skip_reason
               end
 
               super

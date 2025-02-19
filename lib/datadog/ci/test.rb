@@ -62,12 +62,6 @@ module Datadog
         get_tag(Ext::Test::TAG_TEST_SESSION_ID)
       end
 
-      # Returns "true" if the test is skipped by the Test Impact Analysis.
-      # @return [Boolean] true if the test is skipped by the Test Impact Analysis, false otherwise.
-      def skipped_by_itr?
-        get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
-      end
-
       # Returns "true" if test span represents a retry.
       # @return [Boolean] true if this test is a retry, false otherwise.
       def is_retry?
@@ -90,15 +84,6 @@ module Datadog
       # @return [Boolean] true if this test is disabled, false otherwise.
       def disabled?
         get_tag(Ext::Test::TAG_IS_TEST_DISABLED) == "true"
-      end
-
-      # Returns true if Datadog decides to ignore failures of this test so that it doesn't fail the build.
-      # Possible reasons for ignoring failures:
-      # - test was auto retried and passed at least once
-      # - test is quarantined
-      # @return [Boolean] true if the failure of this test should be ignored by test framework.
-      def should_ignore_failures?
-        quarantined? || disabled? || any_retry_passed?
       end
 
       # Marks this test as unskippable by the Test Impact Analysis.
@@ -178,6 +163,25 @@ module Datadog
       # @internal
       def any_retry_passed?
         !!test_suite&.any_test_retry_passed?(datadog_test_id)
+      end
+
+      # @internal
+      def datadog_skip_reason
+        if skipped_by_itr?
+          Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS
+        elsif disabled? || quarantined?
+          Ext::Test::SkipReason::TEST_MANAGEMENT_DISABLED
+        end
+      end
+
+      # @internal
+      def should_ignore_failures?
+        quarantined? || disabled? || any_retry_passed?
+      end
+
+      # @internal
+      def skipped_by_itr?
+        get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
 
       private

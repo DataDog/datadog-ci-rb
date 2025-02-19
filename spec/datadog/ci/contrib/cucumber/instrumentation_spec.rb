@@ -13,6 +13,9 @@ RSpec.describe "Cucumber instrumentation" do
   let(:enable_retries_new) { false }
   let(:known_tests_set) { Set.new }
 
+  let(:enable_test_management) { false }
+  let(:test_properties_hash) { {} }
+
   before do
     allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(cucumber_features_root)
   end
@@ -31,6 +34,9 @@ RSpec.describe "Cucumber instrumentation" do
 
     let(:early_flake_detection_enabled) { enable_retries_new }
     let(:known_tests) { known_tests_set }
+
+    let(:test_management_enabled) { enable_test_management }
+    let(:test_properties) { test_properties_hash }
 
     let(:bundle_path) { "step_definitions/helpers" }
   end
@@ -662,6 +668,38 @@ RSpec.describe "Cucumber instrumentation" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+    end
+  end
+
+  context "executing failing test scenario with quarantined test" do
+    let(:feature_file_to_run) { "failing.feature" }
+
+    let(:enable_test_management) { true }
+    let(:test_properties_hash) do
+      {
+        "Datadog integration - test failing features at spec/datadog/ci/contrib/cucumber/features/failing.feature.cucumber failing scenario." => {
+          "quarantined" => true,
+          "disabled" => false
+        }
+      }
+    end
+
+    it "skips the test without failing the build" do
+      expect(test_spans).to have(1).item
+
+      quarantined_test_span = test_spans.first
+
+      expect(quarantined_test_span).to have_skip_status
+      expect(quarantined_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(quarantined_test_span).to have_test_tag(:is_quarantined)
+      expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
+      expect(quarantined_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_skip_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
     end
   end
 end

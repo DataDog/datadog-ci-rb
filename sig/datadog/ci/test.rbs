@@ -19,6 +19,7 @@ module Datadog
       def quarantined?: () -> bool
       def disabled?: () -> bool
       def should_ignore_failures?: () -> bool
+      def datadog_skip_reason: () -> String?
 
       private
 

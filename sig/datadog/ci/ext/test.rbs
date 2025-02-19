@@ -141,6 +141,11 @@ module Datadog
 
           RETRY_FLAKY_FIXED: "attempt_to_fix"
         end
+
+        module SkipReason
+          TEST_IMPACT_ANALYSIS: "Skipped by Datadog's Test Impact Analysis"
+          TEST_MANAGEMENT_DISABLED: "Flaky test is disabled by Datadog"
+        end
       end
     end
   end
