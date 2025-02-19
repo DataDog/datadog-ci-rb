@@ -72,8 +72,6 @@ module Datadog
 
         ITR_TEST_SKIPPING_MODE: "test"
 
-        ITR_TEST_SKIP_REASON: String
-
         ITR_UNSKIPPABLE_OPTION: :datadog_itr_unskippable
 
         TAG_IS_RUM_ACTIVE: "test.is_rum_active"

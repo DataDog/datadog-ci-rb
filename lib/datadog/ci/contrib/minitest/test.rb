@@ -44,7 +44,7 @@ module Datadog
                 service: datadog_configuration[:service_name]
               )
               test_span&.itr_unskippable! if self.class.dd_suite_unskippable? || self.class.dd_test_unskippable?(name)
-              skip(CI::Ext::Test::ITR_TEST_SKIP_REASON) if test_span&.skipped_by_itr?
+              skip(test_span&.datadog_skip_reason) if test_span&.should_skip?
             end
 
             def after_teardown

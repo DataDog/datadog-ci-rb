@@ -40,7 +40,7 @@ module Datadog
               datadog_test = Datadog::CI.active_test
 
               # special case for cucumber-ruby: we skip quarantined tests, thus for cucumber quarantined is the same as disabled
-              if datadog_test&.skipped_by_itr? || datadog_test&.quarantined?
+              if datadog_test&.should_skip? || datadog_test&.quarantined?
                 raise ::Cucumber::Core::Test::Result::Skipped, datadog_test.datadog_skip_reason
               end
 

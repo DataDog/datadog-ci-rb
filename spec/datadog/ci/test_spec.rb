@@ -101,8 +101,8 @@ RSpec.describe Datadog::CI::Test do
     it { is_expected.to eq("foo/bar.rb") }
   end
 
-  describe "#skipped_by_itr?" do
-    subject(:skipped_by_itr) { ci_test.skipped_by_itr? }
+  describe "#skipped_by_test_impact_analysis?" do
+    subject(:skipped_by_itr) { ci_test.skipped_by_test_impact_analysis? }
 
     context "when tag is set" do
       before do
@@ -126,7 +126,7 @@ RSpec.describe Datadog::CI::Test do
 
     context "when test is not skipped by ITR" do
       before do
-        allow(ci_test).to receive(:skipped_by_itr?).and_return(false)
+        allow(ci_test).to receive(:skipped_by_test_impact_analysis?).and_return(false)
         expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
       end
 
@@ -139,7 +139,7 @@ RSpec.describe Datadog::CI::Test do
 
     context "when test is skipped by ITR" do
       before do
-        allow(ci_test).to receive(:skipped_by_itr?).and_return(true)
+        allow(ci_test).to receive(:skipped_by_test_impact_analysis?).and_return(true)
         expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
         expect(tracer_span).to receive(:clear_tag).with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
         expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_FORCED_RUN, "true")
@@ -466,7 +466,7 @@ RSpec.describe Datadog::CI::Test do
     context "when skipped by ITR" do
       before do
         allow(ci_test).to(
-          receive(:skipped_by_itr?).and_return(true)
+          receive(:skipped_by_test_impact_analysis?).and_return(true)
         )
       end
 
@@ -476,7 +476,7 @@ RSpec.describe Datadog::CI::Test do
     context "when disabled" do
       before do
         allow(ci_test).to(
-          receive(:skipped_by_itr?).and_return(false)
+          receive(:skipped_by_test_impact_analysis?).and_return(false)
         )
         allow(ci_test).to(
           receive(:disabled?).and_return(true)
@@ -489,7 +489,7 @@ RSpec.describe Datadog::CI::Test do
     context "when neither is true" do
       before do
         allow(ci_test).to(
-          receive(:skipped_by_itr?).and_return(false)
+          receive(:skipped_by_test_impact_analysis?).and_return(false)
         )
         allow(ci_test).to(
           receive(:disabled?).and_return(false)
@@ -500,6 +500,46 @@ RSpec.describe Datadog::CI::Test do
       end
 
       it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#should_skip?" do
+    subject(:should_skip) { ci_test.should_skip? }
+
+    context "when skipped by ITR" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when disabled" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when neither is true" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+      end
+
+      it { is_expected.to be false }
     end
   end
 end

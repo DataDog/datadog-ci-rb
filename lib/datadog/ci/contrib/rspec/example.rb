@@ -41,7 +41,7 @@ module Datadog
                 ) do |test_span|
                   test_span&.itr_unskippable! if datadog_unskippable?
 
-                  metadata[:skip] = CI::Ext::Test::ITR_TEST_SKIP_REASON if test_span&.skipped_by_itr?
+                  metadata[:skip] = test_span&.datadog_skip_reason if test_span&.should_skip?
 
                   # before each run remove any previous exception
                   @exception = nil

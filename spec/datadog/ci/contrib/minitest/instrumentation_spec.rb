@@ -1469,4 +1469,57 @@ RSpec.describe "Minitest instrumentation" do
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
     end
   end
+
+  context "with test management enabled and a disabled test" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "DisabledTestSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_failed." => {
+            "quarantined" => false,
+            "disabled" => true,
+            "attempt_to_fix" => false
+          }
+        }
+      end
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class DisabledTestSuite < Minitest::Test
+        def test_passed
+          assert true
+        end
+
+        def test_failed
+          assert 1 + 1 == 3
+        end
+      end
+    end
+
+    it "runs failing test but does not fail the build" do
+      expect(test_spans).to have(2).items
+
+      disabled_test_span = test_spans.find { |span| span.name == "test_failed" }
+
+      expect(disabled_test_span).to have_skip_status
+      expect(disabled_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(disabled_test_span).not_to have_test_tag(:is_quarantined)
+      expect(disabled_test_span).to have_test_tag(:is_test_disabled)
+      expect(disabled_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
 end

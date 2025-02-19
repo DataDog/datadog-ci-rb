@@ -172,7 +172,7 @@ module Datadog
           @mutex.synchronize do
             @total_tests_count += 1
 
-            return if !test.skipped? || !test.skipped_by_itr?
+            return if !test.skipped? || !test.skipped_by_test_impact_analysis?
 
             if forked?
               Datadog.logger.warn { "ITR is not supported for forking test runners yet" }

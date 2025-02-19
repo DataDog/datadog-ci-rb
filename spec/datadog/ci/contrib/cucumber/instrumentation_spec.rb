@@ -702,4 +702,36 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
     end
   end
+
+  context "executing failing test scenario with disabled test" do
+    let(:feature_file_to_run) { "failing.feature" }
+
+    let(:enable_test_management) { true }
+    let(:test_properties_hash) do
+      {
+        "Datadog integration - test failing features at spec/datadog/ci/contrib/cucumber/features/failing.feature.cucumber failing scenario." => {
+          "quarantined" => false,
+          "disabled" => true
+        }
+      }
+    end
+
+    it "skips the test without failing the build" do
+      expect(test_spans).to have(1).item
+
+      disabled_test_span = test_spans.first
+
+      expect(disabled_test_span).to have_skip_status
+      expect(disabled_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(disabled_test_span).not_to have_test_tag(:is_quarantined)
+      expect(disabled_test_span).to have_test_tag(:is_test_disabled)
+      expect(disabled_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_skip_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
 end

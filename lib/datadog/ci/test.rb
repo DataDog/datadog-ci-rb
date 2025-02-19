@@ -100,7 +100,7 @@ module Datadog
         TestOptimisation::Telemetry.itr_unskippable
         set_tag(Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
 
-        if skipped_by_itr?
+        if skipped_by_test_impact_analysis?
           clear_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
 
           TestOptimisation::Telemetry.itr_forced_run
@@ -167,11 +167,16 @@ module Datadog
 
       # @internal
       def datadog_skip_reason
-        if skipped_by_itr?
+        if skipped_by_test_impact_analysis?
           Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS
         elsif disabled? || quarantined?
           Ext::Test::SkipReason::TEST_MANAGEMENT_DISABLED
         end
+      end
+
+      # @internal
+      def should_skip?
+        skipped_by_test_impact_analysis? || disabled?
       end
 
       # @internal
@@ -180,7 +185,7 @@ module Datadog
       end
 
       # @internal
-      def skipped_by_itr?
+      def skipped_by_test_impact_analysis?
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
 

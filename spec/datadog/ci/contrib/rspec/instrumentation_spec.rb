@@ -1452,4 +1452,39 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
     end
   end
+
+  context "session with test management enabled and failing test is disabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails." => {
+            "quarantined" => false,
+            "disabled" => true
+          }
+        }
+      end
+    end
+
+    it "runs failing test but ignores its failure" do
+      rspec_session_run(with_failed_test: true)
+
+      expect(test_spans).to have(2).items
+      disabled_test_span = test_spans.find { |span| span.name == "nested fails" }
+
+      expect(disabled_test_span).to have_skip_status
+      expect(disabled_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(disabled_test_span).not_to have_test_tag(:is_quarantined)
+      expect(disabled_test_span).to have_test_tag(:is_test_disabled)
+      expect(disabled_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
 end

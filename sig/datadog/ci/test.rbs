@@ -10,7 +10,7 @@ module Datadog
       def test_suite_name: () -> String?
       def test_module_id: () -> String?
       def test_session_id: () -> String?
-      def skipped_by_itr?: () -> bool
+      def skipped_by_test_impact_analysis?: () -> bool
       def itr_unskippable!: () -> void
       def parameters: () -> String?
       def is_retry?: () -> bool
@@ -20,6 +20,7 @@ module Datadog
       def disabled?: () -> bool
       def should_ignore_failures?: () -> bool
       def datadog_skip_reason: () -> String?
+      def should_skip?: () -> bool
 
       private
 
