@@ -86,6 +86,12 @@ module Datadog
         get_tag(Ext::Test::TAG_IS_TEST_DISABLED) == "true"
       end
 
+      # Returns "true" if this flaky test has fixing attempts (determined by Datadog backend).
+      # @return [Boolean] true if this test is attempted to be fixed.
+      def attempt_to_fix?
+        get_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX) == "true"
+      end
+
       # Marks this test as unskippable by the Test Impact Analysis.
       # This must be done before the test execution starts.
       #
@@ -176,7 +182,7 @@ module Datadog
 
       # @internal
       def should_skip?
-        skipped_by_test_impact_analysis? || disabled?
+        skipped_by_test_impact_analysis? || (disabled? && !attempt_to_fix?)
       end
 
       # @internal

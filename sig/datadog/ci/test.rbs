@@ -18,6 +18,7 @@ module Datadog
       def any_retry_passed?: () -> bool
       def quarantined?: () -> bool
       def disabled?: () -> bool
+      def attempt_to_fix?: () -> bool
       def should_ignore_failures?: () -> bool
       def datadog_skip_reason: () -> String?
       def should_skip?: () -> bool

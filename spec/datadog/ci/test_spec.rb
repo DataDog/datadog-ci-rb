@@ -524,9 +524,19 @@ RSpec.describe Datadog::CI::Test do
         allow(ci_test).to(
           receive(:disabled?).and_return(true)
         )
+        allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(attempt_to_fix)
+        )
       end
+      let(:attempt_to_fix) { false }
 
       it { is_expected.to be true }
+
+      context "and attempt to fix" do
+        let(:attempt_to_fix) { true }
+
+        it { is_expected.to be false }
+      end
     end
 
     context "when neither is true" do
