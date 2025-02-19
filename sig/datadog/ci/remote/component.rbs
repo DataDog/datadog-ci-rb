@@ -10,6 +10,8 @@ module Datadog
 
         private
 
+        def test_management: () -> Datadog::CI::TestManagement::Component
+
         def test_visibility: () -> Datadog::CI::TestVisibility::Component
 
         def test_optimisation: () -> Datadog::CI::TestOptimisation::Component

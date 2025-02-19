@@ -14,6 +14,8 @@ module Datadog
         @known_tests_enabled: bool
         @slow_test_retries: Datadog::CI::Remote::SlowTestRetries
         @faulty_session_threshold: Integer
+        @test_management_enabled: bool
+        @attempt_to_fix_retries_count: Integer
 
         def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
 
@@ -39,9 +41,15 @@ module Datadog
 
         def faulty_session_threshold: () -> Integer
 
+        def test_management_enabled?: () -> bool
+
+        def attempt_to_fix_retries_count: () -> Integer
+
         private
 
         def early_flake_detection_payload: () -> Hash[String, untyped]
+
+        def test_management_payload: () -> Hash[String, untyped]
 
         def default_payload: () -> Hash[String, untyped]
       end

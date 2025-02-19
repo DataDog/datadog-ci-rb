@@ -116,6 +116,18 @@ module Datadog
                 o.default true
               end
 
+              option :test_management_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_TEST_MANAGEMENT_ENABLED
+                o.default true
+              end
+
+              option :test_management_attempt_to_fix_retries_count do |o|
+                o.type :int
+                o.env CI::Ext::Settings::ENV_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES
+                o.default 20
+              end
+
               # internal only
               option :discard_traces do |o|
                 o.type :bool

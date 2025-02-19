@@ -10,7 +10,7 @@ require "datadog"
 require "datadog/core"
 
 module Datadog
-  # Datadog CI visibility public API.
+  # Datadog Test Optimization public API.
   #
   # @public_api
   module CI
@@ -319,16 +319,16 @@ module Datadog
       # @return [Object] If a block is provided, returns the result of the block execution.
       # @return [Datadog::CI::Span] If no block is provided, returns the active,
       #         unfinished {Datadog::CI::Span}.
-      # @return [nil] if CI visibility is disabled
-      # @raise [ReservedTypeError] if provided type is reserved for Datadog CI visibility
+      # @return [nil] if Test Optimization is disabled
+      # @raise [ReservedTypeError] if provided type is reserved for Datadog Test Optimization
       # @yield Optional block where newly created {Datadog::CI::Span} captures the execution.
       # @yieldparam [Datadog::CI::Span] ci_span the newly created and active [Datadog::CI::Span]
-      # @yieldparam [nil] ci_span if CI visibility is disabled
+      # @yieldparam [nil] ci_span if Test Optimization is disabled
       def trace(span_name, type: "span", tags: {}, &block)
         if Ext::AppTypes::CI_SPAN_TYPES.include?(type)
           raise(
             ReservedTypeError,
-            "Span type #{type} is reserved for Datadog CI visibility. " \
+            "Span type #{type} is reserved for Datadog Test Optimization. " \
               "Reserved types are: #{Ext::AppTypes::CI_SPAN_TYPES}"
           )
         end

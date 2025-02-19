@@ -1,0 +1,33 @@
+module Datadog
+  module CI
+    module TestManagement
+      class TestsProperties
+        @api: Datadog::CI::Transport::Api::Base?
+
+        class Response
+          @http_response: Datadog::CI::Transport::Adapters::Net::Response?
+
+          @json: Hash[String, untyped]?
+
+          def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
+
+          def ok?: () -> bool
+
+          def tests: () -> Hash[String, Hash[String, bool]]
+
+          private
+
+          def payload: () -> Hash[String, untyped]
+        end
+
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?) -> void
+
+        def fetch: (Datadog::CI::TestSession test_session) -> Hash[String, Hash[String, bool]]
+
+        private
+
+        def payload: (Datadog::CI::TestSession test_session) -> String
+      end
+    end
+  end
+end

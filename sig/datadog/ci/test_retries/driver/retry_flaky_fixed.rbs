@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module TestRetries
+      module Driver
+        class RetryFlakyFixed < Base
+          @attempts: Integer
+
+          @max_attempts: Integer
+
+          def initialize: (max_attempts: Integer) -> void
+
+          def should_retry?: () -> bool
+
+          def record_retry: (Datadog::CI::Test test_span) -> void
+
+          def retry_reason: () -> String
+        end
+      end
+    end
+  end
+end

@@ -6,6 +6,9 @@ require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
+require_relative "../test_management/component"
+require_relative "../test_management/null_component"
+require_relative "../test_management/tests_properties"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_optimisation/coverage/writer"
@@ -30,7 +33,7 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries
+        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries, :test_management
 
         def initialize(settings)
           @test_optimisation = nil
@@ -38,6 +41,7 @@ module Datadog
           @git_tree_upload_worker = DummyWorker.new
           @ci_remote = nil
           @test_retries = TestRetries::NullComponent.new
+          @test_management = TestManagement::NullComponent.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -58,7 +62,7 @@ module Datadog
         def activate_ci!(settings)
           unless settings.tracing.enabled
             Datadog.logger.error(
-              "CI visibility requires tracing to be enabled. Disabling CI visibility. " \
+              "Test Optimization requires tracing to be enabled. Disabling Test Optimization. " \
               "NOTE: if you didn't disable tracing intentionally, add `c.tracing.enabled = true` to " \
               "your Datadog.configure block."
             )
@@ -110,8 +114,16 @@ module Datadog
             retry_failed_tests_enabled: settings.ci.retry_failed_tests_enabled,
             retry_failed_tests_max_attempts: settings.ci.retry_failed_tests_max_attempts,
             retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit,
-            retry_new_tests_enabled: settings.ci.retry_new_tests_enabled
+            retry_new_tests_enabled: settings.ci.retry_new_tests_enabled,
+            retry_flaky_fixed_tests_enabled: settings.ci.test_management_enabled,
+            retry_flaky_fixed_tests_max_attempts: settings.ci.test_management_attempt_to_fix_retries_count
           )
+
+          @test_management = TestManagement::Component.new(
+            enabled: settings.ci.test_management_enabled,
+            tests_properties_client: TestManagement::TestsProperties.new(api: test_visibility_api)
+          )
+
           # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
           @test_optimisation = build_test_optimisation(settings, test_visibility_api)
           @test_visibility = TestVisibility::Component.new(
@@ -125,7 +137,7 @@ module Datadog
           if settings.ci.itr_code_coverage_use_single_threaded_mode &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
             Datadog.logger.warn(
-              "Intelligent test runner: Single threaded coverage mode is incompatible with allocation tracing. " \
+              "Test Impact Analysis: Single threaded coverage mode is incompatible with allocation tracing. " \
               "Allocation tracing will be disabled. It means that test impact analysis will not be able to detect " \
               "instantiations of objects in your code, which is important for ActiveRecord models. " \
               "Please add your app/model folder to the list of tracked files or disable single threaded coverage mode."
@@ -137,7 +149,7 @@ module Datadog
           if RUBY_VERSION.start_with?("3.2.") && RUBY_VERSION < "3.2.3" &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
             Datadog.logger.warn(
-              "Intelligent test runner: Allocation tracing is not supported in Ruby versions 3.2.0, 3.2.1 and 3.2.2 and will be forcibly " \
+              "Test Impact Analysis: Allocation tracing is not supported in Ruby versions 3.2.0, 3.2.1 and 3.2.2 and will be forcibly " \
               "disabled. This is due to a VM bug that can lead to crashes (https://bugs.ruby-lang.org/issues/19482). " \
               "Please update your Ruby version or add your app/model folder to the list of tracked files." \
               "Set env variable DD_CIVISIBILITY_ITR_TEST_IMPACT_ANALYSIS_USE_ALLOCATION_TRACING to 0 to disable this warning."
@@ -161,21 +173,21 @@ module Datadog
           if settings.ci.agentless_mode_enabled
             check_dd_site(settings)
 
-            Datadog.logger.debug("CI visibility configured to use agentless transport")
+            Datadog.logger.debug("Test Optimization configured to use agentless transport")
 
             api = Transport::Api::Builder.build_agentless_api(settings)
             if api.nil?
               Datadog.logger.error do
-                "DATADOG CONFIGURATION - CI VISIBILITY - ATTENTION - " \
-                "Agentless mode was enabled but DD_API_KEY is not set: CI visibility is disabled. " \
+                "DATADOG CONFIGURATION - TEST OPTIMIZATION - ATTENTION - " \
+                "Agentless mode was enabled but DD_API_KEY is not set: Test Optimization is disabled. " \
                 "Please make sure to set valid api key in DD_API_KEY environment variable"
               end
 
-              # Tests are running without CI visibility enabled
+              # Tests are running without Test Optimization enabled
               settings.ci.enabled = false
             end
           else
-            Datadog.logger.debug("CI visibility configured to use agent transport via EVP proxy")
+            Datadog.logger.debug("Test Optimization configured to use agent transport via EVP proxy")
 
             api = Transport::Api::Builder.build_evp_proxy_api(settings)
             if api.nil?
@@ -262,7 +274,7 @@ module Datadog
           return if Ext::Settings::DD_SITE_ALLOWLIST.include?(settings.site)
 
           Datadog.logger.warn do
-            "CI VISIBILITY CONFIGURATION " \
+            "TEST OPTIMIZATION CONFIGURATION " \
             "Agentless mode was enabled but DD_SITE is not set to one of the following: #{Ext::Settings::DD_SITE_ALLOWLIST.join(", ")}. " \
             "Please make sure to set valid site in DD_SITE environment variable"
           end

@@ -1,0 +1,25 @@
+module Datadog
+  module CI
+    module TestRetries
+      module Strategy
+        class RetryFlakyFixed < Base
+          @enabled: bool
+
+          @max_attempts: Integer
+
+          attr_reader enabled: bool
+
+          attr_reader max_attempts: Integer
+
+          def initialize: (enabled: bool, max_attempts: Integer) -> void
+
+          def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> untyped
+
+          def covers?: (Datadog::CI::Test test_span) -> bool
+
+          def build_driver: (Datadog::CI::Test test_span) -> Datadog::CI::TestRetries::Driver::Base
+        end
+      end
+    end
+  end
+end

@@ -53,6 +53,10 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
               "5m" => 2
             },
             "faulty_session_threshold" => 30
+          },
+          "test_management" => {
+            "enabled" => "0",
+            "attempt_to_fix_retries" => 40
           }
         }
       end
@@ -126,6 +130,8 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
               ]
             )
             expect(response.faulty_session_threshold).to eq(30)
+            expect(response.test_management_enabled?).to be(false)
+            expect(response.attempt_to_fix_retries_count).to eq(40)
 
             metric = telemetry_metric(:inc, "git_requests.settings_response")
             expect(metric.tags).to eq(

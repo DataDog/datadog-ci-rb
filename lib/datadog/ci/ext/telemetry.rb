@@ -60,6 +60,12 @@ module Datadog
         METRIC_KNOWN_TESTS_RESPONSE_BYTES = "known_tests.response_bytes"
         METRIC_KNOWN_TESTS_RESPONSE_TESTS = "known_tests.response_tests"
 
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST = "test_management_tests.request"
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST_MS = "test_management_tests.request_ms"
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST_ERRORS = "test_management_tests.request_errors"
+        METRIC_TEST_MANAGEMENT_TESTS_RESPONSE_BYTES = "test_management_tests.response_bytes"
+        METRIC_TEST_MANAGEMENT_TESTS_RESPONSE_TESTS = "test_management_tests.response_tests"
+
         METRIC_TEST_SESSION = "test_session"
 
         TAG_TEST_FRAMEWORK = "test_framework"

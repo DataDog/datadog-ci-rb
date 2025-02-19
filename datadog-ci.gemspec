@@ -13,9 +13,9 @@ Gem::Specification.new do |spec|
   spec.authors = ["Datadog, Inc."]
   spec.email = ["dev@datadoghq.com"]
 
-  spec.summary = "Datadog CI visibility for your ruby application"
+  spec.summary = "Datadog Test Optimization for your ruby application"
   spec.description = <<-DESC
-  datadog-ci is a Datadog's CI visibility library for Ruby. It traces
+  datadog-ci is a Datadog's Test Optimization library for Ruby. It traces
   tests as they are being executed and brings developers visibility into
   their CI pipelines.
   DESC

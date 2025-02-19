@@ -1417,4 +1417,177 @@ RSpec.describe "Minitest instrumentation" do
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
+
+  context "with test management enabled and one quarantined test" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "QuarantinedTestSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_failed." => {
+            "quarantined" => true,
+            "disabled" => false,
+            "attempt_to_fix" => false
+          }
+        }
+      end
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class QuarantinedTestSuite < Minitest::Test
+        def test_passed
+          assert true
+        end
+
+        def test_failed
+          assert 1 + 1 == 3
+        end
+      end
+    end
+
+    it "runs failing test but does not fail the build" do
+      expect(test_spans).to have(2).items
+
+      quarantined_test_span = test_spans.find { |span| span.name == "test_failed" }
+
+      expect(quarantined_test_span).to have_fail_status
+      expect(quarantined_test_span).to have_test_tag(:is_quarantined)
+      expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
+      expect(quarantined_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
+  context "with test management enabled and a disabled test" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "DisabledTestSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_failed." => {
+            "quarantined" => false,
+            "disabled" => true,
+            "attempt_to_fix" => false
+          }
+        }
+      end
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class DisabledTestSuite < Minitest::Test
+        def test_passed
+          assert true
+        end
+
+        def test_failed
+          assert 1 + 1 == 3
+        end
+      end
+    end
+
+    it "runs failing test but does not fail the build" do
+      expect(test_spans).to have(2).items
+
+      disabled_test_span = test_spans.find { |span| span.name == "test_failed" }
+
+      expect(disabled_test_span).to have_skip_status
+      expect(disabled_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(disabled_test_span).not_to have_test_tag(:is_quarantined)
+      expect(disabled_test_span).to have_test_tag(:is_test_disabled)
+      expect(disabled_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
+  context "with test management enabled and a test attempted to be fixed" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "AttemptToFixTestSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_failed." => {
+            "quarantined" => true,
+            "disabled" => false,
+            "attempt_to_fix" => true
+          }
+        }
+      end
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class AttemptToFixTestSuite < Minitest::Test
+        def test_passed
+          assert true
+        end
+
+        def test_failed
+          assert 1 + 1 == 3
+        end
+      end
+    end
+
+    it "runs failing test and retries it but does not fail the build" do
+      # 1 original execution and 12 retries (attempt_to_fix_retries_count) and one passed test
+      expect(test_spans).to have(attempt_to_fix_retries_count + 2).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(attempt_to_fix_retries_count + 1).items
+      expect(passed_spans).to have(1).item
+
+      # count how many tests were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(attempt_to_fix_retries_count)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["attempt_to_fix"] * attempt_to_fix_retries_count)
+
+      # count how many tests were marked as attempt_to_fix
+      attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
+      expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
+
+      # count how many tests were marked as quarantined
+      quarantined_count = test_spans.count { |span| span.get_tag("test.test_management.is_quarantined") == "true" }
+      expect(quarantined_count).to eq(attempt_to_fix_retries_count + 1)
+
+      # later: check has_failed_all_retries tag here
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
 end
