@@ -69,6 +69,12 @@ module Datadog
             tags[Ext::Telemetry::TAG_EARLY_FLAKE_DETECTION_ABORT_REASON] = early_flake_detection_abort_reason
           end
 
+          # test management tags
+          tags[Ext::Telemetry::TAG_IS_ATTEMPT_TO_FIX] = "true" if span.get_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX)
+          tags[Ext::Telemetry::TAG_IS_QUARANTINED] = "true" if span.get_tag(Ext::Test::TAG_IS_QUARANTINED)
+          tags[Ext::Telemetry::TAG_IS_TEST_DISABLED] = "true" if span.get_tag(Ext::Test::TAG_IS_TEST_DISABLED)
+          tags[Ext::Telemetry::TAG_HAS_FAILED_ALL_RETRIES] = "true" if span.get_tag(Ext::Test::TAG_HAS_FAILED_ALL_RETRIES)
+
           tags
         end
 

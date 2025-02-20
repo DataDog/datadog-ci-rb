@@ -115,6 +115,10 @@ module Datadog
         TAG_RETRY_REASON: "retry_reason"
 
         TAG_IS_NEW: "is_new"
+        TAG_IS_ATTEMPT_TO_FIX: "is_attempt_to_fix"
+        TAG_IS_QUARANTINED: "is_quarantined"
+        TAG_IS_TEST_DISABLED: "is_test_disabled"
+        TAG_HAS_FAILED_ALL_RETRIES: "has_failed_all_retries"
 
         TAG_LIBRARY: "library"
 

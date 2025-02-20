@@ -86,6 +86,10 @@ module Datadog
         TAG_REQUEST_COMPRESSED = "rq_compressed"
         TAG_RESPONSE_COMPRESSED = "rs_compressed"
         TAG_COMMAND = "command"
+        TAG_IS_ATTEMPT_TO_FIX = "is_attempt_to_fix"
+        TAG_IS_QUARANTINED = "is_quarantined"
+        TAG_IS_TEST_DISABLED = "is_test_disabled"
+        TAG_HAS_FAILED_ALL_RETRIES = "has_failed_all_retries"
         # tags for git_requests.settings_response metric
         TAG_COVERAGE_ENABLED = "coverage_enabled"
         TAG_ITR_ENABLED = "itr_enabled"

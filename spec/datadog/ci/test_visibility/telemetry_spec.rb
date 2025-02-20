@@ -245,7 +245,9 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
             Datadog::CI::Ext::Test::TAG_BROWSER_DRIVER => "selenium",
             Datadog::CI::Ext::Test::TAG_IS_RETRY => "true",
             Datadog::CI::Ext::Test::TAG_RETRY_REASON => "atr",
-            Datadog::CI::Ext::Test::TAG_IS_NEW => "true"
+            Datadog::CI::Ext::Test::TAG_IS_NEW => "true",
+            Datadog::CI::Ext::Test::TAG_IS_ATTEMPT_TO_FIX => "true",
+            Datadog::CI::Ext::Test::TAG_HAS_FAILED_ALL_RETRIES => "true"
           }
         )
       end
@@ -259,7 +261,9 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
           Datadog::CI::Ext::Telemetry::TAG_BROWSER_DRIVER => "selenium",
           Datadog::CI::Ext::Telemetry::TAG_IS_RETRY => "true",
           Datadog::CI::Ext::Telemetry::TAG_RETRY_REASON => "atr",
-          Datadog::CI::Ext::Telemetry::TAG_IS_NEW => "true"
+          Datadog::CI::Ext::Telemetry::TAG_IS_NEW => "true",
+          Datadog::CI::Ext::Telemetry::TAG_IS_ATTEMPT_TO_FIX => "true",
+          Datadog::CI::Ext::Telemetry::TAG_HAS_FAILED_ALL_RETRIES => "true"
         }
       end
 
