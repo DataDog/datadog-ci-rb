@@ -11,6 +11,10 @@ module Datadog
 
       def any_test_retry_passed?: (String) -> bool
 
+      def all_executions_failed?: (String) -> bool
+
+      def all_executions_passed?: (String) -> bool
+
       private
 
       def set_status_from_stats!: () -> void

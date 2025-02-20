@@ -124,6 +124,10 @@ module Datadog
           SKIP: "skip"
         end
 
+        module ExecutionStatsStatus
+          FAIL_IGNORED: "fail_ignored"
+        end
+
         module Type
           TEST: "test"
 

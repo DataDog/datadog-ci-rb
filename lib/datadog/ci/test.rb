@@ -130,7 +130,8 @@ module Datadog
 
         # if we should ignore failures, we consider this test to be passed
         if should_ignore_failures?
-          record_test_result(Ext::Test::Status::PASS)
+          # use a special "fail_ignored" status to mark this test as failed but ignored
+          record_test_result(Ext::Test::ExecutionStatsStatus::FAIL_IGNORED)
         else
           record_test_result(Ext::Test::Status::FAIL)
         end
@@ -169,6 +170,16 @@ module Datadog
       # @internal
       def any_retry_passed?
         !!test_suite&.any_test_retry_passed?(datadog_test_id)
+      end
+
+      # @internal
+      def all_executions_failed?
+        !!test_suite&.all_executions_failed?(datadog_test_id)
+      end
+
+      # @internal
+      def all_executions_passed?
+        !!test_suite&.all_executions_passed?(datadog_test_id)
       end
 
       # @internal

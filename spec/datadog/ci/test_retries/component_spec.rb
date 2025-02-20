@@ -207,7 +207,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         type: "test",
         name: "mytest",
         test_suite_name: "mysuite",
-        attempt_to_fix?: test_attempt_to_fix
+        attempt_to_fix?: test_attempt_to_fix,
+        all_executions_failed?: false,
+        all_executions_passed?: false
       )
     end
 

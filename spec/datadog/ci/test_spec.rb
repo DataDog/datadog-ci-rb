@@ -294,13 +294,13 @@ RSpec.describe Datadog::CI::Test do
       context "and when test is quarantined" do
         let(:is_quarantined) { "true" }
 
-        it "records the test result as passed" do
+        it "records the test result as fail_ignored" do
           expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
           expect(tracer_span).to receive(:status=).with(1)
 
           ci_test.failed!
 
-          expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "pass")
+          expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "fail_ignored")
         end
       end
 

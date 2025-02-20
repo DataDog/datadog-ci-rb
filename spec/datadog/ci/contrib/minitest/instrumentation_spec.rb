@@ -1237,6 +1237,10 @@ RSpec.describe "Minitest instrumentation" do
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
       expect(retry_reasons).to eq(["atr"] * 9)
 
+      # last retry is tagged with has_failed_all_retries for test_failed
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(1)
+
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
       expect(test_suite_spans).to have(12).items
@@ -1462,6 +1466,10 @@ RSpec.describe "Minitest instrumentation" do
       expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
       expect(quarantined_test_span).not_to have_test_tag(:is_attempt_to_fix)
 
+      # as there are no retries, there is no has_failed_all_retries tag
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(0)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
 
@@ -1504,7 +1512,7 @@ RSpec.describe "Minitest instrumentation" do
       end
     end
 
-    it "runs failing test but does not fail the build" do
+    it "skips the disabled test completely" do
       expect(test_spans).to have(2).items
 
       disabled_test_span = test_spans.find { |span| span.name == "test_failed" }
@@ -1581,7 +1589,12 @@ RSpec.describe "Minitest instrumentation" do
       quarantined_count = test_spans.count { |span| span.get_tag("test.test_management.is_quarantined") == "true" }
       expect(quarantined_count).to eq(attempt_to_fix_retries_count + 1)
 
-      # later: check has_failed_all_retries tag here
+      # last retry is tagged with has_failed_all_retries
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(1)
+
+      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
+      expect(fix_passed_tests_count).to eq(0)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status

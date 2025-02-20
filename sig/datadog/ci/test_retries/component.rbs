@@ -24,6 +24,8 @@ module Datadog
 
         def should_retry?: () -> bool
 
+        def tag_last_retry: (Datadog::CI::Test test) -> void
+
         private
 
         def current_retry_driver: () -> Datadog::CI::TestRetries::Driver::Base?

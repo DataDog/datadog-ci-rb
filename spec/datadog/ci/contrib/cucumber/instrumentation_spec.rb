@@ -770,7 +770,9 @@ RSpec.describe "Cucumber instrumentation" do
       attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
       expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
 
-      # later: check has_failed_all_retries tag here
+      # last retry is tagged with has_failed_all_retries
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(1)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status

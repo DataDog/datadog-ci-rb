@@ -93,6 +93,8 @@ module Datadog
           else
             # after each retry we record the result, the driver will decide if we should retry again
             current_retry_driver&.record_retry(test_span)
+
+            tag_last_retry(test_span) unless should_retry?
           end
         end
 
@@ -103,6 +105,15 @@ module Datadog
         # this API is targeted on Cucumber instrumentation or any other that cannot leverage #with_retries method
         def reset_retries!
           self.current_retry_driver = nil
+        end
+
+        def tag_last_retry(test_span)
+          test_span&.set_tag(Ext::Test::TAG_HAS_FAILED_ALL_RETRIES, "true") if test_span&.all_executions_failed?
+
+          # if we are attempting to fix the test and all retries passed, we indicate that the fix might have worked
+          if test_span&.attempt_to_fix? && test_span.all_executions_passed?
+            test_span&.set_tag(Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "true")
+          end
         end
 
         def should_retry?

@@ -60,6 +60,24 @@ module Datadog
       end
 
       # @internal
+      def all_executions_failed?(test_id)
+        synchronize do
+          stats = @execution_stats_per_test[test_id]
+          stats && (stats[Ext::Test::Status::FAIL] > 0 || stats[Ext::Test::ExecutionStatsStatus::FAIL_IGNORED] > 0) &&
+            stats[Ext::Test::Status::PASS] == 0
+        end
+      end
+
+      # @internal
+      def all_executions_passed?(test_id)
+        synchronize do
+          stats = @execution_stats_per_test[test_id]
+          stats && stats[Ext::Test::Status::PASS] > 0 && stats[Ext::Test::Status::FAIL] == 0 &&
+            stats[Ext::Test::ExecutionStatsStatus::FAIL_IGNORED] == 0
+        end
+      end
+
+      # @internal
       def test_executed?(test_id)
         synchronize do
           @execution_stats_per_test.key?(test_id)
@@ -89,8 +107,9 @@ module Datadog
       end
 
       def derive_test_status_from_execution_stats(test_execution_stats)
-        # test is passed if it passed at least once
-        if test_execution_stats[Ext::Test::Status::PASS] > 0
+        # test is passed if it passed at least once or it failed but fail was ignored
+        if test_execution_stats[Ext::Test::Status::PASS] > 0 ||
+            test_execution_stats[Ext::Test::ExecutionStatsStatus::FAIL_IGNORED] > 0
           Ext::Test::Status::PASS
         # if test was never passed, it is failed if it failed at least once
         elsif test_execution_stats[Ext::Test::Status::FAIL] > 0

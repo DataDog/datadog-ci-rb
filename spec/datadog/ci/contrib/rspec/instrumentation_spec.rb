@@ -1322,6 +1322,10 @@ RSpec.describe "RSpec instrumentation" do
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(12)
 
+      # no attempt_to_fix_passed tags as the test was not retried because of attempt_to_fix tag
+      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
+      expect(fix_passed_tests_count).to eq(0)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
 
@@ -1530,7 +1534,9 @@ RSpec.describe "RSpec instrumentation" do
       disabled_count = test_spans.count { |span| span.get_tag("test.test_management.is_test_disabled") == "true" }
       expect(disabled_count).to eq(attempt_to_fix_retries_count + 1)
 
-      # later: check test.test_management.attempt_to_fix_passed tag on the last retry here
+      # we set test.test_management.attempt_to_fix_passed tag on the last retry here
+      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
+      expect(fix_passed_tests_count).to eq(1)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
