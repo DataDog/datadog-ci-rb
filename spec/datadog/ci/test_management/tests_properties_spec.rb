@@ -63,27 +63,35 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
                           "AdminControllerTest" => {
                             "tests" => {
                               "test_new" => {
-                                "disabled" => false,
-                                "quarantined" => true,
-                                "attempt_to_fix" => true
+                                "properties" => {
+                                  "disabled" => false,
+                                  "quarantined" => true,
+                                  "attempt_to_fix" => true
+                                }
                               },
                               "test_index" => {
-                                "disabled" => "true",
-                                "quarantined" => "false"
+                                "properties" => {
+                                  "disabled" => "true",
+                                  "quarantined" => "false"
+                                }
                               },
                               "test_create" => {
-                                "disabled" => false,
-                                "quarantined" => true,
-                                "attempt_to_fix" => false
+                                "properties" => {
+                                  "disabled" => false,
+                                  "quarantined" => true,
+                                  "attempt_to_fix" => false
+                                }
                               }
                             }
                           },
                           "UsersControllerTest" => {
                             "tests" => {
                               "test_new" => {
-                                "disabled" => false,
-                                "quarantined" => false,
-                                "attempt_to_fix" => false
+                                "properties" => {
+                                  "disabled" => false,
+                                  "quarantined" => false,
+                                  "attempt_to_fix" => false
+                                }
                               }
                             }
                           }

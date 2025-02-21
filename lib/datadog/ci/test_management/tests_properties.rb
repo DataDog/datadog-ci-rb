@@ -37,7 +37,8 @@ module Datadog
                   .fetch("suites", {})
                   .each do |test_suite, suite_hash|
                     suite_hash.fetch("tests", {})
-                      .each do |test_name, properties|
+                      .each do |test_name, properties_hash|
+                        properties = properties_hash.fetch("properties", {})
                         properties.transform_values! { |v| Utils::Parsing.convert_to_bool(v) }
 
                         tests_map[Utils::TestRun.datadog_test_id(test_name, test_suite)] = properties
