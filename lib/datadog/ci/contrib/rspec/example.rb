@@ -41,7 +41,7 @@ module Datadog
                 ) do |test_span|
                   test_span&.itr_unskippable! if datadog_unskippable?
 
-                  metadata[:skip] = CI::Ext::Test::ITR_TEST_SKIP_REASON if test_span&.skipped_by_itr?
+                  metadata[:skip] = test_span&.datadog_skip_reason if test_span&.should_skip?
 
                   # before each run remove any previous exception
                   @exception = nil
@@ -58,8 +58,8 @@ module Datadog
                     test_span&.passed!
                   when :failed
                     test_span&.failed!(exception: execution_result.exception)
-                    # if any of the retries passed, we don't fail the test run
-                    @exception = nil if test_span&.any_retry_passed?
+                    # if any of the retries passed or test is quarantined, we don't fail the test run
+                    @exception = nil if test_span&.should_ignore_failures?
                   else
                     # :pending or nil
                     test_span&.skipped!(

@@ -296,7 +296,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
         it "marks test as skippable" do
           expect { subject }
-            .to change { test_span.skipped_by_itr? }
+            .to change { test_span.skipped_by_test_impact_analysis? }
             .from(false)
             .to(true)
         end
@@ -311,7 +311,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
         it "does not mark test as skippable" do
           expect { subject }
-            .not_to change { test_span.skipped_by_itr? }
+            .not_to change { test_span.skipped_by_test_impact_analysis? }
         end
       end
     end
@@ -331,7 +331,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
       it "does not mark test as skippable" do
         expect { subject }
-          .not_to change { test_span.skipped_by_itr? }
+          .not_to change { test_span.skipped_by_test_impact_analysis? }
       end
     end
   end

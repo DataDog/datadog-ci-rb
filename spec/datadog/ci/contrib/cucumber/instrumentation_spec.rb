@@ -13,6 +13,9 @@ RSpec.describe "Cucumber instrumentation" do
   let(:enable_retries_new) { false }
   let(:known_tests_set) { Set.new }
 
+  let(:enable_test_management) { false }
+  let(:test_properties_hash) { {} }
+
   before do
     allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(cucumber_features_root)
   end
@@ -31,6 +34,9 @@ RSpec.describe "Cucumber instrumentation" do
 
     let(:early_flake_detection_enabled) { enable_retries_new }
     let(:known_tests) { known_tests_set }
+
+    let(:test_management_enabled) { enable_test_management }
+    let(:test_properties) { test_properties_hash }
 
     let(:bundle_path) { "step_definitions/helpers" }
   end
@@ -662,6 +668,117 @@ RSpec.describe "Cucumber instrumentation" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+    end
+  end
+
+  context "executing failing test scenario with quarantined test" do
+    let(:feature_file_to_run) { "failing.feature" }
+
+    let(:enable_test_management) { true }
+    let(:test_properties_hash) do
+      {
+        "Datadog integration - test failing features at spec/datadog/ci/contrib/cucumber/features/failing.feature.cucumber failing scenario." => {
+          "quarantined" => true,
+          "disabled" => false
+        }
+      }
+    end
+
+    it "skips the test without failing the build" do
+      expect(test_spans).to have(1).item
+
+      quarantined_test_span = test_spans.first
+
+      expect(quarantined_test_span).to have_skip_status
+      expect(quarantined_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(quarantined_test_span).to have_test_tag(:is_quarantined)
+      expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
+      expect(quarantined_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_skip_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
+  context "executing failing test scenario with disabled test" do
+    let(:feature_file_to_run) { "failing.feature" }
+
+    let(:enable_test_management) { true }
+    let(:test_properties_hash) do
+      {
+        "Datadog integration - test failing features at spec/datadog/ci/contrib/cucumber/features/failing.feature.cucumber failing scenario." => {
+          "quarantined" => false,
+          "disabled" => true
+        }
+      }
+    end
+
+    it "skips the test without failing the build" do
+      expect(test_spans).to have(1).item
+
+      disabled_test_span = test_spans.first
+
+      expect(disabled_test_span).to have_skip_status
+      expect(disabled_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(disabled_test_span).not_to have_test_tag(:is_quarantined)
+      expect(disabled_test_span).to have_test_tag(:is_test_disabled)
+      expect(disabled_test_span).not_to have_test_tag(:is_attempt_to_fix)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_skip_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
+  context "executing failing test scenario with attempt to fix" do
+    let(:feature_file_to_run) { "failing.feature" }
+    let(:expected_test_run_code) { 2 }
+
+    let(:enable_test_management) { true }
+    let(:test_properties_hash) do
+      {
+        "Datadog integration - test failing features at spec/datadog/ci/contrib/cucumber/features/failing.feature.cucumber failing scenario." => {
+          "quarantined" => false,
+          "disabled" => false,
+          "attempt_to_fix" => true
+        }
+      }
+    end
+
+    it "retries the test several times and fails the build as test is not disabled nor quarantined" do
+      # 1 original execution and 12 retries (attempt_to_fix_retries_count)
+      expect(test_spans).to have(attempt_to_fix_retries_count + 1).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(attempt_to_fix_retries_count + 1).items
+      expect(passed_spans).to have(0).item
+
+      # count how many tests were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(attempt_to_fix_retries_count)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["attempt_to_fix"] * attempt_to_fix_retries_count)
+
+      # count how many tests were marked as attempt_to_fix
+      attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
+      expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
+
+      # last retry is tagged with has_failed_all_retries
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(1)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_fail_status
+
+      expect(test_session_span).to have_fail_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
     end
   end
 end

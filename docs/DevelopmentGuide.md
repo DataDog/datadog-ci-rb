@@ -1,6 +1,6 @@
 # Developing
 
-This guide covers some of the common how-tos and technical reference material for developing changes within the CI visibility library.
+This guide covers some of the common how-tos and technical reference material for developing changes within the Test Optimization library.
 
 ## Table of Contents
 
@@ -13,9 +13,9 @@ This guide covers some of the common how-tos and technical reference material fo
 
 ## Setting up
 
-*NOTE: To test locally, you must have `Docker` and `Docker Compose` installed. See the [Docker documentation](https://docs.docker.com/compose/install/) for details.*
+_NOTE: To test locally, you must have `Docker` and `Docker Compose` installed. See the [Docker documentation](https://docs.docker.com/compose/install/) for details._
 
-The CI visibility library uses Docker Compose to create a Ruby environment to develop and test within, as well
+The Test Optimization library uses Docker Compose to create a Ruby environment to develop and test within, as well
 as containers for any dependencies that might be necessary for certain kinds of tests.
 
 To start a development environment, choose a target Ruby version then run the following:
@@ -135,7 +135,7 @@ This can be useful for replicating conditions from CI or isolating certain tests
 Many times we want to run one test file or one single test instead of rerunning the whole test suite.
 To do that, you could use `--example` RSpec argument.
 
-For example, to run only tests for  Minitest hooks you can do:
+For example, to run only tests for Minitest hooks you can do:
 
 ```bash
 bundle exec rake test:minitest'[--example hooks]'
@@ -143,7 +143,7 @@ bundle exec rake test:minitest'[--example hooks]'
 
 #### Checking test coverage
 
-You can check test code coverage by creating a report *after* running a test suite:
+You can check test code coverage by creating a report _after_ running a test suite:
 
 ```bash
 # Run the desired test suite
@@ -155,7 +155,7 @@ $ bundle exec rake coverage:report
 A webpage will be generated at `coverage/report/index.html` with the resulting report.
 
 Because you are likely not running all tests locally, your report will contain partial coverage results.
-You *must* check the CI step `coverage` for the complete test coverage report, ensuring coverage is not
+You _must_ check the CI step `coverage` for the complete test coverage report, ensuring coverage is not
 decreased.
 
 ## Checking code quality

@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module TestManagement
+      class NullComponent
+        @enabled: untyped
+
+        @tests_properties: untyped
+
+        attr_reader enabled: untyped
+
+        attr_reader tests_properties: untyped
+
+        def initialize: () -> void
+
+        def configure: (untyped _, untyped _) -> nil
+      end
+    end
+  end
+end

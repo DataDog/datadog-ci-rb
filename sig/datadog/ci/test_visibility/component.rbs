@@ -102,6 +102,8 @@ module Datadog
         def git_tree_upload_worker: () -> Datadog::CI::Worker
 
         def remote: () -> Datadog::CI::Remote::Component
+
+        def test_management: () -> Datadog::CI::TestManagement::Component
       end
     end
   end

@@ -17,6 +17,8 @@ module Datadog
         ENV_RETRY_FAILED_TESTS_TOTAL_LIMIT: String
         ENV_RETRY_NEW_TESTS_ENABLED: String
         ENV_TEST_SESSION_NAME: String
+        ENV_TEST_MANAGEMENT_ENABLED: String
+        ENV_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES: String
 
         DD_SITE_ALLOWLIST: Array[String]
       end

@@ -62,12 +62,6 @@ module Datadog
         get_tag(Ext::Test::TAG_TEST_SESSION_ID)
       end
 
-      # Returns "true" if the test is skipped by the intelligent test runner.
-      # @return [Boolean] true if the test is skipped by the intelligent test runner, false otherwise.
-      def skipped_by_itr?
-        get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
-      end
-
       # Returns "true" if test span represents a retry.
       # @return [Boolean] true if this test is a retry, false otherwise.
       def is_retry?
@@ -80,7 +74,25 @@ module Datadog
         get_tag(Ext::Test::TAG_IS_NEW) == "true"
       end
 
-      # Marks this test as unskippable by the intelligent test runner.
+      # Returns "true" if this test is quarantined by Datadog test management.
+      # @return [Boolean] true if this test is quarantined, false otherwise.
+      def quarantined?
+        get_tag(Ext::Test::TAG_IS_QUARANTINED) == "true"
+      end
+
+      # Returns "true" if this test is disabled by Datadog test management.
+      # @return [Boolean] true if this test is disabled, false otherwise.
+      def disabled?
+        get_tag(Ext::Test::TAG_IS_TEST_DISABLED) == "true"
+      end
+
+      # Returns "true" if this flaky test has fixing attempts (determined by Datadog backend).
+      # @return [Boolean] true if this test is attempted to be fixed.
+      def attempt_to_fix?
+        get_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX) == "true"
+      end
+
+      # Marks this test as unskippable by the Test Impact Analysis.
       # This must be done before the test execution starts.
       #
       # Examples of tests that should be unskippable:
@@ -94,7 +106,7 @@ module Datadog
         TestOptimisation::Telemetry.itr_unskippable
         set_tag(Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
 
-        if skipped_by_itr?
+        if skipped_by_test_impact_analysis?
           clear_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
 
           TestOptimisation::Telemetry.itr_forced_run
@@ -116,7 +128,13 @@ module Datadog
       def failed!(exception: nil)
         super
 
-        record_test_result(Ext::Test::Status::FAIL)
+        # if we should ignore failures, we consider this test to be passed
+        if should_ignore_failures?
+          # use a special "fail_ignored" status to mark this test as failed but ignored
+          record_test_result(Ext::Test::ExecutionStatsStatus::FAIL_IGNORED)
+        else
+          record_test_result(Ext::Test::Status::FAIL)
+        end
       end
 
       # Sets the status of the span to "skip".
@@ -152,6 +170,40 @@ module Datadog
       # @internal
       def any_retry_passed?
         !!test_suite&.any_test_retry_passed?(datadog_test_id)
+      end
+
+      # @internal
+      def all_executions_failed?
+        !!test_suite&.all_executions_failed?(datadog_test_id)
+      end
+
+      # @internal
+      def all_executions_passed?
+        !!test_suite&.all_executions_passed?(datadog_test_id)
+      end
+
+      # @internal
+      def datadog_skip_reason
+        if skipped_by_test_impact_analysis?
+          Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS
+        elsif disabled? || quarantined?
+          Ext::Test::SkipReason::TEST_MANAGEMENT_DISABLED
+        end
+      end
+
+      # @internal
+      def should_skip?
+        skipped_by_test_impact_analysis? || (disabled? && !attempt_to_fix?)
+      end
+
+      # @internal
+      def should_ignore_failures?
+        quarantined? || disabled? || any_retry_passed?
+      end
+
+      # @internal
+      def skipped_by_test_impact_analysis?
+        get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
 
       private

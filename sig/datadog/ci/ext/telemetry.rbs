@@ -80,6 +80,12 @@ module Datadog
 
         METRIC_KNOWN_TESTS_RESPONSE_TESTS: "known_tests.response_tests"
 
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST: "test_management_tests.request"
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST_MS: "test_management_tests.request_ms"
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST_ERRORS: "test_management_tests.request_errors"
+        METRIC_TEST_MANAGEMENT_TESTS_RESPONSE_BYTES: "test_management_tests.response_bytes"
+        METRIC_TEST_MANAGEMENT_TESTS_RESPONSE_TESTS: "test_management_tests.response_tests"
+
         METRIC_ITR_SKIPPED: "itr_skipped"
 
         METRIC_ITR_UNSKIPPABLE: "itr_unskippable"
@@ -109,6 +115,10 @@ module Datadog
         TAG_RETRY_REASON: "retry_reason"
 
         TAG_IS_NEW: "is_new"
+        TAG_IS_ATTEMPT_TO_FIX: "is_attempt_to_fix"
+        TAG_IS_QUARANTINED: "is_quarantined"
+        TAG_IS_TEST_DISABLED: "is_disabled"
+        TAG_HAS_FAILED_ALL_RETRIES: "has_failed_all_retries"
 
         TAG_LIBRARY: "library"
 

@@ -125,7 +125,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           context "when tracing is disabled" do
             let(:tracing_enabled) { false }
 
-            it "logs an error message and disables CI visibility" do
+            it "logs an error message and disables Test Optimization" do
               expect(Datadog.logger).to have_received(:error)
 
               expect(settings.ci.enabled).to eq(false)
@@ -288,7 +288,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   it "logs a warning" do
                     expect(Datadog.logger).to have_received(:warn) do |*_args, &block|
                       expect(block.call).to match(
-                        /CI VISIBILITY CONFIGURATION Agentless mode was enabled but DD_SITE is not set to one of the following/
+                        /TEST OPTIMIZATION CONFIGURATION Agentless mode was enabled but DD_SITE is not set to one of the following/
                       )
                     end
                   end
@@ -334,7 +334,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                 let(:api_key) { nil }
                 let(:itr_enabled) { true }
 
-                it "logs an error message and disables CI visibility" do
+                it "logs an error message and disables Test Optimization" do
                   expect(Datadog.logger).to have_received(:error)
 
                   expect(settings.ci.enabled).to eq(false)

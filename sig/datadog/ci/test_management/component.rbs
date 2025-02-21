@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module TestManagement
+      class Component
+        @enabled: bool
+
+        @tests_properties_client: Datadog::CI::TestManagement::TestsProperties
+
+        @tests_properties: Hash[String, Hash[String, bool]]
+
+        attr_reader enabled: bool
+
+        attr_reader tests_properties: Hash[String, Hash[String, bool]]
+
+        def initialize: (enabled: bool, tests_properties_client: Datadog::CI::TestManagement::TestsProperties) -> void
+
+        def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
+
+        def tag_test_from_properties: (Datadog::CI::Test test) -> void
+      end
+    end
+  end
+end

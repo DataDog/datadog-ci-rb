@@ -72,8 +72,6 @@ module Datadog
 
         ITR_TEST_SKIPPING_MODE: "test"
 
-        ITR_TEST_SKIP_REASON: String
-
         ITR_UNSKIPPABLE_OPTION: :datadog_itr_unskippable
 
         TAG_IS_RUM_ACTIVE: "test.is_rum_active"
@@ -106,12 +104,28 @@ module Datadog
 
         TAG_CODE_COVERAGE_LINES_PCT: "test.code_coverage.lines_pct"
 
+        TAG_TEST_MANAGEMENT_ENABLED: "test.test_management.enabled"
+
+        TAG_IS_ATTEMPT_TO_FIX: "test.test_management.is_attempt_to_fix"
+
+        TAG_IS_TEST_DISABLED: "test.test_management.is_test_disabled"
+
+        TAG_IS_QUARANTINED: "test.test_management.is_quarantined"
+
+        TAG_HAS_FAILED_ALL_RETRIES: "test.has_failed_all_retries"
+
+        TAG_ATTEMPT_TO_FIX_PASSED: "test.test_management.attempt_to_fix_passed"
+
         module Status
           PASS: "pass"
 
           FAIL: "fail"
 
           SKIP: "skip"
+        end
+
+        module ExecutionStatsStatus
+          FAIL_IGNORED: "fail_ignored"
         end
 
         module Type
@@ -128,6 +142,11 @@ module Datadog
           RETRY_FAILED: "atr"
 
           RETRY_FLAKY_FIXED: "attempt_to_fix"
+        end
+
+        module SkipReason
+          TEST_IMPACT_ANALYSIS: "Skipped by Datadog's Test Impact Analysis"
+          TEST_MANAGEMENT_DISABLED: "Flaky test is disabled by Datadog"
         end
       end
     end

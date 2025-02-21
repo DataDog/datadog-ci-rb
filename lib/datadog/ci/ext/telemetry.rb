@@ -60,6 +60,12 @@ module Datadog
         METRIC_KNOWN_TESTS_RESPONSE_BYTES = "known_tests.response_bytes"
         METRIC_KNOWN_TESTS_RESPONSE_TESTS = "known_tests.response_tests"
 
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST = "test_management_tests.request"
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST_MS = "test_management_tests.request_ms"
+        METRIC_TEST_MANAGEMENT_TESTS_REQUEST_ERRORS = "test_management_tests.request_errors"
+        METRIC_TEST_MANAGEMENT_TESTS_RESPONSE_BYTES = "test_management_tests.response_bytes"
+        METRIC_TEST_MANAGEMENT_TESTS_RESPONSE_TESTS = "test_management_tests.response_tests"
+
         METRIC_TEST_SESSION = "test_session"
 
         TAG_TEST_FRAMEWORK = "test_framework"
@@ -80,6 +86,10 @@ module Datadog
         TAG_REQUEST_COMPRESSED = "rq_compressed"
         TAG_RESPONSE_COMPRESSED = "rs_compressed"
         TAG_COMMAND = "command"
+        TAG_IS_ATTEMPT_TO_FIX = "is_attempt_to_fix"
+        TAG_IS_QUARANTINED = "is_quarantined"
+        TAG_IS_TEST_DISABLED = "is_disabled"
+        TAG_HAS_FAILED_ALL_RETRIES = "has_failed_all_retries"
         # tags for git_requests.settings_response metric
         TAG_COVERAGE_ENABLED = "coverage_enabled"
         TAG_ITR_ENABLED = "itr_enabled"

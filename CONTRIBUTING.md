@@ -1,6 +1,6 @@
 # Contributing
 
-Community contributions to the Datadog CI visibility library for Ruby are welcome! See below for some basic guidelines.
+Community contributions to the Datadog Test Optimization library for Ruby are welcome! See below for some basic guidelines.
 
 ## Want to request a new feature?
 
@@ -24,7 +24,7 @@ Additionally, if you can, include:
 
 For any urgent matters (such as outages) or issues concerning the Datadog service or UI, contact our support team via <https://docs.datadoghq.com/help/> for direct, faster assistance.
 
-You may submit bug reports concerning the Datadog CI visibility library for Ruby by [opening a Github issue](https://github.com/DataDog/datadog-ci-rb/issues/new). At a minimum, please provide:
+You may submit bug reports concerning the Datadog Test Optimization library for Ruby by [opening a Github issue](https://github.com/DataDog/datadog-ci-rb/issues/new). At a minimum, please provide:
 
 - A description of the problem
 - Steps to reproduce
@@ -78,4 +78,4 @@ For more information on common topics such as debugging locally, or how to write
 
 Many thanks to all of our contributors, and looking forward to seeing you on Github! :tada:
 
-- Datadog CI Visibility libraries team
+- Datadog Build&Test libraries team

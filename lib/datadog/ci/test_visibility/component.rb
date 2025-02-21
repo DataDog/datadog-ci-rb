@@ -201,6 +201,8 @@ module Datadog
 
           mark_test_as_new(test) if new_test?(test)
 
+          test_management.tag_test_from_properties(test)
+
           test_optimisation.mark_if_skippable(test)
           test_optimisation.start_coverage(test)
         end
@@ -363,6 +365,10 @@ module Datadog
 
         def remote
           Datadog.send(:components).ci_remote
+        end
+
+        def test_management
+          Datadog.send(:components).test_management
         end
       end
     end

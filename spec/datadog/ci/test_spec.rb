@@ -101,8 +101,8 @@ RSpec.describe Datadog::CI::Test do
     it { is_expected.to eq("foo/bar.rb") }
   end
 
-  describe "#skipped_by_itr?" do
-    subject(:skipped_by_itr) { ci_test.skipped_by_itr? }
+  describe "#skipped_by_test_impact_analysis?" do
+    subject(:skipped_by_itr) { ci_test.skipped_by_test_impact_analysis? }
 
     context "when tag is set" do
       before do
@@ -126,7 +126,7 @@ RSpec.describe Datadog::CI::Test do
 
     context "when test is not skipped by ITR" do
       before do
-        allow(ci_test).to receive(:skipped_by_itr?).and_return(false)
+        allow(ci_test).to receive(:skipped_by_test_impact_analysis?).and_return(false)
         expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
       end
 
@@ -139,7 +139,7 @@ RSpec.describe Datadog::CI::Test do
 
     context "when test is skipped by ITR" do
       before do
-        allow(ci_test).to receive(:skipped_by_itr?).and_return(true)
+        allow(ci_test).to receive(:skipped_by_test_impact_analysis?).and_return(true)
         expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
         expect(tracer_span).to receive(:clear_tag).with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
         expect(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_ITR_FORCED_RUN, "true")
@@ -264,10 +264,15 @@ RSpec.describe Datadog::CI::Test do
     before do
       allow(ci_test).to receive(:test_suite).and_return(test_suite)
 
+      allow(test_suite).to receive(:any_test_retry_passed?).and_return(false)
+
       allow(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
       allow(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
       allow(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+      allow(tracer_span).to receive(:get_tag).with("test.test_management.is_quarantined").and_return(is_quarantined)
+      allow(tracer_span).to receive(:get_tag).with("test.test_management.is_test_disabled").and_return(nil)
     end
+    let(:is_quarantined) { nil }
 
     context "when test suite is set" do
       let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_result: true) }
@@ -284,6 +289,19 @@ RSpec.describe Datadog::CI::Test do
         ci_test.failed!
 
         expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "fail")
+      end
+
+      context "and when test is quarantined" do
+        let(:is_quarantined) { "true" }
+
+        it "records the test result as fail_ignored" do
+          expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
+          expect(tracer_span).to receive(:status=).with(1)
+
+          ci_test.failed!
+
+          expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "fail_ignored")
+        end
       end
 
       context "and when test was already executed" do
@@ -338,6 +356,198 @@ RSpec.describe Datadog::CI::Test do
 
     context "when tag is not set" do
       before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_RETRY).and_return(nil) }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#quarantined?" do
+    subject(:quarantined) { ci_test.quarantined? }
+
+    context "when tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_QUARANTINED).and_return("true")
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_QUARANTINED).and_return(nil) }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#disabled?" do
+    subject(:disabled) { ci_test.disabled? }
+
+    context "when tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_TEST_DISABLED).and_return("true")
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_TEST_DISABLED).and_return(nil) }
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#should_ignore_failures?" do
+    subject(:should_ignore_failures) { ci_test.should_ignore_failures? }
+
+    context "when quarantined" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when disabled" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when any retry passed" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:any_retry_passed?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when neither is true" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:any_retry_passed?).and_return(false)
+        )
+      end
+
+      it { is_expected.to be false }
+    end
+  end
+
+  describe "#datadog_skip_reason" do
+    subject(:datadog_skip_reason) { ci_test.datadog_skip_reason }
+
+    context "when skipped by ITR" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(true)
+        )
+      end
+
+      it { is_expected.to eq(Datadog::CI::Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS) }
+    end
+
+    context "when disabled" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(true)
+        )
+      end
+
+      it { is_expected.to eq(Datadog::CI::Ext::Test::SkipReason::TEST_MANAGEMENT_DISABLED) }
+    end
+
+    context "when neither is true" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+      end
+
+      it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#should_skip?" do
+    subject(:should_skip) { ci_test.should_skip? }
+
+    context "when skipped by ITR" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when disabled" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(true)
+        )
+        allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(attempt_to_fix)
+        )
+      end
+      let(:attempt_to_fix) { false }
+
+      it { is_expected.to be true }
+
+      context "and attempt to fix" do
+        let(:attempt_to_fix) { true }
+
+        it { is_expected.to be false }
+      end
+    end
+
+    context "when neither is true" do
+      before do
+        allow(ci_test).to(
+          receive(:skipped_by_test_impact_analysis?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+      end
 
       it { is_expected.to be false }
     end

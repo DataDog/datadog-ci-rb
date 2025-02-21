@@ -20,7 +20,7 @@ require_relative "telemetry"
 module Datadog
   module CI
     module TestOptimisation
-      # Intelligent test runner implementation
+      # Test Impact Analysis implementation
       # Integrates with backend to provide test impact analysis data and
       # skip tests that are not impacted by the changes
       class Component
@@ -156,7 +156,7 @@ module Datadog
 
           if skippable?(test)
             if forked?
-              Datadog.logger.warn { "Intelligent test runner is not supported for forking test runners yet" }
+              Datadog.logger.warn { "Test Impact Analysis is not supported for forking test runners yet" }
               return
             end
 
@@ -172,7 +172,7 @@ module Datadog
           @mutex.synchronize do
             @total_tests_count += 1
 
-            return if !test.skipped? || !test.skipped_by_itr?
+            return if !test.skipped? || !test.skipped_by_test_impact_analysis?
 
             if forked?
               Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
