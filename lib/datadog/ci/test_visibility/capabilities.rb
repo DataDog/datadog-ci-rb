@@ -18,7 +18,7 @@ module Datadog
 
           [
             Ext::Test::LibraryCapabilities::TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX,
-            Ext::Test::LibraryCapabilities::TAG_TEST_MANAGEMENT_QUARATINE,
+            Ext::Test::LibraryCapabilities::TAG_TEST_MANAGEMENT_QUARANTINE,
             Ext::Test::LibraryCapabilities::TAG_TEST_MANAGEMENT_DISABLE
           ].each do |tag|
             tags[tag] = test_management_tag_value

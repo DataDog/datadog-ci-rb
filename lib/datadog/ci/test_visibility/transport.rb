@@ -12,6 +12,7 @@ require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/event_platform_transport"
 require_relative "../transport/telemetry"
+require_relative "../utils/configuration"
 
 module Datadog
   module CI
@@ -120,10 +121,13 @@ module Datadog
 
           Ext::AppTypes::CI_SPAN_TYPES.each do |ci_span_type|
             packer.write(ci_span_type)
-            packer.write_map_header(1 + library_capabilities_tags.count)
+            packer.write_map_header(2 + library_capabilities_tags.count)
 
-            packer.write(Ext::Test::METADATA_TAG_TEST_SESSION_NAME)
+            packer.write(Ext::Test::TAG_TEST_SESSION_NAME)
             packer.write(test_visibility&.logical_test_session_name)
+
+            packer.write(Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE)
+            packer.write(Utils::Configuration.service_name_provided_by_user?.to_s)
 
             library_capabilities_tags.each do |tag, value|
               packer.write(tag)

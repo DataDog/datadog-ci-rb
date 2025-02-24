@@ -7,6 +7,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
   include_context "CI mode activated" do
     let(:integration_name) { :rspec }
     let(:logical_test_session_name) { "logical_test_session_name" }
+    let(:service_name) { "custom-service" }
   end
 
   subject(:transport) do
@@ -61,7 +62,8 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
               "_dd.library_capabilities.auto_test_retries" => "false",
               "_dd.library_capabilities.test_management.quarantine" => "false",
               "_dd.library_capabilities.test_management.disable" => "false",
-              "_dd.library_capabilities.test_management.attempt_to_fix" => "false"
+              "_dd.library_capabilities.test_management.attempt_to_fix" => "false",
+              "_dd.test.is_user_provided_service" => "true"
             )
           end
 

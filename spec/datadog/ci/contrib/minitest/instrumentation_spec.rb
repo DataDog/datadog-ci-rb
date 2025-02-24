@@ -35,17 +35,6 @@ RSpec.describe "Minitest instrumentation" do
 
       expect(span.service).to eq("datadog-ci-rb")
     end
-
-    it "sets user_provided_service tag to false" do
-      klass = Class.new(Minitest::Test) do
-        def test_foo
-        end
-      end
-
-      klass.new(:test_foo).run
-
-      expect(span).to have_test_tag(:user_provided_test_service, "false")
-    end
   end
 
   context "with service name configured and code coverage enabled" do
@@ -100,14 +89,11 @@ RSpec.describe "Minitest instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(:source_start, "73")
+      expect(span).to have_test_tag(:source_start, "62")
       expect(span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
       )
-
-      # test service is provided by user in the configuration
-      expect(span).to have_test_tag(:user_provided_test_service, "true")
     end
 
     it "creates spans for several tests" do
@@ -507,7 +493,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "434")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "420")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
