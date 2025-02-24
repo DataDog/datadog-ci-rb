@@ -4,7 +4,9 @@ require "datadog/core/environment/identity"
 require "datadog/core/telemetry/logging"
 require "datadog/core/utils/only_once"
 
+require_relative "capabilities"
 require_relative "serializers/factories/test_level"
+
 require_relative "../ext/app_types"
 require_relative "../ext/telemetry"
 require_relative "../ext/transport"
@@ -114,12 +116,19 @@ module Datadog
           packer.write("library_version")
           packer.write(Datadog::CI::VERSION::STRING)
 
+          library_capabilities_tags = Capabilities.tags
+
           Ext::AppTypes::CI_SPAN_TYPES.each do |ci_span_type|
             packer.write(ci_span_type)
-            packer.write_map_header(1)
+            packer.write_map_header(1 + library_capabilities_tags.count)
 
             packer.write(Ext::Test::METADATA_TAG_TEST_SESSION_NAME)
             packer.write(test_visibility&.logical_test_session_name)
+
+            library_capabilities_tags.each do |tag, value|
+              packer.write(tag)
+              packer.write(value)
+            end
           end
 
           packer.write("events")

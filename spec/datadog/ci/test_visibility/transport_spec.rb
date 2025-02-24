@@ -20,6 +20,9 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
   before do
     allow(Datadog.logger).to receive(:warn)
+
+    # this is needed to configure all the components correctky
+    Datadog::CI.start_test_session
   end
 
   let(:dd_env) { nil }
@@ -51,12 +54,45 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
 
           Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
             type_metadata = payload["metadata"][type]
-            expect(type_metadata).to include("test_session.name" => logical_test_session_name)
+            expect(type_metadata).to include(
+              "test_session.name" => logical_test_session_name,
+              "_dd.library_capabilities.test_impact_analysis" => "false",
+              "_dd.library_capabilities.early_flake_detection" => "false",
+              "_dd.library_capabilities.auto_test_retries" => "false",
+              "_dd.library_capabilities.test_management.quarantine" => "false",
+              "_dd.library_capabilities.test_management.disable" => "false",
+              "_dd.library_capabilities.test_management.attempt_to_fix" => "false"
+            )
           end
 
           events = payload["events"]
           expect(events.count).to eq(1)
           expect(events.first["content"]["resource"]).to include("calculator_tests")
+        end
+      end
+
+      context "with test management feature enabled" do
+        before do
+          allow_any_instance_of(Datadog::CI::TestManagement::Component).to receive(:enabled).and_return(true)
+        end
+        it "marks test management feature as enabled in library capabilities tags" do
+          subject
+
+          expect(api).to have_received(:citestcycle_request) do |args|
+            payload = MessagePack.unpack(args[:payload])
+            Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
+              type_metadata = payload["metadata"][type]
+              expect(type_metadata).to include(
+                "test_session.name" => logical_test_session_name,
+                "_dd.library_capabilities.test_impact_analysis" => "false",
+                "_dd.library_capabilities.early_flake_detection" => "false",
+                "_dd.library_capabilities.auto_test_retries" => "false",
+                "_dd.library_capabilities.test_management.quarantine" => "true",
+                "_dd.library_capabilities.test_management.disable" => "true",
+                "_dd.library_capabilities.test_management.attempt_to_fix" => "true"
+              )
+            end
+          end
         end
       end
 

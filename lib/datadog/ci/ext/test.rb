@@ -78,6 +78,16 @@ module Datadog
         TAG_HAS_FAILED_ALL_RETRIES = "test.has_failed_all_retries" # true if test was retried and none of the retries passed
         TAG_ATTEMPT_TO_FIX_PASSED = "test.test_management.attempt_to_fix_passed" # true if test was marked as "attempted to fix" and all of the retries passed
 
+        # a set of tag indicating which capabilities (features) are supported by the library
+        module LibraryCapabilities
+          TAG_TEST_IMPACT_ANALYSIS = "_dd.library_capabilities.test_impact_analysis"
+          TAG_EARLY_FLAKE_DETECTION = "_dd.library_capabilities.early_flake_detection"
+          TAG_AUTO_TEST_RETRIES = "_dd.library_capabilities.auto_test_retries"
+          TAG_TEST_MANAGEMENT_QUARATINE = "_dd.library_capabilities.test_management.quarantine"
+          TAG_TEST_MANAGEMENT_DISABLE = "_dd.library_capabilities.test_management.disable"
+          TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX = "_dd.library_capabilities.test_management.attempt_to_fix"
+        end
+
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
         SPAN_KIND_TEST = "test"
