@@ -208,10 +208,6 @@ module Datadog
           ci_span.set_tags(@environment_tags)
 
           ci_span.set_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
-          ci_span.set_tag(
-            Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE,
-            Utils::Configuration.service_name_provided_by_user?.to_s
-          )
         end
 
         # PROPAGATING CONTEXT FROM TOP-LEVEL TO THE LOWER LEVELS

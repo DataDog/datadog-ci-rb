@@ -401,6 +401,14 @@ module Datadog
       def test_optimisation
         components.test_optimisation
       end
+
+      def test_management
+        components.test_management
+      end
+
+      def test_retries
+        components.test_retries
+      end
     end
   end
 end

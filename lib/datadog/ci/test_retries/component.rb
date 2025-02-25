@@ -31,13 +31,13 @@ module Datadog
         )
           no_retries_strategy = Strategy::NoRetry.new
 
-          retry_failed_strategy = Strategy::RetryFailed.new(
+          @retry_failed_strategy = Strategy::RetryFailed.new(
             enabled: retry_failed_tests_enabled,
             max_attempts: retry_failed_tests_max_attempts,
             total_limit: retry_failed_tests_total_limit
           )
 
-          retry_new_strategy = Strategy::RetryNew.new(
+          @retry_new_strategy = Strategy::RetryNew.new(
             enabled: retry_new_tests_enabled
           )
 
@@ -49,8 +49,8 @@ module Datadog
           # order is important, we apply the first matching strategy
           @retry_strategies = [
             retry_flaky_fixed_strategy,
-            retry_new_strategy,
-            retry_failed_strategy,
+            @retry_new_strategy,
+            @retry_failed_strategy,
             no_retries_strategy
           ]
           @mutex = Mutex.new
@@ -118,6 +118,14 @@ module Datadog
 
         def should_retry?
           !!current_retry_driver&.should_retry?
+        end
+
+        def auto_test_retries_feature_enabled
+          @retry_failed_strategy.enabled
+        end
+
+        def early_flake_detection_feature_enabled
+          @retry_new_strategy.enabled
         end
 
         private
