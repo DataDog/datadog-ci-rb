@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.13.0] - 2025-02-25
+
+### Added
+
+* Flaky test management support ([#289][])
+* Always request the list of known tests and mark new tests ([#286][])
+
 ## [1.12.0] - 2025-01-23
 
 ### Added
@@ -386,7 +393,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.12.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.13.0...main
+[1.13.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.9.0...v1.10.0
@@ -555,3 +563,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#272]: https://github.com/DataDog/datadog-ci-rb/issues/272
 [#275]: https://github.com/DataDog/datadog-ci-rb/issues/275
 [#283]: https://github.com/DataDog/datadog-ci-rb/issues/283
+[#286]: https://github.com/DataDog/datadog-ci-rb/issues/286
+[#289]: https://github.com/DataDog/datadog-ci-rb/issues/289
