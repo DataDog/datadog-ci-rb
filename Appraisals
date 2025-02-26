@@ -189,7 +189,7 @@ with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
 with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_active_support_gem(versions: 4..7)
-with_knapsack_pro_rspec_gem
+with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..8)
 with_selenium_gem if Gem::Version.new("3.0") <= RUBY_VERSION
 with_timecop_gem
 with_cuprite_gem if Gem::Version.new("3.0") <= RUBY_VERSION
