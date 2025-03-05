@@ -39,6 +39,10 @@ module Datadog
 
         def deactivate_test_suite: (String test_suite_name) -> void
 
+        def total_tests_count: () -> Integer
+
+        def incr_total_tests_count: () -> void
+
         private
 
         def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test

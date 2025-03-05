@@ -11,17 +11,11 @@ module Datadog
         @known_tests: Set[String]
         @known_tests_client: Datadog::CI::TestVisibility::KnownTests
 
-        @total_tests_count: Integer
-
-        @mutex: Thread::Mutex
-
         attr_reader test_suite_level_visibility_enabled: bool
 
         attr_reader logical_test_session_name: String?
 
         attr_reader known_tests: Set[String]
-
-        attr_reader total_tests_count: Integer
 
         def initialize: (known_tests_client: Datadog::CI::TestVisibility::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?) -> void
 
@@ -54,6 +48,8 @@ module Datadog
         def deactivate_test_module: () -> void
 
         def deactivate_test_suite: (String test_suite_name) -> void
+
+        def total_tests_count: () -> Integer
 
         def itr_enabled?: () -> bool
 

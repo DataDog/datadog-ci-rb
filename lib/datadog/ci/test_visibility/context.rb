@@ -169,6 +169,14 @@ module Datadog
           @global_context.deactivate_test_suite!(test_suite_name)
         end
 
+        def total_tests_count
+          @global_context.total_tests_count
+        end
+
+        def incr_total_tests_count
+          @global_context.incr_total_tests_count
+        end
+
         private
 
         # BUILDING DOMAIN MODELS

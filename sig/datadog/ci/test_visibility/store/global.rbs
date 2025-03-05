@@ -3,11 +3,15 @@ module Datadog
     module TestVisibility
       module Store
         class Global
-          @mutex: Thread::Mutex
+          @mutex: Monitor
 
           @test_session: Datadog::CI::TestSession?
           @test_module: Datadog::CI::TestModule?
           @test_suites: Hash[String, Datadog::CI::TestSuite]
+
+          @total_tests_count: Integer
+
+          attr_reader total_tests_count: Integer
 
           def initialize: () -> void
 
@@ -34,6 +38,8 @@ module Datadog
           def deactivate_test_module!: () -> void
 
           def deactivate_test_suite!: (String test_suite_name) -> void
+
+          def incr_total_tests_count: () -> void
         end
       end
     end
