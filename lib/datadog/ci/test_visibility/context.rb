@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# require "drb"
+
+require "datadog/core/utils/forking"
 require "datadog/tracing"
 require "datadog/tracing/contrib/component"
 require "datadog/tracing/trace_digest"
@@ -27,6 +30,8 @@ module Datadog
       # Its responsibility includes building domain models for test visibility as well.
       # Internally it uses Datadog::Tracing module to create spans.
       class Context
+        include Core::Utils::Forking
+
         def initialize
           @local_context = Store::Local.new
           @global_context = Store::Global.new

@@ -29,7 +29,7 @@ module Datadog
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
                 },
                 service: datadog_configuration[:service_name],
-                total_tests_count: (DD_ESTIMATED_TESTS_PER_SUITE * ::Minitest::Runnable.runnables.size).to_i
+                estimated_total_tests_count: (DD_ESTIMATED_TESTS_PER_SUITE * ::Minitest::Runnable.runnables.size).to_i
               )
               test_visibility_component.start_test_module(Ext::FRAMEWORK)
             end

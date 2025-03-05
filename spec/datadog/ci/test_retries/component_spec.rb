@@ -45,7 +45,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
   let(:test_session) do
     Datadog::CI::TestSession.new(tracer_span).tap do |test_session|
-      test_session.total_tests_count = session_total_tests_count
+      test_session.estimated_total_tests_count = session_total_tests_count
     end
   end
 

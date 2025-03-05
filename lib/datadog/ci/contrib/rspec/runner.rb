@@ -25,7 +25,7 @@ module Datadog
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
                 },
                 service: datadog_configuration[:service_name],
-                total_tests_count: ::RSpec.world.example_count
+                estimated_total_tests_count: ::RSpec.world.example_count
               )
 
               test_module = test_visibility_component.start_test_module(Ext::FRAMEWORK)

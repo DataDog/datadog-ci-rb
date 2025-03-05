@@ -8,7 +8,7 @@ module Datadog
         def configure(_, _)
         end
 
-        def start_test_session(service: nil, tags: {}, total_tests_count: 0)
+        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0)
           skip_tracing
         end
 

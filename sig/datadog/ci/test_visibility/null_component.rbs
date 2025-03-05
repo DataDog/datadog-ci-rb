@@ -8,7 +8,7 @@ module Datadog
 
         def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped], ?total_tests_count: Integer) -> nil
+        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped], ?estimated_total_tests_count: Integer) -> nil
 
         def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> nil
 

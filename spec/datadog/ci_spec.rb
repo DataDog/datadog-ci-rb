@@ -122,7 +122,7 @@ RSpec.describe Datadog::CI do
 
         before do
           allow(test_visibility).to receive(:start_test_session).with(
-            service: service, tags: {}, total_tests_count: 0
+            service: service, tags: {}, estimated_total_tests_count: 0
           ).and_return(ci_test_session)
         end
 
@@ -138,7 +138,7 @@ RSpec.describe Datadog::CI do
           before do
             allow(Datadog.configuration).to receive(:service_without_fallback).and_return("configured-service")
             allow(test_visibility).to receive(:start_test_session).with(
-              service: "configured-service", tags: {}, total_tests_count: 0
+              service: "configured-service", tags: {}, estimated_total_tests_count: 0
             ).and_return(ci_test_session)
           end
 
@@ -149,7 +149,7 @@ RSpec.describe Datadog::CI do
           before do
             allow(Datadog.configuration).to receive(:service_without_fallback).and_return(nil)
             allow(test_visibility).to receive(:start_test_session).with(
-              service: "datadog-ci-rb", tags: {}, total_tests_count: 0
+              service: "datadog-ci-rb", tags: {}, estimated_total_tests_count: 0
             ).and_return(ci_test_session)
           end
 
@@ -163,7 +163,7 @@ RSpec.describe Datadog::CI do
 
         before do
           allow(test_visibility).to receive(:start_test_session).with(
-            service: "datadog-ci-rb", tags: {}, total_tests_count: total_tests_count
+            service: "datadog-ci-rb", tags: {}, estimated_total_tests_count: total_tests_count
           ).and_return(ci_test_session)
         end
 

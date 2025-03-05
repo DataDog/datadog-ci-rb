@@ -49,7 +49,7 @@ module Datadog
           1,
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::SESSION}
         )
-        test_visibility.start_test_session(service: service, tags: tags, total_tests_count: total_tests_count)
+        test_visibility.start_test_session(service: service, tags: tags, estimated_total_tests_count: total_tests_count)
       end
 
       # The active, unfinished test session.
