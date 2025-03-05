@@ -18,7 +18,9 @@ module Datadog
     module TestVisibility
       # Common behavior for CI tests
       class Component
-        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name, :known_tests, :known_tests_enabled
+        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name,
+          :known_tests, :known_tests_enabled,
+          :total_tests_count
 
         def initialize(
           known_tests_client:,
@@ -36,6 +38,10 @@ module Datadog
           @known_tests_enabled = false
           @known_tests_client = known_tests_client
           @known_tests = Set.new
+
+          @total_tests_count = 0
+
+          @mutex = Mutex.new
         end
 
         def configure(library_configuration, test_session)
@@ -190,6 +196,10 @@ module Datadog
         end
 
         def on_test_started(test)
+          @mutex.synchronize do
+            @total_tests_count += 1
+          end
+
           # sometimes test suite is not being assigned correctly
           # fix it by fetching the one single running test suite from the global context
           fix_test_suite!(test) if test.test_suite_id.nil?

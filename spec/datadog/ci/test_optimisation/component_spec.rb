@@ -351,13 +351,6 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
           .not_to change { component.skipped_tests_count }
       end
 
-      it "increments total tests count" do
-        expect { subject }
-          .to change { component.total_tests_count }
-          .from(0)
-          .to(1)
-      end
-
       it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED
     end
 
@@ -371,12 +364,6 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       it "increments skipped tests count" do
         expect { subject }
           .to change { component.skipped_tests_count }
-          .from(0)
-          .to(1)
-      end
-      it "increments total tests count" do
-        expect { subject }
-          .to change { component.total_tests_count }
           .from(0)
           .to(1)
       end
@@ -394,13 +381,6 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       it "does not increment skipped tests count" do
         expect { subject }
           .not_to change { component.skipped_tests_count }
-      end
-
-      it "increments total tests count" do
-        expect { subject }
-          .to change { component.total_tests_count }
-          .from(0)
-          .to(1)
       end
 
       it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED

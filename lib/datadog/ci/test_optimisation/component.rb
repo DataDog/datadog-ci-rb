@@ -27,7 +27,7 @@ module Datadog
         include Core::Utils::Forking
 
         attr_reader :correlation_id, :skippable_tests, :skippable_tests_fetch_error,
-          :skipped_tests_count, :total_tests_count,
+          :skipped_tests_count,
           :enabled, :test_skipping_enabled, :code_coverage_enabled
 
         def initialize(
@@ -61,7 +61,6 @@ module Datadog
           @correlation_id = nil
           @skippable_tests = Set.new
 
-          @total_tests_count = 0
           @skipped_tests_count = 0
 
           @mutex = Mutex.new
@@ -170,8 +169,6 @@ module Datadog
 
         def count_skipped_test(test)
           @mutex.synchronize do
-            @total_tests_count += 1
-
             return if !test.skipped? || !test.skipped_by_test_impact_analysis?
 
             if forked?

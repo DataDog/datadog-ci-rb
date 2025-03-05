@@ -34,11 +34,11 @@ module Datadog
               return 0.0
             end
 
-            log("Total tests count: #{test_optimisation.total_tests_count}")
+            log("Total tests count: #{test_visibility.total_tests_count}")
             log("Skipped tests count: #{test_optimisation.skipped_tests_count}")
             validate_test_optimisation_state!
 
-            (test_optimisation.skipped_tests_count.to_f / test_optimisation.total_tests_count.to_f).floor(2)
+            (test_optimisation.skipped_tests_count.to_f / test_visibility.total_tests_count.to_f).floor(2)
           end
 
           private
