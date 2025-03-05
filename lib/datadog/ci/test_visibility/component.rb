@@ -154,6 +154,10 @@ module Datadog
           @context.total_tests_count
         end
 
+        def tests_skipped_by_tia_count
+          @context.tests_skipped_by_tia_count
+        end
+
         def itr_enabled?
           test_optimisation.enabled?
         end
@@ -215,7 +219,7 @@ module Datadog
         end
 
         def on_test_session_finished(test_session)
-          test_optimisation.write_test_session_tags(test_session)
+          test_optimisation.write_test_session_tags(test_session, @context.tests_skipped_by_tia_count)
 
           TotalCoverage.extract_lines_pct(test_session)
 
@@ -232,7 +236,7 @@ module Datadog
 
         def on_test_finished(test)
           test_optimisation.stop_coverage(test)
-          test_optimisation.count_skipped_test(test)
+          test_optimisation.on_test_finished(test, @context)
 
           Telemetry.event_finished(test)
 

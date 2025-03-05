@@ -177,6 +177,14 @@ module Datadog
           @global_context.incr_total_tests_count
         end
 
+        def tests_skipped_by_tia_count
+          @global_context.tests_skipped_by_tia_count
+        end
+
+        def incr_tests_skipped_by_tia_count
+          @global_context.incr_tests_skipped_by_tia_count
+        end
+
         private
 
         # BUILDING DOMAIN MODELS

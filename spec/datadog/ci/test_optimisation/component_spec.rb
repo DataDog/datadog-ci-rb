@@ -336,8 +336,12 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
   end
 
-  describe "#count_skipped_test" do
-    subject { component.count_skipped_test(test_span) }
+  describe "#on_test_finished" do
+    subject { component.on_test_finished(test_span, testvis_context) }
+
+    let(:testvis_context) do
+      spy(Datadog::CI::TestVisibility::Context)
+    end
 
     context "test is skipped by framework" do
       let(:test_span) do
@@ -347,8 +351,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it "does not increment skipped tests count" do
-        expect { subject }
-          .not_to change { component.skipped_tests_count }
+        subject
+
+        expect(testvis_context).not_to have_received(:incr_tests_skipped_by_tia_count)
       end
 
       it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED
@@ -362,10 +367,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it "increments skipped tests count" do
-        expect { subject }
-          .to change { component.skipped_tests_count }
-          .from(0)
-          .to(1)
+        subject
+
+        expect(testvis_context).to have_received(:incr_tests_skipped_by_tia_count)
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED, 1
@@ -379,8 +383,9 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it "does not increment skipped tests count" do
-        expect { subject }
-          .not_to change { component.skipped_tests_count }
+        subject
+
+        expect(testvis_context).not_to have_received(:incr_tests_skipped_by_tia_count)
       end
 
       it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_SKIPPED
@@ -394,20 +399,13 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       )
     end
 
-    before do
-      component.count_skipped_test(test_span)
-    end
-
-    subject { component.write_test_session_tags(test_session_span) }
-
-    let(:test_span) do
-      Datadog::CI::Test.new(
-        Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "pass"})
-      )
-    end
+    subject { component.write_test_session_tags(test_session_span, skipped_tests_count) }
+    let(:skipped_tests_count) { 0 }
 
     context "when ITR is enabled" do
       context "when tests were not skipped" do
+        let(:skipped_tests_count) { 0 }
+
         it "submits 0 skipped tests" do
           subject
 
@@ -417,11 +415,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       context "when tests were skipped" do
-        let(:test_span) do
-          Datadog::CI::Test.new(
-            Datadog::Tracing::SpanOperation.new("test", tags: {"test.status" => "skip", "test.skipped_by_itr" => "true"})
-          )
-        end
+        let(:skipped_tests_count) { 1 }
 
         it "submits number of skipped tests" do
           subject

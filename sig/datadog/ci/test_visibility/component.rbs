@@ -51,6 +51,8 @@ module Datadog
 
         def total_tests_count: () -> Integer
 
+        def tests_skipped_by_tia_count: () -> Integer
+
         def itr_enabled?: () -> bool
 
         def shutdown!: () -> void
