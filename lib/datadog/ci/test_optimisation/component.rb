@@ -3,7 +3,6 @@
 require "pp"
 
 require "datadog/core/telemetry/logging"
-require "datadog/core/utils/forking"
 
 require_relative "../ext/test"
 require_relative "../ext/telemetry"
@@ -24,8 +23,6 @@ module Datadog
       # Integrates with backend to provide test impact analysis data and
       # skip tests that are not impacted by the changes
       class Component
-        include Core::Utils::Forking
-
         attr_reader :correlation_id, :skippable_tests, :skippable_tests_fetch_error,
           :enabled, :test_skipping_enabled, :code_coverage_enabled
 
@@ -151,11 +148,6 @@ module Datadog
           return if !enabled? || !skipping_tests?
 
           if skippable?(test)
-            if forked?
-              Datadog.logger.warn { "Test Impact Analysis is not supported for forking test runners yet" }
-              return
-            end
-
             test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
             Datadog.logger.debug { "Marked test as skippable: #{test.datadog_test_id}" }
