@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# require "drb"
+require "drb"
 
 require "datadog/core/utils/forking"
 require "datadog/tracing"

@@ -47,6 +47,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "datadog", "~> 2.4"
   spec.add_dependency "msgpack"
+  spec.add_dependency "drb"
 
   spec.extensions = ["ext/datadog_cov/extconf.rb"]
 end
