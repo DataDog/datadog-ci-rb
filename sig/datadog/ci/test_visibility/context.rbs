@@ -2,8 +2,13 @@ module Datadog
   module CI
     module TestVisibility
       class Context
+        include Datadog::Core::Utils::Forking
+
         @local_context: Datadog::CI::TestVisibility::Store::Local
         @global_context: Datadog::CI::TestVisibility::Store::Global
+        @global_context_client: Datadog::CI::TestVisibility::Store::Global
+
+        @global_context_uri: String
 
         @environment_tags: Hash[String, String]
 
@@ -74,7 +79,19 @@ module Datadog
         def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
 
         def build_tracing_span_options: (String? service_name, String type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
+
+        def start_drb_service: () -> void
+
+        def global_context: () -> Datadog::CI::TestVisibility::Store::Global
       end
     end
   end
+end
+
+module DRb
+  def self.start_service: (String uri, ?Object obj) -> untyped
+end
+
+class DRbObject
+  def self.new_with_uri: (String uri) -> untyped
 end

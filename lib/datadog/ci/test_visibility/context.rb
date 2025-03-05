@@ -38,6 +38,8 @@ module Datadog
         end
 
         def start_test_session(service: nil, tags: {})
+          start_drb_service
+
           @global_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(
               "test.session", build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
@@ -170,19 +172,19 @@ module Datadog
         end
 
         def total_tests_count
-          @global_context.total_tests_count
+          global_context.total_tests_count
         end
 
         def incr_total_tests_count
-          @global_context.incr_total_tests_count
+          global_context.incr_total_tests_count
         end
 
         def tests_skipped_by_tia_count
-          @global_context.tests_skipped_by_tia_count
+          global_context.tests_skipped_by_tia_count
         end
 
         def incr_tests_skipped_by_tia_count
-          @global_context.incr_tests_skipped_by_tia_count
+          global_context.incr_tests_skipped_by_tia_count
         end
 
         private
@@ -293,6 +295,24 @@ module Datadog
           other_options[:type] = type
 
           other_options
+        end
+
+        # DISTRIBUTED RUBY CONTEXT
+        def start_drb_service
+          return if @global_context_uri
+
+          # Do not start DRb service if we are in a forked process because it only makes to do in the parent
+          return if forked?
+
+          @global_context_uri = DRb.start_service("drbunix:", @global_context).uri
+        end
+
+        # depending on whether we are in a forked process or not, returns either the global context or its DRbObject
+        def global_context
+          return @global_context unless forked?
+          return @global_context_client if defined?(@global_context_client)
+
+          @global_context_client = DRbObject.new_with_uri(@global_context_uri)
         end
       end
     end
