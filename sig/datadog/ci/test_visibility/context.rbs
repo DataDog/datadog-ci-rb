@@ -82,14 +82,17 @@ module Datadog
 
         def start_drb_service: () -> void
 
-        def global_context: () -> Datadog::CI::TestVisibility::Store::Global
+        def maybe_remote_global_context: () -> Datadog::CI::TestVisibility::Store::Global
       end
     end
   end
 end
 
 module DRb
-  def self.start_service: (String uri, ?Object obj) -> untyped
+  def self.start_service: (?String uri, ?Object obj) -> untyped
+
+  module DRbUndumped
+  end
 end
 
 class DRbObject

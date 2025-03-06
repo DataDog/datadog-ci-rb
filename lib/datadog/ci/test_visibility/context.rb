@@ -172,19 +172,19 @@ module Datadog
         end
 
         def total_tests_count
-          global_context.total_tests_count
+          maybe_remote_global_context.total_tests_count
         end
 
         def incr_total_tests_count
-          global_context.incr_total_tests_count
+          maybe_remote_global_context.incr_total_tests_count
         end
 
         def tests_skipped_by_tia_count
-          global_context.tests_skipped_by_tia_count
+          maybe_remote_global_context.tests_skipped_by_tia_count
         end
 
         def incr_tests_skipped_by_tia_count
-          global_context.incr_tests_skipped_by_tia_count
+          maybe_remote_global_context.incr_tests_skipped_by_tia_count
         end
 
         private
@@ -308,7 +308,7 @@ module Datadog
         end
 
         # depending on whether we are in a forked process or not, returns either the global context or its DRbObject
-        def global_context
+        def maybe_remote_global_context
           return @global_context unless forked?
           return @global_context_client if defined?(@global_context_client)
 
