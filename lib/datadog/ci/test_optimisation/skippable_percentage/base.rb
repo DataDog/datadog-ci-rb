@@ -44,6 +44,10 @@ module Datadog
           def test_optimisation
             Datadog.send(:components).test_optimisation
           end
+
+          def test_visibility
+            Datadog.send(:components).test_visibility
+          end
         end
       end
     end

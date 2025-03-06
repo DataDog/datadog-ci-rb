@@ -3,6 +3,7 @@ PATH
   specs:
     datadog-ci (1.13.0)
       datadog (~> 2.4)
+      drb
       msgpack
 
 GEM

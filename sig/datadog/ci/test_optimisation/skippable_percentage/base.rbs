@@ -21,6 +21,8 @@ module Datadog
           def error!: (String message) -> void
 
           def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
+
+          def test_visibility: () -> Datadog::CI::TestVisibility::Component
         end
       end
     end

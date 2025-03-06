@@ -70,7 +70,7 @@ module Datadog
 
           def calculate_total_retries_limit(library_settings, test_session)
             percentage_limit = library_settings.faulty_session_threshold
-            tests_count = test_session.total_tests_count.to_i
+            tests_count = test_session.estimated_total_tests_count.to_i
             if tests_count.zero?
               Datadog.logger.debug do
                 "Total tests count is zero, using default value for the total number of tests: [#{DEFAULT_TOTAL_TESTS_COUNT}]"

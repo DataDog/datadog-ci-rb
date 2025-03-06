@@ -6,6 +6,8 @@ module Datadog
       module Store
         # This context is shared between threads and represents the current test session and test module.
         class Global
+          attr_reader :total_tests_count, :tests_skipped_by_tia_count
+
           def initialize
             # we are using Monitor instead of Mutex because it is reentrant
             @mutex = Monitor.new
@@ -13,6 +15,9 @@ module Datadog
             @test_session = nil
             @test_module = nil
             @test_suites = {}
+
+            @total_tests_count = 0
+            @tests_skipped_by_tia_count = 0
           end
 
           def fetch_or_activate_test_suite(test_suite_name, &block)
@@ -80,6 +85,14 @@ module Datadog
 
           def deactivate_test_suite!(test_suite_name)
             @mutex.synchronize { @test_suites.delete(test_suite_name) }
+          end
+
+          def incr_total_tests_count
+            @mutex.synchronize { @total_tests_count += 1 }
+          end
+
+          def incr_tests_skipped_by_tia_count
+            @mutex.synchronize { @tests_skipped_by_tia_count += 1 }
           end
         end
       end

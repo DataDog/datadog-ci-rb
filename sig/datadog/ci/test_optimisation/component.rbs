@@ -19,16 +19,13 @@ module Datadog
         @use_single_threaded_coverage: bool
         @use_allocation_tracing: bool
 
-        @skipped_tests_count: Integer
         @mutex: Thread::Mutex
 
         attr_reader skippable_tests: Set[String]
-        attr_reader skipped_tests_count: Integer
         attr_reader correlation_id: String?
         attr_reader enabled: bool
         attr_reader code_coverage_enabled: bool
         attr_reader test_skipping_enabled: bool
-        attr_reader total_tests_count: Integer
         attr_reader skippable_tests_fetch_error: String?
 
         def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::TestOptimisation::Coverage::Writer?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool) -> void
@@ -49,9 +46,9 @@ module Datadog
 
         def mark_if_skippable: (Datadog::CI::Test test) -> void
 
-        def count_skipped_test: (Datadog::CI::Test test) -> void
+        def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestVisibility::Context context) -> void
 
-        def write_test_session_tags: (Datadog::CI::TestSession test_session) -> void
+        def write_test_session_tags: (Datadog::CI::TestSession test_session, Integer skipped_tests_count) -> void
 
         def shutdown!: () -> void
 

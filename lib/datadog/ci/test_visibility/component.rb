@@ -18,7 +18,8 @@ module Datadog
     module TestVisibility
       # Common behavior for CI tests
       class Component
-        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name, :known_tests, :known_tests_enabled
+        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name,
+          :known_tests, :known_tests_enabled
 
         def initialize(
           known_tests_client:,
@@ -47,11 +48,11 @@ module Datadog
           end
         end
 
-        def start_test_session(service: nil, tags: {}, total_tests_count: 0)
+        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0)
           return skip_tracing unless test_suite_level_visibility_enabled
 
           test_session = @context.start_test_session(service: service, tags: tags)
-          test_session.total_tests_count = total_tests_count
+          test_session.estimated_total_tests_count = estimated_total_tests_count
 
           on_test_session_started(test_session)
           test_session
@@ -149,6 +150,14 @@ module Datadog
           @context.deactivate_test_suite(test_suite_name)
         end
 
+        def total_tests_count
+          @context.total_tests_count
+        end
+
+        def tests_skipped_by_tia_count
+          @context.tests_skipped_by_tia_count
+        end
+
         def itr_enabled?
           test_optimisation.enabled?
         end
@@ -190,6 +199,8 @@ module Datadog
         end
 
         def on_test_started(test)
+          @context.incr_total_tests_count
+
           # sometimes test suite is not being assigned correctly
           # fix it by fetching the one single running test suite from the global context
           fix_test_suite!(test) if test.test_suite_id.nil?
@@ -208,7 +219,7 @@ module Datadog
         end
 
         def on_test_session_finished(test_session)
-          test_optimisation.write_test_session_tags(test_session)
+          test_optimisation.write_test_session_tags(test_session, @context.tests_skipped_by_tia_count)
 
           TotalCoverage.extract_lines_pct(test_session)
 
@@ -225,7 +236,7 @@ module Datadog
 
         def on_test_finished(test)
           test_optimisation.stop_coverage(test)
-          test_optimisation.count_skipped_test(test)
+          test_optimisation.on_test_finished(test, @context)
 
           Telemetry.event_finished(test)
 

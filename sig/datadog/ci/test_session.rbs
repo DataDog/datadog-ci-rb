@@ -1,7 +1,8 @@
 module Datadog
   module CI
     class TestSession < ConcurrentSpan
-      attr_accessor total_tests_count: Integer
+      attr_accessor estimated_total_tests_count: Integer
+
       @inheritable_tags: Hash[untyped, untyped]
 
       def inheritable_tags: () -> Hash[untyped, untyped]

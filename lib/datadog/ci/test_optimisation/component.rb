@@ -3,7 +3,6 @@
 require "pp"
 
 require "datadog/core/telemetry/logging"
-require "datadog/core/utils/forking"
 
 require_relative "../ext/test"
 require_relative "../ext/telemetry"
@@ -24,10 +23,7 @@ module Datadog
       # Integrates with backend to provide test impact analysis data and
       # skip tests that are not impacted by the changes
       class Component
-        include Core::Utils::Forking
-
         attr_reader :correlation_id, :skippable_tests, :skippable_tests_fetch_error,
-          :skipped_tests_count, :total_tests_count,
           :enabled, :test_skipping_enabled, :code_coverage_enabled
 
         def initialize(
@@ -60,9 +56,6 @@ module Datadog
 
           @correlation_id = nil
           @skippable_tests = Set.new
-
-          @total_tests_count = 0
-          @skipped_tests_count = 0
 
           @mutex = Mutex.new
 
@@ -155,11 +148,6 @@ module Datadog
           return if !enabled? || !skipping_tests?
 
           if skippable?(test)
-            if forked?
-              Datadog.logger.warn { "Test Impact Analysis is not supported for forking test runners yet" }
-              return
-            end
-
             test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
             Datadog.logger.debug { "Marked test as skippable: #{test.datadog_test_id}" }
@@ -168,31 +156,22 @@ module Datadog
           end
         end
 
-        def count_skipped_test(test)
-          @mutex.synchronize do
-            @total_tests_count += 1
+        def on_test_finished(test, context)
+          return if !test.skipped? || !test.skipped_by_test_impact_analysis?
 
-            return if !test.skipped? || !test.skipped_by_test_impact_analysis?
+          Telemetry.itr_skipped
 
-            if forked?
-              Datadog.logger.warn { "ITR is not supported for forking test runners yet" }
-              return
-            end
-
-            Telemetry.itr_skipped
-
-            @skipped_tests_count += 1
-          end
+          context.incr_tests_skipped_by_tia_count
         end
 
-        def write_test_session_tags(test_session)
+        def write_test_session_tags(test_session, skipped_tests_count)
           return if !enabled?
 
           Datadog.logger.debug { "Finished optimised session with test skipping enabled: #{@test_skipping_enabled}" }
-          Datadog.logger.debug { "#{@skipped_tests_count} tests were skipped" }
+          Datadog.logger.debug { "#{skipped_tests_count} tests were skipped" }
 
-          test_session.set_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, @skipped_tests_count.positive?.to_s)
-          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, @skipped_tests_count)
+          test_session.set_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, skipped_tests_count.positive?.to_s)
+          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, skipped_tests_count)
         end
 
         def skippable_tests_count

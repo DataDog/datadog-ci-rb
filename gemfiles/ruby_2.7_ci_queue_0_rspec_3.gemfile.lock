@@ -3,6 +3,7 @@ PATH
   specs:
     datadog-ci (1.13.0)
       datadog (~> 2.4)
+      drb
       msgpack
 
 GEM
@@ -34,6 +35,7 @@ GEM
       reline (>= 0.3.8)
     diff-lcs (1.6.0)
     docile (1.4.1)
+    drb (2.2.1)
     ffi (1.17.1-aarch64-linux-gnu)
     hashdiff (1.1.2)
     io-console (0.8.0)
