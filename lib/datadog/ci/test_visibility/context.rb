@@ -301,7 +301,6 @@ module Datadog
         def start_drb_service
           return if @global_context_uri
 
-          # Do not start DRb service if we are in a forked process because it only makes to do in the parent
           return if forked?
 
           @global_context_uri = DRb.start_service("drbunix:", @global_context).uri
