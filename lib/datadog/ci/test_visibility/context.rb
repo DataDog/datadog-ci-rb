@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "drb"
-
-require "datadog/core/utils/forking"
 require "datadog/tracing"
 require "datadog/tracing/contrib/component"
 require "datadog/tracing/trace_digest"
@@ -30,16 +27,19 @@ module Datadog
       # Its responsibility includes building domain models for test visibility as well.
       # Internally it uses Datadog::Tracing module to create spans.
       class Context
-        include Core::Utils::Forking
+        attr_reader :total_tests_count, :tests_skipped_by_tia_count
 
         def initialize
           @local_context = Store::Local.new
           @global_context = Store::Global.new
+
+          @mutex = Mutex.new
+
+          @total_tests_count = 0
+          @tests_skipped_by_tia_count = 0
         end
 
         def start_test_session(service: nil, tags: {})
-          start_drb_service
-
           @global_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(
               "test.session", build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
@@ -171,20 +171,16 @@ module Datadog
           @global_context.deactivate_test_suite!(test_suite_name)
         end
 
-        def total_tests_count
-          maybe_remote_global_context.total_tests_count
-        end
-
         def incr_total_tests_count
-          maybe_remote_global_context.incr_total_tests_count
-        end
-
-        def tests_skipped_by_tia_count
-          maybe_remote_global_context.tests_skipped_by_tia_count
+          p "incr_total_tests_count"
+          p Process.pid
+          @mutex.synchronize { @total_tests_count += 1 }
         end
 
         def incr_tests_skipped_by_tia_count
-          maybe_remote_global_context.incr_tests_skipped_by_tia_count
+          p "incr_tests_skipped_by_tia_count"
+          p Process.pid
+          @mutex.synchronize { @tests_skipped_by_tia_count += 1 }
         end
 
         private
@@ -295,23 +291,6 @@ module Datadog
           other_options[:type] = type
 
           other_options
-        end
-
-        # DISTRIBUTED RUBY CONTEXT
-        def start_drb_service
-          return if @global_context_uri
-
-          return if forked?
-
-          @global_context_uri = DRb.start_service("drbunix:", @global_context).uri
-        end
-
-        # depending on whether we are in a forked process or not, returns either the global context or its DRbObject
-        def maybe_remote_global_context
-          return @global_context unless forked?
-          return @global_context_client if defined?(@global_context_client)
-
-          @global_context_client = DRbObject.new_with_uri(@global_context_uri)
         end
       end
     end

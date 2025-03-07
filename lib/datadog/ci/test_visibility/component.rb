@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
+require "drb"
 require "rbconfig"
+
+require "datadog/core/utils/forking"
 
 require_relative "context"
 require_relative "telemetry"
@@ -16,8 +19,10 @@ require_relative "../worker"
 module Datadog
   module CI
     module TestVisibility
-      # Common behavior for CI tests
+      # Core functionality of the library: tracing tests' execution
       class Component
+        include Core::Utils::Forking
+
         attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name,
           :known_tests, :known_tests_enabled
 
@@ -28,7 +33,9 @@ module Datadog
           logical_test_session_name: nil
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
+
           @context = Context.new
+
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
 
@@ -51,6 +58,8 @@ module Datadog
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0)
           return skip_tracing unless test_suite_level_visibility_enabled
 
+          start_drb_service
+
           test_session = @context.start_test_session(service: service, tags: tags)
           test_session.estimated_total_tests_count = estimated_total_tests_count
 
@@ -69,7 +78,7 @@ module Datadog
         def start_test_suite(test_suite_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          test_suite = @context.start_test_suite(test_suite_name, service: service, tags: tags)
+          test_suite = maybe_remote_context.start_test_suite(test_suite_name, service: service, tags: tags)
           on_test_suite_started(test_suite)
           test_suite
         end
@@ -119,7 +128,7 @@ module Datadog
         end
 
         def active_test_suite(test_suite_name)
-          @context.active_test_suite(test_suite_name)
+          maybe_remote_context.active_test_suite(test_suite_name)
         end
 
         def deactivate_test
@@ -147,15 +156,15 @@ module Datadog
           test_suite = active_test_suite(test_suite_name)
           on_test_suite_finished(test_suite) if test_suite
 
-          @context.deactivate_test_suite(test_suite_name)
+          maybe_remote_context.deactivate_test_suite(test_suite_name)
         end
 
         def total_tests_count
-          @context.total_tests_count
+          maybe_remote_context.total_tests_count
         end
 
         def tests_skipped_by_tia_count
-          @context.tests_skipped_by_tia_count
+          maybe_remote_context.tests_skipped_by_tia_count
         end
 
         def itr_enabled?
@@ -199,7 +208,7 @@ module Datadog
         end
 
         def on_test_started(test)
-          @context.incr_total_tests_count
+          maybe_remote_context.incr_total_tests_count
 
           # sometimes test suite is not being assigned correctly
           # fix it by fetching the one single running test suite from the global context
@@ -219,7 +228,7 @@ module Datadog
         end
 
         def on_test_session_finished(test_session)
-          test_optimisation.write_test_session_tags(test_session, @context.tests_skipped_by_tia_count)
+          test_optimisation.write_test_session_tags(test_session, maybe_remote_context.tests_skipped_by_tia_count)
 
           TotalCoverage.extract_lines_pct(test_session)
 
@@ -236,7 +245,7 @@ module Datadog
 
         def on_test_finished(test)
           test_optimisation.stop_coverage(test)
-          test_optimisation.on_test_finished(test, @context)
+          test_optimisation.on_test_finished(test, maybe_remote_context)
 
           Telemetry.event_finished(test)
 
@@ -269,7 +278,7 @@ module Datadog
         def fix_test_suite!(test)
           return unless test_suite_level_visibility_enabled
 
-          test_suite = @context.single_active_test_suite
+          test_suite = maybe_remote_context.single_active_test_suite
           unless test_suite
             Datadog.logger.debug do
               "Trying to fix test suite for test [#{test.name}] but no single test suite is running."
@@ -380,6 +389,27 @@ module Datadog
 
         def test_management
           Datadog.send(:components).test_management
+        end
+
+        # DISTRIBUTED RUBY CONTEXT
+        def start_drb_service
+          return if @context_service_uri
+          return if forked?
+
+          @context_service = DRb.start_service("drbunix:", @context)
+          @context_service_uri = @context_service.uri
+        end
+
+        # depending on whether we are in a forked process or not, returns either the global context or its DRbObject
+        def maybe_remote_context
+          return @context unless forked?
+          return @context_client if defined?(@context_client)
+
+          # once per fork we must stop the running DRb server that was copied from the parent process
+          # otherwise, client will be confused thinking it's server which leads to terrible bugs
+          @context_service.stop_service
+
+          @context_client = DRbObject.new_with_uri(@context_service_uri)
         end
       end
     end

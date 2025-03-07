@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "drb"
+
 require "datadog/core/environment/platform"
 
 require_relative "ext/test"
@@ -12,6 +14,8 @@ module Datadog
     #
     # @public_api
     class Span
+      include DRb::DRbUndumped
+
       attr_reader :tracer_span
 
       def initialize(tracer_span)

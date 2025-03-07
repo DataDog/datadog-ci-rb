@@ -2,10 +2,16 @@ module Datadog
   module CI
     module TestVisibility
       class Component
+        include Datadog::Core::Utils::Forking
+
         @test_suite_level_visibility_enabled: bool
 
         @codeowners: Datadog::CI::Codeowners::Matcher
         @context: Datadog::CI::TestVisibility::Context
+        @context_client: Datadog::CI::TestVisibility::Context
+
+        @context_service: untyped
+        @context_service_uri: String
 
         @known_tests_enabled: bool
         @known_tests: Set[String]
@@ -108,7 +114,22 @@ module Datadog
         def remote: () -> Datadog::CI::Remote::Component
 
         def test_management: () -> Datadog::CI::TestManagement::Component
+
+        def start_drb_service: () -> void
+
+        def maybe_remote_context: () -> Datadog::CI::TestVisibility::Context
       end
     end
   end
+end
+
+module DRb
+  def self.start_service: (?String uri, ?Object obj) -> untyped
+
+  module DRbUndumped
+  end
+end
+
+class DRbObject
+  def self.new_with_uri: (String uri) -> untyped
 end
