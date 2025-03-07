@@ -172,14 +172,10 @@ module Datadog
         end
 
         def incr_total_tests_count
-          p "incr_total_tests_count"
-          p Process.pid
           @mutex.synchronize { @total_tests_count += 1 }
         end
 
         def incr_tests_skipped_by_tia_count
-          p "incr_tests_skipped_by_tia_count"
-          p Process.pid
           @mutex.synchronize { @tests_skipped_by_tia_count += 1 }
         end
 
