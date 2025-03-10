@@ -59,6 +59,13 @@ module Datadog
             end
           end
 
+          def stop_all_test_suites
+            @mutex.synchronize do
+              @test_suites.each_value(&:finish)
+              @test_suites.clear
+            end
+          end
+
           def inheritable_session_tags
             @mutex.synchronize do
               test_session = @test_session

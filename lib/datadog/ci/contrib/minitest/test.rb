@@ -22,14 +22,11 @@ module Datadog
               super
               return unless datadog_configuration[:enabled]
 
-              test_suite_name = Helpers.test_suite_name(self.class, name)
               if Helpers.parallel?(self.class)
-                test_suite_name = "#{test_suite_name} (#{name} concurrently)"
-
-                # for parallel execution we need to start a new test suite for each test
-                test_visibility_component.start_test_suite(test_suite_name)
+                Helpers.start_test_suite(self.class)
               end
 
+              test_suite_name = Helpers.test_suite_name(self.class, name)
               source_file, line_number = method(name).source_location
 
               test_span = test_visibility_component.trace_test(
@@ -55,10 +52,6 @@ module Datadog
 
               # remove failures if test passed at least once on retries or quarantined
               self.failures = [] if test_span.should_ignore_failures?
-
-              if Helpers.parallel?(self.class)
-                finish_with_result(test_span.test_suite, result_code)
-              end
 
               super
             end

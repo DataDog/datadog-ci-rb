@@ -43,22 +43,20 @@ RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
     # test session and module are failed
     expect([test_session_span, test_module_span]).to all have_fail_status
 
-    # test suite spans are created for each test as for parallel execution
-    expect(test_suite_spans).to have(3).items
-    expect(test_suite_spans).to have_tag_values_no_order(:status, ["pass", "pass", "fail"])
+    # there is a single test suite
+    expect(test_suite_spans).to have(1).item
+    expect(test_suite_spans.first).to have_fail_status
     expect(test_suite_spans).to have_tag_values_no_order(
       :suite,
       [
-        "SomeTest at spec/datadog/ci/contrib/ci_queue_minitest/fake_test.rb (test_fail concurrently)",
-        "SomeTest at spec/datadog/ci/contrib/ci_queue_minitest/fake_test.rb (test_pass concurrently)",
-        "SomeTest at spec/datadog/ci/contrib/ci_queue_minitest/fake_test.rb (test_pass_other concurrently)"
+        "SomeTest at spec/datadog/ci/contrib/ci_queue_minitest/fake_test.rb"
       ]
     )
 
     # there is test span for every test case
     expect(test_spans).to have(3).items
-    # each test span has its own test suite
-    expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 3)
+    # there is a single test suite
+    expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 1)
 
     # every test span is connected to test module and test session
     expect(test_spans).to all have_test_tag(:test_module_id)

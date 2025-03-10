@@ -34,6 +34,8 @@ module Datadog
           def deactivate_test_module!: () -> void
 
           def deactivate_test_suite!: (String test_suite_name) -> void
+
+          def stop_all_test_suites: () -> void
         end
       end
     end

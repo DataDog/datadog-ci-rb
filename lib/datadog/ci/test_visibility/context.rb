@@ -73,17 +73,17 @@ module Datadog
             tracer_span = start_datadog_tracer_span(
               test_suite_name, build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SUITE)
             )
-            set_suite_context(tags, span: tracer_span)
+            set_suite_context(tags, test_suite: tracer_span)
 
             build_test_suite(tracer_span, tags)
           end
         end
 
-        def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
+        def trace_test(test_name, test_suite, service: nil, tags: {}, &block)
           set_inherited_globals(tags)
           set_session_context(tags)
           set_module_context(tags)
-          set_suite_context(tags, name: test_suite_name)
+          set_suite_context(tags, test_suite: test_suite)
 
           tags[Ext::Test::TAG_NAME] = test_name
           tags[Ext::Test::TAG_TYPE] ||= Ext::Test::Type::TEST
@@ -153,6 +153,10 @@ module Datadog
 
         def single_active_test_suite
           @global_context.fetch_single_test_suite
+        end
+
+        def stop_all_test_suites
+          @global_context.stop_all_test_suites
         end
 
         def deactivate_test
@@ -247,17 +251,11 @@ module Datadog
           end
         end
 
-        def set_suite_context(tags, span: nil, name: nil)
-          return if span.nil? && name.nil?
+        def set_suite_context(tags, test_suite: nil)
+          return if test_suite.nil?
 
-          test_suite = span || active_test_suite(name)
-
-          if test_suite
-            tags[Ext::Test::TAG_TEST_SUITE_ID] = test_suite.id.to_s
-            tags[Ext::Test::TAG_SUITE] = test_suite.name
-          else
-            tags[Ext::Test::TAG_SUITE] = name
-          end
+          tags[Ext::Test::TAG_TEST_SUITE_ID] = test_suite.id.to_s
+          tags[Ext::Test::TAG_SUITE] = test_suite.name
         end
 
         # INTERACTIONS WITH TRACING

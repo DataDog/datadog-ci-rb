@@ -84,8 +84,11 @@ module Datadog
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
+          test_suite = maybe_remote_context.active_test_suite(test_suite_name)
+          tags[Ext::Test::TAG_SUITE] ||= test_suite_name
+
           if block
-            @context.trace_test(test_name, test_suite_name, service: service, tags: tags) do |test|
+            @context.trace_test(test_name, test_suite, service: service, tags: tags) do |test|
               subscribe_to_after_stop_event(test.tracer_span)
 
               on_test_started(test)
@@ -94,7 +97,7 @@ module Datadog
               res
             end
           else
-            test = @context.trace_test(test_name, test_suite_name, service: service, tags: tags)
+            test = @context.trace_test(test_name, test_suite, service: service, tags: tags)
             subscribe_to_after_stop_event(test.tracer_span)
             on_test_started(test)
             test
@@ -236,6 +239,8 @@ module Datadog
         end
 
         def on_test_module_finished(test_module)
+          @context.stop_all_test_suites
+
           Telemetry.event_finished(test_module)
         end
 

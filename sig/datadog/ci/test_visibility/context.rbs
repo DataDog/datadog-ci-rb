@@ -13,7 +13,7 @@ module Datadog
 
         def initialize: () -> void
 
-        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+        def trace_test: (String span_name, Datadog::CI::TestSuite? test_suite, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
         def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
@@ -51,6 +51,8 @@ module Datadog
 
         def incr_tests_skipped_by_tia_count: () -> void
 
+        def stop_all_test_suites: () -> void
+
         private
 
         def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
@@ -71,7 +73,7 @@ module Datadog
 
         def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::Tracing::SpanOperation? test_session) -> void
 
-        def set_suite_context: (Hash[untyped, untyped] tags, ?span: Datadog::Tracing::SpanOperation, ?name: String) -> void
+        def set_suite_context: (Hash[untyped, untyped] tags, ?test_suite: Datadog::Tracing::SpanOperation? | Datadog::CI::TestSuite?) -> void
 
         def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
 
