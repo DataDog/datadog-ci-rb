@@ -41,6 +41,12 @@ module Datadog
                 result = super
               end
 
+              # get the current test suite and mark this method as done, so we can check if all tests were executed
+              # for this test suite
+              test_suite_name = Helpers.test_suite_name(klass, method_name)
+              test_suite = test_visibility_component.active_test_suite(test_suite_name)
+              test_suite&.expected_test_done!(method_name)
+
               result
             end
 

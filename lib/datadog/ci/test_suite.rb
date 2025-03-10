@@ -84,6 +84,24 @@ module Datadog
         end
       end
 
+      # @internal
+      def set_expected_tests!(expected_tests)
+        synchronize do
+          return if @expected_tests_set
+
+          @expected_tests_set = Set.new(expected_tests)
+        end
+      end
+
+      # @internal
+      def expected_test_done!(test_name)
+        synchronize do
+          @expected_tests_set.delete(test_name)
+
+          finish if @expected_tests_set.empty?
+        end
+      end
+
       private
 
       def set_status_from_stats!

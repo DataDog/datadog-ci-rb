@@ -2,6 +2,7 @@ module Datadog
   module CI
     class TestSuite < ConcurrentSpan
       @execution_stats_per_test: Hash[String, Hash[String, Integer]]
+      @expected_tests_set: Set[String]
 
       def record_test_result: (String test_id, String datadog_test_status) -> void
 
@@ -14,6 +15,10 @@ module Datadog
       def all_executions_failed?: (String) -> bool
 
       def all_executions_passed?: (String) -> bool
+
+      def set_expected_tests!: (Enumerable[String] tests) -> void
+
+      def expected_test_done!: (String test_name) -> void
 
       private
 

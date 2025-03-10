@@ -22,10 +22,13 @@ module Datadog
             end
 
             test_visibility_component = Datadog.send(:components).test_visibility
-            test_visibility_component.start_test_suite(
+            test_suite = test_visibility_component.start_test_suite(
               test_suite_name,
               tags: test_suite_tags
             )
+            test_suite&.set_expected_tests!(klass.runnable_methods)
+
+            test_suite
           end
 
           def self.test_suite_name(klass, method_name)
