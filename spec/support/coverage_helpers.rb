@@ -56,7 +56,7 @@ module CoverageHelpers
   end
 
   def expect_coverage_events_belong_to_suites(test_suite_spans)
-    expect(coverage_events.map(&:test_suite_id).sort).to eq(test_suite_spans.map(&:id).map(&:to_s).sort)
+    expect(coverage_events.map(&:test_suite_id).sort.uniq).to eq(test_suite_spans.map(&:id).map(&:to_s).sort.uniq)
   end
 
   def expect_coverage_events_belong_to_tests(test_spans)

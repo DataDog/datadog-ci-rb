@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "drb"
-
-require "datadog/core/utils/forking"
 require "datadog/tracing"
 require "datadog/tracing/contrib/component"
 require "datadog/tracing/trace_digest"
@@ -30,16 +27,19 @@ module Datadog
       # Its responsibility includes building domain models for test visibility as well.
       # Internally it uses Datadog::Tracing module to create spans.
       class Context
-        include Core::Utils::Forking
+        attr_reader :total_tests_count, :tests_skipped_by_tia_count
 
         def initialize
           @local_context = Store::Local.new
           @global_context = Store::Global.new
+
+          @mutex = Mutex.new
+
+          @total_tests_count = 0
+          @tests_skipped_by_tia_count = 0
         end
 
         def start_test_session(service: nil, tags: {})
-          start_drb_service
-
           @global_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(
               "test.session", build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
@@ -73,17 +73,17 @@ module Datadog
             tracer_span = start_datadog_tracer_span(
               test_suite_name, build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SUITE)
             )
-            set_suite_context(tags, span: tracer_span)
+            set_suite_context(tags, test_suite: tracer_span)
 
             build_test_suite(tracer_span, tags)
           end
         end
 
-        def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
+        def trace_test(test_name, test_suite, service: nil, tags: {}, &block)
           set_inherited_globals(tags)
           set_session_context(tags)
           set_module_context(tags)
-          set_suite_context(tags, name: test_suite_name)
+          set_suite_context(tags, test_suite: test_suite)
 
           tags[Ext::Test::TAG_NAME] = test_name
           tags[Ext::Test::TAG_TYPE] ||= Ext::Test::Type::TEST
@@ -155,6 +155,10 @@ module Datadog
           @global_context.fetch_single_test_suite
         end
 
+        def stop_all_test_suites
+          @global_context.stop_all_test_suites
+        end
+
         def deactivate_test
           @local_context.deactivate_test
         end
@@ -171,20 +175,12 @@ module Datadog
           @global_context.deactivate_test_suite!(test_suite_name)
         end
 
-        def total_tests_count
-          maybe_remote_global_context.total_tests_count
-        end
-
         def incr_total_tests_count
-          maybe_remote_global_context.incr_total_tests_count
-        end
-
-        def tests_skipped_by_tia_count
-          maybe_remote_global_context.tests_skipped_by_tia_count
+          @mutex.synchronize { @total_tests_count += 1 }
         end
 
         def incr_tests_skipped_by_tia_count
-          maybe_remote_global_context.incr_tests_skipped_by_tia_count
+          @mutex.synchronize { @tests_skipped_by_tia_count += 1 }
         end
 
         private
@@ -255,17 +251,11 @@ module Datadog
           end
         end
 
-        def set_suite_context(tags, span: nil, name: nil)
-          return if span.nil? && name.nil?
+        def set_suite_context(tags, test_suite: nil)
+          return if test_suite.nil?
 
-          test_suite = span || active_test_suite(name)
-
-          if test_suite
-            tags[Ext::Test::TAG_TEST_SUITE_ID] = test_suite.id.to_s
-            tags[Ext::Test::TAG_SUITE] = test_suite.name
-          else
-            tags[Ext::Test::TAG_SUITE] = name
-          end
+          tags[Ext::Test::TAG_TEST_SUITE_ID] = test_suite.id.to_s
+          tags[Ext::Test::TAG_SUITE] = test_suite.name
         end
 
         # INTERACTIONS WITH TRACING
@@ -295,23 +285,6 @@ module Datadog
           other_options[:type] = type
 
           other_options
-        end
-
-        # DISTRIBUTED RUBY CONTEXT
-        def start_drb_service
-          return if @global_context_uri
-
-          return if forked?
-
-          @global_context_uri = DRb.start_service("drbunix:", @global_context).uri
-        end
-
-        # depending on whether we are in a forked process or not, returns either the global context or its DRbObject
-        def maybe_remote_global_context
-          return @global_context unless forked?
-          return @global_context_client if defined?(@global_context_client)
-
-          @global_context_client = DRbObject.new_with_uri(@global_context_uri)
         end
       end
     end

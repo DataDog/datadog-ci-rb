@@ -3,6 +3,8 @@ module Datadog
     module Contrib
       module Minitest
         module Helpers
+          def self.start_test_suite: (untyped klass) -> Datadog::CI::TestSuite?
+
           def self.test_suite_name: (untyped klass, String? method_name) -> ::String
 
           def self.parallel?: (untyped klass) -> bool

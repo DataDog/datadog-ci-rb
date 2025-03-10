@@ -2,19 +2,18 @@ module Datadog
   module CI
     module TestVisibility
       class Context
-        include Datadog::Core::Utils::Forking
+        @mutex: Mutex
 
         @local_context: Datadog::CI::TestVisibility::Store::Local
         @global_context: Datadog::CI::TestVisibility::Store::Global
-        @global_context_client: Datadog::CI::TestVisibility::Store::Global
-
-        @global_context_uri: String
-
         @environment_tags: Hash[String, String]
+
+        @total_tests_count: Integer
+        @tests_skipped_by_tia_count: Integer
 
         def initialize: () -> void
 
-        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+        def trace_test: (String span_name, Datadog::CI::TestSuite? test_suite, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
         def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
@@ -52,6 +51,8 @@ module Datadog
 
         def incr_tests_skipped_by_tia_count: () -> void
 
+        def stop_all_test_suites: () -> void
+
         private
 
         def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
@@ -72,29 +73,15 @@ module Datadog
 
         def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::Tracing::SpanOperation? test_session) -> void
 
-        def set_suite_context: (Hash[untyped, untyped] tags, ?span: Datadog::Tracing::SpanOperation, ?name: String) -> void
+        def set_suite_context: (Hash[untyped, untyped] tags, ?test_suite: Datadog::Tracing::SpanOperation? | Datadog::CI::TestSuite?) -> void
 
         def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
 
         def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
 
         def build_tracing_span_options: (String? service_name, String type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
-
-        def start_drb_service: () -> void
-
-        def maybe_remote_global_context: () -> Datadog::CI::TestVisibility::Store::Global
       end
     end
   end
 end
 
-module DRb
-  def self.start_service: (?String uri, ?Object obj) -> untyped
-
-  module DRbUndumped
-  end
-end
-
-class DRbObject
-  def self.new_with_uri: (String uri) -> untyped
-end

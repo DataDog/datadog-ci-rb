@@ -700,7 +700,7 @@ RSpec.describe "Minitest instrumentation" do
           end
         end
 
-        it "traces all tests correctly, assigning a separate test suite to each of them" do
+        it "traces all tests and test suites correctly" do
           test_threads = test_spans.map { |span| span.get_tag("minitest_thread") }.uniq
 
           # make sure that tests were executed concurrently
@@ -716,7 +716,7 @@ RSpec.describe "Minitest instrumentation" do
               "test_b_2"
             ]
           )
-          expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 4)
+          expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 2)
         end
 
         it "connects tests to a single test session and a single test module" do
@@ -728,15 +728,13 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "creates test suite spans" do
-          expect(test_suite_spans).to have(4).items
+          expect(test_suite_spans).to have(2).items
 
           expect(test_suite_spans).to have_tag_values_no_order(
             :suite,
             [
-              "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_1 concurrently)",
-              "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_2 concurrently)",
-              "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_1 concurrently)",
-              "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_2 concurrently)"
+              "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
+              "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
             ]
           )
         end
@@ -756,9 +754,9 @@ RSpec.describe "Minitest instrumentation" do
           let(:itr_skippable_tests) do
             Set.new(
               [
-                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_1 concurrently).test_a_1.",
-                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_a_2 concurrently).test_a_2.",
-                "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb (test_b_2 concurrently).test_b_2."
+                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_a_1.",
+                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_a_2.",
+                "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_b_2."
               ]
             )
           end
@@ -1229,7 +1227,7 @@ RSpec.describe "Minitest instrumentation" do
 
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
-      expect(test_suite_spans).to have(12).items
+      expect(test_suite_spans).to have(1).item
 
       expect(test_session_span).to have_fail_status
     end
