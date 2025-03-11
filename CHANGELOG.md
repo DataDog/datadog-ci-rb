@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [1.14.0] - 2025-03-11
+
+### Added
+
+* Test impact analysis: add rails parallel testing support ([#294][])
+* Add parallel testing support to minitest framework ([#295][])
+
+### Changed
+
+* Test knapsack_pro v8 ([#292][])
+
 ## [1.13.0] - 2025-02-25
 
 ### Added
@@ -393,7 +404,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.13.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.14.0...main
+[1.14.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.10.0...v1.11.0
@@ -565,3 +577,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#283]: https://github.com/DataDog/datadog-ci-rb/issues/283
 [#286]: https://github.com/DataDog/datadog-ci-rb/issues/286
 [#289]: https://github.com/DataDog/datadog-ci-rb/issues/289
+[#292]: https://github.com/DataDog/datadog-ci-rb/issues/292
+[#294]: https://github.com/DataDog/datadog-ci-rb/issues/294
+[#295]: https://github.com/DataDog/datadog-ci-rb/issues/295
