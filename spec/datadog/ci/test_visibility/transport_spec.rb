@@ -62,7 +62,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
               "_dd.library_capabilities.auto_test_retries" => "false",
               "_dd.library_capabilities.test_management.quarantine" => "false",
               "_dd.library_capabilities.test_management.disable" => "false",
-              "_dd.library_capabilities.test_management.attempt_to_fix" => "false",
+              "_dd.library_capabilities.test_management.attempt_to_fix_v2" => "false",
               "_dd.test.is_user_provided_service" => "true"
             )
           end
@@ -91,7 +91,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
                 "_dd.library_capabilities.auto_test_retries" => "false",
                 "_dd.library_capabilities.test_management.quarantine" => "true",
                 "_dd.library_capabilities.test_management.disable" => "true",
-                "_dd.library_capabilities.test_management.attempt_to_fix" => "true"
+                "_dd.library_capabilities.test_management.attempt_to_fix_v2" => "true"
               )
             end
           end

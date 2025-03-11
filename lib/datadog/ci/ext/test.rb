@@ -85,7 +85,7 @@ module Datadog
           TAG_AUTO_TEST_RETRIES = "_dd.library_capabilities.auto_test_retries"
           TAG_TEST_MANAGEMENT_QUARANTINE = "_dd.library_capabilities.test_management.quarantine"
           TAG_TEST_MANAGEMENT_DISABLE = "_dd.library_capabilities.test_management.disable"
-          TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX = "_dd.library_capabilities.test_management.attempt_to_fix"
+          TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX = "_dd.library_capabilities.test_management.attempt_to_fix_v2"
         end
 
         # internal APM tag to mark a span as a test span
