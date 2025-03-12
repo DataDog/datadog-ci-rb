@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "cli"
 require_relative "integration"
+
+require_relative "../patcher"
 
 module Datadog
   module CI
@@ -13,8 +16,7 @@ module Datadog
           module_function
 
           def patch
-            # Empty implementation as requested
-            # Will be filled in later
+            ::ParallelTests::CLI.include(CLI)
           end
         end
       end
