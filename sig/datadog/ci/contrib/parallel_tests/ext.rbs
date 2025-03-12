@@ -4,6 +4,7 @@ module Datadog
       module ParallelTests
         module Ext
           ENV_ENABLED: String
+          DEFAULT_SERVICE_NAME: String
         end
       end
     end

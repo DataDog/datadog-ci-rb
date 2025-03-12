@@ -17,6 +17,13 @@ module Datadog
               o.env Ext::ENV_ENABLED
               o.default true
             end
+
+            option :service_name do |o|
+              o.type :string
+              o.default do
+                Utils::Configuration.fetch_service_name(Ext::DEFAULT_SERVICE_NAME)
+              end
+            end
           end
         end
       end

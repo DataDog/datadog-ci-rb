@@ -17,7 +17,7 @@ module Datadog
           end
 
           def loaded?
-            !defined?(::ParallelTests).nil?
+            !defined?(::ParallelTests).nil? && !defined?(::ParallelTests::CLI).nil?
           end
 
           def compatible?
