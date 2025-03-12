@@ -12,6 +12,8 @@ module Datadog
       def ci_provider: () -> String?
 
       def ci_job_name: () -> String?
+
+      def git_commit_message: () -> String?
     end
   end
 end

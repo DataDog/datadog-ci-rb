@@ -4,7 +4,6 @@ require "datadog/core/environment/identity"
 require "datadog/core/telemetry/logging"
 require "datadog/core/utils/only_once"
 
-require_relative "capabilities"
 require_relative "serializers/factories/test_level"
 
 require_relative "../ext/app_types"
@@ -117,7 +116,7 @@ module Datadog
           packer.write("library_version")
           packer.write(Datadog::CI::VERSION::STRING)
 
-          library_capabilities_tags = Capabilities.tags
+          library_capabilities_tags = Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS
 
           Ext::AppTypes::CI_SPAN_TYPES.each do |ci_span_type|
             packer.write(ci_span_type)

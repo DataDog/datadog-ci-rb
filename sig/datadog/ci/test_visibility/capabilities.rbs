@@ -1,9 +1,0 @@
-module Datadog
-  module CI
-    module TestVisibility
-      module Capabilities
-        def self.tags: () -> Hash[String, String]
-      end
-    end
-  end
-end
