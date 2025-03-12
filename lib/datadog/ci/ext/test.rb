@@ -85,7 +85,27 @@ module Datadog
           TAG_AUTO_TEST_RETRIES = "_dd.library_capabilities.auto_test_retries"
           TAG_TEST_MANAGEMENT_QUARANTINE = "_dd.library_capabilities.test_management.quarantine"
           TAG_TEST_MANAGEMENT_DISABLE = "_dd.library_capabilities.test_management.disable"
-          TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX = "_dd.library_capabilities.test_management.attempt_to_fix_v2"
+          TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX = "_dd.library_capabilities.test_management.attempt_to_fix"
+
+          # Version numbers for library capabilities
+          module Versions
+            TEST_IMPACT_ANALYSIS_VERSION = "1"
+            EARLY_FLAKE_DETECTION_VERSION = "1"
+            AUTO_TEST_RETRIES_VERSION = "1"
+            TEST_MANAGEMENT_QUARANTINE_VERSION = "1"
+            TEST_MANAGEMENT_DISABLE_VERSION = "1"
+            TEST_MANAGEMENT_ATTEMPT_TO_FIX_VERSION = "2"
+          end
+
+          # Map of capabilities to their versions
+          CAPABILITY_VERSIONS = {
+            TAG_TEST_IMPACT_ANALYSIS => Versions::TEST_IMPACT_ANALYSIS_VERSION,
+            TAG_EARLY_FLAKE_DETECTION => Versions::EARLY_FLAKE_DETECTION_VERSION,
+            TAG_AUTO_TEST_RETRIES => Versions::AUTO_TEST_RETRIES_VERSION,
+            TAG_TEST_MANAGEMENT_QUARANTINE => Versions::TEST_MANAGEMENT_QUARANTINE_VERSION,
+            TAG_TEST_MANAGEMENT_DISABLE => Versions::TEST_MANAGEMENT_DISABLE_VERSION,
+            TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX => Versions::TEST_MANAGEMENT_ATTEMPT_TO_FIX_VERSION
+          }.freeze
         end
 
         # internal APM tag to mark a span as a test span

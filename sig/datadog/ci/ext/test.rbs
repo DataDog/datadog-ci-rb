@@ -122,7 +122,18 @@ module Datadog
           TAG_AUTO_TEST_RETRIES: "_dd.library_capabilities.auto_test_retries"
           TAG_TEST_MANAGEMENT_QUARANTINE: "_dd.library_capabilities.test_management.quarantine"
           TAG_TEST_MANAGEMENT_DISABLE: "_dd.library_capabilities.test_management.disable"
-          TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX: "_dd.library_capabilities.test_management.attempt_to_fix_v2"
+          TAG_TEST_MANAGEMENT_ATTEMPT_TO_FIX: "_dd.library_capabilities.test_management.attempt_to_fix"
+
+          module Versions
+            TEST_IMPACT_ANALYSIS_VERSION: String
+            EARLY_FLAKE_DETECTION_VERSION: String
+            AUTO_TEST_RETRIES_VERSION: String
+            TEST_MANAGEMENT_QUARANTINE_VERSION: String
+            TEST_MANAGEMENT_DISABLE_VERSION: String
+            TEST_MANAGEMENT_ATTEMPT_TO_FIX_VERSION: String
+          end
+
+          CAPABILITY_VERSIONS: Hash[String, String]
         end
 
         module Status
