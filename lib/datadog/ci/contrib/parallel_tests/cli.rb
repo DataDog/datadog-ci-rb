@@ -27,9 +27,14 @@ module Datadog
                   service: datadog_configuration[:service_name],
                   estimated_total_tests_count: 1000
                 )
+                test_module = test_visibility_component.start_test_module("rspec")
+
+                options[:env] ||= {}
+                options[:env][CI::Ext::Settings::ENV_TEST_VISIBILITY_DRB_SERVER_URI] = test_visibility_component.context_service_uri
 
                 super
               ensure
+                test_module&.finish
                 test_session&.finish
               end
             end
@@ -38,9 +43,12 @@ module Datadog
               res = super
 
               test_session = test_visibility_component.active_test_session
+              test_module = test_visibility_component.active_test_module
               if res
+                test_module&.failed!
                 test_session&.failed!
               else
+                test_module&.passed!
                 test_session&.passed!
               end
 

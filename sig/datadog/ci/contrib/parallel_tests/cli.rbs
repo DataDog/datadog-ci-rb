@@ -6,7 +6,7 @@ module Datadog
           def self.included: (untyped base) -> void
 
           module InstanceMethods : ::ParallelTests::CLI
-            def run_tests_in_parallel: (Integer num_processes, Hash[String, String] options) -> untyped
+            def run_tests_in_parallel: (Integer num_processes, Hash[Symbol, untyped] options) -> untyped
             def any_test_failed?: (untyped test_results) -> bool
             def datadog_configuration: () -> untyped
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component

@@ -29,7 +29,9 @@ module Datadog
       class Context
         attr_reader :total_tests_count, :tests_skipped_by_tia_count
 
-        def initialize
+        def initialize(test_visibility_component:)
+          @test_visibility_component = test_visibility_component
+
           @local_context = Store::Local.new
           @global_context = Store::Global.new
 
@@ -239,12 +241,13 @@ module Datadog
         end
 
         def set_session_context(tags, test_session = nil)
-          test_session ||= active_test_session
+          # we need to call TestVisibility::Component here because active test session might be remote
+          test_session ||= @test_visibility_component.active_test_session
           tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id.to_s if test_session
         end
 
         def set_module_context(tags, test_module = nil)
-          test_module ||= active_test_module
+          test_module ||= @test_visibility_component.active_test_module
           if test_module
             tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id.to_s
             tags[Ext::Test::TAG_MODULE] = test_module.name

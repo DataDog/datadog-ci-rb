@@ -2,7 +2,7 @@
 
 require_relative "cli"
 require_relative "integration"
-
+require_relative "runner"
 require_relative "../patcher"
 
 module Datadog
