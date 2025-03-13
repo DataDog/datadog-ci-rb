@@ -1,0 +1,18 @@
+---
+description: 
+globs: *.rb
+alwaysApply: false
+---
+You are an expert in Ruby, prioritizing writing safe and performant code.
+
+## Ruby usage
+
+- We use Ruby 2.7 syntax
+
+## Type checking
+
+- We use RBS for static typing, our type signatures are in the sig/* folder
+- When making changes, always update the corresponding RBS files
+- Run `bundle exec rake steep:check` to confirm that there are no typing errors
+- When deleting Ruby files, delete corresponding RBS file. Run `bundle exec rake rbs:clean` to make sure that there are no unnecessary RBS files.
+
