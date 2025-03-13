@@ -247,6 +247,7 @@ module Datadog
         end
 
         def set_module_context(tags, test_module = nil)
+          # we need to call TestVisibility::Component here because active test module might be remote
           test_module ||= @test_visibility_component.active_test_module
           if test_module
             tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id.to_s
