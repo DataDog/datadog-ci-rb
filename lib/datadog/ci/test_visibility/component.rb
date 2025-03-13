@@ -24,17 +24,18 @@ module Datadog
         include Core::Utils::Forking
 
         attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name,
-          :known_tests, :known_tests_enabled
+          :known_tests, :known_tests_enabled, :context_service_uri
 
         def initialize(
           known_tests_client:,
           test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse,
-          logical_test_session_name: nil
+          logical_test_session_name: nil,
+          context_service_uri: nil
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
-          @context = Context.new
+          @context = Context.new(test_visibility_component: self)
 
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
@@ -44,6 +45,12 @@ module Datadog
           @known_tests_enabled = false
           @known_tests_client = known_tests_client
           @known_tests = Set.new
+
+          # this is used for parallel test runners such as parallel_tests
+          if context_service_uri
+            @context_service_uri = context_service_uri
+            @is_client_process = true
+          end
         end
 
         def configure(library_configuration, test_session)
@@ -60,7 +67,7 @@ module Datadog
 
           start_drb_service
 
-          test_session = @context.start_test_session(service: service, tags: tags)
+          test_session = maybe_remote_context.start_test_session(service: service, tags: tags)
           test_session.estimated_total_tests_count = estimated_total_tests_count
 
           on_test_session_started(test_session)
@@ -70,7 +77,7 @@ module Datadog
         def start_test_module(test_module_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          test_module = @context.start_test_module(test_module_name, service: service, tags: tags)
+          test_module = maybe_remote_context.start_test_module(test_module_name, service: service, tags: tags)
           on_test_module_started(test_module)
           test_module
         end
@@ -123,11 +130,11 @@ module Datadog
         end
 
         def active_test_session
-          @context.active_test_session
+          maybe_remote_context.active_test_session
         end
 
         def active_test_module
-          @context.active_test_module
+          maybe_remote_context.active_test_module
         end
 
         def active_test_suite(test_suite_name)
@@ -145,14 +152,14 @@ module Datadog
           test_session = active_test_session
           on_test_session_finished(test_session) if test_session
 
-          @context.deactivate_test_session
+          maybe_remote_context.deactivate_test_session
         end
 
         def deactivate_test_module
           test_module = active_test_module
           on_test_module_finished(test_module) if test_module
 
-          @context.deactivate_test_module
+          maybe_remote_context.deactivate_test_module
         end
 
         def deactivate_test_suite(test_suite_name)
@@ -397,9 +404,13 @@ module Datadog
         end
 
         # DISTRIBUTED RUBY CONTEXT
+        def client_process?
+          forked? || @is_client_process
+        end
+
         def start_drb_service
           return if @context_service_uri
-          return if forked?
+          return if client_process?
 
           @context_service = DRb.start_service("drbunix:", @context)
           @context_service_uri = @context_service.uri
@@ -407,12 +418,12 @@ module Datadog
 
         # depending on whether we are in a forked process or not, returns either the global context or its DRbObject
         def maybe_remote_context
-          return @context unless forked?
+          return @context unless client_process?
           return @context_client if defined?(@context_client)
 
-          # once per fork we must stop the running DRb server that was copied from the parent process
+          # at least once per fork we must stop the running DRb server that was copied from the parent process
           # otherwise, client will be confused thinking it's server which leads to terrible bugs
-          @context_service.stop_service
+          @context_service&.stop_service
 
           @context_client = DRbObject.new_with_uri(@context_service_uri)
         end

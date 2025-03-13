@@ -129,7 +129,8 @@ module Datadog
           @test_visibility = TestVisibility::Component.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             logical_test_session_name: settings.ci.test_session_name,
-            known_tests_client: build_known_tests_client(settings, test_visibility_api)
+            known_tests_client: build_known_tests_client(settings, test_visibility_api),
+            context_service_uri: settings.ci.test_visibility_drb_server_uri
           )
         end
 

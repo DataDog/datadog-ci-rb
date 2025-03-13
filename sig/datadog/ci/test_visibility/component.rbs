@@ -12,6 +12,7 @@ module Datadog
 
         @context_service: untyped
         @context_service_uri: String
+        @is_client_process: bool
 
         @known_tests_enabled: bool
         @known_tests: Set[String]
@@ -23,7 +24,11 @@ module Datadog
 
         attr_reader known_tests: Set[String]
 
-        def initialize: (known_tests_client: Datadog::CI::TestVisibility::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?) -> void
+        attr_reader known_tests_enabled: bool
+
+        attr_reader context_service_uri: String
+
+        def initialize: (known_tests_client: Datadog::CI::TestVisibility::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?context_service_uri: String?) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
@@ -118,6 +123,8 @@ module Datadog
         def start_drb_service: () -> void
 
         def maybe_remote_context: () -> Datadog::CI::TestVisibility::Context
+
+        def client_process?: () -> bool
       end
     end
   end
