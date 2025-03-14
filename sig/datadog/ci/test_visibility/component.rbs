@@ -4,6 +4,8 @@ module Datadog
       class Component
         include Datadog::Core::Utils::Forking
 
+        FILE_STORAGE_KEY: String
+
         @test_suite_level_visibility_enabled: bool
 
         @codeowners: Datadog::CI::Codeowners::Matcher
@@ -69,6 +71,10 @@ module Datadog
         def shutdown!: () -> void
 
         private
+
+        def store_component_state: () -> bool
+
+        def load_component_state: () -> bool
 
         def configure_library: (Datadog::CI::TestSession test_session) -> void
 

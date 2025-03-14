@@ -13,6 +13,7 @@ require_relative "../codeowners/parser"
 require_relative "../contrib/instrumentation"
 require_relative "../ext/test"
 require_relative "../git/local_repository"
+require_relative "../utils/file_storage"
 
 require_relative "../worker"
 
@@ -22,6 +23,8 @@ module Datadog
       # Core functionality of the library: tracing tests' execution
       class Component
         include Core::Utils::Forking
+
+        FILE_STORAGE_KEY = "test_visibility_component_state"
 
         attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name,
           :known_tests, :known_tests_enabled, :context_service_uri
@@ -55,11 +58,13 @@ module Datadog
 
         def configure(library_configuration, test_session)
           return unless test_suite_level_visibility_enabled
+          return unless library_configuration.known_tests_enabled?
 
-          if library_configuration.known_tests_enabled?
-            @known_tests_enabled = true
-            fetch_known_tests(test_session)
-          end
+          @known_tests_enabled = true
+          return if load_component_state
+
+          fetch_known_tests(test_session)
+          store_component_state
         end
 
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0)
@@ -243,6 +248,8 @@ module Datadog
           TotalCoverage.extract_lines_pct(test_session)
 
           Telemetry.event_finished(test_session)
+
+          Utils::FileStorage.cleanup
         end
 
         def on_test_module_finished(test_module)
@@ -426,6 +433,33 @@ module Datadog
           @context_service&.stop_service
 
           @context_client = DRbObject.new_with_uri(@context_service_uri)
+        end
+
+        def store_component_state
+          state = {
+            known_tests: @known_tests
+          }
+
+          res = Utils::FileStorage.store(FILE_STORAGE_KEY, state)
+          Datadog.logger.debug do
+            "Stored component state: #{res}"
+          end
+
+          res
+        end
+
+        def load_component_state
+          return false unless client_process?
+
+          state = Utils::FileStorage.retrieve(FILE_STORAGE_KEY)
+          unless state
+            Datadog.logger.debug { "No component state found in file storage" }
+            return false
+          end
+
+          @known_tests = state[:known_tests]
+          Datadog.logger.debug { "Loaded component state from file storage" }
+          true
         end
       end
     end
