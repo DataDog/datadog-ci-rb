@@ -14,10 +14,10 @@ module Datadog
 
           module InstanceMethods
             def run_tests_in_parallel(num_processes, options)
+              # only rspec runner is supported for now
               return super if @runner != ::ParallelTests::RSpec::Runner
 
               begin
-                # TODO: how to get total tests count? RSpec isn't loaded yet so we cannot access ::RSpec.world.example_count
                 test_session = test_visibility_component.start_test_session(
                   tags: {
                     CI::Ext::Test::TAG_FRAMEWORK => CI::Contrib::RSpec::Ext::FRAMEWORK,
@@ -25,7 +25,7 @@ module Datadog
 
                   },
                   service: datadog_configuration[:service_name],
-                  estimated_total_tests_count: 1000
+                  estimated_total_tests_count: 10_000 # temporary value, updated by child processes
                 )
                 test_module = test_visibility_component.start_test_module("rspec")
 
