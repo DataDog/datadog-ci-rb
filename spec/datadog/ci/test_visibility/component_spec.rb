@@ -880,6 +880,15 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         expect(test_visibility.known_tests_enabled).to be true
       end
 
+      it "stores component state after fetching known tests" do
+        expect(Datadog::CI::Utils::FileStorage).to receive(:store).with(
+          described_class::FILE_STORAGE_KEY,
+          {known_tests: known_tests}
+        ).and_return(true)
+
+        subject
+      end
+
       it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_tests", 2
 
       context "and when known tests storage is empty" do
@@ -891,6 +900,51 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           subject
 
           expect(test_visibility.known_tests_enabled).to be false
+        end
+      end
+
+      context "when in a client process" do
+        before do
+          allow(test_visibility).to receive(:client_process?).and_return(true)
+        end
+
+        context "when component state exists in file storage" do
+          let(:stored_known_tests) { Set.new(["stored_test1", "stored_test2"]) }
+          let(:stored_state) { {known_tests: stored_known_tests} }
+
+          before do
+            allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+              .with(described_class::FILE_STORAGE_KEY)
+              .and_return(stored_state)
+          end
+
+          it "loads component state from file storage" do
+            subject
+
+            expect(test_visibility.known_tests).to eq(stored_known_tests)
+            expect(test_visibility.known_tests_enabled).to be true
+            expect(known_tests_client).not_to have_received(:fetch)
+          end
+        end
+
+        context "when component state does not exist in file storage" do
+          before do
+            allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+              .with(described_class::FILE_STORAGE_KEY)
+              .and_return(nil)
+          end
+
+          it "fetches and stores known tests" do
+            expect(known_tests_client).to receive(:fetch).with(test_session).and_return(known_tests)
+            expect(Datadog::CI::Utils::FileStorage).to receive(:store).with(
+              described_class::FILE_STORAGE_KEY,
+              {known_tests: known_tests}
+            ).and_return(true)
+
+            subject
+
+            expect(test_visibility.known_tests).to eq(known_tests)
+          end
         end
       end
     end
