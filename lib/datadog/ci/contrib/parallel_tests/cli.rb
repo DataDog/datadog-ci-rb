@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../ext/test"
+require_relative "../rspec/ext"
 
 module Datadog
   module CI
@@ -16,12 +17,11 @@ module Datadog
               return super if @runner != ::ParallelTests::RSpec::Runner
 
               begin
-                # TODO: how to get rspec framework version? it's not loaded yet
                 # TODO: how to get total tests count? RSpec isn't loaded yet so we cannot access ::RSpec.world.example_count
                 test_session = test_visibility_component.start_test_session(
                   tags: {
-                    CI::Ext::Test::TAG_FRAMEWORK => "rspec",
-                    CI::Ext::Test::TAG_FRAMEWORK_VERSION => "0.0.0"
+                    CI::Ext::Test::TAG_FRAMEWORK => CI::Contrib::RSpec::Ext::FRAMEWORK,
+                    CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_extract_rspec_version
 
                   },
                   service: datadog_configuration[:service_name],
@@ -53,6 +53,20 @@ module Datadog
               end
 
               res
+            end
+
+            def datadog_extract_rspec_version
+              # Try to find either 'rspec' or 'rspec-core' gem
+              if Gem.loaded_specs["rspec"]
+                Gem.loaded_specs["rspec"].version.to_s
+              elsif Gem.loaded_specs["rspec-core"]
+                Gem.loaded_specs["rspec-core"].version.to_s
+              else
+                "0.0.0"
+              end
+            rescue => e
+              Datadog.logger.debug("Error extracting RSpec version: #{e.class.name} - #{e.message}")
+              "0.0.0"
             end
 
             def datadog_configuration
