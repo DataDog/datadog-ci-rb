@@ -928,6 +928,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
       context "when in a client process" do
         before do
+          allow(Datadog.send(:components)).to receive(:test_visibility).and_return(test_visibility)
           allow(test_visibility).to receive(:client_process?).and_return(true)
         end
 

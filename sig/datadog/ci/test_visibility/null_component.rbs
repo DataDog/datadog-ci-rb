@@ -32,6 +32,8 @@ module Datadog
 
         def itr_enabled?: () -> bool
 
+        def client_process?: () -> bool
+
         private
 
         def skip_tracing: (?untyped block) -> nil

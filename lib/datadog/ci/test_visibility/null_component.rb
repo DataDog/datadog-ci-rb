@@ -63,6 +63,10 @@ module Datadog
         def logical_test_session_name
         end
 
+        def client_process?
+          false
+        end
+
         private
 
         def skip_tracing(block = nil)

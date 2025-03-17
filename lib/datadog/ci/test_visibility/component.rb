@@ -14,6 +14,7 @@ require_relative "../contrib/instrumentation"
 require_relative "../ext/test"
 require_relative "../git/local_repository"
 require_relative "../utils/file_storage"
+require_relative "../utils/stateful"
 
 require_relative "../worker"
 
@@ -23,6 +24,7 @@ module Datadog
       # Core functionality of the library: tracing tests' execution
       class Component
         include Core::Utils::Forking
+        include Datadog::CI::Utils::Stateful
 
         FILE_STORAGE_KEY = "test_visibility_component_state"
 
@@ -189,6 +191,10 @@ module Datadog
 
         def shutdown!
           # noop, there is no thread owned by test visibility component
+        end
+
+        def client_process?
+          forked? || @is_client_process
         end
 
         private
@@ -412,10 +418,6 @@ module Datadog
         end
 
         # DISTRIBUTED RUBY CONTEXT
-        def client_process?
-          forked? || @is_client_process
-        end
-
         def start_drb_service
           return if @context_service_uri
           return if client_process?
@@ -436,31 +438,19 @@ module Datadog
           @context_client = DRbObject.new_with_uri(@context_service_uri)
         end
 
-        def store_component_state
-          state = {
+        # Implementation of Stateful interface
+        def serialize_state
+          {
             known_tests: @known_tests
           }
-
-          res = Utils::FileStorage.store(FILE_STORAGE_KEY, state)
-          Datadog.logger.debug do
-            "Stored component state: #{res}"
-          end
-
-          res
         end
 
-        def load_component_state
-          return false unless client_process?
-
-          state = Utils::FileStorage.retrieve(FILE_STORAGE_KEY)
-          unless state
-            Datadog.logger.debug { "No component state found in file storage" }
-            return false
-          end
-
+        def restore_state(state)
           @known_tests = state[:known_tests]
-          Datadog.logger.debug { "Loaded component state from file storage" }
-          true
+        end
+
+        def storage_key
+          FILE_STORAGE_KEY
         end
       end
     end

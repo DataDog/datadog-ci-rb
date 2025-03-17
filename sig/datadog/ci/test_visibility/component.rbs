@@ -3,6 +3,7 @@ module Datadog
     module TestVisibility
       class Component
         include Datadog::Core::Utils::Forking
+        include Datadog::CI::Utils::Stateful
 
         FILE_STORAGE_KEY: String
 
@@ -70,11 +71,14 @@ module Datadog
 
         def shutdown!: () -> void
 
+        def client_process?: () -> bool
+
         private
 
-        def store_component_state: () -> bool
+        # Implementation of Stateful interface
+        def serialize_state: () -> Hash[Symbol, untyped]
 
-        def load_component_state: () -> bool
+        def restore_state: (Hash[Symbol, untyped] state) -> void
 
         def configure_library: (Datadog::CI::TestSession test_session) -> void
 
@@ -129,8 +133,6 @@ module Datadog
         def start_drb_service: () -> void
 
         def maybe_remote_context: () -> Datadog::CI::TestVisibility::Context
-
-        def client_process?: () -> bool
       end
     end
   end
