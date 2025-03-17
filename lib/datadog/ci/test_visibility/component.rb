@@ -64,16 +64,17 @@ module Datadog
           return if load_component_state
 
           fetch_known_tests(test_session)
-          store_component_state
+          store_component_state if test_session.distributed
         end
 
-        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0)
+        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: false)
           return skip_tracing unless test_suite_level_visibility_enabled
 
           start_drb_service
 
           test_session = maybe_remote_context.start_test_session(service: service, tags: tags)
           test_session.estimated_total_tests_count = estimated_total_tests_count
+          test_session.distributed = distributed
 
           on_test_session_started(test_session)
           test_session

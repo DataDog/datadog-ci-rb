@@ -866,40 +866,63 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
     end
     let(:known_tests_enabled) { true }
 
-    let(:test_session) { instance_double(Datadog::CI::TestSession) }
+    let(:test_session) { instance_double(Datadog::CI::TestSession, distributed: distributed) }
+    let(:distributed) { false }
 
     subject { test_visibility.configure(library_settings, test_session) }
 
     context "when known tests functionality is enabled" do
       let(:known_tests_enabled) { true }
 
-      it "fetches known tests" do
-        subject
+      context "when test session is not distributed" do
+        let(:distributed) { false }
 
-        expect(test_visibility.known_tests).to eq(known_tests)
-        expect(test_visibility.known_tests_enabled).to be true
+        it "fetches known tests" do
+          subject
+
+          expect(test_visibility.known_tests).to eq(known_tests)
+          expect(test_visibility.known_tests_enabled).to be true
+        end
+
+        it "doesn't store component state after fetching known tests" do
+          expect(Datadog::CI::Utils::FileStorage).not_to receive(:store)
+
+          subject
+        end
+
+        it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_tests", 2
+
+        context "and when known tests storage is empty" do
+          let(:known_tests) { Set.new }
+
+          it "disables known tests functionality" do
+            expect(test_session).to receive(:set_tag).with("test.early_flake.abort_reason", "faulty")
+
+            subject
+
+            expect(test_visibility.known_tests_enabled).to be false
+          end
+        end
       end
 
-      it "stores component state after fetching known tests" do
-        expect(Datadog::CI::Utils::FileStorage).to receive(:store).with(
-          described_class::FILE_STORAGE_KEY,
-          {known_tests: known_tests}
-        ).and_return(true)
+      context "when test session is distributed" do
+        let(:distributed) { true }
 
-        subject
-      end
-
-      it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_tests", 2
-
-      context "and when known tests storage is empty" do
-        let(:known_tests) { Set.new }
-
-        it "disables known tests functionality" do
-          expect(test_session).to receive(:set_tag).with("test.early_flake.abort_reason", "faulty")
+        it "fetches known tests" do
+          expect(known_tests_client).to receive(:fetch).with(test_session).and_return(known_tests)
 
           subject
 
-          expect(test_visibility.known_tests_enabled).to be false
+          expect(test_visibility.known_tests_enabled).to be true
+        end
+
+        it "stores component state" do
+          expect(Datadog::CI::Utils::FileStorage).to receive(:store).with(
+            described_class::FILE_STORAGE_KEY,
+            {known_tests: known_tests}
+          ).and_return(true)
+
+          subject
         end
       end
 
@@ -934,12 +957,8 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
               .and_return(nil)
           end
 
-          it "fetches and stores known tests" do
+          it "fetches known tests" do
             expect(known_tests_client).to receive(:fetch).with(test_session).and_return(known_tests)
-            expect(Datadog::CI::Utils::FileStorage).to receive(:store).with(
-              described_class::FILE_STORAGE_KEY,
-              {known_tests: known_tests}
-            ).and_return(true)
 
             subject
 

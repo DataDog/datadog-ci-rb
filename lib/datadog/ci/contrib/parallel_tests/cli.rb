@@ -25,7 +25,8 @@ module Datadog
 
                   },
                   service: datadog_configuration[:service_name],
-                  estimated_total_tests_count: 10_000 # temporary value, updated by child processes
+                  estimated_total_tests_count: 10_000, # temporary value, updated by child processes
+                  distributed: true
                 )
                 test_module = test_visibility_component.start_test_module("rspec")
 
