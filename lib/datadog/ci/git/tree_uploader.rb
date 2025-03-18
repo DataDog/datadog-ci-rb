@@ -27,6 +27,11 @@ module Datadog
             return
           end
 
+          if test_visibility_component.client_process?
+            Datadog.logger.debug("Test visibility component is running in client process, aborting git upload")
+            return
+          end
+
           Datadog.logger.debug { "Uploading git tree for repository #{repository_url}" }
 
           latest_commits = LocalRepository.git_commits
@@ -90,6 +95,10 @@ module Datadog
           latest_commits.partition do |commit|
             backend_commits.include?(commit)
           end
+        end
+
+        def test_visibility_component
+          Datadog.send(:components).test_visibility
         end
       end
     end

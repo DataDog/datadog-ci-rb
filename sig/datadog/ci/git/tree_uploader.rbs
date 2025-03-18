@@ -12,6 +12,7 @@ module Datadog
         private
 
         def fetch_known_commits_and_split: (String repository_url, Array[String] latest_commits) -> [Array[String], Array[String]]
+        def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
       end
     end
   end
