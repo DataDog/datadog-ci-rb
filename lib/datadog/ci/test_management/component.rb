@@ -2,6 +2,7 @@
 
 require_relative "../ext/telemetry"
 require_relative "../ext/test"
+require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
 require_relative "../utils/test_run"
 
@@ -14,6 +15,10 @@ module Datadog
       # - marking test as disabled causes test to be skipped
       # - marking test as "attempted to fix" causes test to be retried many times to confirm that fix worked
       class Component
+        include Datadog::CI::Utils::Stateful
+
+        FILE_STORAGE_KEY = "test_management_component_state"
+
         attr_reader :enabled, :tests_properties
 
         def initialize(enabled:, tests_properties_client:)
@@ -30,7 +35,11 @@ module Datadog
 
           test_session.set_tag(Ext::Test::TAG_TEST_MANAGEMENT_ENABLED, "true")
 
-          @tests_properties = @tests_properties_client.fetch(test_session)
+          # Load component state first, and if successful, skip fetching tests properties
+          if !load_component_state
+            @tests_properties = @tests_properties_client.fetch(test_session)
+            store_component_state if test_session.distributed
+          end
 
           Utils::Telemetry.distribution(
             Ext::Telemetry::METRIC_TEST_MANAGEMENT_TESTS_RESPONSE_TESTS,
@@ -54,6 +63,21 @@ module Datadog
           test_span.set_tag(Ext::Test::TAG_IS_QUARANTINED, "true") if test_properties["quarantined"]
           test_span.set_tag(Ext::Test::TAG_IS_TEST_DISABLED, "true") if test_properties["disabled"]
           test_span.set_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX, "true") if test_properties["attempt_to_fix"]
+        end
+
+        # Implementation of Stateful interface
+        def serialize_state
+          {
+            tests_properties: @tests_properties
+          }
+        end
+
+        def restore_state(state)
+          @tests_properties = state[:tests_properties]
+        end
+
+        def storage_key
+          FILE_STORAGE_KEY
         end
       end
     end

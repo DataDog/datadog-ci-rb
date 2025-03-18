@@ -10,8 +10,8 @@ require_relative "../ext/telemetry"
 require_relative "../git/local_repository"
 
 require_relative "../utils/parsing"
-require_relative "../utils/telemetry"
 require_relative "../utils/stateful"
+require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "skippable"
