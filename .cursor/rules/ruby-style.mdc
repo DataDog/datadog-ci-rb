@@ -27,4 +27,4 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 
 ## Git
 
-- use `git --no-pager diff` command to inspect changes befor committing changes
+- use `git --no-pager diff` command to inspect changes before committing changes
