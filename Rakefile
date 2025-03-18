@@ -77,6 +77,9 @@ TEST_METADATA = {
   },
   "timecop" => {
     "timecop-0" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby"
+  },
+  "parallel_tests" => {
+    "parallel_tests-5-rspec-3" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby"
   }
 }
 
@@ -159,6 +162,7 @@ namespace :spec do
     selenium
     timecop
     cuprite
+    parallel_tests
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|
