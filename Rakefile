@@ -79,6 +79,7 @@ TEST_METADATA = {
     "timecop-0" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby"
   },
   "parallel_tests" => {
+    "parallel_tests-4-rspec-3" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby",
     "parallel_tests-5-rspec-3" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby"
   }
 }

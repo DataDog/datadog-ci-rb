@@ -198,7 +198,7 @@ with_rspec_gem
 with_cucumber_gem(versions: 3..9)
 with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
-with_parallel_tests_gem if Gem::Version.new("3.2") <= RUBY_VERSION
+with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2") <= RUBY_VERSION
 with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_active_support_gem(versions: 4..7)
 with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..8)

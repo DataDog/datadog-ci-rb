@@ -10,7 +10,7 @@ module Datadog
       module ParallelTests
         # Description of ParallelTests integration
         class Integration < Datadog::CI::Contrib::Integration
-          MINIMUM_VERSION = Gem::Version.new("5.1.0")
+          MINIMUM_VERSION = Gem::Version.new("4.0")
 
           def version
             Gem.loaded_specs["parallel_tests"]&.version
