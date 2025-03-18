@@ -7,11 +7,11 @@ module Datadog
         FILE_STORAGE_KEY: String
 
         @library_settings_client: Datadog::CI::Remote::LibrarySettingsClient
-        @library_configuration: untyped
+        @library_configuration: Datadog::CI::Remote::LibrarySettings
 
         def initialize: (library_settings_client: Datadog::CI::Remote::LibrarySettingsClient) -> void
 
-        def configure: (Datadog::CI::TestSession test_session) -> untyped
+        def configure: (Datadog::CI::TestSession test_session) -> void
 
         # Implementation of Stateful interface
         def serialize_state: () -> Hash[Symbol, untyped]
