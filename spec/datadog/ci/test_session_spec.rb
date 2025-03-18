@@ -69,6 +69,16 @@ RSpec.describe Datadog::CI::TestSession do
     it { is_expected.to eq("ci job name") }
   end
 
+  describe "#git_commit_message" do
+    subject(:git_commit_message) { ci_test_session.git_commit_message }
+
+    before do
+      tracer_span.set_tag(Datadog::CI::Ext::Git::TAG_COMMIT_MESSAGE, "Test commit message")
+    end
+
+    it { is_expected.to eq("Test commit message") }
+  end
+
   describe "#skipping_tests?" do
     subject(:skipping_tests?) { ci_test_session.skipping_tests? }
 

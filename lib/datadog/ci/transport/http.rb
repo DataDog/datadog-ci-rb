@@ -29,7 +29,7 @@ module Datadog
           @host = host
           @port = port
           @timeout = timeout
-          @ssl = ssl.nil? ? true : ssl
+          @ssl = ssl.nil? || ssl
           @compress = compress.nil? ? false : compress
         end
 
