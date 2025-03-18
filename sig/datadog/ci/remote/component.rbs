@@ -2,11 +2,23 @@ module Datadog
   module CI
     module Remote
       class Component
+        include Datadog::CI::Utils::Stateful
+
+        FILE_STORAGE_KEY: String
+
         @library_settings_client: Datadog::CI::Remote::LibrarySettingsClient
+        @library_configuration: untyped
 
         def initialize: (library_settings_client: Datadog::CI::Remote::LibrarySettingsClient) -> void
 
         def configure: (Datadog::CI::TestSession test_session) -> untyped
+
+        # Implementation of Stateful interface
+        def serialize_state: () -> Hash[Symbol, untyped]
+
+        def restore_state: (Hash[Symbol, untyped] state) -> void
+
+        def storage_key: () -> String
 
         private
 

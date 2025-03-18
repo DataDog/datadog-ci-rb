@@ -21,5 +21,6 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 ## Testing
 
 - Write comprehensive tests using RSpec
+- Avoid using `instance_variable_set` in tests, use mocking when needed
 - The main rake task to run all tests is `bundle exec rake ci`
 
