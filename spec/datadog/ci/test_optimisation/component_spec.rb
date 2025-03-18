@@ -102,6 +102,129 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.response_tests", 2
     end
 
+    context "when test session is distributed" do
+      let(:tests_skipping_enabled) { true }
+      let(:skippable_response) do
+        instance_double(
+          Datadog::CI::TestOptimisation::Skippable::Response,
+          correlation_id: "42",
+          tests: Set.new(["suite.test.", "suite.test2."]),
+          ok?: true
+        )
+      end
+      let(:skippable) do
+        instance_double(
+          Datadog::CI::TestOptimisation::Skippable,
+          fetch_skippable_tests: skippable_response
+        )
+      end
+
+      before do
+        allow(test_session).to receive(:distributed).and_return(true)
+        allow(Datadog::CI::TestOptimisation::Skippable).to receive(:new).and_return(skippable)
+      end
+
+      it "stores component state" do
+        expect(Datadog::CI::Utils::FileStorage).to receive(:store).with(
+          described_class::FILE_STORAGE_KEY,
+          {
+            correlation_id: "42",
+            skippable_tests: Set.new(["suite.test.", "suite.test2."])
+          }
+        ).and_return(true)
+
+        configure
+      end
+    end
+
+    context "when test session is not distributed" do
+      let(:tests_skipping_enabled) { true }
+      let(:skippable_response) do
+        instance_double(
+          Datadog::CI::TestOptimisation::Skippable::Response,
+          correlation_id: "42",
+          tests: Set.new(["suite.test.", "suite.test2."]),
+          ok?: true
+        )
+      end
+      let(:skippable) do
+        instance_double(
+          Datadog::CI::TestOptimisation::Skippable,
+          fetch_skippable_tests: skippable_response
+        )
+      end
+
+      before do
+        allow(test_session).to receive(:distributed).and_return(false)
+        allow(Datadog::CI::TestOptimisation::Skippable).to receive(:new).and_return(skippable)
+      end
+
+      it "doesn't store component state" do
+        expect(Datadog::CI::Utils::FileStorage).not_to receive(:store)
+
+        configure
+      end
+    end
+
+    context "when in a client process" do
+      before do
+        allow(Datadog.send(:components)).to receive(:test_visibility).and_return(
+          instance_double(Datadog::CI::TestVisibility::Component, client_process?: true)
+        )
+        allow(Datadog::CI::TestOptimisation::Skippable).to receive(:new)
+      end
+
+      context "when component state exists in file storage" do
+        let(:stored_correlation_id) { "stored_correlation_id" }
+        let(:stored_skippable_tests) { Set.new(["stored.test1.", "stored.test2."]) }
+        let(:stored_state) { {correlation_id: stored_correlation_id, skippable_tests: stored_skippable_tests} }
+
+        before do
+          allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+            .with(described_class::FILE_STORAGE_KEY)
+            .and_return(stored_state)
+        end
+
+        it "loads component state from file storage" do
+          configure
+
+          expect(component.correlation_id).to eq(stored_correlation_id)
+          expect(component.skippable_tests).to eq(stored_skippable_tests)
+          expect(Datadog::CI::TestOptimisation::Skippable).not_to have_received(:new)
+        end
+      end
+
+      context "when component state does not exist in file storage" do
+        let(:skippable) do
+          instance_double(
+            Datadog::CI::TestOptimisation::Skippable,
+            fetch_skippable_tests: instance_double(
+              Datadog::CI::TestOptimisation::Skippable::Response,
+              correlation_id: "42",
+              tests: Set.new(["suite.test.", "suite.test2."]),
+              ok?: true
+            )
+          )
+        end
+
+        before do
+          allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+            .with(described_class::FILE_STORAGE_KEY)
+            .and_return(nil)
+          allow(Datadog::CI::TestOptimisation::Skippable).to receive(:new).and_return(skippable)
+        end
+
+        it "fetches skippable tests" do
+          expect(Datadog::CI::TestOptimisation::Skippable).to receive(:new).and_return(skippable)
+
+          configure
+
+          expect(component.correlation_id).to eq("42")
+          expect(component.skippable_tests).to eq(Set.new(["suite.test.", "suite.test2."]))
+        end
+      end
+    end
+
     context "when ITR is disabled locally" do
       let(:local_itr_enabled) { false }
 

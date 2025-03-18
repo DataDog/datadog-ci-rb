@@ -21,3 +21,5 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 ## Testing
 
 - Write comprehensive tests using RSpec
+- The main rake task to run all tests is `bundle exec rake ci`
+
