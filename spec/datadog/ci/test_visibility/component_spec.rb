@@ -415,6 +415,27 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
+        context "when a test session is already active" do
+          let(:existing_test_session) { test_visibility.start_test_session(service: service, tags: tags) }
+
+          before do
+            existing_test_session
+
+            reset_telemetry_spy!
+          end
+
+          it "returns the existing test session" do
+            expect(subject).to eq(existing_test_session)
+          end
+
+          it "does not emit any telemetry metrics" do
+            subject
+
+            expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED)).to be_falsey
+            expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_TEST_SESSION)).to be_falsey
+          end
+        end
+
         context "with git upload enabled and gitdb api spy" do
           let(:git_metadata_upload_enabled) { true }
           let(:search_commits) { double("search_commits") }
@@ -557,6 +578,25 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
           it "does not start a new trace" do
             expect(subject.tracer_span.trace_id).to eq(test_session.tracer_span.trace_id)
+          end
+        end
+
+        context "when a test module is already active" do
+          let(:existing_test_module) { test_visibility.start_test_module(module_name, service: service, tags: tags) }
+
+          before do
+            existing_test_module
+            reset_telemetry_spy!
+          end
+
+          it "returns the existing test module" do
+            expect(subject).to eq(existing_test_module)
+          end
+
+          it "does not emit any telemetry metrics" do
+            subject
+
+            expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED)).to be_falsey
           end
         end
       end

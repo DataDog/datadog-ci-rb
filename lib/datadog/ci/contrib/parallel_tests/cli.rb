@@ -22,7 +22,6 @@ module Datadog
                   tags: {
                     CI::Ext::Test::TAG_FRAMEWORK => CI::Contrib::RSpec::Ext::FRAMEWORK,
                     CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_extract_rspec_version
-
                   },
                   service: datadog_configuration[:service_name],
                   estimated_total_tests_count: 10_000, # temporary value, updated by child processes

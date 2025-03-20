@@ -72,6 +72,9 @@ module Datadog
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: false)
           return skip_tracing unless test_suite_level_visibility_enabled
 
+          current_test_session = maybe_remote_context.active_test_session
+          return current_test_session if current_test_session
+
           start_drb_service
 
           test_session = maybe_remote_context.start_test_session(service: service, tags: tags)
@@ -84,6 +87,9 @@ module Datadog
 
         def start_test_module(test_module_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
+
+          existing_test_module = maybe_remote_context.active_test_module
+          return existing_test_module if existing_test_module
 
           test_module = maybe_remote_context.start_test_module(test_module_name, service: service, tags: tags)
           on_test_module_started(test_module)
