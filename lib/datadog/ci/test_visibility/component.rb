@@ -110,12 +110,7 @@ module Datadog
         def start_test_suite(test_suite_name, service: nil, tags: {}, context: maybe_remote_context)
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          p "start_test_suite"
-          p context
-
           test_suite = context.start_test_suite(test_suite_name, service: service, tags: tags)
-          p "started test suite"
-          p test_suite
           on_test_suite_started(test_suite)
           test_suite
         end
