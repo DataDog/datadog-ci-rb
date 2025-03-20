@@ -3,6 +3,7 @@
 require_relative "../../ext/test"
 require_relative "../instrumentation"
 require_relative "ext"
+require_relative "helpers"
 
 module Datadog
   module CI
@@ -32,7 +33,7 @@ module Datadog
 
               result = super
               return result unless test_module && test_session
-              return result if parallel_tests?
+              return result if Helpers.parallel_tests?
 
               if result != 0
                 test_module.failed!
@@ -48,10 +49,6 @@ module Datadog
             end
 
             private
-
-            def parallel_tests?
-              !!ENV.fetch("TEST_ENV_NUMBER", nil) && !!ENV.fetch("PARALLEL_TEST_GROUPS", nil)
-            end
 
             def datadog_integration
               CI::Contrib::Instrumentation.fetch_integration(:rspec)

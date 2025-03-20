@@ -72,8 +72,7 @@ module Datadog
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: false)
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          current_test_session = maybe_remote_context.active_test_session
-          return current_test_session if current_test_session
+          current_test_session_exists = !maybe_remote_context.active_test_session.nil?
 
           start_drb_service
 
@@ -82,30 +81,53 @@ module Datadog
           test_session.distributed = distributed
 
           on_test_session_started(test_session)
+
+          # sends internal telemetry events
+          unless current_test_session_exists
+            Telemetry.test_session_started(test_session)
+            Telemetry.event_created(test_session)
+          end
+
           test_session
         end
 
         def start_test_module(test_module_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          existing_test_module = maybe_remote_context.active_test_module
-          return existing_test_module if existing_test_module
+          current_test_module_exists = !maybe_remote_context.active_test_module.nil?
 
           test_module = maybe_remote_context.start_test_module(test_module_name, service: service, tags: tags)
           on_test_module_started(test_module)
+
+          # sends internal telemetry events
+          unless current_test_module_exists
+            Telemetry.event_created(test_module)
+          end
+
           test_module
         end
 
-        def start_test_suite(test_suite_name, service: nil, tags: {})
+        def start_test_suite(test_suite_name, service: nil, tags: {}, context: maybe_remote_context)
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          test_suite = maybe_remote_context.start_test_suite(test_suite_name, service: service, tags: tags)
+          p "start_test_suite"
+          p context
+
+          test_suite = context.start_test_suite(test_suite_name, service: service, tags: tags)
+          p "started test suite"
+          p test_suite
           on_test_suite_started(test_suite)
           test_suite
         end
 
+        def start_local_test_suite(test_suite_name, service: nil, tags: {})
+          return skip_tracing unless test_suite_level_visibility_enabled
+
+          start_test_suite(test_suite_name, service: service, tags: tags, context: @context)
+        end
+
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
-          test_suite = maybe_remote_context.active_test_suite(test_suite_name)
+          test_suite = active_test_suite(test_suite_name)
           tags[Ext::Test::TAG_SUITE] ||= test_suite_name
 
           if block
@@ -152,6 +174,10 @@ module Datadog
         end
 
         def active_test_suite(test_suite_name)
+          # when fetching test_suite to use as test's context, try local context instance first
+          local_test_suite = @context.active_test_suite(test_suite_name)
+          return local_test_suite if local_test_suite
+
           maybe_remote_context.active_test_suite(test_suite_name)
         end
 
@@ -166,21 +192,22 @@ module Datadog
           test_session = active_test_session
           on_test_session_finished(test_session) if test_session
 
-          maybe_remote_context.deactivate_test_session
+          @context.deactivate_test_session
         end
 
         def deactivate_test_module
           test_module = active_test_module
           on_test_module_finished(test_module) if test_module
 
-          maybe_remote_context.deactivate_test_module
+          @context.deactivate_test_module
         end
 
         def deactivate_test_suite(test_suite_name)
           test_suite = active_test_suite(test_suite_name)
           on_test_suite_finished(test_suite) if test_suite
 
-          maybe_remote_context.deactivate_test_suite(test_suite_name)
+          # deactivation always happens on the same process where test suite is located
+          @context.deactivate_test_suite(test_suite_name)
         end
 
         def total_tests_count
@@ -213,10 +240,6 @@ module Datadog
           # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
           Contrib::Instrumentation.instrument_on_session_start
 
-          # sends internal telemetry events
-          Telemetry.test_session_started(test_session)
-          Telemetry.event_created(test_session)
-
           # sets logical test session name if none provided by the user
           override_logical_test_session_name!(test_session) if logical_test_session_name.nil?
 
@@ -225,8 +248,8 @@ module Datadog
           remote.configure(test_session)
         end
 
+        # intentionally empty
         def on_test_module_started(test_module)
-          Telemetry.event_created(test_module)
         end
 
         def on_test_suite_started(test_suite)

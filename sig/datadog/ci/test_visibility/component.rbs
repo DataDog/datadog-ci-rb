@@ -35,15 +35,17 @@ module Datadog
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
-        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
-        def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+        def trace: (String span_name, ?type: String, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool) -> Datadog::CI::TestSession
+        def start_test_session: (?service: String?, ?tags: Hash[Symbol | String, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool) -> Datadog::CI::TestSession
 
-        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestModule
+        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestModule
 
-        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSuite
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped], ?context: Datadog::CI::TestVisibility::Context) -> Datadog::CI::TestSuite
+
+        def start_local_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestSuite
 
         def active_test_session: () -> Datadog::CI::TestSession?
 

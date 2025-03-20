@@ -10,8 +10,6 @@ module Datadog
 
             private
 
-            def parallel_tests?: () -> bool
-
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 
             def datadog_configuration: () -> untyped
