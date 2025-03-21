@@ -72,8 +72,6 @@ module Datadog
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: false)
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          current_test_session_exists = !maybe_remote_context.active_test_session.nil?
-
           start_drb_service
 
           test_session = maybe_remote_context.start_test_session(service: service, tags: tags)
@@ -82,27 +80,14 @@ module Datadog
 
           on_test_session_started(test_session)
 
-          # sends internal telemetry events
-          unless current_test_session_exists
-            Telemetry.test_session_started(test_session)
-            Telemetry.event_created(test_session)
-          end
-
           test_session
         end
 
         def start_test_module(test_module_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          current_test_module_exists = !maybe_remote_context.active_test_module.nil?
-
           test_module = maybe_remote_context.start_test_module(test_module_name, service: service, tags: tags)
           on_test_module_started(test_module)
-
-          # sends internal telemetry events
-          unless current_test_module_exists
-            Telemetry.event_created(test_module)
-          end
 
           test_module
         end
@@ -249,15 +234,16 @@ module Datadog
 
         def on_test_suite_started(test_suite)
           set_codeowners(test_suite)
-
-          Telemetry.event_created(test_suite)
         end
 
         def on_test_started(test)
           maybe_remote_context.incr_total_tests_count
 
-          # sometimes test suite is not being assigned correctly
-          # fix it by fetching the one single running test suite from the global context
+          # Sometimes test suite is not being assigned correctly.
+          # Fix it by fetching the one single running test suite from the process context.
+          #
+          # This is a hack to fix some edge cases that come from some minitest plugins,
+          # especially thoughtbot/shoulda-context.
           fix_test_suite!(test) if test.test_suite_id.nil?
           validate_test_suite_level_visibility_correctness(test)
 

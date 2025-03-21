@@ -6,6 +6,7 @@ require "datadog/tracing/trace_digest"
 
 require_relative "store/global"
 require_relative "store/local"
+require_relative "telemetry"
 
 require_relative "../ext/app_types"
 require_relative "../ext/environment"
@@ -48,7 +49,12 @@ module Datadog
             )
             set_session_context(tags, tracer_span)
 
-            build_test_session(tracer_span, tags)
+            test_session = build_test_session(tracer_span, tags)
+
+            Telemetry.test_session_started(test_session)
+            Telemetry.event_created(test_session)
+
+            test_session
           end
         end
 
@@ -62,7 +68,11 @@ module Datadog
             )
             set_module_context(tags, tracer_span)
 
-            build_test_module(tracer_span, tags)
+            test_module = build_test_module(tracer_span, tags)
+
+            Telemetry.event_created(test_module)
+
+            test_module
           end
         end
 
@@ -77,7 +87,11 @@ module Datadog
             )
             set_suite_context(tags, test_suite: tracer_span)
 
-            build_test_suite(tracer_span, tags)
+            test_suite = build_test_suite(tracer_span, tags)
+
+            Telemetry.event_created(test_suite)
+
+            test_suite
           end
         end
 

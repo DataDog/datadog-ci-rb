@@ -34,6 +34,8 @@ module Datadog
                 CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
               }
 
+              # parallel_tests gem splits tests by files, so test suite is always executed within a single worker
+              # we can use it for some optimization: start test suite in local process when running under parallel_tests
               test_suite = if Helpers.parallel_tests?
                 test_visibility_component&.start_local_test_suite(
                   suite_name,
