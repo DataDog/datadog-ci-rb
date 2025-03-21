@@ -2,6 +2,10 @@ module Datadog
   module CI
     module TestManagement
       class Component
+        include Datadog::CI::Utils::Stateful
+
+        FILE_STORAGE_KEY: String
+
         @enabled: bool
 
         @tests_properties_client: Datadog::CI::TestManagement::TestsProperties
@@ -17,6 +21,13 @@ module Datadog
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
         def tag_test_from_properties: (Datadog::CI::Test test) -> void
+
+        # Implementation of Stateful interface
+        def serialize_state: () -> Hash[Symbol, untyped]
+
+        def restore_state: (Hash[Symbol, untyped] state) -> void
+
+        def storage_key: () -> String
       end
     end
   end

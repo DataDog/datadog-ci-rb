@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Utils
+      module FileStorage
+        TEMP_DIR: String
+
+        def self.store: (String key, Hash[untyped, untyped] value) -> bool
+
+        def self.retrieve: (String key) -> Hash[untyped, untyped]?
+
+        def self.cleanup: () -> bool
+
+        def self.ensure_temp_dir_exists: () -> void
+
+        def self.file_path_for: (String key) -> String
+      end
+    end
+  end
+end

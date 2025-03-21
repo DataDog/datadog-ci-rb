@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module Utils
+      module Stateful
+        def store_component_state: () -> bool
+
+        def load_component_state: () -> bool
+
+        def serialize_state: () -> Hash[Symbol, untyped]
+
+        def restore_state: (Hash[Symbol, untyped] state) -> void
+
+        def storage_key: () -> String
+      end
+    end
+  end
+end

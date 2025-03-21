@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    class ReadonlyTestModule < TestModule
+      @id: Integer
+      @name: String
+
+      def initialize: (TestModule test_module) -> void
+      def id: () -> Integer
+      def name: () -> String
+      def finish: () -> void
+      def set_tag: (untyped key, untyped value) -> void
+      def set_metric: (untyped key, untyped value) -> void
+    end
+  end
+end

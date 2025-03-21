@@ -415,6 +415,27 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
+        context "when a test session is already active" do
+          let(:existing_test_session) { test_visibility.start_test_session(service: service, tags: tags) }
+
+          before do
+            existing_test_session
+
+            reset_telemetry_spy!
+          end
+
+          it "returns the existing test session" do
+            expect(subject).to eq(existing_test_session)
+          end
+
+          it "does not emit any telemetry metrics" do
+            subject
+
+            expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED)).to be_falsey
+            expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_TEST_SESSION)).to be_falsey
+          end
+        end
+
         context "with git upload enabled and gitdb api spy" do
           let(:git_metadata_upload_enabled) { true }
           let(:search_commits) { double("search_commits") }
@@ -557,6 +578,25 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
           it "does not start a new trace" do
             expect(subject.tracer_span.trace_id).to eq(test_session.tracer_span.trace_id)
+          end
+        end
+
+        context "when a test module is already active" do
+          let(:existing_test_module) { test_visibility.start_test_module(module_name, service: service, tags: tags) }
+
+          before do
+            existing_test_module
+            reset_telemetry_spy!
+          end
+
+          it "returns the existing test module" do
+            expect(subject).to eq(existing_test_module)
+          end
+
+          it "does not emit any telemetry metrics" do
+            subject
+
+            expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED)).to be_falsey
           end
         end
       end
@@ -866,31 +906,105 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
     end
     let(:known_tests_enabled) { true }
 
-    let(:test_session) { instance_double(Datadog::CI::TestSession) }
+    let(:test_session) { instance_double(Datadog::CI::TestSession, distributed: distributed) }
+    let(:distributed) { false }
 
     subject { test_visibility.configure(library_settings, test_session) }
 
     context "when known tests functionality is enabled" do
       let(:known_tests_enabled) { true }
 
-      it "fetches known tests" do
-        subject
+      context "when test session is not distributed" do
+        let(:distributed) { false }
 
-        expect(test_visibility.known_tests).to eq(known_tests)
-        expect(test_visibility.known_tests_enabled).to be true
+        it "fetches known tests" do
+          subject
+
+          expect(test_visibility.known_tests).to eq(known_tests)
+          expect(test_visibility.known_tests_enabled).to be true
+        end
+
+        it "doesn't store component state after fetching known tests" do
+          expect(Datadog::CI::Utils::FileStorage).not_to receive(:store)
+
+          subject
+        end
+
+        it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_tests", 2
+
+        context "and when known tests storage is empty" do
+          let(:known_tests) { Set.new }
+
+          it "disables known tests functionality" do
+            expect(test_session).to receive(:set_tag).with("test.early_flake.abort_reason", "faulty")
+
+            subject
+
+            expect(test_visibility.known_tests_enabled).to be false
+          end
+        end
       end
 
-      it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_tests", 2
+      context "when test session is distributed" do
+        let(:distributed) { true }
 
-      context "and when known tests storage is empty" do
-        let(:known_tests) { Set.new }
-
-        it "disables known tests functionality" do
-          expect(test_session).to receive(:set_tag).with("test.early_flake.abort_reason", "faulty")
+        it "fetches known tests" do
+          expect(known_tests_client).to receive(:fetch).with(test_session).and_return(known_tests)
 
           subject
 
-          expect(test_visibility.known_tests_enabled).to be false
+          expect(test_visibility.known_tests_enabled).to be true
+        end
+
+        it "stores component state" do
+          expect(Datadog::CI::Utils::FileStorage).to receive(:store).with(
+            described_class::FILE_STORAGE_KEY,
+            {known_tests: known_tests}
+          ).and_return(true)
+
+          subject
+        end
+      end
+
+      context "when in a client process" do
+        before do
+          allow(Datadog.send(:components)).to receive(:test_visibility).and_return(test_visibility)
+          allow(test_visibility).to receive(:client_process?).and_return(true)
+        end
+
+        context "when component state exists in file storage" do
+          let(:stored_known_tests) { Set.new(["stored_test1", "stored_test2"]) }
+          let(:stored_state) { {known_tests: stored_known_tests} }
+
+          before do
+            allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+              .with(described_class::FILE_STORAGE_KEY)
+              .and_return(stored_state)
+          end
+
+          it "loads component state from file storage" do
+            subject
+
+            expect(test_visibility.known_tests).to eq(stored_known_tests)
+            expect(test_visibility.known_tests_enabled).to be true
+            expect(known_tests_client).not_to have_received(:fetch)
+          end
+        end
+
+        context "when component state does not exist in file storage" do
+          before do
+            allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+              .with(described_class::FILE_STORAGE_KEY)
+              .and_return(nil)
+          end
+
+          it "fetches known tests" do
+            expect(known_tests_client).to receive(:fetch).with(test_session).and_return(known_tests)
+
+            subject
+
+            expect(test_visibility.known_tests).to eq(known_tests)
+          end
         end
       end
     end
@@ -904,6 +1018,86 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         expect(test_visibility.known_tests).to be_empty
         expect(test_visibility.known_tests_enabled).to be false
       end
+    end
+  end
+
+  describe "start_local_test_suite" do
+    include_context "CI mode activated"
+
+    let(:module_name) { "my-module" }
+    let(:session_service) { "session_service" }
+    let(:session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
+
+    let(:test_session) { test_visibility.start_test_session(service: session_service, tags: session_tags) }
+    let(:test_module) { test_visibility.start_test_module(module_name) }
+
+    before do
+      test_session
+      test_module
+      # Allow spying on the underlying @context instance to verify it's being used
+      allow(test_visibility).to receive(:start_test_suite).and_call_original
+    end
+
+    context "when test suite with given name is not started yet" do
+      let(:suite_name) { "my-local-suite" }
+      let(:tags) { {"my.tag" => "my_value"} }
+
+      subject { test_visibility.start_local_test_suite(suite_name, tags: tags) }
+
+      it "returns a new CI test_suite span" do
+        expect(subject).to be_kind_of(Datadog::CI::TestSuite)
+        expect(subject.name).to eq(suite_name)
+        expect(subject.service).to eq(session_service)
+        expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
+      end
+
+      it "calls start_test_suite with the local context" do
+        expect(test_visibility).to receive(:start_test_suite).with(
+          suite_name,
+          service: nil,
+          tags: tags,
+          context: test_visibility.instance_variable_get(:@context)
+        )
+
+        subject
+      end
+
+      it "sets the provided tags correctly while inheriting some tags from the session" do
+        expect(subject).to have_test_tag("test.framework_version", "1.0")
+        expect(subject).to have_test_tag("my.tag", "my_value")
+        expect(subject).not_to have_test_tag("my.session.tag")
+      end
+
+      it "sets the test suite context" do
+        expect(subject).to have_test_tag(:test_suite_id, subject.id.to_s)
+        expect(subject).to have_test_tag(:suite, suite_name)
+      end
+
+      it "sets test session and test module contexts" do
+        expect(subject).to have_test_tag(:test_session_id, test_session.id.to_s)
+        expect(subject).to have_test_tag(:test_module_id, test_module.id.to_s)
+        expect(subject).to have_test_tag(:module, module_name)
+      end
+
+      it_behaves_like "span with environment tags"
+      it_behaves_like "span with default tags"
+      it_behaves_like "span with runtime tags"
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
+    end
+
+    context "when test suite level visibility is disabled" do
+      let(:test_visibility) do
+        described_class.new(
+          known_tests_client: instance_double(Datadog::CI::TestVisibility::KnownTests),
+          test_suite_level_visibility_enabled: false
+        )
+      end
+
+      let(:suite_name) { "my-local-suite" }
+
+      subject { test_visibility.start_local_test_suite(suite_name) }
+
+      it { is_expected.to be_nil }
     end
   end
 end

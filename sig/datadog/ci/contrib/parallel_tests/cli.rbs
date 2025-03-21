@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Contrib
+      module ParallelTests
+        module CLI
+          def self.included: (untyped base) -> void
+
+          module InstanceMethods : ::ParallelTests::CLI
+            def run_tests_in_parallel: (Integer num_processes, Hash[Symbol, untyped] options) -> untyped
+            def any_test_failed?: (untyped test_results) -> bool
+            def datadog_extract_rspec_version: () -> String
+            def datadog_configuration: () -> untyped
+            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+          end
+        end
+      end
+    end
+  end
+end

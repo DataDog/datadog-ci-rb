@@ -2,6 +2,7 @@ module Datadog
   module CI
     class TestSession < ConcurrentSpan
       attr_accessor estimated_total_tests_count: Integer
+      attr_accessor distributed: bool
 
       @inheritable_tags: Hash[untyped, untyped]
 

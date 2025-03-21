@@ -2,7 +2,7 @@ module Datadog
   module CI
     module TestVisibility
       module Store
-        class Local
+        class FiberLocal
           @key: Symbol
 
           def initialize: () -> void

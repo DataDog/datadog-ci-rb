@@ -4,14 +4,18 @@ module Datadog
       class Context
         @mutex: Mutex
 
-        @local_context: Datadog::CI::TestVisibility::Store::Local
-        @global_context: Datadog::CI::TestVisibility::Store::Global
+        @fiber_local_context: Datadog::CI::TestVisibility::Store::FiberLocal
+        @process_context: Datadog::CI::TestVisibility::Store::Process
         @environment_tags: Hash[String, String]
 
         @total_tests_count: Integer
         @tests_skipped_by_tia_count: Integer
+        @test_visibility_component: Datadog::CI::TestVisibility::Component
 
-        def initialize: () -> void
+        attr_reader total_tests_count: Integer
+        attr_reader tests_skipped_by_tia_count: Integer
+
+        def initialize: (test_visibility_component: Datadog::CI::TestVisibility::Component) -> void
 
         def trace_test: (String span_name, Datadog::CI::TestSuite? test_suite, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
@@ -43,11 +47,7 @@ module Datadog
 
         def deactivate_test_suite: (String test_suite_name) -> void
 
-        def total_tests_count: () -> Integer
-
         def incr_total_tests_count: () -> void
-
-        def tests_skipped_by_tia_count: () -> Integer
 
         def incr_tests_skipped_by_tia_count: () -> void
 
@@ -75,11 +75,15 @@ module Datadog
 
         def set_suite_context: (Hash[untyped, untyped] tags, ?test_suite: Datadog::Tracing::SpanOperation? | Datadog::CI::TestSuite?) -> void
 
-        def set_module_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestModule | Datadog::Tracing::SpanOperation? test_module) -> void
+        def set_module_context: (Hash[untyped, untyped] tags, ?(Datadog::CI::TestModule | Datadog::Tracing::SpanOperation)? test_module) -> void
 
         def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
 
         def build_tracing_span_options: (String? service_name, String type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
+
+        def test_session_context: () -> (Datadog::CI::TestSession | Datadog::CI::ReadonlyTestSession)?
+
+        def test_module_context: () -> (Datadog::CI::TestModule | Datadog::CI::ReadonlyTestModule)?
       end
     end
   end

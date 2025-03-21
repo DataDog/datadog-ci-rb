@@ -134,6 +134,12 @@ module Datadog
                 o.default false
               end
 
+              # internal only
+              option :test_visibility_drb_server_uri do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Settings::ENV_TEST_VISIBILITY_DRB_SERVER_URI
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

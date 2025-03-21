@@ -34,4 +34,5 @@ target :lib do
   library "webmock"
   library "simplecov"
   library "cuprite"
+  library "parallel_tests"
 end
