@@ -5,7 +5,7 @@ require "datadog/tracing/contrib/component"
 require "datadog/tracing/trace_digest"
 
 require_relative "store/process"
-require_relative "store/local"
+require_relative "store/fiber_local"
 require_relative "telemetry"
 
 require_relative "../ext/app_types"
@@ -33,7 +33,7 @@ module Datadog
         def initialize(test_visibility_component:)
           @test_visibility_component = test_visibility_component
 
-          @local_context = Store::Local.new
+          @fiber_local_context = Store::FiberLocal.new
           @process_context = Store::Process.new
 
           @mutex = Mutex.new
@@ -116,14 +116,14 @@ module Datadog
             start_datadog_tracer_span(test_name, span_options) do |tracer_span|
               test = build_test(tracer_span, tags)
 
-              @local_context.activate_test(test) do
+              @fiber_local_context.activate_test(test) do
                 block.call(test)
               end
             end
           else
             tracer_span = start_datadog_tracer_span(test_name, span_options)
             test = build_test(tracer_span, tags)
-            @local_context.activate_test(test)
+            @fiber_local_context.activate_test(test)
             test
           end
         end
@@ -152,7 +152,7 @@ module Datadog
         end
 
         def active_test
-          @local_context.active_test
+          @fiber_local_context.active_test
         end
 
         def active_test_session
@@ -176,7 +176,7 @@ module Datadog
         end
 
         def deactivate_test
-          @local_context.deactivate_test
+          @fiber_local_context.deactivate_test
         end
 
         def deactivate_test_session

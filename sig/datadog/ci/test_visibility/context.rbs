@@ -4,7 +4,7 @@ module Datadog
       class Context
         @mutex: Mutex
 
-        @local_context: Datadog::CI::TestVisibility::Store::Local
+        @fiber_local_context: Datadog::CI::TestVisibility::Store::FiberLocal
         @process_context: Datadog::CI::TestVisibility::Store::Process
         @environment_tags: Hash[String, String]
 

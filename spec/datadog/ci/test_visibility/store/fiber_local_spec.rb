@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../../lib/datadog/ci/test_visibility/store/local"
+require_relative "../../../../../lib/datadog/ci/test_visibility/store/fiber_local"
 
-RSpec.describe Datadog::CI::TestVisibility::Store::Local do
+RSpec.describe Datadog::CI::TestVisibility::Store::FiberLocal do
   subject { described_class.new }
 
   let(:tracer_span) { double(Datadog::Tracing::SpanOperation, get_tag: "my test") }
