@@ -247,22 +247,21 @@ module Datadog
 
         # PROPAGATING CONTEXT FROM TOP-LEVEL TO THE LOWER LEVELS
         def set_inherited_globals(tags)
-          # this code achieves the same as @process_context.inheritable_session_tags.merge(tags)
-          # but without allocating a new hash
-          @process_context.inheritable_session_tags.each do |key, value|
+          # Copy inheritable tags from the test session context to the provided tags
+          test_session_context&.inheritable_tags&.each do |key, value|
             tags[key] = value unless tags.key?(key)
           end
         end
 
         def set_session_context(tags, test_session = nil)
           # we need to call TestVisibility::Component here because active test session might be remote
-          test_session ||= @test_visibility_component.active_test_session
+          test_session ||= test_session_context
           tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id.to_s if test_session
         end
 
         def set_module_context(tags, test_module = nil)
           # we need to call TestVisibility::Component here because active test module might be remote
-          test_module ||= @test_visibility_component.active_test_module
+          test_module ||= test_module_context
           if test_module
             tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id.to_s
             tags[Ext::Test::TAG_MODULE] = test_module.name
@@ -303,6 +302,37 @@ module Datadog
           other_options[:type] = type
 
           other_options
+        end
+
+        # one of:
+        #   1. Currrent test session from the Store::Process
+        #   2. Readonly copy of the remote test session (if test session was started by a parent process and local copy was created)
+        #   3. Remote test session as DRb::DRbObject link (in this case also local copy will be created)
+        def test_session_context
+          local_test_session = @process_context.active_test_session
+          return local_test_session if local_test_session
+
+          local_readonly_test_session = @process_context.readonly_test_session
+          return local_readonly_test_session if local_readonly_test_session
+
+          remote_test_session = @test_visibility_component.active_test_session
+          @process_context.set_readonly_test_session(remote_test_session)
+
+          remote_test_session
+        end
+
+        # works similar to test_session_context
+        def test_module_context
+          local_test_module = @process_context.active_test_module
+          return local_test_module if local_test_module
+
+          local_readonly_test_module = @process_context.readonly_test_module
+          return local_readonly_test_module if local_readonly_test_module
+
+          remote_test_module = @test_visibility_component.active_test_module
+          @process_context.set_readonly_test_module(remote_test_module)
+
+          remote_test_module
         end
       end
     end

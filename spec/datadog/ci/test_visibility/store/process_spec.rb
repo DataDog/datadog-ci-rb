@@ -27,28 +27,7 @@ RSpec.describe Datadog::CI::TestVisibility::Store::Process do
     end
   end
 
-  describe "#inheritable_session_tags" do
-    context "when a test session is active" do
-      let(:inheritable_tags) { {"my.session.tag" => "my.session.tag.value"} }
-      before do
-        expect(session).to receive(:inheritable_tags).and_return(inheritable_tags)
-
-        subject.fetch_or_activate_test_session { session }
-      end
-
-      it "returns the inheritable session tags" do
-        expect(subject.inheritable_session_tags).to eq(inheritable_tags)
-      end
-    end
-
-    context "when no test session is active" do
-      it "returns an empty hash" do
-        expect(subject.inheritable_session_tags).to eq({})
-      end
-    end
-  end
-
-  describe "active_test_session" do
+  describe "#active_test_session" do
     context "when a test session is active" do
       before do
         subject.fetch_or_activate_test_session { session }

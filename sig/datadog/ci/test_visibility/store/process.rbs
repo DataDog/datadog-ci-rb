@@ -8,6 +8,8 @@ module Datadog
           @test_session: Datadog::CI::TestSession?
           @test_module: Datadog::CI::TestModule?
           @test_suites: Hash[String, Datadog::CI::TestSuite]
+          @readonly_test_session: Datadog::CI::TestSession?
+          @readonly_test_module: Datadog::CI::TestModule?
 
           def initialize: () -> void
 
@@ -25,8 +27,6 @@ module Datadog
 
           def service: () -> String?
 
-          def inheritable_session_tags: () -> Hash[untyped, untyped]
-
           def active_test_module: () -> Datadog::CI::TestModule?
 
           def deactivate_test_session!: () -> void
@@ -36,6 +36,13 @@ module Datadog
           def deactivate_test_suite!: (String test_suite_name) -> void
 
           def stop_all_test_suites: () -> void
+
+          def set_readonly_test_session: (Datadog::CI::TestSession? test_session) -> void
+
+          def set_readonly_test_module: (Datadog::CI::TestModule? test_module) -> void
+
+          attr_reader readonly_test_session: Datadog::CI::TestSession?
+          attr_reader readonly_test_module: Datadog::CI::TestModule?
         end
       end
     end
