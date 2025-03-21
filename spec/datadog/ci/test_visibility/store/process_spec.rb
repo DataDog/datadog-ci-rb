@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "../../../../../lib/datadog/ci/test_visibility/store/global"
+require_relative "../../../../../lib/datadog/ci/test_visibility/store/process"
 
-RSpec.describe Datadog::CI::TestVisibility::Store::Global do
+RSpec.describe Datadog::CI::TestVisibility::Store::Process do
   subject(:context) { described_class.new }
 
   let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: "test.session", service: "my-service") }
@@ -186,6 +186,7 @@ RSpec.describe Datadog::CI::TestVisibility::Store::Global do
       end
     end
   end
+
   describe "#fetch_single_test_suite" do
     let(:test_suite_name) { "my.suite" }
     let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: test_suite_name) }
@@ -258,46 +259,22 @@ RSpec.describe Datadog::CI::TestVisibility::Store::Global do
         expect(block_spy).to have_received(:call)
       end
     end
-
-    context "concurrently trying to start test module" do
-      include_context "Concurrency test"
-
-      it "activates the test module only once" do
-        repeat do
-          subject.deactivate_test_module!
-
-          block_spy = spy("block")
-
-          run_concurrently do
-            subject.fetch_or_activate_test_module do
-              block_spy.call
-              test_module
-            end
-          end
-
-          expect(block_spy).to have_received(:call).once
-        end
-      end
-    end
   end
 
   describe "#fetch_or_activate_test_session" do
-    let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: "test.session") }
-    let(:test_session) { Datadog::CI::TestSession.new(tracer_span) }
-
     context "when a test session is already active" do
       before do
-        subject.fetch_or_activate_test_session { test_session }
+        subject.fetch_or_activate_test_session { session }
       end
 
-      it "returns the active test module without calling the block" do
+      it "returns the active test session without calling the block" do
         block_spy = spy("block")
         result = subject.fetch_or_activate_test_session do
           block_spy.call
           Datadog::CI::TestSession.new(tracer_span)
         end
 
-        expect(result).to be(test_session)
+        expect(result).to be(session)
         expect(block_spy).not_to have_received(:call)
       end
     end
@@ -307,79 +284,47 @@ RSpec.describe Datadog::CI::TestVisibility::Store::Global do
         block_spy = spy("block")
         result = subject.fetch_or_activate_test_session do
           block_spy.call
-          test_session
+          session
         end
 
-        expect(result).to be(test_session)
+        expect(result).to be(session)
         expect(block_spy).to have_received(:call)
-      end
-    end
-
-    context "concurrently trying to start test session" do
-      include_context "Concurrency test"
-
-      it "activates the test session only once" do
-        repeat do
-          subject.deactivate_test_session!
-
-          block_spy = spy("block")
-
-          run_concurrently do
-            subject.fetch_or_activate_test_session do
-              block_spy.call
-              test_session
-            end
-          end
-
-          expect(block_spy).to have_received(:call).once
-        end
       end
     end
   end
 
-  describe "#active_test_suite" do
-    let(:test_suite_name) { "my.suite" }
-    let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: test_suite_name) }
-    let(:test_suite) { Datadog::CI::TestSuite.new(tracer_span) }
+  describe "#stop_all_test_suites" do
+    let(:test_suite1) { instance_double(Datadog::CI::TestSuite) }
+    let(:test_suite2) { instance_double(Datadog::CI::TestSuite) }
 
-    context "when a test suite is active" do
-      before do
-        subject.fetch_or_activate_test_suite(test_suite_name) { test_suite }
-      end
+    before do
+      allow(test_suite1).to receive(:finish)
+      allow(test_suite2).to receive(:finish)
 
-      it "returns the active test suite" do
-        expect(subject.active_test_suite(test_suite_name)).to be(test_suite)
-      end
+      subject.fetch_or_activate_test_suite("suite1") { test_suite1 }
+      subject.fetch_or_activate_test_suite("suite2") { test_suite2 }
     end
 
-    context "when a test suite with this name is not active" do
-      it "returns nil" do
-        expect(subject.active_test_suite(test_suite_name)).to be_nil
-      end
+    it "calls finish on all test suites and clears the list" do
+      subject.stop_all_test_suites
+
+      expect(test_suite1).to have_received(:finish)
+      expect(test_suite2).to have_received(:finish)
+      expect(subject.active_test_suite("suite1")).to be_nil
+      expect(subject.active_test_suite("suite2")).to be_nil
     end
   end
 
   describe "#deactivate_test_suite!" do
-    let(:test_suite_name) { "my.suite" }
-    let(:tracer_span) { double(Datadog::Tracing::SpanOperation, name: test_suite_name) }
-    let(:test_suite) { Datadog::CI::TestSuite.new(tracer_span) }
+    let(:test_suite) { instance_double(Datadog::CI::TestSuite) }
 
-    context "when a test suite is active" do
-      before do
-        subject.fetch_or_activate_test_suite(test_suite_name) { test_suite }
-      end
-
-      it "deactivates the test suite" do
-        subject.deactivate_test_suite!(test_suite_name)
-        expect(subject.active_test_suite(test_suite_name)).to be_nil
-      end
+    before do
+      subject.fetch_or_activate_test_suite("suite") { test_suite }
     end
 
-    context "when no test suite is active" do
-      it "does nothing" do
-        subject.deactivate_test_suite!(test_suite_name)
-        expect(subject.active_test_suite(test_suite_name)).to be_nil
-      end
+    it "removes the test suite from the active list" do
+      subject.deactivate_test_suite!("suite")
+      expect(subject.active_test_suite("suite")).to be_nil
     end
   end
 end

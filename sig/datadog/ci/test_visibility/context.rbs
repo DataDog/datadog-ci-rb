@@ -5,7 +5,7 @@ module Datadog
         @mutex: Mutex
 
         @local_context: Datadog::CI::TestVisibility::Store::Local
-        @global_context: Datadog::CI::TestVisibility::Store::Global
+        @process_context: Datadog::CI::TestVisibility::Store::Process
         @environment_tags: Hash[String, String]
 
         @total_tests_count: Integer

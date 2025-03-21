@@ -5,7 +5,7 @@ module Datadog
     module TestVisibility
       module Store
         # This context is shared between threads and represents the current test session and test module.
-        class Global
+        class Process
           def initialize
             # we are using Monitor instead of Mutex because it is reentrant
             @mutex = Monitor.new

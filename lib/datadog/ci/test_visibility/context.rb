@@ -4,7 +4,7 @@ require "datadog/tracing"
 require "datadog/tracing/contrib/component"
 require "datadog/tracing/trace_digest"
 
-require_relative "store/global"
+require_relative "store/process"
 require_relative "store/local"
 require_relative "telemetry"
 
@@ -34,7 +34,7 @@ module Datadog
           @test_visibility_component = test_visibility_component
 
           @local_context = Store::Local.new
-          @global_context = Store::Global.new
+          @process_context = Store::Process.new
 
           @mutex = Mutex.new
 
@@ -43,7 +43,7 @@ module Datadog
         end
 
         def start_test_session(service: nil, tags: {})
-          @global_context.fetch_or_activate_test_session do
+          @process_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(
               "test.session", build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
             )
@@ -59,7 +59,7 @@ module Datadog
         end
 
         def start_test_module(test_module_name, service: nil, tags: {})
-          @global_context.fetch_or_activate_test_module do
+          @process_context.fetch_or_activate_test_module do
             set_inherited_globals(tags)
             set_session_context(tags)
 
@@ -77,7 +77,7 @@ module Datadog
         end
 
         def start_test_suite(test_suite_name, service: nil, tags: {})
-          @global_context.fetch_or_activate_test_suite(test_suite_name) do
+          @process_context.fetch_or_activate_test_suite(test_suite_name) do
             set_inherited_globals(tags)
             set_session_context(tags)
             set_module_context(tags)
@@ -156,23 +156,23 @@ module Datadog
         end
 
         def active_test_session
-          @global_context.active_test_session
+          @process_context.active_test_session
         end
 
         def active_test_module
-          @global_context.active_test_module
+          @process_context.active_test_module
         end
 
         def active_test_suite(test_suite_name)
-          @global_context.active_test_suite(test_suite_name)
+          @process_context.active_test_suite(test_suite_name)
         end
 
         def single_active_test_suite
-          @global_context.fetch_single_test_suite
+          @process_context.fetch_single_test_suite
         end
 
         def stop_all_test_suites
-          @global_context.stop_all_test_suites
+          @process_context.stop_all_test_suites
         end
 
         def deactivate_test
@@ -180,15 +180,15 @@ module Datadog
         end
 
         def deactivate_test_session
-          @global_context.deactivate_test_session!
+          @process_context.deactivate_test_session!
         end
 
         def deactivate_test_module
-          @global_context.deactivate_test_module!
+          @process_context.deactivate_test_module!
         end
 
         def deactivate_test_suite(test_suite_name)
-          @global_context.deactivate_test_suite!(test_suite_name)
+          @process_context.deactivate_test_suite!(test_suite_name)
         end
 
         def incr_total_tests_count
@@ -247,9 +247,9 @@ module Datadog
 
         # PROPAGATING CONTEXT FROM TOP-LEVEL TO THE LOWER LEVELS
         def set_inherited_globals(tags)
-          # this code achieves the same as @global_context.inheritable_session_tags.merge(tags)
+          # this code achieves the same as @process_context.inheritable_session_tags.merge(tags)
           # but without allocating a new hash
-          @global_context.inheritable_session_tags.each do |key, value|
+          @process_context.inheritable_session_tags.each do |key, value|
             tags[key] = value unless tags.key?(key)
           end
         end
@@ -299,7 +299,7 @@ module Datadog
         end
 
         def build_tracing_span_options(service, type, other_options = {})
-          other_options[:service] = service || @global_context.service
+          other_options[:service] = service || @process_context.service
           other_options[:type] = type
 
           other_options
