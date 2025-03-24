@@ -13,6 +13,8 @@ require_relative "../codeowners/parser"
 require_relative "../contrib/instrumentation"
 require_relative "../ext/test"
 require_relative "../git/local_repository"
+require_relative "../utils/file_storage"
+require_relative "../utils/stateful"
 
 require_relative "../worker"
 
@@ -22,19 +24,23 @@ module Datadog
       # Core functionality of the library: tracing tests' execution
       class Component
         include Core::Utils::Forking
+        include Datadog::CI::Utils::Stateful
+
+        FILE_STORAGE_KEY = "test_visibility_component_state"
 
         attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name,
-          :known_tests, :known_tests_enabled
+          :known_tests, :known_tests_enabled, :context_service_uri, :local_test_suites_mode
 
         def initialize(
           known_tests_client:,
           test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse,
-          logical_test_session_name: nil
+          logical_test_session_name: nil,
+          context_service_uri: nil
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
-          @context = Context.new
+          @context = Context.new(test_visibility_component: self)
 
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
@@ -44,47 +50,72 @@ module Datadog
           @known_tests_enabled = false
           @known_tests_client = known_tests_client
           @known_tests = Set.new
+
+          # this is used for parallel test runners such as parallel_tests
+          if context_service_uri
+            @context_service_uri = context_service_uri
+            @is_client_process = true
+          end
+
+          # This is used for parallel test runners such as parallel_tests.
+          # If true, then test suites are created in the worker process, not the parent.
+          #
+          # The only test runner that requires creating test suites in the remote process is rails test runner because
+          # it splits workload by test, not by test suite.
+          #
+          # Another test runner that splits workload by test is knapsack_pro, but we lack distributed test sessions/test suties
+          # support for that one (as of 2025-03).
+          @local_test_suites_mode = true
         end
 
         def configure(library_configuration, test_session)
           return unless test_suite_level_visibility_enabled
+          return unless library_configuration.known_tests_enabled?
 
-          if library_configuration.known_tests_enabled?
-            @known_tests_enabled = true
-            fetch_known_tests(test_session)
-          end
+          @known_tests_enabled = true
+          return if load_component_state
+
+          fetch_known_tests(test_session)
+          store_component_state if test_session.distributed
         end
 
-        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0)
+        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: false, local_test_suites_mode: true)
           return skip_tracing unless test_suite_level_visibility_enabled
+
+          @local_test_suites_mode = local_test_suites_mode
 
           start_drb_service
 
-          test_session = @context.start_test_session(service: service, tags: tags)
+          test_session = maybe_remote_context.start_test_session(service: service, tags: tags)
           test_session.estimated_total_tests_count = estimated_total_tests_count
+          test_session.distributed = distributed
 
           on_test_session_started(test_session)
+
           test_session
         end
 
         def start_test_module(test_module_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          test_module = @context.start_test_module(test_module_name, service: service, tags: tags)
+          test_module = maybe_remote_context.start_test_module(test_module_name, service: service, tags: tags)
           on_test_module_started(test_module)
+
           test_module
         end
 
         def start_test_suite(test_suite_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
-          test_suite = maybe_remote_context.start_test_suite(test_suite_name, service: service, tags: tags)
+          context = @local_test_suites_mode ? @context : maybe_remote_context
+
+          test_suite = context.start_test_suite(test_suite_name, service: service, tags: tags)
           on_test_suite_started(test_suite)
           test_suite
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
-          test_suite = maybe_remote_context.active_test_suite(test_suite_name)
+          test_suite = active_test_suite(test_suite_name)
           tags[Ext::Test::TAG_SUITE] ||= test_suite_name
 
           if block
@@ -123,14 +154,18 @@ module Datadog
         end
 
         def active_test_session
-          @context.active_test_session
+          maybe_remote_context.active_test_session
         end
 
         def active_test_module
-          @context.active_test_module
+          maybe_remote_context.active_test_module
         end
 
         def active_test_suite(test_suite_name)
+          # when fetching test_suite to use as test's context, try local context instance first
+          local_test_suite = @context.active_test_suite(test_suite_name)
+          return local_test_suite if local_test_suite
+
           maybe_remote_context.active_test_suite(test_suite_name)
         end
 
@@ -159,7 +194,8 @@ module Datadog
           test_suite = active_test_suite(test_suite_name)
           on_test_suite_finished(test_suite) if test_suite
 
-          maybe_remote_context.deactivate_test_suite(test_suite_name)
+          # deactivation always happens on the same process where test suite is located
+          @context.deactivate_test_suite(test_suite_name)
         end
 
         def total_tests_count
@@ -178,6 +214,10 @@ module Datadog
           # noop, there is no thread owned by test visibility component
         end
 
+        def client_process?
+          forked? || @is_client_process
+        end
+
         private
 
         # DOMAIN EVENTS
@@ -188,10 +228,6 @@ module Datadog
           # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
           Contrib::Instrumentation.instrument_on_session_start
 
-          # sends internal telemetry events
-          Telemetry.test_session_started(test_session)
-          Telemetry.event_created(test_session)
-
           # sets logical test session name if none provided by the user
           override_logical_test_session_name!(test_session) if logical_test_session_name.nil?
 
@@ -200,21 +236,22 @@ module Datadog
           remote.configure(test_session)
         end
 
+        # intentionally empty
         def on_test_module_started(test_module)
-          Telemetry.event_created(test_module)
         end
 
         def on_test_suite_started(test_suite)
           set_codeowners(test_suite)
-
-          Telemetry.event_created(test_suite)
         end
 
         def on_test_started(test)
           maybe_remote_context.incr_total_tests_count
 
-          # sometimes test suite is not being assigned correctly
-          # fix it by fetching the one single running test suite from the global context
+          # Sometimes test suite is not being assigned correctly.
+          # Fix it by fetching the one single running test suite from the process context.
+          #
+          # This is a hack to fix some edge cases that come from some minitest plugins,
+          # especially thoughtbot/shoulda-context.
           fix_test_suite!(test) if test.test_suite_id.nil?
           validate_test_suite_level_visibility_correctness(test)
 
@@ -236,6 +273,8 @@ module Datadog
           TotalCoverage.extract_lines_pct(test_session)
 
           Telemetry.event_finished(test_session)
+
+          Utils::FileStorage.cleanup
         end
 
         def on_test_module_finished(test_module)
@@ -399,7 +438,7 @@ module Datadog
         # DISTRIBUTED RUBY CONTEXT
         def start_drb_service
           return if @context_service_uri
-          return if forked?
+          return if client_process?
 
           @context_service = DRb.start_service("drbunix:", @context)
           @context_service_uri = @context_service.uri
@@ -407,14 +446,29 @@ module Datadog
 
         # depending on whether we are in a forked process or not, returns either the global context or its DRbObject
         def maybe_remote_context
-          return @context unless forked?
+          return @context unless client_process?
           return @context_client if defined?(@context_client)
 
-          # once per fork we must stop the running DRb server that was copied from the parent process
+          # at least once per fork we must stop the running DRb server that was copied from the parent process
           # otherwise, client will be confused thinking it's server which leads to terrible bugs
-          @context_service.stop_service
+          @context_service&.stop_service
 
           @context_client = DRbObject.new_with_uri(@context_service_uri)
+        end
+
+        # Implementation of Stateful interface
+        def serialize_state
+          {
+            known_tests: @known_tests
+          }
+        end
+
+        def restore_state(state)
+          @known_tests = state[:known_tests]
+        end
+
+        def storage_key
+          FILE_STORAGE_KEY
         end
       end
     end

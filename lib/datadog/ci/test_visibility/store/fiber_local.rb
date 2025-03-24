@@ -4,7 +4,7 @@ module Datadog
   module CI
     module TestVisibility
       module Store
-        class Local
+        class FiberLocal
           def initialize
             @key = :datadog_ci_active_test
 

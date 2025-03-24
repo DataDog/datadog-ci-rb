@@ -19,6 +19,7 @@ module Datadog
         ENV_TEST_SESSION_NAME: String
         ENV_TEST_MANAGEMENT_ENABLED: String
         ENV_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES: String
+        ENV_TEST_VISIBILITY_DRB_SERVER_URI: String
 
         DD_SITE_ALLOWLIST: Array[String]
       end

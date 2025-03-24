@@ -1,11 +1,16 @@
 # frozen_string_literal: true
 
+require_relative "../../readonly_test_session"
+require_relative "../../readonly_test_module"
+
 module Datadog
   module CI
     module TestVisibility
       module Store
         # This context is shared between threads and represents the current test session and test module.
-        class Global
+        class Process
+          attr_reader :readonly_test_session, :readonly_test_module
+
           def initialize
             # we are using Monitor instead of Mutex because it is reentrant
             @mutex = Monitor.new
@@ -13,6 +18,11 @@ module Datadog
             @test_session = nil
             @test_module = nil
             @test_suites = {}
+
+            # small copies of id, name and some tags: store them in the current process to set session/module context
+            # for any spans faster
+            @readonly_test_session = nil
+            @readonly_test_module = nil
           end
 
           def fetch_or_activate_test_suite(test_suite_name, &block)
@@ -53,27 +63,10 @@ module Datadog
             @mutex.synchronize { @test_suites[test_suite_name] }
           end
 
-          def service
-            @mutex.synchronize do
-              @test_session&.service
-            end
-          end
-
           def stop_all_test_suites
             @mutex.synchronize do
               @test_suites.each_value(&:finish)
               @test_suites.clear
-            end
-          end
-
-          def inheritable_session_tags
-            @mutex.synchronize do
-              test_session = @test_session
-              if test_session
-                test_session.inheritable_tags
-              else
-                {}
-              end
             end
           end
 
@@ -87,6 +80,18 @@ module Datadog
 
           def deactivate_test_suite!(test_suite_name)
             @mutex.synchronize { @test_suites.delete(test_suite_name) }
+          end
+
+          def set_readonly_test_session(remote_test_session)
+            return if remote_test_session.nil?
+
+            @readonly_test_session = Datadog::CI::ReadonlyTestSession.new(remote_test_session)
+          end
+
+          def set_readonly_test_module(remote_test_module)
+            return if remote_test_module.nil?
+
+            @readonly_test_module = Datadog::CI::ReadonlyTestModule.new(remote_test_module)
           end
         end
       end

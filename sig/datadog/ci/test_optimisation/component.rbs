@@ -3,6 +3,9 @@ module Datadog
     module TestOptimisation
       class Component
         include Datadog::Core::Utils::Forking
+        include Datadog::CI::Utils::Stateful
+
+        FILE_STORAGE_KEY: String
 
         @enabled: bool
         @test_skipping_enabled: bool
@@ -53,6 +56,13 @@ module Datadog
         def shutdown!: () -> void
 
         def skippable_tests_count: () -> Integer
+
+        # Implementation of Stateful interface
+        def serialize_state: () -> Hash[Symbol, untyped]
+
+        def restore_state: (Hash[Symbol, untyped] state) -> void
+
+        def storage_key: () -> String
 
         private
 

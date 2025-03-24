@@ -50,4 +50,15 @@ RSpec.shared_context "Telemetry spy" do
   def telemetry_metric(type, name)
     @metrics[type].find { |m| m.name == name }
   end
+
+  def reset_telemetry_spy!
+    @metrics = {
+      inc: [],
+      distribution: []
+    }
+  end
+
+  def received_telemetry_metric?(type, name)
+    @metrics[type].map(&:name).include?(name)
+  end
 end

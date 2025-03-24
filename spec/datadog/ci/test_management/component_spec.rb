@@ -41,7 +41,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
     end
     let(:test_management_enabled) { true }
 
-    let(:test_session) { instance_double(Datadog::CI::TestSession) }
+    let(:test_session) { instance_double(Datadog::CI::TestSession, distributed: false) }
 
     subject(:configure) { test_management.configure(library_settings, test_session) }
 
@@ -63,6 +63,89 @@ RSpec.describe Datadog::CI::TestManagement::Component do
       end
 
       it_behaves_like "emits telemetry metric", :distribution, "test_management_tests.response_tests", 2
+
+      context "when test session is distributed" do
+        before do
+          allow(test_session).to receive(:distributed).and_return(true)
+        end
+
+        it "stores component state" do
+          expect(Datadog::CI::Utils::FileStorage).to receive(:store).with(
+            described_class::FILE_STORAGE_KEY,
+            {
+              tests_properties: tests_properties
+            }
+          ).and_return(true)
+
+          configure
+        end
+      end
+
+      context "when test session is not distributed" do
+        before do
+          allow(test_session).to receive(:distributed).and_return(false)
+        end
+
+        it "doesn't store component state" do
+          expect(Datadog::CI::Utils::FileStorage).not_to receive(:store)
+
+          configure
+        end
+      end
+
+      context "when in a client process" do
+        before do
+          allow(Datadog.send(:components)).to receive(:test_visibility).and_return(
+            instance_double(Datadog::CI::TestVisibility::Component, client_process?: true)
+          )
+          allow(Datadog::CI::TestManagement::TestsProperties).to receive(:new)
+        end
+
+        context "when component state exists in file storage" do
+          let(:stored_tests_properties) do
+            {
+              "stored.test1." => {
+                "disabled" => true,
+                "quarantined" => false
+              },
+              "stored.test2." => {
+                "disabled" => false,
+                "quarantined" => true
+              }
+            }
+          end
+          let(:stored_state) { {tests_properties: stored_tests_properties} }
+
+          before do
+            allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+              .with(described_class::FILE_STORAGE_KEY)
+              .and_return(stored_state)
+          end
+
+          it "loads component state from file storage" do
+            configure
+
+            expect(test_management.tests_properties).to eq(stored_tests_properties)
+            expect(tests_properties_client).not_to have_received(:fetch)
+          end
+        end
+
+        context "when component state does not exist in file storage" do
+          before do
+            allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+              .with(described_class::FILE_STORAGE_KEY)
+              .and_return(nil)
+          end
+
+          it "fetches tests properties" do
+            expect(tests_properties_client).to receive(:fetch).with(test_session).and_return(tests_properties)
+
+            configure
+
+            expect(test_management.tests_properties).to eq(tests_properties)
+          end
+        end
+      end
 
       describe "#tag_test_from_properties" do
         before do

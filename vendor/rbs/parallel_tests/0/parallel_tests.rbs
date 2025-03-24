@@ -1,0 +1,18 @@
+module ParallelTests
+  class CLI
+    def run_tests_in_parallel: (Integer num_processes, Hash[String, String] options) -> void
+    def any_test_failed?: (untyped test_results) -> bool
+  end
+
+  module RSpec
+    class Runner
+      def run_tests_in_parallel: (Integer num_processes, Hash[String, String] options) -> void
+    end
+  end
+
+  module Test
+    class Runner
+      def execute_command: (String cmd, Integer process_number, Integer num_processes, Hash[String, String] options) -> void
+    end
+  end
+end

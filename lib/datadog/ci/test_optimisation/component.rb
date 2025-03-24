@@ -10,6 +10,7 @@ require_relative "../ext/telemetry"
 require_relative "../git/local_repository"
 
 require_relative "../utils/parsing"
+require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
@@ -23,6 +24,10 @@ module Datadog
       # Integrates with backend to provide test impact analysis data and
       # skip tests that are not impacted by the changes
       class Component
+        include Datadog::CI::Utils::Stateful
+
+        FILE_STORAGE_KEY = "test_optimisation_component_state"
+
         attr_reader :correlation_id, :skippable_tests, :skippable_tests_fetch_error,
           :enabled, :test_skipping_enabled, :code_coverage_enabled
 
@@ -78,9 +83,13 @@ module Datadog
 
           load_datadog_cov! if @code_coverage_enabled
 
-          Datadog.logger.debug("Configured TestOptimisation with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
+          # Load component state first, and if successful, skip fetching skippable tests
+          if skipping_tests? && !load_component_state
+            fetch_skippable_tests(test_session)
+            store_component_state if test_session.distributed
+          end
 
-          fetch_skippable_tests(test_session)
+          Datadog.logger.debug("Configured TestOptimisation with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
         end
 
         def enabled?
@@ -180,6 +189,23 @@ module Datadog
 
         def shutdown!
           @coverage_writer&.stop
+        end
+
+        # Implementation of Stateful interface
+        def serialize_state
+          {
+            correlation_id: @correlation_id,
+            skippable_tests: @skippable_tests
+          }
+        end
+
+        def restore_state(state)
+          @correlation_id = state[:correlation_id]
+          @skippable_tests = state[:skippable_tests]
+        end
+
+        def storage_key
+          FILE_STORAGE_KEY
         end
 
         private

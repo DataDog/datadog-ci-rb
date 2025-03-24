@@ -4,8 +4,9 @@ require "datadog/tracing"
 require "datadog/tracing/contrib/component"
 require "datadog/tracing/trace_digest"
 
-require_relative "store/global"
-require_relative "store/local"
+require_relative "store/process"
+require_relative "store/fiber_local"
+require_relative "telemetry"
 
 require_relative "../ext/app_types"
 require_relative "../ext/environment"
@@ -29,9 +30,11 @@ module Datadog
       class Context
         attr_reader :total_tests_count, :tests_skipped_by_tia_count
 
-        def initialize
-          @local_context = Store::Local.new
-          @global_context = Store::Global.new
+        def initialize(test_visibility_component:)
+          @test_visibility_component = test_visibility_component
+
+          @fiber_local_context = Store::FiberLocal.new
+          @process_context = Store::Process.new
 
           @mutex = Mutex.new
 
@@ -40,18 +43,23 @@ module Datadog
         end
 
         def start_test_session(service: nil, tags: {})
-          @global_context.fetch_or_activate_test_session do
+          @process_context.fetch_or_activate_test_session do
             tracer_span = start_datadog_tracer_span(
               "test.session", build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
             )
             set_session_context(tags, tracer_span)
 
-            build_test_session(tracer_span, tags)
+            test_session = build_test_session(tracer_span, tags)
+
+            Telemetry.test_session_started(test_session)
+            Telemetry.event_created(test_session)
+
+            test_session
           end
         end
 
         def start_test_module(test_module_name, service: nil, tags: {})
-          @global_context.fetch_or_activate_test_module do
+          @process_context.fetch_or_activate_test_module do
             set_inherited_globals(tags)
             set_session_context(tags)
 
@@ -60,12 +68,16 @@ module Datadog
             )
             set_module_context(tags, tracer_span)
 
-            build_test_module(tracer_span, tags)
+            test_module = build_test_module(tracer_span, tags)
+
+            Telemetry.event_created(test_module)
+
+            test_module
           end
         end
 
         def start_test_suite(test_suite_name, service: nil, tags: {})
-          @global_context.fetch_or_activate_test_suite(test_suite_name) do
+          @process_context.fetch_or_activate_test_suite(test_suite_name) do
             set_inherited_globals(tags)
             set_session_context(tags)
             set_module_context(tags)
@@ -75,7 +87,11 @@ module Datadog
             )
             set_suite_context(tags, test_suite: tracer_span)
 
-            build_test_suite(tracer_span, tags)
+            test_suite = build_test_suite(tracer_span, tags)
+
+            Telemetry.event_created(test_suite)
+
+            test_suite
           end
         end
 
@@ -100,14 +116,14 @@ module Datadog
             start_datadog_tracer_span(test_name, span_options) do |tracer_span|
               test = build_test(tracer_span, tags)
 
-              @local_context.activate_test(test) do
+              @fiber_local_context.activate_test(test) do
                 block.call(test)
               end
             end
           else
             tracer_span = start_datadog_tracer_span(test_name, span_options)
             test = build_test(tracer_span, tags)
-            @local_context.activate_test(test)
+            @fiber_local_context.activate_test(test)
             test
           end
         end
@@ -136,43 +152,43 @@ module Datadog
         end
 
         def active_test
-          @local_context.active_test
+          @fiber_local_context.active_test
         end
 
         def active_test_session
-          @global_context.active_test_session
+          @process_context.active_test_session
         end
 
         def active_test_module
-          @global_context.active_test_module
+          @process_context.active_test_module
         end
 
         def active_test_suite(test_suite_name)
-          @global_context.active_test_suite(test_suite_name)
+          @process_context.active_test_suite(test_suite_name)
         end
 
         def single_active_test_suite
-          @global_context.fetch_single_test_suite
+          @process_context.fetch_single_test_suite
         end
 
         def stop_all_test_suites
-          @global_context.stop_all_test_suites
+          @process_context.stop_all_test_suites
         end
 
         def deactivate_test
-          @local_context.deactivate_test
+          @fiber_local_context.deactivate_test
         end
 
         def deactivate_test_session
-          @global_context.deactivate_test_session!
+          @process_context.deactivate_test_session!
         end
 
         def deactivate_test_module
-          @global_context.deactivate_test_module!
+          @process_context.deactivate_test_module!
         end
 
         def deactivate_test_suite(test_suite_name)
-          @global_context.deactivate_test_suite!(test_suite_name)
+          @process_context.deactivate_test_suite!(test_suite_name)
         end
 
         def incr_total_tests_count
@@ -231,20 +247,21 @@ module Datadog
 
         # PROPAGATING CONTEXT FROM TOP-LEVEL TO THE LOWER LEVELS
         def set_inherited_globals(tags)
-          # this code achieves the same as @global_context.inheritable_session_tags.merge(tags)
-          # but without allocating a new hash
-          @global_context.inheritable_session_tags.each do |key, value|
+          # Copy inheritable tags from the test session context to the provided tags
+          test_session_context&.inheritable_tags&.each do |key, value|
             tags[key] = value unless tags.key?(key)
           end
         end
 
         def set_session_context(tags, test_session = nil)
-          test_session ||= active_test_session
+          # we need to call TestVisibility::Component here because active test session might be remote
+          test_session ||= test_session_context
           tags[Ext::Test::TAG_TEST_SESSION_ID] = test_session.id.to_s if test_session
         end
 
         def set_module_context(tags, test_module = nil)
-          test_module ||= active_test_module
+          # we need to call TestVisibility::Component here because active test module might be remote
+          test_module ||= test_module_context
           if test_module
             tags[Ext::Test::TAG_TEST_MODULE_ID] = test_module.id.to_s
             tags[Ext::Test::TAG_MODULE] = test_module.name
@@ -281,10 +298,41 @@ module Datadog
         end
 
         def build_tracing_span_options(service, type, other_options = {})
-          other_options[:service] = service || @global_context.service
+          other_options[:service] = service || test_session_context&.service
           other_options[:type] = type
 
           other_options
+        end
+
+        # one of:
+        #   1. Currrent test session from the Store::Process
+        #   2. Readonly copy of the remote test session (if test session was started by a parent process and local copy was created)
+        #   3. Remote test session as DRb::DRbObject link (in this case also local copy will be created)
+        def test_session_context
+          local_test_session = @process_context.active_test_session
+          return local_test_session if local_test_session
+
+          local_readonly_test_session = @process_context.readonly_test_session
+          return local_readonly_test_session if local_readonly_test_session
+
+          remote_test_session = @test_visibility_component.active_test_session
+          @process_context.set_readonly_test_session(remote_test_session)
+
+          remote_test_session
+        end
+
+        # works similar to test_session_context
+        def test_module_context
+          local_test_module = @process_context.active_test_module
+          return local_test_module if local_test_module
+
+          local_readonly_test_module = @process_context.readonly_test_module
+          return local_readonly_test_module if local_readonly_test_module
+
+          remote_test_module = @test_visibility_component.active_test_module
+          @process_context.set_readonly_test_module(remote_test_module)
+
+          remote_test_module
         end
       end
     end

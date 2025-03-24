@@ -415,16 +415,17 @@ end
 
 # Integrations
 
-# Test frameworks (manual instrumentation)
+# Test frameworks
 require_relative "ci/contrib/cucumber/integration"
 require_relative "ci/contrib/minitest/integration"
 require_relative "ci/contrib/rspec/integration"
 
-# Test runners (instrumented automatically when corresponding frameworks are instrumented)
+# Test runners
 require_relative "ci/contrib/knapsack/integration"
 require_relative "ci/contrib/ciqueue/integration"
+require_relative "ci/contrib/parallel_tests/integration"
 
-# Additional test libraries (auto instrumented later on test session start)
+# Additional test libraries (auto instrumented on test session start)
 require_relative "ci/contrib/selenium/integration"
 require_relative "ci/contrib/cuprite/integration"
 require_relative "ci/contrib/simplecov/integration"

@@ -27,7 +27,10 @@ module Datadog
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
                 },
                 service: datadog_configuration[:service_name],
-                estimated_total_tests_count: tests_count
+                estimated_total_tests_count: tests_count,
+                # if minitest is being used with a parallel runner, then tests split will happen by example, not by test suite
+                # we need to always start/stop test suites in the parent process in this case
+                local_test_suites_mode: false
               )
               test_visibility_component.start_test_module(Ext::FRAMEWORK)
             end

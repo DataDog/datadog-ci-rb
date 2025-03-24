@@ -180,6 +180,17 @@ def self.with_cuprite_gem(cuprite_versions: 0, capybara_versions: 3)
   end
 end
 
+def self.with_parallel_tests_gem(parallel_tests_versions: 5, rspec_versions: 3)
+  Array(parallel_tests_versions).each do |parallel_tests_v|
+    Array(rspec_versions).each do |rspec_v|
+      appraise "parallel_tests-#{parallel_tests_v}-rspec-#{rspec_v}" do
+        gem "parallel_tests", "~> #{parallel_tests_v}"
+        gem "rspec", "~> #{rspec_v}"
+      end
+    end
+  end
+end
+
 major, minor, = RUBY_VERSION.segments
 
 with_minitest_gem
@@ -187,6 +198,7 @@ with_rspec_gem
 with_cucumber_gem(versions: 3..9)
 with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
+with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2") <= RUBY_VERSION
 with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_active_support_gem(versions: 4..7)
 with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..8)

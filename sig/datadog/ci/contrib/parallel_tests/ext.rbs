@@ -1,0 +1,12 @@
+module Datadog
+  module CI
+    module Contrib
+      module ParallelTests
+        module Ext
+          ENV_ENABLED: String
+          DEFAULT_SERVICE_NAME: String
+        end
+      end
+    end
+  end
+end

@@ -2,6 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "ext"
+require_relative "helpers"
 
 module Datadog
   module CI
@@ -28,13 +29,19 @@ module Datadog
               return super unless top_level?
 
               suite_name = "#{description} at #{file_path}"
-              test_suite = test_visibility_component&.start_test_suite(
-                suite_name,
-                tags: {
-                  CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
-                  CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
-                }
-              )
+              suite_tags = {
+                CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
+                CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
+              }
+
+              # parallel_tests gem splits tests by files, so test suite is always executed within a single worker
+              # we can use it for some optimization: start test suite in local process when running under parallel_tests
+              test_suite =
+                test_visibility_component&.start_test_suite(
+                  suite_name,
+                  tags: suite_tags,
+                  service: datadog_configuration[:service_name]
+                )
 
               success = super
               return success unless test_suite

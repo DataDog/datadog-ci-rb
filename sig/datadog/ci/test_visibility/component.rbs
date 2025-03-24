@@ -3,6 +3,9 @@ module Datadog
     module TestVisibility
       class Component
         include Datadog::Core::Utils::Forking
+        include Datadog::CI::Utils::Stateful
+
+        FILE_STORAGE_KEY: String
 
         @test_suite_level_visibility_enabled: bool
 
@@ -12,10 +15,13 @@ module Datadog
 
         @context_service: untyped
         @context_service_uri: String
+        @is_client_process: bool
 
         @known_tests_enabled: bool
         @known_tests: Set[String]
         @known_tests_client: Datadog::CI::TestVisibility::KnownTests
+
+        @local_test_suites_mode: bool
 
         attr_reader test_suite_level_visibility_enabled: bool
 
@@ -23,19 +29,25 @@ module Datadog
 
         attr_reader known_tests: Set[String]
 
-        def initialize: (known_tests_client: Datadog::CI::TestVisibility::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?) -> void
+        attr_reader known_tests_enabled: bool
+
+        attr_reader context_service_uri: String
+
+        attr_reader local_test_suites_mode: bool
+
+        def initialize: (known_tests_client: Datadog::CI::TestVisibility::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?context_service_uri: String?) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
-        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
-        def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+        def trace: (String span_name, ?type: String, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped], ?estimated_total_tests_count: Integer) -> Datadog::CI::TestSession
+        def start_test_session: (?service: String?, ?tags: Hash[Symbol | String, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool, ?local_test_suites_mode: bool) -> Datadog::CI::TestSession
 
-        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestModule
+        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestModule
 
-        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSuite
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestSuite
 
         def active_test_session: () -> Datadog::CI::TestSession?
 
@@ -63,7 +75,14 @@ module Datadog
 
         def shutdown!: () -> void
 
+        def client_process?: () -> bool
+
         private
+
+        # Implementation of Stateful interface
+        def serialize_state: () -> Hash[Symbol, untyped]
+
+        def restore_state: (Hash[Symbol, untyped] state) -> void
 
         def configure_library: (Datadog::CI::TestSession test_session) -> void
 
