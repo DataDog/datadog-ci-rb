@@ -7,10 +7,10 @@ module Datadog
   module CI
     module TestVisibility
       module Store
-        attr_reader :readonly_test_session, :readonly_test_module
-
         # This context is shared between threads and represents the current test session and test module.
         class Process
+          attr_reader :readonly_test_session, :readonly_test_module
+
           def initialize
             # we are using Monitor instead of Mutex because it is reentrant
             @mutex = Monitor.new
