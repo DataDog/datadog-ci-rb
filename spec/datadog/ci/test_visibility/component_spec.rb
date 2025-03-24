@@ -406,6 +406,20 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SESSION)
         end
 
+        it "sets local_test_suites_mode to true by default" do
+          subject
+          expect(test_visibility.local_test_suites_mode).to be true
+        end
+
+        context "when local_test_suites_mode is explicitly set" do
+          subject { test_visibility.start_test_session(service: service, tags: tags, local_test_suites_mode: false) }
+
+          it "sets local_test_suites_mode to the provided value" do
+            subject
+            expect(test_visibility.local_test_suites_mode).to be false
+          end
+        end
+
         it "sets the test session id" do
           expect(subject).to have_test_tag(:test_session_id, subject.id.to_s)
         end
@@ -648,6 +662,40 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           it_behaves_like "span with default tags"
           it_behaves_like "span with runtime tags"
           it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
+        end
+
+        context "when local_test_suites_mode is true" do
+          let(:suite_name) { "my-suite" }
+          let(:tags) { {"my.tag" => "my_value"} }
+
+          before do
+            test_visibility.start_test_session(local_test_suites_mode: true)
+          end
+
+          it "uses local context to start test suite" do
+            expect(test_visibility).not_to receive(:maybe_remote_context)
+
+            test_visibility.start_test_suite(suite_name, tags: tags)
+          end
+        end
+
+        context "when local_test_suites_mode is false" do
+          let(:suite_name) { "my-suite" }
+          let(:tags) { {"my.tag" => "my_value"} }
+          let(:remote_context) { double("remote_context") }
+
+          before do
+            test_visibility.start_test_session(local_test_suites_mode: false)
+            allow(test_visibility).to receive(:maybe_remote_context).and_return(remote_context)
+          end
+
+          it "uses remote context to start test suite" do
+            expect(remote_context).to receive(:start_test_suite)
+              .with(suite_name, service: nil, tags: tags)
+              .and_return(double("test_suite", source_file: "test_suite.rb", set_tag: true))
+
+            test_visibility.start_test_suite(suite_name, tags: tags)
+          end
         end
 
         context "when test suite with given name is already started" do
@@ -1018,86 +1066,6 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         expect(test_visibility.known_tests).to be_empty
         expect(test_visibility.known_tests_enabled).to be false
       end
-    end
-  end
-
-  describe "start_local_test_suite" do
-    include_context "CI mode activated"
-
-    let(:module_name) { "my-module" }
-    let(:session_service) { "session_service" }
-    let(:session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
-
-    let(:test_session) { test_visibility.start_test_session(service: session_service, tags: session_tags) }
-    let(:test_module) { test_visibility.start_test_module(module_name) }
-
-    before do
-      test_session
-      test_module
-      # Allow spying on the underlying @context instance to verify it's being used
-      allow(test_visibility).to receive(:start_test_suite).and_call_original
-    end
-
-    context "when test suite with given name is not started yet" do
-      let(:suite_name) { "my-local-suite" }
-      let(:tags) { {"my.tag" => "my_value"} }
-
-      subject { test_visibility.start_local_test_suite(suite_name, tags: tags) }
-
-      it "returns a new CI test_suite span" do
-        expect(subject).to be_kind_of(Datadog::CI::TestSuite)
-        expect(subject.name).to eq(suite_name)
-        expect(subject.service).to eq(session_service)
-        expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST_SUITE)
-      end
-
-      it "calls start_test_suite with the local context" do
-        expect(test_visibility).to receive(:start_test_suite).with(
-          suite_name,
-          service: nil,
-          tags: tags,
-          context: test_visibility.instance_variable_get(:@context)
-        )
-
-        subject
-      end
-
-      it "sets the provided tags correctly while inheriting some tags from the session" do
-        expect(subject).to have_test_tag("test.framework_version", "1.0")
-        expect(subject).to have_test_tag("my.tag", "my_value")
-        expect(subject).not_to have_test_tag("my.session.tag")
-      end
-
-      it "sets the test suite context" do
-        expect(subject).to have_test_tag(:test_suite_id, subject.id.to_s)
-        expect(subject).to have_test_tag(:suite, suite_name)
-      end
-
-      it "sets test session and test module contexts" do
-        expect(subject).to have_test_tag(:test_session_id, test_session.id.to_s)
-        expect(subject).to have_test_tag(:test_module_id, test_module.id.to_s)
-        expect(subject).to have_test_tag(:module, module_name)
-      end
-
-      it_behaves_like "span with environment tags"
-      it_behaves_like "span with default tags"
-      it_behaves_like "span with runtime tags"
-      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
-    end
-
-    context "when test suite level visibility is disabled" do
-      let(:test_visibility) do
-        described_class.new(
-          known_tests_client: instance_double(Datadog::CI::TestVisibility::KnownTests),
-          test_suite_level_visibility_enabled: false
-        )
-      end
-
-      let(:suite_name) { "my-local-suite" }
-
-      subject { test_visibility.start_local_test_suite(suite_name) }
-
-      it { is_expected.to be_nil }
     end
   end
 end

@@ -62,9 +62,7 @@ module Datadog
           end
 
           def service
-            @mutex.synchronize do
-              @test_session&.service
-            end
+            @test_session&.service
           end
 
           def stop_all_test_suites

@@ -21,6 +21,8 @@ module Datadog
         @known_tests: Set[String]
         @known_tests_client: Datadog::CI::TestVisibility::KnownTests
 
+        @local_test_suites_mode: bool
+
         attr_reader test_suite_level_visibility_enabled: bool
 
         attr_reader logical_test_session_name: String?
@@ -31,6 +33,8 @@ module Datadog
 
         attr_reader context_service_uri: String
 
+        attr_reader local_test_suites_mode: bool
+
         def initialize: (known_tests_client: Datadog::CI::TestVisibility::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?context_service_uri: String?) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
@@ -39,13 +43,11 @@ module Datadog
 
         def trace: (String span_name, ?type: String, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[Symbol | String, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool) -> Datadog::CI::TestSession
+        def start_test_session: (?service: String?, ?tags: Hash[Symbol | String, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool, ?local_test_suites_mode: bool) -> Datadog::CI::TestSession
 
         def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestModule
 
-        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped], ?context: Datadog::CI::TestVisibility::Context) -> Datadog::CI::TestSuite
-
-        def start_local_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestSuite
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestSuite
 
         def active_test_session: () -> Datadog::CI::TestSession?
 

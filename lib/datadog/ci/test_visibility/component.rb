@@ -29,7 +29,7 @@ module Datadog
         FILE_STORAGE_KEY = "test_visibility_component_state"
 
         attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name,
-          :known_tests, :known_tests_enabled, :context_service_uri
+          :known_tests, :known_tests_enabled, :context_service_uri, :local_test_suites_mode
 
         def initialize(
           known_tests_client:,
@@ -56,6 +56,16 @@ module Datadog
             @context_service_uri = context_service_uri
             @is_client_process = true
           end
+
+          # This is used for parallel test runners such as parallel_tests.
+          # If true, then test suites are created in the worker process, not the parent.
+          #
+          # The only test runner that requires creating test suites in the remote process is rails test runner because
+          # it splits workload by test, not by test suite.
+          #
+          # Another test runner that splits workload by test is knapsack_pro, but we lack distributed test sessions/test suties
+          # support for that one (as of 2025-03).
+          @local_test_suites_mode = true
         end
 
         def configure(library_configuration, test_session)
@@ -69,8 +79,10 @@ module Datadog
           store_component_state if test_session.distributed
         end
 
-        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: false)
+        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: false, local_test_suites_mode: true)
           return skip_tracing unless test_suite_level_visibility_enabled
+
+          @local_test_suites_mode = local_test_suites_mode
 
           start_drb_service
 
@@ -92,18 +104,14 @@ module Datadog
           test_module
         end
 
-        def start_test_suite(test_suite_name, service: nil, tags: {}, context: maybe_remote_context)
+        def start_test_suite(test_suite_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
+
+          context = @local_test_suites_mode ? @context : maybe_remote_context
 
           test_suite = context.start_test_suite(test_suite_name, service: service, tags: tags)
           on_test_suite_started(test_suite)
           test_suite
-        end
-
-        def start_local_test_suite(test_suite_name, service: nil, tags: {})
-          return skip_tracing unless test_suite_level_visibility_enabled
-
-          start_test_suite(test_suite_name, service: service, tags: tags, context: @context)
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
