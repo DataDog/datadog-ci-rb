@@ -4,11 +4,13 @@ module Datadog
       @id: Integer
       @name: String
       @inheritable_tags: Hash[String | Symbol, String]
+      @service: String
 
       def initialize: (TestSession test_session) -> void
       def id: () -> Integer
       def name: () -> String
       def inheritable_tags: () -> Hash[String | Symbol, String]
+      def service: () -> String
       def finish: () -> void
       def set_tag: (String | Symbol key, String value) -> void
       def set_metric: (String | Symbol key, Numeric value) -> void

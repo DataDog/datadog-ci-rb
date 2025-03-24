@@ -7,6 +7,8 @@ module Datadog
   module CI
     module TestVisibility
       module Store
+        attr_reader :readonly_test_session, :readonly_test_module
+
         # This context is shared between threads and represents the current test session and test module.
         class Process
           def initialize
@@ -61,10 +63,6 @@ module Datadog
             @mutex.synchronize { @test_suites[test_suite_name] }
           end
 
-          def service
-            @test_session&.service
-          end
-
           def stop_all_test_suites
             @mutex.synchronize do
               @test_suites.each_value(&:finish)
@@ -95,8 +93,6 @@ module Datadog
 
             @readonly_test_module = Datadog::CI::ReadonlyTestModule.new(remote_test_module)
           end
-
-          attr_reader :readonly_test_session, :readonly_test_module
         end
       end
     end

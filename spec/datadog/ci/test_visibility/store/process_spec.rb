@@ -9,24 +9,6 @@ RSpec.describe Datadog::CI::TestVisibility::Store::Process do
   let(:session) { Datadog::CI::TestSession.new(tracer_span) }
   let(:test_module) { Datadog::CI::TestModule.new(tracer_span) }
 
-  describe "#service" do
-    context "when a test session is active" do
-      before do
-        subject.fetch_or_activate_test_session { session }
-      end
-
-      it "returns the service name" do
-        expect(subject.service).to eq("my-service")
-      end
-    end
-
-    context "when no test session is active" do
-      it "returns nil" do
-        expect(subject.service).to be_nil
-      end
-    end
-  end
-
   describe "#active_test_session" do
     context "when a test session is active" do
       before do

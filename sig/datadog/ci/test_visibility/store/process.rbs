@@ -25,8 +25,6 @@ module Datadog
 
           def active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
 
-          def service: () -> String?
-
           def active_test_module: () -> Datadog::CI::TestModule?
 
           def deactivate_test_session!: () -> void

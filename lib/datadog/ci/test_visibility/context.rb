@@ -298,7 +298,7 @@ module Datadog
         end
 
         def build_tracing_span_options(service, type, other_options = {})
-          other_options[:service] = service || @process_context.service
+          other_options[:service] = service || test_session_context&.service
           other_options[:type] = type
 
           other_options

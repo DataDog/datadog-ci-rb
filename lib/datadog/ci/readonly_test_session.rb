@@ -10,9 +10,10 @@ module Datadog
         @id = test_session.id
         @name = test_session.name
         @inheritable_tags = test_session.inheritable_tags
+        @service = test_session.service
       end
 
-      attr_reader :id, :name, :inheritable_tags
+      attr_reader :id, :name, :inheritable_tags, :service
 
       def finish
         raise "ReadonlyTestSession cannot be finished"
