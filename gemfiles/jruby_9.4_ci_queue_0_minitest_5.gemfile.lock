@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    datadog-ci (1.14.0)
+    datadog-ci (1.15.0)
       datadog (~> 2.4)
       drb
       msgpack
