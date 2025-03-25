@@ -248,6 +248,12 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
     end
 
+    def with_source_git_dir
+      ClimateControl.modify("GIT_DIR" => File.join(source_path, ".git")) do
+        yield
+      end
+    end
+
     before do
       `mkdir -p #{origin_path}`
       # create origin
@@ -269,6 +275,40 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
 
     after { FileUtils.remove_entry(tmpdir) }
+
+    context "with multiline commit message" do
+      before do
+        `cd #{source_path} && echo "Hello, world!" >> README.md && git add README.md && git commit -m "Initial commit\n\nThis is a multiline commit message"`
+      end
+
+      describe ".git_commit_message" do
+        subject do
+          with_source_git_dir do
+            described_class.git_commit_message
+          end
+        end
+
+        it "returns the multiline commit message" do
+          expect(subject).to eq("Initial commit\n\nThis is a multiline commit message")
+        end
+      end
+    end
+
+    context "with multiple git messages" do
+      before do
+        `cd #{source_path} && echo "Hello, world!" >> README.md && git add README.md && git commit -m "Initial commit" -m "More details"`
+      end
+
+      describe ".git_commit_message" do
+        subject do
+          with_source_git_dir { described_class.git_commit_message }
+        end
+
+        it "returns the commit message" do
+          expect(subject).to eq("Initial commit\n\nMore details")
+        end
+      end
+    end
 
     context "with shallow clone" do
       before do
