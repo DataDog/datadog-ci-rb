@@ -1,5 +1,18 @@
 ## [Unreleased]
 
+## [1.15.0] - 2025-03-25
+
+
+### Added
+
+* parallel tests gem support ([#299][])
+* implemented attempt to fix flow V2 ([#298][])
+
+### Fixed
+
+* Fix: prevent test impact analysis from skipping flaky tests that are attempted to be fixed ([#301][])
+* Fix git commit message extraction to extract multiline commit messages correctly ([#300][])
+
 ## [1.14.0] - 2025-03-11
 
 ### Added
@@ -404,7 +417,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.14.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.15.0...main
+[1.15.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.11.0...v1.12.0
@@ -580,3 +594,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#292]: https://github.com/DataDog/datadog-ci-rb/issues/292
 [#294]: https://github.com/DataDog/datadog-ci-rb/issues/294
 [#295]: https://github.com/DataDog/datadog-ci-rb/issues/295
+[#298]: https://github.com/DataDog/datadog-ci-rb/issues/298
+[#299]: https://github.com/DataDog/datadog-ci-rb/issues/299
+[#300]: https://github.com/DataDog/datadog-ci-rb/issues/300
+[#301]: https://github.com/DataDog/datadog-ci-rb/issues/301
