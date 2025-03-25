@@ -751,6 +751,8 @@ RSpec.describe "RSpec instrumentation" do
 
       let(:itr_enabled) { true }
       let(:tests_skipping_enabled) { true }
+
+      let(:test_management_enabled) { true }
     end
 
     context "skipped a single test" do
@@ -830,6 +832,24 @@ RSpec.describe "RSpec instrumentation" do
 
         expect(before_all_spy).to have_received(:call)
         expect(before_context_spy).to have_received(:call)
+      end
+
+      context "but some test is an attempt to fix" do
+        let(:test_properties) do
+          {
+            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo." => {
+              "quarantined" => false,
+              "disabled" => false,
+              "attempt_to_fix" => true
+            }
+          }
+        end
+
+        it "does not skip context hooks" do
+          rspec_session_run(with_failed_test: true)
+
+          expect(before_context_spy).to have_received(:call)
+        end
       end
 
       context "but some tests are unskippable" do

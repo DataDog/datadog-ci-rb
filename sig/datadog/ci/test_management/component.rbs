@@ -22,6 +22,8 @@ module Datadog
 
         def tag_test_from_properties: (Datadog::CI::Test test) -> void
 
+        def attempt_to_fix?: (String datadog_fqn_test_id) -> bool
+
         # Implementation of Stateful interface
         def serialize_state: () -> Hash[Symbol, untyped]
 

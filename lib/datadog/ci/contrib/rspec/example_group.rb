@@ -34,8 +34,6 @@ module Datadog
                 CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
               }
 
-              # parallel_tests gem splits tests by files, so test suite is always executed within a single worker
-              # we can use it for some optimization: start test suite in local process when running under parallel_tests
               test_suite =
                 test_visibility_component&.start_test_suite(
                   suite_name,
@@ -63,7 +61,8 @@ module Datadog
 
             def all_examples_skipped_by_datadog?
               descendant_filtered_examples.all? do |example|
-                !example.datadog_unskippable? && test_optimisation_component&.skippable?(example)
+                !example.datadog_unskippable? && test_optimisation_component&.skippable?(example.datadog_test_id) &&
+                  !test_management_component&.attempt_to_fix?(example.datadog_fqn_test_id)
               end
             end
 
@@ -77,6 +76,10 @@ module Datadog
 
             def test_optimisation_component
               Datadog.send(:components).test_optimisation
+            end
+
+            def test_management_component
+              Datadog.send(:components).test_management
             end
           end
         end
