@@ -147,16 +147,16 @@ module Datadog
           event
         end
 
-        def skippable?(test)
+        def skippable?(datadog_test_id)
           return false if !enabled? || !skipping_tests?
 
-          @skippable_tests.include?(test.datadog_test_id)
+          @skippable_tests.include?(datadog_test_id)
         end
 
         def mark_if_skippable(test)
           return if !enabled? || !skipping_tests?
 
-          if skippable?(test)
+          if skippable?(test.datadog_test_id) && !test.attempt_to_fix?
             test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
             Datadog.logger.debug { "Marked test as skippable: #{test.datadog_test_id}" }

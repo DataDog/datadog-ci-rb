@@ -97,6 +97,13 @@ module Datadog
               )
             end
 
+            def datadog_fqn_test_id
+              @datadog_fqn_test_id ||= Utils::TestRun.datadog_test_id(
+                datadog_test_name,
+                datadog_test_suite_name
+              )
+            end
+
             def datadog_unskippable?
               !!metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
             end

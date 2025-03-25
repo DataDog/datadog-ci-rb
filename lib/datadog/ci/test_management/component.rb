@@ -65,6 +65,15 @@ module Datadog
           test_span.set_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX, "true") if test_properties["attempt_to_fix"]
         end
 
+        def attempt_to_fix?(datadog_fqn_test_id)
+          return false unless @enabled
+
+          test_properties = @tests_properties[datadog_fqn_test_id]
+          return false if test_properties.nil?
+
+          test_properties.fetch("attempt_to_fix", false)
+        end
+
         # Implementation of Stateful interface
         def serialize_state
           {

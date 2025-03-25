@@ -751,6 +751,8 @@ RSpec.describe "RSpec instrumentation" do
 
       let(:itr_enabled) { true }
       let(:tests_skipping_enabled) { true }
+
+      let(:test_management_enabled) { true }
     end
 
     context "skipped a single test" do
@@ -830,6 +832,24 @@ RSpec.describe "RSpec instrumentation" do
 
         expect(before_all_spy).to have_received(:call)
         expect(before_context_spy).to have_received(:call)
+      end
+
+      context "but some test is an attempt to fix" do
+        let(:test_properties) do
+          {
+            "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo." => {
+              "quarantined" => false,
+              "disabled" => false,
+              "attempt_to_fix" => true
+            }
+          }
+        end
+
+        it "does not skip context hooks" do
+          rspec_session_run(with_failed_test: true)
+
+          expect(before_context_spy).to have_received(:call)
+        end
       end
 
       context "but some tests are unskippable" do
@@ -1505,6 +1525,68 @@ RSpec.describe "RSpec instrumentation" do
             "attempt_to_fix" => true
           }
         }
+      end
+    end
+
+    it "runs the test and retries it" do
+      rspec_session_run
+
+      # 1 original execution and 12 retries (attempt_to_fix_retries_count)
+      expect(test_spans).to have(attempt_to_fix_retries_count + 1).items
+
+      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to have(0).items
+      expect(passed_spans).to have(attempt_to_fix_retries_count + 1).items
+
+      # count how many tests were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(attempt_to_fix_retries_count)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["attempt_to_fix"] * attempt_to_fix_retries_count)
+
+      # count how many tests were marked as attempt_to_fix
+      attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
+      expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
+
+      # count how many tests were marked as disabled
+      disabled_count = test_spans.count { |span| span.get_tag("test.test_management.is_test_disabled") == "true" }
+      expect(disabled_count).to eq(attempt_to_fix_retries_count + 1)
+
+      # we set test.test_management.attempt_to_fix_passed tag on the last retry here
+      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
+      expect(fix_passed_tests_count).to eq(1)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
+  context "session with test management and test impact analysis enabled and a test is both attempt_to_fix and skipped" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo." => {
+            "quarantined" => false,
+            "disabled" => true,
+            "attempt_to_fix" => true
+          }
+        }
+      end
+
+      let(:itr_enabled) { true }
+      let(:tests_skipping_enabled) { true }
+      let(:itr_skippable_tests) do
+        Set.new([
+          'SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{"arguments":{},"metadata":{"scoped_id":"1:1:1"}}'
+        ])
       end
     end
 
