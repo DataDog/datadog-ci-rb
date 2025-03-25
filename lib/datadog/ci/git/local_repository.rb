@@ -142,7 +142,7 @@ module Datadog
         end
 
         def self.git_commit_message
-          exec_git_command("git show -s --format=%s")
+          exec_git_command("git log -n 1 --format=%B")
         rescue => e
           log_failure(e, "git commit message")
           nil
