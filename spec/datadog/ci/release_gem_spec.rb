@@ -21,6 +21,7 @@ RSpec.describe "gem release process" do
            |\.env
            |\.gitignore
            |\.rspec
+           |\.rspec-local.example
            |\.rubocop.yml
            |\.standard.yml
            |\.standard_todo.yml
