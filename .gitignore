@@ -23,3 +23,5 @@ lib/**/*.o
 lib/**/*.dylib
 lib/**/*.dll
 
+# from Datadog Cursor extension
+.cursor/mcp.json
