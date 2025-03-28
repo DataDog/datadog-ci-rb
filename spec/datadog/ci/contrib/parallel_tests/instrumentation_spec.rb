@@ -18,6 +18,11 @@ RSpec.describe "RSpec instrumentation with parallel_tests runner" do
     # Create a temporary directory for test files
     FileUtils.mkdir_p("spec/datadog/ci/contrib/parallel_tests/suite_under_test")
 
+    # Write spec_helper file
+    File.write("spec/datadog/ci/contrib/parallel_tests/suite_under_test/spec_helper.rb", <<~RUBY)
+      require "rspec"
+    RUBY
+
     # Write some test files that include passing, failing, and skipped tests
     File.write("spec/datadog/ci/contrib/parallel_tests/suite_under_test/test_a_spec.rb", <<~RUBY)
       RSpec.describe "TestA" do
@@ -57,7 +62,10 @@ RSpec.describe "RSpec instrumentation with parallel_tests runner" do
     with_new_rspec_environment do
       # Run the tests with parallel_tests (2 processes)
       # Use ParallelTests::CLI directly to start test session in this process
-      ParallelTests::CLI.new.run(["--type", "rspec"] + %w[spec/datadog/ci/contrib/parallel_tests/suite_under_test])
+      ParallelTests::CLI.new.run(
+        ["--type", "rspec"] +
+          %w[-- --default-path spec/datadog/ci/contrib/parallel_tests/suite_under_test --out /dev/null -- spec/datadog/ci/contrib/parallel_tests/suite_under_test]
+      )
     end
 
     # Test session should be created
