@@ -134,6 +134,11 @@ module Datadog
                 o.default true
               end
 
+              option :agentless_logs_submission_url do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Settings::ENV_AGENTLESS_LOGS_SUBMISSION_URL
+              end
+
               # internal only
               option :discard_traces do |o|
                 o.type :bool
