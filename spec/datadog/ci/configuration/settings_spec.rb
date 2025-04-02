@@ -651,6 +651,47 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#agentless_logs_submission_enabled" do
+        subject(:agentless_logs_submission_enabled) { settings.ci.agentless_logs_submission_enabled }
+
+        it { is_expected.to be true }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_AGENTLESS_LOGS_SUBMISSION_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_AGENTLESS_LOGS_SUBMISSION_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#agentless_logs_submission_enabled=" do
+        it "updates the #agentless_logs_submission_enabled setting" do
+          expect { settings.ci.agentless_logs_submission_enabled = false }
+            .to change { settings.ci.agentless_logs_submission_enabled }
+            .from(true)
+            .to(false)
+        end
+      end
+
       describe "#instrument" do
         let(:integration_name) { :fake }
 
