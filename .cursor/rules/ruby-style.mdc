@@ -19,6 +19,7 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 - Always run `bundle exec rake steep:check` after any update to RBS files
 - When deleting Ruby files, delete corresponding RBS file. Run `bundle exec rake rbs:clean` to make sure that there are no unnecessary RBS files.
 - Avoid using `untyped` type, use it only when it is not feasible to derive the correct type
+- Do not write types like `(nil | Type)`, use `Type?` instead
 
 ## Testing
 
