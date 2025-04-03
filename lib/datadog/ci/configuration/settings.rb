@@ -131,7 +131,7 @@ module Datadog
               option :agentless_logs_submission_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_AGENTLESS_LOGS_SUBMISSION_ENABLED
-                o.default true
+                o.default false
               end
 
               option :agentless_logs_submission_url do |o|
