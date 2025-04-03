@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Datadog
   module CI
     module Logs
@@ -12,6 +14,7 @@ module Datadog
           return unless enabled
 
           # p event
+
           event
         end
       end
