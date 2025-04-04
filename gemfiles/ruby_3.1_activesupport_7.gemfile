@@ -13,6 +13,7 @@ gem "climate_control"
 gem "webmock"
 gem "rake"
 gem "yard"
+gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "master"
 gem "os"
 gem "activesupport", "~> 7"
 

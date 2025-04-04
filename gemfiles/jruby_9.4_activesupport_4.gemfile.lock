@@ -1,3 +1,15 @@
+GIT
+  remote: https://github.com/DataDog/dd-trace-rb.git
+  revision: edcfe6a36b0ec38f03dde21f2801aef47e9697f5
+  branch: master
+  specs:
+    datadog (2.13.0)
+      datadog-ruby_core_source (~> 3.4)
+      libdatadog (~> 16.0.1.1.0)
+      libddwaf (~> 1.21.0.0.1)
+      logger
+      msgpack
+
 PATH
   remote: ..
   specs:
@@ -26,14 +38,8 @@ GEM
     crack (1.0.0)
       bigdecimal
       rexml
-    datadog (2.11.0)
-      datadog-ruby_core_source (~> 3.4)
-      libdatadog (~> 16.0.1.1.0)
-      libddwaf (~> 1.18.0.0.1)
-      logger
-      msgpack
     datadog-ruby_core_source (3.4.0)
-    diff-lcs (1.6.0)
+    diff-lcs (1.6.1)
     docile (1.4.1)
     drb (2.2.1)
     ffi (1.17.1-java)
@@ -41,10 +47,10 @@ GEM
     i18n (0.9.5)
       concurrent-ruby (~> 1.0)
     libdatadog (16.0.1.1.0)
-    libddwaf (1.18.0.0.1-java)
+    libddwaf (1.21.0.0.1-java)
       ffi (~> 1.0)
-    logger (1.6.6)
-    minitest (5.25.4)
+    logger (1.7.0)
+    minitest (5.25.5)
     msgpack (1.8.0-java)
     os (1.1.4)
     public_suffix (6.0.1)
@@ -79,7 +85,7 @@ GEM
     thread_safe (0.3.6-java)
     tzinfo (1.2.11)
       thread_safe (~> 0.1)
-    webmock (3.25.0)
+    webmock (3.25.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
@@ -93,6 +99,7 @@ DEPENDENCIES
   appraisal
   bigdecimal (< 3.1.8)
   climate_control
+  datadog!
   datadog-ci!
   os
   rake
