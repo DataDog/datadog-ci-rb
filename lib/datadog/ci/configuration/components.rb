@@ -4,6 +4,7 @@ require "datadog/core/telemetry/ext"
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
+require_relative "../logs/component"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
@@ -33,7 +34,8 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries, :test_management
+        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries,
+          :test_management, :agentless_logs_submission
 
         def initialize(settings)
           @test_optimisation = nil
@@ -132,6 +134,8 @@ module Datadog
             known_tests_client: build_known_tests_client(settings, test_visibility_api),
             context_service_uri: settings.ci.test_visibility_drb_server_uri
           )
+
+          @agentless_logs_submission = Logs::Component.new(enabled: settings.ci.agentless_logs_submission_enabled)
         end
 
         def build_test_optimisation(settings, test_visibility_api)

@@ -651,6 +651,82 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#agentless_logs_submission_enabled" do
+        subject(:agentless_logs_submission_enabled) { settings.ci.agentless_logs_submission_enabled }
+
+        it { is_expected.to be false }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_AGENTLESS_LOGS_SUBMISSION_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_AGENTLESS_LOGS_SUBMISSION_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be false }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#agentless_logs_submission_enabled=" do
+        it "updates the #agentless_logs_submission_enabled setting" do
+          expect { settings.ci.agentless_logs_submission_enabled = true }
+            .to change { settings.ci.agentless_logs_submission_enabled }
+            .from(false)
+            .to(true)
+        end
+      end
+
+      describe "#agentless_logs_submission_url" do
+        subject(:agentless_logs_submission_url) { settings.ci.agentless_logs_submission_url }
+
+        it { is_expected.to be nil }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_AGENTLESS_LOGS_SUBMISSION_URL}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_AGENTLESS_LOGS_SUBMISSION_URL => agentless_logs_submission_url) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:agentless_logs_submission_url) { nil }
+
+            it { is_expected.to be nil }
+          end
+
+          context "is set to some value" do
+            let(:agentless_logs_submission_url) { "example.com" }
+
+            it { is_expected.to eq agentless_logs_submission_url }
+          end
+        end
+      end
+
+      describe "#agentless_logs_submission_url=" do
+        it "updates the #agentless_logs_submission_url setting" do
+          expect { settings.ci.agentless_logs_submission_url = "example.com" }
+            .to change { settings.ci.agentless_logs_submission_url }
+            .from(nil)
+            .to("example.com")
+        end
+      end
+
       describe "#instrument" do
         let(:integration_name) { :fake }
 

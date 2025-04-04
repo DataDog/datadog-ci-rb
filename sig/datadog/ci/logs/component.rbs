@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Logs
+      class Component
+        attr_reader enabled: bool
+
+        def initialize: (enabled: bool) -> void
+
+        def write: (Hash[String, untyped] event) -> Hash[String, untyped]?
+      end
+    end
+  end
+end

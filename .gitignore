@@ -23,3 +23,8 @@ lib/**/*.o
 lib/**/*.dylib
 lib/**/*.dll
 
+# Datadog extension config
+.cursor/mcp.json
+
+# Local extensions configs
+.vscode

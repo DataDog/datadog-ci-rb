@@ -35,4 +35,5 @@ target :lib do
   library "simplecov"
   library "cuprite"
   library "parallel_tests"
+  library "rails"
 end
