@@ -70,6 +70,7 @@ jobs:
           # it will terminate the tmate session and quit gracefully.
           detached: true
       - name: Generate junit report name
+        if: ${{ !cancelled() }}
         id: junit_report_name
         run: echo "name=${{ inputs.alias }}-$(basename $BUNDLE_GEMFILE)-${{ matrix.task }}" >> $GITHUB_OUTPUT
       - name: Upload junit reports
