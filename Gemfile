@@ -24,6 +24,9 @@ gem "webmock"
 gem "rake"
 gem "yard"
 
+# test against gem datadog from master
+gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "master"
+
 # platform helpers
 gem "os"
 
