@@ -9,8 +9,9 @@ module Datadog
           @citestcycle_http: Datadog::CI::Transport::HTTP
           @api_http: Datadog::CI::Transport::HTTP
           @citestcov_http: Datadog::CI::Transport::HTTP
+          @logs_intake_http: Datadog::CI::Transport::HTTP
 
-          def initialize: (api_key: String, citestcycle_url: String, api_url: String, citestcov_url: String) -> void
+          def initialize: (api_key: String, citestcycle_url: String, api_url: String, citestcov_url: String, logs_intake_url: String) -> void
 
           def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
@@ -19,6 +20,8 @@ module Datadog
           def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
           def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
+
+          def logs_intake_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
           private
 

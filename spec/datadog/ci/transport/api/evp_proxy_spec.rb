@@ -19,9 +19,6 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
   let(:api_http) { double(:http) }
 
   let(:container_id) { nil }
-  before do
-    expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
-  end
 
   let(:citestcycle_headers) do
     {
@@ -58,6 +55,10 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
     end
 
     describe "#citestcycle_request" do
+      before do
+        expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+      end
+
       context "with path starting from / character" do
         it "produces correct headers and forwards request to HTTP layer prepending path with evp_proxy" do
           expect(intake_http).to receive(:request).with(
@@ -114,6 +115,10 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
     end
 
     describe "#api_request" do
+      before do
+        expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+      end
+
       context "with path starting from / character" do
         it "produces correct headers and forwards request to HTTP layer prepending path with evp_proxy" do
           expect(api_http).to receive(:request).with(
@@ -158,6 +163,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
 
     describe "#citestcov_request" do
       before do
+        expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
         expect(SecureRandom).to receive(:uuid).and_return("42")
       end
 
@@ -186,6 +192,14 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
         )
 
         subject.citestcov_request(path: "/path", payload: "payload")
+      end
+    end
+
+    describe "#logs_intake_request" do
+      it "raises NotImplementedError" do
+        expect do
+          subject.logs_intake_request(path: "/path", payload: "payload")
+        end.to raise_error(NotImplementedError, "Logs intake is not supported in EVP proxy mode")
       end
     end
   end

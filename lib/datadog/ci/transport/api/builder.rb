@@ -27,11 +27,15 @@ module Datadog
             citestcov_url = settings.ci.agentless_url ||
               "https://#{Ext::Transport::TEST_COVERAGE_INTAKE_HOST_PREFIX}.#{dd_site}:443"
 
+            logs_intake_url = settings.ci.agentless_url ||
+              "https://#{Ext::Transport::LOGS_INTAKE_HOST_PREFIX}.#{dd_site}:443"
+
             Agentless.new(
               api_key: settings.api_key,
               citestcycle_url: citestcycle_url,
               api_url: api_url,
-              citestcov_url: citestcov_url
+              citestcov_url: citestcov_url,
+              logs_intake_url: logs_intake_url
             )
           end
 

@@ -46,6 +46,10 @@ module Datadog
             perform_request(@agent_intake_http, path: path, payload: @citestcov_payload, headers: headers, verb: verb)
           end
 
+          def logs_intake_request(path:, payload:, headers: {}, verb: "post")
+            raise NotImplementedError, "Logs intake is not supported in EVP proxy mode"
+          end
+
           private
 
           def perform_request(http_client, path:, payload:, headers:, verb:)
