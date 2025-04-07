@@ -5,6 +5,7 @@ require "datadog/core/telemetry/ext"
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
 require_relative "../logs/component"
+require_relative "../logs/transport"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
@@ -135,7 +136,7 @@ module Datadog
             context_service_uri: settings.ci.test_visibility_drb_server_uri
           )
 
-          @agentless_logs_submission = Logs::Component.new(enabled: settings.ci.agentless_logs_submission_enabled)
+          @agentless_logs_submission = build_agentless_logs_component(settings, test_visibility_api)
         end
 
         def build_test_optimisation(settings, test_visibility_api)
@@ -257,6 +258,27 @@ module Datadog
             api: api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings)
+          )
+        end
+
+        def build_logs_transport(settings, api)
+          Logs::Transport.new(api: api)
+        end
+
+        def build_agentless_logs_component(settings, api)
+          if settings.ci.agentless_logs_submission_enabled && !settings.ci.agentless_mode_enabled
+            Datadog.logger.error(
+              "Agentless logs submission is enabled but agentless mode is not enabled. " \
+              "Logs will not be submitted. " \
+              "Please make sure to set DD_CIVISIBILITY_AGENTLESS_ENABLED to true if you want to submit logs in agentless mode. " \
+              "Otherwise, set DD_AGENTLESS_LOG_SUBMISSION_ENABLED to 0 and use Datadog Agent to submit logs."
+            )
+            settings.ci.agentless_logs_submission_enabled = false
+          end
+
+          Logs::Component.new(
+            enabled: settings.ci.agentless_logs_submission_enabled,
+            transport: build_logs_transport(settings, api)
           )
         end
 

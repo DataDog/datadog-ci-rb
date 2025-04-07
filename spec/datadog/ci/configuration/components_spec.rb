@@ -39,6 +39,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.tracing.enabled = tracing_enabled
           settings.ci.enabled = enabled
           settings.ci.agentless_mode_enabled = agentless_enabled
+          settings.ci.agentless_logs_submission_enabled = agentless_logs_submission_enabled
 
           settings.ci.force_test_level_visibility = force_test_level_visibility
           settings.ci.agentless_url = agentless_url
@@ -110,6 +111,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:agentless_url) { nil }
         let(:dd_site) { nil }
         let(:agentless_enabled) { false }
+        let(:agentless_logs_submission_enabled) { false }
         let(:force_test_level_visibility) { false }
         let(:evp_proxy_v2_supported) { false }
         let(:evp_proxy_v4_supported) { false }
@@ -340,6 +342,45 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   expect(settings.ci.enabled).to eq(false)
                   expect(components.test_visibility.itr_enabled?).to eq(false)
                 end
+              end
+            end
+          end
+
+          context "and when agentless_logs_submission" do
+            context "is enabled" do
+              let(:agentless_logs_submission_enabled) { true }
+
+              context "when agentless mode is enabled" do
+                let(:agentless_enabled) { true }
+                let(:api_key) { "api_key" }
+
+                it "creates logs component with enabled=true" do
+                  expect(components.agentless_logs_submission).to be_kind_of(Datadog::CI::Logs::Component)
+                  expect(components.agentless_logs_submission.enabled).to eq(true)
+                end
+              end
+
+              context "when agentless mode is disabled" do
+                let(:agentless_enabled) { false }
+
+                it "logs an error and disables agentless logs submission" do
+                  expect(Datadog.logger).to have_received(:error).with(
+                    /Agentless logs submission is enabled but agentless mode is not enabled./
+                  )
+
+                  expect(settings.ci.agentless_logs_submission_enabled).to eq(false)
+                  expect(components.agentless_logs_submission).to be_kind_of(Datadog::CI::Logs::Component)
+                  expect(components.agentless_logs_submission.enabled).to eq(false)
+                end
+              end
+            end
+
+            context "is disabled" do
+              let(:agentless_logs_submission_enabled) { false }
+
+              it "creates logs component with enabled=false" do
+                expect(components.agentless_logs_submission).to be_kind_of(Datadog::CI::Logs::Component)
+                expect(components.agentless_logs_submission.enabled).to eq(false)
               end
             end
           end

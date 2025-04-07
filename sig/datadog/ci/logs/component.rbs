@@ -4,7 +4,9 @@ module Datadog
       class Component
         attr_reader enabled: bool
 
-        def initialize: (enabled: bool) -> void
+        @transport: Datadog::CI::Logs::Transport
+
+        def initialize: (enabled: bool, transport: Datadog::CI::Logs::Transport) -> void
 
         def write: (Hash[Symbol | String, untyped] event) -> void
 
