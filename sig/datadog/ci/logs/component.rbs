@@ -6,7 +6,13 @@ module Datadog
 
         def initialize: (enabled: bool) -> void
 
-        def write: (Hash[String, untyped] event) -> Hash[String, untyped]?
+        def write: (Hash[Symbol | String, untyped] event) -> void
+
+        private
+
+        def add_common_tags!: (Hash[Symbol | String, untyped] event) -> void
+
+        def test_visibility: () -> Datadog::CI::TestVisibility::Component
       end
     end
   end

@@ -7,7 +7,8 @@ module Datadog
         module Formatter
           def call(severity, timestamp, progname, msg)
             # don't even construct an object for every log message if agentless logs submission is not enabled
-            super unless datadog_logs_component.enabled
+            return super unless datadog_logs_component.enabled
+            return super unless msg.include?("dd.trace_id")
 
             datadog_logs_component.write({
               message: msg,
