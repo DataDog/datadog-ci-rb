@@ -3,8 +3,10 @@
 require_relative "../../../../lib/datadog/ci/logs/component"
 
 RSpec.describe Datadog::CI::Logs::Component do
-  let(:component) { described_class.new(enabled: enabled) }
+  let(:component) { described_class.new(enabled: enabled, transport: transport) }
+
   let(:enabled) { true }
+  let(:transport) { instance_double(Datadog::CI::Logs::Transport, send_events: true) }
 
   describe "#write" do
     subject(:write) { component.write(event) }
