@@ -28,10 +28,10 @@ module Datadog
         def add_common_tags!(event)
           test_session = test_visibility.active_test_session
 
-          event[:ddsource] = "ruby"
-          event[:ddtags] = "datadog.product:citest"
-          event[:service] = test_session&.service
-          event[:hostname] = Datadog::Core::Environment::Platform.hostname
+          event[:ddsource] ||= "ruby"
+          event[:ddtags] ||= "datadog.product:citest"
+          event[:service] ||= test_session&.service
+          event[:hostname] ||= Datadog::Core::Environment::Platform.hostname
         end
 
         def test_visibility

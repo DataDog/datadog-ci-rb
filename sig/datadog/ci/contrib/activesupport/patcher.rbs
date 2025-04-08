@@ -6,6 +6,7 @@ module Datadog
           include Datadog::CI::Contrib::Patcher
 
           def self.patch: () -> bool
+          def datadog_logs_component: () -> Datadog::CI::Logs::Component
         end
       end
     end

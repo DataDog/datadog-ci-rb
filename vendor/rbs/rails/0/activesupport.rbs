@@ -10,6 +10,8 @@ end
 
 module ActiveSupport::TaggedLogging::Formatter
   def call: (severity: String, timestamp: String, progname: String?, msg: String) -> String
+
+  def tags_text: () -> String
 end
 
 class ActiveSupport::Logger < Logger

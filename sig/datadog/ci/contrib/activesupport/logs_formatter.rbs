@@ -2,7 +2,7 @@ module Datadog
   module CI
     module Contrib
       module ActiveSupport
-        module Formatter : ActiveSupport::TaggedLogging::Formatter
+        module LogsFormatter : ActiveSupport::TaggedLogging::Formatter
           def call: (String severity, Time timestamp, String? progname, String msg) -> String
 
           private
