@@ -8,13 +8,13 @@ module AgentlessLogsHelpers
   # Retrieves all traces in the current tracer instance.
   # This method does not cache its results.
   def fetch_agentless_logs
-    runner.instance_variable_get(:@agentless_logs) || []
+    agentless_logs_component.instance_variable_get(:@agentless_logs) || []
   end
 
   # Remove all traces from the current tracer instance and
   # busts cache of +#spans+ and +#span+.
   def clear_agentless_logs!
-    runner.instance_variable_set(:@agentless_logs, [])
+    agentless_logs_component.instance_variable_set(:@agentless_logs, [])
 
     @agentless_logs = nil
   end
@@ -39,7 +39,7 @@ module AgentlessLogsHelpers
     end
   end
 
-  def runner
+  def agentless_logs_component
     Datadog.send(:components).agentless_logs_submission
   end
 end
