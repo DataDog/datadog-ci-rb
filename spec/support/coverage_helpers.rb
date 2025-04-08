@@ -12,13 +12,13 @@ module CoverageHelpers
   # Retrieves all traces in the current tracer instance.
   # This method does not cache its results.
   def fetch_coverage_events
-    runner.instance_variable_get(:@coverage_events) || []
+    test_optimisation_component.instance_variable_get(:@coverage_events) || []
   end
 
   # Remove all traces from the current tracer instance and
   # busts cache of +#spans+ and +#span+.
   def clear_coverage_events!
-    runner.instance_variable_set(:@coverage_events, [])
+    test_optimisation_component.instance_variable_set(:@coverage_events, [])
 
     @coverage_events = nil
   end
@@ -43,7 +43,7 @@ module CoverageHelpers
     end
   end
 
-  def runner
+  def test_optimisation_component
     Datadog::CI.send(:test_optimisation)
   end
 
