@@ -40,7 +40,7 @@ module Datadog
 
         def build_known_tests_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestVisibility::KnownTests
 
-        def build_logs_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Logs::Transport
+        def build_logs_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 
         def build_agentless_logs_component: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Logs::Component
 

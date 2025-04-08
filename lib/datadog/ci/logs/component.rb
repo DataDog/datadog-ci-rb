@@ -8,19 +8,22 @@ module Datadog
       class Component
         attr_reader :enabled
 
-        def initialize(enabled:, transport:)
-          @enabled = enabled
-          @transport = transport
+        def initialize(enabled:, writer:)
+          @enabled = enabled && !writer.nil?
+          @writer = writer
         end
 
         def write(event)
           return unless enabled
 
           add_common_tags!(event)
+          @writer&.write(event)
 
-          # p @transport.send_events([event])
+          nil
+        end
 
-          event
+        def shutdown!
+          @writer&.stop
         end
 
         private

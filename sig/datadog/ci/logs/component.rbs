@@ -4,11 +4,13 @@ module Datadog
       class Component
         attr_reader enabled: bool
 
-        @transport: Datadog::CI::Logs::Transport
+        @writer: Datadog::CI::AsyncWriter?
 
-        def initialize: (enabled: bool, transport: Datadog::CI::Logs::Transport) -> void
+        def initialize: (enabled: bool, writer: Datadog::CI::AsyncWriter?) -> void
 
         def write: (Hash[Symbol | String, untyped] event) -> void
+
+        def shutdown!: () -> void
 
         private
 

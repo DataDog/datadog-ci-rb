@@ -21,9 +21,9 @@ require_relative "../test_visibility/known_tests"
 require_relative "../test_visibility/null_component"
 require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
+require_relative "../test_visibility/null_transport"
 require_relative "../test_visibility/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
-require_relative "../test_visibility/null_transport"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
 require_relative "../utils/test_run"
@@ -59,6 +59,7 @@ module Datadog
 
           @test_visibility&.shutdown!
           @test_optimisation&.shutdown!
+          @agentless_logs_submission&.shutdown!
           @git_tree_upload_worker&.stop
         end
 
@@ -261,13 +262,9 @@ module Datadog
           )
         end
 
-        def build_logs_transport(settings, api)
-          Logs::Transport.new(api: api)
-        end
-
         def build_agentless_logs_component(settings, api)
           if settings.ci.agentless_logs_submission_enabled && !settings.ci.agentless_mode_enabled
-            Datadog.logger.error(
+            Datadog.logger.warn(
               "Agentless logs submission is enabled but agentless mode is not enabled. " \
               "Logs will not be submitted. " \
               "Please make sure to set DD_CIVISIBILITY_AGENTLESS_ENABLED to true if you want to submit logs in agentless mode. " \
@@ -278,8 +275,14 @@ module Datadog
 
           Logs::Component.new(
             enabled: settings.ci.agentless_logs_submission_enabled,
-            transport: build_logs_transport(settings, api)
+            writer: build_logs_writer(settings, api)
           )
+        end
+
+        def build_logs_writer(settings, api)
+          return nil if api.nil? || settings.ci.discard_traces
+
+          AsyncWriter.new(transport: Logs::Transport.new(api: api), options: {buffer_size: 1024})
         end
 
         # fetch custom tags provided by the user in DD_TAGS env var

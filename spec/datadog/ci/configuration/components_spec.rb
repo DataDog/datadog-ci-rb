@@ -364,7 +364,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                 let(:agentless_enabled) { false }
 
                 it "logs an error and disables agentless logs submission" do
-                  expect(Datadog.logger).to have_received(:error).with(
+                  expect(Datadog.logger).to have_received(:warn).with(
                     /Agentless logs submission is enabled but agentless mode is not enabled./
                   )
 

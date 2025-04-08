@@ -60,12 +60,12 @@ module Datadog
 
         if responses.find(&:server_error?)
           loop_back_off!
-          Datadog.logger.warn { "Encountered server error while sending log events" }
+          Datadog.logger.warn { "Encountered server error while sending events: #{responses}" }
         end
 
         nil
       rescue => e
-        Datadog.logger.warn { "Error while sending log events: #{e}" }
+        Datadog.logger.warn { "Error while sending events: #{e}" }
         loop_back_off!
       end
 
