@@ -24,7 +24,7 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 ## Testing
 
 - Write comprehensive tests using RSpec
-- Do not `instance_variable_set` in tests, use mocking when needed
+- Do not use `instance_variable_set` in tests, use mocking when needed
 - The main rake task to run all tests is `bundle exec rake ci`
 - If new files in the repository are created, run `git add -A` before running tests (otherwise `release_gem_spec.rb` will fail)
 - Do not making changes to `release_gem_spec.rb` if not asked 
