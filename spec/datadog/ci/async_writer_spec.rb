@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-require_relative "../../../../../lib/datadog/ci/test_optimisation/coverage/writer"
-require_relative "../../../../../lib/datadog/ci/test_optimisation/coverage/transport"
+require_relative "../../../lib/datadog/ci/async_writer"
 
-RSpec.describe Datadog::CI::TestOptimisation::Coverage::Writer do
+RSpec.describe Datadog::CI::AsyncWriter do
   subject(:writer) { described_class.new(transport: transport, options: options) }
 
   let(:options) { {} }
-  let(:transport) { instance_double(Datadog::CI::TestOptimisation::Coverage::Transport) }
+  let(:transport) { double("transport") }
   before do
     allow(transport).to receive(:send_events).and_return([])
   end

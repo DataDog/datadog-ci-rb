@@ -13,7 +13,6 @@ require_relative "../test_management/null_component"
 require_relative "../test_management/tests_properties"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
-require_relative "../test_optimisation/coverage/writer"
 require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
 require_relative "../test_visibility/component"
@@ -28,6 +27,7 @@ require_relative "../test_visibility/null_transport"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
 require_relative "../utils/test_run"
+require_relative "../async_writer"
 require_relative "../worker"
 
 module Datadog
@@ -229,7 +229,7 @@ module Datadog
           # nil means that coverage event will be ignored
           return nil if api.nil? || settings.ci.discard_traces
 
-          TestOptimisation::Coverage::Writer.new(
+          AsyncWriter.new(
             transport: TestOptimisation::Coverage::Transport.new(api: api)
           )
         end

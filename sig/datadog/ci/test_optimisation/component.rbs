@@ -12,7 +12,7 @@ module Datadog
         @code_coverage_enabled: bool
         @correlation_id: String?
         @skippable_tests: Set[String]
-        @coverage_writer: Datadog::CI::TestOptimisation::Coverage::Writer?
+        @coverage_writer: Datadog::CI::AsyncWriter?
 
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
@@ -31,7 +31,7 @@ module Datadog
         attr_reader test_skipping_enabled: bool
         attr_reader skippable_tests_fetch_error: String?
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::TestOptimisation::Coverage::Writer?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 

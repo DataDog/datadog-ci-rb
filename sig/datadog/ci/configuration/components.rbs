@@ -32,7 +32,7 @@ module Datadog
 
         def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> (Datadog::CI::TestVisibility::Transport? | Datadog::CI::TestVisibility::NullTransport)
 
-        def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestOptimisation::Coverage::Writer?
+        def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 
         def build_git_upload_worker: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Worker
 
