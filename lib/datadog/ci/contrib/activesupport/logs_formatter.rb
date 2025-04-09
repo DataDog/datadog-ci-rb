@@ -9,6 +9,12 @@ module Datadog
             # don't even construct an object for every log message if agentless logs submission is not enabled
             return super unless datadog_logs_component.enabled
 
+            # additional precaution because we cannot use targeted prepend in Ruby 2.7, so method :tags_text might
+            # not be available (highly unlikely, but not unimaginable)
+            #
+            # (see Datadog::CI::Contrib::ActiveSupport::Patcher for explanation)
+            return super unless respond_to?(:tags_text)
+
             message = "#{msg} #{tags_text}"
             return super unless message.include?("dd.trace_id")
 

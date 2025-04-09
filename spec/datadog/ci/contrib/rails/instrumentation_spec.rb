@@ -24,7 +24,7 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
       Minitest.run([])
     end
 
-    it "instruments this minitest session with agentless logs" do
+    it "instruments this test session with agentless logs support" do
       # test session and module traced
       expect(test_session_span).not_to be_nil
       expect(test_module_span).not_to be_nil
@@ -56,10 +56,9 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
       expect(test_spans).to all have_test_tag(:test_module_id)
       expect(test_spans).to all have_test_tag(:test_session_id)
 
-      logs = fetch_agentless_logs
-      expect(logs).to have(3).items
+      expect(agentless_logs).to have(3).items
 
-      addition_log = logs.find { |log| log[:message].include?("Adding") }
+      addition_log = agentless_logs.find { |log| log[:message].include?("Adding") }
       expect(addition_log).to be_present
       expect(addition_log[:message]).to include("Adding 1 and 2")
       expect(addition_log[:message]).to include("dd.span_id")
@@ -75,7 +74,7 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
       Minitest.run([])
     end
 
-    it "instruments this minitest session" do
+    it "instruments this test session with agentless logs support" do
       # test session and module traced
       expect(test_session_span).not_to be_nil
       expect(test_module_span).not_to be_nil
@@ -108,6 +107,8 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
       expect(test_spans).to all have_test_tag(:test_suite_id)
       expect(test_spans).to all have_test_tag(:test_module_id)
       expect(test_spans).to all have_test_tag(:test_session_id)
+
+      expect(agentless_logs).to have(5).items
     end
   end
 end
