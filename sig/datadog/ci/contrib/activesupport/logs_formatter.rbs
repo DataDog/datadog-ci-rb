@@ -7,6 +7,7 @@ module Datadog
 
           private
           def datadog_logs_component: () -> untyped
+          def datadog_configuration: () -> Hash[Symbol, untyped]
         end
       end
     end

@@ -8,6 +8,7 @@ module Datadog
           def call(severity, timestamp, progname, msg)
             # don't even construct an object for every log message if agentless logs submission is not enabled
             return super unless datadog_logs_component.enabled
+            return super unless datadog_configuration[:enabled]
 
             # additional precaution because we cannot use targeted prepend in Ruby 2.7, so method :tags_text might
             # not be available (highly unlikely, but not unimaginable)
@@ -28,6 +29,10 @@ module Datadog
 
           def datadog_logs_component
             Datadog.send(:components).agentless_logs_submission
+          end
+
+          def datadog_configuration
+            Datadog.configuration.ci[:activesupport]
           end
         end
       end
