@@ -8,6 +8,7 @@ module Datadog
         @ci_remote: Datadog::CI::Remote::Component
         @custom_configuration: Hash[String, String]
         @test_management: Datadog::CI::TestManagement::Component
+        @agentless_logs_submission: Datadog::CI::Logs::Component
 
         attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
         attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component?
@@ -15,6 +16,7 @@ module Datadog
         attr_reader ci_remote: Datadog::CI::Remote::Component
         attr_reader test_retries: Datadog::CI::TestRetries::Component
         attr_reader test_management: Datadog::CI::TestManagement::Component
+        attr_reader agentless_logs_submission: Datadog::CI::Logs::Component
 
         def initialize: (untyped settings) -> void
 
@@ -30,13 +32,17 @@ module Datadog
 
         def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> (Datadog::CI::TestVisibility::Transport? | Datadog::CI::TestVisibility::NullTransport)
 
-        def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestOptimisation::Coverage::Writer?
+        def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 
         def build_git_upload_worker: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Worker
 
         def build_library_settings_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Remote::LibrarySettingsClient
 
         def build_known_tests_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestVisibility::KnownTests
+
+        def build_logs_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
+
+        def build_agentless_logs_component: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Logs::Component
 
         def custom_configuration: (untyped settings) -> Hash[String, String]
 

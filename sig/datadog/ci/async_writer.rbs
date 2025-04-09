@@ -1,0 +1,44 @@
+module Datadog
+  module CI
+    class AsyncWriter
+      include Datadog::Core::Workers::Async::Thread
+      include Datadog::Core::Workers::Polling
+      include Datadog::Core::Workers::Queue
+      include Datadog::Core::Workers::IntervalLoop
+
+      @transport: untyped
+
+      @buffer_size: Integer
+
+      @shutdown_timeout: Integer
+
+      @stopped: bool
+
+      attr_reader transport: untyped
+
+      DEFAULT_BUFFER_MAX_SIZE: 10000
+
+      DEFAULT_SHUTDOWN_TIMEOUT: 60
+
+      DEFAULT_INTERVAL: 3
+
+      def initialize: (transport: untyped, ?options: ::Hash[untyped, untyped]) -> void
+
+      def write: (untyped event) -> untyped
+
+      def perform: (*untyped events) -> nil
+
+      def stop: (?bool force_stop, ?Integer timeout) -> untyped
+
+      def enqueue: (untyped event) -> untyped
+
+      def dequeue: () -> ::Array[untyped]
+
+      def async?: () -> true
+
+      def after_fork: () -> untyped
+
+      def buffer_klass: () -> untyped
+    end
+  end
+end

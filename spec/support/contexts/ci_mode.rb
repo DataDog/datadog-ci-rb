@@ -9,9 +9,11 @@
 # end
 
 require_relative "../coverage_helpers"
+require_relative "../agentless_logs_helpers"
 
 RSpec.shared_context "CI mode activated" do
   include CoverageHelpers
+  include AgentlessLogsHelpers
 
   let(:service_name) { nil }
   let(:test_command) { "command" }
@@ -20,6 +22,8 @@ RSpec.shared_context "CI mode activated" do
   let(:integration_options) { {} }
 
   let(:ci_enabled) { true }
+  let(:agentless_mode_enabled) { false }
+  let(:api_key) { nil }
   let(:force_test_level_visibility) { false }
   let(:itr_enabled) { false }
   let(:code_coverage_enabled) { false }
@@ -62,10 +66,13 @@ RSpec.shared_context "CI mode activated" do
   let(:known_tests) { Set.new }
   let(:test_properties) { {} }
 
+  let(:agentless_logs_enabled) { false }
+
   let(:test_visibility) { Datadog.send(:components).test_visibility }
 
   before do
     setup_test_coverage_writer!
+    setup_agentless_logs_writer!
 
     allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
       receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
@@ -126,8 +133,14 @@ RSpec.shared_context "CI mode activated" do
         c.service = service_name
       end
 
+      if api_key
+        c.api_key = api_key
+      end
+
       # library switch
       c.ci.enabled = ci_enabled
+
+      c.ci.agentless_mode_enabled = agentless_mode_enabled
 
       # test visibility
       c.ci.force_test_level_visibility = force_test_level_visibility
@@ -144,6 +157,9 @@ RSpec.shared_context "CI mode activated" do
 
       # logical test session name
       c.ci.test_session_name = logical_test_session_name
+
+      # agentless logs
+      c.ci.agentless_logs_submission_enabled = agentless_logs_enabled
 
       # instrumentation
       unless integration_name == :no_instrument

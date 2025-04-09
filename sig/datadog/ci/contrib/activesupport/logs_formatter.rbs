@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module Contrib
+      module ActiveSupport
+        module LogsFormatter : ActiveSupport::TaggedLogging::Formatter
+          def call: (String severity, Time timestamp, String? progname, String msg) -> String
+
+          private
+          def datadog_logs_component: () -> untyped
+          def datadog_configuration: () -> Hash[Symbol, untyped]
+        end
+      end
+    end
+  end
+end

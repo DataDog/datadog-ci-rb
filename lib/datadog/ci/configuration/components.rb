@@ -4,6 +4,8 @@ require "datadog/core/telemetry/ext"
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
+require_relative "../logs/component"
+require_relative "../logs/transport"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
@@ -11,7 +13,6 @@ require_relative "../test_management/null_component"
 require_relative "../test_management/tests_properties"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
-require_relative "../test_optimisation/coverage/writer"
 require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
 require_relative "../test_visibility/component"
@@ -20,12 +21,13 @@ require_relative "../test_visibility/known_tests"
 require_relative "../test_visibility/null_component"
 require_relative "../test_visibility/serializers/factories/test_level"
 require_relative "../test_visibility/serializers/factories/test_suite_level"
+require_relative "../test_visibility/null_transport"
 require_relative "../test_visibility/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
-require_relative "../test_visibility/null_transport"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
 require_relative "../utils/test_run"
+require_relative "../async_writer"
 require_relative "../worker"
 
 module Datadog
@@ -33,7 +35,8 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries, :test_management
+        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries,
+          :test_management, :agentless_logs_submission
 
         def initialize(settings)
           @test_optimisation = nil
@@ -56,6 +59,7 @@ module Datadog
 
           @test_visibility&.shutdown!
           @test_optimisation&.shutdown!
+          @agentless_logs_submission&.shutdown!
           @git_tree_upload_worker&.stop
         end
 
@@ -132,6 +136,8 @@ module Datadog
             known_tests_client: build_known_tests_client(settings, test_visibility_api),
             context_service_uri: settings.ci.test_visibility_drb_server_uri
           )
+
+          @agentless_logs_submission = build_agentless_logs_component(settings, test_visibility_api)
         end
 
         def build_test_optimisation(settings, test_visibility_api)
@@ -224,7 +230,7 @@ module Datadog
           # nil means that coverage event will be ignored
           return nil if api.nil? || settings.ci.discard_traces
 
-          TestOptimisation::Coverage::Writer.new(
+          AsyncWriter.new(
             transport: TestOptimisation::Coverage::Transport.new(api: api)
           )
         end
@@ -254,6 +260,29 @@ module Datadog
             dd_env: settings.env,
             config_tags: custom_configuration(settings)
           )
+        end
+
+        def build_agentless_logs_component(settings, api)
+          if settings.ci.agentless_logs_submission_enabled && !settings.ci.agentless_mode_enabled
+            Datadog.logger.warn(
+              "Agentless logs submission is enabled but agentless mode is not enabled. " \
+              "Logs will not be submitted. " \
+              "Please make sure to set DD_CIVISIBILITY_AGENTLESS_ENABLED to true if you want to submit logs in agentless mode. " \
+              "Otherwise, set DD_AGENTLESS_LOG_SUBMISSION_ENABLED to 0 and use Datadog Agent to submit logs."
+            )
+            settings.ci.agentless_logs_submission_enabled = false
+          end
+
+          Logs::Component.new(
+            enabled: settings.ci.agentless_logs_submission_enabled,
+            writer: build_logs_writer(settings, api)
+          )
+        end
+
+        def build_logs_writer(settings, api)
+          return nil if api.nil? || settings.ci.discard_traces
+
+          AsyncWriter.new(transport: Logs::Transport.new(api: api), options: {buffer_size: 1024})
         end
 
         # fetch custom tags provided by the user in DD_TAGS env var

@@ -11,6 +11,8 @@ module Datadog
 
           def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
+          def logs_intake_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
+
           private
 
           def headers_with_default: (Hash[String, String] headers) -> Hash[String, String]

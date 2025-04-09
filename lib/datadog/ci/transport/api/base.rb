@@ -38,6 +38,10 @@ module Datadog
             ].join("\r\n")
           end
 
+          def logs_intake_request(path:, payload:, headers: {}, verb: "post")
+            headers[Ext::Transport::HEADER_CONTENT_TYPE] ||= Ext::Transport::CONTENT_TYPE_JSON
+          end
+
           def headers_with_default(headers)
             request_headers = default_headers
             request_headers.merge!(headers)

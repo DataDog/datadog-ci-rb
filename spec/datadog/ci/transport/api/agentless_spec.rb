@@ -6,7 +6,8 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
       api_key: api_key,
       citestcycle_url: citestcycle_url,
       citestcov_url: citestcov_url,
-      api_url: api_url
+      api_url: api_url,
+      logs_intake_url: logs_intake_url
     )
   end
 
@@ -16,6 +17,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
     let(:citestcycle_url) { "" }
     let(:api_url) { "api.datadoghq.com" }
     let(:citestcov_url) { "citestcov.datadoghq.com" }
+    let(:logs_intake_url) { "logs.datadoghq.com" }
 
     it { expect { subject }.to raise_error(/Invalid agentless mode URL:/) }
   end
@@ -29,6 +31,9 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
 
     let(:citestcov_url) { "http://localhost:5555" }
     let(:citestcov_http) { double(:http) }
+
+    let(:logs_intake_url) { "http://localhost:5555" }
+    let(:logs_intake_http) { double(:http) }
 
     before do
       expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
@@ -51,6 +56,13 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         ssl: false,
         compress: true
       ).and_return(citestcov_http)
+
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: "localhost",
+        port: 5555,
+        ssl: false,
+        compress: true
+      ).and_return(logs_intake_http)
     end
 
     describe "#citestcycle_request" do
@@ -73,6 +85,39 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         subject.citestcycle_request(path: "path", payload: "payload")
       end
     end
+
+    describe "#logs_intake_request" do
+      let(:expected_headers) do
+        {
+          "DD-API-KEY" => "api_key",
+          "Content-Type" => "application/json"
+        }
+      end
+
+      it "produces correct headers and forwards request to HTTP layer" do
+        expect(logs_intake_http).to receive(:request).with(
+          path: "path",
+          payload: "payload",
+          verb: "post",
+          headers: expected_headers,
+          accept_compressed_response: false
+        )
+
+        subject.logs_intake_request(path: "path", payload: "payload")
+      end
+
+      it "allows to override headers" do
+        expect(logs_intake_http).to receive(:request).with(
+          path: "path",
+          payload: "payload",
+          verb: "post",
+          headers: expected_headers.merge({"Content-Type" => "application/msgpack"}),
+          accept_compressed_response: false
+        )
+
+        subject.logs_intake_request(path: "path", payload: "payload", headers: {"Content-Type" => "application/msgpack"})
+      end
+    end
   end
 
   context "valid urls" do
@@ -84,6 +129,9 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
 
     let(:citestcov_url) { "https://citestcov-intake.datadoghq.com:443" }
     let(:citestcov_http) { double(:http) }
+
+    let(:logs_intake_url) { "https://http-intake.logs.datadoghq.com:443" }
+    let(:logs_intake_http) { double(:http) }
 
     before do
       expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
@@ -106,6 +154,13 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         ssl: true,
         compress: true
       ).and_return(citestcov_http)
+
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: "http-intake.logs.datadoghq.com",
+        port: 443,
+        ssl: true,
+        compress: true
+      ).and_return(logs_intake_http)
     end
 
     describe "#citestcycle_request" do

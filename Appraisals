@@ -116,15 +116,16 @@ def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context
   end
 end
 
-def self.with_active_support_gem(versions: 7)
-  Array(versions).each do |activesupport_v|
-    appraise "activesupport-#{activesupport_v}" do
-      gem "activesupport", "~> #{activesupport_v}"
+def self.with_rails_gem(versions: 7)
+  Array(versions).each do |rails_v|
+    appraise "rails-#{rails_v}" do
+      gem "rails", "~> #{rails_v}"
       if RUBY_ENGINE.include?("jruby")
         gem "bigdecimal", "< 3.1.8"
       end
+
       # ruby 3.4 extracts more parts of stdlib into gems
-      if Gem::Version.new("3.4") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby") && (4..6).cover?(activesupport_v)
+      if Gem::Version.new("3.4") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby") && (4..6).cover?(rails_v)
         gem "base64"
         gem "mutex_m"
         gem "drb"
@@ -200,7 +201,8 @@ with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
 with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2") <= RUBY_VERSION
 with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
-with_active_support_gem(versions: 4..7)
+with_rails_gem(versions: 5..7)
+with_rails_gem(versions: 8) if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
 with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..8)
 with_selenium_gem if Gem::Version.new("3.0") <= RUBY_VERSION
 with_timecop_gem

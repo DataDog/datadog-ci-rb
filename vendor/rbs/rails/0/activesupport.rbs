@@ -1,0 +1,19 @@
+module Rails
+  def self.logger: () -> ActiveSupport::Logger
+end
+
+module ActiveSupport
+end
+
+module ActiveSupport::TaggedLogging
+end
+
+module ActiveSupport::TaggedLogging::Formatter
+  def call: (severity: String, timestamp: String, progname: String?, msg: String) -> String
+
+  def tags_text: () -> String
+end
+
+class ActiveSupport::Logger < Logger
+  def formatter: () -> untyped
+end

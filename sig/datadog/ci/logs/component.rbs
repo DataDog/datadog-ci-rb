@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Logs
+      class Component
+        attr_reader enabled: bool
+
+        @writer: Datadog::CI::AsyncWriter?
+
+        def initialize: (enabled: bool, writer: Datadog::CI::AsyncWriter?) -> void
+
+        def write: (Hash[Symbol | String, untyped] event) -> void
+
+        def shutdown!: () -> void
+
+        private
+
+        def add_common_tags!: (Hash[Symbol | String, untyped] event) -> void
+
+        def test_visibility: () -> Datadog::CI::TestVisibility::Component
+      end
+    end
+  end
+end
