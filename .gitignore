@@ -28,3 +28,4 @@ lib/**/*.dll
 
 # Local extensions configs
 .vscode
+.clangd
