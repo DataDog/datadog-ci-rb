@@ -1,0 +1,9 @@
+module Lograge
+end
+
+module Lograge::LogSubscribers
+end
+
+class Lograge::LogSubscribers::Base
+  def before_format: (data: untyped, payload: untyped) -> Hash[Symbol, untyped]
+end

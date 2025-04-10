@@ -5,7 +5,12 @@ module Datadog
         module Patcher
           include Datadog::CI::Contrib::Patcher
 
-          def self.patch: () -> bool
+          def self.patch: () -> void
+          def self.datadog_logs_component: () -> untyped
+
+          # Instance methods
+          def patch: () -> void
+          def datadog_logs_component: () -> Datadog::CI::Logs::Component
         end
       end
     end

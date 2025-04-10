@@ -17,11 +17,16 @@ module Datadog
           end
 
           def loaded?
-            !defined?(::Lograge).nil?
+            !defined?(::Lograge).nil? && !defined?(::Lograge::LogSubscribers).nil? &&
+              !defined?(::Lograge::LogSubscribers::Base).nil?
           end
 
           def compatible?
             super && version && version >= MINIMUM_VERSION
+          end
+
+          def late_instrument?
+            true
           end
 
           def new_configuration

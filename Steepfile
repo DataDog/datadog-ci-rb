@@ -36,4 +36,5 @@ target :lib do
   library "cuprite"
   library "parallel_tests"
   library "rails"
+  library "lograge"
 end
