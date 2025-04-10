@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module Contrib
+      module Lograge
+        class Integration < Datadog::CI::Contrib::Integration
+          MINIMUM_VERSION: Gem::Version
+
+          def version: () -> untyped
+
+          def loaded?: () -> bool
+
+          def compatible?: () -> bool
+
+          def new_configuration: () -> Datadog::CI::Contrib::Lograge::Configuration::Settings
+
+          def patcher: () -> singleton(Patcher)
+        end
+      end
+    end
+  end
+end
