@@ -327,7 +327,7 @@ module Datadog
 
             # patch gem's telemetry transport layer to use Net::HTTP instead of WebMock's Net::HTTP
             Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
-          rescue => e
+          rescue LoadError, StandardError => e
             Datadog.logger.warn("Failed to patch Datadog gem's telemetry layer: #{e}")
           end
         end
