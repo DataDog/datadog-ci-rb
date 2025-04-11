@@ -321,15 +321,6 @@ module Datadog
 
           settings.telemetry.agentless_enabled = true if settings.ci.agentless_mode_enabled
           settings.telemetry.shutdown_timeout_seconds = 60.0
-
-          begin
-            require "datadog/core/telemetry/http/adapters/net"
-
-            # patch gem's telemetry transport layer to use Net::HTTP instead of WebMock's Net::HTTP
-            Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
-          rescue => e
-            Datadog.logger.warn("Failed to patch Datadog gem's telemetry layer: #{e}")
-          end
         end
 
         # When timecop is present:
