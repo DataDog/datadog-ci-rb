@@ -24,7 +24,7 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 ## Testing
 
 - Write comprehensive tests using RSpec
-- Do not use `instance_variable_set` in tests, use mocking when needed
+- Do not use `instance_variable_set` and `instance_variable_get` in tests, use mocking when needed
 - The main rake task to run all tests is `bundle exec rake ci`
 - If new files in the repository are created, run `git add -A` before running tests (otherwise `release_gem_spec.rb` will fail)
 - Do not making changes to `release_gem_spec.rb` if not asked 
@@ -33,3 +33,9 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 ## Git
 
 - use `git --no-pager diff` command to inspect changes before commit (use this command only when asked to commit)
+
+## Commands
+
+- %contrib given the name of external gem, create a new subfolder in lib/datadog/ci/contrib folder with the name of the external gem. In this subfolder create files `patcher.rb`, `integration.rb`, `ext.rb`, `configuration/settings.rb`. Look into `lib/datadog/ci/contrib/activesupport` to see what these files should look like. Create RBS type definitions for new files. Look into `sig/datadog/ci/contrib/activesupport` for an example of how type definitions should look like.
+- %steep run `bundle exec rake steep:check`. If there are typechecking errors, examine and fix them. 
+- %rbs for the files the current context examine the current changes and fix (or create) corresponding rbs files

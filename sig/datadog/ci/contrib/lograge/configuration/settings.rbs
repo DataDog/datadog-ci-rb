@@ -1,0 +1,16 @@
+module Datadog
+  module CI
+    module Contrib
+      module Lograge
+        module Configuration
+          class Settings < Datadog::CI::Contrib::Settings
+            def initialize: () ?{ (Settings) -> void } -> void
+
+            def enabled: () -> bool
+            def enabled=: (bool) -> bool
+          end
+        end
+      end
+    end
+  end
+end

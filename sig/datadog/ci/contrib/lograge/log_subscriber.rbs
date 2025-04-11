@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Contrib
+      module Lograge
+        module LogSubscriber
+          def self.included: (untyped base) -> void
+
+          module InstanceMethods : Lograge::LogSubscribers::Base
+            private
+
+            def before_format: (untyped data, untyped payload) -> untyped
+            def datadog_logs_component: () -> Datadog::CI::Logs::Component
+            def datadog_configuration: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end

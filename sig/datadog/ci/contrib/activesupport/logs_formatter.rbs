@@ -6,7 +6,8 @@ module Datadog
           def call: (String severity, Time timestamp, String? progname, String msg) -> String
 
           private
-          def datadog_logs_component: () -> untyped
+
+          def datadog_logs_component: () -> Datadog::CI::Logs::Component
           def datadog_configuration: () -> Hash[Symbol, untyped]
         end
       end
