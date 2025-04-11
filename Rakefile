@@ -81,6 +81,9 @@ TEST_METADATA = {
   "parallel_tests" => {
     "parallel_tests-4-rspec-3" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby",
     "parallel_tests-5-rspec-3" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ jruby"
+  },
+  "lograge" => {
+    "lograge-0-rails-8" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ❌ jruby"
   }
 }
 
@@ -164,6 +167,7 @@ namespace :spec do
     timecop
     cuprite
     parallel_tests
+    lograge
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|

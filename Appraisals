@@ -192,6 +192,17 @@ def self.with_parallel_tests_gem(parallel_tests_versions: 5, rspec_versions: 3)
   end
 end
 
+def self.with_lograge_gem(rails_versions: 8, lograge_versions: 0)
+  Array(rails_versions).each do |rails_v|
+    Array(lograge_versions).each do |lograge_v|
+      appraise "lograge-#{lograge_v}-rails-#{rails_v}" do
+        gem "lograge", "~> #{lograge_v}"
+        gem "rails", "~> #{rails_v}"
+      end
+    end
+  end
+end
+
 major, minor, = RUBY_VERSION.segments
 
 with_minitest_gem
@@ -207,6 +218,7 @@ with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..8)
 with_selenium_gem if Gem::Version.new("3.0") <= RUBY_VERSION
 with_timecop_gem
 with_cuprite_gem if Gem::Version.new("3.0") <= RUBY_VERSION
+with_lograge_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
