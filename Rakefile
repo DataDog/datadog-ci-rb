@@ -84,6 +84,9 @@ TEST_METADATA = {
   },
   "lograge" => {
     "lograge-0-rails-8" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ❌ jruby"
+  },
+  "semantic_logger" => {
+    "semantic_logger-4-rails-8" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ❌ jruby"
   }
 }
 
@@ -168,6 +171,7 @@ namespace :spec do
     cuprite
     parallel_tests
     lograge
+    semantic_logger
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|

@@ -9,7 +9,12 @@ RSpec.shared_context "Rails test app" do
   after do
     # Unsubscribe log subscription to prevent flaky specs due to multiple subscription
     # after several test cases.
-    ::Lograge::LogSubscribers::ActionController.detach_from :action_controller
+    ::Lograge::LogSubscribers::ActionController.detach_from(:action_controller) if defined?(::Lograge)
+
+    if defined?(::RailsSemanticLogger)
+      ::RailsSemanticLogger::ActionController::LogSubscriber.detach_from :action_controller
+      ::RailsSemanticLogger::ActionView::LogSubscriber.detach_from :action_view
+    end
 
     Rails.application = nil
     Rails.logger = nil
@@ -70,6 +75,11 @@ RSpec.shared_context "Rails test app" do
         config.lograge.logger = config.logger
 
         config.lograge.enabled = true
+      end
+
+      # Semantic Logger settings should be exclusive to `ActiveSupport::TaggedLogging` and `Lograge`
+      if config.respond_to?(:rails_semantic_logger)
+        config.rails_semantic_logger.add_file_appender = false
       end
     end
 

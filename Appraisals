@@ -203,6 +203,18 @@ def self.with_lograge_gem(rails_versions: 8, lograge_versions: 0)
   end
 end
 
+def self.with_semantic_logger_gem(rails_versions: 8, semantic_logger_versions: 4)
+  Array(rails_versions).each do |rails_v|
+    Array(semantic_logger_versions).each do |semantic_logger_v|
+      appraise "semantic_logger-#{semantic_logger_v}-rails-#{rails_v}" do
+        gem "rails", "~> #{rails_v}"
+
+        gem "rails_semantic_logger", "~> #{semantic_logger_v}"
+      end
+    end
+  end
+end
+
 major, minor, = RUBY_VERSION.segments
 
 with_minitest_gem
@@ -219,6 +231,7 @@ with_selenium_gem if Gem::Version.new("3.0") <= RUBY_VERSION
 with_timecop_gem
 with_cuprite_gem if Gem::Version.new("3.0") <= RUBY_VERSION
 with_lograge_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
+with_semantic_logger_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 
