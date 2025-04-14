@@ -19,8 +19,6 @@ module Datadog
               return
             end
 
-            # Patching logic will be implemented here
-            # For now, just log that patching was attempted
             ::SemanticLogger::Logger.include(Logger)
           end
 
