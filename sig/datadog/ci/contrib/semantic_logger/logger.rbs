@@ -1,0 +1,16 @@
+module Datadog
+  module CI
+    module Contrib
+      module SemanticLogger
+        module Logger
+          def self.included: (singleton(::Class)) -> void
+
+          module InstanceMethods : ::SemanticLogger::Logger
+            def log: (::SemanticLogger::Log log, ?String? message, ?String? progname) ?{ () -> untyped } -> void
+            def datadog_logs_component: () -> Datadog::CI::Logs::Component
+          end
+        end
+      end
+    end
+  end
+end

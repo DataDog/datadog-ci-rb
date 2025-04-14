@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module Contrib
-      module ActiveSupport
+      module SemanticLogger
         module Patcher
           include Datadog::CI::Contrib::Patcher
 

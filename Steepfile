@@ -37,4 +37,5 @@ target :lib do
   library "parallel_tests"
   library "rails"
   library "lograge"
+  library "semantic_logger"
 end

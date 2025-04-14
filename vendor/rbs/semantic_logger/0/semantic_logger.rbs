@@ -1,0 +1,10 @@
+module SemanticLogger
+end
+
+class SemanticLogger::Logger
+  def log: (SemanticLogger::Log log, String? message, String? progname) ?{ () -> untyped } -> void
+end
+
+class SemanticLogger::Log
+  def to_h: () -> Hash[untyped, untyped]
+end

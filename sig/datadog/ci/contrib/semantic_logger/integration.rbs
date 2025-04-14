@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Contrib
+      module SemanticLogger
+        class Integration < Datadog::CI::Contrib::Integration
+          MINIMUM_VERSION: Gem::Version
+
+          def version: () -> untyped
+
+          def loaded?: () -> bool
+
+          def compatible?: () -> bool
+
+          def late_instrument?: () -> bool
+
+          def new_configuration: () -> Configuration::Settings
+
+          def patcher: () -> singleton(Patcher)
+        end
+      end
+    end
+  end
+end
