@@ -7,8 +7,6 @@ module Datadog
         # Datadog ActiveSupport integration constants
         module Ext
           ENV_ENABLED = "DD_CI_ACTIVESUPPORT_ENABLED"
-
-          DEFAULT_SERVICE_NAME = "activesupport"
         end
       end
     end

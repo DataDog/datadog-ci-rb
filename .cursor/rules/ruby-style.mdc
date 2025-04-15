@@ -36,6 +36,6 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 
 ## Commands
 
-- %contrib given the name of external gem, create a new subfolder in lib/datadog/ci/contrib folder with the name of the external gem. In this subfolder create files `patcher.rb`, `integration.rb`, `ext.rb`, `configuration/settings.rb`. Look into `lib/datadog/ci/contrib/activesupport` to see what these files should look like. Create RBS type definitions for new files. Look into `sig/datadog/ci/contrib/activesupport` for an example of how type definitions should look like.
+- %contrib given the name of external gem, create a new subfolder in lib/datadog/ci/contrib folder with the name of the external gem. In this subfolder create files `patcher.rb`, `integration.rb`, `ext.rb`, `configuration/settings.rb`. Look into `lib/datadog/ci/contrib/activesupport` to see what these files should look like. Create RBS type definitions for new files. Look into `sig/datadog/ci/contrib/activesupport` folder for an example of how type definitions should look like. Add corresponding require in `lib/datadog/ci.rb`.
 - %steep run `bundle exec rake steep:check`. If there are typechecking errors, examine and fix them. 
 - %rbs for the files the current context examine the current changes and fix (or create) corresponding rbs files

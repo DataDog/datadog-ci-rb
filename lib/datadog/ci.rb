@@ -431,6 +431,7 @@ require_relative "ci/contrib/cuprite/integration"
 require_relative "ci/contrib/simplecov/integration"
 require_relative "ci/contrib/activesupport/integration"
 require_relative "ci/contrib/lograge/integration"
+require_relative "ci/contrib/semantic_logger/integration"
 
 # Configuration extensions
 require_relative "ci/configuration/extensions"

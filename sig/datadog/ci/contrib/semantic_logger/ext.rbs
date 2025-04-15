@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module Contrib
-      module ActiveSupport
+      module SemanticLogger
         module Ext
           ENV_ENABLED: String
         end
