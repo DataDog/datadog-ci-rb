@@ -36,7 +36,7 @@ module Datadog
           end
 
           def retry_reason
-            Ext::Test::RetryReason::RETRY_NEW
+            Ext::Test::RetryReason::RETRY_DETECT_FLAKY
           end
         end
       end

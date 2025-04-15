@@ -515,9 +515,9 @@ RSpec.describe "Cucumber instrumentation" do
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
       expect(retries_count).to eq(8)
 
-      # Cucumber itself does not provide a way to track retry reasons
+      # We set retry reason to "external" when the test is retried outside of datadog-ci gem
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([])
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_EXTERNAL] * 8)
 
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -554,7 +554,7 @@ RSpec.describe "Cucumber instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["atr"] * 8)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 8)
 
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -580,7 +580,7 @@ RSpec.describe "Cucumber instrumentation" do
 
         # check retry reasons
         retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-        expect(retry_reasons).to eq(["atr"] * 2)
+        expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 2)
 
         # count how many spans were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -609,7 +609,7 @@ RSpec.describe "Cucumber instrumentation" do
 
         # check retry reasons
         retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-        expect(retry_reasons).to eq(["atr"] * 4)
+        expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 4)
 
         # count how many spans were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -657,7 +657,7 @@ RSpec.describe "Cucumber instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["efd"] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
 
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
