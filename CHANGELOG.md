@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [1.16.0] - 2025-04-15
+
+
+### Added
+
+* agentless logs submission for tests ([#306][])
+* lograge support for agentless logs feature ([#308][])
+* semantic_logger instrumentation for agentless logs feature ([#311][])
+* retry reason "external" ([#312][])
+
 ## [1.15.0] - 2025-03-25
 
 
@@ -417,7 +427,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.15.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.16.0...main
+[1.16.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.12.0...v1.13.0
@@ -598,3 +609,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#299]: https://github.com/DataDog/datadog-ci-rb/issues/299
 [#300]: https://github.com/DataDog/datadog-ci-rb/issues/300
 [#301]: https://github.com/DataDog/datadog-ci-rb/issues/301
+[#306]: https://github.com/DataDog/datadog-ci-rb/issues/306
+[#308]: https://github.com/DataDog/datadog-ci-rb/issues/308
+[#311]: https://github.com/DataDog/datadog-ci-rb/issues/311
+[#312]: https://github.com/DataDog/datadog-ci-rb/issues/312
