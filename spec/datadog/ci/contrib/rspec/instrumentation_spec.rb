@@ -962,7 +962,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["atr"] * 4)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 4)
 
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
@@ -1001,7 +1001,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["atr"] * 3)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 3)
 
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
@@ -1042,7 +1042,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["atr"] * 5)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 5)
 
       # it retried failing test 5 times
       expect(test_spans_by_test_name["nested fails"]).to have(6).items
@@ -1100,7 +1100,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["efd"] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1134,7 +1134,7 @@ RSpec.describe "RSpec instrumentation" do
 
         # check retry reasons
         retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-        expect(retry_reasons).to eq(["efd"] * 5)
+        expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 5)
 
         # count how many tests were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1235,7 +1235,10 @@ RSpec.describe "RSpec instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact.sort
-      expect(retry_reasons).to eq((["atr"] * 4) + (["efd"] * 10))
+      expect(retry_reasons).to eq(
+        ([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 4) +
+          ([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      )
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1287,7 +1290,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["efd"] * 20)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 20)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1336,7 +1339,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["efd"] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
@@ -1386,7 +1389,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["efd"] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }

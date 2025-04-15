@@ -151,8 +151,8 @@ module Datadog
 
         # possible reasons why a test was retried
         module RetryReason
-          RETRY_NEW = "efd"
-          RETRY_FAILED = "atr"
+          RETRY_DETECT_FLAKY = "early_flake_detection"
+          RETRY_FAILED = "auto_test_retries"
           RETRY_FLAKY_FIXED = "attempt_to_fix"
         end
 
