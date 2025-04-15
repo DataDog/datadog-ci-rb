@@ -72,7 +72,7 @@ module Datadog
         get_tag(Ext::Test::TAG_IS_RETRY) == "true"
       end
 
-      # Returns string with a reason why test was retroed
+      # Returns string with a reason why test was retried
       # @return [String] retry reason
       def retry_reason
         get_tag(Ext::Test::TAG_RETRY_REASON)
