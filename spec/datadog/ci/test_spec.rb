@@ -18,9 +18,58 @@ RSpec.describe Datadog::CI::Test do
   end
 
   describe "#finish" do
+    before do
+      allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_RETRY).and_return(is_retry)
+      allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_RETRY_REASON).and_return(retry_reason)
+    end
+
+    let(:is_retry) { nil }
+    let(:retry_reason) { nil }
+
     it "deactivates the test" do
       ci_test.finish
       expect(test_visibility).to have_received(:deactivate_test)
+    end
+
+    context "when test is a retry" do
+      let(:is_retry) { "true" }
+
+      context "and retry reason is not set" do
+        it "sets retry reason to external" do
+          expect(tracer_span).to receive(:set_tag).with(
+            Datadog::CI::Ext::Test::TAG_RETRY_REASON,
+            Datadog::CI::Ext::Test::RetryReason::RETRY_EXTERNAL
+          )
+
+          ci_test.finish
+        end
+      end
+
+      context "and retry reason is already set" do
+        let(:retry_reason) { "some_reason" }
+
+        it "does not set retry reason" do
+          expect(tracer_span).not_to receive(:set_tag).with(
+            Datadog::CI::Ext::Test::TAG_RETRY_REASON,
+            anything
+          )
+
+          ci_test.finish
+        end
+      end
+    end
+
+    context "when test is not a retry" do
+      let(:is_retry) { nil }
+
+      it "does not set retry reason" do
+        expect(tracer_span).not_to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_RETRY_REASON,
+          anything
+        )
+
+        ci_test.finish
+      end
     end
   end
 
@@ -118,6 +167,26 @@ RSpec.describe Datadog::CI::Test do
       before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR).and_return(nil) }
 
       it { is_expected.to be false }
+    end
+  end
+
+  describe "#retry_reason" do
+    subject(:retry_reason) { ci_test.retry_reason }
+
+    context "when retry reason tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_RETRY_REASON).and_return("test_retry_reason")
+        )
+      end
+
+      it { is_expected.to eq("test_retry_reason") }
+    end
+
+    context "when retry reason tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_RETRY_REASON).and_return(nil) }
+
+      it { is_expected.to be_nil }
     end
   end
 

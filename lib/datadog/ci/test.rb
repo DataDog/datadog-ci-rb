@@ -25,6 +25,10 @@ module Datadog
       # Finishes the current test.
       # @return [void]
       def finish
+        if is_retry? && retry_reason.nil?
+          set_tag(Ext::Test::TAG_RETRY_REASON, Ext::Test::RetryReason::RETRY_EXTERNAL)
+        end
+
         test_visibility.deactivate_test
 
         super
@@ -66,6 +70,12 @@ module Datadog
       # @return [Boolean] true if this test is a retry, false otherwise.
       def is_retry?
         get_tag(Ext::Test::TAG_IS_RETRY) == "true"
+      end
+
+      # Returns string with a reason why test was retroed
+      # @return [String] retry reason
+      def retry_reason
+        get_tag(Ext::Test::TAG_RETRY_REASON)
       end
 
       # Returns "true" if this span represents a test that wasn't known to Datadog before.

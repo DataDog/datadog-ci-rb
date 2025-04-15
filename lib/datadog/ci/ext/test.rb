@@ -154,6 +154,7 @@ module Datadog
           RETRY_DETECT_FLAKY = "early_flake_detection"
           RETRY_FAILED = "auto_test_retries"
           RETRY_FLAKY_FIXED = "attempt_to_fix"
+          RETRY_EXTERNAL = "external"
         end
 
         # possible reasons why a test was skipped
