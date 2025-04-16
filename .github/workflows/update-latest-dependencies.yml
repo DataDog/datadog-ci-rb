@@ -9,7 +9,7 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
 
-# Default permissions for all jobss
+# Default permissions for all jobs
 permissions: {}
 
 jobs:
