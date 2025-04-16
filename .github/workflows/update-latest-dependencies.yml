@@ -47,8 +47,8 @@ jobs:
           persist-credentials: false
       - name: Bundle
         run: bundle install
-      - name: Install current versions
-        run: bundle exec appraisal install
+      - name: Generate gemfiles
+        run: bundle exec appraisal generate
       - name: Update to the latest versions
         run: bundle exec appraisal update
       - name: Upload artifact
