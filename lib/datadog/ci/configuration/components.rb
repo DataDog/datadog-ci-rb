@@ -323,10 +323,10 @@ module Datadog
           settings.telemetry.shutdown_timeout_seconds = 60.0
 
           begin
-            require "datadog/core/telemetry/http/adapters/net"
+            require "datadog/core/transport/http/adapters/net"
 
-            # patch gem's telemetry transport layer to use Net::HTTP instead of WebMock's Net::HTTP
-            Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
+            # patch gem's core transport layer to use Net::HTTP instead of WebMock's Net::HTTP
+            Core::Transport::HTTP::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
           rescue LoadError, StandardError => e
             Datadog.logger.warn("Failed to patch Datadog gem's telemetry layer: #{e}")
           end

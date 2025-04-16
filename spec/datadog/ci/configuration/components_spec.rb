@@ -163,8 +163,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   expect(settings.telemetry).to have_received(:enabled=).with(true)
                 end
 
-                it "patches Datadog::Core::Telemetry::Http::Adapters::Net" do
-                  expect(Datadog::Core::Telemetry::Http::Adapters::Net).to be < Datadog::CI::Transport::Adapters::TelemetryWebmockSafeAdapter
+                it "patches Datadog::Core::Transport::HTTP::Adapters::Net" do
+                  expect(Datadog::Core::Transport::HTTP::Adapters::Net).to be < Datadog::CI::Transport::Adapters::TelemetryWebmockSafeAdapter
                 end
               end
 
