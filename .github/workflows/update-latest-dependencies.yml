@@ -4,6 +4,9 @@ on: # yamllint disable-line rule:truthy
   schedule:
     - cron: '0 0 * * *' # Every day at midnight
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
 
 concurrency:
   group: ${{ github.workflow }}
