@@ -9,7 +9,7 @@ module Datadog
 
     def self.start_test: (String test_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::Test?
 
-    def self.start_test_session: (?service: String, ?tags: Hash[untyped, untyped], total_tests_count: Integer) -> Datadog::CI::TestSession?
+    def self.start_test_session: (?service: String, ?tags: Hash[untyped, untyped], ?total_tests_count: Integer) -> Datadog::CI::TestSession?
 
     def self.start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestModule?
 

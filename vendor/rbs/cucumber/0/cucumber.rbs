@@ -9,6 +9,7 @@ end
 
 class Cucumber::Runtime
   def formatters: () -> untyped
+  def filters: () -> untyped
   def begin_scenario: (untyped test_case) -> void
 end
 

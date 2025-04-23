@@ -31,6 +31,8 @@ module Datadog
 
             def ci_env_vars: () -> String?
 
+            def additional_tags: () -> Hash[String, String]
+
             private
 
             def github_server_url: () -> String?

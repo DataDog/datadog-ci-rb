@@ -8,7 +8,7 @@ module Datadog
           module InstanceMethods
             include ::KnapsackPro::Runners::Queue::RSpecRunner
 
-            def knapsack__run_specs: (untyped args) -> untyped
+            def knapsack__run_specs: (*untyped) -> untyped
 
             private
 

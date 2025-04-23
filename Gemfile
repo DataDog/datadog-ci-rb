@@ -37,8 +37,8 @@ group :check do
 
   # type checks
   if RUBY_VERSION >= "3.0.0" && RUBY_PLATFORM != "java"
-    gem "rbs", "~> 3.5.0", require: false
-    gem "steep", "~> 1.7.0", require: false
+    gem "rbs", "~> 3.9.0", require: false
+    gem "steep", "~> 1.10.0", require: false
   end
 
   # memory checks

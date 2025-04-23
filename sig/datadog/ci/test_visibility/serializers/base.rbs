@@ -58,6 +58,8 @@ module Datadog
 
           def type: () -> String
 
+          def span_type: () -> String
+
           def event_type: () -> String
 
           def name: () -> String

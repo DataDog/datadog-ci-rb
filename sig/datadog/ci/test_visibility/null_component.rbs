@@ -4,6 +4,8 @@ module Datadog
       class NullComponent
         def initialize: (?untyped args) -> void
 
+        def configure: (untyped _, untyped _) -> void
+
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (nil span) -> untyped } -> untyped
 
         def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
@@ -29,6 +31,10 @@ module Datadog
         def set_test_finished_callback: (Proc callback) -> void
 
         def remove_test_finished_callback: () -> void
+
+        def test_suite_level_visibility_enabled: () -> bool
+
+        def logical_test_session_name: () -> nil
 
         def shutdown!: () -> nil
 

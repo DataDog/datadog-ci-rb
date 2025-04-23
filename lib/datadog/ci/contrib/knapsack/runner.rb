@@ -19,6 +19,7 @@ module Datadog
               return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
               return super unless datadog_configuration[:enabled]
 
+              # @type var test_session: Datadog::CI::TestSession?
               test_session = test_visibility_component.start_test_session(
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => CI::Contrib::RSpec::Ext::FRAMEWORK,
@@ -27,6 +28,7 @@ module Datadog
                 service: datadog_configuration[:service_name]
               )
 
+              # @type var test_module: Datadog::CI::TestModule?
               test_module = test_visibility_component.start_test_module(CI::Contrib::RSpec::Ext::FRAMEWORK)
 
               result = super
