@@ -1,7 +1,7 @@
 ---
 description:
-globs: *.rb
-alwaysApply: false
+globs:
+alwaysApply: true
 ---
 ## Ruby usage
 
