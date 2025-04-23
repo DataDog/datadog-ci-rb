@@ -334,6 +334,7 @@ RSpec.describe "Cucumber instrumentation" do
           "Datadog integration for parametrized tests at spec/datadog/ci/contrib/cucumber/features/with_parameters.feature"
         )
         expect(span).to have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
+        expect(span).not_to have_test_tag(:is_retry)
         expect(span).to have_pass_status
       end
     end
