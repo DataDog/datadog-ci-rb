@@ -1,10 +1,8 @@
 ---
-description: 
+description:
 globs: *.rb
 alwaysApply: false
 ---
-You are an expert in Ruby, prioritizing writing safe and performant code.
-
 ## Ruby usage
 
 - We use Ruby 2.7 syntax
@@ -13,29 +11,24 @@ You are an expert in Ruby, prioritizing writing safe and performant code.
 
 ## Type checking
 
-- We use RBS for static typing, our type signatures are in the sig/* folder
-- When making changes, always update the corresponding RBS files
-- Run `bundle exec rake steep:check` to confirm that there are no typing errors
+- RBS is used for static type checking
+- Type definitions are in the `sig/` directory
+- Update type definitions when modifying code
+- Run `bundle exec rake steep:check` to verify type correctness
 - Always run `bundle exec rake steep:check` after any update to RBS files
 - When deleting Ruby files, delete corresponding RBS file. Run `bundle exec rake rbs:clean` to make sure that there are no unnecessary RBS files.
 - Avoid using `untyped` type, use it only when it is not feasible to derive the correct type
 - Do not write types like `(nil | Type)`, use `Type?` instead
+- See [StaticTypingGuide.md](mdc:docs/StaticTypingGuide.md) for details
 
-## Testing
+## Code Quality
 
-- Write comprehensive tests using RSpec
-- Do not use `instance_variable_set` and `instance_variable_get` in tests, use mocking when needed
-- The main rake task to run all tests is `bundle exec rake ci`
-- If new files in the repository are created, run `git add -A` before running tests (otherwise `release_gem_spec.rb` will fail)
-- Do not making changes to `release_gem_spec.rb` if not asked 
-- When you added or changed some tests, always run these tests to verify they work. Do not use focused tests feature (fit, fdescribe). Run specific rspec file with `bundle exec rspec <file_path>`
-
-## Git
-
-- use `git --no-pager diff` command to inspect changes before commit (use this command only when asked to commit)
+- @standardrb is used for code style enforcement
+- Run `bundle exec standardrb` to check code quality
+- Ensure all code passes style checks before submitting
 
 ## Commands
 
 - %contrib given the name of external gem, create a new subfolder in lib/datadog/ci/contrib folder with the name of the external gem. In this subfolder create files `patcher.rb`, `integration.rb`, `ext.rb`, `configuration/settings.rb`. Look into `lib/datadog/ci/contrib/activesupport` to see what these files should look like. Create RBS type definitions for new files. Look into `sig/datadog/ci/contrib/activesupport` folder for an example of how type definitions should look like. Add corresponding require in `lib/datadog/ci.rb`.
-- %steep run `bundle exec rake steep:check`. If there are typechecking errors, examine and fix them. 
+- %steep run `bundle exec rake steep:check`. If there are typechecking errors, examine and fix them.
 - %rbs for the files the current context examine the current changes and fix (or create) corresponding rbs files
