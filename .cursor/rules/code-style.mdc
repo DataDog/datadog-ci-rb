@@ -3,6 +3,7 @@ description:
 globs:
 alwaysApply: true
 ---
+
 ## Ruby usage
 
 - We use Ruby 2.7 syntax
