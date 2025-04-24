@@ -63,7 +63,7 @@ module Datadog
             res = pathname.relative_path_from(root_path).to_s
 
             unless defined?(@prefix_to_root)
-              @prefix_to_root = res&.gsub(path, "") if res.end_with?(path)
+              @prefix_to_root = res.gsub(path, "") if res.end_with?(path)
             end
           end
 
@@ -90,6 +90,7 @@ module Datadog
 
         def self.git_repository_url
           Telemetry.git_command(Ext::Telemetry::Command::GET_REPOSITORY)
+          # @type var res: String?
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
@@ -120,6 +121,7 @@ module Datadog
 
         def self.git_branch
           Telemetry.git_command(Ext::Telemetry::Command::GET_BRANCH)
+          # @type var res: String?
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
@@ -177,7 +179,9 @@ module Datadog
         def self.git_commits
           Telemetry.git_command(Ext::Telemetry::Command::GET_LOCAL_COMMITS)
 
+          # @type var output: String?
           output = nil
+
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
             output = exec_git_command("git log --format=%H -n 1000 --since=\"1 month ago\"")
           end
@@ -186,7 +190,6 @@ module Datadog
 
           return [] if output.nil?
 
-          # @type var output: String
           output.split("\n")
         rescue => e
           log_failure(e, "git commits")
@@ -199,6 +202,7 @@ module Datadog
           included_commits = filter_invalid_commits(included_commits).join(" ")
           excluded_commits = filter_invalid_commits(excluded_commits).map! { |sha| "^#{sha}" }.join(" ")
 
+          # @type var res: String?
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
@@ -264,6 +268,7 @@ module Datadog
 
         def self.git_unshallow
           Telemetry.git_command(Ext::Telemetry::Command::UNSHALLOW)
+          # @type var res: String?
           res = nil
 
           unshallow_command =
@@ -296,7 +301,7 @@ module Datadog
                   nil
                 end
 
-              break unless unshallowing_errored
+              break [] unless unshallowing_errored
             end
           end
 
@@ -316,10 +321,13 @@ module Datadog
           def exec_git_command(cmd, stdin: nil)
             # Shell injection is alleviated by making sure that no outside modules call this method.
             # It is called only internally with static parameters.
-            # no-dd-sa:ruby-security/shell-injection
+
+            # @type var out: String
+            # @type var status: Process::Status?
             out, status = Open3.capture2e(cmd, stdin_data: stdin)
 
             if status.nil?
+              # @type var retry_count: Integer
               retry_count = COMMAND_RETRY_COUNT
               Datadog.logger.debug { "Opening pipe failed, starting retries..." }
               while status.nil? && retry_count.positive?

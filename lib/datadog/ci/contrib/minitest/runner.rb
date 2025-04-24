@@ -38,6 +38,7 @@ module Datadog
             def run_one_method(klass, method_name)
               return super unless datadog_configuration[:enabled]
 
+              # @type var result: untyped
               result = nil
 
               test_retries_component.with_retries do

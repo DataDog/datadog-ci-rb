@@ -1,0 +1,67 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Architecture and Design
+
+This library instruments the execution of tests to measure durations for test sessions, test suites, and individual tests. Additionally, it dynamically modifies test behaviors at runtime, enabling features such as retries for failed tests, skipping irrelevant tests, and managing quarantined tests.
+
+## Project Structure
+
+- @lib/datadog/ci - implementation of the library
+- [ci.rb](mdc:lib/datadog/ci.rb) - Main entry point and public API
+- [auto_instrument.rb](mdc:lib/datadog/ci/auto_instrument.rb) - Automated instrumentation entry point
+- [datadog-ci.gemspec](mdc:datadog-ci.gemspec) - Gem specification
+- @spec/ - Library test suite
+- @ext/ - Native extension for test impact analysis
+- @docs/ - Developer documentation
+
+## Core data model
+
+- [span.rb](mdc:lib/datadog/ci/span.rb) - base class for core models
+- [concurrent_span.rb](mdc:lib/datadog/ci/concurrent_span.rb) - Thread-safe base model class
+- [test.rb](mdc:lib/datadog/ci/test.rb) - Represents a single test execution
+- [test_suite.rb](mdc:lib/datadog/ci/test_suite.rb) - represents a test suite
+- [test_module.rb](mdc:lib/datadog/ci/test_module.rb) - Logical component of a test session (currently aligns fully with a test session)
+- [test_session.rb](mdc:lib/datadog/ci/test_session.rb) - Represents an entire testing session
+- @lib/datadog/ci/contrib - Framework-specific integrations
+
+## Library components
+
+- [components.rb](mdc:lib/datadog/ci/configuration/components.rb) - Centralized library entry point for initializing configuration and components
+- @lib/datadog/ci/configuration - Configuration management
+- @lib/datadog/ci/ext - Constants for tags and attributes
+- @lib/datadog/ci/transport - Manages communication with Datadog backend services
+- @lib/datadog/ci/test_visibility - Core component tracing test execution details
+- @lib/datadog/ci/remote - Retrieves remote settings from Datadog backend
+- @lib/datadog/ci/git - Collects Git repository details and uploads commit information to Datadog for test impact analysis
+- @lib/datadog/ci/test_optimisation - Determines skippable tests from backend information (actual skipping handled by framework integrations)
+- @lib/datadog/ci/test_retries - Marks tests for automatic retries or early flake detection
+- @lib/datadog/ci/test_management - Manages test statuses (quarantined, disabled) fetched from backend
+- @lib/datadog/ci/logs - Forwards Ruby logging output to Datadog Logs
+
+## Framework Integrations
+
+The library supports various test frameworks, test runners, and other libraries through contrib modules, such as:
+- RSpec
+- Minitest
+- Cucumber
+- ActiveSupport
+- Selenium, etc
+
+Each integration is in `lib/datadog/ci/contrib/<framework_name>/`
+
+## Integration Pattern
+
+Each framework integration follows a common pattern:
+1. `patcher.rb` - Modifies framework behavior
+2. `integration.rb` - Describes the integration
+3. `ext.rb` - Constants specific to the integration
+4. `configuration/settings.rb` - Integration-specific settings
+
+## Native Extensions
+
+The library uses native extensions for code coverage tracking for test impact analysis which requires using Ruby C API.
+
+The native extension is in `ext/` directory and compiled for each Ruby version.

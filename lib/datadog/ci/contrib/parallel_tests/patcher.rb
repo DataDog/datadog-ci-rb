@@ -11,9 +11,7 @@ module Datadog
         module Patcher
           include Datadog::CI::Contrib::Patcher
 
-          module_function
-
-          def patch
+          def self.patch
             ::ParallelTests::CLI.include(CLI)
           end
         end
