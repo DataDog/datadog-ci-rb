@@ -37,7 +37,8 @@ RSpec.describe "gem release process" do
            |Steepfile
            |datadog-ci\.gemspec
            |docker-compose\.yml
-           |static-analysis\.datadog\.yml
+           |plan\.md
+           |todo\.md
           )
           $
         /x
