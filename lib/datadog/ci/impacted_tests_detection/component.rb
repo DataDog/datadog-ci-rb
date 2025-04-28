@@ -36,6 +36,15 @@ module Datadog
         def enabled?
           @enabled
         end
+
+        def modified?(test_span)
+          return false unless enabled?
+
+          source_file = test_span.source_file
+          return false if source_file.nil?
+
+          @changed_files.include?(source_file)
+        end
       end
     end
   end

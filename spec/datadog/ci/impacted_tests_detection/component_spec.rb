@@ -74,4 +74,43 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       expect(component.enabled?).to eq(initial_enabled)
     end
   end
+
+  describe "#modified?" do
+    let(:test_span) { instance_double(Datadog::CI::Test, source_file: source_file) }
+    let(:source_file) { "file1.rb" }
+
+    before do
+      component.configure(library_settings, test_session)
+    end
+
+    context "when component is not enabled" do
+      let(:impacted_tests_enabled) { false }
+
+      it "returns false" do
+        expect(component.modified?(test_span)).to be false
+      end
+    end
+
+    context "when test_span.source_file is nil" do
+      let(:source_file) { nil }
+
+      it "returns false" do
+        expect(component.modified?(test_span)).to be false
+      end
+    end
+
+    context "when test_span.source_file is in @changed_files" do
+      it "returns true" do
+        expect(component.modified?(test_span)).to be true
+      end
+    end
+
+    context "when test_span.source_file is not in @changed_files" do
+      let(:source_file) { "not_in_set.rb" }
+
+      it "returns false" do
+        expect(component.modified?(test_span)).to be false
+      end
+    end
+  end
 end

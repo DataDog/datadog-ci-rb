@@ -37,12 +37,13 @@ This file breaks down the implementation plan into actionable steps for a coding
   - If the result is `nil`, log a warning ("ITD disabled: could not get changed files"), set `@enabled = false`, and return.
   - If successful, store the returned `Set` in `@changed_files` and set `@enabled = true`.
 - [x] **Prompt 3.4:** In `ImpactedTestsDetection::Component`, implement the `enabled?` method to return the value of `@enabled`.
-- [ ] **Prompt 3.5:** In `ImpactedTestsDetection::Component`, implement the `modified?(test_file_path)` method:
+- [x] **Prompt 3.5:** In `ImpactedTestsDetection::Component`, implement the `modified?(test_span)` method where `test_span` is `Datadog::CI::Test`:
   - Return `false` if `!enabled?`.
-  - Normalize the input `test_file_path` (which might be absolute) to be relative to the Git repository root (similar to how paths are stored in `@changed_files`). You might need access to the Git repository root path for this.
-  - Check if the normalized path exists in the `@changed_files` set. Return `true` or `false`.
+  - Return `false` if `test_span.source_file` is nil.
+  - Check if `test_span.source_file` exists in the `@changed_files` set. Return `true` or `false`.
 - [ ] **Prompt 3.6:** In `lib/datadog/ci/impacted_tests_detection/null_component.rb`, define `ImpactedTestsDetection::NullComponent` with a no-op `configure` method, an `enabled?` method returning `false`, and a `modified?` method returning `false`.
 - [ ] **Prompt 3.7:** Create `lib/datadog/ci/impacted_tests_detection/telemetry.rb`. Define `module Datadog::CI::ImpactedTestsDetection::Telemetry`. Add a class method `self.impacted_test_detected` that calls `Datadog::CI::Utils::Telemetry.inc(Datadog::CI::Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)`.
+- [ ] **Prompt 3.8:** In `ImpactedTestsDetection::Component`, implement the `tag_modified_test(test_span)` method where `test_span` is `Datadog::CI::Test`. If `modified?(test_span)` is true, it sets the `test.is_modified` tag (look into Datadog::CI::Ext::Test for a constant) and calls `impacted_test_detected` method on `Datadog::CI::ImpactedTestsDetection::Telemetry`.
 
 ## Phase 4: Component Wiring
 
