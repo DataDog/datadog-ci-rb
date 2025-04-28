@@ -12,8 +12,8 @@ This file breaks down the implementation plan into actionable steps for a coding
 
 ## Phase 2: Git Interaction
 
-- [ ] **Prompt 2.1:** In `lib/datadog/ci/git/local_repository.rb`, add logic to detect if running within GitHub Actions or GitLab CI by checking standard environment variables (e.g., `GITHUB_ACTIONS`, `GITLAB_CI`).
-- [ ] **Prompt 2.2:** In `lib/datadog/ci/git/local_repository.rb`, add a method `base_commit_sha` that attempts to retrieve the base commit SHA for the current PR/MR from GitHub Actions (`GITHUB_BASE_REF`) or GitLab (`CI_MERGE_REQUEST_DIFF_BASE_SHA`). Return the SHA string if found, otherwise return `nil`.
+- [ ] **Prompt 2.1:** Add a `base_commit_sha` method to environment extractors.
+- [ ] **Prompt 2.2:** Extract `base_commit_sha` for thecurrent PR/MR from GitHub Actions (`GITHUB_BASE_REF`) or GitLab (`CI_MERGE_REQUEST_DIFF_BASE_SHA`). Return the SHA string if found, otherwise return `nil`.
 - [ ] **Prompt 2.3:** In `lib/datadog/ci/git/local_repository.rb`, add a method `get_changed_files_from_diff(base_commit)`.
   - If `base_commit` is `nil`, return `nil`.
   - Execute the command `git diff -U0 --word-diff=porcelain <base_commit>`.
