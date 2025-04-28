@@ -1,8 +1,0 @@
-# frozen_string_literal: true
-
-class Datadog::CI::ImpactedTestsDetection::NullComponent
-  def configure: (untyped, untyped) -> void
-  def enabled?: () -> bool
-  def modified?: (untyped) -> bool
-  def tag_modified_test: (untyped) -> void
-end

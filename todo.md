@@ -41,16 +41,15 @@ This file breaks down the implementation plan into actionable steps for a coding
   - Return `false` if `!enabled?`.
   - Return `false` if `test_span.source_file` is nil.
   - Check if `test_span.source_file` exists in the `@changed_files` set. Return `true` or `false`.
-- [x] **Prompt 3.6:** In `lib/datadog/ci/impacted_tests_detection/null_component.rb`, define `ImpactedTestsDetection::NullComponent` with a no-op `configure` method, an `enabled?` method returning `false`, and a `modified?` method returning `false`, and a `tag_modified_test(test_span)` method doing nothing.
-- [x] **Prompt 3.7:** Create `lib/datadog/ci/impacted_tests_detection/telemetry.rb`. Define `module Datadog::CI::ImpactedTestsDetection::Telemetry`. Add a class method `self.impacted_test_detected` that calls `Datadog::CI::Utils::Telemetry.inc(Datadog::CI::Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)`.
-- [ ] **Prompt 3.8:** In `ImpactedTestsDetection::Component`, implement the `tag_modified_test(test_span)` method where `test_span` is `Datadog::CI::Test`. If `modified?(test_span)` is true, it sets the `test.is_modified` tag (look into Datadog::CI::Ext::Test for a constant) and calls `impacted_test_detected` method on `Datadog::CI::ImpactedTestsDetection::Telemetry`.
+- [x] **Prompt 3.6:** Create `lib/datadog/ci/impacted_tests_detection/telemetry.rb`. Define `module Datadog::CI::ImpactedTestsDetection::Telemetry`. Add a class method `self.impacted_test_detected` that calls `Datadog::CI::Utils::Telemetry.inc(Datadog::CI::Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)`.
+- [x] **Prompt 3.7:** In `ImpactedTestsDetection::Component`, implement the `tag_modified_test(test_span)` method where `test_span` is `Datadog::CI::Test`. If `modified?(test_span)` is true, it sets the `test.is_modified` tag (look into Datadog::CI::Ext::Test for a constant) and calls `impacted_test_detected` method on `Datadog::CI::ImpactedTestsDetection::Telemetry`.
 
 ## Phase 4: Component Wiring
 
-- [ ] **Prompt 6.1:** Modify `lib/datadog/ci/configuration/components.rb`:
-  - Add `require_relative` statements for the new ITD component files (`../impacted_tests_detection/component`, `../impacted_tests_detection/null_component`, `../impacted_tests_detection/telemetry`).
+- [x] **Prompt 6.1:** Modify `lib/datadog/ci/configuration/components.rb`:
+  - Add `require_relative` statement for the new ITD component file (`../impacted_tests_detection/component`).
   - Add `impacted_tests_detection` to the `attr_reader` list.
-  - In the `initialize` method, instantiate the correct ITD component (`ImpactedTestsDetection::Component` or `NullComponent`) based on the _initial_ value of `settings.ci.impacted_tests_detection_enabled`. Pass the Git repository instance (`Git::LocalRepository.new`) and initial settings as dependencies to the `Component` initializer. Store the instance in `@impacted_tests_detection`.
+  - In the `activate_ci!` method, instantiate the ITD component `ImpactedTestsDetection::Component` and pass value of `settings.ci.impacted_tests_detection_enabled`. Store the instance in `@impacted_tests_detection`.
 - [ ] **Prompt 6.2:** Modify `lib/datadog/ci/remote/component.rb`. Find the method responsible for applying library settings after they are fetched from the backend (e.g., a method named `configure` or similar within that component).
   - Inside this method, determine the final enablement state for ITD by checking the `DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED` environment variable first, and then the `impacted_tests_enabled` setting received from the remote configuration.
   - Call the `configure` method on the ITD component instance: `Datadog.components.impacted_tests_detection.configure(enabled_from_remote: final_enabled_state)`.
