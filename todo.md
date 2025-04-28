@@ -6,7 +6,7 @@ This file breaks down the implementation plan into actionable steps for a coding
 
 - [x] **Prompt 1.1:** In `lib/datadog/ci/configuration/settings.rb`, define a new CI setting `impacted_tests_detection_enabled` (boolean, default `false`).
 - [x] **Prompt 1.2:** In `lib/datadog/ci/configuration/settings.rb`, ensure the value of `impacted_tests_detection_enabled` is overridden by the environment variable `DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED` if it is set. Parse the env var as a boolean.
-- [ ] **Prompt 1.3:** Update the remote settings parsing logic (likely in `lib/datadog/ci/remote/settings.rb` or a related file) to recognize and store the `impacted_tests_enabled` (boolean) field from the backend response. This value will be used later to configure the ITD component.
+- [x] **Prompt 1.3:** Update the remote settings parsing logic in `lib/datadog/ci/remote/library_settings.rb` to recognize and store the `impacted_tests_enabled` (boolean) field from the backend response. This value will be used later to configure the ITD component.
 - [ ] **Prompt 1.4:** In `lib/datadog/ci/ext/telemetry.rb`, define a new constant `METRIC_IMPACTED_TESTS_IS_MODIFIED = "impacted_tests.is_modified"`.
 - [ ] **Prompt 1.5:** In `lib/datadog/ci/ext/test.rb`, define a new constant `TAG_TEST_IS_MODIFIED = "test.is_modified"`.
 
