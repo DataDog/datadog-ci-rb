@@ -46,7 +46,17 @@ This file breaks down the implementation plan into actionable steps for a coding
 - [ ] **Prompt 3.7:** Create `lib/datadog/ci/impacted_tests_detection/telemetry.rb`. Define `module Datadog::CI::ImpactedTestsDetection::Telemetry`. Add a class method `self.impacted_test_detected` that calls `Datadog::CI::Utils::Telemetry.inc(Datadog::CI::Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)`.
 - [ ] **Prompt 3.8:** Create an empty file `lib/datadog/ci/impacted_tests_detection/configuration/settings.rb`.
 
-## Phase 4: Integrate ITD Check into TestVisibility
+## Phase 4: Component Wiring
+
+- [ ] **Prompt 6.1:** Modify `lib/datadog/ci/configuration/components.rb`:
+  - Add `require_relative` statements for the new ITD component files (`../impacted_tests_detection/component`, `../impacted_tests_detection/null_component`, `../impacted_tests_detection/telemetry`).
+  - Add `impacted_tests_detection` to the `attr_reader` list.
+  - In the `initialize` method, instantiate the correct ITD component (`ImpactedTestsDetection::Component` or `NullComponent`) based on the _initial_ value of `settings.ci.impacted_tests_detection_enabled`. Pass the Git repository instance (`Git::LocalRepository.new`) and initial settings as dependencies to the `Component` initializer. Store the instance in `@impacted_tests_detection`.
+- [ ] **Prompt 6.2:** Modify `lib/datadog/ci/remote/component.rb`. Find the method responsible for applying library settings after they are fetched from the backend (e.g., a method named `configure` or similar within that component).
+  - Inside this method, determine the final enablement state for ITD by checking the `DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED` environment variable first, and then the `impacted_tests_enabled` setting received from the remote configuration.
+  - Call the `configure` method on the ITD component instance: `Datadog.components.impacted_tests_detection.configure(enabled_from_remote: final_enabled_state)`.
+
+## Phase 5: Integrate ITD Check into TestVisibility
 
 - [ ] **Prompt 4.1:** Modify `lib/datadog/ci/test_visibility/component.rb`. In the `on_test_started(test)` method, find the section _after_ `mark_test_as_new(test)`. Add the following logic:
   - Get the ITD component instance using the existing `impacted_tests_detection` helper method (`itd = impacted_tests_detection`).
@@ -58,26 +68,7 @@ This file breaks down the implementation plan into actionable steps for a coding
       - Set the tag: `test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED, "true")`.
       - Increment the metric: `Datadog::CI::ImpactedTestsDetection::Telemetry.impacted_test_detected`.
 
-## Phase 5: Test Retries Integration
+## Phase 6: Test Retries Integration
 
 - [ ] **Prompt 5.1:** Modify `lib/datadog/ci/test_retries/component.rb`. Locate the logic that decides whether to perform Early Flake Detection retries (it currently checks `test.is_new?`).
 - [ ] **Prompt 5.2:** Modify the condition from Prompt 5.1. In addition to checking if the test `is_new?`, also check if the test span has the tag `Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED` set to `"true"`. The retry should happen if _either_ condition is met (and relevant retry settings are enabled).
-
-## Phase 6: Component Wiring & Documentation
-
-- [ ] **Prompt 6.1:** Modify `lib/datadog/ci/configuration/components.rb`:
-  - Add `require_relative` statements for the new ITD component files (`../impacted_tests_detection/component`, `../impacted_tests_detection/null_component`, `../impacted_tests_detection/telemetry`).
-  - Add `impacted_tests_detection` to the `attr_reader` list.
-  - In the `initialize` method, instantiate the correct ITD component (`ImpactedTestsDetection::Component` or `NullComponent`) based on the _initial_ value of `settings.ci.impacted_tests_detection_enabled`. Pass the Git repository instance (`Git::LocalRepository.new`) and initial settings as dependencies to the `Component` initializer. Store the instance in `@impacted_tests_detection`.
-- [ ] **Prompt 6.2:** Modify `lib/datadog/ci/remote/component.rb`. Find the method responsible for applying library settings after they are fetched from the backend (e.g., a method named `configure` or similar within that component).
-  - Inside this method, determine the final enablement state for ITD by checking the `DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED` environment variable first, and then the `impacted_tests_enabled` setting received from the remote configuration.
-  - Call the `configure` method on the ITD component instance: `Datadog.components.impacted_tests_detection.configure(enabled_from_remote: final_enabled_state)`.
-- [ ] **Prompt 6.3:** Update documentation:
-  - Add a section to `README.md` explaining the Impacted Tests Detection feature, the `DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED` environment variable, and the corresponding remote setting `impacted_tests_enabled`. Mention supported CI providers and the fallback behavior if the base commit cannot be determined.
-  - _(Optional)_ Create a more detailed `docs/impacted-tests-detection.md` if needed.
-
-## Phase 7: Final Checks
-
-- [ ] **Prompt 7.1:** Run `bundle exec standardrb --fix` to ensure code style compliance. Address any reported issues.
-- [ ] **Prompt 7.2:** Run `bundle exec rake steep:check` to verify type correctness. Address any reported type errors.
-- [ ] **Prompt 7.3:** Run `bundle exec rake spec` to execute the test suite. Ensure all tests pass. Address any failures.
