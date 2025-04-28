@@ -25,26 +25,24 @@ This file breaks down the implementation plan into actionable steps for a coding
 
 ## Phase 3: Impacted Tests Detection (ITD) Component
 
-- [ ] **Prompt 3.1:** Create the directory `lib/datadog/ci/impacted_tests_detection/`.
-- [ ] **Prompt 3.2:** Create `lib/datadog/ci/impacted_tests_detection/component.rb`. Define `module Datadog::CI::ImpactedTestsDetection` and within it, the class `Component`.
-  - Add an initializer that accepts a git repository instance (`Datadog::CI::Git::LocalRepository`) and initial settings.
-  - Store the git repository dependency.
-  - Initialize instance variables `@enabled = false` and `@changed_files = nil`.
-- [ ] **Prompt 3.3:** In `ImpactedTestsDetection::Component`, implement the `configure(enabled_from_remote:)` method:
-  - If `enabled_from_remote` is false, set `@enabled = false` and return.
-  - Call the `base_commit_sha` method from the Git repository instance.
+- [x] **Prompt 3.1:** Create the directory `lib/datadog/ci/impacted_tests_detection/`.
+- [x] **Prompt 3.2:** Create `lib/datadog/ci/impacted_tests_detection/component.rb`. Define `module Datadog::CI::ImpactedTestsDetection` and within it, the class `Component`.
+  - Add an initializer that accepts a `enabled:` property (boolean).
+  - Initialize instance variables `@enabled = enabled` and `@changed_files = nil`.
+- [x] **Prompt 3.3:** In `ImpactedTestsDetection::Component`, implement the `configure(library_settings, test_session)` method:
+  - If `library_settings.impacted_tests_enabled?` is false, set `@enabled = false` and return.
+  - Obtain the `base_commit_sha` from `test_session.base_commit_sha`.
   - If the base commit is `nil`, log a warning ("ITD disabled: base commit not found") using `Datadog.logger`, set `@enabled = false`, and return.
-  - Call `get_changed_files_from_diff` with the base commit.
+  - Call `LocalRepository.get_changed_files_from_diff` with the base commit.
   - If the result is `nil`, log a warning ("ITD disabled: could not get changed files"), set `@enabled = false`, and return.
   - If successful, store the returned `Set` in `@changed_files` and set `@enabled = true`.
-- [ ] **Prompt 3.4:** In `ImpactedTestsDetection::Component`, implement the `enabled?` method to return the value of `@enabled`.
+- [x] **Prompt 3.4:** In `ImpactedTestsDetection::Component`, implement the `enabled?` method to return the value of `@enabled`.
 - [ ] **Prompt 3.5:** In `ImpactedTestsDetection::Component`, implement the `modified?(test_file_path)` method:
-  - Return `false` if `!enabled?` or `@changed_files.nil?`.
+  - Return `false` if `!enabled?`.
   - Normalize the input `test_file_path` (which might be absolute) to be relative to the Git repository root (similar to how paths are stored in `@changed_files`). You might need access to the Git repository root path for this.
   - Check if the normalized path exists in the `@changed_files` set. Return `true` or `false`.
 - [ ] **Prompt 3.6:** In `lib/datadog/ci/impacted_tests_detection/null_component.rb`, define `ImpactedTestsDetection::NullComponent` with a no-op `configure` method, an `enabled?` method returning `false`, and a `modified?` method returning `false`.
 - [ ] **Prompt 3.7:** Create `lib/datadog/ci/impacted_tests_detection/telemetry.rb`. Define `module Datadog::CI::ImpactedTestsDetection::Telemetry`. Add a class method `self.impacted_test_detected` that calls `Datadog::CI::Utils::Telemetry.inc(Datadog::CI::Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)`.
-- [ ] **Prompt 3.8:** Create an empty file `lib/datadog/ci/impacted_tests_detection/configuration/settings.rb`.
 
 ## Phase 4: Component Wiring
 

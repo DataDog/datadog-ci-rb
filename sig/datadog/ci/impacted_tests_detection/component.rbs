@@ -1,0 +1,10 @@
+module Datadog::CI::ImpactedTestsDetection
+  class Component
+    @enabled: bool
+    @changed_files: Set[String]
+
+    def initialize: (enabled: bool) -> void
+    def configure: (untyped, untyped) -> void
+    def enabled?: () -> bool
+  end
+end
