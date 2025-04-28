@@ -42,7 +42,7 @@ This file breaks down the implementation plan into actionable steps for a coding
   - Return `false` if `test_span.source_file` is nil.
   - Check if `test_span.source_file` exists in the `@changed_files` set. Return `true` or `false`.
 - [x] **Prompt 3.6:** In `lib/datadog/ci/impacted_tests_detection/null_component.rb`, define `ImpactedTestsDetection::NullComponent` with a no-op `configure` method, an `enabled?` method returning `false`, and a `modified?` method returning `false`, and a `tag_modified_test(test_span)` method doing nothing.
-- [ ] **Prompt 3.7:** Create `lib/datadog/ci/impacted_tests_detection/telemetry.rb`. Define `module Datadog::CI::ImpactedTestsDetection::Telemetry`. Add a class method `self.impacted_test_detected` that calls `Datadog::CI::Utils::Telemetry.inc(Datadog::CI::Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)`.
+- [x] **Prompt 3.7:** Create `lib/datadog/ci/impacted_tests_detection/telemetry.rb`. Define `module Datadog::CI::ImpactedTestsDetection::Telemetry`. Add a class method `self.impacted_test_detected` that calls `Datadog::CI::Utils::Telemetry.inc(Datadog::CI::Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)`.
 - [ ] **Prompt 3.8:** In `ImpactedTestsDetection::Component`, implement the `tag_modified_test(test_span)` method where `test_span` is `Datadog::CI::Test`. If `modified?(test_span)` is true, it sets the `test.is_modified` tag (look into Datadog::CI::Ext::Test for a constant) and calls `impacted_test_detected` method on `Datadog::CI::ImpactedTestsDetection::Telemetry`.
 
 ## Phase 4: Component Wiring

@@ -1,0 +1,3 @@
+module Datadog::CI::ImpactedTestsDetection::Telemetry
+  def self.impacted_test_detected: () -> void
+end
