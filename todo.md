@@ -12,8 +12,9 @@ This file breaks down the implementation plan into actionable steps for a coding
 
 ## Phase 2: Git Interaction
 
-- [ ] **Prompt 2.1:** Add a `base_commit_sha` method to environment extractors.
-- [ ] **Prompt 2.2:** Extract `base_commit_sha` for thecurrent PR/MR from GitHub Actions (`GITHUB_BASE_REF`) or GitLab (`CI_MERGE_REQUEST_DIFF_BASE_SHA`). Return the SHA string if found, otherwise return `nil`.
+- [x] **Prompt 2.1:** Add a `base_commit_sha` method to `datadog/ci/span.rb`. It returns the value of tag `Datadog::CI::Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA`.
+- [ ] **Prompt 2.2:** Implement additional_tags method for `datadog/ci/ext/environment/providers/gitlab.rb` similarly to
+      Github Actions (`datadog/ci/ext/environment/providers/github_actions.rb`). Use the following env variables available in Gitlab: CI_MERGE_REQUEST_TARGET_BRANCH_NAME, CI_MERGE_REQUEST_TARGET_BRANCH_SHA, CI_MERGE_REQUEST_SOURCE_BRANCH_SHA.
 - [ ] **Prompt 2.3:** In `lib/datadog/ci/git/local_repository.rb`, add a method `get_changed_files_from_diff(base_commit)`.
   - If `base_commit` is `nil`, return `nil`.
   - Execute the command `git diff -U0 --word-diff=porcelain <base_commit>`.
