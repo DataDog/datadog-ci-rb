@@ -68,6 +68,8 @@ module Datadog
 
         METRIC_TEST_SESSION = "test_session"
 
+        METRIC_IMPACTED_TESTS_IS_MODIFIED = "impacted_tests.is_modified"
+
         TAG_TEST_FRAMEWORK = "test_framework"
         TAG_EVENT_TYPE = "event_type"
         TAG_HAS_CODEOWNER = "has_codeowner"
