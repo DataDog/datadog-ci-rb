@@ -864,6 +864,47 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             .to(options)
         end
       end
+
+      describe "#impacted_tests_detection_enabled" do
+        subject(:impacted_tests_detection_enabled) { settings.ci.impacted_tests_detection_enabled }
+
+        it { is_expected.to be false }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_IMPACTED_TESTS_DETECTION_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_IMPACTED_TESTS_DETECTION_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be false }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#impacted_tests_detection_enabled=" do
+        it "updates the #impacted_tests_detection_enabled setting" do
+          expect { settings.ci.impacted_tests_detection_enabled = true }
+            .to change { settings.ci.impacted_tests_detection_enabled }
+            .from(false)
+            .to(true)
+        end
+      end
     end
   end
 end

@@ -4,8 +4,8 @@ This file breaks down the implementation plan into actionable steps for a coding
 
 ## Phase 1: Configuration & Setup
 
-- [ ] **Prompt 1.1:** In `lib/datadog/ci/configuration/settings.rb`, define a new CI setting `impacted_tests_detection_enabled` (boolean, default `false`).
-- [ ] **Prompt 1.2:** In `lib/datadog/ci/configuration/settings.rb`, ensure the value of `impacted_tests_detection_enabled` is overridden by the environment variable `DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED` if it is set. Parse the env var as a boolean.
+- [x] **Prompt 1.1:** In `lib/datadog/ci/configuration/settings.rb`, define a new CI setting `impacted_tests_detection_enabled` (boolean, default `false`).
+- [x] **Prompt 1.2:** In `lib/datadog/ci/configuration/settings.rb`, ensure the value of `impacted_tests_detection_enabled` is overridden by the environment variable `DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED` if it is set. Parse the env var as a boolean.
 - [ ] **Prompt 1.3:** Update the remote settings parsing logic (likely in `lib/datadog/ci/remote/settings.rb` or a related file) to recognize and store the `impacted_tests_enabled` (boolean) field from the backend response. This value will be used later to configure the ITD component.
 - [ ] **Prompt 1.4:** In `lib/datadog/ci/ext/telemetry.rb`, define a new constant `METRIC_IMPACTED_TESTS_IS_MODIFIED = "impacted_tests.is_modified"`.
 - [ ] **Prompt 1.5:** In `lib/datadog/ci/ext/test.rb`, define a new constant `TAG_TEST_IS_MODIFIED = "test.is_modified"`.
@@ -16,7 +16,7 @@ This file breaks down the implementation plan into actionable steps for a coding
 - [ ] **Prompt 2.2:** In `lib/datadog/ci/git/local_repository.rb`, add a method `base_commit_sha` that attempts to retrieve the base commit SHA for the current PR/MR from GitHub Actions (`GITHUB_BASE_REF`) or GitLab (`CI_MERGE_REQUEST_DIFF_BASE_SHA`). Return the SHA string if found, otherwise return `nil`.
 - [ ] **Prompt 2.3:** In `lib/datadog/ci/git/local_repository.rb`, add a method `get_changed_files_from_diff(base_commit)`.
   - If `base_commit` is `nil`, return `nil`.
-  - Execute the command `git diff -U0 --word-diff=porcelain <base_commit> HEAD`.
+  - Execute the command `git diff -U0 --word-diff=porcelain <base_commit>`.
   - Parse the output using the regex `^diff --git a/(?<file>.+) b/(?<file2>.+)$` to extract modified file paths.
   - Normalize these paths to be relative to the repository root.
   - Handle potential errors during command execution or parsing, returning `nil` if errors occur.

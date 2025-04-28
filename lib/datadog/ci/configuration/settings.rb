@@ -151,6 +151,12 @@ module Datadog
                 o.env CI::Ext::Settings::ENV_TEST_VISIBILITY_DRB_SERVER_URI
               end
 
+              option :impacted_tests_detection_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_IMPACTED_TESTS_DETECTION_ENABLED
+                o.default false
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
