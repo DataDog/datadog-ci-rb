@@ -2,6 +2,10 @@
 
 require "set"
 
+require_relative "../ext/test"
+require_relative "../git/local_repository"
+require_relative "telemetry"
+
 module Datadog
   module CI
     module ImpactedTestsDetection
@@ -22,7 +26,7 @@ module Datadog
             return
           end
 
-          changed_files = Datadog::CI::Git::LocalRepository.get_changed_files_from_diff(base_commit_sha)
+          changed_files = Git::LocalRepository.get_changed_files_from_diff(base_commit_sha)
           if changed_files.nil?
             Datadog.logger.warn { "Impacted tests detection disabled: could not get changed files" }
             @enabled = false
@@ -44,6 +48,13 @@ module Datadog
           return false if source_file.nil?
 
           @changed_files.include?(source_file)
+        end
+
+        def tag_modified_test(test_span)
+          return unless modified?(test_span)
+
+          test_span.set_tag(Ext::Test::TAG_TEST_IS_MODIFIED, "true")
+          Telemetry.impacted_test_detected
         end
       end
     end

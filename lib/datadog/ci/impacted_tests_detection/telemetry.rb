@@ -1,9 +1,14 @@
+# frozen_string_literal: true
+
+require_relative "../ext/telemetry"
+require_relative "../utils/telemetry"
+
 module Datadog
   module CI
     module ImpactedTestsDetection
       module Telemetry
         def self.impacted_test_detected
-          Datadog::CI::Utils::Telemetry.inc(Datadog::CI::Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)
+          Utils::Telemetry.inc(Ext::Telemetry::METRIC_IMPACTED_TESTS_IS_MODIFIED, 1)
         end
       end
     end
