@@ -205,6 +205,8 @@ module Datadog
           GET_OBJECTS: "get_objects"
 
           PACK_OBJECTS: "pack_objects"
+
+          DIFF: "diff"
         end
 
         module Provider

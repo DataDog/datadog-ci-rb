@@ -48,6 +48,8 @@ module Datadog
 
         def self.git_unshallow: () -> String?
 
+        def self.get_changed_files_from_diff: (String? base_commit) -> ::Set[String]?
+
         private
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]

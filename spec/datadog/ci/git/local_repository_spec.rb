@@ -310,6 +310,57 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
     end
 
+    describe ".get_changed_files_from_diff" do
+      let(:base_branch) { "base" }
+      let(:feature_branch) { "feature" }
+
+      let(:base_file) { "base.txt" }
+      let(:not_changed_file) { "not_changed.txt" }
+      let(:feature_file) { "feature.txt" }
+
+      let(:file_to_rename) { "file_to_rename.txt" }
+      let(:renamed_file) { "renamed_file.txt" }
+
+      def build_base_branch
+        `cd #{source_path} && git checkout -b #{base_branch}`
+        `cd #{source_path} && echo "base branch file" >> #{base_file}`
+        `cd #{source_path} && echo "not changed file" >> #{not_changed_file}`
+        `cd #{source_path} && echo "file to rename" >> #{file_to_rename}`
+        `cd #{source_path} && git add #{base_file} #{not_changed_file} #{file_to_rename}  `
+        `cd #{source_path} && git commit -m 'Add base file'`
+        `cd #{source_path} && git rev-parse HEAD`.strip
+      end
+
+      def build_feature_branch
+        `cd #{source_path} && git checkout -b #{feature_branch}`
+        `cd #{source_path} && echo "feature branch file" >> #{feature_file}`
+        `cd #{source_path} && echo "modified in feature branch" >> #{base_file}`
+        `cd #{source_path} && mv #{file_to_rename} #{renamed_file}`
+        `cd #{source_path} && git add -A`
+        `cd #{source_path} && git commit -m 'Add feature file and modify base file'`
+        `cd #{source_path} && git rev-parse HEAD`.strip
+      end
+
+      it "detects changed files between feature and base branch" do
+        # avoids cached git root from previous test cases
+        allow(described_class).to receive(:root).and_return(nil)
+
+        # Setup branches and commits
+        base_sha = build_base_branch
+        build_feature_branch
+
+        # Now diff from feature branch to base branch
+        changed_files = nil
+        with_source_git_dir do
+          changed_files = described_class.get_changed_files_from_diff(base_sha)
+        end
+
+        expect(changed_files).to be_a(Set)
+        # Should includes all modified and renamed files
+        expect(changed_files).to eq(Set.new([base_file, feature_file, file_to_rename]))
+      end
+    end
+
     context "with shallow clone" do
       before do
         # create a shallow clone

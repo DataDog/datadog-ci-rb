@@ -15,14 +15,13 @@ This file breaks down the implementation plan into actionable steps for a coding
 - [x] **Prompt 2.1:** Add a `base_commit_sha` method to `datadog/ci/span.rb`. It returns the value of tag `Datadog::CI::Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA`.
 - [x] **Prompt 2.2:** Implement additional_tags method for `datadog/ci/ext/environment/providers/gitlab.rb` similarly to
       Github Actions (`datadog/ci/ext/environment/providers/github_actions.rb`). Use the following env variables available in Gitlab: CI_MERGE_REQUEST_TARGET_BRANCH_NAME, CI_MERGE_REQUEST_TARGET_BRANCH_SHA, CI_MERGE_REQUEST_SOURCE_BRANCH_SHA.
-- [ ] **Prompt 2.3:** In `lib/datadog/ci/git/local_repository.rb`, add a method `get_changed_files_from_diff(base_commit)`.
+- [x] **Prompt 2.3:** In `lib/datadog/ci/git/local_repository.rb`, add a method `get_changed_files_from_diff(base_commit)`.
   - If `base_commit` is `nil`, return `nil`.
   - Execute the command `git diff -U0 --word-diff=porcelain <base_commit>`.
   - Parse the output using the regex `^diff --git a/(?<file>.+) b/(?<file2>.+)$` to extract modified file paths.
   - Normalize these paths to be relative to the repository root.
   - Handle potential errors during command execution or parsing, returning `nil` if errors occur.
   - Return a `Set` containing the normalized file paths on success.
-- [ ] **Prompt 2.4:** Add memoization to the `get_changed_files_from_diff` method, caching the result based on the `base_commit` argument for the duration of the object's lifetime.
 
 ## Phase 3: Impacted Tests Detection (ITD) Component
 

@@ -140,6 +140,7 @@ module Datadog
           GET_LOCAL_COMMITS = "get_local_commits"
           GET_OBJECTS = "get_objects"
           PACK_OBJECTS = "pack_objects"
+          DIFF = "diff"
         end
 
         module Provider

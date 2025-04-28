@@ -2,6 +2,7 @@
 
 require "open3"
 require "pathname"
+require "set"
 
 require_relative "../ext/telemetry"
 require_relative "telemetry"
@@ -307,6 +308,46 @@ module Datadog
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::UNSHALLOW, duration_ms)
           res
+        end
+
+        # Returns a Set of normalized file paths changed since the given base_commit.
+        # If base_commit is nil, returns nil. On error, returns nil.
+        def self.get_changed_files_from_diff(base_commit)
+          return nil if base_commit.nil?
+
+          Telemetry.git_command(Ext::Telemetry::Command::DIFF)
+
+          begin
+            # 1. Run the git diff command
+
+            # @type var output: String?
+            output = nil
+            duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+              output = exec_git_command("git diff -U0 --word-diff=porcelain #{base_commit} HEAD")
+            end
+            Telemetry.git_command_ms(Ext::Telemetry::Command::DIFF, duration_ms)
+
+            return nil if output.nil?
+
+            # 2. Parse the output to extracr which files changed
+            changed_files = Set.new
+            output.each_line do |line|
+              # Match lines like: diff --git a/foo/bar.rb b/foo/bar.rb
+              # This captures git changes on file level
+              match = /^diff --git a\/(?<file>.+) b\/(?<file2>.+)$/.match(line)
+              if match && match[:file]
+                changed_file = match[:file]
+                # Normalize to repo root
+                normalized_changed_file = relative_to_root(changed_file)
+                changed_files << normalized_changed_file unless normalized_changed_file.nil? || normalized_changed_file.empty?
+              end
+            end
+            changed_files
+          rescue => e
+            telemetry_track_error(e, Ext::Telemetry::Command::DIFF)
+            log_failure(e, "get changed files from diff")
+            nil
+          end
         end
 
         # makes .exec_git_command private to make sure that this method
