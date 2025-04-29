@@ -69,6 +69,8 @@ RSpec.shared_context "CI mode activated" do
   let(:agentless_logs_enabled) { false }
 
   let(:impacted_tests_enabled) { false }
+  let(:base_commit_sha) { "base_commit_sha" }
+  let(:changed_files) { Set.new }
 
   let(:test_visibility) { Datadog.send(:components).test_visibility }
 
@@ -131,6 +133,13 @@ RSpec.shared_context "CI mode activated" do
     allow_any_instance_of(Datadog::CI::TestVisibility::KnownTests).to receive(:fetch).and_return(known_tests)
 
     allow_any_instance_of(Datadog::CI::TestManagement::TestsProperties).to receive(:fetch).and_return(test_properties)
+
+    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changed_files_from_diff).and_return(changed_files)
+
+    if impacted_tests_enabled
+      # stub base commit sha
+      allow_any_instance_of(Datadog::CI::TestSession).to receive(:base_commit_sha).and_return(base_commit_sha)
+    end
 
     Datadog.configure do |c|
       if service_name
