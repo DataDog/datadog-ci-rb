@@ -31,7 +31,7 @@ module Datadog
               mark_test_session_faulty(Datadog::CI.active_test_session)
             end
 
-            @enabled && !test_span.skipped? && test_span.is_new?
+            @enabled && !test_span.skipped? && (test_span.is_new? || test_span.modified?)
           end
 
           def configure(library_settings, test_session)

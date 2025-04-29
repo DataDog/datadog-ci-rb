@@ -66,6 +66,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     let(:test_failed) { false }
     let(:test_skipped) { false }
     let(:test_is_new) { false }
+    let(:test_modified) { false }
     let(:test_attempt_to_fix) { false }
 
     let(:test_span) do
@@ -77,6 +78,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         skipped?: test_skipped,
         is_new?: test_is_new,
         attempt_to_fix?: test_attempt_to_fix,
+        modified?: test_modified,
         set_tag: nil
       )
     end
@@ -156,7 +158,13 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         end
       end
 
-      context "when test is not new" do
+      context "when test is modified" do
+        let(:test_modified) { true }
+
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::RetryFlakeDetection) }
+      end
+
+      context "when test is not new and not modified" do
         it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
       end
     end
