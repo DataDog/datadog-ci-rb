@@ -329,7 +329,7 @@ module Datadog
 
             return nil if output.nil?
 
-            # 2. Parse the output to extracr which files changed
+            # 2. Parse the output to extract which files changed
             changed_files = Set.new
             output.each_line do |line|
               # Match lines like: diff --git a/foo/bar.rb b/foo/bar.rb
