@@ -141,7 +141,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       context "when test is new" do
         let(:test_is_new) { true }
 
-        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::RetryNew) }
+        it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::RetryFlakeDetection) }
 
         context "when test is skipped" do
           let(:test_skipped) { true }

@@ -8,9 +8,6 @@ module Datadog
 
         @retry_strategies: Array[Datadog::CI::TestRetries::Strategy::Base]
 
-        @retry_failed_strategy: Datadog::CI::TestRetries::Strategy::RetryFailed
-
-        @retry_new_strategy: Datadog::CI::TestRetries::Strategy::RetryNew
 
         def initialize: (retry_failed_tests_enabled: bool, retry_failed_tests_max_attempts: Integer, retry_failed_tests_total_limit: Integer, retry_new_tests_enabled: bool, retry_flaky_fixed_tests_enabled: bool, retry_flaky_fixed_tests_max_attempts: Integer) -> void
 
@@ -30,9 +27,6 @@ module Datadog
 
         def tag_last_retry: (Datadog::CI::Test test) -> void
 
-        def auto_test_retries_feature_enabled: () -> bool
-
-        def early_flake_detection_feature_enabled: () -> bool
 
         private
 

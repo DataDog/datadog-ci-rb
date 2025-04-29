@@ -2,13 +2,13 @@
 
 require_relative "base"
 
-require_relative "../driver/retry_new"
+require_relative "../driver/retry_flake_detection"
 
 module Datadog
   module CI
     module TestRetries
       module Strategy
-        class RetryNew < Base
+        class RetryFlakeDetection < Base
           DEFAULT_TOTAL_TESTS_COUNT = 100
 
           attr_reader :enabled, :max_attempts_thresholds, :total_limit, :retried_count
@@ -52,7 +52,7 @@ module Datadog
             end
             @retried_count += 1
 
-            Driver::RetryNew.new(test_span, max_attempts_thresholds: @max_attempts_thresholds)
+            Driver::RetryFlakeDetection.new(test_span, max_attempts_thresholds: @max_attempts_thresholds)
           end
 
           private
