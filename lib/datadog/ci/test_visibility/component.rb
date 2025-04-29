@@ -261,6 +261,8 @@ module Datadog
 
           mark_test_as_new(test) if new_test?(test)
 
+          impacted_tests_detection.tag_modified_test(test)
+
           test_management.tag_test_from_properties(test)
 
           test_optimisation.mark_if_skippable(test)
@@ -433,6 +435,10 @@ module Datadog
 
         def test_management
           Datadog.send(:components).test_management
+        end
+
+        def impacted_tests_detection
+          Datadog.send(:components).impacted_tests_detection
         end
 
         # DISTRIBUTED RUBY CONTEXT

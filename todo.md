@@ -56,15 +56,10 @@ This file breaks down the implementation plan into actionable steps for a coding
 
 ## Phase 5: Integrate ITD Check into TestVisibility
 
-- [ ] **Prompt 5.1:** Modify `lib/datadog/ci/test_visibility/component.rb`. In the `on_test_started(test)` method, find the section _after_ `mark_test_as_new(test)`. Add the following logic:
-  - Get the ITD component instance using the existing `impacted_tests_detection` helper method (`itd = impacted_tests_detection`).
-  - Check `if itd.enabled?`.
-  - Inside the check, get the test's source file: `source_file = test.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_FILE)`.
-  - If `source_file` is not nil:
-    - Call `is_modified = itd.modified?(source_file)`.
-    - If `is_modified` is true:
-      - Set the tag: `test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED, "true")`.
-      - Increment the metric: `Datadog::CI::ImpactedTestsDetection::Telemetry.impacted_test_detected`.
+- [x] **Prompt 5.1:** Modify `lib/datadog/ci/test_visibility/component.rb`. In the `on_test_started(test)` method, find the section _after_ `mark_test_as_new(test)`. Add the following logic:
+  - Get the ITD component instance using the `impacted_tests_detection` helper method (`itd = impacted_tests_detection`).
+  - Call `itd.tag_modified_test(test)`.
+  - add tests and RBS type definitions
 
 ## Phase 6: Test Retries Integration
 
