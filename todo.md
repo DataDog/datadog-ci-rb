@@ -46,17 +46,17 @@ This file breaks down the implementation plan into actionable steps for a coding
 
 ## Phase 4: Component Wiring
 
-- [x] **Prompt 6.1:** Modify `lib/datadog/ci/configuration/components.rb`:
+- [x] **Prompt 4.1:** Modify `lib/datadog/ci/configuration/components.rb`:
   - Add `require_relative` statement for the new ITD component file (`../impacted_tests_detection/component`).
   - Add `impacted_tests_detection` to the `attr_reader` list.
   - In the `activate_ci!` method, instantiate the ITD component `ImpactedTestsDetection::Component` and pass value of `settings.ci.impacted_tests_detection_enabled`. Store the instance in `@impacted_tests_detection`.
-- [ ] **Prompt 6.2:** Modify `lib/datadog/ci/remote/component.rb`. Find the method responsible for applying library settings after they are fetched from the backend (e.g., a method named `configure` or similar within that component).
+- [x] **Prompt 4.2:** Modify `lib/datadog/ci/remote/component.rb`. Find the method responsible for applying library settings after they are fetched from the backend (e.g., a method named `configure` or similar within that component).
   - Inside this method, determine the final enablement state for ITD by checking the `DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED` environment variable first, and then the `impacted_tests_enabled` setting received from the remote configuration.
   - Call the `configure` method on the ITD component instance: `Datadog.components.impacted_tests_detection.configure(enabled_from_remote: final_enabled_state)`.
 
 ## Phase 5: Integrate ITD Check into TestVisibility
 
-- [ ] **Prompt 4.1:** Modify `lib/datadog/ci/test_visibility/component.rb`. In the `on_test_started(test)` method, find the section _after_ `mark_test_as_new(test)`. Add the following logic:
+- [ ] **Prompt 5.1:** Modify `lib/datadog/ci/test_visibility/component.rb`. In the `on_test_started(test)` method, find the section _after_ `mark_test_as_new(test)`. Add the following logic:
   - Get the ITD component instance using the existing `impacted_tests_detection` helper method (`itd = impacted_tests_detection`).
   - Check `if itd.enabled?`.
   - Inside the check, get the test's source file: `source_file = test.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_FILE)`.
@@ -68,5 +68,5 @@ This file breaks down the implementation plan into actionable steps for a coding
 
 ## Phase 6: Test Retries Integration
 
-- [ ] **Prompt 5.1:** Modify `lib/datadog/ci/test_retries/component.rb`. Locate the logic that decides whether to perform Early Flake Detection retries (it currently checks `test.is_new?`).
-- [ ] **Prompt 5.2:** Modify the condition from Prompt 5.1. In addition to checking if the test `is_new?`, also check if the test span has the tag `Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED` set to `"true"`. The retry should happen if _either_ condition is met (and relevant retry settings are enabled).
+- [ ] **Prompt 6.1:** Modify `lib/datadog/ci/test_retries/component.rb`. Locate the logic that decides whether to perform Early Flake Detection retries (it currently checks `test.is_new?`).
+- [ ] **Prompt 6.2:** Modify the condition from Prompt 5.1. In addition to checking if the test `is_new?`, also check if the test span has the tag `Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED` set to `"true"`. The retry should happen if _either_ condition is met (and relevant retry settings are enabled).
