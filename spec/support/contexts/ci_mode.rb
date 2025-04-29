@@ -68,6 +68,8 @@ RSpec.shared_context "CI mode activated" do
 
   let(:agentless_logs_enabled) { false }
 
+  let(:impacted_tests_enabled) { false }
+
   let(:test_visibility) { Datadog.send(:components).test_visibility }
 
   before do
@@ -98,7 +100,8 @@ RSpec.shared_context "CI mode activated" do
         faulty_session_threshold: faulty_session_threshold,
         known_tests_enabled?: known_tests_enabled,
         test_management_enabled?: test_management_enabled,
-        attempt_to_fix_retries_count: attempt_to_fix_retries_count
+        attempt_to_fix_retries_count: attempt_to_fix_retries_count,
+        impacted_tests_enabled?: impacted_tests_enabled
       ),
       # This is for the second call to fetch_library_settings
       instance_double(
@@ -118,7 +121,8 @@ RSpec.shared_context "CI mode activated" do
         faulty_session_threshold: faulty_session_threshold,
         known_tests_enabled?: known_tests_enabled,
         test_management_enabled?: test_management_enabled,
-        attempt_to_fix_retries_count: attempt_to_fix_retries_count
+        attempt_to_fix_retries_count: attempt_to_fix_retries_count,
+        impacted_tests_enabled?: impacted_tests_enabled
       )
     )
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
