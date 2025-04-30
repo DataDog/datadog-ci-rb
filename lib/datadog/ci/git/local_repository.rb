@@ -315,6 +315,8 @@ module Datadog
         def self.get_changed_files_from_diff(base_commit)
           return nil if base_commit.nil?
 
+          Datadog.logger.debug { "calculating git diff from base_commit: #{base_commit}" }
+
           Telemetry.git_command(Ext::Telemetry::Command::DIFF)
 
           begin
@@ -326,6 +328,8 @@ module Datadog
               output = exec_git_command("git diff -U0 --word-diff=porcelain #{base_commit} HEAD")
             end
             Telemetry.git_command_ms(Ext::Telemetry::Command::DIFF, duration_ms)
+
+            Datadog.logger.debug { "git diff output: #{output}" }
 
             return nil if output.nil?
 
@@ -340,6 +344,9 @@ module Datadog
                 # Normalize to repo root
                 normalized_changed_file = relative_to_root(changed_file)
                 changed_files << normalized_changed_file unless normalized_changed_file.nil? || normalized_changed_file.empty?
+
+                Datadog.logger.debug { "matched changed_file: #{changed_file} from line: #{line}" }
+                Datadog.logger.debug { "normalized_changed_file: #{normalized_changed_file}" }
               end
             end
             changed_files
