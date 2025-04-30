@@ -26,6 +26,10 @@ module Datadog
           def to_msgpack: (?untyped? packer) -> untyped
 
           def pretty_inspect: () -> String
+
+          def pretty_print: (untyped q) -> void
+
+          def to_s: () -> String
         end
       end
     end

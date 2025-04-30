@@ -40,7 +40,11 @@ module Datadog
                 },
                 service: datadog_configuration[:service_name]
               )
+              # Steep type checker doesn't know that we patched Minitest::Test class definition
+              #
+              # steep:ignore:start
               test_span&.itr_unskippable! if self.class.dd_suite_unskippable? || self.class.dd_test_unskippable?(name)
+              # steep:ignore:end
               skip(test_span&.datadog_skip_reason) if test_span&.should_skip?
             end
 
@@ -100,9 +104,10 @@ module Datadog
             end
 
             def dd_test_unskippable?(test_name)
-              return false unless @datadog_itr_unskippable_tests
+              tests = @datadog_itr_unskippable_tests
+              return false unless tests
 
-              @datadog_itr_unskippable_tests.include?(test_name)
+              tests.include?(test_name)
             end
           end
         end

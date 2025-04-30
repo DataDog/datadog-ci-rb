@@ -11,6 +11,8 @@ module Datadog
 
           def tags: () -> Hash[String, untyped]
 
+          def self.handles?: (Hash[String, String?] env) -> bool
+
           private
 
           attr_reader env: untyped

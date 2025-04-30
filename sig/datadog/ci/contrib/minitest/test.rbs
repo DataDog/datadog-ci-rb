@@ -5,9 +5,9 @@ module Datadog
         module Test
           module ClassMethods
             @datadog_itr_unskippable_suite: bool
-            @datadog_itr_unskippable_tests: Array[String]
+            @datadog_itr_unskippable_tests: Array[String]?
 
-            def datadog_itr_unskippable: (untyped args) -> void
+            def datadog_itr_unskippable: (*untyped) -> void
 
             def dd_suite_unskippable?: () -> bool
 
@@ -16,7 +16,6 @@ module Datadog
 
           module InstanceMethods : ::Minitest::Test
             include ::Minitest::Test::LifecycleHooks
-
             extend ClassMethods
 
             def before_setup: () -> (nil | untyped)

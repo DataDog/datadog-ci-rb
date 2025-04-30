@@ -1,3 +1,5 @@
+Ruby = Steep::Diagnostic::Ruby
+
 target :lib do
   signature "sig"
 
@@ -38,4 +40,16 @@ target :lib do
   library "rails"
   library "lograge"
   library "semantic_logger"
+
+  configure_code_diagnostics(Ruby.default) do |hash|
+    # This check asks you to type every empty collection used in
+    # local variables with an inline type annotation (e.g. `ret = {} #: Hash[Symbol,untyped]`).
+    # This pollutes the code base, and demands seemingly unnecessary typing of internal variables.
+    # Ideally, these empty collections automatically assume a signature based on its usage inside its method.
+    # @see https://github.com/soutaro/steep/pull/1338
+    hash[Ruby::UnannotatedEmptyCollection] = :hint
+
+    hash[Ruby::FallbackAny] = :hint
+    hash[Ruby::UnreachableBranch] = :hint
+  end
 end

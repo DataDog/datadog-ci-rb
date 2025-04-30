@@ -6,7 +6,7 @@ module Datadog
           def self.included: (untyped base) -> untyped
 
           module InstanceMethods : ::RSpec::Core::Runner
-            def run_specs: (untyped example_groups) -> untyped
+            def run_specs: (*untyped) -> untyped
 
             private
 

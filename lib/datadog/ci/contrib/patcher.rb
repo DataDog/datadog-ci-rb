@@ -29,9 +29,13 @@ module Datadog
             return unless defined?(super)
 
             patch_only_once.run do
+              # There is no way to tell Steep that we prepend these methods to modules that have .patch method
+              #
+              # steep:ignore:start
               super.tap do
                 @patch_successful = true
               end
+              # steep:ignore:end
             rescue => e
               on_patch_error(e)
             end

@@ -13,6 +13,8 @@ module Datadog
         def initialize: () -> void
 
         def configure: (untyped _, untyped _) -> nil
+
+        def tag_test_from_properties: (untyped _) -> nil
       end
     end
   end

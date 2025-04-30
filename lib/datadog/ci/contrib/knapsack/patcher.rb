@@ -9,9 +9,7 @@ module Datadog
         module Patcher
           include Datadog::CI::Contrib::Patcher
 
-          module_function
-
-          def patch
+          def self.patch
             if ::RSpec::Core::Runner.ancestors.include?(::KnapsackPro::Extensions::RSpecExtension::Runner)
               # knapsack already patched rspec runner
               require_relative "runner"
