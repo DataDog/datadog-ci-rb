@@ -8,5 +8,9 @@ module Datadog::CI::ImpactedTestsDetection
     def enabled?: () -> bool
     def modified?: (Datadog::CI::Test test_span) -> bool
     def tag_modified_test: (Datadog::CI::Test test_span) -> void
+
+    private
+
+    def git_tree_upload_worker: () -> Datadog::CI::Worker
   end
 end

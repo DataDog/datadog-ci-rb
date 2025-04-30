@@ -16,8 +16,7 @@ module Datadog
         end
 
         def configure(library_settings, test_session)
-          # UNCOMMENT BEFORE MERGE
-          # @enabled &&= library_settings.impacted_tests_enabled?
+          @enabled &&= library_settings.impacted_tests_enabled?
 
           return unless @enabled
 
@@ -28,6 +27,7 @@ module Datadog
             return
           end
 
+          # we must unshallow the repository before executing `git diff` command
           git_tree_upload_worker.wait_until_done
 
           changed_files = Git::LocalRepository.get_changed_files_from_diff(base_commit_sha)
@@ -71,6 +71,8 @@ module Datadog
           test_span.set_tag(Ext::Test::TAG_TEST_IS_MODIFIED, "true")
           Telemetry.impacted_test_detected
         end
+
+        private
 
         def git_tree_upload_worker
           Datadog.send(:components).git_tree_upload_worker

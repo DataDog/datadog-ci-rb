@@ -12,8 +12,11 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
   let(:impacted_tests_enabled) { true }
   let(:changed_files_set) { Set.new(["file1.rb", "file2.rb"]) }
 
+  let(:git_worker) { spy("git_worker") }
+
   before do
     allow(Datadog::CI::Git::LocalRepository).to receive(:get_changed_files_from_diff).and_return(changed_files_set)
+    allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
 
     allow(Datadog.logger).to receive(:warn)
   end
@@ -35,6 +38,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
         component.configure(library_settings, test_session)
 
         expect(component.enabled?).to be false
+        expect(git_worker).not_to have_received(:wait_until_done)
       end
     end
 
@@ -55,6 +59,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
         component.configure(library_settings, test_session)
         expect(component.enabled?).to be true
         expect(component.instance_variable_get(:@changed_files)).to eq(changed_files_set)
+        expect(git_worker).to have_received(:wait_until_done)
       end
     end
 
