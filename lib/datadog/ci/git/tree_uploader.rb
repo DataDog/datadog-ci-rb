@@ -45,10 +45,12 @@ module Datadog
             # ask the backend for the list of commits it already has
             known_commits, new_commits = fetch_known_commits_and_split(repository_url, latest_commits)
             # if all commits are present in the backend, we don't need to upload anything
-            if new_commits.empty?
-              Datadog.logger.debug("No new commits to upload")
-              return
-            end
+
+            # UNCOMMENT THIS BEFORE MERGE
+            # if new_commits.empty?
+            #   Datadog.logger.debug("No new commits to upload")
+            #   return
+            # end
 
             # quite often we deal with shallow clones in CI environment
             if LocalRepository.git_shallow_clone? && LocalRepository.git_unshallow
