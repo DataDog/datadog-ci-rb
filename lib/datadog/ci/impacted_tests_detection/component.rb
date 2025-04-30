@@ -28,6 +28,8 @@ module Datadog
             return
           end
 
+          git_tree_upload_worker.wait_until_done
+
           changed_files = Git::LocalRepository.get_changed_files_from_diff(base_commit_sha)
           if changed_files.nil?
             Datadog.logger.debug { "Impacted tests detection disabled: could not get changed files" }
@@ -68,6 +70,10 @@ module Datadog
 
           test_span.set_tag(Ext::Test::TAG_TEST_IS_MODIFIED, "true")
           Telemetry.impacted_test_detected
+        end
+
+        def git_tree_upload_worker
+          Datadog.send(:components).git_tree_upload_worker
         end
       end
     end
