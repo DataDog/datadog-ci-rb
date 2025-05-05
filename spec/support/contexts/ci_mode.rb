@@ -174,6 +174,9 @@ RSpec.shared_context "CI mode activated" do
       # agentless logs
       c.ci.agentless_logs_submission_enabled = agentless_logs_enabled
 
+      # impacted tests detection
+      c.ci.impacted_tests_detection_enabled = impacted_tests_enabled
+
       # instrumentation
       unless integration_name == :no_instrument
         c.ci.instrument integration_name, integration_options
