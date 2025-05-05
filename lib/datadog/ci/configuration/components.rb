@@ -241,7 +241,7 @@ module Datadog
 
         def build_git_upload_worker(settings, api)
           if settings.ci.git_metadata_upload_enabled
-            git_tree_uploader = Git::TreeUploader.new(api: api)
+            git_tree_uploader = Git::TreeUploader.new(api: api, force_unshallow: settings.ci.impacted_tests_detection_enabled)
             Worker.new do |repository_url|
               git_tree_uploader.call(repository_url)
             end

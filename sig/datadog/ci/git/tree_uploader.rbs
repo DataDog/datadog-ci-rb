@@ -3,10 +3,12 @@ module Datadog
     module Git
       class TreeUploader
         @api: Datadog::CI::Transport::Api::Base?
+        @force_unshallow: bool
 
         attr_reader api: Datadog::CI::Transport::Api::Base?
+        attr_reader force_unshallow: bool
 
-        def initialize: (api: Datadog::CI::Transport::Api::Base?) -> void
+        def initialize: (api: Datadog::CI::Transport::Api::Base?, ?force_unshallow: bool) -> void
         def call: (String repository_url) -> void
 
         private

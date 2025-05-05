@@ -15,10 +15,11 @@ module Datadog
   module CI
     module Git
       class TreeUploader
-        attr_reader :api
+        attr_reader :api, :force_unshallow
 
-        def initialize(api:)
+        def initialize(api:, force_unshallow: false)
           @api = api
+          @force_unshallow = force_unshallow
         end
 
         def call(repository_url)
@@ -46,7 +47,12 @@ module Datadog
             known_commits, new_commits = fetch_known_commits_and_split(repository_url, latest_commits)
             # if all commits are present in the backend, we don't need to upload anything
 
-            if new_commits.empty?
+            # We optimize unshallowing process by checking the latest available commits with backend:
+            # if they are already known to backend, then we don't have to unshallow.
+            #
+            # Sometimes we need to unshallow anyway: for impacted tests detection feature for example we need
+            # to calculate git diffs locally. In this case we skip the optimization and always unshallow.
+            if new_commits.empty? && !@force_unshallow
               Datadog.logger.debug("No new commits to upload")
               return
             end
