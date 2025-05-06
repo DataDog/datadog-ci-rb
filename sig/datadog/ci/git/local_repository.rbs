@@ -50,6 +50,8 @@ module Datadog
 
         def self.get_changed_files_from_diff: (String? base_commit) -> ::Set[String]?
 
+        def self.git_base_ref: () -> String?
+
         private
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]
@@ -59,6 +61,8 @@ module Datadog
         def self.log_failure: (StandardError e, String action) -> void
 
         def self.telemetry_track_error: (StandardError e, String command) -> void
+
+        def self.default_branch?: (String branch, String? default_branch, String remote_name) -> bool
       end
     end
   end

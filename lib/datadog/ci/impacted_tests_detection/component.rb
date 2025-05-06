@@ -16,9 +16,7 @@ module Datadog
         end
 
         def configure(library_settings, test_session)
-          # UNCOMMENT BEFORE MERGE
-          # @enabled &&= library_settings.impacted_tests_enabled?
-          # UNCOMMENT BEFORE MERGE
+          @enabled &&= library_settings.impacted_tests_enabled?
 
           return unless @enabled
 
