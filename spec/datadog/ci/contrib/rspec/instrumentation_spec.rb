@@ -1558,7 +1558,7 @@ RSpec.describe "RSpec instrumentation" do
       expect(disabled_count).to eq(attempt_to_fix_retries_count + 1)
 
       # we set test.test_management.attempt_to_fix_passed tag on the last retry here
-      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
+      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
       expect(fix_passed_tests_count).to eq(1)
 
       expect(test_suite_spans).to have(1).item
