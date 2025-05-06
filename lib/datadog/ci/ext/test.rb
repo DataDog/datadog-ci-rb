@@ -94,7 +94,7 @@ module Datadog
             AUTO_TEST_RETRIES_VERSION = "1"
             TEST_MANAGEMENT_QUARANTINE_VERSION = "1"
             TEST_MANAGEMENT_DISABLE_VERSION = "1"
-            TEST_MANAGEMENT_ATTEMPT_TO_FIX_VERSION = "2"
+            TEST_MANAGEMENT_ATTEMPT_TO_FIX_VERSION = "3"
           end
 
           # Map of capabilities to their versions

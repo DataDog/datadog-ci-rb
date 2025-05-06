@@ -279,4 +279,53 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       it { is_expected.to eq(remote_attempt_to_fix_retries_count + 1) }
     end
   end
+
+  describe "#tag_last_retry" do
+    let(:test_span) do
+      instance_double(
+        Datadog::CI::Test,
+        all_executions_failed?: all_executions_failed,
+        all_executions_passed?: all_executions_passed,
+        attempt_to_fix?: attempt_to_fix,
+        set_tag: nil
+      )
+    end
+
+    let(:all_executions_failed) { false }
+    let(:all_executions_passed) { false }
+    let(:attempt_to_fix) { false }
+
+    subject { component.tag_last_retry(test_span) }
+
+    context "when test has failed all retries" do
+      let(:all_executions_failed) { true }
+
+      it "sets TAG_HAS_FAILED_ALL_RETRIES to true" do
+        subject
+        expect(test_span).to have_received(:set_tag).with(Datadog::CI::Ext::Test::TAG_HAS_FAILED_ALL_RETRIES, "true")
+      end
+    end
+
+    context "when test is an attempt to fix" do
+      let(:attempt_to_fix) { true }
+
+      context "when all executions passed" do
+        let(:all_executions_passed) { true }
+
+        it "sets TAG_ATTEMPT_TO_FIX_PASSED to true" do
+          subject
+          expect(test_span).to have_received(:set_tag).with(Datadog::CI::Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "true")
+        end
+      end
+
+      context "when at least one execution failed" do
+        let(:all_executions_passed) { false }
+
+        it "sets TAG_ATTEMPT_TO_FIX_PASSED to false" do
+          subject
+          expect(test_span).to have_received(:set_tag).with(Datadog::CI::Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "false")
+        end
+      end
+    end
+  end
 end
