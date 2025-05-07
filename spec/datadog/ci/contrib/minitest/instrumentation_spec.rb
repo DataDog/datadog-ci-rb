@@ -1577,8 +1577,11 @@ RSpec.describe "Minitest instrumentation" do
       failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
       expect(failed_all_retries_count).to eq(1)
 
-      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
-      expect(fix_passed_tests_count).to eq(0)
+      fix_passed_successfully_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
+      expect(fix_passed_successfully_tests_count).to eq(0)
+
+      fix_failed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "false" }
+      expect(fix_failed_tests_count).to eq(1)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status

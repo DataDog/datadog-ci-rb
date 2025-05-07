@@ -111,9 +111,8 @@ module Datadog
           test_span&.set_tag(Ext::Test::TAG_HAS_FAILED_ALL_RETRIES, "true") if test_span&.all_executions_failed?
 
           # if we are attempting to fix the test and all retries passed, we indicate that the fix might have worked
-          if test_span&.attempt_to_fix? && test_span.all_executions_passed?
-            test_span&.set_tag(Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "true")
-          end
+          # otherwise we send "false" to show that it didn't work
+          test_span&.set_tag(Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, test_span&.all_executions_passed?.to_s) if test_span&.attempt_to_fix?
         end
 
         def should_retry?
