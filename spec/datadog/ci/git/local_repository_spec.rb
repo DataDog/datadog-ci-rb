@@ -310,8 +310,8 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
     end
 
-    describe ".get_changed_files_from_diff" do
-      let(:base_branch) { "base" }
+    context "with feature branch" do
+      let(:base_branch) { "master" }
       let(:feature_branch) { "feature" }
 
       let(:base_file) { "base.txt" }
@@ -322,12 +322,13 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       let(:renamed_file) { "renamed_file.txt" }
 
       def build_base_branch
-        `cd #{source_path} && git checkout -b #{base_branch}`
+        `cd #{source_path} && git checkout #{base_branch}`
         `cd #{source_path} && echo "base branch file" >> #{base_file}`
         `cd #{source_path} && echo "not changed file" >> #{not_changed_file}`
         `cd #{source_path} && echo "file to rename" >> #{file_to_rename}`
         `cd #{source_path} && git add #{base_file} #{not_changed_file} #{file_to_rename}  `
         `cd #{source_path} && git commit -m 'Add base file'`
+        `cd #{source_path} && git push origin #{base_branch}`
         `cd #{source_path} && git rev-parse HEAD`.strip
       end
 
@@ -338,26 +339,79 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         `cd #{source_path} && mv #{file_to_rename} #{renamed_file}`
         `cd #{source_path} && git add -A`
         `cd #{source_path} && git commit -m 'Add feature file and modify base file'`
+        `cd #{source_path} && git push origin #{feature_branch}`
         `cd #{source_path} && git rev-parse HEAD`.strip
       end
 
-      it "detects changed files between feature and base branch" do
-        # avoids cached git root from previous test cases
-        allow(described_class).to receive(:root).and_return(nil)
+      describe ".get_changed_files_from_diff" do
+        it "detects changed files between feature and base branch" do
+          # avoids cached git root from previous test cases
+          allow(described_class).to receive(:root).and_return(nil)
 
-        # Setup branches and commits
-        base_sha = build_base_branch
-        build_feature_branch
+          # Setup branches and commits
+          base_sha = build_base_branch
+          build_feature_branch
 
-        # Now diff from feature branch to base branch
-        changed_files = nil
-        with_source_git_dir do
-          changed_files = described_class.get_changed_files_from_diff(base_sha)
+          # Now diff from feature branch to base branch
+          changed_files = nil
+          with_source_git_dir do
+            changed_files = described_class.get_changed_files_from_diff(base_sha)
+          end
+
+          expect(changed_files).to be_a(Set)
+          # Should includes all modified and renamed files
+          expect(changed_files).to eq(Set.new([base_file, feature_file, file_to_rename]))
+        end
+      end
+
+      describe ".git_base_ref" do
+        it "returns the ref from the base branch" do
+          expected_base_sha = build_base_branch
+          build_feature_branch
+
+          base_sha = nil
+          with_source_git_dir do
+            base_sha = described_class.git_base_ref
+          end
+
+          expect(base_sha).to eq(expected_base_sha)
         end
 
-        expect(changed_files).to be_a(Set)
-        # Should includes all modified and renamed files
-        expect(changed_files).to eq(Set.new([base_file, feature_file, file_to_rename]))
+        context "with preprod branch" do
+          let(:preprod_branch) { "preprod" }
+          let(:new_feature_branch) { "new-feature" }
+
+          def build_preprod_branch
+            `cd #{source_path} && git checkout -b #{preprod_branch}`
+            `cd #{source_path} && echo "preprod changes" >> #{feature_file}`
+            `cd #{source_path} && git add #{feature_file}`
+            `cd #{source_path} && git commit -m 'Add preprod changes'`
+            `cd #{source_path} && git push origin #{preprod_branch}`
+            `cd #{source_path} && git rev-parse HEAD`.strip
+          end
+
+          def build_new_feature_branch
+            `cd #{source_path} && git checkout -b #{new_feature_branch}`
+            `cd #{source_path} && echo "new feature changes" >> #{feature_file}`
+            `cd #{source_path} && git add #{feature_file}`
+            `cd #{source_path} && git commit -m 'Add new feature changes'`
+            `cd #{source_path} && git push origin #{new_feature_branch}`
+            `cd #{source_path} && git rev-parse HEAD`.strip
+          end
+
+          it "returns the ref from preprod branch" do
+            build_base_branch
+            expected_base_sha = build_preprod_branch
+            build_new_feature_branch
+
+            base_sha = nil
+            with_source_git_dir do
+              base_sha = described_class.git_base_ref
+            end
+
+            expect(base_sha).to eq(expected_base_sha)
+          end
+        end
       end
     end
 

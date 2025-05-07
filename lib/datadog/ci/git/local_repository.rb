@@ -387,7 +387,11 @@ module Datadog
 
           # @type var default_branch: String?
           default_branch = nil
-          default_ref = exec_git_command("git symbolic-ref --quiet --short \"refs/remotes/#{remote_name}/HEAD\" 2>/dev/null")
+          begin
+            default_ref = exec_git_command("git symbolic-ref --quiet --short \"refs/remotes/#{remote_name}/HEAD\" 2>/dev/null")
+          rescue
+            Datadog.logger.debug("Could not get symbolic-ref, trying to find a fallback (main, master)...")
+          end
 
           unless default_ref.nil?
             default_branch = default_ref&.sub(/^#{remote_name}\//, "")
@@ -424,10 +428,10 @@ module Datadog
             metrics[cand] = {behind: behind, ahead: ahead, base_sha: base_sha}
           end
 
-          # 5. Find the best branch: lowest behind, break ties in favor of default branch
+          # 5. Find the best branch: lowest ahead, break ties in favor of default branch
           _, best_data = metrics.min_by do |cand, data|
             [
-              data[:behind],
+              data[:ahead],
               default_branch?(cand, default_branch, remote_name) ? 0 : 1 # prefer default branch on tie
             ]
           end
