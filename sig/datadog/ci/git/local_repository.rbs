@@ -52,6 +52,22 @@ module Datadog
 
         def self.git_base_ref: () -> String?
 
+        def self.get_target_branch: () -> String?
+
+        def self.remove_remote_prefix: (String? branch_name, String remote_name) -> String?
+
+        def self.main_like_branch?: (String? branch_name, Regexp branch_filter) -> bool?
+
+        def self.detect_default_branch: (String remote_name) -> String?
+
+        def self.find_fallback_default_branch: (String remote_name) -> String?
+
+        def self.build_candidate_list: (String remote_name, Regexp branch_filter, String target_branch) -> Array[String]?
+
+        def self.compute_branch_metrics: (Array[String] candidates, String target_branch) -> Hash[String, Hash[Symbol, untyped]]
+
+        def self.find_best_branch: (Hash[String, Hash[Symbol, untyped]] metrics, String? default_branch, String remote_name) -> String?
+
         private
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]

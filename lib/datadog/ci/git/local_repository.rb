@@ -357,69 +357,89 @@ module Datadog
           end
         end
 
-        # On best effort basis
+        # On best effort basis determines the git sha of the most likely
+        # base branch for the current PR.
         def self.git_base_ref
-          # 1. INPUTS
           remote_name = "origin" # TODO: make this configurable
           default_like_branch_filter = /^(main|master|preprod|prod|release\/.*|hotfix\/.*)$/
 
-          # Target branchis the current branch, TODO make it configurable
-          target_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")&.strip
+          target_branch = get_target_branch
+          return nil if target_branch.nil?
 
+          # Early exit if target is a main-like branch
+          short_target = remove_remote_prefix(target_branch, remote_name)
+          if main_like_branch?(short_target, default_like_branch_filter)
+            Datadog.logger.debug("Branch '#{target_branch}' already matches base branch filter")
+            return nil
+          end
+
+          default_branch = detect_default_branch(remote_name)
+
+          candidates = build_candidate_list(remote_name, default_like_branch_filter, target_branch)
+          if candidates.nil? || candidates.empty?
+            Datadog.logger.debug("No candidate branches found.")
+            return nil
+          end
+
+          metrics = compute_branch_metrics(candidates, target_branch)
+          find_best_branch(metrics, default_branch, remote_name)
+        rescue => e
+          log_failure(e, "git base ref")
+          nil
+        end
+
+        def self.get_target_branch
+          target_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")&.strip
           if target_branch.nil?
             Datadog.logger.debug("Could not get current branch")
-            return
+            return nil
           end
 
-          # Check if target branch exists
           exec_git_command("git rev-parse --verify --quiet #{target_branch} > /dev/null")
+          target_branch
+        end
 
-          # 1a. EARLY EXIT IF TARGET IS ITSELF A MAIN-LIKE BRANCH
-          # Remove leading "#{remote_name}/" if present
-          short_target = target_branch&.sub(/^#{Regexp.escape(remote_name)}\//, "")
+        def self.remove_remote_prefix(branch_name, remote_name)
+          branch_name&.sub(/^#{Regexp.escape(remote_name)}\//, "")
+        end
 
-          if short_target&.match?(default_like_branch_filter)
-            Datadog.logger.debug("Branch '#{target_branch}' already matches branch_filter → no parent needed.")
-            return
-          end
+        def self.main_like_branch?(branch_name, branch_filter)
+          branch_name&.match?(branch_filter)
+        end
 
-          # 2. DETECT DEFAULT BRANCH (if any)
-
+        def self.detect_default_branch(remote_name)
           # @type var default_branch: String?
           default_branch = nil
           begin
             default_ref = exec_git_command("git symbolic-ref --quiet --short \"refs/remotes/#{remote_name}/HEAD\" 2>/dev/null")
+            default_branch = remove_remote_prefix(default_ref, remote_name) unless default_ref.nil?
           rescue
             Datadog.logger.debug("Could not get symbolic-ref, trying to find a fallback (main, master)...")
           end
 
-          unless default_ref.nil?
-            default_branch = default_ref&.sub(/^#{remote_name}\//, "")
-          end
+          default_branch = find_fallback_default_branch(remote_name) if default_branch.nil?
+          default_branch
+        end
 
-          if default_branch.nil?
-            Datadog.logger.debug("Could not get symbolic-ref, trying to find a fallback (main, master)...")
-            ["main", "master"].each do |fallback|
-              exec_git_command("git show-ref --verify --quiet \"refs/remotes/#{remote_name}/#{fallback}\"")
-              default_branch = fallback
-              break []
-            rescue
-              next
-            end
+        def self.find_fallback_default_branch(remote_name)
+          Datadog.logger.debug("Could not get symbolic-ref, trying to find a fallback (main, master)...")
+          ["main", "master"].each do |fallback|
+            exec_git_command("git show-ref --verify --quiet \"refs/remotes/#{remote_name}/#{fallback}\"")
+            return fallback
+          rescue
+            next
           end
+          nil
+        end
 
-          # 3. BUILD CANDIDATE LIST
+        def self.build_candidate_list(remote_name, branch_filter, target_branch)
           candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/heads \"refs/remotes/#{remote_name}\"")&.lines&.map(&:strip)
-          candidates&.select! { |b| b.match?(default_like_branch_filter) && b != target_branch }
+          candidates&.select! { |b| b.match?(branch_filter) && b != target_branch }
+          candidates
+        end
 
-          if candidates.nil? || candidates.empty?
-            Datadog.logger.debug("No candidate branches found.")
-            return
-          end
-
+        def self.compute_branch_metrics(candidates, target_branch)
           metrics = {}
-
-          # 4. COMPUTE METRICS
           candidates.each do |cand|
             base_sha = exec_git_command("git merge-base #{cand} #{target_branch} 2>/dev/null")&.strip
             next if base_sha.nil? || base_sha.empty?
@@ -427,8 +447,12 @@ module Datadog
             behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{target_branch}")&.strip&.split&.map(&:to_i)
             metrics[cand] = {behind: behind, ahead: ahead, base_sha: base_sha}
           end
+          metrics
+        end
 
-          # 5. Find the best branch: lowest ahead, break ties in favor of default branch
+        def self.find_best_branch(metrics, default_branch, remote_name)
+          return nil if metrics.empty?
+
           _, best_data = metrics.min_by do |cand, data|
             [
               data[:ahead],
@@ -437,9 +461,6 @@ module Datadog
           end
 
           best_data ? best_data[:base_sha] : nil
-        rescue => e
-          log_failure(e, "git base ref")
-          nil
         end
 
         def self.default_branch?(branch, default_branch, remote_name)
