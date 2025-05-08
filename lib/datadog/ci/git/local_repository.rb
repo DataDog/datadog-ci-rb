@@ -361,7 +361,7 @@ module Datadog
         # base branch for the current PR.
         def self.base_commit_sha
           remote_name = "origin" # TODO: make this configurable
-          default_like_branch_filter = /^(main|master|preprod|prod|release\/.*|hotfix\/.*)$/
+          default_like_branch_filter = /^(main|master|preprod|prod|dev|release\/.*|hotfix\/.*)$/
 
           target_branch = get_target_branch
           return nil if target_branch.nil?
@@ -440,7 +440,7 @@ module Datadog
 
         def self.build_candidate_list(remote_name, branch_filter, target_branch)
           candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/heads \"refs/remotes/#{remote_name}\"")&.lines&.map(&:strip)
-          Datadog.logger.debug { "Availbale branches: '#{candidates}'" }
+          Datadog.logger.debug { "Available branches: '#{candidates}'" }
           candidates&.select! { |b| b.match?(branch_filter) && b != target_branch }
           Datadog.logger.debug { "Candidate branches: '#{candidates}'" }
           candidates
