@@ -28,6 +28,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       it "disables the component and returns early" do
         component.configure(library_settings, test_session)
         expect(component.enabled?).to be false
+        expect(git_worker).not_to have_received(:wait_until_done)
       end
     end
 
@@ -42,7 +43,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
         component.configure(library_settings, test_session)
 
         expect(component.enabled?).to be false
-        expect(git_worker).not_to have_received(:wait_until_done)
+        expect(git_worker).to have_received(:wait_until_done)
       end
     end
 
