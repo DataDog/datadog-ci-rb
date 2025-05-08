@@ -366,23 +366,29 @@ module Datadog
           target_branch = get_target_branch
           return nil if target_branch.nil?
 
+          Datadog.logger.debug { "Target branch: '#{target_branch}'" }
+
           # Early exit if target is a main-like branch
           short_target = remove_remote_prefix(target_branch, remote_name)
           if main_like_branch?(short_target, default_like_branch_filter)
-            Datadog.logger.debug("Branch '#{target_branch}' already matches base branch filter")
+            Datadog.logger.debug { "Branch '#{target_branch}' already matches base branch filter (#{default_like_branch_filter})" }
             return nil
           end
 
           default_branch = detect_default_branch(remote_name)
+          Datadog.logger.debug { "Default branch: '#{default_branch}'" }
 
           candidates = build_candidate_list(remote_name, default_like_branch_filter, target_branch)
           if candidates.nil? || candidates.empty?
-            Datadog.logger.debug("No candidate branches found.")
+            Datadog.logger.debug { "No candidate branches found." }
             return nil
           end
 
           metrics = compute_branch_metrics(candidates, target_branch)
-          find_best_branch(metrics, default_branch, remote_name)
+          Datadog.logger.debug { "Branch metrics: '#{metrics}'" }
+          best_branch = find_best_branch(metrics, default_branch, remote_name)
+          Datadog.logger.debug { "Best branch: '#{best_branch}'" }
+          best_branch
         rescue => e
           log_failure(e, "git base ref")
           nil
@@ -391,7 +397,7 @@ module Datadog
         def self.get_target_branch
           target_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")&.strip
           if target_branch.nil?
-            Datadog.logger.debug("Could not get current branch")
+            Datadog.logger.debug { "Could not get current branch" }
             return nil
           end
 
@@ -414,7 +420,7 @@ module Datadog
             default_ref = exec_git_command("git symbolic-ref --quiet --short \"refs/remotes/#{remote_name}/HEAD\" 2>/dev/null")
             default_branch = remove_remote_prefix(default_ref, remote_name) unless default_ref.nil?
           rescue
-            Datadog.logger.debug("Could not get symbolic-ref, trying to find a fallback (main, master)...")
+            Datadog.logger.debug { "Could not get symbolic-ref, trying to find a fallback (main, master)..." }
           end
 
           default_branch = find_fallback_default_branch(remote_name) if default_branch.nil?
@@ -422,9 +428,9 @@ module Datadog
         end
 
         def self.find_fallback_default_branch(remote_name)
-          Datadog.logger.debug("Could not get symbolic-ref, trying to find a fallback (main, master)...")
           ["main", "master"].each do |fallback|
             exec_git_command("git show-ref --verify --quiet \"refs/remotes/#{remote_name}/#{fallback}\"")
+            Datadog.logger.debug { "Found fallback default branch '#{fallback}'" }
             return fallback
           rescue
             next
@@ -434,7 +440,9 @@ module Datadog
 
         def self.build_candidate_list(remote_name, branch_filter, target_branch)
           candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/heads \"refs/remotes/#{remote_name}\"")&.lines&.map(&:strip)
+          Datadog.logger.debug { "Availbale branches: '#{candidates}'" }
           candidates&.select! { |b| b.match?(branch_filter) && b != target_branch }
+          Datadog.logger.debug { "Candidate branches: '#{candidates}'" }
           candidates
         end
 
