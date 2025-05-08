@@ -361,7 +361,9 @@ module Datadog
         # base branch for the current PR.
         def self.base_commit_sha
           remote_name = "origin" # TODO: make this configurable
-          default_like_branch_filter = /^(main|master|preprod|prod|dev|release\/.*|hotfix\/.*)$/
+
+          possible_base_branches = %w[main master preprod prod dev development trunk]
+          default_like_branch_filter = /^(#{possible_base_branches.join("|")}|release\/.*|hotfix\/.*)$/
 
           target_branch = get_target_branch
           return nil if target_branch.nil?
@@ -374,6 +376,9 @@ module Datadog
             Datadog.logger.debug { "Branch '#{target_branch}' already matches base branch filter (#{default_like_branch_filter})" }
             return nil
           end
+
+          # Check and fetch base branches
+          check_and_fetch_base_branches(remote_name, possible_base_branches)
 
           default_branch = detect_default_branch(remote_name)
           Datadog.logger.debug { "Default branch: '#{default_branch}'" }
@@ -392,6 +397,30 @@ module Datadog
         rescue => e
           log_failure(e, "git base ref")
           nil
+        end
+
+        def self.check_and_fetch_base_branches(remote_name, branches)
+          branches.each do |branch|
+            # Check if branch exists locally
+
+            exec_git_command("git show-ref --verify --quiet refs/heads/#{branch}")
+            Datadog.logger.debug { "Branch '#{branch}' exists locally, skipping" }
+          rescue GitCommandExecutionError => e
+            Datadog.logger.debug { "Branch '#{branch}' doesn't exist locally, checking remote: #{e}" }
+            # Branch doesn't exist locally, check remote
+            begin
+              remote_heads = exec_git_command("git ls-remote --heads #{remote_name} #{branch}")
+              if remote_heads.nil? || remote_heads.empty?
+                Datadog.logger.debug { "Branch '#{branch}' doesn't exist in remote" }
+                next
+              end
+
+              Datadog.logger.debug { "Branch '#{branch}' exists in remote, fetching" }
+              exec_git_command("git fetch --depth 1 #{remote_name} #{branch}:#{branch}")
+            rescue GitCommandExecutionError => e
+              Datadog.logger.debug { "Branch '#{branch}' couldn't be fetched from remote: #{e}" }
+            end
+          end
         end
 
         def self.get_target_branch
