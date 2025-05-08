@@ -1,6 +1,6 @@
-require_relative "../../../../../lib/datadog/ci/test_retries/driver/retry_new"
+require_relative "../../../../../lib/datadog/ci/test_retries/driver/retry_flake_detection"
 
-RSpec.describe Datadog::CI::TestRetries::Driver::RetryNew do
+RSpec.describe Datadog::CI::TestRetries::Driver::RetryFlakeDetection do
   let(:max_attempts) { 10 }
   let(:max_attempts_thresholds) {
     Datadog::CI::Remote::SlowTestRetries.new({

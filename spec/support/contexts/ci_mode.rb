@@ -68,6 +68,10 @@ RSpec.shared_context "CI mode activated" do
 
   let(:agentless_logs_enabled) { false }
 
+  let(:impacted_tests_enabled) { false }
+  let(:base_commit_sha) { "base_commit_sha" }
+  let(:changed_files) { Set.new }
+
   let(:test_visibility) { Datadog.send(:components).test_visibility }
 
   before do
@@ -98,7 +102,8 @@ RSpec.shared_context "CI mode activated" do
         faulty_session_threshold: faulty_session_threshold,
         known_tests_enabled?: known_tests_enabled,
         test_management_enabled?: test_management_enabled,
-        attempt_to_fix_retries_count: attempt_to_fix_retries_count
+        attempt_to_fix_retries_count: attempt_to_fix_retries_count,
+        impacted_tests_enabled?: impacted_tests_enabled
       ),
       # This is for the second call to fetch_library_settings
       instance_double(
@@ -118,7 +123,8 @@ RSpec.shared_context "CI mode activated" do
         faulty_session_threshold: faulty_session_threshold,
         known_tests_enabled?: known_tests_enabled,
         test_management_enabled?: test_management_enabled,
-        attempt_to_fix_retries_count: attempt_to_fix_retries_count
+        attempt_to_fix_retries_count: attempt_to_fix_retries_count,
+        impacted_tests_enabled?: impacted_tests_enabled
       )
     )
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
@@ -127,6 +133,13 @@ RSpec.shared_context "CI mode activated" do
     allow_any_instance_of(Datadog::CI::TestVisibility::KnownTests).to receive(:fetch).and_return(known_tests)
 
     allow_any_instance_of(Datadog::CI::TestManagement::TestsProperties).to receive(:fetch).and_return(test_properties)
+
+    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changed_files_from_diff).and_return(changed_files)
+
+    if impacted_tests_enabled
+      # stub base commit sha
+      allow_any_instance_of(Datadog::CI::TestSession).to receive(:base_commit_sha).and_return(base_commit_sha)
+    end
 
     Datadog.configure do |c|
       if service_name
@@ -160,6 +173,9 @@ RSpec.shared_context "CI mode activated" do
 
       # agentless logs
       c.ci.agentless_logs_submission_enabled = agentless_logs_enabled
+
+      # impacted tests detection
+      c.ci.impacted_tests_detection_enabled = impacted_tests_enabled
 
       # instrumentation
       unless integration_name == :no_instrument

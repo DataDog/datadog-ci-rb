@@ -11,6 +11,17 @@ RSpec.describe Datadog::CI::Remote::Component do
   let(:test_retries) { instance_double(Datadog::CI::TestRetries::Component) }
   let(:test_visibility) { instance_double(Datadog::CI::TestVisibility::Component) }
   let(:test_management) { instance_double(Datadog::CI::TestManagement::Component) }
+  let(:impacted_tests_detection) { instance_double(Datadog::CI::ImpactedTestsDetection::Component) }
+
+  let(:configurable_components) do
+    [
+      test_optimisation,
+      test_retries,
+      test_visibility,
+      test_management,
+      impacted_tests_detection
+    ]
+  end
 
   before do
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_tree_upload_worker)
@@ -18,6 +29,7 @@ RSpec.describe Datadog::CI::Remote::Component do
     allow(Datadog.send(:components)).to receive(:test_retries).and_return(test_retries)
     allow(Datadog.send(:components)).to receive(:test_visibility).and_return(test_visibility)
     allow(Datadog.send(:components)).to receive(:test_management).and_return(test_management)
+    allow(Datadog.send(:components)).to receive(:impacted_tests_detection).and_return(impacted_tests_detection)
   end
 
   describe "#configure" do
@@ -38,10 +50,9 @@ RSpec.describe Datadog::CI::Remote::Component do
         expect(library_settings_client).to receive(:fetch)
           .with(test_session).and_return(library_configuration).once
 
-        expect(test_optimisation).to receive(:configure).with(library_configuration, test_session)
-        expect(test_retries).to receive(:configure).with(library_configuration, test_session)
-        expect(test_visibility).to receive(:configure).with(library_configuration, test_session)
-        expect(test_management).to receive(:configure).with(library_configuration, test_session)
+        configurable_components.each do |component|
+          expect(component).to receive(:configure).with(library_configuration, test_session)
+        end
       end
 
       it { subject }
@@ -66,10 +77,9 @@ RSpec.describe Datadog::CI::Remote::Component do
         expect(library_settings_client).to receive(:fetch)
           .with(test_session).and_return(library_configuration)
 
-        expect(test_optimisation).to receive(:configure).with(library_configuration, test_session)
-        expect(test_retries).to receive(:configure).with(library_configuration, test_session)
-        expect(test_visibility).to receive(:configure).with(library_configuration, test_session)
-        expect(test_management).to receive(:configure).with(library_configuration, test_session)
+        configurable_components.each do |component|
+          expect(component).to receive(:configure).with(library_configuration, test_session)
+        end
       end
 
       it { subject }
@@ -90,10 +100,10 @@ RSpec.describe Datadog::CI::Remote::Component do
 
           allow(library_settings_client).to receive(:fetch)
             .with(test_session).and_return(library_configuration)
-          allow(test_optimisation).to receive(:configure).with(library_configuration, test_session)
-          allow(test_retries).to receive(:configure).with(library_configuration, test_session)
-          allow(test_visibility).to receive(:configure).with(library_configuration, test_session)
-          allow(test_management).to receive(:configure).with(library_configuration, test_session)
+
+          configurable_components.each do |component|
+            allow(component).to receive(:configure).with(library_configuration, test_session)
+          end
         end
 
         it "stores component state when test session is distributed" do
@@ -123,10 +133,9 @@ RSpec.describe Datadog::CI::Remote::Component do
         # Should not fetch configuration
         expect(library_settings_client).not_to receive(:fetch)
 
-        expect(test_optimisation).to receive(:configure).with(library_configuration, test_session)
-        expect(test_retries).to receive(:configure).with(library_configuration, test_session)
-        expect(test_visibility).to receive(:configure).with(library_configuration, test_session)
-        expect(test_management).to receive(:configure).with(library_configuration, test_session)
+        configurable_components.each do |component|
+          expect(component).to receive(:configure).with(library_configuration, test_session)
+        end
 
         # Mock store_component_state for verification
         allow(component).to receive(:store_component_state)

@@ -106,6 +106,14 @@ module Datadog
           )
         end
 
+        def impacted_tests_enabled?
+          return @impacted_tests_enabled if defined?(@impacted_tests_enabled)
+
+          @impacted_tests_enabled = Utils::Parsing.convert_to_bool(
+            payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_IMPACTED_TESTS_ENABLED_KEY, false)
+          )
+        end
+
         def slow_test_retries
           return @slow_test_retries if defined?(@slow_test_retries)
 

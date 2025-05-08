@@ -2,6 +2,7 @@
 
 require "open3"
 require "pathname"
+require "set"
 
 require_relative "../ext/telemetry"
 require_relative "telemetry"
@@ -307,6 +308,200 @@ module Datadog
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::UNSHALLOW, duration_ms)
           res
+        end
+
+        # Returns a Set of normalized file paths changed since the given base_commit.
+        # If base_commit is nil, returns nil. On error, returns nil.
+        def self.get_changed_files_from_diff(base_commit)
+          return nil if base_commit.nil?
+
+          Datadog.logger.debug { "calculating git diff from base_commit: #{base_commit}" }
+
+          Telemetry.git_command(Ext::Telemetry::Command::DIFF)
+
+          begin
+            # 1. Run the git diff command
+
+            # @type var output: String?
+            output = nil
+            duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+              output = exec_git_command("git diff -U0 --word-diff=porcelain #{base_commit} HEAD")
+            end
+            Telemetry.git_command_ms(Ext::Telemetry::Command::DIFF, duration_ms)
+
+            Datadog.logger.debug { "git diff output: #{output}" }
+
+            return nil if output.nil?
+
+            # 2. Parse the output to extract which files changed
+            changed_files = Set.new
+            output.each_line do |line|
+              # Match lines like: diff --git a/foo/bar.rb b/foo/bar.rb
+              # This captures git changes on file level
+              match = /^diff --git a\/(?<file>.+) b\/(?<file2>.+)$/.match(line)
+              if match && match[:file]
+                changed_file = match[:file]
+                # Normalize to repo root
+                normalized_changed_file = relative_to_root(changed_file)
+                changed_files << normalized_changed_file unless normalized_changed_file.nil? || normalized_changed_file.empty?
+
+                Datadog.logger.debug { "matched changed_file: #{changed_file} from line: #{line}" }
+                Datadog.logger.debug { "normalized_changed_file: #{normalized_changed_file}" }
+              end
+            end
+            changed_files
+          rescue => e
+            telemetry_track_error(e, Ext::Telemetry::Command::DIFF)
+            log_failure(e, "get changed files from diff")
+            nil
+          end
+        end
+
+        # On best effort basis determines the git sha of the most likely
+        # base branch for the current PR.
+        def self.base_commit_sha
+          remote_name = "origin" # TODO: make this configurable
+
+          possible_base_branches = %w[main master preprod prod dev development trunk]
+          default_like_branch_filter = /^(#{possible_base_branches.join("|")}|release\/.*|hotfix\/.*)$/
+
+          target_branch = get_target_branch
+          return nil if target_branch.nil?
+
+          Datadog.logger.debug { "Target branch: '#{target_branch}'" }
+
+          # Early exit if target is a main-like branch
+          short_target = remove_remote_prefix(target_branch, remote_name)
+          if main_like_branch?(short_target, default_like_branch_filter)
+            Datadog.logger.debug { "Branch '#{target_branch}' already matches base branch filter (#{default_like_branch_filter})" }
+            return nil
+          end
+
+          # Check and fetch base branches
+          check_and_fetch_base_branches(remote_name, possible_base_branches)
+
+          default_branch = detect_default_branch(remote_name)
+          Datadog.logger.debug { "Default branch: '#{default_branch}'" }
+
+          candidates = build_candidate_list(remote_name, default_like_branch_filter, target_branch)
+          if candidates.nil? || candidates.empty?
+            Datadog.logger.debug { "No candidate branches found." }
+            return nil
+          end
+
+          metrics = compute_branch_metrics(candidates, target_branch)
+          Datadog.logger.debug { "Branch metrics: '#{metrics}'" }
+          best_branch = find_best_branch(metrics, default_branch, remote_name)
+          Datadog.logger.debug { "Best branch: '#{best_branch}'" }
+          best_branch
+        rescue => e
+          log_failure(e, "git base ref")
+          nil
+        end
+
+        def self.check_and_fetch_base_branches(remote_name, branches)
+          branches.each do |branch|
+            # Check if branch exists locally
+
+            exec_git_command("git show-ref --verify --quiet refs/heads/#{branch}")
+            Datadog.logger.debug { "Branch '#{branch}' exists locally, skipping" }
+          rescue GitCommandExecutionError => e
+            Datadog.logger.debug { "Branch '#{branch}' doesn't exist locally, checking remote: #{e}" }
+            # Branch doesn't exist locally, check remote
+            begin
+              remote_heads = exec_git_command("git ls-remote --heads #{remote_name} #{branch}")
+              if remote_heads.nil? || remote_heads.empty?
+                Datadog.logger.debug { "Branch '#{branch}' doesn't exist in remote" }
+                next
+              end
+
+              Datadog.logger.debug { "Branch '#{branch}' exists in remote, fetching" }
+              exec_git_command("git fetch --depth 1 #{remote_name} #{branch}:#{branch}")
+            rescue GitCommandExecutionError => e
+              Datadog.logger.debug { "Branch '#{branch}' couldn't be fetched from remote: #{e}" }
+            end
+          end
+        end
+
+        def self.get_target_branch
+          target_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")&.strip
+          if target_branch.nil?
+            Datadog.logger.debug { "Could not get current branch" }
+            return nil
+          end
+
+          exec_git_command("git rev-parse --verify --quiet #{target_branch} > /dev/null")
+          target_branch
+        end
+
+        def self.remove_remote_prefix(branch_name, remote_name)
+          branch_name&.sub(/^#{Regexp.escape(remote_name)}\//, "")
+        end
+
+        def self.main_like_branch?(branch_name, branch_filter)
+          branch_name&.match?(branch_filter)
+        end
+
+        def self.detect_default_branch(remote_name)
+          # @type var default_branch: String?
+          default_branch = nil
+          begin
+            default_ref = exec_git_command("git symbolic-ref --quiet --short \"refs/remotes/#{remote_name}/HEAD\" 2>/dev/null")
+            default_branch = remove_remote_prefix(default_ref, remote_name) unless default_ref.nil?
+          rescue
+            Datadog.logger.debug { "Could not get symbolic-ref, trying to find a fallback (main, master)..." }
+          end
+
+          default_branch = find_fallback_default_branch(remote_name) if default_branch.nil?
+          default_branch
+        end
+
+        def self.find_fallback_default_branch(remote_name)
+          ["main", "master"].each do |fallback|
+            exec_git_command("git show-ref --verify --quiet \"refs/remotes/#{remote_name}/#{fallback}\"")
+            Datadog.logger.debug { "Found fallback default branch '#{fallback}'" }
+            return fallback
+          rescue
+            next
+          end
+          nil
+        end
+
+        def self.build_candidate_list(remote_name, branch_filter, target_branch)
+          candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/heads \"refs/remotes/#{remote_name}\"")&.lines&.map(&:strip)
+          Datadog.logger.debug { "Available branches: '#{candidates}'" }
+          candidates&.select! { |b| b.match?(branch_filter) && b != target_branch }
+          Datadog.logger.debug { "Candidate branches: '#{candidates}'" }
+          candidates
+        end
+
+        def self.compute_branch_metrics(candidates, target_branch)
+          metrics = {}
+          candidates.each do |cand|
+            base_sha = exec_git_command("git merge-base #{cand} #{target_branch} 2>/dev/null")&.strip
+            next if base_sha.nil? || base_sha.empty?
+
+            behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{target_branch}")&.strip&.split&.map(&:to_i)
+            metrics[cand] = {behind: behind, ahead: ahead, base_sha: base_sha}
+          end
+          metrics
+        end
+
+        def self.find_best_branch(metrics, default_branch, remote_name)
+          return nil if metrics.empty?
+
+          _, best_data = metrics.min_by do |cand, data|
+            [
+              data[:ahead],
+              default_branch?(cand, default_branch, remote_name) ? 0 : 1 # prefer default branch on tie
+            ]
+          end
+
+          best_data ? best_data[:base_sha] : nil
+        end
+
+        def self.default_branch?(branch, default_branch, remote_name)
+          branch == default_branch || branch == "#{remote_name}/#{default_branch}"
         end
 
         # makes .exec_git_command private to make sure that this method

@@ -9,7 +9,7 @@ module Datadog
     module TestRetries
       module Driver
         # retry every new test up to 10 times (early flake detection)
-        class RetryNew < Base
+        class RetryFlakeDetection < Base
           def initialize(test_span, max_attempts_thresholds:)
             @max_attempts_thresholds = max_attempts_thresholds
             @attempts = 0

@@ -16,6 +16,7 @@ module Datadog
         @faulty_session_threshold: Integer
         @test_management_enabled: bool
         @attempt_to_fix_retries_count: Integer
+        @impacted_tests_enabled: bool
 
         def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
 
@@ -44,6 +45,8 @@ module Datadog
         def test_management_enabled?: () -> bool
 
         def attempt_to_fix_retries_count: () -> Integer
+
+        def impacted_tests_enabled?: () -> bool
 
         private
 

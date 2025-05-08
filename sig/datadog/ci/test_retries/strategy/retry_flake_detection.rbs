@@ -2,7 +2,7 @@ module Datadog
   module CI
     module TestRetries
       module Strategy
-        class RetryNew < Base
+        class RetryFlakeDetection < Base
           @enabled: bool
 
           @total_limit: Integer

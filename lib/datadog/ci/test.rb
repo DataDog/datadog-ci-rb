@@ -102,6 +102,12 @@ module Datadog
         get_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX) == "true"
       end
 
+      # Returns "true" if this test is marked as modified (e.g., impacted by code changes).
+      # @return [Boolean] true if this test is modified, false otherwise.
+      def modified?
+        get_tag(Ext::Test::TAG_TEST_IS_MODIFIED) == "true"
+      end
+
       # Marks this test as unskippable by the Test Impact Analysis.
       # This must be done before the test execution starts.
       #

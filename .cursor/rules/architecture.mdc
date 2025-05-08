@@ -32,6 +32,7 @@ This library instruments the execution of tests to measure durations for test se
 - [components.rb](mdc:lib/datadog/ci/configuration/components.rb) - Centralized library entry point for initializing configuration and components
 - @lib/datadog/ci/configuration - Configuration management
 - @lib/datadog/ci/ext - Constants for tags and attributes
+- @lib/datadog/ci/ext/environment - Extractors for environment information from CI providers and git
 - @lib/datadog/ci/transport - Manages communication with Datadog backend services
 - @lib/datadog/ci/test_visibility - Core component tracing test execution details
 - @lib/datadog/ci/remote - Retrieves remote settings from Datadog backend

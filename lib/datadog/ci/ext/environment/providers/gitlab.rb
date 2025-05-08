@@ -100,6 +100,23 @@ module Datadog
               }.to_json
             end
 
+            def additional_tags
+              base_branch = env["CI_MERGE_REQUEST_TARGET_BRANCH_NAME"]
+              base_sha = env["CI_MERGE_REQUEST_TARGET_BRANCH_SHA"]
+              head_sha = env["CI_MERGE_REQUEST_SOURCE_BRANCH_SHA"]
+
+              return {} if base_branch.nil? || base_branch.empty?
+
+              # @type var result: Hash[String, String]
+              result = {
+                Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH => base_branch
+              }
+              result[Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA] = base_sha if base_sha && !base_sha.empty?
+              result[Ext::Git::TAG_COMMIT_HEAD_SHA] = head_sha if head_sha && !head_sha.empty?
+
+              result
+            end
+
             private
 
             def extract_name_email

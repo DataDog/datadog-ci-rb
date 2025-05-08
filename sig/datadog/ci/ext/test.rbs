@@ -52,6 +52,8 @@ module Datadog
 
         TAG_TEST_SUITE_ID: "_test.suite_id"
 
+        TAG_TEST_IS_MODIFIED: "test.is_modified"
+
         TRANSIENT_TAGS: Array[String]
 
         INHERITABLE_TAGS: Array[String]

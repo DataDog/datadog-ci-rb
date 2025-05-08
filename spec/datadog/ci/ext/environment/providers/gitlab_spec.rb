@@ -72,4 +72,51 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Gitlab do
       end
     end
   end
+
+  describe "#additional_tags" do
+    let(:base_env) do
+      {
+        "GITLAB_CI" => "gitlab",
+        "CI_MERGE_REQUEST_TARGET_BRANCH_NAME" => "main",
+        "CI_MERGE_REQUEST_TARGET_BRANCH_SHA" => "abc123",
+        "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA" => "def456"
+      }
+    end
+
+    subject { described_class.new(env).additional_tags }
+
+    context "when all relevant variables are present" do
+      let(:env) { base_env }
+      it "returns all expected tags" do
+        expect(subject).to eq({
+          Datadog::CI::Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH => "main",
+          Datadog::CI::Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA => "abc123",
+          Datadog::CI::Ext::Git::TAG_COMMIT_HEAD_SHA => "def456"
+        })
+      end
+    end
+
+    context "when only base branch is present" do
+      let(:env) { base_env.merge("CI_MERGE_REQUEST_TARGET_BRANCH_SHA" => nil, "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA" => nil) }
+      it "returns only the base branch tag" do
+        expect(subject).to eq({
+          Datadog::CI::Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH => "main"
+        })
+      end
+    end
+
+    context "when base branch is missing" do
+      let(:env) { base_env.merge("CI_MERGE_REQUEST_TARGET_BRANCH_NAME" => nil) }
+      it "returns an empty hash" do
+        expect(subject).to eq({})
+      end
+    end
+
+    context "when base branch is empty" do
+      let(:env) { base_env.merge("CI_MERGE_REQUEST_TARGET_BRANCH_NAME" => "") }
+      it "returns an empty hash" do
+        expect(subject).to eq({})
+      end
+    end
+  end
 end

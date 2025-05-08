@@ -6,6 +6,7 @@ require "datadog/core/environment/platform"
 
 require_relative "ext/test"
 require_relative "utils/test_run"
+require_relative "ext/git"
 
 module Datadog
   module CI
@@ -162,6 +163,12 @@ module Datadog
       # @return [String] the branch.
       def git_branch
         tracer_span.get_tag(Ext::Git::TAG_BRANCH)
+      end
+
+      # Returns the base commit SHA for the pull request, if available.
+      # @return [String, nil] the base commit SHA or nil if not set.
+      def base_commit_sha
+        tracer_span.get_tag(Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA)
       end
 
       # Returns the OS architecture extracted from the environment.

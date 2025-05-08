@@ -108,6 +108,9 @@ module Datadog
           }.freeze
         end
 
+        # impacted tests detection
+        TAG_TEST_IS_MODIFIED = "test.is_modified"
+
         # internal APM tag to mark a span as a test span
         TAG_SPAN_KIND = "span.kind"
         SPAN_KIND_TEST = "test"

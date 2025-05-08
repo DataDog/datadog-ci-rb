@@ -621,4 +621,29 @@ RSpec.describe Datadog::CI::Test do
       it { is_expected.to be false }
     end
   end
+
+  describe "#modified?" do
+    subject(:modified) { ci_test.modified? }
+
+    context "when tag is set to 'true'" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED).and_return("true")
+      end
+      it { is_expected.to be true }
+    end
+
+    context "when tag is set to 'false'" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED).and_return("false")
+      end
+      it { is_expected.to be false }
+    end
+
+    context "when tag is not set" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED).and_return(nil)
+      end
+      it { is_expected.to be false }
+    end
+  end
 end

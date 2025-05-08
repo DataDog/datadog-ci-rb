@@ -260,6 +260,20 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
+  describe "#base_commit_sha" do
+    it "returns the base commit SHA for the pull request" do
+      expect(tracer_span).to receive(:get_tag).with("git.pull_request.base_branch_sha").and_return("base_sha")
+
+      expect(span.base_commit_sha).to eq("base_sha")
+    end
+
+    it "returns nil if the tag is not set" do
+      expect(tracer_span).to receive(:get_tag).with("git.pull_request.base_branch_sha").and_return(nil)
+
+      expect(span.base_commit_sha).to be_nil
+    end
+  end
+
   describe "#os_architecture" do
     it "returns the OS architecture" do
       expect(tracer_span).to receive(:get_tag).with("os.architecture").and_return("arch")

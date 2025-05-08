@@ -95,6 +95,8 @@ module Datadog
         CONTENT_ENCODING_GZIP: "gzip"
 
         GZIP_MAGIC_NUMBER: String
+
+        DD_API_SETTINGS_RESPONSE_IMPACTED_TESTS_ENABLED_KEY: "impacted_tests_enabled"
       end
     end
   end

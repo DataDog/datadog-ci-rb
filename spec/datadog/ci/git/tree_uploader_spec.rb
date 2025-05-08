@@ -6,7 +6,8 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
   include_context "Telemetry spy"
 
   let(:api) { double("api") }
-  subject(:tree_uploader) { described_class.new(api: api) }
+  let(:force_unshallow) { false }
+  subject(:tree_uploader) { described_class.new(api: api, force_unshallow: force_unshallow) }
 
   before do
     allow(Datadog.logger).to receive(:debug)
@@ -83,6 +84,20 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
           expect(Datadog.logger).to receive(:debug).with("No new commits to upload")
 
           subject
+        end
+
+        context "when the force_unshallow option is set to true" do
+          let(:force_unshallow) { true }
+
+          it "unshallows the repository" do
+            expect(Datadog::CI::Git::LocalRepository).to receive(:git_shallow_clone?).and_return(true)
+            expect(Datadog::CI::Git::LocalRepository).to receive(:git_unshallow).and_return(true)
+
+            # expect additional call to fetch git commits
+            expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(latest_commits)
+
+            subject
+          end
         end
       end
 

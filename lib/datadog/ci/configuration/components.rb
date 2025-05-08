@@ -4,6 +4,7 @@ require "datadog/core/telemetry/ext"
 
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
+require_relative "../impacted_tests_detection/component"
 require_relative "../logs/component"
 require_relative "../logs/transport"
 require_relative "../remote/component"
@@ -36,7 +37,7 @@ module Datadog
       # Adds CI behavior to Datadog trace components
       module Components
         attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries,
-          :test_management, :agentless_logs_submission
+          :test_management, :agentless_logs_submission, :impacted_tests_detection
 
         def initialize(settings)
           @test_optimisation = nil
@@ -45,6 +46,7 @@ module Datadog
           @ci_remote = nil
           @test_retries = TestRetries::NullComponent.new
           @test_management = TestManagement::NullComponent.new
+          @impacted_tests_detection = nil
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -138,6 +140,8 @@ module Datadog
           )
 
           @agentless_logs_submission = build_agentless_logs_component(settings, test_visibility_api)
+
+          @impacted_tests_detection = ImpactedTestsDetection::Component.new(enabled: settings.ci.impacted_tests_detection_enabled)
         end
 
         def build_test_optimisation(settings, test_visibility_api)
@@ -237,7 +241,7 @@ module Datadog
 
         def build_git_upload_worker(settings, api)
           if settings.ci.git_metadata_upload_enabled
-            git_tree_uploader = Git::TreeUploader.new(api: api)
+            git_tree_uploader = Git::TreeUploader.new(api: api, force_unshallow: settings.ci.impacted_tests_detection_enabled)
             Worker.new do |repository_url|
               git_tree_uploader.call(repository_url)
             end
