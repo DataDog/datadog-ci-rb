@@ -50,7 +50,7 @@ module Datadog
 
         def self.get_changed_files_from_diff: (String? base_commit) -> ::Set[String]?
 
-        def self.git_base_ref: () -> String?
+        def self.base_commit_sha: () -> String?
 
         def self.get_target_branch: () -> String?
 

@@ -20,7 +20,7 @@ module Datadog
 
           return unless @enabled
 
-          base_commit_sha = test_session.base_commit_sha
+          base_commit_sha = test_session.base_commit_sha || Git::LocalRepository.base_commit_sha
           if base_commit_sha.nil?
             Datadog.logger.debug { "Impacted tests detection disabled: base commit not found" }
             @enabled = false

@@ -34,6 +34,10 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
     context "when base_commit_sha is nil" do
       let(:base_commit_sha) { nil }
 
+      before do
+        expect(Datadog::CI::Git::LocalRepository).to receive(:base_commit_sha).and_return(base_commit_sha)
+      end
+
       it "disables the component" do
         component.configure(library_settings, test_session)
 

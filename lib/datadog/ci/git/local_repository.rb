@@ -359,7 +359,7 @@ module Datadog
 
         # On best effort basis determines the git sha of the most likely
         # base branch for the current PR.
-        def self.git_base_ref
+        def self.base_commit_sha
           remote_name = "origin" # TODO: make this configurable
           default_like_branch_filter = /^(main|master|preprod|prod|release\/.*|hotfix\/.*)$/
 

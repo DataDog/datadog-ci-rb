@@ -364,14 +364,14 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         end
       end
 
-      describe ".git_base_ref" do
+      describe ".base_commit_sha" do
         it "returns the ref from the base branch" do
           expected_base_sha = build_base_branch
           build_feature_branch
 
           base_sha = nil
           with_source_git_dir do
-            base_sha = described_class.git_base_ref
+            base_sha = described_class.base_commit_sha
           end
 
           expect(base_sha).to eq(expected_base_sha)
@@ -406,7 +406,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
             base_sha = nil
             with_source_git_dir do
-              base_sha = described_class.git_base_ref
+              base_sha = described_class.base_commit_sha
             end
 
             expect(base_sha).to eq(expected_base_sha)
