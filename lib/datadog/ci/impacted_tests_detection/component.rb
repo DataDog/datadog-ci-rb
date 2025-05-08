@@ -20,15 +20,15 @@ module Datadog
 
           return unless @enabled
 
+          # we must unshallow the repository before trying to find base_commit_sha or executing `git diff` command
+          git_tree_upload_worker.wait_until_done
+
           base_commit_sha = test_session.base_commit_sha || Git::LocalRepository.base_commit_sha
           if base_commit_sha.nil?
             Datadog.logger.debug { "Impacted tests detection disabled: base commit not found" }
             @enabled = false
             return
           end
-
-          # we must unshallow the repository before executing `git diff` command
-          git_tree_upload_worker.wait_until_done
 
           changed_files = Git::LocalRepository.get_changed_files_from_diff(base_commit_sha)
           if changed_files.nil?
