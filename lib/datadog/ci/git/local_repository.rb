@@ -24,6 +24,8 @@ module Datadog
         end
 
         COMMAND_RETRY_COUNT = 3
+        POSSIBLE_BASE_BRANCHES = %w[main master preprod prod dev development trunk].freeze
+        DEFAULT_LIKE_BRANCH_FILTER = /^(#{POSSIBLE_BASE_BRANCHES.join("|")}|release\/.*|hotfix\/.*)$/.freeze
 
         def self.root
           return @root if defined?(@root)
@@ -360,30 +362,26 @@ module Datadog
         # On best effort basis determines the git sha of the most likely
         # base branch for the current PR.
         def self.base_commit_sha
-          remote_name = "origin" # TODO: make this configurable
-
-          possible_base_branches = %w[main master preprod prod dev development trunk]
-          default_like_branch_filter = /^(#{possible_base_branches.join("|")}|release\/.*|hotfix\/.*)$/
+          remote_name = get_remote_name
+          Datadog.logger.debug { "Remote name: '#{remote_name}'" }
 
           target_branch = get_target_branch
           return nil if target_branch.nil?
-
           Datadog.logger.debug { "Target branch: '#{target_branch}'" }
 
           # Early exit if target is a main-like branch
-          short_target = remove_remote_prefix(target_branch, remote_name)
-          if main_like_branch?(short_target, default_like_branch_filter)
-            Datadog.logger.debug { "Branch '#{target_branch}' already matches base branch filter (#{default_like_branch_filter})" }
+          if main_like_branch?(target_branch, remote_name)
+            Datadog.logger.debug { "Branch '#{target_branch}' already matches base branch filter (#{DEFAULT_LIKE_BRANCH_FILTER})" }
             return nil
           end
 
           # Check and fetch base branches
-          check_and_fetch_base_branches(remote_name, possible_base_branches)
+          check_and_fetch_base_branches(remote_name)
 
           default_branch = detect_default_branch(remote_name)
           Datadog.logger.debug { "Default branch: '#{default_branch}'" }
 
-          candidates = build_candidate_list(remote_name, default_like_branch_filter, target_branch)
+          candidates = build_candidate_list(remote_name, target_branch)
           if candidates.nil? || candidates.empty?
             Datadog.logger.debug { "No candidate branches found." }
             return nil
@@ -399,8 +397,8 @@ module Datadog
           nil
         end
 
-        def self.check_and_fetch_base_branches(remote_name, branches)
-          branches.each do |branch|
+        def self.check_and_fetch_base_branches(remote_name)
+          POSSIBLE_BASE_BRANCHES.each do |branch|
             # Check if branch exists locally
 
             exec_git_command("git show-ref --verify --quiet refs/heads/#{branch}")
@@ -438,8 +436,9 @@ module Datadog
           branch_name&.sub(/^#{Regexp.escape(remote_name)}\//, "")
         end
 
-        def self.main_like_branch?(branch_name, branch_filter)
-          branch_name&.match?(branch_filter)
+        def self.main_like_branch?(branch_name, remote_name)
+          short_branch_name = remove_remote_prefix(branch_name, remote_name)
+          short_branch_name&.match?(DEFAULT_LIKE_BRANCH_FILTER)
         end
 
         def self.detect_default_branch(remote_name)
@@ -467,10 +466,10 @@ module Datadog
           nil
         end
 
-        def self.build_candidate_list(remote_name, branch_filter, target_branch)
+        def self.build_candidate_list(remote_name, target_branch)
           candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/heads \"refs/remotes/#{remote_name}\"")&.lines&.map(&:strip)
           Datadog.logger.debug { "Available branches: '#{candidates}'" }
-          candidates&.select! { |b| b.match?(branch_filter) && b != target_branch }
+          candidates&.select! { |b| b.match?(DEFAULT_LIKE_BRANCH_FILTER) && b != target_branch }
           Datadog.logger.debug { "Candidate branches: '#{candidates}'" }
           candidates
         end
@@ -502,6 +501,25 @@ module Datadog
 
         def self.default_branch?(branch, default_branch, remote_name)
           branch == default_branch || branch == "#{remote_name}/#{default_branch}"
+        end
+
+        def self.get_remote_name
+          # Try to find remote from upstream tracking
+          upstream = nil
+          begin
+            upstream = exec_git_command("git rev-parse --abbrev-ref --symbolic-full-name @{upstream}")&.strip
+          rescue => e
+            Datadog.logger.debug { "Error getting upstream: #{e}" }
+          end
+
+          if upstream
+            upstream.split("/").first
+          else
+            # Fallback to first remote if no upstream is set
+            first_remote_value = exec_git_command("git remote")&.split("\n")&.first
+            Datadog.logger.debug { "First remote value: '#{first_remote_value}'" }
+            first_remote_value || "origin"
+          end
         end
 
         # makes .exec_git_command private to make sure that this method
