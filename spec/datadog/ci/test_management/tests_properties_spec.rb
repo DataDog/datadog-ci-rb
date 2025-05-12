@@ -17,7 +17,8 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
       Datadog::Tracing::SpanOperation.new("session", service: service).tap do |span|
         span.set_tags({
           "git.repository_url" => "repository_url",
-          "git.commit.message" => "Test commit message"
+          "git.commit.message" => "Test commit message",
+          "git.commit.sha" => "test_sha"
         })
       end
     end
@@ -38,6 +39,7 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
         attributes = data["attributes"]
         expect(attributes["repository_url"]).to eq("repository_url")
         expect(attributes["commit_message"]).to eq("Test commit message")
+        expect(attributes["sha"]).to eq("test_sha")
       end
     end
 
