@@ -60,7 +60,11 @@ module Datadog
 
             def git_commit_sha: () -> nil
 
-            def additional_tags: () -> Hash[String, String]
+            def git_pull_request_base_branch: () -> String?
+
+            def git_pull_request_base_branch_sha: () -> String?
+
+            def git_commit_head_sha: () -> String?
 
             private
 

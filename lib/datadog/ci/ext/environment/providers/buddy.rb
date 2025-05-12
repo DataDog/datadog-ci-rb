@@ -66,14 +66,9 @@ module Datadog
               env["BUDDY_EXECUTION_REVISION_COMMITTER_EMAIL"]
             end
 
-            def additional_tags
+            def git_pull_request_base_branch
               # from docs: The name of the Git BASE branch of the currently run Pull Request
-              base_branch = env["BUDDY_RUN_PR_BASE_BRANCH"]
-              return {} if base_branch.nil? || base_branch.empty?
-
-              {
-                Git::TAG_PULL_REQUEST_BASE_BRANCH => base_branch
-              }
+              env["BUDDY_RUN_PR_BASE_BRANCH"]
             end
           end
         end

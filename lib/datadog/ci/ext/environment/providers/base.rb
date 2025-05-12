@@ -96,8 +96,13 @@ module Datadog
             def git_commit_sha
             end
 
-            def additional_tags
-              {}
+            def git_pull_request_base_branch
+            end
+
+            def git_pull_request_base_branch_sha
+            end
+
+            def git_commit_head_sha
             end
 
             private
