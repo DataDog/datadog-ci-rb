@@ -141,6 +141,7 @@ module Datadog
           GET_OBJECTS = "get_objects"
           PACK_OBJECTS = "pack_objects"
           DIFF = "diff"
+          BASE_COMMIT_SHA = "base_commit_sha"
         end
 
         module Provider

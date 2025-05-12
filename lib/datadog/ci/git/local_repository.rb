@@ -362,6 +362,7 @@ module Datadog
         # On best effort basis determines the git sha of the most likely
         # base branch for the current PR.
         def self.base_commit_sha
+          Telemetry.git_command(Ext::Telemetry::Command::BASE_COMMIT_SHA)
           remote_name = get_remote_name
           Datadog.logger.debug { "Remote name: '#{remote_name}'" }
 
@@ -393,6 +394,7 @@ module Datadog
           Datadog.logger.debug { "Best branch: '#{best_branch}'" }
           best_branch
         rescue => e
+          telemetry_track_error(e, Ext::Telemetry::Command::BASE_COMMIT_SHA)
           log_failure(e, "git base ref")
           nil
         end
