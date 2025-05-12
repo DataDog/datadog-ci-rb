@@ -123,7 +123,7 @@ module Datadog
               return @name_email_tuple if defined?(@name_email_tuple)
 
               name_and_email_string = env["CI_COMMIT_AUTHOR"]
-              if name_and_email_string.include?("<") && (match = /^([^<]*)<([^>]*)>$/.match(name_and_email_string))
+              if name_and_email_string&.include?("<") && (match = /^([^<]*)<([^>]*)>$/.match(name_and_email_string))
                 name = match[1]
                 name = name.strip if name
                 email = match[2]

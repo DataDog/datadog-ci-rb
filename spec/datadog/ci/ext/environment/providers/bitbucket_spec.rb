@@ -11,7 +11,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Bitbucket do
           "BITBUCKET_COMMIT" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
           "BITBUCKET_GIT_HTTP_ORIGIN" => "https://bitbucket-repo-url.com/repo.git",
           "BITBUCKET_PIPELINE_UUID" => "{bitbucket-uuid}",
-          "BITBUCKET_REPO_FULL_NAME" => "bitbucket-repo"
+          "BITBUCKET_REPO_FULL_NAME" => "bitbucket-repo",
+          "BITBUCKET_PR_DESTINATION_BRANCH" => "main"
         }
       end
       # Modify HOME so that '~' expansion matches CI home directory.
@@ -28,7 +29,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Bitbucket do
           "ci.workspace_path" => "/foo/bar",
           "git.branch" => "master",
           "git.commit.sha" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
-          "git.repository_url" => "https://bitbucket-repo-url.com/repo.git"
+          "git.repository_url" => "https://bitbucket-repo-url.com/repo.git",
+          "git.pull_request.base_branch" => "main"
         }
       end
 

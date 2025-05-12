@@ -3,7 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Buddy < Extractor
+          class Buddy < Base
             def provider_name: () -> "buddy"
 
             def pipeline_id: () -> ::String

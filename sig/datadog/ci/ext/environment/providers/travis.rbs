@@ -3,7 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Travis < Extractor
+          class Travis < Base
             def provider_name: () -> "travisci"
 
             def job_url: () -> String?

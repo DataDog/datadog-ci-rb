@@ -363,6 +363,7 @@ module Datadog
         # base branch for the current PR.
         def self.base_commit_sha
           Telemetry.git_command(Ext::Telemetry::Command::BASE_COMMIT_SHA)
+
           remote_name = get_remote_name
           Datadog.logger.debug { "Remote name: '#{remote_name}'" }
 

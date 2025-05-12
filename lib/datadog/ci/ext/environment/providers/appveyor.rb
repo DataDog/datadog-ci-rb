@@ -83,6 +83,16 @@ module Datadog
               commit_message
             end
 
+            def additional_tags
+              # from docs: build branch. For Pull Request commits it is base branch PR is merging into
+              base_branch = env["APPVEYOR_REPO_BRANCH"]
+              return {} if base_branch.nil? || base_branch.empty?
+
+              {
+                Git::TAG_PULL_REQUEST_BASE_BRANCH => base_branch
+              }
+            end
+
             private
 
             def github_repo_provider?

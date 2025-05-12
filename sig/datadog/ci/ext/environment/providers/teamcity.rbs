@@ -3,7 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Teamcity < Extractor
+          class Teamcity < Base
             def provider_name: () -> "teamcity"
 
             def job_name: () -> String?

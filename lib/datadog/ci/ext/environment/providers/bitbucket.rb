@@ -59,6 +59,17 @@ module Datadog
               env["BITBUCKET_TAG"]
             end
 
+            def additional_tags
+              # from docs: The pull request destination branch (used in combination with BITBUCKET_BRANCH).
+              # Only available on a pull request triggered build
+              base_branch = env["BITBUCKET_PR_DESTINATION_BRANCH"]
+              return {} if base_branch.nil? || base_branch.empty?
+
+              {
+                Git::TAG_PULL_REQUEST_BASE_BRANCH => base_branch
+              }
+            end
+
             private
 
             def url

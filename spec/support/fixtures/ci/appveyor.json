@@ -27,6 +27,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -58,6 +59,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -89,6 +91,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -120,6 +123,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -153,6 +157,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -184,6 +189,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -217,6 +223,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -244,7 +251,8 @@
       "ci.workspace_path": "/foo/bar",
       "git.commit.author.email": "appveyor-commit-author-email@datadoghq.com",
       "git.commit.author.name": "appveyor-commit-author-name",
-      "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended"
+      "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
+      "git.pull_request.base_branch": "master"
     }
   ],
   [
@@ -275,6 +283,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "origin/master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -306,6 +315,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "refs/heads/master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -337,6 +347,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "refs/heads/feature/one",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -369,6 +380,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "origin/master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -401,6 +413,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "refs/heads/master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git"
     }
   ],
@@ -433,6 +446,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "origin/master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git",
       "git.tag": "0.1.0"
     }
@@ -466,6 +480,7 @@
       "git.commit.author.name": "appveyor-commit-author-name",
       "git.commit.message": "appveyor-commit-message\nappveyor-commit-message-extended",
       "git.commit.sha": "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+      "git.pull_request.base_branch": "refs/heads/master",
       "git.repository_url": "https://github.com/appveyor-repo-name.git",
       "git.tag": "0.1.0"
     }

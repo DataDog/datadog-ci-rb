@@ -3,7 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Codefresh < Extractor
+          class Codefresh < Base
             def provider_name: () -> "codefresh"
 
             def job_name: () -> String?

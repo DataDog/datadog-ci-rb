@@ -47,7 +47,7 @@ module Datadog
             end
 
             def git_branch
-              env["BITRISEIO_GIT_BRANCH_DEST"] || env["BITRISE_GIT_BRANCH"]
+              env["BITRISEIO_PULL_REQUEST_HEAD_BRANCH"] || env["BITRISE_GIT_BRANCH"]
             end
 
             def git_tag
@@ -72,6 +72,17 @@ module Datadog
 
             def git_commit_committer_email
               env["GIT_CLONE_COMMIT_COMMITER_EMAIL"] || env["GIT_CLONE_COMMIT_COMMITER_NAME"]
+            end
+
+            def additional_tags
+              # from docs: Used only with builds triggered by pull requests: the destination/target branch of the pull request that triggered the build.
+              # For example, a pull request wants to merge the content of a branch into the branch main. In this case, this Env Var’s value is main.
+              base_branch = env["BITRISEIO_GIT_BRANCH_DEST"]
+              return {} if base_branch.nil? || base_branch.empty?
+
+              {
+                Git::TAG_PULL_REQUEST_BASE_BRANCH => base_branch
+              }
             end
           end
         end

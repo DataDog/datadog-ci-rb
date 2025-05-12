@@ -86,6 +86,8 @@ module Datadog
               }
 
               event_path = env["GITHUB_EVENT_PATH"]
+              return result if event_path.nil? || event_path.empty?
+
               event_json = JSON.parse(File.read(event_path))
 
               head_sha = event_json.dig("pull_request", "head", "sha")
