@@ -25,6 +25,12 @@ module Datadog
             def git_commit_committer_email: () -> String?
 
             def git_commit_committer_date: () -> String?
+
+            def git_pull_request_base_branch: () -> String?
+
+            def git_pull_request_base_branch_sha: () -> String?
+
+            def git_commit_head_sha: () -> String?
           end
         end
       end
