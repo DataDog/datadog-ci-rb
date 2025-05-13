@@ -868,7 +868,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       describe "#impacted_tests_detection_enabled" do
         subject(:impacted_tests_detection_enabled) { settings.ci.impacted_tests_detection_enabled }
 
-        it { is_expected.to be true }
+        it { is_expected.to be false }
 
         context "when #{Datadog::CI::Ext::Settings::ENV_IMPACTED_TESTS_DETECTION_ENABLED}" do
           around do |example|
@@ -880,7 +880,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
           context "is not defined" do
             let(:enable) { nil }
 
-            it { is_expected.to be true }
+            it { is_expected.to be false }
           end
 
           context "is set to true" do
@@ -899,10 +899,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
       describe "#impacted_tests_detection_enabled=" do
         it "updates the #impacted_tests_detection_enabled setting" do
-          expect { settings.ci.impacted_tests_detection_enabled = false }
+          expect { settings.ci.impacted_tests_detection_enabled = true }
             .to change { settings.ci.impacted_tests_detection_enabled }
-            .from(true)
-            .to(false)
+            .from(false)
+            .to(true)
         end
       end
     end
