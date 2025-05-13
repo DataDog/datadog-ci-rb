@@ -361,7 +361,7 @@ module Datadog
 
         # On best effort basis determines the git sha of the most likely
         # base branch for the current PR.
-        def self.base_commit_sha
+        def self.base_commit_sha(base_branch: nil)
           Telemetry.git_command(Ext::Telemetry::Command::BASE_COMMIT_SHA)
 
           remote_name = get_remote_name
@@ -377,13 +377,17 @@ module Datadog
             return nil
           end
 
-          # Check and fetch base branches
-          check_and_fetch_base_branches(remote_name)
+          # Check and fetch base branches if they don't exist in local git repository
+          if base_branch.nil?
+            check_and_fetch_base_branches(remote_name)
+          else
+            check_and_fetch_branch(base_branch, remote_name)
+          end
 
           default_branch = detect_default_branch(remote_name)
           Datadog.logger.debug { "Default branch: '#{default_branch}'" }
 
-          candidates = build_candidate_list(remote_name, target_branch)
+          candidates = build_candidate_list(remote_name, target_branch, base_branch)
           if candidates.nil? || candidates.empty?
             Datadog.logger.debug { "No candidate branches found." }
             return nil
@@ -400,27 +404,30 @@ module Datadog
           nil
         end
 
+        def self.check_and_fetch_branch(branch, remote_name)
+          # Check if branch exists locally
+          exec_git_command("git show-ref --verify --quiet refs/heads/#{branch}")
+          Datadog.logger.debug { "Branch '#{branch}' exists locally, skipping" }
+        rescue GitCommandExecutionError => e
+          Datadog.logger.debug { "Branch '#{branch}' doesn't exist locally, checking remote: #{e}" }
+          # Branch doesn't exist locally, check remote
+          begin
+            remote_heads = exec_git_command("git ls-remote --heads #{remote_name} #{branch}")
+            if remote_heads.nil? || remote_heads.empty?
+              Datadog.logger.debug { "Branch '#{branch}' doesn't exist in remote" }
+              return
+            end
+
+            Datadog.logger.debug { "Branch '#{branch}' exists in remote, fetching" }
+            exec_git_command("git fetch --depth 1 #{remote_name} #{branch}:#{branch}")
+          rescue GitCommandExecutionError => e
+            Datadog.logger.debug { "Branch '#{branch}' couldn't be fetched from remote: #{e}" }
+          end
+        end
+
         def self.check_and_fetch_base_branches(remote_name)
           POSSIBLE_BASE_BRANCHES.each do |branch|
-            # Check if branch exists locally
-
-            exec_git_command("git show-ref --verify --quiet refs/heads/#{branch}")
-            Datadog.logger.debug { "Branch '#{branch}' exists locally, skipping" }
-          rescue GitCommandExecutionError => e
-            Datadog.logger.debug { "Branch '#{branch}' doesn't exist locally, checking remote: #{e}" }
-            # Branch doesn't exist locally, check remote
-            begin
-              remote_heads = exec_git_command("git ls-remote --heads #{remote_name} #{branch}")
-              if remote_heads.nil? || remote_heads.empty?
-                Datadog.logger.debug { "Branch '#{branch}' doesn't exist in remote" }
-                next
-              end
-
-              Datadog.logger.debug { "Branch '#{branch}' exists in remote, fetching" }
-              exec_git_command("git fetch --depth 1 #{remote_name} #{branch}:#{branch}")
-            rescue GitCommandExecutionError => e
-              Datadog.logger.debug { "Branch '#{branch}' couldn't be fetched from remote: #{e}" }
-            end
+            check_and_fetch_branch(branch, remote_name)
           end
         end
 
@@ -469,7 +476,11 @@ module Datadog
           nil
         end
 
-        def self.build_candidate_list(remote_name, target_branch)
+        def self.build_candidate_list(remote_name, target_branch, base_branch)
+          unless base_branch.nil?
+            return [base_branch]
+          end
+
           candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/heads \"refs/remotes/#{remote_name}\"")&.lines&.map(&:strip)
           Datadog.logger.debug { "Available branches: '#{candidates}'" }
           candidates&.select! { |b| b.match?(DEFAULT_LIKE_BRANCH_FILTER) && b != target_branch }
