@@ -124,7 +124,10 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
               "DD_GIT_COMMIT_AUTHOR_DATE" => "2021-06-18T18:35:10+00:00",
               "DD_GIT_COMMIT_COMMITTER_NAME" => "user committer",
               "DD_GIT_COMMIT_COMMITTER_EMAIL" => "user-committer@provided.com",
-              "DD_GIT_COMMIT_COMMITTER_DATE" => "2021-06-19T18:35:10+00:00"
+              "DD_GIT_COMMIT_COMMITTER_DATE" => "2021-06-19T18:35:10+00:00",
+              "DD_GIT_PULL_REQUEST_BASE_BRANCH" => "my-pull-request-base-branch",
+              "DD_GIT_PULL_REQUEST_BASE_BRANCH_SHA" => "my-pull-request-base-branch-sha",
+              "DD_GIT_COMMIT_HEAD_SHA" => "my-commit-head-sha"
             }
           end
 
@@ -142,7 +145,10 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                 "git.commit.committer.name" => env["DD_GIT_COMMIT_COMMITTER_NAME"],
                 "git.commit.message" => env["DD_GIT_COMMIT_MESSAGE"],
                 "git.commit.sha" => env["DD_GIT_COMMIT_SHA"],
-                "git.repository_url" => env["DD_GIT_REPOSITORY_URL"]
+                "git.repository_url" => env["DD_GIT_REPOSITORY_URL"],
+                "git.pull_request.base_branch" => env["DD_GIT_PULL_REQUEST_BASE_BRANCH"],
+                "git.pull_request.base_branch_sha" => env["DD_GIT_PULL_REQUEST_BASE_BRANCH_SHA"],
+                "git.commit.head_sha" => env["DD_GIT_COMMIT_HEAD_SHA"]
               }
             )
           end

@@ -3,15 +3,18 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class GithubActions < Extractor
+          class GithubActions < Base
             @ref: String
             @github_server_url: String?
+            @github_event_json: Hash[String, untyped]?
 
-            def provider_name: () -> "github"
+            def self.handles?: (Hash[String, String] env) -> bool
+
+            def provider_name: () -> String
 
             def job_name: () -> String?
 
-            def job_url: () -> ::String
+            def job_url: () -> String
 
             def pipeline_id: () -> String?
 
@@ -19,21 +22,27 @@ module Datadog
 
             def pipeline_number: () -> String?
 
-            def pipeline_url: () -> String?
+            def pipeline_url: () -> String
 
             def workspace_path: () -> String?
 
-            def git_repository_url: () -> ::String
+            def git_repository_url: () -> String
 
             def git_commit_sha: () -> String?
 
             def git_branch_or_tag: () -> String?
 
-            def ci_env_vars: () -> String?
+            def ci_env_vars: () -> String
 
-            def additional_tags: () -> Hash[String, String]
+            def git_pull_request_base_branch: () -> String?
+
+            def git_pull_request_base_branch_sha: () -> String?
+
+            def git_commit_head_sha: () -> String?
 
             private
+
+            def github_event_json: () -> Hash[String, untyped]?
 
             def github_server_url: () -> String?
           end

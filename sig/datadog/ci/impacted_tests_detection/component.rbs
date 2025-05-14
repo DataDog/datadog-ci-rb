@@ -1,0 +1,16 @@
+module Datadog::CI::ImpactedTestsDetection
+  class Component
+    @enabled: bool
+    @changed_files: Set[String]
+
+    def initialize: (enabled: bool) -> void
+    def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
+    def enabled?: () -> bool
+    def modified?: (Datadog::CI::Test test_span) -> bool
+    def tag_modified_test: (Datadog::CI::Test test_span) -> void
+
+    private
+
+    def git_tree_upload_worker: () -> Datadog::CI::Worker
+  end
+end

@@ -100,13 +100,25 @@ module Datadog
               }.to_json
             end
 
+            def git_pull_request_base_branch
+              env["CI_MERGE_REQUEST_TARGET_BRANCH_NAME"]
+            end
+
+            def git_pull_request_base_branch_sha
+              env["CI_MERGE_REQUEST_TARGET_BRANCH_SHA"]
+            end
+
+            def git_commit_head_sha
+              env["CI_MERGE_REQUEST_SOURCE_BRANCH_SHA"]
+            end
+
             private
 
             def extract_name_email
               return @name_email_tuple if defined?(@name_email_tuple)
 
               name_and_email_string = env["CI_COMMIT_AUTHOR"]
-              if name_and_email_string.include?("<") && (match = /^([^<]*)<([^>]*)>$/.match(name_and_email_string))
+              if name_and_email_string&.include?("<") && (match = /^([^<]*)<([^>]*)>$/.match(name_and_email_string))
                 name = match[1]
                 name = name.strip if name
                 email = match[2]

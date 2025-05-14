@@ -2,7 +2,7 @@ module Datadog
   module CI
     module TestRetries
       module Driver
-        class RetryNew < Base
+        class RetryFlakeDetection < Base
           @max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries
 
           @attempts: Integer

@@ -31,6 +31,8 @@ module Datadog
         def test_retries: () -> Datadog::CI::TestRetries::Component
 
         def git_tree_upload_worker: () -> Datadog::CI::Worker
+
+        def impacted_tests_detection: () -> Datadog::CI::ImpactedTestsDetection::Component
       end
     end
   end

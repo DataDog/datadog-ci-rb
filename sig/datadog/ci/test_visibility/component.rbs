@@ -137,6 +137,8 @@ module Datadog
         def start_drb_service: () -> void
 
         def maybe_remote_context: () -> Datadog::CI::TestVisibility::Context
+
+        def impacted_tests_detection: () -> Datadog::CI::ImpactedTestsDetection::Component
       end
     end
   end

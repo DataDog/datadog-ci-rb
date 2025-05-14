@@ -16,7 +16,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Buddy do
           "BUDDY_EXECUTION_URL" => "https://app.buddy.works/myworkspace/my-project/pipelines/pipeline/456/execution/5d9dc42c422f5a268b389d08",
           "BUDDY_PIPELINE_ID" => "456",
           "BUDDY_PIPELINE_NAME" => "Deploy to Production",
-          "BUDDY_SCM_URL" => "https://github.com/buddyworks/my-project.git"
+          "BUDDY_SCM_URL" => "https://github.com/buddyworks/my-project.git",
+          "BUDDY_RUN_PR_BASE_BRANCH" => "main"
         }
       end
       # Modify HOME so that '~' expansion matches CI home directory.
@@ -35,7 +36,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Buddy do
           "git.commit.message" => "Create buddy.yml",
           "git.commit.sha" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
           "git.repository_url" => "https://github.com/buddyworks/my-project.git",
-          "git.tag" => "v1.0"
+          "git.tag" => "v1.0",
+          "git.pull_request.base_branch" => "main"
         }
       end
 

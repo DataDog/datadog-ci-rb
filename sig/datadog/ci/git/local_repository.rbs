@@ -11,6 +11,8 @@ module Datadog
         end
 
         COMMAND_RETRY_COUNT: 3
+        POSSIBLE_BASE_BRANCHES: Array[String]
+        DEFAULT_LIKE_BRANCH_FILTER: Regexp
 
         self.@root: String
         self.@prefix_to_root: String
@@ -48,15 +50,43 @@ module Datadog
 
         def self.git_unshallow: () -> String?
 
+        def self.get_changed_files_from_diff: (String? base_commit) -> ::Set[String]?
+
+        def self.base_commit_sha: (?base_branch: String?) -> String?
+
+        def self.get_source_branch: () -> String?
+
+        def self.get_remote_name: () -> String
+
+        def self.remove_remote_prefix: (String? branch_name, String remote_name) -> String?
+
+        def self.main_like_branch?: (String? branch_name, String remote_name) -> bool?
+
+        def self.detect_default_branch: (String remote_name) -> String?
+
+        def self.find_fallback_default_branch: (String remote_name) -> String?
+
+        def self.build_candidate_list: (String remote_name, String target_branch, String? base_branch) -> Array[String]?
+
+        def self.compute_branch_metrics: (Array[String] candidates, String target_branch) -> Hash[String, { behind: Integer, ahead: Integer, base_sha: String }]
+
+        def self.find_best_branch: (Hash[String, { behind: Integer, ahead: Integer, base_sha: String }] metrics, String? default_branch, String remote_name) -> String?
+
         private
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]
 
-        def self.exec_git_command: (String ref, ?stdin: String?) -> String?
+        def self.exec_git_command: (String cmd, ?stdin: String?) -> String?
 
         def self.log_failure: (StandardError e, String action) -> void
 
         def self.telemetry_track_error: (StandardError e, String command) -> void
+
+        def self.default_branch?: (String branch, String? default_branch, String remote_name) -> bool
+
+        def self.check_and_fetch_base_branches: (Array[String] branches, String remote_name) -> void
+
+        def self.check_and_fetch_branch: (String branch, String remote_name) -> void
       end
     end
   end

@@ -54,6 +54,18 @@ module Datadog
             def git_commit_committer_date
               env[Git::ENV_COMMIT_COMMITTER_DATE]
             end
+
+            def git_pull_request_base_branch
+              env[Git::ENV_PULL_REQUEST_BASE_BRANCH]
+            end
+
+            def git_pull_request_base_branch_sha
+              env[Git::ENV_PULL_REQUEST_BASE_BRANCH_SHA]
+            end
+
+            def git_commit_head_sha
+              env[Git::ENV_COMMIT_HEAD_SHA]
+            end
           end
         end
       end

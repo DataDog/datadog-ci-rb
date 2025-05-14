@@ -69,6 +69,8 @@ module Datadog
 
       def source_file: () -> String?
 
+      def base_commit_sha: () -> String?
+
       private
 
       def test_visibility: () -> Datadog::CI::TestVisibility::Component

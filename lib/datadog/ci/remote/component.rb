@@ -46,7 +46,8 @@ module Datadog
             Worker.new { test_optimisation.configure(@library_configuration, test_session) },
             Worker.new { test_retries.configure(@library_configuration, test_session) },
             Worker.new { test_visibility.configure(@library_configuration, test_session) },
-            Worker.new { test_management.configure(@library_configuration, test_session) }
+            Worker.new { test_management.configure(@library_configuration, test_session) },
+            Worker.new { impacted_tests_detection.configure(@library_configuration, test_session) }
           ]
 
           # launch configuration workers
@@ -87,6 +88,10 @@ module Datadog
 
         def test_retries
           Datadog.send(:components).test_retries
+        end
+
+        def impacted_tests_detection
+          Datadog.send(:components).impacted_tests_detection
         end
 
         def git_tree_upload_worker

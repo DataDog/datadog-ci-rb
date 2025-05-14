@@ -46,13 +46,11 @@ module Datadog
               Git::TAG_COMMIT_COMMITTER_EMAIL => @provider.git_commit_committer_email,
               Git::TAG_COMMIT_COMMITTER_NAME => @provider.git_commit_committer_name,
               Git::TAG_COMMIT_MESSAGE => @provider.git_commit_message,
-              Git::TAG_COMMIT_SHA => @provider.git_commit_sha
+              Git::TAG_COMMIT_SHA => @provider.git_commit_sha,
+              Git::TAG_PULL_REQUEST_BASE_BRANCH => @provider.git_pull_request_base_branch,
+              Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA => @provider.git_pull_request_base_branch_sha,
+              Git::TAG_COMMIT_HEAD_SHA => @provider.git_commit_head_sha
             }
-
-            # set additional tags if provider needs them
-            @provider.additional_tags.each do |key, value|
-              @tags[key] = value
-            end
 
             # Normalize Git references and filter sensitive data
             normalize_git!

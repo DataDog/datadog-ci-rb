@@ -1,6 +1,6 @@
-require_relative "../../../../../lib/datadog/ci/test_retries/strategy/retry_new"
+require_relative "../../../../../lib/datadog/ci/test_retries/strategy/retry_flake_detection"
 
-RSpec.describe Datadog::CI::TestRetries::Strategy::RetryNew do
+RSpec.describe Datadog::CI::TestRetries::Strategy::RetryFlakeDetection do
   include_context "Telemetry spy"
 
   let(:enabled) { true }

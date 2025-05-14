@@ -3,7 +3,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Gitlab < Extractor
+          class Gitlab < Base
             @name_email_tuple: [String?, String?]
 
             def provider_name: () -> "gitlab"

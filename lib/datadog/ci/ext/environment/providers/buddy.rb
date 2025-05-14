@@ -65,6 +65,11 @@ module Datadog
             def git_commit_committer_email
               env["BUDDY_EXECUTION_REVISION_COMMITTER_EMAIL"]
             end
+
+            def git_pull_request_base_branch
+              # from docs: The name of the Git BASE branch of the currently run Pull Request
+              env["BUDDY_RUN_PR_BASE_BRANCH"]
+            end
           end
         end
       end

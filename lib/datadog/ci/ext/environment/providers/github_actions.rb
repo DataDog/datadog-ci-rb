@@ -76,33 +76,52 @@ module Datadog
               }.reject { |_, v| v.nil? }.to_json
             end
 
-            def additional_tags
-              base_ref = env["GITHUB_BASE_REF"]
-              return {} if base_ref.nil? || base_ref.empty?
+            def git_pull_request_base_branch
+              return nil if github_event_json.nil?
 
-              # @type var result: Hash[String, String]
-              result = {
-                Git::TAG_PULL_REQUEST_BASE_BRANCH => base_ref
-              }
+              env["GITHUB_BASE_REF"]
+            end
 
-              event_path = env["GITHUB_EVENT_PATH"]
-              event_json = JSON.parse(File.read(event_path))
+            def git_pull_request_base_branch_sha
+              return nil if git_pull_request_base_branch.nil?
 
-              head_sha = event_json.dig("pull_request", "head", "sha")
-              result[Git::TAG_COMMIT_HEAD_SHA] = head_sha if head_sha
+              event_json = github_event_json
+              return nil if event_json.nil?
 
-              base_sha = event_json.dig("pull_request", "base", "sha")
-              result[Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA] = base_sha if base_sha
-
-              result
+              event_json.dig("pull_request", "base", "sha")
             rescue => e
-              Datadog.logger.error("Failed to extract additional tags from GitHub Actions: #{e}")
-              Core::Telemetry::Logger.report(e, description: "Failed to extract additional tags from GitHub Actions")
+              Datadog.logger.error("Failed to extract pull request base branch SHA from GitHub Actions: #{e}")
+              Core::Telemetry::Logger.report(e, description: "Failed to extract pull request base branch SHA from GitHub Actions")
+              nil
+            end
 
-              {}
+            def git_commit_head_sha
+              return nil if git_pull_request_base_branch.nil?
+
+              event_json = github_event_json
+              return nil if event_json.nil?
+
+              event_json.dig("pull_request", "head", "sha")
+            rescue => e
+              Datadog.logger.error("Failed to extract commit head SHA from GitHub Actions: #{e}")
+              Core::Telemetry::Logger.report(e, description: "Failed to extract commit head SHA from GitHub Actions")
+              nil
             end
 
             private
+
+            def github_event_json
+              return @github_event_json if defined?(@github_event_json)
+
+              event_path = env["GITHUB_EVENT_PATH"]
+              return @github_event_json = nil if event_path.nil? || event_path.empty?
+
+              @github_event_json = JSON.parse(File.read(event_path))
+            rescue => e
+              Datadog.logger.error("Failed to parse GitHub event JSON: #{e}")
+              Core::Telemetry::Logger.report(e, description: "Failed to parse GitHub event JSON")
+              @github_event_json = nil
+            end
 
             def github_server_url
               return @github_server_url if defined?(@github_server_url)

@@ -12,6 +12,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Bitrise do
           "BITRISE_GIT_MESSAGE" => "bitrise-git-commit-message",
           "BITRISE_SOURCE_DIR" => "/foo/bar",
           "BITRISE_TRIGGERED_WORKFLOW_ID" => "bitrise-pipeline-name",
+          "BITRISEIO_GIT_BRANCH_DEST" => "main",
           "GIT_CLONE_COMMIT_HASH" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
           "GIT_REPOSITORY_URL" => "https://bitrise-build-url.com/repo.git"
         }
@@ -29,7 +30,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Bitrise do
           "ci.workspace_path" => "/foo/bar",
           "git.commit.message" => "bitrise-git-commit-message",
           "git.commit.sha" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
-          "git.repository_url" => "https://bitrise-build-url.com/repo.git"
+          "git.repository_url" => "https://bitrise-build-url.com/repo.git",
+          "git.pull_request.base_branch" => "main"
         }
       end
 

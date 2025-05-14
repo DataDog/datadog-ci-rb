@@ -310,6 +310,172 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
     end
 
+    context "with feature branch" do
+      let(:base_branch) { "master" }
+      let(:feature_branch) { "feature" }
+
+      let(:base_file) { "base.txt" }
+      let(:not_changed_file) { "not_changed.txt" }
+      let(:feature_file) { "feature.txt" }
+
+      let(:file_to_rename) { "file_to_rename.txt" }
+      let(:renamed_file) { "renamed_file.txt" }
+
+      def build_base_branch
+        `cd #{source_path} && git checkout #{base_branch}`
+        `cd #{source_path} && echo "base branch file" >> #{base_file}`
+        `cd #{source_path} && echo "not changed file" >> #{not_changed_file}`
+        `cd #{source_path} && echo "file to rename" >> #{file_to_rename}`
+        `cd #{source_path} && git add #{base_file} #{not_changed_file} #{file_to_rename}  `
+        `cd #{source_path} && git commit -m 'Add base file'`
+        `cd #{source_path} && git push origin #{base_branch}`
+        `cd #{source_path} && git rev-parse HEAD`.strip
+      end
+
+      def build_feature_branch
+        `cd #{source_path} && git checkout -b #{feature_branch}`
+        `cd #{source_path} && echo "feature branch file" >> #{feature_file}`
+        `cd #{source_path} && echo "modified in feature branch" >> #{base_file}`
+        `cd #{source_path} && mv #{file_to_rename} #{renamed_file}`
+        `cd #{source_path} && git add -A`
+        `cd #{source_path} && git commit -m 'Add feature file and modify base file'`
+        `cd #{source_path} && git push origin #{feature_branch}`
+        `cd #{source_path} && git rev-parse HEAD`.strip
+      end
+
+      describe ".get_changed_files_from_diff" do
+        it "detects changed files between feature and base branch" do
+          # avoids cached git root from previous test cases
+          allow(described_class).to receive(:root).and_return(nil)
+
+          # Setup branches and commits
+          base_sha = build_base_branch
+          build_feature_branch
+
+          # Now diff from feature branch to base branch
+          changed_files = nil
+          with_source_git_dir do
+            changed_files = described_class.get_changed_files_from_diff(base_sha)
+          end
+
+          expect(changed_files).to be_a(Set)
+          # Should includes all modified and renamed files
+          expect(changed_files).to eq(Set.new([base_file, feature_file, file_to_rename]))
+        end
+      end
+
+      describe ".base_commit_sha" do
+        it "returns the ref from the base branch" do
+          expected_base_sha = build_base_branch
+          build_feature_branch
+
+          base_sha = nil
+          with_source_git_dir do
+            base_sha = described_class.base_commit_sha
+          end
+
+          expect(base_sha).to eq(expected_base_sha)
+        end
+
+        context "with fresh clone where only the feature branch exists (repo cloned in GitHub Actions style)" do
+          let(:new_clone_path) { File.join(tmpdir, "new_source_repo") }
+
+          def with_new_clone_git_dir
+            ClimateControl.modify("GIT_DIR" => File.join(new_clone_path, ".git")) do
+              yield
+            end
+          end
+
+          def clone_only_feature_branch
+            `mkdir -p #{new_clone_path}`
+            `cd #{new_clone_path} && git init`
+            `cd #{new_clone_path} && git remote add origin file://#{origin_path}`
+            `cd #{new_clone_path} && git fetch --no-tags --prune --no-recurse-submodules origin #{feature_branch}`
+            `cd #{new_clone_path} && git checkout --progress --force -B #{feature_branch} refs/remotes/origin/#{feature_branch}`
+          end
+
+          it "returns the ref from default branch" do
+            expected_base_sha = build_base_branch
+            build_feature_branch
+            clone_only_feature_branch
+
+            base_sha = nil
+            with_new_clone_git_dir do
+              base_sha = described_class.base_commit_sha
+            end
+
+            expect(base_sha).to eq(expected_base_sha)
+          end
+
+          context "when base branch is provided" do
+            it "returns the ref from the base branch" do
+              expected_base_sha = build_base_branch
+              build_feature_branch
+              clone_only_feature_branch
+
+              base_sha = nil
+              with_new_clone_git_dir do
+                base_sha = described_class.base_commit_sha(base_branch: "master")
+              end
+
+              expect(base_sha).to eq(expected_base_sha)
+            end
+          end
+        end
+
+        context "with preprod branch" do
+          let(:preprod_branch) { "preprod" }
+          let(:new_feature_branch) { "new-feature" }
+
+          def build_preprod_branch
+            `cd #{source_path} && git checkout -b #{preprod_branch}`
+            `cd #{source_path} && echo "preprod changes" >> #{feature_file}`
+            `cd #{source_path} && git add #{feature_file}`
+            `cd #{source_path} && git commit -m 'Add preprod changes'`
+            `cd #{source_path} && git push origin #{preprod_branch}`
+            `cd #{source_path} && git rev-parse HEAD`.strip
+          end
+
+          def build_new_feature_branch
+            `cd #{source_path} && git checkout -b #{new_feature_branch}`
+            `cd #{source_path} && echo "new feature changes" >> #{feature_file}`
+            `cd #{source_path} && git add #{feature_file}`
+            `cd #{source_path} && git commit -m 'Add new feature changes'`
+            `cd #{source_path} && git push origin #{new_feature_branch}`
+            `cd #{source_path} && git rev-parse HEAD`.strip
+          end
+
+          it "returns the ref from preprod branch" do
+            build_base_branch
+            expected_base_sha = build_preprod_branch
+            build_new_feature_branch
+
+            base_sha = nil
+            with_source_git_dir do
+              base_sha = described_class.base_commit_sha
+            end
+
+            expect(base_sha).to eq(expected_base_sha)
+          end
+
+          context "when base branch is provided" do
+            it "returns the ref from the base branch" do
+              expected_base_sha = build_base_branch
+              build_preprod_branch
+              build_new_feature_branch
+
+              base_sha = nil
+              with_source_git_dir do
+                base_sha = described_class.base_commit_sha(base_branch: "master")
+              end
+
+              expect(base_sha).to eq(expected_base_sha)
+            end
+          end
+        end
+      end
+    end
+
     context "with shallow clone" do
       before do
         # create a shallow clone

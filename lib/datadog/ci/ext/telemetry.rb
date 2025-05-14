@@ -68,6 +68,8 @@ module Datadog
 
         METRIC_TEST_SESSION = "test_session"
 
+        METRIC_IMPACTED_TESTS_IS_MODIFIED = "impacted_tests.is_modified"
+
         TAG_TEST_FRAMEWORK = "test_framework"
         TAG_EVENT_TYPE = "event_type"
         TAG_HAS_CODEOWNER = "has_codeowner"
@@ -138,6 +140,8 @@ module Datadog
           GET_LOCAL_COMMITS = "get_local_commits"
           GET_OBJECTS = "get_objects"
           PACK_OBJECTS = "pack_objects"
+          DIFF = "diff"
+          BASE_COMMIT_SHA = "base_commit_sha"
         end
 
         module Provider

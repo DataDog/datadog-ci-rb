@@ -14,7 +14,10 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::UserDefinedTags do
           "DD_GIT_COMMIT_COMMITTER_NAME" => "usersupplied-comittername",
           "DD_GIT_COMMIT_MESSAGE" => "usersupplied-message",
           "DD_GIT_COMMIT_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
-          "DD_GIT_REPOSITORY_URL" => "git@github.com:DataDog/userrepo.git"
+          "DD_GIT_REPOSITORY_URL" => "git@github.com:DataDog/userrepo.git",
+          "DD_GIT_PULL_REQUEST_BASE_BRANCH" => "usersupplied-pullrequest-base-branch",
+          "DD_GIT_PULL_REQUEST_BASE_BRANCH_SHA" => "usersupplied-pullrequest-base-branch-sha",
+          "DD_GIT_COMMIT_HEAD_SHA" => "usersupplied-commit-head-sha"
         }
       end
       # Modify HOME so that '~' expansion matches CI home directory.
@@ -31,7 +34,10 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::UserDefinedTags do
           "git.commit.committer.name" => "usersupplied-comittername",
           "git.commit.message" => "usersupplied-message",
           "git.commit.sha" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
-          "git.repository_url" => "git@github.com:DataDog/userrepo.git"
+          "git.repository_url" => "git@github.com:DataDog/userrepo.git",
+          "git.pull_request.base_branch" => "usersupplied-pullrequest-base-branch",
+          "git.pull_request.base_branch_sha" => "usersupplied-pullrequest-base-branch-sha",
+          "git.commit.head_sha" => "usersupplied-commit-head-sha"
         }
       end
 
