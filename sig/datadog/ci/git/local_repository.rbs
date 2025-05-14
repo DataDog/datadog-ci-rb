@@ -84,7 +84,7 @@ module Datadog
 
         def self.default_branch?: (String branch, String? default_branch, String remote_name) -> bool
 
-        def self.check_and_fetch_base_branches: (String remote_name) -> void
+        def self.check_and_fetch_base_branches: (Array[String] branches, String remote_name) -> void
 
         def self.check_and_fetch_branch: (String branch, String remote_name) -> void
       end

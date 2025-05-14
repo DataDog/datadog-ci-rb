@@ -369,6 +369,7 @@ module Datadog
 
           source_branch = get_source_branch
           return nil if source_branch.nil?
+
           Datadog.logger.debug { "Source branch: '#{source_branch}'" }
 
           # Early exit if source is a main-like branch
@@ -377,12 +378,9 @@ module Datadog
             return nil
           end
 
+          possible_base_branches = base_branch.nil? ? POSSIBLE_BASE_BRANCHES : [base_branch]
           # Check and fetch base branches if they don't exist in local git repository
-          if base_branch.nil?
-            check_and_fetch_base_branches(remote_name)
-          else
-            check_and_fetch_branch(base_branch, remote_name)
-          end
+          check_and_fetch_base_branches(possible_base_branches, remote_name)
 
           default_branch = detect_default_branch(remote_name)
           Datadog.logger.debug { "Default branch: '#{default_branch}'" }
@@ -395,9 +393,11 @@ module Datadog
 
           metrics = compute_branch_metrics(candidates, source_branch)
           Datadog.logger.debug { "Branch metrics: '#{metrics}'" }
-          best_branch = find_best_branch(metrics, default_branch, remote_name)
-          Datadog.logger.debug { "Best branch: '#{best_branch}'" }
-          best_branch
+
+          best_branch_sha = find_best_branch(metrics, default_branch, remote_name)
+          Datadog.logger.debug { "Best branch: '#{best_branch_sha}'" }
+
+          best_branch_sha
         rescue => e
           telemetry_track_error(e, Ext::Telemetry::Command::BASE_COMMIT_SHA)
           log_failure(e, "git base ref")
@@ -410,7 +410,6 @@ module Datadog
           Datadog.logger.debug { "Branch '#{branch}' exists locally, skipping" }
         rescue GitCommandExecutionError => e
           Datadog.logger.debug { "Branch '#{branch}' doesn't exist locally, checking remote: #{e}" }
-          # Branch doesn't exist locally, check remote
           begin
             remote_heads = exec_git_command("git ls-remote --heads #{remote_name} #{branch}")
             if remote_heads.nil? || remote_heads.empty?
@@ -425,8 +424,8 @@ module Datadog
           end
         end
 
-        def self.check_and_fetch_base_branches(remote_name)
-          POSSIBLE_BASE_BRANCHES.each do |branch|
+        def self.check_and_fetch_base_branches(branches, remote_name)
+          branches.each do |branch|
             check_and_fetch_branch(branch, remote_name)
           end
         end
