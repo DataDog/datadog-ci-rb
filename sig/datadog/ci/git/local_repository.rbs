@@ -54,7 +54,7 @@ module Datadog
 
         def self.base_commit_sha: (?base_branch: String?) -> String?
 
-        def self.get_target_branch: () -> String?
+        def self.get_source_branch: () -> String?
 
         def self.get_remote_name: () -> String
 

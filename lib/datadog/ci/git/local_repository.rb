@@ -367,13 +367,13 @@ module Datadog
           remote_name = get_remote_name
           Datadog.logger.debug { "Remote name: '#{remote_name}'" }
 
-          target_branch = get_target_branch
-          return nil if target_branch.nil?
-          Datadog.logger.debug { "Target branch: '#{target_branch}'" }
+          source_branch = get_source_branch
+          return nil if source_branch.nil?
+          Datadog.logger.debug { "Source branch: '#{source_branch}'" }
 
-          # Early exit if target is a main-like branch
-          if main_like_branch?(target_branch, remote_name)
-            Datadog.logger.debug { "Branch '#{target_branch}' already matches base branch filter (#{DEFAULT_LIKE_BRANCH_FILTER})" }
+          # Early exit if source is a main-like branch
+          if main_like_branch?(source_branch, remote_name)
+            Datadog.logger.debug { "Branch '#{source_branch}' already matches base branch filter (#{DEFAULT_LIKE_BRANCH_FILTER})" }
             return nil
           end
 
@@ -387,13 +387,13 @@ module Datadog
           default_branch = detect_default_branch(remote_name)
           Datadog.logger.debug { "Default branch: '#{default_branch}'" }
 
-          candidates = build_candidate_list(remote_name, target_branch, base_branch)
+          candidates = build_candidate_list(remote_name, source_branch, base_branch)
           if candidates.nil? || candidates.empty?
             Datadog.logger.debug { "No candidate branches found." }
             return nil
           end
 
-          metrics = compute_branch_metrics(candidates, target_branch)
+          metrics = compute_branch_metrics(candidates, source_branch)
           Datadog.logger.debug { "Branch metrics: '#{metrics}'" }
           best_branch = find_best_branch(metrics, default_branch, remote_name)
           Datadog.logger.debug { "Best branch: '#{best_branch}'" }
@@ -431,15 +431,15 @@ module Datadog
           end
         end
 
-        def self.get_target_branch
-          target_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")&.strip
-          if target_branch.nil?
+        def self.get_source_branch
+          source_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")&.strip
+          if source_branch.nil?
             Datadog.logger.debug { "Could not get current branch" }
             return nil
           end
 
-          exec_git_command("git rev-parse --verify --quiet #{target_branch} > /dev/null")
-          target_branch
+          exec_git_command("git rev-parse --verify --quiet #{source_branch} > /dev/null")
+          source_branch
         end
 
         def self.remove_remote_prefix(branch_name, remote_name)
