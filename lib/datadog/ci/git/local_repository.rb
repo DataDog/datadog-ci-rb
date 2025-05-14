@@ -476,25 +476,25 @@ module Datadog
           nil
         end
 
-        def self.build_candidate_list(remote_name, target_branch, base_branch)
+        def self.build_candidate_list(remote_name, source_branch, base_branch)
           unless base_branch.nil?
             return [base_branch]
           end
 
           candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/heads \"refs/remotes/#{remote_name}\"")&.lines&.map(&:strip)
           Datadog.logger.debug { "Available branches: '#{candidates}'" }
-          candidates&.select! { |b| b.match?(DEFAULT_LIKE_BRANCH_FILTER) && b != target_branch }
+          candidates&.select! { |b| b.match?(DEFAULT_LIKE_BRANCH_FILTER) && b != source_branch }
           Datadog.logger.debug { "Candidate branches: '#{candidates}'" }
           candidates
         end
 
-        def self.compute_branch_metrics(candidates, target_branch)
+        def self.compute_branch_metrics(candidates, source_branch)
           metrics = {}
           candidates.each do |cand|
-            base_sha = exec_git_command("git merge-base #{cand} #{target_branch} 2>/dev/null")&.strip
+            base_sha = exec_git_command("git merge-base #{cand} #{source_branch} 2>/dev/null")&.strip
             next if base_sha.nil? || base_sha.empty?
 
-            behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{target_branch}")&.strip&.split&.map(&:to_i)
+            behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{source_branch}")&.strip&.split&.map(&:to_i)
             metrics[cand] = {behind: behind, ahead: ahead, base_sha: base_sha}
           end
           metrics
