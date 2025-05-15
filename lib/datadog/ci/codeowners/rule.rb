@@ -24,9 +24,12 @@ module Datadog
         private
 
         def flags
+          # prevents /path/* from matching subfolders
           return ::File::FNM_PATHNAME if pattern.end_with?("#{::File::SEPARATOR}*")
+          # prevents /path/*.rb from matching Ruby files in subfolders
           return ::File::FNM_PATHNAME if pattern.include?("*.")
-          return ::File::FNM_PATHNAME if pattern.include?("/**/")
+          # allows /path/**/subfolder to match both /path/subfolder and /path/a/b/c/subfolder
+          return ::File::FNM_PATHNAME if pattern.include?("#{::File::SEPARATOR}**#{::File::SEPARATOR}")
           0
         end
       end

@@ -42,8 +42,11 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
             # Comment line
             /path/to/*.rb @owner3
             /path/to/file.rb @owner1 @owner2 #This is an inline comment.
+
             /path/to/a/**/z @owner4
+
             /path/to/module/**/** @owner5
+            /path/to/folder/** @owner6
           CODEOWNERS
         end
 
@@ -60,6 +63,9 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           expect(matcher.list_owners("/path/to/module/file.rb")).to eq(["@owner5"])
           expect(matcher.list_owners("/path/to/module/submodule/file.rb")).to eq(["@owner5"])
           expect(matcher.list_owners("/path/to/module/submodule/subsubmodule/file.rb")).to eq(["@owner5"])
+
+          expect(matcher.list_owners("/path/to/folder/file.rb")).to eq(["@owner6"])
+          expect(matcher.list_owners("/path/to/folder/subfolder/file.rb")).to eq(["@owner6"])
         end
       end
 
