@@ -25,6 +25,8 @@ module Datadog
 
         def flags
           return ::File::FNM_PATHNAME if pattern.end_with?("#{::File::SEPARATOR}*")
+          return ::File::FNM_PATHNAME if pattern.include?("*.")
+          return ::File::FNM_PATHNAME if pattern.include?("/**/")
           0
         end
       end
