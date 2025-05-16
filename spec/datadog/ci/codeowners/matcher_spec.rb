@@ -42,12 +42,30 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
             # Comment line
             /path/to/*.rb @owner3
             /path/to/file.rb @owner1 @owner2 #This is an inline comment.
+
+            /path/to/a/**/z @owner4
+
+            /path/to/module/**/** @owner5
+            /path/to/folder/** @owner6
           CODEOWNERS
         end
 
         it "returns the list of owners" do
           expect(matcher.list_owners("/path/to/file.rb")).to eq(["@owner1", "@owner2"])
+          expect(matcher.list_owners("/path/to/subfolder/file.rb")).to be_nil
           expect(matcher.list_owners("/path/to/another_file.rb")).to eq(["@owner3"])
+
+          expect(matcher.list_owners("/path/to/a/z/file.rb")).to eq(["@owner4"])
+          expect(matcher.list_owners("/path/to/a/c/z/file.rb")).to eq(["@owner4"])
+          expect(matcher.list_owners("/path/to/a/c/d/z/file.rb")).to eq(["@owner4"])
+          expect(matcher.list_owners("/path/to/a/c/d/z/y/file.rb")).to be_nil
+
+          expect(matcher.list_owners("/path/to/module/file.rb")).to eq(["@owner5"])
+          expect(matcher.list_owners("/path/to/module/submodule/file.rb")).to eq(["@owner5"])
+          expect(matcher.list_owners("/path/to/module/submodule/subsubmodule/file.rb")).to eq(["@owner5"])
+
+          expect(matcher.list_owners("/path/to/folder/file.rb")).to eq(["@owner6"])
+          expect(matcher.list_owners("/path/to/folder/subfolder/file.rb")).to eq(["@owner6"])
         end
       end
 
