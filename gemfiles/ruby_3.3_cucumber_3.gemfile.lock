@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 1f6a7c5be47fb32f64d57fe275be6fcb14f442bc
+  revision: 50745bcae3059dbce93d03bf32c19e85c66a40c8
   branch: master
   specs:
     datadog (2.15.0)
@@ -151,4 +151,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.5.21
+   2.4.19

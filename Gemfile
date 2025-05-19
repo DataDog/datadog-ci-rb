@@ -36,7 +36,7 @@ group :check do
   gem "standard", "~> 1.31"
 
   # type checks
-  if RUBY_VERSION >= "3.1.0" && RUBY_PLATFORM != "java"
+  if RUBY_VERSION >= "3.4.0" && RUBY_PLATFORM != "java"
     gem "rbs", "~> 3.9.0", require: false
     gem "steep", "~> 1.10.0", require: false
   end
