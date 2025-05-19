@@ -1,5 +1,21 @@
 ## [Unreleased]
 
+## [1.17.0] - 2025-05-19
+
+### Added
+
+* Impacted tests detection ([#318][])
+
+### Changed
+
+* flaky test management: add sha parameter to the tests_properties request ([#321][])
+* Send `attempt_to_fix_passed:false` when attempt_to_fix_validation did not succeed ([#320][])
+
+### Fixed
+
+* fix CODEOWNERS parsing issue where "**" wasn't matching zero folders ([#323][])
+* fix webmock compatibility of internal telemetry ([#309][])
+
 ## [1.16.0] - 2025-04-15
 
 
@@ -427,7 +443,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.16.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.17.0...main
+[1.17.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.13.0...v1.14.0
@@ -611,5 +628,10 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#301]: https://github.com/DataDog/datadog-ci-rb/issues/301
 [#306]: https://github.com/DataDog/datadog-ci-rb/issues/306
 [#308]: https://github.com/DataDog/datadog-ci-rb/issues/308
+[#309]: https://github.com/DataDog/datadog-ci-rb/issues/309
 [#311]: https://github.com/DataDog/datadog-ci-rb/issues/311
 [#312]: https://github.com/DataDog/datadog-ci-rb/issues/312
+[#318]: https://github.com/DataDog/datadog-ci-rb/issues/318
+[#320]: https://github.com/DataDog/datadog-ci-rb/issues/320
+[#321]: https://github.com/DataDog/datadog-ci-rb/issues/321
+[#323]: https://github.com/DataDog/datadog-ci-rb/issues/323
