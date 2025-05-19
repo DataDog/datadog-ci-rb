@@ -334,6 +334,14 @@ module Datadog
           rescue LoadError, StandardError => e
             Datadog.logger.warn("Failed to patch Datadog gem's telemetry layer: #{e}")
           end
+
+          # for compatibility with old telemetry transport
+          begin
+            require "datadog/core/telemetry/http/adapters/net"
+            Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
+          rescue LoadError, StandardError => e
+            Datadog.logger.debug("The old telemetry transport layer is not available: #{e}")
+          end
         end
 
         # When timecop is present:
