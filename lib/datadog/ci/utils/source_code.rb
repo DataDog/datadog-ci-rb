@@ -13,6 +13,7 @@ module Datadog
         end
 
         def self.last_line(proc)
+          return nil if proc.nil?
           return nil unless LAST_LINE_AVAILABLE
 
           # Ruby has outdated RBS for RubyVM::InstructionSequence where method `of` is not defined
