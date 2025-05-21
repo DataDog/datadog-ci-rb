@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+module Datadog
+  module CI
+    module Utils
+      module SourceCode
+        LAST_LINE_AVAILABLE: bool
+
+        def self.last_line: (Proc proc) -> Integer?
+
+        def self._native_last_line_from_iseq: (RubyVM::InstructionSequence iseq) -> Integer?
+      end
+    end
+  end
+end

@@ -209,6 +209,10 @@ Rake::ExtensionTask.new("datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}") do |ext|
   ext.ext_dir = "ext/datadog_cov"
 end
 
+Rake::ExtensionTask.new("datadog_source_code.#{RUBY_VERSION}_#{RUBY_PLATFORM}") do |ext|
+  ext.ext_dir = "ext/datadog_source_code"
+end
+
 task :compile_ext do
   if RUBY_ENGINE == "ruby"
     Rake::Task[:clean].invoke
