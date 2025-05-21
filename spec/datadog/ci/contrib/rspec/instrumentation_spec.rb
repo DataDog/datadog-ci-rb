@@ -170,7 +170,10 @@ RSpec.describe "RSpec instrumentation" do
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
       expect(first_test_span).to have_test_tag(:source_start, "142")
-      expect(first_test_span).to have_test_tag(:source_end, "144")
+      if Datadog::CI::Utils::SourceCode::LAST_LINE_AVAILABLE
+        expect(first_test_span).to have_test_tag(:source_end, "144")
+      end
+
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
