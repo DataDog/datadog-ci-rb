@@ -90,6 +90,8 @@ RSpec.describe "Minitest instrumentation" do
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
       expect(span).to have_test_tag(:source_start, "62")
+      expect(span).to have_test_tag(:source_end, "63") unless PlatformHelpers.jruby?
+
       expect(span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -493,7 +495,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "420")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "422")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
