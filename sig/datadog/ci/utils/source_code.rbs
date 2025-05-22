@@ -6,7 +6,7 @@ module Datadog
       module SourceCode
         LAST_LINE_AVAILABLE: bool
 
-        def self.last_line: (Proc | Method proc) -> Integer?
+        def self.last_line: (Proc? | Method? target) -> Integer?
 
         def self._native_last_line_from_iseq: (RubyVM::InstructionSequence iseq) -> Integer?
       end

@@ -12,13 +12,13 @@ module Datadog
           LAST_LINE_AVAILABLE = false
         end
 
-        def self.last_line(proc)
-          return nil if proc.nil?
+        def self.last_line(target)
+          return nil if target.nil?
           return nil unless LAST_LINE_AVAILABLE
 
           # Ruby has outdated RBS for RubyVM::InstructionSequence where method `of` is not defined
           # steep:ignore:start
-          iseq = RubyVM::InstructionSequence.of(proc)
+          iseq = RubyVM::InstructionSequence.of(target)
           # steep:ignore:end
           _native_last_line_from_iseq(iseq)
         end
