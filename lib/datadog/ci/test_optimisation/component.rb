@@ -150,7 +150,7 @@ module Datadog
         def skippable?(datadog_test_id)
           return false if !enabled? || !skipping_tests?
 
-          @skippable_tests.include?(datadog_test_id)
+          @mutex.synchronize { @skippable_tests.include?(datadog_test_id) }
         end
 
         def mark_if_skippable(test)
@@ -253,8 +253,10 @@ module Datadog
               .fetch_skippable_tests(test_session)
           @skippable_tests_fetch_error = skippable_response.error_message unless skippable_response.ok?
 
-          @correlation_id = skippable_response.correlation_id
-          @skippable_tests = skippable_response.tests
+          @mutex.synchronize do
+            @correlation_id = skippable_response.correlation_id
+            @skippable_tests = skippable_response.tests
+          end
 
           Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
           Datadog.logger.debug { "Found #{@skippable_tests.count} skippable tests." }
