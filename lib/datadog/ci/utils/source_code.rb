@@ -19,6 +19,7 @@ module Datadog
           # Ruby has outdated RBS for RubyVM::InstructionSequence where method `of` is not defined
           # steep:ignore:start
           iseq = RubyVM::InstructionSequence.of(target)
+          return nil unless iseq.is_a?(RubyVM::InstructionSequence)
           # steep:ignore:end
           _native_last_line_from_iseq(iseq)
         end

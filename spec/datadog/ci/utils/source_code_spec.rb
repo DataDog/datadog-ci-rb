@@ -42,6 +42,14 @@ RSpec.describe Datadog::CI::Utils::SourceCode do
           expect(subject).to eq(19)
         end
       end
+
+      context "with arbitrary thing" do
+        let(:target) { 42 }
+
+        it "returns nil" do
+          expect(subject).to eq(nil)
+        end
+      end
     end
 
     context "when LAST_LINE_AVAILABLE is false" do

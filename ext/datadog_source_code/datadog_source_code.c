@@ -8,10 +8,12 @@ void rb_iseq_code_location(const rb_iseq_t *, int *first_lineno,
                            int *first_column, int *last_lineno,
                            int *last_column);
 
-static VALUE iseq_last_line(VALUE self, VALUE iseqw) {
+static VALUE last_line_from_iseq(VALUE self, VALUE iseqw) {
   const rb_iseq_t *iseq = rb_iseqw_to_iseq(iseqw);
+
   int line;
   rb_iseq_code_location(iseq, NULL, NULL, &line, NULL);
+
   return INT2NUM(line);
 }
 
@@ -22,5 +24,5 @@ void Init_datadog_source_code(void) {
   VALUE mSourceCode = rb_define_module_under(mUtils, "SourceCode");
 
   rb_define_singleton_method(mSourceCode, "_native_last_line_from_iseq",
-                             iseq_last_line, 1);
+                             last_line_from_iseq, 1);
 }
