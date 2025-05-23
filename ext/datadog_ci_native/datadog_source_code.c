@@ -1,5 +1,4 @@
 #include <ruby.h>
-#include <ruby/debug.h>
 
 // These structs and functions are not exported by MRI because they are part of
 // the internal API. We declare them here to use them via dynamic linking.
