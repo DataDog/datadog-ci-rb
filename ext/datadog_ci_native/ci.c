@@ -1,5 +1,3 @@
-#include <ruby.h>
-
 #include "datadog_cov.h"
 #include "datadog_source_code.h"
 

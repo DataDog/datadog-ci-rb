@@ -1,9 +1,10 @@
 #include <ruby.h>
 #include <ruby/debug.h>
 
+// These structs and functions are not exported by MRI because they are part of
+// the internal API. We declare them here to use them via dynamic linking.
 typedef struct rb_iseq_struct rb_iseq_t;
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
-
 void rb_iseq_code_location(const rb_iseq_t *, int *first_lineno,
                            int *first_column, int *last_lineno,
                            int *last_column);
