@@ -200,8 +200,10 @@ module Datadog
         end
 
         def restore_state(state)
-          @correlation_id = state[:correlation_id]
-          @skippable_tests = state[:skippable_tests]
+          @mutex.synchronize do
+            @correlation_id = state[:correlation_id]
+            @skippable_tests = state[:skippable_tests]
+          end
         end
 
         def storage_key
