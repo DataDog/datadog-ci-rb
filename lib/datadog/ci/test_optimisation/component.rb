@@ -225,7 +225,7 @@ module Datadog
         end
 
         def load_datadog_cov!
-          require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+          require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
           Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
         rescue LoadError => e

@@ -2,7 +2,7 @@
 
 require "fileutils"
 
-require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
 RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
   before do

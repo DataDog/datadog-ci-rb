@@ -5,7 +5,7 @@ module Datadog
     module Utils
       module SourceCode
         begin
-          require "datadog_source_code.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+          require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
           LAST_LINE_AVAILABLE = true
         rescue LoadError

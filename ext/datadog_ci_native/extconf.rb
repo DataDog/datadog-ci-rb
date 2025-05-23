@@ -1,6 +1,6 @@
-if RUBY_ENGINE != "ruby" || Gem.win_platform? || !defined?(RubyVM::InstructionSequence)
+if RUBY_ENGINE != "ruby" || Gem.win_platform?
   warn(
-    "WARN: Skipping build of source code native extension because of unsupported platform."
+    "WARN: Skipping build of code coverage native extension because of unsupported platform."
   )
 
   File.write("Makefile", "all install clean: # dummy makefile that does nothing")
@@ -13,6 +13,6 @@ require "mkmf"
 # This makes it easier for development (avoids "oops I forgot to rebuild when I switched my Ruby") and ensures that
 # the wrong library is never loaded.
 # When requiring, we need to use the exact same string, including the version and the platform.
-EXTENSION_NAME = "datadog_source_code.#{RUBY_VERSION}_#{RUBY_PLATFORM}".freeze
+EXTENSION_NAME = "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}".freeze
 
 create_makefile(EXTENSION_NAME)

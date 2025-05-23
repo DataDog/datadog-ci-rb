@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
 require_relative "app/model/my_model"
 require_relative "app/model/my_model_❤️"
