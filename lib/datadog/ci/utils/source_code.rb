@@ -21,6 +21,8 @@ module Datadog
           iseq = RubyVM::InstructionSequence.of(target)
           return nil unless iseq.is_a?(RubyVM::InstructionSequence)
           # steep:ignore:end
+
+          # this function is implemented in ext/datadog_ci_native/datadog_source_code.c
           _native_last_line_from_iseq(iseq)
         end
       end
