@@ -54,6 +54,8 @@ module Datadog
 
         def self.base_commit_sha: (?base_branch: String?) -> String?
 
+        private
+
         def self.get_source_branch: () -> String?
 
         def self.get_remote_name: () -> String
@@ -66,13 +68,11 @@ module Datadog
 
         def self.find_fallback_default_branch: (String remote_name) -> String?
 
-        def self.build_candidate_list: (String remote_name, String target_branch, String? base_branch) -> Array[String]?
+        def self.build_candidate_list: (String remote_name, String? base_branch) -> Array[String]?
 
         def self.compute_branch_metrics: (Array[String] candidates, String target_branch) -> Hash[String, { behind: Integer, ahead: Integer, base_sha: String }]
 
         def self.find_best_branch: (Hash[String, { behind: Integer, ahead: Integer, base_sha: String }] metrics, String? default_branch, String remote_name) -> String?
-
-        private
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]
 
