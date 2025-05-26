@@ -160,7 +160,7 @@ module Datadog
 
         TAG_FAIL_FAST_TEST_ORDER_ENABLED: "fail_fast_test_order_enabled"
 
-        METRIC_IMPACTED_TESTS_IS_MODIFIED: "impacted_tests.is_modified"
+        TAG_IS_MODIFIED: "is_modified"
 
         module EventType
           TEST: "test"
