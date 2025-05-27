@@ -68,8 +68,6 @@ module Datadog
 
         METRIC_TEST_SESSION = "test_session"
 
-        METRIC_IMPACTED_TESTS_IS_MODIFIED = "impacted_tests.is_modified"
-
         TAG_TEST_FRAMEWORK = "test_framework"
         TAG_EVENT_TYPE = "event_type"
         TAG_HAS_CODEOWNER = "has_codeowner"
@@ -92,6 +90,7 @@ module Datadog
         TAG_IS_QUARANTINED = "is_quarantined"
         TAG_IS_TEST_DISABLED = "is_disabled"
         TAG_HAS_FAILED_ALL_RETRIES = "has_failed_all_retries"
+        TAG_IS_MODIFIED = "is_modified"
         # tags for git_requests.settings_response metric
         TAG_COVERAGE_ENABLED = "coverage_enabled"
         TAG_ITR_ENABLED = "itr_enabled"

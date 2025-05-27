@@ -75,6 +75,9 @@ module Datadog
           tags[Ext::Telemetry::TAG_IS_TEST_DISABLED] = "true" if span.get_tag(Ext::Test::TAG_IS_TEST_DISABLED)
           tags[Ext::Telemetry::TAG_HAS_FAILED_ALL_RETRIES] = "true" if span.get_tag(Ext::Test::TAG_HAS_FAILED_ALL_RETRIES)
 
+          # impacted tests tags
+          tags[Ext::Telemetry::TAG_IS_MODIFIED] = "true" if span.get_tag(Ext::Test::TAG_TEST_IS_MODIFIED)
+
           tags
         end
 

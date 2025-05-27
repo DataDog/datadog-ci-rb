@@ -269,6 +269,30 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
 
       it { event_finished }
     end
+
+    context "test span with is_modified tag" do
+      let(:span) do
+        Datadog::Tracing::SpanOperation.new(
+          "test",
+          type: Datadog::CI::Ext::AppTypes::TYPE_TEST,
+          tags: {
+            Datadog::CI::Ext::Test::TAG_FRAMEWORK => "rspec",
+            Datadog::CI::Ext::Environment::TAG_PROVIDER_NAME => "gha",
+            Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED => "true"
+          }
+        )
+      end
+
+      let(:expected_tags) do
+        {
+          Datadog::CI::Ext::Telemetry::TAG_EVENT_TYPE => Datadog::CI::Ext::Telemetry::EventType::TEST,
+          Datadog::CI::Ext::Telemetry::TAG_TEST_FRAMEWORK => "rspec",
+          Datadog::CI::Ext::Telemetry::TAG_IS_MODIFIED => "true"
+        }
+      end
+
+      it { event_finished }
+    end
   end
 
   describe ".test_session_started" do

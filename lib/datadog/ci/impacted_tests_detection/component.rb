@@ -4,7 +4,6 @@ require "set"
 
 require_relative "../ext/test"
 require_relative "../git/local_repository"
-require_relative "telemetry"
 
 module Datadog
   module CI
@@ -69,7 +68,6 @@ module Datadog
           end
 
           test_span.set_tag(Ext::Test::TAG_TEST_IS_MODIFIED, "true")
-          Telemetry.impacted_test_detected
         end
 
         private

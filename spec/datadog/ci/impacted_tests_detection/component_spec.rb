@@ -137,9 +137,9 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
         allow(component).to receive(:modified?).with(test_span).and_return(true)
       end
 
-      it "sets the is_modified tag and calls Telemetry" do
+      it "sets the is_modified tag" do
         expect(test_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED, "true")
-        expect(Datadog::CI::ImpactedTestsDetection::Telemetry).to receive(:impacted_test_detected)
+
         component.tag_modified_test(test_span)
       end
     end
@@ -149,9 +149,9 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
         allow(component).to receive(:modified?).with(test_span).and_return(false)
       end
 
-      it "does not set the tag or call Telemetry" do
+      it "does not set the is_modified tag" do
         expect(test_span).not_to receive(:set_tag)
-        expect(Datadog::CI::ImpactedTestsDetection::Telemetry).not_to receive(:impacted_test_detected)
+
         component.tag_modified_test(test_span)
       end
     end
