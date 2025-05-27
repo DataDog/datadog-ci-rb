@@ -377,7 +377,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           expect(base_sha).to eq(expected_base_sha)
         end
 
-        context "with fresh clone where only the feature branch exists (repo cloned in GitHub Actions style)" do
+        context "when repository is cloned from remote" do
           let(:new_clone_path) { File.join(tmpdir, "new_source_repo") }
 
           def with_new_clone_git_dir
@@ -386,39 +386,64 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
             end
           end
 
-          def clone_only_feature_branch
-            `mkdir -p #{new_clone_path}`
-            `cd #{new_clone_path} && git init`
-            `cd #{new_clone_path} && git remote add origin file://#{origin_path}`
-            `cd #{new_clone_path} && git fetch --no-tags --prune --no-recurse-submodules origin #{feature_branch}`
-            `cd #{new_clone_path} && git checkout --progress --force -B #{feature_branch} refs/remotes/origin/#{feature_branch}`
-          end
-
-          it "returns the ref from default branch" do
-            expected_base_sha = build_base_branch
-            build_feature_branch
-            clone_only_feature_branch
-
-            base_sha = nil
-            with_new_clone_git_dir do
-              base_sha = described_class.base_commit_sha
+          context "with fresh clone where remote branch is cloned into master branch of the local repository" do
+            def clone_from_remote_into_local_master_branch
+              `mkdir -p #{new_clone_path}`
+              `cd #{new_clone_path} && git init`
+              `cd #{new_clone_path} && git remote add origin file://#{origin_path}`
+              `cd #{new_clone_path} && git fetch origin #{feature_branch}`
+              `cd #{new_clone_path} && git reset --hard origin/#{feature_branch}`
             end
 
-            expect(base_sha).to eq(expected_base_sha)
+            it "returns the ref from default branch" do
+              expected_base_sha = build_base_branch
+              build_feature_branch
+              clone_from_remote_into_local_master_branch
+
+              base_sha = nil
+              with_new_clone_git_dir do
+                base_sha = described_class.base_commit_sha
+              end
+
+              expect(base_sha).to eq(expected_base_sha)
+            end
           end
 
-          context "when base branch is provided" do
-            it "returns the ref from the base branch" do
+          context "with fresh clone where only the feature branch exists (repo cloned in GitHub Actions style)" do
+            def clone_only_feature_branch
+              `mkdir -p #{new_clone_path}`
+              `cd #{new_clone_path} && git init`
+              `cd #{new_clone_path} && git remote add origin file://#{origin_path}`
+              `cd #{new_clone_path} && git fetch --no-tags --prune --no-recurse-submodules origin #{feature_branch}`
+              `cd #{new_clone_path} && git checkout --progress --force -B #{feature_branch} refs/remotes/origin/#{feature_branch}`
+            end
+
+            it "returns the ref from default branch" do
               expected_base_sha = build_base_branch
               build_feature_branch
               clone_only_feature_branch
 
               base_sha = nil
               with_new_clone_git_dir do
-                base_sha = described_class.base_commit_sha(base_branch: "master")
+                base_sha = described_class.base_commit_sha
               end
 
               expect(base_sha).to eq(expected_base_sha)
+            end
+
+            context "when base branch is provided" do
+              it "returns the ref from the base branch" do
+                expected_base_sha = build_base_branch
+                build_feature_branch
+                clone_only_feature_branch
+
+                base_sha = nil
+                with_new_clone_git_dir do
+                  base_sha = described_class.base_commit_sha(base_branch: "master")
+                end
+
+                expect(base_sha).to eq(expected_base_sha)
+              end
             end
           end
         end
