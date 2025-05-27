@@ -105,6 +105,6 @@ The library uses a component-based architecture with several key systems:
 When working with this codebase, pay special attention to:
 
 - Integration with testing frameworks, which often use dynamic patching
-- The C extension in `ext/datadog_cov` for performance-critical code coverage
+- The C extension in `ext/datadog_ci_native` for performance-critical code coverage and for accessing end lines info from compiled iseqs
 - Multi-threading safety for background workers and data collection
 - Compatibility across different Ruby versions and testing frameworks

@@ -2,6 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
+require_relative "../../utils/source_code"
 require_relative "../../utils/test_run"
 require_relative "../instrumentation"
 require_relative "ext"
@@ -26,17 +27,23 @@ module Datadog
               # don't report test to RSpec::Core::Reporter until retries are done
               @skip_reporting = true
 
+              # @type var tags : Hash[String, String]
+              tags = {
+                CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
+                CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
+                CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
+                CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s,
+                CI::Ext::Test::TAG_PARAMETERS => datadog_test_parameters
+              }
+
+              end_line = Utils::SourceCode.last_line(@example_block)
+              tags[CI::Ext::Test::TAG_SOURCE_END] = end_line.to_s if end_line
+
               test_retries_component.with_retries do
                 test_visibility_component.trace_test(
                   datadog_test_name,
                   datadog_test_suite_name,
-                  tags: {
-                    CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                    CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
-                    CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
-                    CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s,
-                    CI::Ext::Test::TAG_PARAMETERS => datadog_test_parameters
-                  },
+                  tags: tags,
                   service: datadog_configuration[:service_name]
                 ) do |test_span|
                   test_span&.itr_unskippable! if datadog_unskippable?

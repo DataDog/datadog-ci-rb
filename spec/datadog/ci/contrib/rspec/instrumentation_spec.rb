@@ -170,6 +170,8 @@ RSpec.describe "RSpec instrumentation" do
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
       expect(first_test_span).to have_test_tag(:source_start, "142")
+      expect(first_test_span).to have_test_tag(:source_end, "144") unless PlatformHelpers.jruby?
+
       expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"

@@ -150,7 +150,7 @@ module Datadog
         def skippable?(datadog_test_id)
           return false if !enabled? || !skipping_tests?
 
-          @skippable_tests.include?(datadog_test_id)
+          @mutex.synchronize { @skippable_tests.include?(datadog_test_id) }
         end
 
         def mark_if_skippable(test)
@@ -200,8 +200,10 @@ module Datadog
         end
 
         def restore_state(state)
-          @correlation_id = state[:correlation_id]
-          @skippable_tests = state[:skippable_tests]
+          @mutex.synchronize do
+            @correlation_id = state[:correlation_id]
+            @skippable_tests = state[:skippable_tests]
+          end
         end
 
         def storage_key
@@ -225,7 +227,7 @@ module Datadog
         end
 
         def load_datadog_cov!
-          require "datadog_cov.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+          require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
           Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
         rescue LoadError => e
@@ -253,8 +255,10 @@ module Datadog
               .fetch_skippable_tests(test_session)
           @skippable_tests_fetch_error = skippable_response.error_message unless skippable_response.ok?
 
-          @correlation_id = skippable_response.correlation_id
-          @skippable_tests = skippable_response.tests
+          @mutex.synchronize do
+            @correlation_id = skippable_response.correlation_id
+            @skippable_tests = skippable_response.tests
+          end
 
           Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
           Datadog.logger.debug { "Found #{@skippable_tests.count} skippable tests." }

@@ -2,6 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
+require_relative "../../utils/source_code"
 require_relative "../instrumentation"
 require_relative "ext"
 require_relative "helpers"
@@ -27,17 +28,26 @@ module Datadog
               end
 
               test_suite_name = Helpers.test_suite_name(self.class, name)
-              source_file, line_number = method(name).source_location
+
+              # @type var tags : Hash[String, String]
+              tags = {
+                CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
+                CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
+              }
+
+              # try to find out where test method starts and ends
+              test_method = method(name)
+              source_file, first_line_number = test_method.source_location
+              last_line_number = Utils::SourceCode.last_line(test_method)
+
+              tags[CI::Ext::Test::TAG_SOURCE_FILE] = Git::LocalRepository.relative_to_root(source_file) if source_file
+              tags[CI::Ext::Test::TAG_SOURCE_START] = first_line_number.to_s if first_line_number
+              tags[CI::Ext::Test::TAG_SOURCE_END] = last_line_number.to_s if last_line_number
 
               test_span = test_visibility_component.trace_test(
                 name,
                 test_suite_name,
-                tags: {
-                  CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                  CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
-                  CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(source_file),
-                  CI::Ext::Test::TAG_SOURCE_START => line_number.to_s
-                },
+                tags: tags,
                 service: datadog_configuration[:service_name]
               )
               # Steep type checker doesn't know that we patched Minitest::Test class definition
