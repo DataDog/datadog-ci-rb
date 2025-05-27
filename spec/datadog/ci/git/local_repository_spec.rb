@@ -409,6 +409,30 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
             end
           end
 
+          context "when remote is pointing to non existing repository" do
+            def create_new_repo_with_non_existing_remote
+              `mkdir -p #{new_clone_path}`
+              `cd #{new_clone_path} && git init`
+              `cd #{new_clone_path} && echo "base branch file" >> #{base_file}`
+              `cd #{new_clone_path} && git add -A`
+              `cd #{new_clone_path} && git commit -m 'first commit'`
+              `cd #{new_clone_path} && git remote add origin git@git.com:datadog/non_existing_repo.git`
+            end
+
+            it "returns nil", skip: true do
+              build_base_branch
+              build_feature_branch
+              create_new_repo_with_non_existing_remote
+
+              base_sha = nil
+              with_new_clone_git_dir do
+                base_sha = described_class.base_commit_sha
+              end
+
+              expect(base_sha).to be_nil
+            end
+          end
+
           context "with fresh clone where only the feature branch exists (repo cloned in GitHub Actions style)" do
             def clone_only_feature_branch
               `mkdir -p #{new_clone_path}`
