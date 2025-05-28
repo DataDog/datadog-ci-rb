@@ -5,6 +5,7 @@ require "pathname"
 require "set"
 
 require_relative "../ext/telemetry"
+require_relative "../utils/command"
 require_relative "telemetry"
 require_relative "user"
 
@@ -430,7 +431,7 @@ module Datadog
         end
 
         def self.get_source_branch
-          source_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")&.strip
+          source_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")
           if source_branch.nil?
             Datadog.logger.debug { "Could not get current branch" }
             return nil
@@ -480,7 +481,7 @@ module Datadog
           candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/remotes/#{remote_name}")&.lines&.map(&:strip)
           Datadog.logger.debug { "Available branches: '#{candidates}'" }
           candidates&.select! do |candidate_branch|
-            # TODO: this if might need to be refactored into its own entity
+            # TODO: this "if" might need to be refactored into its own entity
             if base_branch.nil?
               main_like_branch?(candidate_branch, remote_name)
             else
@@ -546,8 +547,6 @@ module Datadog
           end
         end
 
-        # makes .exec_git_command private to make sure that this method
-        # is not called from outside of this module with insecure parameters
         class << self
           private
 
@@ -556,20 +555,16 @@ module Datadog
           end
 
           def exec_git_command(cmd, stdin: nil)
-            # Shell injection is alleviated by making sure that no outside modules call this method.
-            # It is called only internally with static parameters.
-
             # @type var out: String
             # @type var status: Process::Status?
-            out, status = Open3.capture2e(cmd, stdin_data: stdin)
+            out, status = Utils::Command.exec_command(cmd, stdin_data: stdin)
 
             if status.nil?
               # @type var retry_count: Integer
               retry_count = COMMAND_RETRY_COUNT
               Datadog.logger.debug { "Opening pipe failed, starting retries..." }
               while status.nil? && retry_count.positive?
-                # no-dd-sa:ruby-security/shell-injection
-                out, status = Open3.capture2e(cmd, stdin_data: stdin)
+                out, status = Utils::Command.exec_command(cmd, stdin_data: stdin)
                 Datadog.logger.debug { "After retry status is [#{status}]" }
                 retry_count -= 1
               end
@@ -583,15 +578,6 @@ module Datadog
                 status: status
               )
             end
-
-            # Sometimes Encoding.default_external is somehow set to US-ASCII which breaks
-            # commit messages with UTF-8 characters like emojis
-            # We force output's encoding to be UTF-8 in this case
-            # This is safe to do as UTF-8 is compatible with US-ASCII
-            if Encoding.default_external == Encoding::US_ASCII
-              out = out.force_encoding(Encoding::UTF_8)
-            end
-            out.strip! # There's always a "\n" at the end of the command output
 
             return nil if out.empty?
 

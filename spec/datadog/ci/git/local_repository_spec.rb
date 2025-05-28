@@ -5,6 +5,11 @@ require_relative "../../../../lib/datadog/ci/git/local_repository"
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
   include_context "Telemetry spy"
 
+  before do
+    # to make tests faster we lower the default timeout for all external calls
+    stub_const("Datadog::CI::Utils::Command::DEFAULT_TIMEOUT", 0.5)
+  end
+
   let(:environment_variables) { {} }
 
   def with_custom_git_environment
@@ -20,7 +25,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
     context "caches the result" do
       before do
-        expect(Open3).to receive(:capture2e).never
+        expect(Datadog::CI::Utils::Command).to receive(:exec_command).never
       end
 
       it "returns the same result" do
@@ -90,7 +95,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
     context "caches the result" do
       before do
-        expect(Open3).to receive(:capture2e).never
+        expect(Datadog::CI::Utils::Command).to receive(:exec_command).never
       end
 
       it "returns the same result" do
@@ -419,7 +424,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
               `cd #{new_clone_path} && git remote add origin git@git.com:datadog/non_existing_repo.git`
             end
 
-            it "returns nil", skip: true do
+            it "returns nil" do
               build_base_branch
               build_feature_branch
               create_new_repo_with_non_existing_remote
@@ -562,7 +567,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
         context "successful from the first try" do
           before do
-            expect(Open3).to receive(:capture2e).and_call_original.at_most(2).times
+            expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original.at_most(2).times
           end
 
           it "unshallows the repository" do
@@ -574,8 +579,8 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
         context "when unshallow command fails" do
           before do
-            allow(Open3).to receive(:capture2e).and_call_original
-            allow(Open3).to receive(:capture2e)
+            allow(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original
+            allow(Datadog::CI::Utils::Command).to receive(:exec_command)
               .with("git fetch --shallow-since=\"1 month ago\" --update-shallow --filter=\"blob:none\" --recurse-submodules=no $(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)", stdin_data: nil)
               .and_return(["error", double(success?: false, to_i: 1)])
           end
@@ -693,7 +698,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
       context "succeeds on retries" do
         before do
-          expect(Open3).to receive(:capture2e).and_return([nil, nil], [+"sha1\nsha2", double(success?: true)])
+          expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_return([nil, nil], [+"sha1\nsha2", double(success?: true)])
         end
 
         it { is_expected.to eq(%w[sha1 sha2]) }
@@ -701,8 +706,8 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
       context "fails on retries" do
         before do
-          expect(Open3).to(
-            receive(:capture2e)
+          expect(Datadog::CI::Utils::Command).to(
+            receive(:exec_command)
               .and_return([nil, nil])
               .at_most(described_class::COMMAND_RETRY_COUNT + 1)
               .times
@@ -723,7 +728,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
       context "returns exit code 1" do
         before do
-          expect(Open3).to receive(:capture2e).and_return(["error", double(success?: false, to_i: 1)])
+          expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_return(["error", double(success?: false, to_i: 1)])
         end
 
         it { is_expected.to eq([]) }
@@ -740,7 +745,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
       context "git executable is missing" do
         before do
-          expect(Open3).to receive(:capture2e).and_raise(Errno::ENOENT.new("no file or directoru"))
+          expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_raise(Errno::ENOENT.new("no file or directoru"))
         end
 
         it { is_expected.to eq([]) }

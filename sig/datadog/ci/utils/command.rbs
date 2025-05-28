@@ -1,0 +1,15 @@
+# frozen_string_literal: true
+
+module Datadog
+  module CI
+    module Utils
+      module Command
+        DEFAULT_TIMEOUT: Integer
+
+        BUFFER_SIZE: Integer
+
+        def self.exec_command: (String command, ?stdin_data: String?, ?timeout: Integer) -> [String, Process::Status?]
+      end
+    end
+  end
+end

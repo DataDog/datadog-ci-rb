@@ -1,3 +1,5 @@
 module Open3
   def self.capture2e: (String cmd, ?stdin_data: String?) -> [String, Process::Status?]
+
+  def self.popen2e: (String cmd) -> [IO, IO, Thread]
 end
