@@ -497,7 +497,7 @@ module Datadog
           metrics = {}
           candidates.each do |cand|
             # base_sha = exec_git_command("git merge-base #{cand} #{source_branch} 2>/dev/null")&.strip
-            base_sha = exec_git_command("git merge-base #{cand} HEAD")
+            base_sha = exec_git_command("git merge-base #{cand} #{source_branch}")
             next if base_sha.nil? || base_sha.empty?
 
             behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{source_branch}")&.strip&.split&.map(&:to_i)
@@ -572,7 +572,7 @@ module Datadog
 
             if status.nil? || !status.success?
               raise GitCommandExecutionError.new(
-                "Failed to run git command [#{cmd}] with input [#{stdin}] and output [#{out}]",
+                "Failed to run git command [#{cmd}] with input [#{stdin}] and output [#{out}]. Status: #{status}",
                 output: out,
                 command: cmd,
                 status: status
