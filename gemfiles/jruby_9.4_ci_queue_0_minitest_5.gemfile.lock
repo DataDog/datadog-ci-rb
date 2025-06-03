@@ -30,7 +30,7 @@ GEM
       thor (>= 0.14.0)
     bigdecimal (3.2.1-java)
     builder (3.3.0)
-    ci-queue (0.67.0)
+    ci-queue (0.66.0)
       logger
     climate_control (1.2.0)
     crack (1.0.0)
@@ -95,7 +95,7 @@ PLATFORMS
 
 DEPENDENCIES
   appraisal
-  ci-queue (~> 0)
+  ci-queue (~> 0, < 0.67)
   climate_control
   datadog!
   datadog-ci!
