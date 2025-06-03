@@ -80,7 +80,7 @@ module Datadog
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]
 
-        def self.exec_git_command: (String cmd, ?stdin: String?, ?timeout: Integer) -> String?
+        def self.exec_git_command: (Array[String] cmd, ?stdin: String?, ?timeout: Integer) -> String?
 
         def self.log_failure: (StandardError e, String action) -> void
 

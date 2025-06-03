@@ -6,18 +6,34 @@ require "datadog/core/utils/time"
 module Datadog
   module CI
     module Utils
-      # Providdes a way to call external commands with timeout
+      # Provides a way to call external commands with timeout
       module Command
         DEFAULT_TIMEOUT = 10 # seconds
         BUFFER_SIZE = 1024
 
+        # Executes a command with optional timeout and stdin data
+        #
+        # @param command [Array<String>] Command to execute.
+        #   When passed as an Array, the command bypasses shell interpretation (safer).
+        #   When passed as a String, the command is executed through the shell.
+        # @param stdin_data [String, nil] Data to write to stdin
+        # @param timeout [Integer] Maximum execution time in seconds
+        # @return [Array<String, Process::Status?>] Output and exit status
+        #
+        # @example Safe usage with array (recommended)
+        #   Command.exec_command(["git", "log", "-n", "1"])
+        #
+        # @example Legacy usage with string
+        #   Command.exec_command("git log -n 1")
+        #
         def self.exec_command(command, stdin_data: nil, timeout: DEFAULT_TIMEOUT)
           output = +""
           exit_value = nil
           timeout_reached = false
 
           begin
-            stdin, stderrout, thread = Open3.popen2e(command)
+            stdin, stderrout, thread = Open3.popen2e(*command)
+
             pid = thread[:pid]
             start = Core::Utils::Time.get_time
 

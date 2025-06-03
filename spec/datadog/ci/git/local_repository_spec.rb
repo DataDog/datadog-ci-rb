@@ -606,7 +606,8 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
         context "successful from the first try" do
           before do
-            expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original.at_most(2).times
+            # We now make more calls: config, rev-parse HEAD, rev-parse upstream, and fetch
+            expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original.at_most(5).times
           end
 
           it "unshallows the repository" do
@@ -618,12 +619,17 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
         context "when unshallow command fails" do
           before do
+            head_commit = "sha"
             allow(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original
             allow(Datadog::CI::Utils::Command).to receive(:exec_command)
+              .with(["git", "rev-parse", "HEAD"], stdin_data: nil, timeout: Datadog::CI::Git::LocalRepository::SHORT_TIMEOUT)
+              .and_return([head_commit, double(success?: true)])
+
+            # Mock the fetch command with the head commit to fail
+            allow(Datadog::CI::Utils::Command).to receive(:exec_command)
               .with(
-                "git fetch --shallow-since=\"1 month ago\" --update-shallow --filter=\"blob:none\" --recurse-submodules=no $(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)",
-                stdin_data: nil,
-                timeout: Datadog::CI::Git::LocalRepository::UNSHALLOW_TIMEOUT
+                ["git", "fetch", "--shallow-since=\"1 month ago\"", "--update-shallow", "--filter=blob:none", "--recurse-submodules=no", "origin", head_commit],
+                stdin_data: nil, timeout: Datadog::CI::Git::LocalRepository::UNSHALLOW_TIMEOUT
               )
               .and_return(["error", double(success?: false, to_i: 1)])
           end

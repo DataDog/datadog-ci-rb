@@ -8,7 +8,7 @@ module Datadog
 
         BUFFER_SIZE: Integer
 
-        def self.exec_command: (String command, ?stdin_data: String?, ?timeout: Integer) -> [String, Process::Status?]
+        def self.exec_command: (Array[String] command, ?stdin_data: String?, ?timeout: Integer) -> [String, Process::Status?]
       end
     end
   end
