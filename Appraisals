@@ -81,7 +81,7 @@ def self.with_ci_queue_minitest_gem(minitest_versions: 5, ci_queue_versions: 0)
     Array(ci_queue_versions).each do |ci_queue_v|
       appraise "ci-queue-#{ci_queue_v}-minitest-#{minitest_v}" do
         gem "minitest", "~> #{minitest_v}"
-        gem "ci-queue", "~> #{ci_queue_v}"
+        gem "ci-queue", "~> #{ci_queue_v}", "< 0.67"
         gem "minitest-reporters", "~> 1"
       end
     end
