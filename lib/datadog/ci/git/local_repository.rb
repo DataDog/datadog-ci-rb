@@ -350,7 +350,7 @@ module Datadog
             output.each_line do |line|
               # Match lines like: diff --git a/foo/bar.rb b/foo/bar.rb
               # This captures git changes on file level
-              match = /^diff --git a\/(?<file>.+) b\/(?<file2>.+)$/.match(line)
+              match = /^diff --git a\/(?<file>.+?) b\//.match(line)
               if match && match[:file]
                 changed_file = match[:file]
                 # Normalize to repo root

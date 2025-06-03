@@ -367,6 +367,45 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           # Should includes all modified and renamed files
           expect(changed_files).to eq(Set.new([base_file, feature_file, file_to_rename]))
         end
+
+        context "with malicious input that could cause ReDoS" do
+          it "handles pathological diff output without catastrophic backtracking" do
+            # Create a malicious git diff output that would cause catastrophic backtracking
+            # with the vulnerable regex /^diff --git a\/(?<file>.+) b\/(?<file2>.+)$/
+            # The pattern "a b/a b/a b/..." repeated many times would cause exponential backtracking
+            malicious_path = "a b/" * 50 + "file.txt"
+            malicious_diff_output = "diff --git a/#{malicious_path} b/#{malicious_path}\n" \
+                                   "--- a/#{malicious_path}\n" \
+                                   "+++ b/#{malicious_path}\n" \
+                                   "@@ -1 +1 @@\n" \
+                                   "-old content\n" \
+                                   "+new content\n"
+            expected_path = "a"
+
+            # Mock the git command to return our malicious output
+            allow(described_class).to receive(:exec_git_command)
+              .with(anything, timeout: anything)
+              .and_return(malicious_diff_output)
+
+            # With the non-greedy regex, it will only capture "a" (up to the first " b/")
+            # Mock relative_to_root to return a simple path
+            allow(described_class).to receive(:relative_to_root)
+              .with(expected_path)
+              .and_return(expected_path)
+
+            # This should complete quickly without timing out
+            result = nil
+            duration_ms = Datadog::Core::Utils::Time.measure(:float_millisecond) do
+              result = described_class.get_changed_files_from_diff("base_commit_sha")
+            end
+
+            # Should complete in under 1000 milliseconds (vulnerable regex would take much longer)
+            expect(duration_ms).to be < 1000.0
+            expect(result).to be_a(Set)
+            # The non-greedy regex will extract "a" from the malicious path
+            expect(result).to include(expected_path)
+          end
+        end
       end
 
       describe ".base_commit_sha" do
