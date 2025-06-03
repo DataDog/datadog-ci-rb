@@ -55,7 +55,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           telemetry_double = instance_double(
             Datadog::Core::Telemetry::Component,
             emit_closing!: nil,
-            stop!: nil
+            shutdown!: nil
           )
           allow(Datadog::Core::Telemetry::Component).to receive(:build).and_return(telemetry_double)
 
