@@ -49,10 +49,13 @@ module Datadog
               break unless thread.alive?
             end
 
+            if (Core::Utils::Time.get_time - start) > timeout
+              timeout_reached = true
+            end
+
             if thread.alive?
               begin
                 Process.kill("TERM", pid)
-                timeout_reached = true
               rescue
                 # Process already terminated
               end
