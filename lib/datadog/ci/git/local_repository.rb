@@ -419,14 +419,14 @@ module Datadog
           begin
             remote_heads = exec_git_command("git ls-remote --heads #{remote_name} #{branch}")
             if remote_heads.nil? || remote_heads.empty?
-              Datadog.logger.debug { "Branch '#{branch}' doesn't exist in remote" }
+              Datadog.logger.debug { "Branch '#{remote_name}/#{branch}' doesn't exist in remote" }
               return
             end
 
-            Datadog.logger.debug { "Branch '#{branch}' exists in remote, fetching" }
+            Datadog.logger.debug { "Branch '#{remote_name}/#{branch}' exists in remote, fetching" }
             exec_git_command("git fetch --depth 1 #{remote_name} #{branch}")
           rescue GitCommandExecutionError => e
-            Datadog.logger.debug { "Branch '#{branch}' couldn't be fetched from remote: #{e}" }
+            Datadog.logger.debug { "Branch '#{remote_name}/#{branch}' couldn't be fetched from remote: #{e}" }
           end
         end
 

@@ -43,7 +43,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::LocalGit do
 
     context "when git show -s returns nothing" do
       before do
-        allow(Open3).to receive(:capture2e).and_return(["", double(success?: true)])
+        allow(Datadog::CI::Utils::Command).to receive(:exec_command).and_return(["", double(success?: true)])
       end
 
       it "returns nil and does not fail" do
