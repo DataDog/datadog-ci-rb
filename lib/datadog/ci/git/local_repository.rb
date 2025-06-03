@@ -466,7 +466,7 @@ module Datadog
 
         def self.find_fallback_default_branch(remote_name)
           ["main", "master"].each do |fallback|
-            exec_git_command("git show-ref --verify --quiet \"refs/remotes/#{remote_name}/#{fallback}\"")
+            exec_git_command("git show-ref --verify --quiet refs/remotes/#{remote_name}/#{fallback}")
             Datadog.logger.debug { "Found fallback default branch '#{fallback}'" }
             return fallback
           rescue
@@ -477,7 +477,7 @@ module Datadog
 
         def self.build_candidate_list(remote_name, base_branch)
           # we cannot assume that local branches are the same as remote branches
-          # so we need to go over remote branches
+          # so we need to go over remote branches only
           candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/remotes/#{remote_name}")&.lines&.map(&:strip)
           Datadog.logger.debug { "Available branches: '#{candidates}'" }
           candidates&.select! do |candidate_branch|
@@ -496,8 +496,7 @@ module Datadog
         def self.compute_branch_metrics(candidates, source_branch)
           metrics = {}
           candidates.each do |cand|
-            # base_sha = exec_git_command("git merge-base #{cand} #{source_branch} 2>/dev/null")&.strip
-            base_sha = exec_git_command("git merge-base #{cand} #{source_branch}")
+            base_sha = exec_git_command("git merge-base #{cand} #{source_branch} 2>/dev/null")&.strip
             next if base_sha.nil? || base_sha.empty?
 
             behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{source_branch}")&.strip&.split&.map(&:to_i)
