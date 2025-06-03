@@ -64,7 +64,7 @@ module Datadog
             thread.join(1)
             exit_value = thread.value
           ensure
-            stderrout.close if stderrout
+            stderrout&.close
           end
 
           # we read command's output as binary so now we need to set an appropriate encoding for the result

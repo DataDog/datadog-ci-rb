@@ -28,6 +28,12 @@ module Datadog
         POSSIBLE_BASE_BRANCHES = %w[main master preprod prod dev development trunk].freeze
         DEFAULT_LIKE_BRANCH_FILTER = /^(#{POSSIBLE_BASE_BRANCHES.join("|")}|release\/.*|hotfix\/.*)$/.freeze
 
+        # these values were set based on internal telemetry
+        # all timeouts are in seconds
+        UNSHALLOW_TIMEOUT = 500
+        LONG_TIMEOUT = 30
+        SHORT_TIMEOUT = 3
+
         def self.root
           return @root if defined?(@root)
 
@@ -187,7 +193,7 @@ module Datadog
           output = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            output = exec_git_command("git log --format=%H -n 1000 --since=\"1 month ago\"")
+            output = exec_git_command("git log --format=%H -n 1000 --since=\"1 month ago\"", timeout: LONG_TIMEOUT)
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_LOCAL_COMMITS, duration_ms)
@@ -216,7 +222,8 @@ module Datadog
               "--no-object-names " \
               "--filter=blob:none " \
               "--since=\"1 month ago\" " \
-              "#{excluded_commits} #{included_commits}"
+              "#{excluded_commits} #{included_commits}",
+              timeout: LONG_TIMEOUT
             )
           end
 
@@ -242,7 +249,8 @@ module Datadog
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
             exec_git_command(
               "git pack-objects --compression=9 --max-pack-size=3m #{path}/#{basename}",
-              stdin: commit_tree
+              stdin: commit_tree,
+              timeout: LONG_TIMEOUT
             )
           end
           Telemetry.git_command_ms(Ext::Telemetry::Command::PACK_OBJECTS, duration_ms)
@@ -296,7 +304,8 @@ module Datadog
               res =
                 begin
                   exec_git_command(
-                    "#{unshallow_command} #{remote}"
+                    "#{unshallow_command} #{remote}",
+                    timeout: UNSHALLOW_TIMEOUT
                   )
                 rescue => e
                   log_failure(e, "git unshallow")
@@ -328,7 +337,7 @@ module Datadog
             # @type var output: String?
             output = nil
             duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-              output = exec_git_command("git diff -U0 --word-diff=porcelain #{base_commit} HEAD")
+              output = exec_git_command("git diff -U0 --word-diff=porcelain #{base_commit} HEAD", timeout: LONG_TIMEOUT)
             end
             Telemetry.git_command_ms(Ext::Telemetry::Command::DIFF, duration_ms)
 
@@ -424,7 +433,7 @@ module Datadog
             end
 
             Datadog.logger.debug { "Branch '#{remote_name}/#{branch}' exists in remote, fetching" }
-            exec_git_command("git fetch --depth 1 #{remote_name} #{branch}")
+            exec_git_command("git fetch --depth 1 #{remote_name} #{branch}", timeout: LONG_TIMEOUT)
           rescue GitCommandExecutionError => e
             Datadog.logger.debug { "Branch '#{remote_name}/#{branch}' couldn't be fetched from remote: #{e}" }
           end
@@ -496,10 +505,10 @@ module Datadog
         def self.compute_branch_metrics(candidates, source_branch)
           metrics = {}
           candidates.each do |cand|
-            base_sha = exec_git_command("git merge-base #{cand} #{source_branch} 2>/dev/null")&.strip
+            base_sha = exec_git_command("git merge-base #{cand} #{source_branch} 2>/dev/null", timeout: LONG_TIMEOUT)&.strip
             next if base_sha.nil? || base_sha.empty?
 
-            behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{source_branch}")&.strip&.split&.map(&:to_i)
+            behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{source_branch}", timeout: LONG_TIMEOUT)&.strip&.split&.map(&:to_i)
             if behind == 0 && ahead == 0
               Datadog.logger.debug { "Branch '#{cand}' is up to date with '#{source_branch}'" }
               next
@@ -553,17 +562,17 @@ module Datadog
             commits.filter { |commit| Utils::Git.valid_commit_sha?(commit) }
           end
 
-          def exec_git_command(cmd, stdin: nil)
+          def exec_git_command(cmd, stdin: nil, timeout: SHORT_TIMEOUT)
             # @type var out: String
             # @type var status: Process::Status?
-            out, status = Utils::Command.exec_command(cmd, stdin_data: stdin)
+            out, status = Utils::Command.exec_command(cmd, stdin_data: stdin, timeout: timeout)
 
             if status.nil?
               # @type var retry_count: Integer
               retry_count = COMMAND_RETRY_COUNT
               Datadog.logger.debug { "Opening pipe failed, starting retries..." }
               while status.nil? && retry_count.positive?
-                out, status = Utils::Command.exec_command(cmd, stdin_data: stdin)
+                out, status = Utils::Command.exec_command(cmd, stdin_data: stdin, timeout: timeout)
                 Datadog.logger.debug { "After retry status is [#{status}]" }
                 retry_count -= 1
               end

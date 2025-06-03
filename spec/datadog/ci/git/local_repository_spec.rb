@@ -581,7 +581,11 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           before do
             allow(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original
             allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-              .with("git fetch --shallow-since=\"1 month ago\" --update-shallow --filter=\"blob:none\" --recurse-submodules=no $(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)", stdin_data: nil)
+              .with(
+                "git fetch --shallow-since=\"1 month ago\" --update-shallow --filter=\"blob:none\" --recurse-submodules=no $(git config --default origin --get clone.defaultRemoteName) $(git rev-parse HEAD)",
+                stdin_data: nil,
+                timeout: Datadog::CI::Git::LocalRepository::UNSHALLOW_TIMEOUT
+              )
               .and_return(["error", double(success?: false, to_i: 1)])
           end
 
