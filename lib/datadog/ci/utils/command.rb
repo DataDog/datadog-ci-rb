@@ -11,11 +11,11 @@ module Datadog
         DEFAULT_TIMEOUT = 10 # seconds
         BUFFER_SIZE = 1024
 
+        OPEN_STDIN_RETRY_COUNT = 3
+
         # Executes a command with optional timeout and stdin data
         #
         # @param command [Array<String>] Command to execute.
-        #   When passed as an Array, the command bypasses shell interpretation (safer).
-        #   When passed as a String, the command is executed through the shell.
         # @param stdin_data [String, nil] Data to write to stdin
         # @param timeout [Integer] Maximum execution time in seconds
         # @return [Array<String, Process::Status?>] Output and exit status
@@ -23,8 +23,6 @@ module Datadog
         # @example Safe usage with array (recommended)
         #   Command.exec_command(["git", "log", "-n", "1"])
         #
-        # @example Legacy usage with string
-        #   Command.exec_command("git log -n 1")
         #
         def self.exec_command(command, stdin_data: nil, timeout: DEFAULT_TIMEOUT)
           output = +""
@@ -32,21 +30,10 @@ module Datadog
           timeout_reached = false
 
           begin
-            stdin, stderrout, thread = Open3.popen2e(*command)
-
-            pid = thread[:pid]
             start = Core::Utils::Time.get_time
 
-            # write input to stdin
-            begin
-              if stdin_data
-                stdin.write(stdin_data)
-              end
-            rescue Errno::EPIPE
-              return ["Error writing to stdin", nil]
-            end
-
-            stdin.close
+            _, stderrout, thread = popen_with_stdin(command, stdin_data: stdin_data)
+            pid = thread[:pid]
 
             # wait for output and read from stdout/stderr
             while (Core::Utils::Time.get_time - start) < timeout
@@ -58,11 +45,9 @@ module Datadog
                 output << stderrout.read_nonblock(1024)
               rescue IO::WaitReadable
               rescue EOFError
-                # we're done
+                # we're done here, we return from this cycle when we processed the whole output of the command
                 break
               end
-
-              break unless thread.alive?
             end
 
             if (Core::Utils::Time.get_time - start) > timeout
@@ -79,6 +64,8 @@ module Datadog
 
             thread.join(1)
             exit_value = thread.value
+          rescue Errno::EPIPE
+            return ["Error writing to stdin", nil]
           ensure
             stderrout&.close
           end
@@ -102,6 +89,26 @@ module Datadog
           end
 
           [output, exit_value]
+        end
+
+        def self.popen_with_stdin(command, stdin_data: nil, retries_left: OPEN_STDIN_RETRY_COUNT)
+          result = Open3.popen2e(*command)
+          stdin = result.first
+
+          # write input to stdin
+          begin
+            stdin.write(stdin_data) if stdin_data
+          rescue Errno::EPIPE => e
+            if retries_left > 0
+              return popen_with_stdin(command, stdin_data: stdin_data, retries_left: retries_left - 1)
+            else
+              raise e
+            end
+          end
+
+          result
+        ensure
+          stdin.close
         end
       end
     end

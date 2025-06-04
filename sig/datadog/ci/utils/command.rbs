@@ -8,7 +8,13 @@ module Datadog
 
         BUFFER_SIZE: Integer
 
+        OPEN_STDIN_RETRY_COUNT: Integer
+
+        COMMAND_RETRY_COUNT: Integer
+
         def self.exec_command: (Array[String] command, ?stdin_data: String?, ?timeout: Integer) -> [String, Process::Status?]
+
+        def self.popen_with_stdin: (Array[String] command, ?stdin_data: String?, ?retries_left: Integer) -> [IO, IO, Thread]
       end
     end
   end

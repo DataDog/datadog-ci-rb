@@ -745,36 +745,6 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     describe ".git_commits" do
       subject { described_class.git_commits }
 
-      context "succeeds on retries" do
-        before do
-          expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_return([nil, nil], [+"sha1\nsha2", double(success?: true)])
-        end
-
-        it { is_expected.to eq(%w[sha1 sha2]) }
-      end
-
-      context "fails on retries" do
-        before do
-          expect(Datadog::CI::Utils::Command).to(
-            receive(:exec_command)
-              .and_return([nil, nil])
-              .at_most(described_class::COMMAND_RETRY_COUNT + 1)
-              .times
-          )
-        end
-
-        it { is_expected.to eq([]) }
-
-        it_behaves_like "emits telemetry metric", :inc, "git.command_errors", 1
-
-        it "tags error metric with command" do
-          subject
-
-          metric = telemetry_metric(:inc, "git.command_errors")
-          expect(metric.tags).to eq({"command" => "get_local_commits"})
-        end
-      end
-
       context "returns exit code 1" do
         before do
           expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_return(["error", double(success?: false, to_i: 1)])

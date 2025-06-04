@@ -24,7 +24,6 @@ module Datadog
           end
         end
 
-        COMMAND_RETRY_COUNT = 3
         POSSIBLE_BASE_BRANCHES = %w[main master preprod prod dev development trunk].freeze
         DEFAULT_LIKE_BRANCH_FILTER = /^(#{POSSIBLE_BASE_BRANCHES.join("|")}|release\/.*|hotfix\/.*)$/.freeze
 
@@ -41,7 +40,7 @@ module Datadog
         end
 
         # ATTENTION: this function is running in a hot path
-        # and should be optimized for performance
+        # and must be optimized for performance
         def self.relative_to_root(path)
           return "" if path.nil?
 
@@ -600,17 +599,6 @@ module Datadog
             # @type var out: String
             # @type var status: Process::Status?
             out, status = Utils::Command.exec_command(cmd, stdin_data: stdin, timeout: timeout)
-
-            if status.nil?
-              # @type var retry_count: Integer
-              retry_count = COMMAND_RETRY_COUNT
-              Datadog.logger.debug { "Opening pipe failed, starting retries..." }
-              while status.nil? && retry_count.positive?
-                out, status = Utils::Command.exec_command(cmd, stdin_data: stdin, timeout: timeout)
-                Datadog.logger.debug { "After retry status is [#{status}]" }
-                retry_count -= 1
-              end
-            end
 
             if status.nil? || !status.success?
               # Convert command to string representation for error message

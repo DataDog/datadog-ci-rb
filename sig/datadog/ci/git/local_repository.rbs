@@ -10,7 +10,6 @@ module Datadog
           def initialize: (String message, output: String?, command: String, status: Process::Status?) -> void
         end
 
-        COMMAND_RETRY_COUNT: 3
         POSSIBLE_BASE_BRANCHES: Array[String]
         DEFAULT_LIKE_BRANCH_FILTER: Regexp
 
