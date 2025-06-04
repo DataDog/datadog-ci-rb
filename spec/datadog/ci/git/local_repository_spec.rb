@@ -241,15 +241,58 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
     let(:tmpdir) { Dir.mktmpdir }
 
+    # repositories:
+    # - source is where we create the repo and add some commits
+    # - origin is the remote repository that we push to
+    # - clone is the local repository that we clone from origin
     let(:origin_path) { File.join(tmpdir, "repo_origin") }
     let(:source_path) { File.join(tmpdir, "source_repo") }
 
     let(:clone_folder_name) { "repo_clone" }
     let(:clone_path) { File.join(tmpdir, clone_folder_name) }
 
-    def with_clone_git_dir
-      ClimateControl.modify("GIT_DIR" => File.join(clone_path, ".git")) do
-        yield
+    # branches:
+    # - base_branch is the default branch (let's imagine we have a PR targeting this branch)
+    # - feature_branch is the branch with new changes that we want to merge into base
+    let(:base_branch) { "master" }
+    let(:feature_branch) { "feature" }
+
+    let(:base_file) { "base.txt" }
+    let(:not_changed_file) { "not_changed.txt" }
+    let(:feature_file) { "feature.txt" }
+
+    let(:file_to_rename) { "file_to_rename.txt" }
+    let(:renamed_file) { "renamed_file.txt" }
+
+    def create_source_repo_and_push_to_origin
+      system("mkdir -p #{origin_path}")
+
+      Dir.chdir(origin_path) do
+        system("git init --bare")
+      end
+
+      # create a new git repository
+      system("mkdir -p #{source_path}")
+
+      Dir.chdir(source_path) do
+        system("git init")
+        system("git remote add origin #{origin_path}")
+        if ENV["CI"] == "true"
+          system("git config user.email 'dev@datadoghq.com'")
+          system("git config user.name 'Bits'")
+        end
+
+        system("echo 'Hello, world!' >> README.md")
+        system("git add README.md")
+        system("git commit -m 'Initial commit'")
+
+        commits_count.times do
+          system("echo 'Hello, world!' >> README.md")
+          system("git add README.md")
+          system("git commit -m 'Update README'")
+        end
+
+        system("git push origin master")
       end
     end
 
@@ -259,31 +302,25 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
     end
 
+    def with_clone_git_dir
+      ClimateControl.modify("GIT_DIR" => File.join(clone_path, ".git")) do
+        yield
+      end
+    end
+
     before do
-      `mkdir -p #{origin_path}`
-      # create origin
-      `cd #{origin_path} && git init --bare`
-
-      # create a new git repository
-      `mkdir -p #{source_path}`
-      `cd #{source_path} && git init && git remote add origin #{origin_path}`
-      if ENV["CI"] == "true"
-        `cd #{source_path} && git config user.email "dev@datadoghq.com"`
-        `cd #{source_path} && git config user.name "Bits"`
-      end
-      `cd #{source_path} && echo "Hello, world!" >> README.md && git add README.md && git commit -m "Initial commit"`
-
-      commits_count.times do
-        `cd #{source_path} && echo "Hello, world!" >> README.md && git add README.md && git commit -m "Update README"`
-      end
-      `cd #{source_path} && git push origin master`
+      create_source_repo_and_push_to_origin
     end
 
     after { FileUtils.remove_entry(tmpdir) }
 
     context "with multiline commit message" do
       before do
-        `cd #{source_path} && echo "Hello, world!" >> README.md && git add README.md && git commit -m "Initial commit\n\nThis is a multiline commit message"`
+        Dir.chdir(source_path) do
+          system("echo 'Hello, world!' >> README.md")
+          system("git add README.md")
+          system("git commit -m 'Initial commit\n\nThis is a multiline commit message'")
+        end
       end
 
       describe ".git_commit_message" do
@@ -301,7 +338,11 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
     context "with multiple git messages" do
       before do
-        `cd #{source_path} && echo "Hello, world!" >> README.md && git add README.md && git commit -m "Initial commit" -m "More details"`
+        Dir.chdir(source_path) do
+          system("echo 'Hello, world!' >> README.md")
+          system("git add README.md")
+          system("git commit -m 'Initial commit' -m 'More details'")
+        end
       end
 
       describe ".git_commit_message" do
@@ -316,36 +357,30 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     end
 
     context "with feature branch" do
-      let(:base_branch) { "master" }
-      let(:feature_branch) { "feature" }
-
-      let(:base_file) { "base.txt" }
-      let(:not_changed_file) { "not_changed.txt" }
-      let(:feature_file) { "feature.txt" }
-
-      let(:file_to_rename) { "file_to_rename.txt" }
-      let(:renamed_file) { "renamed_file.txt" }
-
       def build_base_branch
-        `cd #{source_path} && git checkout #{base_branch}`
-        `cd #{source_path} && echo "base branch file" >> #{base_file}`
-        `cd #{source_path} && echo "not changed file" >> #{not_changed_file}`
-        `cd #{source_path} && echo "file to rename" >> #{file_to_rename}`
-        `cd #{source_path} && git add #{base_file} #{not_changed_file} #{file_to_rename}  `
-        `cd #{source_path} && git commit -m 'Add base file'`
-        `cd #{source_path} && git push origin #{base_branch}`
-        `cd #{source_path} && git rev-parse HEAD`.strip
+        Dir.chdir(source_path) do
+          system("git checkout #{base_branch}")
+          system("echo 'base branch file' >> #{base_file}")
+          system("echo 'not changed file' >> #{not_changed_file}")
+          system("echo 'file to rename' >> #{file_to_rename}")
+          system("git add #{base_file} #{not_changed_file} #{file_to_rename}")
+          system("git commit -m 'Add base file'")
+          system("git push origin #{base_branch}")
+          `git rev-parse HEAD`.strip
+        end
       end
 
       def build_feature_branch
-        `cd #{source_path} && git checkout -b #{feature_branch}`
-        `cd #{source_path} && echo "feature branch file" >> #{feature_file}`
-        `cd #{source_path} && echo "modified in feature branch" >> #{base_file}`
-        `cd #{source_path} && mv #{file_to_rename} #{renamed_file}`
-        `cd #{source_path} && git add -A`
-        `cd #{source_path} && git commit -m 'Add feature file and modify base file'`
-        `cd #{source_path} && git push origin #{feature_branch}`
-        `cd #{source_path} && git rev-parse HEAD`.strip
+        Dir.chdir(source_path) do
+          system("git checkout -b #{feature_branch}")
+          system("echo 'feature branch file' >> #{feature_file}")
+          system("echo 'modified in feature branch' >> #{base_file}")
+          system("mv #{file_to_rename} #{renamed_file}")
+          system("git add -A")
+          system("git commit -m 'Add feature file and modify base file'")
+          system("git push origin #{feature_branch}")
+          `git rev-parse HEAD`.strip
+        end
       end
 
       describe ".get_changed_files_from_diff" do
@@ -422,21 +457,15 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         end
 
         context "when repository is cloned from remote" do
-          let(:new_clone_path) { File.join(tmpdir, "new_source_repo") }
-
-          def with_new_clone_git_dir
-            ClimateControl.modify("GIT_DIR" => File.join(new_clone_path, ".git")) do
-              yield
-            end
-          end
-
           context "with fresh clone where remote branch is cloned into master branch of the local repository" do
             def clone_from_remote_into_local_master_branch
-              `mkdir -p #{new_clone_path}`
-              `cd #{new_clone_path} && git init`
-              `cd #{new_clone_path} && git remote add origin file://#{origin_path}`
-              `cd #{new_clone_path} && git fetch origin #{feature_branch}`
-              `cd #{new_clone_path} && git reset --hard origin/#{feature_branch}`
+              `mkdir -p #{clone_path}`
+              Dir.chdir(clone_path) do
+                system("git init")
+                system("git remote add origin file://#{origin_path}")
+                system("git fetch origin #{feature_branch}")
+                system("git reset --hard origin/#{feature_branch}")
+              end
             end
 
             it "returns the ref from default branch" do
@@ -445,7 +474,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
               clone_from_remote_into_local_master_branch
 
               base_sha = nil
-              with_new_clone_git_dir do
+              with_clone_git_dir do
                 base_sha = described_class.base_commit_sha
               end
 
@@ -459,7 +488,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
                 clone_from_remote_into_local_master_branch
 
                 base_sha = nil
-                with_new_clone_git_dir do
+                with_clone_git_dir do
                   base_sha = described_class.base_commit_sha(base_branch: "master")
                 end
 
@@ -472,7 +501,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
                 clone_from_remote_into_local_master_branch
 
                 base_sha = nil
-                with_new_clone_git_dir do
+                with_clone_git_dir do
                   base_sha = described_class.base_commit_sha(base_branch: "origin/master")
                 end
 
@@ -483,12 +512,15 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
           context "when remote is pointing to non existing repository" do
             def create_new_repo_with_non_existing_remote
-              `mkdir -p #{new_clone_path}`
-              `cd #{new_clone_path} && git init`
-              `cd #{new_clone_path} && echo "base branch file" >> #{base_file}`
-              `cd #{new_clone_path} && git add -A`
-              `cd #{new_clone_path} && git commit -m 'first commit'`
-              `cd #{new_clone_path} && git remote add origin git@git.com:datadog/non_existing_repo.git`
+              `mkdir -p #{clone_path}`
+
+              Dir.chdir(clone_path) do
+                system("git init")
+                system("echo 'base branch file' >> #{base_file}")
+                system("git add -A")
+                system("git commit -m 'first commit'")
+                system("git remote add origin git@git.com:datadog/non_existing_repo.git")
+              end
             end
 
             it "returns nil" do
@@ -497,7 +529,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
               create_new_repo_with_non_existing_remote
 
               base_sha = nil
-              with_new_clone_git_dir do
+              with_clone_git_dir do
                 base_sha = described_class.base_commit_sha
               end
 
@@ -507,11 +539,13 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
           context "with fresh clone where only the feature branch exists (repo cloned in GitHub Actions style)" do
             def clone_only_feature_branch
-              `mkdir -p #{new_clone_path}`
-              `cd #{new_clone_path} && git init`
-              `cd #{new_clone_path} && git remote add origin file://#{origin_path}`
-              `cd #{new_clone_path} && git fetch --no-tags --prune --no-recurse-submodules origin #{feature_branch}`
-              `cd #{new_clone_path} && git checkout --progress --force -B #{feature_branch} refs/remotes/origin/#{feature_branch}`
+              `mkdir -p #{clone_path}`
+              Dir.chdir(clone_path) do
+                system("git init")
+                system("git remote add origin file://#{origin_path}")
+                system("git fetch --no-tags --prune --no-recurse-submodules origin #{feature_branch}")
+                system("git checkout --progress --force -B #{feature_branch} refs/remotes/origin/#{feature_branch}")
+              end
             end
 
             it "returns the ref from default branch" do
@@ -520,7 +554,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
               clone_only_feature_branch
 
               base_sha = nil
-              with_new_clone_git_dir do
+              with_clone_git_dir do
                 base_sha = described_class.base_commit_sha
               end
 
@@ -534,7 +568,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
                 clone_only_feature_branch
 
                 base_sha = nil
-                with_new_clone_git_dir do
+                with_clone_git_dir do
                   base_sha = described_class.base_commit_sha(base_branch: "master")
                 end
 
@@ -549,21 +583,25 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           let(:new_feature_branch) { "new-feature" }
 
           def build_preprod_branch
-            `cd #{source_path} && git checkout -b #{preprod_branch}`
-            `cd #{source_path} && echo "preprod changes" >> #{feature_file}`
-            `cd #{source_path} && git add #{feature_file}`
-            `cd #{source_path} && git commit -m 'Add preprod changes'`
-            `cd #{source_path} && git push origin #{preprod_branch}`
-            `cd #{source_path} && git rev-parse HEAD`.strip
+            Dir.chdir(source_path) do
+              system("git checkout -b #{preprod_branch}")
+              system("echo 'preprod changes' >> #{feature_file}")
+              system("git add #{feature_file}")
+              system("git commit -m 'Add preprod changes'")
+              system("git push origin #{preprod_branch}")
+              `git rev-parse HEAD`.strip
+            end
           end
 
           def build_new_feature_branch
-            `cd #{source_path} && git checkout -b #{new_feature_branch}`
-            `cd #{source_path} && echo "new feature changes" >> #{feature_file}`
-            `cd #{source_path} && git add #{feature_file}`
-            `cd #{source_path} && git commit -m 'Add new feature changes'`
-            `cd #{source_path} && git push origin #{new_feature_branch}`
-            `cd #{source_path} && git rev-parse HEAD`.strip
+            Dir.chdir(source_path) do
+              system("git checkout -b #{new_feature_branch}")
+              system("echo 'new feature changes' >> #{feature_file}")
+              system("git add #{feature_file}")
+              system("git commit -m 'Add new feature changes'")
+              system("git push origin #{new_feature_branch}")
+              `git rev-parse HEAD`.strip
+            end
           end
 
           it "returns the ref from preprod branch" do
@@ -600,7 +638,9 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     context "with shallow clone" do
       before do
         # create a shallow clone
-        `cd #{tmpdir} && git clone --depth=1 file://#{origin_path} #{clone_folder_name}`
+        Dir.chdir(tmpdir) do
+          system("git clone --depth=1 file://#{origin_path} #{clone_folder_name}")
+        end
       end
 
       describe ".git_shallow_clone?" do
@@ -677,7 +717,9 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
     context "with full clone" do
       before do
         # create a full clone
-        `cd #{tmpdir} && git clone file://#{origin_path} #{clone_folder_name}`
+        Dir.chdir(tmpdir) do
+          system("git clone file://#{origin_path} #{clone_folder_name}")
+        end
       end
 
       describe ".git_commits" do
