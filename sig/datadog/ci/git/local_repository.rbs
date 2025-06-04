@@ -63,6 +63,8 @@ module Datadog
 
         def self.get_remote_name: () -> String
 
+        def self.get_upstream_branch: () -> String?
+
         def self.remove_remote_prefix: (String? branch_name, String remote_name) -> String?
 
         def self.main_like_branch?: (String? branch_name, String remote_name) -> bool?
@@ -71,11 +73,13 @@ module Datadog
 
         def self.find_fallback_default_branch: (String remote_name) -> String?
 
-        def self.build_candidate_list: (String remote_name, String? base_branch) -> Array[String]?
+        def self.build_candidate_list: (String remote_name) -> Array[String]?
 
         def self.compute_branch_metrics: (Array[String] candidates, String target_branch) -> Hash[String, { behind: Integer, ahead: Integer, base_sha: String }]
 
-        def self.find_best_branch: (Hash[String, { behind: Integer, ahead: Integer, base_sha: String }] metrics, String? default_branch, String remote_name) -> String?
+        def self.find_best_branch: (Hash[String, { behind: Integer, ahead: Integer, base_sha: String }] metrics, String remote_name) -> String?
+
+        def self.branches_equal?: (String? branch_name, String? default_branch, String remote_name) -> bool
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]
 
@@ -84,8 +88,6 @@ module Datadog
         def self.log_failure: (StandardError e, String action) -> void
 
         def self.telemetry_track_error: (StandardError e, String command) -> void
-
-        def self.default_branch?: (String branch, String? default_branch, String remote_name) -> bool
 
         def self.check_and_fetch_base_branches: (Array[String] branches, String remote_name) -> void
 

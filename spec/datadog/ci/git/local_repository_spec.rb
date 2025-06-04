@@ -451,6 +451,34 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
               expect(base_sha).to eq(expected_base_sha)
             end
+
+            context "when base branch is provided" do
+              it "returns the ref from the base branch" do
+                expected_base_sha = build_base_branch
+                build_feature_branch
+                clone_from_remote_into_local_master_branch
+
+                base_sha = nil
+                with_new_clone_git_dir do
+                  base_sha = described_class.base_commit_sha(base_branch: "master")
+                end
+
+                expect(base_sha).to eq(expected_base_sha)
+              end
+
+              it "returns the ref from the base branch when base branch has remote prefix" do
+                expected_base_sha = build_base_branch
+                build_feature_branch
+                clone_from_remote_into_local_master_branch
+
+                base_sha = nil
+                with_new_clone_git_dir do
+                  base_sha = described_class.base_commit_sha(base_branch: "origin/master")
+                end
+
+                expect(base_sha).to eq(expected_base_sha)
+              end
+            end
           end
 
           context "when remote is pointing to non existing repository" do
