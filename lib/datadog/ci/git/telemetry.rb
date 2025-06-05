@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "../utils/telemetry"
+require_relative "cli"
+
 module Datadog
   module CI
     module Git
@@ -19,6 +22,17 @@ module Datadog
 
         def self.git_command_ms(command, duration_ms)
           Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_COMMAND_MS, duration_ms, tags_for_command(command))
+        end
+
+        def self.track_error(e, command)
+          case e
+          when Errno::ENOENT
+            git_command_errors(command, executable_missing: true)
+          when CLI::GitCommandExecutionError
+            git_command_errors(command, exit_code: e.status&.to_i)
+          else
+            git_command_errors(command, exit_code: -9000)
+          end
         end
 
         def self.tags_for_command(command)

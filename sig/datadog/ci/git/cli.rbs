@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module Git
+      module CLI
+        class GitCommandExecutionError < StandardError
+          attr_reader output: String
+          attr_reader command: String
+          attr_reader status: Process::Status?
+
+          def initialize: (String message, output: String, command: String, status: Process::Status?) -> void
+        end
+
+        UNSHALLOW_TIMEOUT: Integer
+        LONG_TIMEOUT: Integer
+        SHORT_TIMEOUT: Integer
+
+        def self.exec_git_command: (Array[String] cmd, ?stdin: String?, ?timeout: Integer) -> String?
+      end
+    end
+  end
+end

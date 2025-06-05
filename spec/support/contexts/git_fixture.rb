@@ -10,5 +10,5 @@ shared_context "with git fixture" do |git_fixture|
 end
 
 shared_context "without git installed" do
-  before { allow(Open3).to receive(:capture2e).and_raise(Errno::ENOENT, "No such file or directory - git") }
+  before { allow(Datadog::CI::Utils::Command).to receive(:exec_command).and_raise(Errno::ENOENT, "No such file or directory - git") }
 end

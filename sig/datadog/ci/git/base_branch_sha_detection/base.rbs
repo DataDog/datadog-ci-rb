@@ -1,0 +1,24 @@
+module Datadog
+  module CI
+    module Git
+      module BaseBranchShaDetection
+        class Base
+          attr_reader remote_name: String
+          attr_reader source_branch: String
+
+          def initialize: (String remote_name, String source_branch) -> void
+
+          def call: () -> String?
+
+          def merge_base_sha: (String branch, String source_branch) -> String?
+
+          def check_and_fetch_branch: (String branch, String remote_name) -> void
+
+          def remove_remote_prefix: (String? branch_name, String remote_name) -> String?
+
+          def branches_equal?: (String? branch_name, String? default_branch, String remote_name) -> bool
+        end
+      end
+    end
+  end
+end

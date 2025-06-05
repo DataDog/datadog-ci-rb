@@ -5,6 +5,9 @@ require "pathname"
 require "set"
 
 require_relative "../ext/telemetry"
+require_relative "../utils/command"
+require_relative "base_branch_sha_detector"
+require_relative "cli"
 require_relative "telemetry"
 require_relative "user"
 
@@ -12,21 +15,6 @@ module Datadog
   module CI
     module Git
       module LocalRepository
-        class GitCommandExecutionError < StandardError
-          attr_reader :output, :command, :status
-          def initialize(message, output:, command:, status:)
-            super(message)
-
-            @output = output
-            @command = command
-            @status = status
-          end
-        end
-
-        COMMAND_RETRY_COUNT = 3
-        POSSIBLE_BASE_BRANCHES = %w[main master preprod prod dev development trunk].freeze
-        DEFAULT_LIKE_BRANCH_FILTER = /^(#{POSSIBLE_BASE_BRANCHES.join("|")}|release\/.*|hotfix\/.*)$/.freeze
-
         def self.root
           return @root if defined?(@root)
 
@@ -34,7 +22,7 @@ module Datadog
         end
 
         # ATTENTION: this function is running in a hot path
-        # and should be optimized for performance
+        # and must be optimized for performance
         def self.relative_to_root(path)
           return "" if path.nil?
 
@@ -97,26 +85,26 @@ module Datadog
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = exec_git_command("git ls-remote --get-url")
+            res = CLI.exec_git_command(["ls-remote", "--get-url"])
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_REPOSITORY, duration_ms)
           res
         rescue => e
           log_failure(e, "git repository url")
-          telemetry_track_error(e, Ext::Telemetry::Command::GET_REPOSITORY)
+          Telemetry.track_error(e, Ext::Telemetry::Command::GET_REPOSITORY)
           nil
         end
 
         def self.git_root
-          exec_git_command("git rev-parse --show-toplevel")
+          CLI.exec_git_command(["rev-parse", "--show-toplevel"])
         rescue => e
           log_failure(e, "git root path")
           nil
         end
 
         def self.git_commit_sha
-          exec_git_command("git rev-parse HEAD")
+          CLI.exec_git_command(["rev-parse", "HEAD"])
         rescue => e
           log_failure(e, "git commit sha")
           nil
@@ -128,26 +116,26 @@ module Datadog
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = exec_git_command("git rev-parse --abbrev-ref HEAD")
+            res = CLI.exec_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_BRANCH, duration_ms)
           res
         rescue => e
           log_failure(e, "git branch")
-          telemetry_track_error(e, Ext::Telemetry::Command::GET_BRANCH)
+          Telemetry.track_error(e, Ext::Telemetry::Command::GET_BRANCH)
           nil
         end
 
         def self.git_tag
-          exec_git_command("git tag --points-at HEAD")
+          CLI.exec_git_command(["tag", "--points-at", "HEAD"])
         rescue => e
           log_failure(e, "git tag")
           nil
         end
 
         def self.git_commit_message
-          exec_git_command("git log -n 1 --format=%B")
+          CLI.exec_git_command(["log", "-n", "1", "--format=%B"])
         rescue => e
           log_failure(e, "git commit message")
           nil
@@ -155,7 +143,7 @@ module Datadog
 
         def self.git_commit_users
           # Get committer and author information in one command.
-          output = exec_git_command("git show -s --format='%an\t%ae\t%at\t%cn\t%ce\t%ct'")
+          output = CLI.exec_git_command(["show", "-s", "--format=%an\t%ae\t%at\t%cn\t%ce\t%ct"])
           unless output
             Datadog.logger.debug(
               "Unable to read git commit users: git command output is nil"
@@ -186,7 +174,7 @@ module Datadog
           output = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            output = exec_git_command("git log --format=%H -n 1000 --since=\"1 month ago\"")
+            output = CLI.exec_git_command(["log", "--format=%H", "-n", "1000", "--since=\"1 month ago\""], timeout: CLI::LONG_TIMEOUT)
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_LOCAL_COMMITS, duration_ms)
@@ -196,27 +184,28 @@ module Datadog
           output.split("\n")
         rescue => e
           log_failure(e, "git commits")
-          telemetry_track_error(e, Ext::Telemetry::Command::GET_LOCAL_COMMITS)
+          Telemetry.track_error(e, Ext::Telemetry::Command::GET_LOCAL_COMMITS)
           []
         end
 
         def self.git_commits_rev_list(included_commits:, excluded_commits:)
           Telemetry.git_command(Ext::Telemetry::Command::GET_OBJECTS)
-          included_commits = filter_invalid_commits(included_commits).join(" ")
-          excluded_commits = filter_invalid_commits(excluded_commits).map! { |sha| "^#{sha}" }.join(" ")
+          included_commits_list = filter_invalid_commits(included_commits)
+          excluded_commits_list = filter_invalid_commits(excluded_commits).map { |sha| "^#{sha}" }
 
           # @type var res: String?
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = exec_git_command(
-              "git rev-list " \
-              "--objects " \
-              "--no-object-names " \
-              "--filter=blob:none " \
-              "--since=\"1 month ago\" " \
-              "#{excluded_commits} #{included_commits}"
-            )
+            cmd = [
+              "rev-list",
+              "--objects",
+              "--no-object-names",
+              "--filter=blob:none",
+              "--since=\"1 month ago\""
+            ] + excluded_commits_list + included_commits_list
+
+            res = CLI.exec_git_command(cmd, timeout: CLI::LONG_TIMEOUT)
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_OBJECTS, duration_ms)
@@ -224,7 +213,7 @@ module Datadog
           res
         rescue => e
           log_failure(e, "git commits rev list")
-          telemetry_track_error(e, Ext::Telemetry::Command::GET_OBJECTS)
+          Telemetry.track_error(e, Ext::Telemetry::Command::GET_OBJECTS)
           nil
         end
 
@@ -239,9 +228,10 @@ module Datadog
           Telemetry.git_command(Ext::Telemetry::Command::PACK_OBJECTS)
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            exec_git_command(
-              "git pack-objects --compression=9 --max-pack-size=3m #{path}/#{basename}",
-              stdin: commit_tree
+            CLI.exec_git_command(
+              ["pack-objects", "--compression=9", "--max-pack-size=3m", "#{path}/#{basename}"],
+              stdin: commit_tree,
+              timeout: CLI::LONG_TIMEOUT
             )
           end
           Telemetry.git_command_ms(Ext::Telemetry::Command::PACK_OBJECTS, duration_ms)
@@ -249,7 +239,7 @@ module Datadog
           basename
         rescue => e
           log_failure(e, "git generate packfiles")
-          telemetry_track_error(e, Ext::Telemetry::Command::PACK_OBJECTS)
+          Telemetry.track_error(e, Ext::Telemetry::Command::PACK_OBJECTS)
           nil
         end
 
@@ -258,14 +248,14 @@ module Datadog
           res = false
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = exec_git_command("git rev-parse --is-shallow-repository") == "true"
+            res = CLI.exec_git_command(["rev-parse", "--is-shallow-repository"]) == "true"
           end
           Telemetry.git_command_ms(Ext::Telemetry::Command::CHECK_SHALLOW, duration_ms)
 
           res
         rescue => e
           log_failure(e, "git shallow clone")
-          telemetry_track_error(e, Ext::Telemetry::Command::CHECK_SHALLOW)
+          Telemetry.track_error(e, Ext::Telemetry::Command::CHECK_SHALLOW)
           false
         end
 
@@ -274,19 +264,15 @@ module Datadog
           # @type var res: String?
           res = nil
 
-          unshallow_command =
-            "git fetch " \
-            "--shallow-since=\"1 month ago\" " \
-            "--update-shallow " \
-            "--filter=\"blob:none\" " \
-            "--recurse-submodules=no " \
-            "$(git config --default origin --get clone.defaultRemoteName)"
+          default_remote = CLI.exec_git_command(["config", "--default", "origin", "--get", "clone.defaultRemoteName"])&.strip
+          head_commit = git_commit_sha
+          upstream_branch = get_upstream_branch
 
-          unshallow_remotes = [
-            "$(git rev-parse HEAD)",
-            "$(git rev-parse --abbrev-ref --symbolic-full-name @{upstream})",
-            nil
-          ]
+          # Build array of remotes to try, filtering out nil values
+          unshallow_remotes = []
+          unshallow_remotes << head_commit if head_commit
+          unshallow_remotes << upstream_branch if upstream_branch
+          unshallow_remotes << nil # Ensure the loop runs at least once, even if no valid remotes are available. This acts as a fallback mechanism.
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
             unshallow_remotes.each do |remote|
@@ -294,17 +280,27 @@ module Datadog
 
               res =
                 begin
-                  exec_git_command(
-                    "#{unshallow_command} #{remote}"
-                  )
+                  # @type var cmd: Array[String]
+                  cmd = [
+                    "fetch",
+                    "--shallow-since=\"1 month ago\"",
+                    "--update-shallow",
+                    "--filter=blob:none",
+                    "--recurse-submodules=no",
+                    default_remote
+                  ]
+                  cmd << remote if remote
+
+                  CLI.exec_git_command(cmd, timeout: CLI::UNSHALLOW_TIMEOUT)
                 rescue => e
                   log_failure(e, "git unshallow")
-                  telemetry_track_error(e, Ext::Telemetry::Command::UNSHALLOW)
+                  Telemetry.track_error(e, Ext::Telemetry::Command::UNSHALLOW)
                   unshallowing_errored = true
                   nil
                 end
 
-              break [] unless unshallowing_errored
+              # If the command succeeded, break and return the result
+              break [] if res && !unshallowing_errored
             end
           end
 
@@ -327,7 +323,7 @@ module Datadog
             # @type var output: String?
             output = nil
             duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-              output = exec_git_command("git diff -U0 --word-diff=porcelain #{base_commit} HEAD")
+              output = CLI.exec_git_command(["diff", "-U0", "--word-diff=porcelain", base_commit, "HEAD"], timeout: CLI::LONG_TIMEOUT)
             end
             Telemetry.git_command_ms(Ext::Telemetry::Command::DIFF, duration_ms)
 
@@ -340,7 +336,7 @@ module Datadog
             output.each_line do |line|
               # Match lines like: diff --git a/foo/bar.rb b/foo/bar.rb
               # This captures git changes on file level
-              match = /^diff --git a\/(?<file>.+) b\/(?<file2>.+)$/.match(line)
+              match = /^diff --git a\/(?<file>.+?) b\//.match(line)
               if match && match[:file]
                 changed_file = match[:file]
                 # Normalize to repo root
@@ -353,7 +349,7 @@ module Datadog
             end
             changed_files
           rescue => e
-            telemetry_track_error(e, Ext::Telemetry::Command::DIFF)
+            Telemetry.track_error(e, Ext::Telemetry::Command::DIFF)
             log_failure(e, "get changed files from diff")
             nil
           end
@@ -364,245 +360,28 @@ module Datadog
         def self.base_commit_sha(base_branch: nil)
           Telemetry.git_command(Ext::Telemetry::Command::BASE_COMMIT_SHA)
 
-          remote_name = get_remote_name
-          Datadog.logger.debug { "Remote name: '#{remote_name}'" }
-
-          source_branch = get_source_branch
-          return nil if source_branch.nil?
-
-          Datadog.logger.debug { "Source branch: '#{source_branch}'" }
-
-          # Early exit if source is a main-like branch
-          if main_like_branch?(source_branch, remote_name)
-            Datadog.logger.debug { "Branch '#{source_branch}' already matches base branch filter (#{DEFAULT_LIKE_BRANCH_FILTER})" }
-            return nil
-          end
-
-          possible_base_branches = base_branch.nil? ? POSSIBLE_BASE_BRANCHES : [base_branch]
-          # Check and fetch base branches if they don't exist in local git repository
-          check_and_fetch_base_branches(possible_base_branches, remote_name)
-
-          default_branch = detect_default_branch(remote_name)
-          Datadog.logger.debug { "Default branch: '#{default_branch}'" }
-
-          candidates = build_candidate_list(remote_name, source_branch, base_branch)
-          if candidates.nil? || candidates.empty?
-            Datadog.logger.debug { "No candidate branches found." }
-            return nil
-          end
-
-          metrics = compute_branch_metrics(candidates, source_branch)
-          Datadog.logger.debug { "Branch metrics: '#{metrics}'" }
-
-          best_branch_sha = find_best_branch(metrics, default_branch, remote_name)
-          Datadog.logger.debug { "Best branch: '#{best_branch_sha}'" }
-
-          best_branch_sha
+          BaseBranchShaDetector.base_branch_sha(base_branch)
         rescue => e
-          telemetry_track_error(e, Ext::Telemetry::Command::BASE_COMMIT_SHA)
+          Telemetry.track_error(e, Ext::Telemetry::Command::BASE_COMMIT_SHA)
           log_failure(e, "git base ref")
           nil
         end
 
-        def self.check_and_fetch_branch(branch, remote_name)
-          # Check if branch exists locally
-          exec_git_command("git show-ref --verify --quiet refs/heads/#{branch}")
-          Datadog.logger.debug { "Branch '#{branch}' exists locally, skipping" }
-        rescue GitCommandExecutionError => e
-          Datadog.logger.debug { "Branch '#{branch}' doesn't exist locally, checking remote: #{e}" }
-          begin
-            remote_heads = exec_git_command("git ls-remote --heads #{remote_name} #{branch}")
-            if remote_heads.nil? || remote_heads.empty?
-              Datadog.logger.debug { "Branch '#{branch}' doesn't exist in remote" }
-              return
-            end
-
-            Datadog.logger.debug { "Branch '#{branch}' exists in remote, fetching" }
-            exec_git_command("git fetch --depth 1 #{remote_name} #{branch}:#{branch}")
-          rescue GitCommandExecutionError => e
-            Datadog.logger.debug { "Branch '#{branch}' couldn't be fetched from remote: #{e}" }
-          end
-        end
-
-        def self.check_and_fetch_base_branches(branches, remote_name)
-          branches.each do |branch|
-            check_and_fetch_branch(branch, remote_name)
-          end
-        end
-
-        def self.get_source_branch
-          source_branch = exec_git_command("git rev-parse --abbrev-ref HEAD")&.strip
-          if source_branch.nil?
-            Datadog.logger.debug { "Could not get current branch" }
-            return nil
-          end
-
-          exec_git_command("git rev-parse --verify --quiet #{source_branch} > /dev/null")
-          source_branch
-        end
-
-        def self.remove_remote_prefix(branch_name, remote_name)
-          branch_name&.sub(/^#{Regexp.escape(remote_name)}\//, "")
-        end
-
-        def self.main_like_branch?(branch_name, remote_name)
-          short_branch_name = remove_remote_prefix(branch_name, remote_name)
-          short_branch_name&.match?(DEFAULT_LIKE_BRANCH_FILTER)
-        end
-
-        def self.detect_default_branch(remote_name)
-          # @type var default_branch: String?
-          default_branch = nil
-          begin
-            default_ref = exec_git_command("git symbolic-ref --quiet --short \"refs/remotes/#{remote_name}/HEAD\" 2>/dev/null")
-            default_branch = remove_remote_prefix(default_ref, remote_name) unless default_ref.nil?
-          rescue
-            Datadog.logger.debug { "Could not get symbolic-ref, trying to find a fallback (main, master)..." }
-          end
-
-          default_branch = find_fallback_default_branch(remote_name) if default_branch.nil?
-          default_branch
-        end
-
-        def self.find_fallback_default_branch(remote_name)
-          ["main", "master"].each do |fallback|
-            exec_git_command("git show-ref --verify --quiet \"refs/remotes/#{remote_name}/#{fallback}\"")
-            Datadog.logger.debug { "Found fallback default branch '#{fallback}'" }
-            return fallback
-          rescue
-            next
-          end
+        def self.get_upstream_branch
+          CLI.exec_git_command(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])
+        rescue => e
+          Datadog.logger.debug { "Error getting upstream: #{e}" }
           nil
         end
 
-        def self.build_candidate_list(remote_name, source_branch, base_branch)
-          unless base_branch.nil?
-            return [base_branch]
-          end
-
-          candidates = exec_git_command("git for-each-ref --format='%(refname:short)' refs/heads \"refs/remotes/#{remote_name}\"")&.lines&.map(&:strip)
-          Datadog.logger.debug { "Available branches: '#{candidates}'" }
-          candidates&.select! { |b| b.match?(DEFAULT_LIKE_BRANCH_FILTER) && b != source_branch }
-          Datadog.logger.debug { "Candidate branches: '#{candidates}'" }
-          candidates
+        def self.filter_invalid_commits(commits)
+          commits.filter { |commit| Utils::Git.valid_commit_sha?(commit) }
         end
 
-        def self.compute_branch_metrics(candidates, source_branch)
-          metrics = {}
-          candidates.each do |cand|
-            base_sha = exec_git_command("git merge-base #{cand} #{source_branch} 2>/dev/null")&.strip
-            next if base_sha.nil? || base_sha.empty?
-
-            behind, ahead = exec_git_command("git rev-list --left-right --count #{cand}...#{source_branch}")&.strip&.split&.map(&:to_i)
-            metrics[cand] = {behind: behind, ahead: ahead, base_sha: base_sha}
-          end
-          metrics
-        end
-
-        def self.find_best_branch(metrics, default_branch, remote_name)
-          return nil if metrics.empty?
-
-          _, best_data = metrics.min_by do |cand, data|
-            [
-              data[:ahead],
-              default_branch?(cand, default_branch, remote_name) ? 0 : 1 # prefer default branch on tie
-            ]
-          end
-
-          best_data ? best_data[:base_sha] : nil
-        end
-
-        def self.default_branch?(branch, default_branch, remote_name)
-          branch == default_branch || branch == "#{remote_name}/#{default_branch}"
-        end
-
-        def self.get_remote_name
-          # Try to find remote from upstream tracking
-          upstream = nil
-          begin
-            upstream = exec_git_command("git rev-parse --abbrev-ref --symbolic-full-name @{upstream}")&.strip
-          rescue => e
-            Datadog.logger.debug { "Error getting upstream: #{e}" }
-          end
-
-          if upstream
-            upstream.split("/").first
-          else
-            # Fallback to first remote if no upstream is set
-            first_remote_value = exec_git_command("git remote")&.split("\n")&.first
-            Datadog.logger.debug { "First remote value: '#{first_remote_value}'" }
-            first_remote_value || "origin"
-          end
-        end
-
-        # makes .exec_git_command private to make sure that this method
-        # is not called from outside of this module with insecure parameters
-        class << self
-          private
-
-          def filter_invalid_commits(commits)
-            commits.filter { |commit| Utils::Git.valid_commit_sha?(commit) }
-          end
-
-          def exec_git_command(cmd, stdin: nil)
-            # Shell injection is alleviated by making sure that no outside modules call this method.
-            # It is called only internally with static parameters.
-
-            # @type var out: String
-            # @type var status: Process::Status?
-            out, status = Open3.capture2e(cmd, stdin_data: stdin)
-
-            if status.nil?
-              # @type var retry_count: Integer
-              retry_count = COMMAND_RETRY_COUNT
-              Datadog.logger.debug { "Opening pipe failed, starting retries..." }
-              while status.nil? && retry_count.positive?
-                # no-dd-sa:ruby-security/shell-injection
-                out, status = Open3.capture2e(cmd, stdin_data: stdin)
-                Datadog.logger.debug { "After retry status is [#{status}]" }
-                retry_count -= 1
-              end
-            end
-
-            if status.nil? || !status.success?
-              raise GitCommandExecutionError.new(
-                "Failed to run git command [#{cmd}] with input [#{stdin}] and output [#{out}]",
-                output: out,
-                command: cmd,
-                status: status
-              )
-            end
-
-            # Sometimes Encoding.default_external is somehow set to US-ASCII which breaks
-            # commit messages with UTF-8 characters like emojis
-            # We force output's encoding to be UTF-8 in this case
-            # This is safe to do as UTF-8 is compatible with US-ASCII
-            if Encoding.default_external == Encoding::US_ASCII
-              out = out.force_encoding(Encoding::UTF_8)
-            end
-            out.strip! # There's always a "\n" at the end of the command output
-
-            return nil if out.empty?
-
-            out
-          end
-
-          def log_failure(e, action)
-            Datadog.logger.debug(
-              "Unable to perform #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-            )
-          end
-
-          def telemetry_track_error(e, command)
-            case e
-            when Errno::ENOENT
-              Telemetry.git_command_errors(command, executable_missing: true)
-            when GitCommandExecutionError
-              Telemetry.git_command_errors(command, exit_code: e.status&.to_i)
-            else
-              Telemetry.git_command_errors(command, exit_code: -9000)
-            end
-          end
+        def self.log_failure(e, action)
+          Datadog.logger.debug(
+            "Unable to perform #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
+          )
         end
       end
     end

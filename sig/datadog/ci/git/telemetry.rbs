@@ -8,6 +8,8 @@ module Datadog
 
         def self.git_command_ms: (String command, untyped duration_ms) -> void
 
+        def self.track_error: (StandardError e, String command) -> void
+
         def self.tags_for_command: (String command) -> ::Hash[String, String]
 
         def self.exit_code_for: (?exit_code: Integer?, ?executable_missing: bool) -> String?
