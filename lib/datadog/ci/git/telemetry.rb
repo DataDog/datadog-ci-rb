@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../utils/telemetry"
+require_relative "cli"
 
 module Datadog
   module CI
@@ -27,7 +28,7 @@ module Datadog
           case e
           when Errno::ENOENT
             git_command_errors(command, executable_missing: true)
-          when LocalRepository::GitCommandExecutionError
+          when CLI::GitCommandExecutionError
             git_command_errors(command, exit_code: e.status&.to_i)
           else
             git_command_errors(command, exit_code: -9000)

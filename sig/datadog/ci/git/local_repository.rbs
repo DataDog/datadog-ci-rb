@@ -2,20 +2,8 @@ module Datadog
   module CI
     module Git
       module LocalRepository
-        class GitCommandExecutionError < StandardError
-          attr_reader command: String
-          attr_reader output: String?
-          attr_reader status: Process::Status?
-
-          def initialize: (String message, output: String?, command: String, status: Process::Status?) -> void
-        end
-
         POSSIBLE_BASE_BRANCHES: Array[String]
         DEFAULT_LIKE_BRANCH_FILTER: Regexp
-
-        UNSHALLOW_TIMEOUT: 500
-        LONG_TIMEOUT: 30
-        SHORT_TIMEOUT: 3
 
         self.@root: String
         self.@prefix_to_root: String
@@ -82,8 +70,6 @@ module Datadog
         def self.branches_equal?: (String? branch_name, String? default_branch, String remote_name) -> bool
 
         def self.filter_invalid_commits: (Enumerable[String] commits) -> Array[String]
-
-        def self.exec_git_command: (Array[String] cmd, ?stdin: String?, ?timeout: Integer) -> String?
 
         def self.log_failure: (StandardError e, String action) -> void
 

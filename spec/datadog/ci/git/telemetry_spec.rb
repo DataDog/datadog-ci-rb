@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../../../lib/datadog/ci/git/telemetry"
+require_relative "../../../../lib/datadog/ci/git/cli"
 
 RSpec.describe Datadog::CI::Git::Telemetry do
   describe ".git_command" do
@@ -96,7 +97,7 @@ RSpec.describe Datadog::CI::Git::Telemetry do
 
     context "when error is GitCommandExecutionError" do
       let(:status) { double(to_i: 1) }
-      let(:error) { Datadog::CI::Git::LocalRepository::GitCommandExecutionError.new("Git command failed", output: "error", command: "git", status: status) }
+      let(:error) { Datadog::CI::Git::CLI::GitCommandExecutionError.new("Git command failed", output: "error", command: "git", status: status) }
 
       it "calls git_command_errors with exit_code from status" do
         expect(described_class).to receive(:git_command_errors).with(command, exit_code: 1)

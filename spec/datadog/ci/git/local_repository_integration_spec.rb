@@ -189,7 +189,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           expected_path = "a"
 
           # Mock the git command to return our malicious output
-          allow(described_class).to receive(:exec_git_command)
+          allow(Datadog::CI::Git::CLI).to receive(:exec_git_command)
             .with(anything, timeout: anything)
             .and_return(malicious_diff_output)
 
@@ -467,14 +467,14 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           head_commit = "sha"
           allow(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original
           allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-            .with(["git", "rev-parse", "HEAD"], stdin_data: nil, timeout: Datadog::CI::Git::LocalRepository::SHORT_TIMEOUT)
+            .with(["git", "rev-parse", "HEAD"], stdin_data: nil, timeout: Datadog::CI::Git::CLI::SHORT_TIMEOUT)
             .and_return([head_commit, double(success?: true)])
 
           # Mock the fetch command with the head commit to fail
           allow(Datadog::CI::Utils::Command).to receive(:exec_command)
             .with(
               ["git", "fetch", "--shallow-since=\"1 month ago\"", "--update-shallow", "--filter=blob:none", "--recurse-submodules=no", "origin", head_commit],
-              stdin_data: nil, timeout: Datadog::CI::Git::LocalRepository::UNSHALLOW_TIMEOUT
+              stdin_data: nil, timeout: Datadog::CI::Git::CLI::UNSHALLOW_TIMEOUT
             )
             .and_return(["error", double(success?: false, to_i: 1)])
         end
