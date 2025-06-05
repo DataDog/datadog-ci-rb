@@ -272,7 +272,7 @@ module Datadog
           unshallow_remotes = []
           unshallow_remotes << head_commit if head_commit
           unshallow_remotes << upstream_branch if upstream_branch
-          unshallow_remotes << nil # fallback to empty unshallow remote
+          unshallow_remotes << nil # Ensure the loop runs at least once, even if no valid remotes are available. This acts as a fallback mechanism.
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
             unshallow_remotes.each do |remote|
