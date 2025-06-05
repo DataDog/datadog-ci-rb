@@ -6,6 +6,7 @@ require "set"
 
 require_relative "../ext/telemetry"
 require_relative "../utils/command"
+require_relative "branch_metric"
 require_relative "telemetry"
 require_relative "user"
 
@@ -379,10 +380,10 @@ module Datadog
         def self.base_commit_sha(base_branch: nil)
           Telemetry.git_command(Ext::Telemetry::Command::BASE_COMMIT_SHA)
 
+          Datadog.logger.debug { "Base branch: '#{base_branch}'" }
+
           remote_name = get_remote_name
           Datadog.logger.debug { "Remote name: '#{remote_name}'" }
-
-          Datadog.logger.debug { "Base branch: '#{base_branch}'" }
 
           source_branch = get_source_branch
           return nil if source_branch.nil?
@@ -502,7 +503,7 @@ module Datadog
               return nil
             end
 
-            # Verify the branch exists (note: we can't redirect to /dev/null in array form)
+            # Verify the branch exists
             begin
               exec_git_command(["git", "rev-parse", "--verify", "--quiet", source_branch])
             rescue
@@ -525,7 +526,6 @@ module Datadog
             # @type var default_branch: String?
             default_branch = nil
             begin
-              # Note: we can't redirect stderr to /dev/null in array form, but --quiet should suppress most output
               default_ref = exec_git_command(["git", "symbolic-ref", "--quiet", "--short", "refs/remotes/#{remote_name}/HEAD"])
               default_branch = remove_remote_prefix(default_ref, remote_name) unless default_ref.nil?
             rescue
@@ -560,7 +560,7 @@ module Datadog
           end
 
           def compute_branch_metrics(candidates, source_branch)
-            metrics = {}
+            metrics = []
             candidates.each do |cand|
               # Note: we can't redirect stderr in array form, but we'll handle errors via exceptions
               begin
@@ -571,13 +571,25 @@ module Datadog
               end
               next if base_sha.nil? || base_sha.empty?
 
-              behind, ahead = exec_git_command(["git", "rev-list", "--left-right", "--count", "#{cand}...#{source_branch}"], timeout: LONG_TIMEOUT)&.strip&.split&.map(&:to_i)
-              if behind == 0 && ahead == 0
+              rev_list_output = exec_git_command(["git", "rev-list", "--left-right", "--count", "#{cand}...#{source_branch}"], timeout: LONG_TIMEOUT)&.strip
+              next if rev_list_output.nil?
+
+              behind, ahead = rev_list_output.split.map(&:to_i)
+              next if behind.nil? || ahead.nil?
+
+              metric = BranchMetric.new(
+                branch_name: cand,
+                behind: behind,
+                ahead: ahead,
+                base_sha: base_sha
+              )
+
+              if metric.up_to_date?
                 Datadog.logger.debug { "Branch '#{cand}' is up to date with '#{source_branch}'" }
                 next
               end
 
-              metrics[cand] = {behind: behind, ahead: ahead, base_sha: base_sha}
+              metrics << metric
             end
             metrics
           end
@@ -585,20 +597,20 @@ module Datadog
           def find_best_branch(metrics, remote_name)
             return nil if metrics.empty?
 
-            # TODO: law of demeter violation, git branch metric is a concept that needs to appear
-            return metrics.first&.last&.[](:base_sha) if metrics.size == 1
+            # If there's only one metric, return its base SHA
+            return metrics.first.base_sha if metrics.size == 1
 
             default_branch = detect_default_branch(remote_name)
             Datadog.logger.debug { "Default branch: '#{default_branch}'" }
 
-            _, best_data = metrics.min_by do |cand, data|
+            best_metric = metrics.min_by do |metric|
               [
-                data[:ahead],
-                branches_equal?(cand, default_branch, remote_name) ? 0 : 1 # prefer default branch on tie
+                metric.divergence_score,
+                branches_equal?(metric.branch_name, default_branch, remote_name) ? 0 : 1 # prefer default branch on tie
               ]
             end
 
-            best_data ? best_data[:base_sha] : nil
+            best_metric&.base_sha
           end
 
           def branches_equal?(branch_name, default_branch, remote_name)

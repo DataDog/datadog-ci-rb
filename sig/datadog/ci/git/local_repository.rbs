@@ -75,9 +75,9 @@ module Datadog
 
         def self.build_candidate_list: (String remote_name) -> Array[String]?
 
-        def self.compute_branch_metrics: (Array[String] candidates, String target_branch) -> Hash[String, { behind: Integer, ahead: Integer, base_sha: String }]
+        def self.compute_branch_metrics: (Array[String] candidates, String target_branch) -> Array[BranchMetric]
 
-        def self.find_best_branch: (Hash[String, { behind: Integer, ahead: Integer, base_sha: String }] metrics, String remote_name) -> String?
+        def self.find_best_branch: (Array[BranchMetric] metrics, String remote_name) -> String?
 
         def self.branches_equal?: (String? branch_name, String? default_branch, String remote_name) -> bool
 

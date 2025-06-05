@@ -1,0 +1,18 @@
+module Datadog
+  module CI
+    module Git
+      class BranchMetric
+        attr_reader branch_name: String
+        attr_reader behind: Integer
+        attr_reader ahead: Integer
+        attr_reader base_sha: String
+
+        def initialize: (branch_name: String, behind: Integer, ahead: Integer, base_sha: String) -> void
+
+        def up_to_date?: () -> bool
+
+        def divergence_score: () -> Integer
+      end
+    end
+  end
+end
