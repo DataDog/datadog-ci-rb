@@ -33,11 +33,11 @@ module Datadog
         def self.exec_git_command(cmd, stdin: nil, timeout: SHORT_TIMEOUT)
           # @type var out: String
           # @type var status: Process::Status?
-          out, status = Utils::Command.exec_command(cmd, stdin_data: stdin, timeout: timeout)
+          out, status = Utils::Command.exec_command(["git"] + cmd, stdin_data: stdin, timeout: timeout)
 
           if status.nil? || !status.success?
             # Convert command to string representation for error message
-            cmd_str = cmd.is_a?(Array) ? cmd.join(" ") : cmd
+            cmd_str = cmd.join(" ")
             raise GitCommandExecutionError.new(
               "Failed to run git command [#{cmd_str}] with input [#{stdin}] and output [#{out}]. Status: #{status}",
               output: out,

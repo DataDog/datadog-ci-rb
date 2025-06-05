@@ -6,7 +6,7 @@ require "datadog/ci/git/cli"
 
 RSpec.describe Datadog::CI::Git::CLI do
   describe ".exec_git_command" do
-    let(:command) { ["git", "rev-parse", "HEAD"] }
+    let(:command) { ["rev-parse", "HEAD"] }
     let(:stdin_data) { nil }
     let(:timeout) { described_class::SHORT_TIMEOUT }
 
@@ -16,7 +16,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(command, stdin_data: stdin_data, timeout: timeout)
+          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
           .and_return([output, status])
       end
 
@@ -41,7 +41,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(command, stdin_data: stdin_data, timeout: timeout)
+          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
           .and_return([output, status])
       end
 
@@ -50,9 +50,9 @@ RSpec.describe Datadog::CI::Git::CLI do
           described_class.exec_git_command(command, stdin: stdin_data, timeout: timeout)
         end.to raise_error(described_class::GitCommandExecutionError) do |error|
           expect(error.output).to eq(output)
-          expect(error.command).to eq("git rev-parse HEAD")
+          expect(error.command).to eq("rev-parse HEAD")
           expect(error.status).to eq(status)
-          expect(error.message).to include("Failed to run git command [git rev-parse HEAD]")
+          expect(error.message).to include("Failed to run git command [rev-parse HEAD]")
           expect(error.message).to include("with input []")
           expect(error.message).to include("and output [#{output}]")
         end
@@ -65,7 +65,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(command, stdin_data: stdin_data, timeout: timeout)
+          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
           .and_return([output, status])
       end
 
@@ -74,7 +74,7 @@ RSpec.describe Datadog::CI::Git::CLI do
           described_class.exec_git_command(command, stdin: stdin_data, timeout: timeout)
         end.to raise_error(described_class::GitCommandExecutionError) do |error|
           expect(error.output).to eq(output)
-          expect(error.command).to eq("git rev-parse HEAD")
+          expect(error.command).to eq("rev-parse HEAD")
           expect(error.status).to be_nil
         end
       end
@@ -87,7 +87,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(command, stdin_data: stdin_data, timeout: timeout)
+          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
           .and_return([output, status])
       end
 
@@ -95,7 +95,7 @@ RSpec.describe Datadog::CI::Git::CLI do
         result = described_class.exec_git_command(command, stdin: stdin_data, timeout: timeout)
         expect(result).to eq(output)
         expect(Datadog::CI::Utils::Command).to have_received(:exec_command)
-          .with(command, stdin_data: stdin_data, timeout: timeout)
+          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
       end
     end
 
@@ -106,7 +106,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(command, stdin_data: stdin_data, timeout: custom_timeout)
+          .with(["git"] + command, stdin_data: stdin_data, timeout: custom_timeout)
           .and_return([output, status])
       end
 
@@ -114,7 +114,7 @@ RSpec.describe Datadog::CI::Git::CLI do
         result = described_class.exec_git_command(command, timeout: custom_timeout)
         expect(result).to eq(output)
         expect(Datadog::CI::Utils::Command).to have_received(:exec_command)
-          .with(command, stdin_data: nil, timeout: custom_timeout)
+          .with(["git"] + command, stdin_data: nil, timeout: custom_timeout)
       end
     end
 
@@ -124,7 +124,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(command, stdin_data: nil, timeout: described_class::SHORT_TIMEOUT)
+          .with(["git"] + command, stdin_data: nil, timeout: described_class::SHORT_TIMEOUT)
           .and_return([output, status])
       end
 
@@ -132,7 +132,7 @@ RSpec.describe Datadog::CI::Git::CLI do
         result = described_class.exec_git_command(command)
         expect(result).to eq(output)
         expect(Datadog::CI::Utils::Command).to have_received(:exec_command)
-          .with(command, stdin_data: nil, timeout: described_class::SHORT_TIMEOUT)
+          .with(["git"] + command, stdin_data: nil, timeout: described_class::SHORT_TIMEOUT)
       end
     end
   end

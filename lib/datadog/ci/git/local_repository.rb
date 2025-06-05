@@ -88,7 +88,7 @@ module Datadog
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = CLI.exec_git_command(["git", "ls-remote", "--get-url"])
+            res = CLI.exec_git_command(["ls-remote", "--get-url"])
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_REPOSITORY, duration_ms)
@@ -100,14 +100,14 @@ module Datadog
         end
 
         def self.git_root
-          CLI.exec_git_command(["git", "rev-parse", "--show-toplevel"])
+          CLI.exec_git_command(["rev-parse", "--show-toplevel"])
         rescue => e
           log_failure(e, "git root path")
           nil
         end
 
         def self.git_commit_sha
-          CLI.exec_git_command(["git", "rev-parse", "HEAD"])
+          CLI.exec_git_command(["rev-parse", "HEAD"])
         rescue => e
           log_failure(e, "git commit sha")
           nil
@@ -119,7 +119,7 @@ module Datadog
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = CLI.exec_git_command(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            res = CLI.exec_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_BRANCH, duration_ms)
@@ -131,14 +131,14 @@ module Datadog
         end
 
         def self.git_tag
-          CLI.exec_git_command(["git", "tag", "--points-at", "HEAD"])
+          CLI.exec_git_command(["tag", "--points-at", "HEAD"])
         rescue => e
           log_failure(e, "git tag")
           nil
         end
 
         def self.git_commit_message
-          CLI.exec_git_command(["git", "log", "-n", "1", "--format=%B"])
+          CLI.exec_git_command(["log", "-n", "1", "--format=%B"])
         rescue => e
           log_failure(e, "git commit message")
           nil
@@ -146,7 +146,7 @@ module Datadog
 
         def self.git_commit_users
           # Get committer and author information in one command.
-          output = CLI.exec_git_command(["git", "show", "-s", "--format=%an\t%ae\t%at\t%cn\t%ce\t%ct"])
+          output = CLI.exec_git_command(["show", "-s", "--format=%an\t%ae\t%at\t%cn\t%ce\t%ct"])
           unless output
             Datadog.logger.debug(
               "Unable to read git commit users: git command output is nil"
@@ -177,7 +177,7 @@ module Datadog
           output = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            output = CLI.exec_git_command(["git", "log", "--format=%H", "-n", "1000", "--since=\"1 month ago\""], timeout: CLI::LONG_TIMEOUT)
+            output = CLI.exec_git_command(["log", "--format=%H", "-n", "1000", "--since=\"1 month ago\""], timeout: CLI::LONG_TIMEOUT)
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_LOCAL_COMMITS, duration_ms)
@@ -202,7 +202,7 @@ module Datadog
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
             # Build command array with all the parameters
             cmd = [
-              "git", "rev-list",
+              "rev-list",
               "--objects",
               "--no-object-names",
               "--filter=blob:none",
@@ -233,7 +233,7 @@ module Datadog
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
             CLI.exec_git_command(
-              ["git", "pack-objects", "--compression=9", "--max-pack-size=3m", "#{path}/#{basename}"],
+              ["pack-objects", "--compression=9", "--max-pack-size=3m", "#{path}/#{basename}"],
               stdin: commit_tree,
               timeout: CLI::LONG_TIMEOUT
             )
@@ -252,7 +252,7 @@ module Datadog
           res = false
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = CLI.exec_git_command(["git", "rev-parse", "--is-shallow-repository"]) == "true"
+            res = CLI.exec_git_command(["rev-parse", "--is-shallow-repository"]) == "true"
           end
           Telemetry.git_command_ms(Ext::Telemetry::Command::CHECK_SHALLOW, duration_ms)
 
@@ -268,7 +268,7 @@ module Datadog
           # @type var res: String?
           res = nil
 
-          default_remote = CLI.exec_git_command(["git", "config", "--default", "origin", "--get", "clone.defaultRemoteName"])&.strip
+          default_remote = CLI.exec_git_command(["config", "--default", "origin", "--get", "clone.defaultRemoteName"])&.strip
           head_commit = git_commit_sha
           upstream_branch = get_upstream_branch
 
@@ -286,7 +286,7 @@ module Datadog
                 begin
                   # @type var cmd: Array[String]
                   cmd = [
-                    "git", "fetch",
+                    "fetch",
                     "--shallow-since=\"1 month ago\"",
                     "--update-shallow",
                     "--filter=blob:none",
@@ -327,7 +327,7 @@ module Datadog
             # @type var output: String?
             output = nil
             duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-              output = CLI.exec_git_command(["git", "diff", "-U0", "--word-diff=porcelain", base_commit, "HEAD"], timeout: CLI::LONG_TIMEOUT)
+              output = CLI.exec_git_command(["diff", "-U0", "--word-diff=porcelain", base_commit, "HEAD"], timeout: CLI::LONG_TIMEOUT)
             end
             Telemetry.git_command_ms(Ext::Telemetry::Command::DIFF, duration_ms)
 
@@ -429,27 +429,27 @@ module Datadog
             # @type var short_branch_name: String
             short_branch_name = remove_remote_prefix(branch, remote_name)
 
-            CLI.exec_git_command(["git", "show-ref", "--verify", "--quiet", "refs/remotes/#{remote_name}/#{short_branch_name}"])
+            CLI.exec_git_command(["show-ref", "--verify", "--quiet", "refs/remotes/#{remote_name}/#{short_branch_name}"])
             Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' already fetched from remote, skipping" }
           rescue CLI::GitCommandExecutionError => e
             Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' doesn't exist locally, checking remote..." }
 
             begin
-              remote_heads = CLI.exec_git_command(["git", "ls-remote", "--heads", remote_name, short_branch_name])
+              remote_heads = CLI.exec_git_command(["ls-remote", "--heads", remote_name, short_branch_name])
               if remote_heads.nil? || remote_heads.empty?
                 Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' doesn't exist in remote" }
                 return
               end
 
               Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' exists in remote, fetching" }
-              CLI.exec_git_command(["git", "fetch", "--depth", "1", remote_name, short_branch_name], timeout: CLI::LONG_TIMEOUT)
+              CLI.exec_git_command(["fetch", "--depth", "1", remote_name, short_branch_name], timeout: CLI::LONG_TIMEOUT)
             rescue CLI::GitCommandExecutionError => e
               Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' couldn't be fetched from remote: #{e}" }
             end
           end
 
           def get_source_branch
-            source_branch = CLI.exec_git_command(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+            source_branch = CLI.exec_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
             if source_branch.nil?
               Datadog.logger.debug { "Could not get current branch" }
               return nil
@@ -457,7 +457,7 @@ module Datadog
 
             # Verify the branch exists
             begin
-              CLI.exec_git_command(["git", "rev-parse", "--verify", "--quiet", source_branch])
+              CLI.exec_git_command(["rev-parse", "--verify", "--quiet", source_branch])
             rescue
               # Branch verification failed
               return nil
@@ -478,7 +478,7 @@ module Datadog
             # @type var default_branch: String?
             default_branch = nil
             begin
-              default_ref = CLI.exec_git_command(["git", "symbolic-ref", "--quiet", "--short", "refs/remotes/#{remote_name}/HEAD"])
+              default_ref = CLI.exec_git_command(["symbolic-ref", "--quiet", "--short", "refs/remotes/#{remote_name}/HEAD"])
               default_branch = remove_remote_prefix(default_ref, remote_name) unless default_ref.nil?
             rescue
               Datadog.logger.debug { "Could not get symbolic-ref, trying to find a fallback (main, master)..." }
@@ -490,7 +490,7 @@ module Datadog
 
           def find_fallback_default_branch(remote_name)
             ["main", "master"].each do |fallback|
-              CLI.exec_git_command(["git", "show-ref", "--verify", "--quiet", "refs/remotes/#{remote_name}/#{fallback}"])
+              CLI.exec_git_command(["show-ref", "--verify", "--quiet", "refs/remotes/#{remote_name}/#{fallback}"])
               Datadog.logger.debug { "Found fallback default branch '#{fallback}'" }
               return fallback
             rescue
@@ -502,7 +502,7 @@ module Datadog
           def build_candidate_list(remote_name)
             # we cannot assume that local branches are the same as remote branches
             # so we need to go over remote branches only
-            candidates = CLI.exec_git_command(["git", "for-each-ref", "--format=%(refname:short)", "refs/remotes/#{remote_name}"])&.lines&.map(&:strip)
+            candidates = CLI.exec_git_command(["for-each-ref", "--format=%(refname:short)", "refs/remotes/#{remote_name}"])&.lines&.map(&:strip)
             Datadog.logger.debug { "Available branches: '#{candidates}'" }
             candidates&.select! do |candidate_branch|
               main_like_branch?(candidate_branch, remote_name)
@@ -516,14 +516,14 @@ module Datadog
             candidates.each do |cand|
               # Note: we can't redirect stderr in array form, but we'll handle errors via exceptions
               begin
-                base_sha = CLI.exec_git_command(["git", "merge-base", cand, source_branch], timeout: CLI::LONG_TIMEOUT)&.strip
+                base_sha = CLI.exec_git_command(["merge-base", cand, source_branch], timeout: CLI::LONG_TIMEOUT)&.strip
               rescue
                 # merge-base failed, skip this candidate
                 next
               end
               next if base_sha.nil? || base_sha.empty?
 
-              rev_list_output = CLI.exec_git_command(["git", "rev-list", "--left-right", "--count", "#{cand}...#{source_branch}"], timeout: CLI::LONG_TIMEOUT)&.strip
+              rev_list_output = CLI.exec_git_command(["rev-list", "--left-right", "--count", "#{cand}...#{source_branch}"], timeout: CLI::LONG_TIMEOUT)&.strip
               next if rev_list_output.nil?
 
               behind, ahead = rev_list_output.split.map(&:to_i)
@@ -577,14 +577,14 @@ module Datadog
               upstream.split("/").first
             else
               # Fallback to first remote if no upstream is set
-              first_remote_value = CLI.exec_git_command(["git", "remote"])&.split("\n")&.first
+              first_remote_value = CLI.exec_git_command(["remote"])&.split("\n")&.first
               Datadog.logger.debug { "First remote value: '#{first_remote_value}'" }
               first_remote_value || "origin"
             end
           end
 
           def get_upstream_branch
-            CLI.exec_git_command(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])
+            CLI.exec_git_command(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])
           rescue => e
             Datadog.logger.debug { "Error getting upstream: #{e}" }
             nil
