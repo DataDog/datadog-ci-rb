@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module Git
+      module BaseBranchShaDetection
+        class MergeBaseExtractor < Base
+          attr_reader base_branch: String
+
+          def initialize: (String remote_name, String source_branch, String base_branch) -> void
+
+          def call: () -> String?
+        end
+      end
+    end
+  end
+end

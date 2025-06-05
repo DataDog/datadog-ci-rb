@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Git
+      module BaseBranchShaDetector
+        def self.base_branch_sha: (String? base_branch) -> String?
+
+        def self.get_remote_name: () -> String
+
+        def self.get_source_branch: () -> String?
+      end
+    end
+  end
+end

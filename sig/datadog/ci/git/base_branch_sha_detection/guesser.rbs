@@ -1,0 +1,27 @@
+module Datadog
+  module CI
+    module Git
+      module BaseBranchShaDetection
+        class Guesser < Base
+          def call: () -> String?
+
+          private
+
+          def check_and_fetch_base_branches: (Array[String] branches, String remote_name) -> void
+
+          def main_like_branch?: (String? branch_name, String remote_name) -> bool?
+
+          def detect_default_branch: (String remote_name) -> String?
+
+          def find_fallback_default_branch: (String remote_name) -> String?
+
+          def build_candidate_list: (String remote_name) -> Array[String]?
+
+          def compute_branch_metrics: (Array[String] candidates, String source_branch) -> Array[BaseBranchShaDetection::BranchMetric]
+
+          def find_best_branch: (Array[BaseBranchShaDetection::BranchMetric] metrics, String remote_name) -> String?
+        end
+      end
+    end
+  end
+end

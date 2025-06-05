@@ -6,7 +6,7 @@ require "set"
 
 require_relative "../ext/telemetry"
 require_relative "../utils/command"
-require_relative "branch_metric"
+require_relative "base_branch_sha_detector"
 require_relative "cli"
 require_relative "telemetry"
 require_relative "user"
@@ -200,7 +200,6 @@ module Datadog
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            # Build command array with all the parameters
             cmd = [
               "rev-list",
               "--objects",
@@ -364,231 +363,28 @@ module Datadog
         def self.base_commit_sha(base_branch: nil)
           Telemetry.git_command(Ext::Telemetry::Command::BASE_COMMIT_SHA)
 
-          Datadog.logger.debug { "Base branch: '#{base_branch}'" }
-
-          remote_name = get_remote_name
-          Datadog.logger.debug { "Remote name: '#{remote_name}'" }
-
-          source_branch = get_source_branch
-          return nil if source_branch.nil?
-
-          Datadog.logger.debug { "Source branch: '#{source_branch}'" }
-
-          candidates = if base_branch.nil?
-            # Check and fetch base branches if they don't exist in local git repository
-            check_and_fetch_base_branches(POSSIBLE_BASE_BRANCHES, remote_name)
-
-            build_candidate_list(remote_name)
-          else
-            check_and_fetch_branch(base_branch, remote_name)
-
-            base_branch_with_remote = "#{remote_name}/#{remove_remote_prefix(base_branch, remote_name)}"
-            [base_branch_with_remote]
-          end
-
-          if candidates.nil? || candidates.empty?
-            Datadog.logger.debug { "No candidate branches found." }
-            return nil
-          end
-
-          metrics = compute_branch_metrics(candidates, source_branch)
-          Datadog.logger.debug { "Branch metrics: '#{metrics}'" }
-
-          best_branch_sha = find_best_branch(metrics, remote_name)
-          Datadog.logger.debug { "Best branch SHA: '#{best_branch_sha}'" }
-
-          best_branch_sha
+          BaseBranchShaDetector.base_branch_sha(base_branch)
         rescue => e
           Telemetry.track_error(e, Ext::Telemetry::Command::BASE_COMMIT_SHA)
           log_failure(e, "git base ref")
           nil
         end
 
-        class << self
-          private
+        def self.get_upstream_branch
+          CLI.exec_git_command(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])
+        rescue => e
+          Datadog.logger.debug { "Error getting upstream: #{e}" }
+          nil
+        end
 
-          def filter_invalid_commits(commits)
-            commits.filter { |commit| Utils::Git.valid_commit_sha?(commit) }
-          end
+        def self.filter_invalid_commits(commits)
+          commits.filter { |commit| Utils::Git.valid_commit_sha?(commit) }
+        end
 
-          def log_failure(e, action)
-            Datadog.logger.debug(
-              "Unable to perform #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
-            )
-          end
-
-          def check_and_fetch_base_branches(branches, remote_name)
-            branches.each do |branch|
-              check_and_fetch_branch(branch, remote_name)
-            end
-          end
-
-          def check_and_fetch_branch(branch, remote_name)
-            # Check if branch already fetched from remote
-
-            # @type var short_branch_name: String
-            short_branch_name = remove_remote_prefix(branch, remote_name)
-
-            CLI.exec_git_command(["show-ref", "--verify", "--quiet", "refs/remotes/#{remote_name}/#{short_branch_name}"])
-            Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' already fetched from remote, skipping" }
-          rescue CLI::GitCommandExecutionError => e
-            Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' doesn't exist locally, checking remote..." }
-
-            begin
-              remote_heads = CLI.exec_git_command(["ls-remote", "--heads", remote_name, short_branch_name])
-              if remote_heads.nil? || remote_heads.empty?
-                Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' doesn't exist in remote" }
-                return
-              end
-
-              Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' exists in remote, fetching" }
-              CLI.exec_git_command(["fetch", "--depth", "1", remote_name, short_branch_name], timeout: CLI::LONG_TIMEOUT)
-            rescue CLI::GitCommandExecutionError => e
-              Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' couldn't be fetched from remote: #{e}" }
-            end
-          end
-
-          def get_source_branch
-            source_branch = CLI.exec_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
-            if source_branch.nil?
-              Datadog.logger.debug { "Could not get current branch" }
-              return nil
-            end
-
-            # Verify the branch exists
-            begin
-              CLI.exec_git_command(["rev-parse", "--verify", "--quiet", source_branch])
-            rescue
-              # Branch verification failed
-              return nil
-            end
-            source_branch
-          end
-
-          def remove_remote_prefix(branch_name, remote_name)
-            branch_name&.sub(/^#{Regexp.escape(remote_name)}\//, "")
-          end
-
-          def main_like_branch?(branch_name, remote_name)
-            short_branch_name = remove_remote_prefix(branch_name, remote_name)
-            short_branch_name&.match?(DEFAULT_LIKE_BRANCH_FILTER)
-          end
-
-          def detect_default_branch(remote_name)
-            # @type var default_branch: String?
-            default_branch = nil
-            begin
-              default_ref = CLI.exec_git_command(["symbolic-ref", "--quiet", "--short", "refs/remotes/#{remote_name}/HEAD"])
-              default_branch = remove_remote_prefix(default_ref, remote_name) unless default_ref.nil?
-            rescue
-              Datadog.logger.debug { "Could not get symbolic-ref, trying to find a fallback (main, master)..." }
-            end
-
-            default_branch = find_fallback_default_branch(remote_name) if default_branch.nil?
-            default_branch
-          end
-
-          def find_fallback_default_branch(remote_name)
-            ["main", "master"].each do |fallback|
-              CLI.exec_git_command(["show-ref", "--verify", "--quiet", "refs/remotes/#{remote_name}/#{fallback}"])
-              Datadog.logger.debug { "Found fallback default branch '#{fallback}'" }
-              return fallback
-            rescue
-              next
-            end
-            nil
-          end
-
-          def build_candidate_list(remote_name)
-            # we cannot assume that local branches are the same as remote branches
-            # so we need to go over remote branches only
-            candidates = CLI.exec_git_command(["for-each-ref", "--format=%(refname:short)", "refs/remotes/#{remote_name}"])&.lines&.map(&:strip)
-            Datadog.logger.debug { "Available branches: '#{candidates}'" }
-            candidates&.select! do |candidate_branch|
-              main_like_branch?(candidate_branch, remote_name)
-            end
-            Datadog.logger.debug { "Candidate branches: '#{candidates}'" }
-            candidates
-          end
-
-          def compute_branch_metrics(candidates, source_branch)
-            metrics = []
-            candidates.each do |cand|
-              # Note: we can't redirect stderr in array form, but we'll handle errors via exceptions
-              begin
-                base_sha = CLI.exec_git_command(["merge-base", cand, source_branch], timeout: CLI::LONG_TIMEOUT)&.strip
-              rescue
-                # merge-base failed, skip this candidate
-                next
-              end
-              next if base_sha.nil? || base_sha.empty?
-
-              rev_list_output = CLI.exec_git_command(["rev-list", "--left-right", "--count", "#{cand}...#{source_branch}"], timeout: CLI::LONG_TIMEOUT)&.strip
-              next if rev_list_output.nil?
-
-              behind, ahead = rev_list_output.split.map(&:to_i)
-              next if behind.nil? || ahead.nil?
-
-              metric = BranchMetric.new(
-                branch_name: cand,
-                behind: behind,
-                ahead: ahead,
-                base_sha: base_sha
-              )
-
-              if metric.up_to_date?
-                Datadog.logger.debug { "Branch '#{cand}' is up to date with '#{source_branch}'" }
-                next
-              end
-
-              metrics << metric
-            end
-            metrics
-          end
-
-          def find_best_branch(metrics, remote_name)
-            return nil if metrics.empty?
-
-            # If there's only one metric, return its base SHA
-            return metrics.first.base_sha if metrics.size == 1
-
-            default_branch = detect_default_branch(remote_name)
-            Datadog.logger.debug { "Default branch: '#{default_branch}'" }
-
-            best_metric = metrics.min_by do |metric|
-              [
-                metric.divergence_score,
-                branches_equal?(metric.branch_name, default_branch, remote_name) ? 0 : 1 # prefer default branch on tie
-              ]
-            end
-
-            best_metric&.base_sha
-          end
-
-          def branches_equal?(branch_name, default_branch, remote_name)
-            remove_remote_prefix(branch_name, remote_name) == remove_remote_prefix(default_branch, remote_name)
-          end
-
-          def get_remote_name
-            # Try to find remote from upstream tracking
-            upstream = get_upstream_branch
-
-            if upstream
-              upstream.split("/").first
-            else
-              # Fallback to first remote if no upstream is set
-              first_remote_value = CLI.exec_git_command(["remote"])&.split("\n")&.first
-              Datadog.logger.debug { "First remote value: '#{first_remote_value}'" }
-              first_remote_value || "origin"
-            end
-          end
-
-          def get_upstream_branch
-            CLI.exec_git_command(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])
-          rescue => e
-            Datadog.logger.debug { "Error getting upstream: #{e}" }
-            nil
-          end
+        def self.log_failure(e, action)
+          Datadog.logger.debug(
+            "Unable to perform #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
+          )
         end
       end
     end
