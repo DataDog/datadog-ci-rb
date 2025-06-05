@@ -3,6 +3,9 @@ module Datadog
     module Git
       module BaseBranchShaDetection
         class Guesser < Base
+          DEFAULT_LIKE_BRANCH_FILTER: Regexp
+          POSSIBLE_BASE_BRANCHES: Array[String]
+
           def call: () -> String?
 
           private

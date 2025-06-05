@@ -10,9 +10,12 @@ module Datadog
     module Git
       module BaseBranchShaDetection
         class Guesser < Base
+          POSSIBLE_BASE_BRANCHES = %w[main master preprod prod dev development trunk].freeze
+          DEFAULT_LIKE_BRANCH_FILTER = /^(#{POSSIBLE_BASE_BRANCHES.join("|")}|release\/.*|hotfix\/.*)$/.freeze
+
           def call
             # Check and fetch base branches if they don't exist in local git repository
-            check_and_fetch_base_branches(LocalRepository::POSSIBLE_BASE_BRANCHES, remote_name)
+            check_and_fetch_base_branches(POSSIBLE_BASE_BRANCHES, remote_name)
 
             candidates = build_candidate_list(remote_name)
 

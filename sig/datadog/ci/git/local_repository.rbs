@@ -2,9 +2,6 @@ module Datadog
   module CI
     module Git
       module LocalRepository
-        POSSIBLE_BASE_BRANCHES: Array[String]
-        DEFAULT_LIKE_BRANCH_FILTER: Regexp
-
         self.@root: String
         self.@prefix_to_root: String
         self.@repository_name: String

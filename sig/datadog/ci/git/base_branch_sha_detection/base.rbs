@@ -3,8 +3,6 @@ module Datadog
     module Git
       module BaseBranchShaDetection
         class Base
-          DEFAULT_LIKE_BRANCH_FILTER: Regexp
-          POSSIBLE_BASE_BRANCHES: Array[String]
           attr_reader remote_name: String
           attr_reader source_branch: String
 

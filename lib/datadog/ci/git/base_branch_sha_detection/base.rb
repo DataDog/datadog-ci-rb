@@ -7,9 +7,6 @@ module Datadog
     module Git
       module BaseBranchShaDetection
         class Base
-          POSSIBLE_BASE_BRANCHES = %w[main master preprod prod dev development trunk].freeze
-          DEFAULT_LIKE_BRANCH_FILTER = /^(#{POSSIBLE_BASE_BRANCHES.join("|")}|release\/.*|hotfix\/.*)$/.freeze
-
           attr_reader :remote_name
           attr_reader :source_branch
 

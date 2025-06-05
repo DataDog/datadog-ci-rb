@@ -15,9 +15,6 @@ module Datadog
   module CI
     module Git
       module LocalRepository
-        POSSIBLE_BASE_BRANCHES = %w[main master preprod prod dev development trunk].freeze
-        DEFAULT_LIKE_BRANCH_FILTER = /^(#{POSSIBLE_BASE_BRANCHES.join("|")}|release\/.*|hotfix\/.*)$/.freeze
-
         def self.root
           return @root if defined?(@root)
 
