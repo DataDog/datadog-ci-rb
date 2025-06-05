@@ -111,7 +111,7 @@ module Datadog
           res
         rescue => e
           log_failure(e, "git repository url")
-          telemetry_track_error(e, Ext::Telemetry::Command::GET_REPOSITORY)
+          Telemetry.track_error(e, Ext::Telemetry::Command::GET_REPOSITORY)
           nil
         end
 
@@ -142,7 +142,7 @@ module Datadog
           res
         rescue => e
           log_failure(e, "git branch")
-          telemetry_track_error(e, Ext::Telemetry::Command::GET_BRANCH)
+          Telemetry.track_error(e, Ext::Telemetry::Command::GET_BRANCH)
           nil
         end
 
@@ -203,7 +203,7 @@ module Datadog
           output.split("\n")
         rescue => e
           log_failure(e, "git commits")
-          telemetry_track_error(e, Ext::Telemetry::Command::GET_LOCAL_COMMITS)
+          Telemetry.track_error(e, Ext::Telemetry::Command::GET_LOCAL_COMMITS)
           []
         end
 
@@ -233,7 +233,7 @@ module Datadog
           res
         rescue => e
           log_failure(e, "git commits rev list")
-          telemetry_track_error(e, Ext::Telemetry::Command::GET_OBJECTS)
+          Telemetry.track_error(e, Ext::Telemetry::Command::GET_OBJECTS)
           nil
         end
 
@@ -259,7 +259,7 @@ module Datadog
           basename
         rescue => e
           log_failure(e, "git generate packfiles")
-          telemetry_track_error(e, Ext::Telemetry::Command::PACK_OBJECTS)
+          Telemetry.track_error(e, Ext::Telemetry::Command::PACK_OBJECTS)
           nil
         end
 
@@ -275,7 +275,7 @@ module Datadog
           res
         rescue => e
           log_failure(e, "git shallow clone")
-          telemetry_track_error(e, Ext::Telemetry::Command::CHECK_SHALLOW)
+          Telemetry.track_error(e, Ext::Telemetry::Command::CHECK_SHALLOW)
           false
         end
 
@@ -314,7 +314,7 @@ module Datadog
                   exec_git_command(cmd, timeout: UNSHALLOW_TIMEOUT)
                 rescue => e
                   log_failure(e, "git unshallow")
-                  telemetry_track_error(e, Ext::Telemetry::Command::UNSHALLOW)
+                  Telemetry.track_error(e, Ext::Telemetry::Command::UNSHALLOW)
                   unshallowing_errored = true
                   nil
                 end
@@ -369,7 +369,7 @@ module Datadog
             end
             changed_files
           rescue => e
-            telemetry_track_error(e, Ext::Telemetry::Command::DIFF)
+            Telemetry.track_error(e, Ext::Telemetry::Command::DIFF)
             log_failure(e, "get changed files from diff")
             nil
           end
@@ -415,7 +415,7 @@ module Datadog
 
           best_branch_sha
         rescue => e
-          telemetry_track_error(e, Ext::Telemetry::Command::BASE_COMMIT_SHA)
+          Telemetry.track_error(e, Ext::Telemetry::Command::BASE_COMMIT_SHA)
           log_failure(e, "git base ref")
           nil
         end
@@ -452,17 +452,6 @@ module Datadog
             Datadog.logger.debug(
               "Unable to perform #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
             )
-          end
-
-          def telemetry_track_error(e, command)
-            case e
-            when Errno::ENOENT
-              Telemetry.git_command_errors(command, executable_missing: true)
-            when GitCommandExecutionError
-              Telemetry.git_command_errors(command, exit_code: e.status&.to_i)
-            else
-              Telemetry.git_command_errors(command, exit_code: -9000)
-            end
           end
 
           def check_and_fetch_base_branches(branches, remote_name)

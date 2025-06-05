@@ -23,6 +23,17 @@ module Datadog
           Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_COMMAND_MS, duration_ms, tags_for_command(command))
         end
 
+        def self.track_error(e, command)
+          case e
+          when Errno::ENOENT
+            git_command_errors(command, executable_missing: true)
+          when LocalRepository::GitCommandExecutionError
+            git_command_errors(command, exit_code: e.status&.to_i)
+          else
+            git_command_errors(command, exit_code: -9000)
+          end
+        end
+
         def self.tags_for_command(command)
           {Ext::Telemetry::TAG_COMMAND => command}
         end

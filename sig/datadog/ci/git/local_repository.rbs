@@ -87,8 +87,6 @@ module Datadog
 
         def self.log_failure: (StandardError e, String action) -> void
 
-        def self.telemetry_track_error: (StandardError e, String command) -> void
-
         def self.check_and_fetch_base_branches: (Array[String] branches, String remote_name) -> void
 
         def self.check_and_fetch_branch: (String branch, String remote_name) -> void

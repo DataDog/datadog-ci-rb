@@ -79,4 +79,38 @@ RSpec.describe Datadog::CI::Git::Telemetry do
 
     it { git_command_ms }
   end
+
+  describe ".track_error" do
+    subject(:track_error) { described_class.track_error(error, command) }
+
+    let(:command) { "git ls-remote --get-url" }
+
+    context "when error is Errno::ENOENT" do
+      let(:error) { Errno::ENOENT.new("No such file or directory") }
+
+      it "calls git_command_errors with executable_missing: true" do
+        expect(described_class).to receive(:git_command_errors).with(command, executable_missing: true)
+        track_error
+      end
+    end
+
+    context "when error is GitCommandExecutionError" do
+      let(:status) { double(to_i: 1) }
+      let(:error) { Datadog::CI::Git::LocalRepository::GitCommandExecutionError.new("Git command failed", output: "error", command: "git", status: status) }
+
+      it "calls git_command_errors with exit_code from status" do
+        expect(described_class).to receive(:git_command_errors).with(command, exit_code: 1)
+        track_error
+      end
+    end
+
+    context "when error is a generic StandardError" do
+      let(:error) { StandardError.new("Some other error") }
+
+      it "calls git_command_errors with exit_code: -9000" do
+        expect(described_class).to receive(:git_command_errors).with(command, exit_code: -9000)
+        track_error
+      end
+    end
+  end
 end
