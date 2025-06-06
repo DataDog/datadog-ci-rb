@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [1.18.0] - 2025-06-06
+
+### Added
+
+* Report end lines for tests ([#327][])
+
+### Changed
+
+* Impacted tests detection: improve a script to determine the base branch sha ([#329][])
+
 ## [1.17.0] - 2025-05-19
 
 ### Added
@@ -443,7 +453,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.17.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.18.0...main
+[1.18.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.14.0...v1.15.0
@@ -635,3 +646,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#320]: https://github.com/DataDog/datadog-ci-rb/issues/320
 [#321]: https://github.com/DataDog/datadog-ci-rb/issues/321
 [#323]: https://github.com/DataDog/datadog-ci-rb/issues/323
+[#327]: https://github.com/DataDog/datadog-ci-rb/issues/327
+[#329]: https://github.com/DataDog/datadog-ci-rb/issues/329
