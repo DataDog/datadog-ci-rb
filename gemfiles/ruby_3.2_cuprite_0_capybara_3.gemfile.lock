@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 60d42f9dbb0f1c52e01f75f34cfcd0054dae2eb5
+  revision: 980774e415fe1681bb31bca79fcd3093427486f7
   branch: master
   specs:
     datadog (2.17.0)
@@ -28,7 +28,7 @@ GEM
       rake
       thor (>= 0.14.0)
     base64 (0.3.0)
-    bigdecimal (3.2.1)
+    bigdecimal (3.2.2)
     builder (3.3.0)
     capybara (3.40.0)
       addressable
@@ -119,7 +119,7 @@ GEM
       stringio
     public_suffix (6.0.2)
     racc (1.8.1)
-    rack (3.1.15)
+    rack (3.1.16)
     rack-test (2.2.0)
       rack (>= 1.3)
     rake (13.3.0)
@@ -196,4 +196,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.3.26
+   2.5.21
