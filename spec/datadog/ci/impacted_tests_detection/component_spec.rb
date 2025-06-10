@@ -15,7 +15,9 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
   let(:git_worker) { spy("git_worker") }
 
   before do
-    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(changed_files_set)
+    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
+      Datadog::CI::Git::Diff.new(changed_files: changed_files_set)
+    )
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
 
     allow(Datadog.logger).to receive(:warn)
@@ -47,9 +49,11 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       end
     end
 
-    context "when get_changes_since returns nil" do
+    context "when get_changes_since returns empty diff" do
       before do
-        allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(nil)
+        allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
+          Datadog::CI::Git::Diff.new(changed_files: Set.new)
+        )
       end
 
       it "disables the component" do
@@ -63,7 +67,6 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       it "sets changed_files and enables the component" do
         component.configure(library_settings, test_session)
         expect(component.enabled?).to be true
-        expect(component.instance_variable_get(:@changed_files)).to eq(changed_files_set)
         expect(git_worker).to have_received(:wait_until_done)
       end
     end

@@ -30,7 +30,7 @@ module Datadog
           end
 
           changed_files = Git::LocalRepository.get_changes_since(base_commit_sha)
-          if changed_files.nil?
+          if changed_files.empty?
             Datadog.logger.debug { "Impacted tests detection disabled: could not get changed files" }
             @enabled = false
             return

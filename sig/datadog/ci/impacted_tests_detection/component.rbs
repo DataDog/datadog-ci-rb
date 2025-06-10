@@ -1,7 +1,7 @@
 module Datadog::CI::ImpactedTestsDetection
   class Component
     @enabled: bool
-    @changed_files: Set[String]
+    @changed_files: Datadog::CI::Git::Diff
 
     def initialize: (enabled: bool) -> void
     def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void

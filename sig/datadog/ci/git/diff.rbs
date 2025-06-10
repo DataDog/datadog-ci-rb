@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Git
+      class Diff
+        @changed_files: ::Set[String]
+
+        def initialize: (?changed_files: ::Set[String]) -> void
+
+        def include?: (String file_path) -> bool
+
+        def size: () -> Integer
+
+        def empty?: () -> bool
+
+        def inspect: () -> String
+
+        def to_set: () -> ::Set[String]
+
+        def self.parse_diff_output: (String? output) -> Diff
+      end
+    end
+  end
+end

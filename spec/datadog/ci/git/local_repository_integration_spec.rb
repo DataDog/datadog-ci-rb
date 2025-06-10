@@ -169,9 +169,9 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           changed_files = described_class.get_changes_since(base_sha)
         end
 
-        expect(changed_files).to be_a(Set)
+        expect(changed_files).to be_a(Datadog::CI::Git::Diff)
         # Should includes all modified and renamed files
-        expect(changed_files).to eq(Set.new([base_file, feature_file, file_to_rename]))
+        expect(changed_files.to_set).to eq(Set.new([base_file, feature_file, file_to_rename]))
       end
 
       context "with malicious input that could cause ReDoS" do
@@ -207,7 +207,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
           # Should complete in under 1000 milliseconds (vulnerable regex would take much longer)
           expect(duration_ms).to be < 1000.0
-          expect(result).to be_a(Set)
+          expect(result).to be_a(Datadog::CI::Git::Diff)
           # The non-greedy regex will extract "a" from the malicious path
           expect(result).to include(expected_path)
         end
