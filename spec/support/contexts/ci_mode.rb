@@ -134,7 +134,11 @@ RSpec.shared_context "CI mode activated" do
 
     allow_any_instance_of(Datadog::CI::TestManagement::TestsProperties).to receive(:fetch).and_return(test_properties)
 
-    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(Datadog::CI::Git::Diff.new(changed_files: changed_files))
+    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
+      Datadog::CI::Git::Diff.parse_diff_output(
+        changed_files.map { |file| "diff --git a/#{file} b/#{file}" }.join("\n")
+      )
+    )
 
     if impacted_tests_enabled
       # stub base commit sha

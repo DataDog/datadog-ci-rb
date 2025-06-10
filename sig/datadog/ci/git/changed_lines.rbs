@@ -1,0 +1,22 @@
+module Datadog
+  module CI
+    module Git
+      class ChangedLines
+        @intervals: Array[Array[Integer]]
+        @built: bool
+
+        def initialize: () -> void
+
+        def add_interval: (Integer start_line, Integer end_line) -> void
+
+        def build!: () -> void
+
+        def overlaps?: (Integer query_start, Integer query_end) -> bool
+
+        def empty?: () -> bool
+
+        def intervals: () -> Array[Array[Integer]]
+      end
+    end
+  end
+end

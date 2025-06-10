@@ -15,8 +15,10 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
   let(:git_worker) { spy("git_worker") }
 
   before do
+    # Create a mock git diff output that would result in the changed_files_set
+    git_diff_output = changed_files_set.map { |file| "diff --git a/#{file} b/#{file}" }.join("\n")
     allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
-      Datadog::CI::Git::Diff.new(changed_files: changed_files_set)
+      Datadog::CI::Git::Diff.parse_diff_output(git_diff_output)
     )
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
 
@@ -52,7 +54,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
     context "when get_changes_since returns empty diff" do
       before do
         allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
-          Datadog::CI::Git::Diff.new(changed_files: Set.new)
+          Datadog::CI::Git::Diff.parse_diff_output("")
         )
       end
 

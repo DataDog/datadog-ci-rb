@@ -171,7 +171,10 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
         expect(changed_files).to be_a(Datadog::CI::Git::Diff)
         # Should includes all modified and renamed files
-        expect(changed_files.to_set).to eq(Set.new([base_file, feature_file, file_to_rename]))
+        expect(changed_files.include?(base_file)).to be true
+        expect(changed_files.include?(feature_file)).to be true
+        expect(changed_files.include?(file_to_rename)).to be true
+        expect(changed_files.size).to eq(3)
       end
 
       context "with malicious input that could cause ReDoS" do

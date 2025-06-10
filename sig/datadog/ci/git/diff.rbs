@@ -2,19 +2,24 @@ module Datadog
   module CI
     module Git
       class Diff
-        @changed_files: ::Set[String]
+        FILE_CHANGE_REGEX: Regexp
+        LINES_CHANGE_REGEX: Regexp
 
-        def initialize: (?changed_files: ::Set[String]) -> void
+        @changed_files: Hash[String, ChangedLines]
+
+        def initialize: (?changed_files: Hash[String, ChangedLines]) -> void
 
         def include?: (String file_path) -> bool
+
+        def lines_changed?: (String file_path, Integer start_line, Integer end_line) -> bool
+
+        def changed_line_intervals: (String file_path) -> Array[Array[Integer]]
 
         def size: () -> Integer
 
         def empty?: () -> bool
 
         def inspect: () -> String
-
-        def to_set: () -> ::Set[String]
 
         def self.parse_diff_output: (String? output) -> Diff
       end

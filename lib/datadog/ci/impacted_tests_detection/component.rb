@@ -57,7 +57,11 @@ module Datadog
           source_file = test_span.source_file
           return false if source_file.nil?
 
-          @changed_files.include?(source_file)
+          result = @changed_files.include?(source_file)
+          Datadog.logger.debug do
+            "Impacted tests detection: test #{test_span.name} with source file #{source_file} is modified: #{result}"
+          end
+          result
         end
 
         def tag_modified_test(test_span)
