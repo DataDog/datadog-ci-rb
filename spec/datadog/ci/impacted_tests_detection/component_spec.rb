@@ -15,7 +15,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
   let(:git_worker) { spy("git_worker") }
 
   before do
-    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changed_files_from_diff).and_return(changed_files_set)
+    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(changed_files_set)
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
 
     allow(Datadog.logger).to receive(:warn)
@@ -47,9 +47,9 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       end
     end
 
-    context "when get_changed_files_from_diff returns nil" do
+    context "when get_changes_since returns nil" do
       before do
-        allow(Datadog::CI::Git::LocalRepository).to receive(:get_changed_files_from_diff).and_return(nil)
+        allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(nil)
       end
 
       it "disables the component" do
@@ -72,7 +72,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       let(:initial_enabled) { false }
 
       it "remains disabled and does not proceed" do
-        expect(Datadog::CI::Git::LocalRepository).not_to receive(:get_changed_files_from_diff)
+        expect(Datadog::CI::Git::LocalRepository).not_to receive(:get_changes_since)
         component.configure(library_settings, test_session)
         expect(component.enabled?).to be false
       end

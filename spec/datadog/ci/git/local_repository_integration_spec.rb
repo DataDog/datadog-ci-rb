@@ -154,7 +154,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
     end
 
-    describe ".get_changed_files_from_diff" do
+    describe ".get_changes_since" do
       it "detects changed files between feature and base branch" do
         # avoids cached git root from previous test cases
         allow(described_class).to receive(:root).and_return(nil)
@@ -166,7 +166,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         # Now diff from feature branch to base branch
         changed_files = nil
         with_source_git_dir do
-          changed_files = described_class.get_changed_files_from_diff(base_sha)
+          changed_files = described_class.get_changes_since(base_sha)
         end
 
         expect(changed_files).to be_a(Set)
@@ -202,7 +202,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           # This should complete quickly without timing out
           result = nil
           duration_ms = Datadog::Core::Utils::Time.measure(:float_millisecond) do
-            result = described_class.get_changed_files_from_diff("base_commit_sha")
+            result = described_class.get_changes_since("base_commit_sha")
           end
 
           # Should complete in under 1000 milliseconds (vulnerable regex would take much longer)

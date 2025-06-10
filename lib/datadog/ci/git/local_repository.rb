@@ -310,7 +310,7 @@ module Datadog
 
         # Returns a Set of normalized file paths changed since the given base_commit.
         # If base_commit is nil, returns nil. On error, returns nil.
-        def self.get_changed_files_from_diff(base_commit)
+        def self.get_changes_since(base_commit)
           return nil if base_commit.nil?
 
           Datadog.logger.debug { "calculating git diff from base_commit: #{base_commit}" }
