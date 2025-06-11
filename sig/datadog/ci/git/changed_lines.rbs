@@ -4,6 +4,7 @@ module Datadog
       class ChangedLines
         @intervals: Array[Array[Integer]]
         @built: bool
+        @mutex: Mutex
 
         def initialize: () -> void
 

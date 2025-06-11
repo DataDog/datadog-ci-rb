@@ -9,56 +9,60 @@ module Datadog
         def initialize
           @intervals = [] # Array of [start, end] pairs
           @built = false
+          @mutex = Mutex.new
         end
 
         # Add an interval (defers merging until build! is called)
         def add_interval(start_line, end_line)
           return if start_line > end_line
 
-          @intervals << [start_line, end_line]
-          @built = false
+          @mutex.synchronize do
+            @intervals << [start_line, end_line]
+            @built = false
+          end
         end
 
         # Sort and merge all intervals
         # Call this after all intervals have been added
         def build!
-          return false if @built
+          @mutex.synchronize do
+            return false if @built
 
-          @built = true
-          return false if @intervals.empty?
+            @built = true
+            return false if @intervals.empty?
 
-          # Sort intervals by start line
-          @intervals.sort_by!(&:first)
+            # Sort intervals by start line
+            @intervals.sort_by!(&:first)
 
-          # Merge overlapping intervals
-          merged = []
+            # Merge overlapping intervals
+            merged = []
 
-          # @type var current_start: Integer
-          # @type var current_end: Integer
-          current_start, current_end = @intervals.first
+            # @type var current_start: Integer
+            # @type var current_end: Integer
+            current_start, current_end = @intervals.first
 
-          @intervals.each_with_index do |interval, index|
-            next if index == 0
-            # @type var start_line: Integer
-            # @type var end_line: Integer
-            start_line, end_line = interval
+            @intervals.each_with_index do |interval, index|
+              next if index == 0
+              # @type var start_line: Integer
+              # @type var end_line: Integer
+              start_line, end_line = interval
 
-            if start_line <= current_end + 1
-              # Overlapping or adjacent intervals, merge them
-              current_end = [current_end, end_line].max
-            else
-              # Non-overlapping interval, save current and start new
-              merged << [current_start, current_end]
-              current_start = start_line
-              current_end = end_line
+              if start_line <= current_end + 1
+                # Overlapping or adjacent intervals, merge them
+                current_end = [current_end, end_line].max
+              else
+                # Non-overlapping interval, save current and start new
+                merged << [current_start, current_end]
+                current_start = start_line
+                current_end = end_line
+              end
             end
+
+            merged << [current_start, current_end]
+
+            @intervals = merged
+            true
           end
-
-          # Don't forget the last interval
-          merged << [current_start, current_end]
-
-          @intervals = merged
-          true
         end
 
         # Check if any line in the query interval overlaps with changed lines
