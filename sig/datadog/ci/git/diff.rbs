@@ -9,9 +9,7 @@ module Datadog
 
         def initialize: (?changed_files: Hash[String, ChangedLines]) -> void
 
-        def include?: (String file_path) -> bool
-
-        def lines_changed?: (String file_path, Integer start_line, Integer end_line) -> bool
+        def lines_changed?: (String file_path, ?start_line: Integer?, ?end_line: Integer?) -> bool
 
         def changed_line_intervals: (String file_path) -> Array[Array[Integer]]
 

@@ -14,14 +14,13 @@ module Datadog
           @changed_files = changed_files # Hash of file_path => ChangedLines
         end
 
-        def include?(file_path)
-          @changed_files.key?(file_path)
-        end
-
         # Check if any lines in the given range are changed for the specified file
-        def lines_changed?(file_path, start_line, end_line)
+        def lines_changed?(file_path, start_line: nil, end_line: nil)
           changed_lines = @changed_files[file_path]
           return false unless changed_lines
+
+          # If either start_line or end_line is nil, return true if file is present
+          return true if start_line.nil? || end_line.nil?
 
           changed_lines.overlaps?(start_line, end_line)
         end

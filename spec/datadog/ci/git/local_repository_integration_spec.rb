@@ -170,10 +170,11 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         end
 
         expect(changed_files).to be_a(Datadog::CI::Git::Diff)
-        # Should includes all modified and renamed files
-        expect(changed_files.include?(base_file)).to be true
-        expect(changed_files.include?(feature_file)).to be true
-        expect(changed_files.include?(file_to_rename)).to be true
+
+        # Should includes all modified files, ignores the file that was renamed without changes
+        expect(changed_files.lines_changed?(base_file, start_line: 2, end_line: 2)).to be true
+        expect(changed_files.lines_changed?(feature_file, start_line: 1, end_line: 1)).to be true
+        expect(changed_files.lines_changed?(file_to_rename, start_line: 1, end_line: 1)).to be false
         expect(changed_files.size).to eq(3)
       end
 
@@ -212,7 +213,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           expect(duration_ms).to be < 1000.0
           expect(result).to be_a(Datadog::CI::Git::Diff)
           # The non-greedy regex will extract "a" from the malicious path
-          expect(result).to include(expected_path)
+          expect(result.lines_changed?(expected_path)).to be true
         end
       end
     end

@@ -32,7 +32,7 @@ RSpec.describe Datadog::CI::Git::Diff do
           index 1234567..abcdefg 100644
           --- a/app/models/user.rb
           +++ b/app/models/user.rb
-          @@ -1,3 +1,4 @@
+          @@ -1,3 +2,1 @@
            class User
           +  attr_accessor :name
            end
@@ -41,8 +41,12 @@ RSpec.describe Datadog::CI::Git::Diff do
         diff = described_class.parse_diff_output(git_output)
 
         expect(diff.size).to eq(1)
-        expect(diff.include?("app/models/user.rb")).to be true
-        expect(diff.include?("other_file.rb")).to be false
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 2, end_line: 2)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 1, end_line: 1)).to be false
+        expect(diff.lines_changed?("other_file.rb", start_line: 1, end_line: 10)).to be false
+        # Test the new nil argument functionality
+        expect(diff.lines_changed?("app/models/user.rb")).to be true
+        expect(diff.lines_changed?("other_file.rb")).to be false
         expect(diff.empty?).to be false
       end
 
@@ -52,7 +56,7 @@ RSpec.describe Datadog::CI::Git::Diff do
           index 1234567..abcdefg 100644
           --- a/app/models/user.rb
           +++ b/app/models/user.rb
-          @@ -1,3 +1,4 @@
+          @@ -1,3 +2,1 @@
            class User
           +  attr_accessor :name
            end
@@ -60,7 +64,7 @@ RSpec.describe Datadog::CI::Git::Diff do
           index 7890123..xyz9876 100644
           --- a/spec/models/user_spec.rb
           +++ b/spec/models/user_spec.rb
-          @@ -5,2 +5,5 @@
+          @@ -5,2 +2,3 @@
            RSpec.describe User do
           +  it "has a name" do
           +    expect(User.new.name).to be_nil
@@ -71,9 +75,97 @@ RSpec.describe Datadog::CI::Git::Diff do
         diff = described_class.parse_diff_output(git_output)
 
         expect(diff.size).to eq(2)
-        expect(diff.include?("app/models/user.rb")).to be true
-        expect(diff.include?("spec/models/user_spec.rb")).to be true
-        expect(diff.include?("other_file.rb")).to be false
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 1, end_line: 4)).to be true
+        expect(diff.lines_changed?("spec/models/user_spec.rb", start_line: 2, end_line: 4)).to be true
+        expect(diff.lines_changed?("spec/models/user_spec.rb", start_line: 5, end_line: 5)).to be false
+        expect(diff.lines_changed?("other_file.rb", start_line: 1, end_line: 10)).to be false
+        # Test the new nil argument functionality for multiple files
+        expect(diff.lines_changed?("app/models/user.rb")).to be true
+        expect(diff.lines_changed?("spec/models/user_spec.rb")).to be true
+        expect(diff.lines_changed?("other_file.rb")).to be false
+      end
+    end
+
+    context "with nil keyword arguments" do
+      it "returns true for files in diff when start_line is nil" do
+        git_output = <<~OUTPUT
+          diff --git a/app/models/user.rb b/app/models/user.rb
+          @@ -10,4 +10,7 @@
+           def initialize
+             @name = nil
+          +  @email = nil
+           end
+        OUTPUT
+
+        diff = described_class.parse_diff_output(git_output)
+
+        expect(diff.lines_changed?("app/models/user.rb", end_line: 15)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: nil, end_line: 15)).to be true
+      end
+
+      it "returns true for files in diff when end_line is nil" do
+        git_output = <<~OUTPUT
+          diff --git a/app/models/user.rb b/app/models/user.rb
+          @@ -10,4 +10,7 @@
+           def initialize
+             @name = nil
+          +  @email = nil
+           end
+        OUTPUT
+
+        diff = described_class.parse_diff_output(git_output)
+
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 5)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 5, end_line: nil)).to be true
+      end
+
+      it "returns true for files in diff when both arguments are nil" do
+        git_output = <<~OUTPUT
+          diff --git a/app/models/user.rb b/app/models/user.rb
+          @@ -10,4 +10,7 @@
+           def initialize
+             @name = nil
+          +  @email = nil
+           end
+        OUTPUT
+
+        diff = described_class.parse_diff_output(git_output)
+
+        expect(diff.lines_changed?("app/models/user.rb")).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: nil, end_line: nil)).to be true
+      end
+
+      it "returns false for files not in diff when arguments are nil" do
+        git_output = <<~OUTPUT
+          diff --git a/app/models/user.rb b/app/models/user.rb
+          @@ -10,4 +10,7 @@
+           def initialize
+             @name = nil
+          +  @email = nil
+           end
+        OUTPUT
+
+        diff = described_class.parse_diff_output(git_output)
+
+        expect(diff.lines_changed?("app/models/post.rb")).to be false
+        expect(diff.lines_changed?("app/models/post.rb", start_line: nil)).to be false
+        expect(diff.lines_changed?("app/models/post.rb", end_line: nil)).to be false
+        expect(diff.lines_changed?("app/models/post.rb", start_line: nil, end_line: nil)).to be false
+      end
+
+      it "returns false for files not in diff even with binary files" do
+        git_output = <<~OUTPUT
+          diff --git a/image.png b/image.png
+          index 1234567..abcdefg 100644
+          Binary files a/image.png and b/image.png differ
+        OUTPUT
+
+        diff = described_class.parse_diff_output(git_output)
+
+        expect(diff.lines_changed?("image.png")).to be true
+        expect(diff.lines_changed?("image.png", start_line: nil)).to be true
+        expect(diff.lines_changed?("image.png", end_line: nil)).to be true
+        expect(diff.lines_changed?("other_file.png")).to be false
       end
     end
 
@@ -94,10 +186,10 @@ RSpec.describe Datadog::CI::Git::Diff do
 
         diff = described_class.parse_diff_output(git_output)
 
-        expect(diff.lines_changed?("app/models/user.rb", 10, 16)).to be true
-        expect(diff.lines_changed?("app/models/user.rb", 12, 14)).to be true
-        expect(diff.lines_changed?("app/models/user.rb", 8, 9)).to be false
-        expect(diff.lines_changed?("app/models/user.rb", 17, 20)).to be false
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 10, end_line: 16)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 12, end_line: 14)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 8, end_line: 9)).to be false
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 17, end_line: 20)).to be false
       end
 
       it "tracks changed lines for multiple intervals" do
@@ -120,20 +212,20 @@ RSpec.describe Datadog::CI::Git::Diff do
         diff = described_class.parse_diff_output(git_output)
 
         # First interval: lines 5-7 (start=5, count=3, end=5+3-1=7)
-        expect(diff.lines_changed?("app/models/user.rb", 5, 7)).to be true
-        expect(diff.lines_changed?("app/models/user.rb", 6, 6)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 5, end_line: 7)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 6, end_line: 6)).to be true
 
         # Second interval: lines 16-20 (start=16, count=5, end=16+5-1=20)
-        expect(diff.lines_changed?("app/models/user.rb", 16, 20)).to be true
-        expect(diff.lines_changed?("app/models/user.rb", 18, 20)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 16, end_line: 20)).to be true
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 18, end_line: 20)).to be true
 
         # Between intervals: should be false
-        expect(diff.lines_changed?("app/models/user.rb", 8, 15)).to be false
-        expect(diff.lines_changed?("app/models/user.rb", 10, 15)).to be false
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 8, end_line: 15)).to be false
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 10, end_line: 15)).to be false
 
         # Outside intervals: should be false
-        expect(diff.lines_changed?("app/models/user.rb", 1, 4)).to be false
-        expect(diff.lines_changed?("app/models/user.rb", 21, 25)).to be false
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 1, end_line: 4)).to be false
+        expect(diff.lines_changed?("app/models/user.rb", start_line: 21, end_line: 25)).to be false
       end
 
       it "returns false for lines_changed? when file is not in diff" do
@@ -146,8 +238,8 @@ RSpec.describe Datadog::CI::Git::Diff do
 
         diff = described_class.parse_diff_output(git_output)
 
-        expect(diff.lines_changed?("app/models/post.rb", 1, 10)).to be false
-        expect(diff.lines_changed?("non_existent.rb", 5, 15)).to be false
+        expect(diff.lines_changed?("app/models/post.rb", start_line: 1, end_line: 10)).to be false
+        expect(diff.lines_changed?("non_existent.rb", start_line: 5, end_line: 15)).to be false
       end
     end
 
@@ -162,8 +254,7 @@ RSpec.describe Datadog::CI::Git::Diff do
 
         diff = described_class.parse_diff_output(git_output)
 
-        expect(diff.include?("config.rb")).to be true
-        expect(diff.lines_changed?("config.rb", 1, 2)).to be true
+        expect(diff.lines_changed?("config.rb", start_line: 1, end_line: 2)).to be true
       end
 
       it "handles single line changes (@@ -5 +5 @@)" do
@@ -176,10 +267,9 @@ RSpec.describe Datadog::CI::Git::Diff do
 
         diff = described_class.parse_diff_output(git_output)
 
-        expect(diff.include?("config.rb")).to be true
-        expect(diff.lines_changed?("config.rb", 5, 5)).to be true
-        expect(diff.lines_changed?("config.rb", 4, 4)).to be false
-        expect(diff.lines_changed?("config.rb", 6, 6)).to be false
+        expect(diff.lines_changed?("config.rb", start_line: 5, end_line: 5)).to be true
+        expect(diff.lines_changed?("config.rb", start_line: 4, end_line: 4)).to be false
+        expect(diff.lines_changed?("config.rb", start_line: 6, end_line: 6)).to be false
       end
 
       it "handles large line count changes" do
@@ -192,11 +282,10 @@ RSpec.describe Datadog::CI::Git::Diff do
 
         diff = described_class.parse_diff_output(git_output)
 
-        expect(diff.include?("large_file.rb")).to be true
-        expect(diff.lines_changed?("large_file.rb", 100, 174)).to be true
-        expect(diff.lines_changed?("large_file.rb", 120, 150)).to be true
-        expect(diff.lines_changed?("large_file.rb", 90, 99)).to be false
-        expect(diff.lines_changed?("large_file.rb", 175, 200)).to be false
+        expect(diff.lines_changed?("large_file.rb", start_line: 100, end_line: 174)).to be true
+        expect(diff.lines_changed?("large_file.rb", start_line: 120, end_line: 150)).to be true
+        expect(diff.lines_changed?("large_file.rb", start_line: 90, end_line: 99)).to be false
+        expect(diff.lines_changed?("large_file.rb", start_line: 175, end_line: 200)).to be false
       end
 
       it "handles binary files" do
@@ -208,8 +297,7 @@ RSpec.describe Datadog::CI::Git::Diff do
 
         diff = described_class.parse_diff_output(git_output)
 
-        expect(diff.include?("image.png")).to be true
-        expect(diff.lines_changed?("image.png", 1, 10)).to be false
+        expect(diff.lines_changed?("image.png", start_line: 1, end_line: 10)).to be false
       end
 
       it "handles new file creation" do
@@ -229,8 +317,7 @@ RSpec.describe Datadog::CI::Git::Diff do
 
         diff = described_class.parse_diff_output(git_output)
 
-        expect(diff.include?("new_file.rb")).to be true
-        expect(diff.lines_changed?("new_file.rb", 1, 5)).to be true
+        expect(diff.lines_changed?("new_file.rb", start_line: 1, end_line: 5)).to be true
       end
 
       it "handles file deletion" do
@@ -250,9 +337,8 @@ RSpec.describe Datadog::CI::Git::Diff do
 
         diff = described_class.parse_diff_output(git_output)
 
-        expect(diff.include?("deleted_file.rb")).to be true
         # Note: For deleted files, we still track them but there are no "new" lines
-        expect(diff.lines_changed?("deleted_file.rb", 1, 5)).to be false
+        expect(diff.lines_changed?("deleted_file.rb", start_line: 1, end_line: 5)).to be false
       end
     end
 
@@ -277,10 +363,8 @@ RSpec.describe Datadog::CI::Git::Diff do
         diff = described_class.parse_diff_output(git_output)
 
         expect(diff.size).to eq(2)
-        expect(diff.include?("file1.rb")).to be true
-        expect(diff.include?("file2.rb")).to be true
-        expect(diff.lines_changed?("file1.rb", 1, 3)).to be true
-        expect(diff.lines_changed?("file2.rb", 5, 6)).to be true
+        expect(diff.lines_changed?("file1.rb", start_line: 1, end_line: 3)).to be true
+        expect(diff.lines_changed?("file2.rb", start_line: 5, end_line: 6)).to be true
       end
 
       it "handles diff output without @@ lines" do
@@ -296,11 +380,9 @@ RSpec.describe Datadog::CI::Git::Diff do
         diff = described_class.parse_diff_output(git_output)
 
         expect(diff.size).to eq(2)
-        expect(diff.include?("file1.rb")).to be true
-        expect(diff.include?("file2.rb")).to be true
         # No line changes recorded since there were no @@ lines
-        expect(diff.lines_changed?("file1.rb", 1, 100)).to be false
-        expect(diff.lines_changed?("file2.rb", 1, 100)).to be false
+        expect(diff.lines_changed?("file1.rb", start_line: 1, end_line: 100)).to be false
+        expect(diff.lines_changed?("file2.rb", start_line: 1, end_line: 100)).to be false
       end
     end
   end
