@@ -66,6 +66,22 @@ module Datadog
         get_tag(Ext::Test::TAG_TEST_SESSION_ID)
       end
 
+      # Returns the starting line number of the test in the source file.
+      # @return [Integer] the starting line number
+      # @return [nil] if the starting line is not available
+      def start_line
+        line = get_tag(Ext::Test::TAG_SOURCE_START)
+        line&.to_i
+      end
+
+      # Returns the ending line number of the test in the source file.
+      # @return [Integer] the ending line number
+      # @return [nil] if the ending line is not available
+      def end_line
+        line = get_tag(Ext::Test::TAG_SOURCE_END)
+        line&.to_i
+      end
+
       # Returns "true" if test span represents a retry.
       # @return [Boolean] true if this test is a retry, false otherwise.
       def is_retry?

@@ -138,6 +138,46 @@ RSpec.describe Datadog::CI::Test do
     it { is_expected.to eq("test session id") }
   end
 
+  describe "#start_line" do
+    subject(:start_line) { ci_test.start_line }
+
+    context "when start line tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_SOURCE_START).and_return("42")
+        )
+      end
+
+      it { is_expected.to eq(42) }
+    end
+
+    context "when start line tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_SOURCE_START).and_return(nil) }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#end_line" do
+    subject(:end_line) { ci_test.end_line }
+
+    context "when end line tag is set" do
+      before do
+        allow(tracer_span).to(
+          receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_SOURCE_END).and_return("100")
+        )
+      end
+
+      it { is_expected.to eq(100) }
+    end
+
+    context "when end line tag is not set" do
+      before { allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_SOURCE_END).and_return(nil) }
+
+      it { is_expected.to be_nil }
+    end
+  end
+
   describe "#source_file" do
     subject(:source_file) { ci_test.source_file }
 
