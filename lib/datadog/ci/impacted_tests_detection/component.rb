@@ -57,6 +57,10 @@ module Datadog
           source_file = test_span.source_file
           return false if source_file.nil?
 
+          # convert to relative path without leading slash
+          # @type var source_file: String
+          source_file = source_file[1..] if source_file.start_with?("/")
+
           result = @changed_files.include?(source_file)
           Datadog.logger.debug do
             "Impacted tests detection: test #{test_span.name} with source file #{source_file} is modified: #{result}"

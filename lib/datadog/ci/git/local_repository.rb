@@ -38,14 +38,22 @@ module Datadog
             # that root is a prefix of the path
             return "" if path.size < prefix_index
 
-            prefix_index += 1 if path[prefix_index] == File::SEPARATOR
-            res = path[prefix_index..]
+            # this means that the root is not a prefix of this path somehow
+            return "" if path[prefix_index] != File::SEPARATOR
+
+            res = path[prefix_index + 1..]
           else
             # prefix_to_root is a difference between the root path and the given path
-            if @prefix_to_root == ""
-              return path
-            elsif @prefix_to_root
-              return File.join(@prefix_to_root, path)
+            if defined?(@prefix_to_root)
+              # if path starts with ./ remove the dot before applying the optimization
+              # @type var path: String
+              path = path[1..] if path.start_with?("./")
+
+              if @prefix_to_root == ""
+                return path
+              elsif @prefix_to_root
+                return File.join(@prefix_to_root, path)
+              end
             end
 
             pathname = Pathname.new(File.expand_path(path))

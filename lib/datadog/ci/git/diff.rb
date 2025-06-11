@@ -57,18 +57,15 @@ module Datadog
             # This captures git changes on file level
             match = FILE_CHANGE_REGEX.match(line)
             if match && match[:file]
+              # this path here is already relative from the git root
               changed_file = match[:file]
-              # Normalize to repo root
-              normalized_changed_file = LocalRepository.relative_to_root(changed_file)
 
-              unless normalized_changed_file.nil? || normalized_changed_file.empty?
-                current_file = normalized_changed_file
-                p current_file
+              unless changed_file.nil? || changed_file.empty?
+                current_file = changed_file
                 changed_files[current_file] ||= ChangedLines.new
               end
 
               Datadog.logger.debug { "matched changed_file: #{changed_file} from line: #{line}" }
-              Datadog.logger.debug { "normalized_changed_file: #{normalized_changed_file}" }
 
               next
             end

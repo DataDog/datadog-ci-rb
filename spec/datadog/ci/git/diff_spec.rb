@@ -256,56 +256,6 @@ RSpec.describe Datadog::CI::Git::Diff do
       end
     end
 
-    context "with relative_to_root filtering" do
-      it "handles files that get filtered out by relative_to_root" do
-        git_output = <<~OUTPUT
-          diff --git a/valid_file.rb b/valid_file.rb
-          @@ -1,2 +1,3 @@
-           class Valid
-          +  # comment
-           end
-          diff --git a/invalid_file.rb b/invalid_file.rb
-          @@ -1,2 +1,3 @@
-           class Invalid
-          +  # comment
-           end
-        OUTPUT
-
-        # Mock relative_to_root to filter out invalid_file.rb
-        allow(Datadog::CI::Git::LocalRepository).to receive(:relative_to_root) do |path|
-          (path == "valid_file.rb") ? "valid_file.rb" : ""
-        end
-
-        diff = described_class.parse_diff_output(git_output)
-
-        expect(diff.size).to eq(1)
-        expect(diff.include?("valid_file.rb")).to be true
-        expect(diff.include?("invalid_file.rb")).to be false
-        expect(diff.lines_changed?("valid_file.rb", 1, 3)).to be true
-      end
-
-      it "handles files that get normalized by relative_to_root" do
-        git_output = <<~OUTPUT
-          diff --git a/path/to/file.rb b/path/to/file.rb
-          @@ -1,2 +1,3 @@
-           class Example
-          +  # comment
-           end
-        OUTPUT
-
-        # Mock relative_to_root to normalize the path
-        allow(Datadog::CI::Git::LocalRepository).to receive(:relative_to_root) do |path|
-          "normalized/#{path}"
-        end
-
-        diff = described_class.parse_diff_output(git_output)
-
-        expect(diff.include?("normalized/path/to/file.rb")).to be true
-        expect(diff.include?("path/to/file.rb")).to be false
-        expect(diff.lines_changed?("normalized/path/to/file.rb", 1, 3)).to be true
-      end
-    end
-
     context "with malformed or irregular git output" do
       it "ignores non-diff lines in the output" do
         git_output = <<~OUTPUT

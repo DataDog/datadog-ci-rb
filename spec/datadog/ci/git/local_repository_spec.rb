@@ -37,6 +37,11 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
   describe ".relative_to_root" do
     subject { described_class.relative_to_root(path) }
 
+    # Clear the @prefix_to_root cache before each test to ensure isolation
+    before do
+      described_class.remove_instance_variable(:@prefix_to_root) if described_class.instance_variable_defined?(:@prefix_to_root)
+    end
+
     context "when path is nil" do
       let(:path) { nil }
 
@@ -58,19 +63,180 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         before do
           allow(described_class).to receive(:root).and_return("/foo/bar")
         end
-        let(:path) { "/foo/bar/baz" }
 
-        it { is_expected.to eq("baz") }
-      end
+        context "when path is longer than root" do
+          let(:path) { "/foo/bar/baz" }
 
-      context "when path is relative" do
-        before do
-          allow(described_class).to receive(:root).and_return("#{Dir.pwd}/foo/bar")
+          it { is_expected.to eq("baz") }
         end
 
-        let(:path) { "./baz" }
+        context "when path ends with separator" do
+          let(:path) { "/foo/bar/baz/" }
 
-        it { is_expected.to eq("../../baz") }
+          it { is_expected.to eq("baz/") }
+        end
+
+        context "when path is exactly the root" do
+          let(:path) { "/foo/bar" }
+
+          it { is_expected.to eq("") }
+        end
+
+        context "when path is equal to the root with a trailing slash" do
+          let(:path) { "/foo/bar/" }
+
+          it { is_expected.to eq("") }
+        end
+
+        context "when path is shorter than root" do
+          let(:path) { "/foo" }
+
+          it { is_expected.to eq("") }
+        end
+
+        context "when path looks kind of like a relative path from root but not really" do
+          let(:path) { "/foo/barbaz" }
+
+          it { is_expected.to eq("") }
+        end
+
+        context "when path has nested directories" do
+          let(:path) { "/foo/bar/baz/qux/file.txt" }
+
+          it { is_expected.to eq("baz/qux/file.txt") }
+        end
+      end
+
+      context "when path is relative and the root is a parent directory" do
+        before do
+          allow(described_class).to receive(:root).and_return("#{Dir.pwd}/..")
+        end
+
+        context "when path starts with ./" do
+          let(:path) { "./baz" }
+
+          it "calculates correct relative path" do
+            expect(subject).to eq("datadog-ci-rb/baz")
+          end
+        end
+
+        context "when path starts with ./ and has nested directories" do
+          let(:path) { "./baz/qux/file.txt" }
+
+          it "calculates correct relative path with nested directories" do
+            expect(subject).to eq("datadog-ci-rb/baz/qux/file.txt")
+          end
+        end
+
+        context "when path doesn't start with ./" do
+          let(:path) { "baz" }
+
+          it { is_expected.to eq("datadog-ci-rb/baz") }
+        end
+
+        context "when @prefix_to_root is cached as empty string" do
+          before do
+            described_class.instance_variable_set(:@prefix_to_root, "")
+          end
+
+          let(:path) { "baz" }
+
+          it { is_expected.to eq("baz") }
+        end
+
+        context "when @prefix_to_root is cached with a value" do
+          before do
+            described_class.instance_variable_set(:@prefix_to_root, "/foo/bar")
+          end
+
+          let(:path) { "baz" }
+
+          it { is_expected.to eq("/foo/bar/baz") }
+        end
+
+        context "when path starts with ./ and @prefix_to_root is cached as empty" do
+          before do
+            described_class.instance_variable_set(:@prefix_to_root, "")
+          end
+
+          let(:path) { "./baz" }
+
+          it "strips the ./ and returns the path" do
+            # When @prefix_to_root is empty, it strips ./ (removes first character) and returns the path
+            expect(subject).to eq("/baz")
+          end
+        end
+
+        context "when path starts with ./ and @prefix_to_root is cached with value" do
+          before do
+            described_class.instance_variable_set(:@prefix_to_root, "/foo/bar")
+          end
+
+          let(:path) { "./baz" }
+
+          it "strips the ./ and joins with prefix" do
+            expect(subject).to eq("/foo/bar/baz")
+          end
+        end
+
+        context "when multiple calls cache @prefix_to_root correctly" do
+          before do
+            allow(described_class).to receive(:root).and_return("#{Dir.pwd}/foo")
+          end
+
+          it "caches @prefix_to_root after first call" do
+            # First call should calculate and cache @prefix_to_root
+            first_result = described_class.relative_to_root("bar")
+            expect(first_result).to eq("../bar")
+
+            # Verify @prefix_to_root was cached
+            expect(described_class.instance_variable_get(:@prefix_to_root)).to eq("../")
+
+            # Second call should use cached value
+            second_result = described_class.relative_to_root("baz")
+            expect(second_result).to eq("../baz")
+          end
+        end
+
+        context "when relative path calculation might return nil" do
+          before do
+            allow(described_class).to receive(:root).and_return("/tmp")
+            # Mock Pathname to return nil from relative_path_from
+            pathname_mock = double("pathname")
+            allow(Pathname).to receive(:new).and_return(pathname_mock)
+            allow(pathname_mock).to receive(:relative_path_from).and_return(nil)
+          end
+
+          let(:path) { "test" }
+
+          it "returns empty string when result is nil" do
+            expect(subject).to eq("")
+          end
+        end
+      end
+
+      context "edge cases" do
+        before do
+          allow(described_class).to receive(:root).and_return("/root")
+        end
+
+        context "when path contains special characters" do
+          let(:path) { "/root/file with spaces.txt" }
+
+          it { is_expected.to eq("file with spaces.txt") }
+        end
+
+        context "when path contains unicode characters" do
+          let(:path) { "/root/файл.txt" }
+
+          it { is_expected.to eq("файл.txt") }
+        end
+
+        context "when path has multiple separators" do
+          let(:path) { "/root//double//separators" }
+
+          it { is_expected.to eq("/double//separators") }
+        end
       end
     end
   end
