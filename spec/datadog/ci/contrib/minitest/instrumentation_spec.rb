@@ -1595,7 +1595,7 @@ RSpec.describe "Minitest instrumentation" do
 
   context "session with early flake detection and impacted tests detection enabled" do
     include_context "CI mode activated" do
-      let(:integration_name) { :rspec }
+      let(:integration_name) { :minitest }
 
       let(:early_flake_detection_enabled) { true }
       let(:impacted_tests_enabled) { true }
