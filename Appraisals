@@ -49,6 +49,8 @@ end
 
 def self.with_cucumber_gem(versions:)
   Array(versions).each do |v|
+    next if v == 10 && Gem::Version.new("3.1") > RUBY_VERSION
+
     appraise "cucumber-#{v}" do
       gem "cucumber", "~> #{v}"
       # cucumber versions 4-6 are not compatible with activesupport 7.1
@@ -219,7 +221,7 @@ major, minor, = RUBY_VERSION.segments
 
 with_minitest_gem
 with_rspec_gem
-with_cucumber_gem(versions: 3..9)
+with_cucumber_gem(versions: 3..10)
 with_ci_queue_minitest_gem
 with_ci_queue_rspec_gem
 with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2") <= RUBY_VERSION
