@@ -1681,4 +1681,45 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_session_span).to have_fail_status
     end
   end
+
+  context "session with early flake detection and impacted tests detection enabled, but the test is not modified" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:early_flake_detection_enabled) { true }
+      let(:impacted_tests_enabled) { true }
+      let(:faulty_session_threshold) { 100 }
+
+      let(:known_tests) do
+        Set.new([
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails.",
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo."
+        ])
+      end
+      let(:changed_files) do
+        Set.new([
+          "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb:118:120"
+        ])
+      end
+    end
+
+    it "does not retry the test" do
+      rspec_session_run
+
+      expect(test_spans).to have(1).item
+
+      # count how many tests were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(0)
+
+      # count how many test spans were marked as modified
+      modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
+      expect(modified_count).to eq(0)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+    end
+  end
 end

@@ -30,7 +30,7 @@ module GitDiffGenerator
       index 1234567..abcdefg 100644
       --- a/#{filename}
       +++ b/#{filename}
-      @@ -#{start_line},#{line_count} +#{start_line},#{line_count + 1} @@
+      @@ -#{start_line},#{line_count} +#{start_line},#{line_count} @@
       #{generate_context_lines(start_line, end_line)}
     DIFF
   end

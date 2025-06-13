@@ -17,7 +17,10 @@ module Datadog
         # Check if any lines in the given range are changed for the specified file
         def lines_changed?(file_path, start_line: nil, end_line: nil)
           changed_lines = @changed_files[file_path]
-          return false unless changed_lines
+          unless changed_lines
+            Datadog.logger.debug { "No changes found for file: #{file_path}" }
+            return false
+          end
 
           # If either start_line or end_line is nil, return true if file is present
           return true if start_line.nil? || end_line.nil?
@@ -64,7 +67,7 @@ module Datadog
                 changed_files[current_file] ||= ChangedLines.new
               end
 
-              Datadog.logger.debug { "matched changed_file: #{changed_file} from line: #{line}" }
+              Datadog.logger.debug { "matched changed_file: #{changed_file} from git diff line: #{line}" }
 
               next
             end
