@@ -286,6 +286,16 @@ RSpec.describe Datadog::CI::Utils::Command do
         }.to raise_error(Errno::EPIPE)
       end
     end
+
+    context "when Open3.popen2e raises an error" do
+      it "propagates the error without NameError" do
+        allow(Open3).to receive(:popen2e).and_raise(Errno::ENOENT.new("not found"))
+
+        expect do
+          described_class.popen_with_stdin(["missing_command"], stdin_data: nil)
+        end.to raise_error(Errno::ENOENT)
+      end
+    end
   end
 
   describe "integration with real git commands" do

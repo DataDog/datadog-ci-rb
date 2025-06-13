@@ -92,6 +92,7 @@ module Datadog
         end
 
         def self.popen_with_stdin(command, stdin_data: nil, retries_left: OPEN_STDIN_RETRY_COUNT)
+          stdin = nil
           result = Open3.popen2e(*command)
           stdin = result.first
 
@@ -108,7 +109,7 @@ module Datadog
 
           result
         ensure
-          stdin.close
+          stdin&.close
         end
       end
     end
