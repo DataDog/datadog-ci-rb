@@ -1,0 +1,11 @@
+module GitDiffGenerator
+  def generate_git_diff_output: (Set[String] changed_files_set) -> String
+
+  private
+
+  def generate_diff_for_file_with_lines: (String filename, Integer start_line, Integer end_line) -> String
+
+  def generate_diff_for_file: (String filename) -> String
+
+  def generate_context_lines: (Integer start_line, Integer end_line) -> String
+end

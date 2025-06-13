@@ -1649,7 +1649,7 @@ RSpec.describe "RSpec instrumentation" do
       end
       let(:changed_files) do
         Set.new([
-          "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
+          "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb:40:120"
         ])
       end
     end

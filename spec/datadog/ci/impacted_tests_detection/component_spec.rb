@@ -10,15 +10,14 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
   let(:test_session) { double("test_session", base_commit_sha: base_commit_sha) }
   let(:base_commit_sha) { "abc123" }
   let(:impacted_tests_enabled) { true }
-  let(:changed_files_set) { Set.new(["file1.rb", "file2.rb"]) }
+  let(:changed_files_set) { Set.new(["file1.rb:2:5", "file2.rb:4:6"]) }
 
   let(:git_worker) { spy("git_worker") }
 
   before do
     # Create a mock git diff output that would result in the changed_files_set
-    git_diff_output = changed_files_set.map { |file| "diff --git a/#{file} b/#{file}" }.join("\n")
     allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
-      Datadog::CI::Git::Diff.parse_diff_output(git_diff_output)
+      Datadog::CI::Git::Diff.parse_diff_output(generate_git_diff_output(changed_files_set))
     )
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
 
@@ -54,7 +53,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
     context "when get_changes_since returns empty diff" do
       before do
         allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
-          Datadog::CI::Git::Diff.parse_diff_output("")
+          Datadog::CI::Git::Diff.parse_diff_output(generate_git_diff_output(Set.new))
         )
       end
 
@@ -91,8 +90,10 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
   end
 
   describe "#modified?" do
-    let(:test_span) { instance_double(Datadog::CI::Test, source_file: source_file) }
+    let(:test_span) { instance_double(Datadog::CI::Test, source_file: source_file, start_line: start_line, end_line: end_line) }
     let(:source_file) { "file1.rb" }
+    let(:start_line) { 1 }
+    let(:end_line) { 10 }
 
     before do
       component.configure(library_settings, test_session)

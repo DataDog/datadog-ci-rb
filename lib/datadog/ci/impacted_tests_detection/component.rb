@@ -59,7 +59,7 @@ module Datadog
           # @type var source_file: String
           source_file = source_file[1..] if source_file.start_with?("/")
 
-          result = @git_diff.lines_changed?(source_file)
+          result = @git_diff.lines_changed?(source_file, start_line: test_span.start_line, end_line: test_span.end_line)
           Datadog.logger.debug do
             "Impacted tests detection: test #{test_span.name} with source file #{source_file} is modified: #{result}"
           end
