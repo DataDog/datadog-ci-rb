@@ -154,7 +154,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
     end
 
-    describe ".get_changed_files_from_diff" do
+    describe ".get_changes_since" do
       it "detects changed files between feature and base branch" do
         # avoids cached git root from previous test cases
         allow(described_class).to receive(:root).and_return(nil)
@@ -166,12 +166,16 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         # Now diff from feature branch to base branch
         changed_files = nil
         with_source_git_dir do
-          changed_files = described_class.get_changed_files_from_diff(base_sha)
+          changed_files = described_class.get_changes_since(base_sha)
         end
 
-        expect(changed_files).to be_a(Set)
-        # Should includes all modified and renamed files
-        expect(changed_files).to eq(Set.new([base_file, feature_file, file_to_rename]))
+        expect(changed_files).to be_a(Datadog::CI::Git::Diff)
+
+        # Should includes all modified files, ignores the file that was renamed without changes
+        expect(changed_files.lines_changed?(base_file, start_line: 2, end_line: 2)).to be true
+        expect(changed_files.lines_changed?(feature_file, start_line: 1, end_line: 1)).to be true
+        expect(changed_files.lines_changed?(file_to_rename, start_line: 1, end_line: 1)).to be false
+        expect(changed_files.size).to eq(3)
       end
 
       context "with malicious input that could cause ReDoS" do
@@ -202,14 +206,14 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           # This should complete quickly without timing out
           result = nil
           duration_ms = Datadog::Core::Utils::Time.measure(:float_millisecond) do
-            result = described_class.get_changed_files_from_diff("base_commit_sha")
+            result = described_class.get_changes_since("base_commit_sha")
           end
 
           # Should complete in under 1000 milliseconds (vulnerable regex would take much longer)
           expect(duration_ms).to be < 1000.0
-          expect(result).to be_a(Set)
+          expect(result).to be_a(Datadog::CI::Git::Diff)
           # The non-greedy regex will extract "a" from the malicious path
-          expect(result).to include(expected_path)
+          expect(result.lines_changed?(expected_path)).to be true
         end
       end
     end

@@ -85,7 +85,7 @@ module Datadog
 
             def git_pull_request_base_branch
               # from docs: build branch. For Pull Request commits it is base branch PR is merging into
-              env["APPVEYOR_REPO_BRANCH"]
+              env["APPVEYOR_REPO_BRANCH"] if env["APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH"]
             end
 
             private

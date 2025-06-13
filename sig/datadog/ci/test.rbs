@@ -10,6 +10,8 @@ module Datadog
       def test_suite_name: () -> String?
       def test_module_id: () -> String?
       def test_session_id: () -> String?
+      def start_line: () -> Integer?
+      def end_line: () -> Integer?
       def is_retry?: () -> bool
       def retry_reason: () -> String?
       def is_new?: () -> bool

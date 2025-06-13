@@ -85,6 +85,10 @@ module Datadog
               env["BUILDKITE_MESSAGE"]
             end
 
+            def git_pull_request_base_branch
+              env["BUILDKITE_PULL_REQUEST_BASE_BRANCH"]
+            end
+
             def ci_env_vars
               {
                 "BUILDKITE_BUILD_ID" => env["BUILDKITE_BUILD_ID"],

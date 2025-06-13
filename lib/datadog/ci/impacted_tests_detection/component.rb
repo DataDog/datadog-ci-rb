@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 require_relative "../ext/test"
 require_relative "../git/local_repository"
 
@@ -11,7 +9,7 @@ module Datadog
       class Component
         def initialize(enabled:)
           @enabled = enabled
-          @changed_files = Set.new
+          @git_diff = Git::Diff.new
         end
 
         def configure(library_settings, test_session)
@@ -29,21 +27,21 @@ module Datadog
             return
           end
 
-          changed_files = Git::LocalRepository.get_changed_files_from_diff(base_commit_sha)
-          if changed_files.nil?
+          git_diff = Git::LocalRepository.get_changes_since(base_commit_sha)
+          if git_diff.empty?
             Datadog.logger.debug { "Impacted tests detection disabled: could not get changed files" }
             @enabled = false
             return
           end
 
           Datadog.logger.debug do
-            "Impacted tests detection: found #{changed_files.size} changed files"
+            "Impacted tests detection: found #{git_diff.size} changed files"
           end
           Datadog.logger.debug do
-            "Impacted tests detection: changed files: #{changed_files.inspect}"
+            "Impacted tests detection: changed files: #{git_diff.inspect}"
           end
 
-          @changed_files = changed_files
+          @git_diff = git_diff
           @enabled = true
         end
 
@@ -57,7 +55,15 @@ module Datadog
           source_file = test_span.source_file
           return false if source_file.nil?
 
-          @changed_files.include?(source_file)
+          # convert to relative path without leading slash
+          # @type var source_file: String
+          source_file = source_file[1..] if source_file.start_with?("/")
+
+          result = @git_diff.lines_changed?(source_file, start_line: test_span.start_line, end_line: test_span.end_line)
+          Datadog.logger.debug do
+            "Impacted tests detection: test #{test_span.name} with source file #{source_file} is modified: #{result}"
+          end
+          result
         end
 
         def tag_modified_test(test_span)
