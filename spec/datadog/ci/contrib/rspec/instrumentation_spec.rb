@@ -1683,6 +1683,9 @@ RSpec.describe "RSpec instrumentation" do
   end
 
   context "session with early flake detection and impacted tests detection enabled, but the test is not modified" do
+    # there is no end lines support for JRuby, so impacted tests detection works only on file level
+    before { skip if PlatformHelpers.jruby? }
+
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }
 
