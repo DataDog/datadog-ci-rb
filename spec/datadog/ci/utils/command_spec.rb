@@ -211,6 +211,12 @@ RSpec.describe Datadog::CI::Utils::Command do
         expect(status).to be_success
       end
     end
+
+    context "when command is missing" do
+      it "raises Errno::ENOENT" do
+        expect { described_class.exec_command(["nonexistent_command"]) }.to raise_error(Errno::ENOENT)
+      end
+    end
   end
 
   describe ".popen_with_stdin" do
