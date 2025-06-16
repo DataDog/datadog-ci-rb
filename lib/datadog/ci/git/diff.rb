@@ -28,22 +28,16 @@ module Datadog
           changed_lines.overlaps?(start_line, end_line)
         end
 
-        # Get all changed line intervals for a file
-        def changed_line_intervals(file_path)
-          changed_lines = @changed_files[file_path]
-          return [] unless changed_lines
-
-          changed_lines.intervals
-        end
-
-        def size
-          @changed_files.size
-        end
-
         def empty?
           @changed_files.empty?
         end
 
+        # for debug purposes
+        def size
+          @changed_files.size
+        end
+
+        # for debug purposes
         def inspect
           @changed_files.inspect
         end

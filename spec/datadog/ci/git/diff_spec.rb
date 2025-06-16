@@ -387,41 +387,6 @@ RSpec.describe Datadog::CI::Git::Diff do
     end
   end
 
-  describe "#changed_line_intervals" do
-    it "returns changed line intervals for a file" do
-      git_output = <<~OUTPUT
-        diff --git a/app/models/user.rb b/app/models/user.rb
-        @@ -5,2 +5,3 @@
-         class User
-        +  include ActiveModel::Model
-        @@ -15,3 +16,5 @@
-         def save
-        +  validate_email
-        +  validate_phone
-         end
-      OUTPUT
-
-      diff = described_class.parse_diff_output(git_output)
-      intervals = diff.changed_line_intervals("app/models/user.rb")
-
-      expect(intervals).to contain_exactly([5, 7], [16, 20])
-    end
-
-    it "returns empty array for file not in diff" do
-      git_output = <<~OUTPUT
-        diff --git a/app/models/user.rb b/app/models/user.rb
-        @@ -5,2 +5,3 @@
-         class User
-        +  include ActiveModel::Model
-      OUTPUT
-
-      diff = described_class.parse_diff_output(git_output)
-      intervals = diff.changed_line_intervals("non_existent.rb")
-
-      expect(intervals).to eq([])
-    end
-  end
-
   describe "#inspect" do
     it "returns meaningful representation of the diff" do
       git_output = <<~OUTPUT

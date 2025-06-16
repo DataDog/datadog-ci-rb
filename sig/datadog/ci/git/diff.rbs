@@ -11,8 +11,6 @@ module Datadog
 
         def lines_changed?: (String file_path, ?start_line: Integer?, ?end_line: Integer?) -> bool
 
-        def changed_line_intervals: (String file_path) -> Array[Array[Integer]]
-
         def size: () -> Integer
 
         def empty?: () -> bool
