@@ -36,8 +36,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Appveyor do
           "git.commit.author.name" => "appveyor-commit-author-name",
           "git.commit.message" => "appveyor-commit-message\nappveyor-commit-message-extended",
           "git.commit.sha" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
-          "git.repository_url" => "https://github.com/appveyor-repo-name.git",
-          "git.pull_request.base_branch" => "master"
+          "git.repository_url" => "https://github.com/appveyor-repo-name.git"
         }
       end
 

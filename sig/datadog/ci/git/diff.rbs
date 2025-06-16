@@ -1,0 +1,24 @@
+module Datadog
+  module CI
+    module Git
+      class Diff
+        FILE_CHANGE_REGEX: Regexp
+        LINES_CHANGE_REGEX: Regexp
+
+        @changed_files: Hash[String, ChangedLines]
+
+        def initialize: (?changed_files: Hash[String, ChangedLines]) -> void
+
+        def lines_changed?: (String file_path, ?start_line: Integer?, ?end_line: Integer?) -> bool
+
+        def size: () -> Integer
+
+        def empty?: () -> bool
+
+        def inspect: () -> String
+
+        def self.parse_diff_output: (String? output) -> Diff
+      end
+    end
+  end
+end

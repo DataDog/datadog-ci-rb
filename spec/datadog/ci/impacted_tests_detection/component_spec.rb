@@ -10,12 +10,15 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
   let(:test_session) { double("test_session", base_commit_sha: base_commit_sha) }
   let(:base_commit_sha) { "abc123" }
   let(:impacted_tests_enabled) { true }
-  let(:changed_files_set) { Set.new(["file1.rb", "file2.rb"]) }
+  let(:changed_files_set) { Set.new(["file1.rb:2:5", "file2.rb:4:6"]) }
 
   let(:git_worker) { spy("git_worker") }
 
   before do
-    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changed_files_from_diff).and_return(changed_files_set)
+    # Create a mock git diff output that would result in the changed_files_set
+    allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
+      Datadog::CI::Git::Diff.parse_diff_output(generate_git_diff_output(changed_files_set))
+    )
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
 
     allow(Datadog.logger).to receive(:warn)
@@ -47,9 +50,11 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       end
     end
 
-    context "when get_changed_files_from_diff returns nil" do
+    context "when get_changes_since returns empty diff" do
       before do
-        allow(Datadog::CI::Git::LocalRepository).to receive(:get_changed_files_from_diff).and_return(nil)
+        allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
+          Datadog::CI::Git::Diff.parse_diff_output(generate_git_diff_output(Set.new))
+        )
       end
 
       it "disables the component" do
@@ -63,7 +68,6 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       it "sets changed_files and enables the component" do
         component.configure(library_settings, test_session)
         expect(component.enabled?).to be true
-        expect(component.instance_variable_get(:@changed_files)).to eq(changed_files_set)
         expect(git_worker).to have_received(:wait_until_done)
       end
     end
@@ -72,7 +76,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       let(:initial_enabled) { false }
 
       it "remains disabled and does not proceed" do
-        expect(Datadog::CI::Git::LocalRepository).not_to receive(:get_changed_files_from_diff)
+        expect(Datadog::CI::Git::LocalRepository).not_to receive(:get_changes_since)
         component.configure(library_settings, test_session)
         expect(component.enabled?).to be false
       end
@@ -86,8 +90,10 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
   end
 
   describe "#modified?" do
-    let(:test_span) { instance_double(Datadog::CI::Test, source_file: source_file) }
+    let(:test_span) { instance_double(Datadog::CI::Test, source_file: source_file, start_line: start_line, end_line: end_line) }
     let(:source_file) { "file1.rb" }
+    let(:start_line) { 1 }
+    let(:end_line) { 10 }
 
     before do
       component.configure(library_settings, test_session)

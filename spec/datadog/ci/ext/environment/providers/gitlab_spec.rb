@@ -50,7 +50,6 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Gitlab do
           "git.commit.sha" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
           "git.commit.head_sha" => "def456",
           "git.pull_request.base_branch" => "main",
-          "git.pull_request.base_branch_sha" => "abc123",
           "git.repository_url" => "https://gitlab.com/repo/myrepo.git"
         }
       end

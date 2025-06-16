@@ -36,6 +36,8 @@ module Datadog
 
             def git_commit_message: () -> String?
 
+            def git_pull_request_base_branch: () -> String?
+
             def ci_env_vars: () -> String?
           end
         end

@@ -8,6 +8,7 @@ require_relative "../ext/telemetry"
 require_relative "../utils/command"
 require_relative "base_branch_sha_detector"
 require_relative "cli"
+require_relative "diff"
 require_relative "telemetry"
 require_relative "user"
 
@@ -37,14 +38,22 @@ module Datadog
             # that root is a prefix of the path
             return "" if path.size < prefix_index
 
-            prefix_index += 1 if path[prefix_index] == File::SEPARATOR
-            res = path[prefix_index..]
+            # this means that the root is not a prefix of this path somehow
+            return "" if path[prefix_index] != File::SEPARATOR
+
+            res = path[prefix_index + 1..]
           else
             # prefix_to_root is a difference between the root path and the given path
-            if @prefix_to_root == ""
-              return path
-            elsif @prefix_to_root
-              return File.join(@prefix_to_root, path)
+            if defined?(@prefix_to_root)
+              # if path starts with ./ remove the dot before applying the optimization
+              # @type var path: String
+              path = path[1..] if path.start_with?("./")
+
+              if @prefix_to_root == ""
+                return path
+              elsif @prefix_to_root
+                return File.join(@prefix_to_root, path)
+              end
             end
 
             pathname = Pathname.new(File.expand_path(path))
@@ -308,10 +317,10 @@ module Datadog
           res
         end
 
-        # Returns a Set of normalized file paths changed since the given base_commit.
+        # Returns a Diff object with relative file paths for files that were changed since the given base_commit.
         # If base_commit is nil, returns nil. On error, returns nil.
-        def self.get_changed_files_from_diff(base_commit)
-          return nil if base_commit.nil?
+        def self.get_changes_since(base_commit)
+          return Diff.new if base_commit.nil?
 
           Datadog.logger.debug { "calculating git diff from base_commit: #{base_commit}" }
 
@@ -329,29 +338,14 @@ module Datadog
 
             Datadog.logger.debug { "git diff output: #{output}" }
 
-            return nil if output.nil?
+            return Diff.new if output.nil?
 
-            # 2. Parse the output to extract which files changed
-            changed_files = Set.new
-            output.each_line do |line|
-              # Match lines like: diff --git a/foo/bar.rb b/foo/bar.rb
-              # This captures git changes on file level
-              match = /^diff --git a\/(?<file>.+?) b\//.match(line)
-              if match && match[:file]
-                changed_file = match[:file]
-                # Normalize to repo root
-                normalized_changed_file = relative_to_root(changed_file)
-                changed_files << normalized_changed_file unless normalized_changed_file.nil? || normalized_changed_file.empty?
-
-                Datadog.logger.debug { "matched changed_file: #{changed_file} from line: #{line}" }
-                Datadog.logger.debug { "normalized_changed_file: #{normalized_changed_file}" }
-              end
-            end
-            changed_files
+            # 2. Parse the output using Git::Diff
+            Diff.parse_diff_output(output)
           rescue => e
             Telemetry.track_error(e, Ext::Telemetry::Command::DIFF)
             log_failure(e, "get changed files from diff")
-            nil
+            Diff.new
           end
         end
 

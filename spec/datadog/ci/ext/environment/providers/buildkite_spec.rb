@@ -18,7 +18,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Buildkite do
           "BUILDKITE_MESSAGE" => "buildkite-git-commit-message",
           "BUILDKITE_PIPELINE_SLUG" => "buildkite-pipeline-name",
           "BUILDKITE_REPO" => "http://hostname.com/repo.git",
-          "BUILDKITE_TAG" => ""
+          "BUILDKITE_TAG" => "",
+          "BUILDKITE_PULL_REQUEST_BASE_BRANCH" => "main"
         }
       end
       # Modify HOME so that '~' expansion matches CI home directory.
@@ -39,7 +40,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Buildkite do
           "git.commit.author.name" => "buildkite-git-commit-author-name",
           "git.commit.message" => "buildkite-git-commit-message",
           "git.commit.sha" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
-          "git.repository_url" => "http://hostname.com/repo.git"
+          "git.repository_url" => "http://hostname.com/repo.git",
+          "git.pull_request.base_branch" => "main"
         }
       end
 

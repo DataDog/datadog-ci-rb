@@ -12,9 +12,12 @@ RSpec.describe "Cucumber instrumentation" do
 
   let(:enable_retries_new) { false }
   let(:known_tests_set) { Set.new }
+  let(:enable_impacted_tests) { false }
 
   let(:enable_test_management) { false }
   let(:test_properties_hash) { {} }
+
+  let(:changed_files_set) { Set.new }
 
   before do
     allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(cucumber_features_root)
@@ -37,6 +40,9 @@ RSpec.describe "Cucumber instrumentation" do
 
     let(:test_management_enabled) { enable_test_management }
     let(:test_properties) { test_properties_hash }
+
+    let(:impacted_tests_enabled) { enable_impacted_tests }
+    let(:changed_files) { changed_files_set }
 
     let(:bundle_path) { "step_definitions/helpers" }
   end
@@ -780,6 +786,60 @@ RSpec.describe "Cucumber instrumentation" do
 
       expect(test_session_span).to have_fail_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
+  context "executing a feature with Datadog's early flake detection and impacted tests detection enabled" do
+    let(:feature_file_to_run) { "passing.feature" }
+    let(:enable_retries_new) { true }
+    let(:enable_impacted_tests) { true }
+
+    let(:known_tests_set) do
+      Set.new(
+        [
+          "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature.pending scenario.",
+          "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature.cucumber scenario.",
+          "Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature.skipped scenario."
+        ]
+      )
+    end
+
+    let(:changed_files_set) do
+      Set.new(
+        [
+          "passing.feature:1:1"
+        ]
+      )
+    end
+
+    it "retries modified test" do
+      # 1 initial run of passing test + 10 retries + 3 skipped tests = 14 spans
+      expect(test_spans).to have(14).items
+
+      skipped_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
+      expect(skipped_spans).to have(3).items # see steps.rb
+      expect(passed_spans).to have(11).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+      expect(test_spans_by_test_name["cucumber scenario"]).to have(11).items
+
+      # count how many spans were marked as retries
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(10)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+
+      # modified tests - all tests are marked as modified because we don't have end lines in cucumber
+      modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
+      expect(modified_count).to eq(14)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
 end
