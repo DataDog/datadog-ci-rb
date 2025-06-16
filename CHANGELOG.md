@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [1.19.0] - 2025-06-16
+
+### Changed
+
+* Impacted tests detection works with line level granularity ([#335][])
+
+### Fixed
+
+* Fix stdin close in Command.popen_with_stdin ([#339][])
+
 ## [1.18.0] - 2025-06-06
 
 ### Added
@@ -453,7 +463,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.18.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.19.0...main
+[1.19.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.15.0...v1.16.0
@@ -648,3 +659,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#323]: https://github.com/DataDog/datadog-ci-rb/issues/323
 [#327]: https://github.com/DataDog/datadog-ci-rb/issues/327
 [#329]: https://github.com/DataDog/datadog-ci-rb/issues/329
+[#335]: https://github.com/DataDog/datadog-ci-rb/issues/335
+[#339]: https://github.com/DataDog/datadog-ci-rb/issues/339
