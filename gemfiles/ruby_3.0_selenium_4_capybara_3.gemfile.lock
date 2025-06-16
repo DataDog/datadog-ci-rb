@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: cc5d0e851b666950362606d1a24b4a8da343ee1d
+  revision: 482c04ebbb01274a52ab61f63143caf26ba1e5fb
   branch: master
   specs:
     datadog (2.17.0)
@@ -65,7 +65,7 @@ GEM
       bigdecimal
     cucumber-gherkin (27.0.0)
       cucumber-messages (>= 19.1.4, < 23)
-    cucumber-html-formatter (21.9.0)
+    cucumber-html-formatter (21.10.1)
       cucumber-messages (> 19, < 28)
     cucumber-messages (22.0.0)
     cucumber-tag-expressions (6.1.2)
