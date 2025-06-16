@@ -317,7 +317,7 @@ module Datadog
           res
         end
 
-        # Returns a Diff object with normalized file paths changed since the given base_commit.
+        # Returns a Diff object with relative file paths for files that were changed since the given base_commit.
         # If base_commit is nil, returns nil. On error, returns nil.
         def self.get_changes_since(base_commit)
           return Diff.new if base_commit.nil?
