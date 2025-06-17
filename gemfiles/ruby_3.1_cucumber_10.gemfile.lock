@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 482c04ebbb01274a52ab61f63143caf26ba1e5fb
+  revision: c6e0d59308cbf834a31a00007b95ae519f02b48d
   branch: master
   specs:
     datadog (2.17.0)
@@ -71,6 +71,7 @@ GEM
     erb (4.0.4)
       cgi (>= 0.3.3)
     ffi (1.17.2-aarch64-linux-gnu)
+    ffi (1.17.2-x86_64-linux-gnu)
     hashdiff (1.2.0)
     io-console (0.8.0)
     irb (1.15.2)
@@ -78,7 +79,10 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     libdatadog (18.1.0.1.0-aarch64-linux)
+    libdatadog (18.1.0.1.0-x86_64-linux)
     libddwaf (1.22.0.0.2-aarch64-linux)
+      ffi (~> 1.0)
+    libddwaf (1.22.0.0.2-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     mini_mime (1.1.5)
@@ -136,6 +140,7 @@ GEM
 
 PLATFORMS
   aarch64-linux
+  x86_64-linux
 
 DEPENDENCIES
   appraisal
@@ -155,4 +160,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.3.26
+   2.5.21
