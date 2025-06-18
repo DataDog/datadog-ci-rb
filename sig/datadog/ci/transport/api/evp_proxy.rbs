@@ -8,7 +8,7 @@ module Datadog
           @container_id: String?
           @path_prefix: String
 
-          def initialize: (agent_settings: Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings, ?path_prefix: String) -> void
+          def initialize: (agent_settings: Datadog::Core::Configuration::AgentSettings, ?path_prefix: String) -> void
 
           def request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
@@ -22,7 +22,7 @@ module Datadog
 
           def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
 
-          def build_http_client: (Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings agent_settings, compress: bool) -> Datadog::CI::Transport::HTTP
+          def build_http_client: (Datadog::Core::Configuration::AgentSettings agent_settings, compress: bool) -> Datadog::CI::Transport::HTTP
 
           def path_with_prefix: (String path) -> String
 
