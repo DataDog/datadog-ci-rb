@@ -6,7 +6,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
   end
 
   let(:agent_settings) do
-    Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings.new(
+    Datadog::Core::Configuration::AgentSettings.new(
       adapter: :net_http,
       ssl: false,
       hostname: "localhost",

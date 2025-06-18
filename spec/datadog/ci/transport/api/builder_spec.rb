@@ -86,7 +86,7 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
     let(:api) { double(:api) }
 
     let(:agent_settings) do
-      Datadog::Core::Configuration::AgentSettingsResolver::AgentSettings.new(
+      Datadog::Core::Configuration::AgentSettings.new(
         adapter: :net_http,
         ssl: false,
         hostname: "localhost",
