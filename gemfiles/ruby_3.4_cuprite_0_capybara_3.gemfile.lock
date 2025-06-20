@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 87c8f9974e851355d1874de2149803676f6f7574
+  revision: 22b290686338a0c238a9b48c19b39a2df5398aa7
   branch: master
   specs:
     datadog (2.17.0)
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
       libdatadog (~> 18.1.0.1.0)
-      libddwaf (~> 1.22.0.0.2)
+      libddwaf (~> 1.24.1.0.0)
       logger
       msgpack
 
@@ -65,7 +65,7 @@ GEM
       bigdecimal
     cucumber-gherkin (27.0.0)
       cucumber-messages (>= 19.1.4, < 23)
-    cucumber-html-formatter (21.10.1)
+    cucumber-html-formatter (21.12.0)
       cucumber-messages (> 19, < 28)
     cucumber-messages (22.0.0)
     cucumber-tag-expressions (6.1.2)
@@ -104,15 +104,15 @@ GEM
     libdatadog (18.1.0.1.0)
     libdatadog (18.1.0.1.0-aarch64-linux)
     libdatadog (18.1.0.1.0-x86_64-linux)
-    libddwaf (1.22.0.0.2)
+    libddwaf (1.24.1.0.0)
       ffi (~> 1.0)
-    libddwaf (1.22.0.0.2-aarch64-linux)
+    libddwaf (1.24.1.0.0-aarch64-linux)
       ffi (~> 1.0)
-    libddwaf (1.22.0.0.2-arm64-darwin)
+    libddwaf (1.24.1.0.0-arm64-darwin)
       ffi (~> 1.0)
-    libddwaf (1.22.0.0.2-x86_64-darwin)
+    libddwaf (1.24.1.0.0-x86_64-darwin)
       ffi (~> 1.0)
-    libddwaf (1.22.0.0.2-x86_64-linux)
+    libddwaf (1.24.1.0.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     matrix (0.4.3)
