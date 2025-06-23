@@ -25,6 +25,14 @@ module Datadog
             def job_url
               env["BUILD_URL"]
             end
+
+            def git_pull_request_base_branch
+              env["TEAMCITY_PULLREQUEST_TARGET_BRANCH"]
+            end
+
+            def pr_number
+              env["TEAMCITY_PULLREQUEST_NUMBER"]
+            end
           end
         end
       end
