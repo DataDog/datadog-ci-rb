@@ -40,6 +40,14 @@ module Datadog
               env["CF_BRANCH"]
             end
 
+            def git_pull_request_base_branch
+              env["CF_PULL_REQUEST_TARGET"]
+            end
+
+            def pr_number
+              env["CF_PULL_REQUEST_NUMBER"]
+            end
+
             def ci_env_vars
               {
                 "CF_BUILD_ID" => env["CF_BUILD_ID"]
