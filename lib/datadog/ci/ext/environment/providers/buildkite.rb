@@ -89,6 +89,12 @@ module Datadog
               env["BUILDKITE_PULL_REQUEST_BASE_BRANCH"]
             end
 
+            def pr_number
+              return nil if env["BUILDKITE_PULL_REQUEST"] == "false"
+
+              env["BUILDKITE_PULL_REQUEST"]
+            end
+
             def ci_env_vars
               {
                 "BUILDKITE_BUILD_ID" => env["BUILDKITE_BUILD_ID"],
