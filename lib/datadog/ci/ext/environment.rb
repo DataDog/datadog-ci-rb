@@ -24,6 +24,7 @@ module Datadog
         TAG_NODE_LABELS = "ci.node.labels"
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
+        TAG_PR_NUMBER = "pr.number"
 
         module Provider
           APPVEYOR = "appveyor"

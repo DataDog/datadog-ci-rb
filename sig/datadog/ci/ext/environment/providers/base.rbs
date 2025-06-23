@@ -66,6 +66,8 @@ module Datadog
 
             def git_commit_head_sha: () -> String?
 
+            def pr_number: () -> String?
+
             private
 
             def set_branch_and_tag: () -> [String?, String?]

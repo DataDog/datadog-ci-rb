@@ -49,7 +49,9 @@ module Datadog
               Git::TAG_COMMIT_SHA => @provider.git_commit_sha,
               Git::TAG_PULL_REQUEST_BASE_BRANCH => @provider.git_pull_request_base_branch,
               Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA => @provider.git_pull_request_base_branch_sha,
-              Git::TAG_COMMIT_HEAD_SHA => @provider.git_commit_head_sha
+              Git::TAG_COMMIT_HEAD_SHA => @provider.git_commit_head_sha,
+
+              Environment::TAG_PR_NUMBER => @provider.pr_number
             }
 
             # Normalize Git references and filter sensitive data
@@ -57,13 +59,16 @@ module Datadog
             # Expand ~
             expand_workspace!
 
+            # Convert all tag values to strings
+            @tags.transform_values! { |v| v&.to_s }
+
             # remove empty tags
             @tags.reject! do |_, v|
               # setting type of v here to untyped because steep does not
               # understand `v.nil? || something`
 
               # @type var v: untyped
-              v.nil? || v.strip.empty?
+              v.nil? || v.to_s.strip.empty?
             end
 
             @tags
@@ -80,6 +85,7 @@ module Datadog
 
             @tags[Git::TAG_TAG] = Utils::Git.normalize_ref(@tags[Git::TAG_TAG])
             @tags[Git::TAG_BRANCH] = Utils::Git.normalize_ref(@tags[Git::TAG_BRANCH])
+            @tags[Git::TAG_PULL_REQUEST_BASE_BRANCH] = Utils::Git.normalize_ref(@tags[Git::TAG_PULL_REQUEST_BASE_BRANCH])
             @tags[Git::TAG_REPOSITORY_URL] = Datadog::Core::Utils::Url.filter_basic_auth(
               @tags[Git::TAG_REPOSITORY_URL]
             )
