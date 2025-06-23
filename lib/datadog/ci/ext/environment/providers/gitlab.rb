@@ -108,6 +108,10 @@ module Datadog
               env["CI_MERGE_REQUEST_SOURCE_BRANCH_SHA"]
             end
 
+            def pr_number
+              env["CI_MERGE_REQUEST_IID"]
+            end
+
             private
 
             def extract_name_email
