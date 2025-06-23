@@ -65,6 +65,14 @@ module Datadog
               env["GIT_BRANCH"]
             end
 
+            def git_pull_request_base_branch
+              env["CHANGE_TARGET"]
+            end
+
+            def pr_number
+              env["CHANGE_ID"]
+            end
+
             def ci_env_vars
               {
                 "DD_CUSTOM_TRACE_ID" => env["DD_CUSTOM_TRACE_ID"]
