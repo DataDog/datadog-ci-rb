@@ -36,6 +36,7 @@ module Datadog
           BUILDKITE = "buildkite"
           CIRCLECI = "circleci"
           CODEFRESH = "codefresh"
+          DRONE = "drone"
           GITHUB = "github"
           GITLAB = "gitlab"
           JENKINS = "jenkins"
