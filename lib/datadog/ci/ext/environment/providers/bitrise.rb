@@ -79,6 +79,10 @@ module Datadog
               # For example, a pull request wants to merge the content of a branch into the branch main. In this case, this Env Var’s value is main.
               env["BITRISEIO_GIT_BRANCH_DEST"]
             end
+
+            def pr_number
+              env["BITRISE_PULL_REQUEST"]
+            end
           end
         end
       end
