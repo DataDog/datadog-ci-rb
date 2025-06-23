@@ -72,6 +72,10 @@ module Datadog
               env["BUILD_SOURCEVERSIONMESSAGE"]
             end
 
+            def pr_number
+              env["CIRCLE_PR_NUMBER"]
+            end
+
             def ci_env_vars
               {
                 "CIRCLE_WORKFLOW_ID" => env["CIRCLE_WORKFLOW_ID"],
