@@ -77,8 +77,6 @@ module Datadog
             end
 
             def git_pull_request_base_branch
-              return nil if github_event_json.nil?
-
               env["GITHUB_BASE_REF"]
             end
 
