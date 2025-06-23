@@ -80,6 +80,14 @@ module Datadog
               env["BUILD_SOURCEVERSIONMESSAGE"]
             end
 
+            def git_pull_request_base_branch
+              env["SYSTEM_PULLREQUEST_TARGETBRANCH"]
+            end
+
+            def pr_number
+              env["SYSTEM_PULLREQUEST_PULLREQUESTNUMBER"]
+            end
+
             def ci_env_vars
               {
                 "SYSTEM_TEAMPROJECTID" => env["SYSTEM_TEAMPROJECTID"],
