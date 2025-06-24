@@ -105,6 +105,9 @@ module Datadog
             def git_commit_head_sha
             end
 
+            def pr_number
+            end
+
             private
 
             def set_branch_and_tag

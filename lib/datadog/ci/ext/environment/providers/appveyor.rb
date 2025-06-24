@@ -74,6 +74,14 @@ module Datadog
               env["APPVEYOR_REPO_COMMIT_AUTHOR_EMAIL"]
             end
 
+            def git_commit_head_sha
+              env["APPVEYOR_PULL_REQUEST_HEAD_COMMIT"]
+            end
+
+            def pr_number
+              env["APPVEYOR_PULL_REQUEST_NUMBER"]
+            end
+
             def git_commit_message
               commit_message = env["APPVEYOR_REPO_COMMIT_MESSAGE"]
               if commit_message

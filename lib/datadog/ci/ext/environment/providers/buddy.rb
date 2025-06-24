@@ -70,6 +70,10 @@ module Datadog
               # from docs: The name of the Git BASE branch of the currently run Pull Request
               env["BUDDY_RUN_PR_BASE_BRANCH"]
             end
+
+            def pr_number
+              env["BUDDY_RUN_PR_NO"]
+            end
           end
         end
       end

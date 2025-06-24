@@ -10,6 +10,7 @@ require_relative "providers/buddy"
 require_relative "providers/buildkite"
 require_relative "providers/circleci"
 require_relative "providers/codefresh"
+require_relative "providers/drone"
 require_relative "providers/github_actions"
 require_relative "providers/gitlab"
 require_relative "providers/jenkins"
@@ -34,6 +35,7 @@ module Datadog
             Providers::Buildkite,
             Providers::Circleci,
             Providers::Codefresh,
+            Providers::Drone,
             Providers::GithubActions,
             Providers::Gitlab,
             Providers::Jenkins,

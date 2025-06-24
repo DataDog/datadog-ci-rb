@@ -27,6 +27,8 @@ module Datadog
             def git_tag: () -> String?
 
             def git_commit_message: () -> String?
+
+            def pull_request?: () -> bool
           end
         end
       end

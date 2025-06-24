@@ -27,6 +27,8 @@ module Datadog
 
         TAG_CI_ENV_VARS: String
 
+        TAG_PR_NUMBER: String
+
         POSSIBLE_BUNDLE_LOCATIONS: Array[String]
 
         PROVIDERS: ::Array[Array[String | Symbol]]
@@ -41,6 +43,7 @@ module Datadog
           BUILDKITE: "buildkite"
           CIRCLECI: "circleci"
           CODEFRESH: "codefresh"
+          DRONE: "drone"
           GITHUB: "github"
           GITLAB: "gitlab"
           JENKINS: "jenkins"

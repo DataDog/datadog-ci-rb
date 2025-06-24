@@ -65,6 +65,10 @@ module Datadog
               env["BITBUCKET_PR_DESTINATION_BRANCH"]
             end
 
+            def pr_number
+              env["BITBUCKET_PR_ID"]
+            end
+
             private
 
             def url

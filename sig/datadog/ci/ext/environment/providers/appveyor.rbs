@@ -33,6 +33,8 @@ module Datadog
 
             def git_commit_author_email: () -> String?
 
+            def pr_number: () -> String?
+
             def git_commit_message: () -> String?
 
             def github_repo_provider?: () -> bool

@@ -3,18 +3,16 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          class Circleci < Base
-            def provider_name: () -> "circleci"
-
-            def job_url: () -> String?
+          class Drone < Base
+            def provider_name: () -> "drone"
 
             def job_name: () -> String?
 
-            def pipeline_id: () -> String?
+            def pipeline_number: () -> String?
 
-            def pipeline_name: () -> String?
+            def pipeline_url: () -> String?
 
-            def pipeline_url: () -> ::String
+            def stage_name: () -> String?
 
             def workspace_path: () -> String?
 
@@ -32,7 +30,11 @@ module Datadog
 
             def git_commit_message: () -> String?
 
-            def ci_env_vars: () -> ::String
+            def git_pull_request_base_branch: () -> String?
+
+            def pr_number: () -> String?
+
+            def ci_env_vars: () -> String?
           end
         end
       end

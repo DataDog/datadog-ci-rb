@@ -61,6 +61,28 @@ module Datadog
             def git_commit_message
               env["TRAVIS_COMMIT_MESSAGE"]
             end
+
+            def git_pull_request_base_branch
+              return nil unless pull_request?
+
+              env["TRAVIS_BRANCH"]
+            end
+
+            def git_commit_head_sha
+              return nil unless pull_request?
+
+              env["TRAVIS_PULL_REQUEST_SHA"]
+            end
+
+            def pr_number
+              return nil unless pull_request?
+
+              env["TRAVIS_PULL_REQUEST"]
+            end
+
+            def pull_request?
+              env["TRAVIS_EVENT_TYPE"] == "pull_request"
+            end
           end
         end
       end
