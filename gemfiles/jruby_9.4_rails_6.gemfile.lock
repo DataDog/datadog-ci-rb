@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 60d42f9dbb0f1c52e01f75f34cfcd0054dae2eb5
+  revision: cd3ce6a3941eafcbc2b9269cf5e05f9b39dd444b
   branch: master
   specs:
     datadog (2.17.0)
@@ -124,7 +124,7 @@ GEM
     mini_mime (1.1.5)
     minitest (5.25.5)
     msgpack (1.8.0-java)
-    net-imap (0.5.8)
+    net-imap (0.5.9)
       date
       net-protocol
     net-pop (0.1.2)
