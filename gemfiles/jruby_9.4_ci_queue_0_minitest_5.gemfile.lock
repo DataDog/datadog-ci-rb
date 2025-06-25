@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 60d42f9dbb0f1c52e01f75f34cfcd0054dae2eb5
+  revision: cd3ce6a3941eafcbc2b9269cf5e05f9b39dd444b
   branch: master
   specs:
     datadog (2.17.0)
@@ -28,9 +28,9 @@ GEM
       bundler
       rake
       thor (>= 0.14.0)
-    bigdecimal (3.2.1-java)
+    bigdecimal (3.2.2-java)
     builder (3.3.0)
-    ci-queue (0.66.0)
+    ci-queue (0.69.0)
       logger
     climate_control (1.2.0)
     crack (1.0.0)
@@ -95,7 +95,7 @@ PLATFORMS
 
 DEPENDENCIES
   appraisal
-  ci-queue (~> 0, < 0.67)
+  ci-queue (~> 0)
   climate_control
   datadog!
   datadog-ci!

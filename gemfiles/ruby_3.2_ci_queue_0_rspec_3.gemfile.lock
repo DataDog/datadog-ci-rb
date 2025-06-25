@@ -28,7 +28,7 @@ GEM
       rake
       thor (>= 0.14.0)
     bigdecimal (3.2.2)
-    ci-queue (0.68.0)
+    ci-queue (0.69.0)
       logger
     climate_control (1.2.0)
     crack (1.0.0)
@@ -129,4 +129,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.5.21
+   2.3.26
