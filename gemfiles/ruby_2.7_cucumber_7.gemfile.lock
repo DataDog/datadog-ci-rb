@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: cd3ce6a3941eafcbc2b9269cf5e05f9b39dd444b
+  revision: 783b428cc70c90f956e9cbb9b534868932f75e09
   branch: master
   specs:
     datadog (2.17.0)
@@ -92,7 +92,7 @@ GEM
     mime-types (3.7.0)
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
-    mime-types-data (3.2025.0617)
+    mime-types-data (3.2025.0624)
     msgpack (1.8.0)
     multi_test (0.1.2)
     os (1.1.4)
@@ -118,7 +118,7 @@ GEM
       rspec-mocks (~> 3.13.0)
     rspec-collection_matchers (1.2.1)
       rspec-expectations (>= 2.99.0.beta1)
-    rspec-core (3.13.4)
+    rspec-core (3.13.5)
       rspec-support (~> 3.13.0)
     rspec-expectations (3.13.5)
       diff-lcs (>= 1.2.0, < 2.0)
