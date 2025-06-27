@@ -3,8 +3,6 @@ module Datadog
     module Contrib
       module RSpec
         module DocumentationFormatter
-          DATADOG_RETRY_REASONS: Array[String]
-
           def self.included: (untyped base) -> untyped
 
           module InstanceMethods : ::RSpec::Core::Formatters::DocumentationFormatter

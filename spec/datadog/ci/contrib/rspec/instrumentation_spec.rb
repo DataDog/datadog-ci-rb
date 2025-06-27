@@ -1126,6 +1126,7 @@ RSpec.describe "RSpec instrumentation" do
 
       # validate that we have the Datadog's output
       expect(result.stdout.string).to include("Retried 10 times by Datadog Early Flake Detection")
+      expect(result.stdout.string).to include("Results were: 10 / 10 pass")
 
       # p "------------------------------------------------------------------------------"
       # p ""

@@ -72,6 +72,12 @@ module Datadog
         tracer_span.get_tag(Ext::Test::TAG_STATUS) == Ext::Test::Status::SKIP
       end
 
+      # Returns the current status of the span.
+      # @return [String, nil] the status of the span ("pass", "fail", "skip"), or nil if not set
+      def status
+        tracer_span.get_tag(Ext::Test::TAG_STATUS)
+      end
+
       # Sets the status of the span to "pass".
       # @return [void]
       def passed!

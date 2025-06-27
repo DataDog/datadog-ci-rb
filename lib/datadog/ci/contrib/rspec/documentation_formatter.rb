@@ -4,12 +4,6 @@ module Datadog
       module RSpec
         # Instrument RSpec::Core::Formatters::DocumentationFormatter
         module DocumentationFormatter
-          DATADOG_RETRY_REASONS = [
-            CI::Ext::Test::RetryReason::RETRY_FAILED,
-            CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY,
-            CI::Ext::Test::RetryReason::RETRY_FLAKY_FIXED
-          ]
-
           def self.included(base)
             base.prepend(InstanceMethods)
           end
@@ -28,12 +22,25 @@ module Datadog
             end
 
             def retries_output(example)
-              return if !example.metadata[:dd_retries] || !DATADOG_RETRY_REASONS.include?(example.metadata[:dd_retry_reason])
+              if !example.metadata[:dd_retries] ||
+                  !CI::Ext::Test::RetryReason::DATADOG_RETRY_REASONS.include?(
+                    example.metadata[:dd_retry_reason]
+                  )
+                return
+              end
 
-              output.puts "Retried #{example.metadata[:dd_retries]} times by #{retry_source(example.metadata[:dd_retry_reason])}"
-              # TODO: retry results
+              @group_level += 1
+
+              output.puts(
+                "#{current_indentation}| Retried #{example.metadata[:dd_retries]} times by #{retry_source(example.metadata[:dd_retry_reason])}"
+              )
+              output.puts(
+                "#{current_indentation}| Results were: #{example.metadata[:dd_results].map { |status, count| "#{count} / #{example.metadata[:dd_retries]} #{status}" }.join(", ")}"
+              )
               # TODO: Was it flaky????
               # TODO: was it attempt to fix? if yes - did it fail all retries or was it a success or is it still flaky?
+
+              @group_level -= 1
             end
 
             def retry_source(reason)

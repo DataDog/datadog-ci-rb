@@ -168,6 +168,8 @@ module Datadog
           RETRY_FLAKY_FIXED: "attempt_to_fix"
 
           RETRY_EXTERNAL: "external"
+
+          DATADOG_RETRY_REASONS: Array[String]
         end
 
         module SkipReason
