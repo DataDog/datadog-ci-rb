@@ -159,6 +159,12 @@ module Datadog
           RETRY_FAILED = "auto_test_retries"
           RETRY_FLAKY_FIXED = "attempt_to_fix"
           RETRY_EXTERNAL = "external"
+
+          DATADOG_RETRY_REASONS = [
+            RETRY_FAILED,
+            RETRY_DETECT_FLAKY,
+            RETRY_FLAKY_FIXED
+          ]
         end
 
         # possible reasons why a test was skipped

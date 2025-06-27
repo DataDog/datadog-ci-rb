@@ -94,6 +94,48 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
+  describe "#status" do
+    context "when status is nil" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return(nil)
+      end
+
+      it "returns nil" do
+        expect(span.status).to be_nil
+      end
+    end
+
+    context "when status is pass" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("pass")
+      end
+
+      it "returns pass" do
+        expect(span.status).to eq("pass")
+      end
+    end
+
+    context "when status is fail" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("fail")
+      end
+
+      it "returns fail" do
+        expect(span.status).to eq("fail")
+      end
+    end
+
+    context "when status is skip" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with("test.status").and_return("skip")
+      end
+
+      it "returns skip" do
+        expect(span.status).to eq("skip")
+      end
+    end
+  end
+
   describe "#passed!" do
     it "sets the status to PASS" do
       expect(tracer_span).to receive(:set_tag).with("test.status", "pass")

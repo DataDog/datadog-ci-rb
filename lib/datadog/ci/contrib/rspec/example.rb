@@ -74,6 +74,15 @@ module Datadog
                       exception: execution_result.pending_exception
                     )
                   end
+
+                  if test_span&.is_retry?
+                    metadata[:dd_retries] ||= 0
+                    metadata[:dd_results] ||= Hash.new(0)
+
+                    metadata[:dd_retries] += 1
+                    metadata[:dd_retry_reason] = test_span&.retry_reason
+                    metadata[:dd_results][test_span&.status] += 1
+                  end
                 end
               end
 
