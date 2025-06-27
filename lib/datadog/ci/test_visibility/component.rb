@@ -267,6 +267,8 @@ module Datadog
 
           test_optimisation.mark_if_skippable(test)
           test_optimisation.start_coverage(test)
+
+          test_retries.record_test_started(test)
         end
 
         def on_test_session_finished(test_session)

@@ -61,3 +61,22 @@ class RSpec::Core::World
   def wants_to_quit: () -> bool
   def example_count: () -> Integer
 end
+
+module RSpec::Core::Notifications
+end
+
+class RSpec::Core::Notifications::ExampleNotification
+  def example: () -> RSpec::Core::Example
+end
+
+module RSpec::Core::Formatters
+end
+
+class RSpec::Core::Formatters::DocumentationFormatter
+  def output: () -> IO
+
+  def example_started: (RSpec::Core::Notification::ExampleNotification) -> void
+  def example_passed: (RSpec::Core::Notification::ExampleNotification) -> void
+  def example_failed: (RSpec::Core::Notification::ExampleNotification) -> void
+  def example_pending: (RSpec::Core::Notification::ExampleNotification) -> void
+end

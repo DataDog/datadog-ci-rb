@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Contrib
+      module RSpec
+        module DocumentationFormatter
+          DATADOG_RETRY_REASONS: Array[String]
+
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods : ::RSpec::Core::Formatters::DocumentationFormatter
+            def example_passed: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
+            def example_failed: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
+
+            private
+
+            def retries_output: (::RSpec::Core::Example example) -> void
+            def retry_source: (String reason) -> String
+          end
+        end
+      end
+    end
+  end
+end
