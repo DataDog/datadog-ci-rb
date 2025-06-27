@@ -1,4 +1,6 @@
 require "time"
+require "stringio"
+require "ostruct"
 
 RSpec.describe "RSpec instrumentation" do
   let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
@@ -115,14 +117,17 @@ RSpec.describe "RSpec instrumentation" do
         end
       end
 
-      options_array = %w[--pattern none]
+      options_array = %w[--pattern none --format documentation]
       if dry_run
         options_array << "--dry-run"
       end
       options = ::RSpec::Core::ConfigurationOptions.new(options_array)
-      ::RSpec::Core::Runner.new(options).run(devnull, devnull)
 
-      spec
+      stdout = StringIO.new
+      stderr = StringIO.new
+      ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+
+      OpenStruct.new(spec: spec, stdout: stdout, stderr: stderr)
     end
   end
 
@@ -169,8 +174,8 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "142")
-      expect(first_test_span).to have_test_tag(:source_end, "144") unless PlatformHelpers.jruby?
+      expect(first_test_span).to have_test_tag(:source_start, "147")
+      expect(first_test_span).to have_test_tag(:source_end, "149") unless PlatformHelpers.jruby?
 
       expect(first_test_span).to have_test_tag(
         :codeowners,
@@ -583,7 +588,8 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "creates test suite span" do
-      spec = rspec_session_run
+      result = rspec_session_run
+      spec = result.spec
 
       expect(first_test_suite_span).not_to be_nil
 
@@ -601,7 +607,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "46")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "48")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -639,7 +645,8 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     context "with shared examples" do
-      let!(:spec) { rspec_session_run(with_shared_test: true) }
+      let!(:result) { rspec_session_run(with_shared_test: true) }
+      let!(:spec) { result.spec }
 
       it "creates correct test spans connects all tests to a single test suite" do
         shared_test_spans = test_spans.filter { |test_span| test_span.name == "nested shared examples adds 1 and 1" }
@@ -681,9 +688,12 @@ RSpec.describe "RSpec instrumentation" do
           end
 
           options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
-          ::RSpec::Core::Runner.new(options).run(devnull, devnull)
 
-          spec
+          stdout = StringIO.new
+          stderr = StringIO.new
+          ::RSpec::Core::Runner.new(options).run(stdout, stderr)
+
+          OpenStruct.new(spec: spec, stdout: stdout, stderr: stderr)
         end
       end
 
@@ -1082,7 +1092,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "retries the new test 10 times" do
-      rspec_session_run(with_failed_test: true)
+      result = rspec_session_run(with_failed_test: true)
 
       # 1 passing test + 10 new test retries + 1 failed test run = 12 spans
       expect(test_spans).to have(12).items
@@ -1113,6 +1123,17 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_session_span).to have_fail_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+
+      # validate that we have the Datadog's output
+      expect(result.stdout.string).to include("Retried 10 times by Datadog Early Flake Detection")
+
+      # p "------------------------------------------------------------------------------"
+      # p ""
+      # p ""
+      # print result.stdout.string
+      # p ""
+      # p ""
+      # p "------------------------------------------------------------------------------"
     end
 
     context "when test is slower than 5 seconds" do
