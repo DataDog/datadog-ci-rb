@@ -25,6 +25,12 @@ module Datadog
               end
             end
 
+            option :datadog_formatter_enabled do |o|
+              o.type :bool
+              o.env Ext::ENV_DATADOG_FORMATTER_ENABLED
+              o.default true
+            end
+
             # internal only
             option :dry_run_enabled do |o|
               o.type :bool

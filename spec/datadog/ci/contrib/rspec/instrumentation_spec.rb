@@ -1761,4 +1761,27 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_session_span).to have_pass_status
     end
   end
+
+  context "when skipping tests and Datadog formatter is disabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec", datadog_formatter_enabled: false} }
+
+      let(:itr_enabled) { true }
+      let(:tests_skipping_enabled) { true }
+
+      let(:itr_skippable_tests) do
+        Set.new([
+          'SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{"arguments":{},"metadata":{"scoped_id":"1:1:1"}}'
+        ])
+      end
+    end
+
+    it "doesn't add Datadog output" do
+      result = rspec_session_run(with_failed_test: true)
+
+      expect(result.stdout.string).not_to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).not_to include("1 skipped by test impact analysis")
+    end
+  end
 end

@@ -4,6 +4,7 @@ module Datadog
       module RSpec
         module Ext
           ENV_ENABLED: String
+          ENV_DATADOG_FORMATTER_ENABLED: String
 
           FRAMEWORK: String
           DEFAULT_SERVICE_NAME: String
