@@ -6,9 +6,15 @@ module Datadog
           def self.included: (untyped base) -> untyped
 
           module InstanceMethods : ::RSpec::Core::Formatters::DocumentationFormatter
+            @dd_flaky_tests: Integer
+            @dd_quarantined_tests: Integer
+            @dd_disabled_tests: Integer
+            @dd_skipped_by_tia_tests: Integer
+
             def example_passed: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
             def example_failed: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
             def example_pending: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
+            def dump_summary: (untyped notification) -> void
 
             private
 

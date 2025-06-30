@@ -27,6 +27,21 @@ module Datadog
               dd_example_finished(notification.example)
             end
 
+            def dump_summary(notification)
+              super
+
+              return unless @dd_flaky_tests || @dd_quarantined_tests || @dd_disabled_tests || @dd_skipped_by_tia_tests
+
+              summary = "\nDatadog Test Optimization Summary:\n"
+              summary += "#{@dd_flaky_tests} flaky detected " if @dd_flaky_tests&.positive?
+              summary += "#{@dd_quarantined_tests} quarantined " if @dd_quarantined_tests&.positive?
+              summary += "#{@dd_disabled_tests} disabled " if @dd_disabled_tests&.positive?
+              summary += "#{@dd_skipped_by_tia_tests} skipped by test impact analysis " if @dd_skipped_by_tia_tests&.positive?
+              summary += "\n"
+
+              output.puts summary
+            end
+
             private
 
             def dd_example_finished(example)

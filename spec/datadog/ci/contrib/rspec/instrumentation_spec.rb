@@ -775,13 +775,16 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "skips test" do
-        rspec_session_run(with_failed_test: true)
+        result = rspec_session_run(with_failed_test: true)
 
         expect(test_spans).to have(2).items
         expect(test_spans).to have_tag_values_no_order(:status, ["skip", "fail"])
 
         itr_skipped_test = test_spans.find { |span| span.name == "nested foo" }
         expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
+
+        expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+        expect(result.stdout.string).to include("1 skipped by test impact analysis")
       end
 
       it "runs context hooks" do
@@ -986,6 +989,9 @@ RSpec.describe "RSpec instrumentation" do
       expect(result.stdout.string).to include("Retried 4 times by Datadog Auto Test Retries")
       expect(result.stdout.string).to include("Results were: 3 / 4 fail, 1 / 4 pass")
       expect(result.stdout.string).to include("Flaky test detected")
+
+      expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).to include("1 flaky detected")
     end
   end
 
@@ -1390,7 +1396,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "retries the new test 10 times" do
-      rspec_session_run(with_flaky_test_that_fails_once: true)
+      result = rspec_session_run(with_flaky_test_that_fails_once: true)
 
       # 1 passing test + 1 flaky test run + 10 new test retries = 12 spans
       expect(test_spans).to have(12).items
@@ -1420,6 +1426,9 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+
+      expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).to include("1 flaky detected")
     end
   end
 
@@ -1498,6 +1507,9 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
       expect(result.stdout.string).to include("Test was quarantined by Datadog Flaky Test Management")
+
+      expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).to include("1 quarantined")
     end
   end
 
@@ -1589,6 +1601,9 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
 
       expect(result.stdout.string).to include("Test was disabled by Datadog Flaky Test Management")
+
+      expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).to include("1 disabled")
     end
   end
 
