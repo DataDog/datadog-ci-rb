@@ -7,6 +7,13 @@ module Datadog
 
           FRAMEWORK: String
           DEFAULT_SERVICE_NAME: String
+
+          METADATA_DD_RETRIES: Symbol
+          METADATA_DD_RETRY_RESULTS: Symbol
+          METADATA_DD_RETRY_REASON: Symbol
+          METADATA_DD_QUARANTINED: Symbol
+          METADATA_DD_DISABLED: Symbol
+          METADATA_DD_SKIPPED_BY_ITR: Symbol
         end
       end
     end

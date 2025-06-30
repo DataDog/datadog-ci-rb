@@ -952,7 +952,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "retries test until it passes" do
-      rspec_session_run(with_flaky_test: true)
+      result = rspec_session_run(with_flaky_test: true)
 
       # 1 initial run of flaky test + 4 retries until pass + 1 passing test = 6 spans
       expect(test_spans).to have(6).items
@@ -982,6 +982,10 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_suite_spans.first).to have_pass_status
 
       expect(test_session_span).to have_pass_status
+
+      expect(result.stdout.string).to include("Retried 4 times by Datadog Auto Test Retries")
+      expect(result.stdout.string).to include("Results were: 3 / 4 fail, 1 / 4 pass")
+      expect(result.stdout.string).to include("Flaky test detected")
     end
   end
 
@@ -1127,14 +1131,6 @@ RSpec.describe "RSpec instrumentation" do
       # validate that we have the Datadog's output
       expect(result.stdout.string).to include("Retried 10 times by Datadog Early Flake Detection")
       expect(result.stdout.string).to include("Results were: 10 / 10 pass")
-
-      # p "------------------------------------------------------------------------------"
-      # p ""
-      # p ""
-      # print result.stdout.string
-      # p ""
-      # p ""
-      # p "------------------------------------------------------------------------------"
     end
 
     context "when test is slower than 5 seconds" do
@@ -1486,7 +1482,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "runs failing test but ignores its failure" do
-      rspec_session_run(with_failed_test: true)
+      result = rspec_session_run(with_failed_test: true)
 
       expect(test_spans).to have(2).items
       quarantined_test_span = test_spans.find { |span| span.name == "nested fails" }
@@ -1501,6 +1497,7 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+      expect(result.stdout.string).to include("Test was quarantined by Datadog Flaky Test Management")
     end
   end
 
@@ -1556,7 +1553,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "runs the test and retries it" do
-      rspec_session_run
+      result = rspec_session_run
 
       # 1 original execution and 12 retries (attempt_to_fix_retries_count)
       expect(test_spans).to have(attempt_to_fix_retries_count + 1).items
@@ -1590,6 +1587,8 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+
+      expect(result.stdout.string).to include("Test was disabled by Datadog Flaky Test Management")
     end
   end
 

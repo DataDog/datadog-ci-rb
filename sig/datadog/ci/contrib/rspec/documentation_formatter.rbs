@@ -8,11 +8,15 @@ module Datadog
           module InstanceMethods : ::RSpec::Core::Formatters::DocumentationFormatter
             def example_passed: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
             def example_failed: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
+            def example_pending: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
 
             private
 
-            def retries_output: (::RSpec::Core::Example example) -> void
-            def retry_source: (String reason) -> String
+            def dd_example_finished: (::RSpec::Core::Example example) -> void
+            def dd_retries_output: (::RSpec::Core::Example example) -> void
+            def dd_retry_source: (String reason) -> String
+            def dd_test_management_output: (::RSpec::Core::Example example) -> void
+            def dd_test_impact_analysis_output: (::RSpec::Core::Example example) -> void
           end
         end
       end
