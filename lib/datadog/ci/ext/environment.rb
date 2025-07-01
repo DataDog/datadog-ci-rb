@@ -3,6 +3,7 @@
 require "datadog/core/telemetry/logging"
 
 require_relative "git"
+require_relative "environment/configuration_discrepancy_checker"
 require_relative "environment/extractor"
 
 require_relative "../utils/git"
@@ -53,15 +54,18 @@ module Datadog
           tags = Environment::Extractor.new(env).tags
 
           # If user defined metadata is defined, overwrite
-          tags.merge!(
-            Environment::Extractor.new(env, provider_klass: Providers::UserDefinedTags).tags
-          )
+          user_provided_tags = Environment::Extractor.new(env, provider_klass: Providers::UserDefinedTags).tags
+          tags.merge!(user_provided_tags)
 
           # Fill out tags from local git as fallback
           local_git_tags = Environment::Extractor.new(env, provider_klass: Providers::LocalGit).tags
           local_git_tags.each do |key, value|
             tags[key] ||= value
           end
+
+          # send some telemetry for the cases where git commit sha is overriden
+          discrepancy_checker = ConfigurationDiscrepancyChecker.new(tags, local_git_tags, user_provided_tags)
+          discrepancy_checker.check_for_discrepancies
 
           ensure_post_conditions(tags)
 

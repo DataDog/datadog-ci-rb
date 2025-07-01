@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module Ext
+      module Environment
+        class ConfigurationDiscrepancyChecker
+          @ci_provider_env_tags: Hash[String, String]
+          @local_git_tags: Hash[String, String]
+          @user_provided_tags: Hash[String, String]
+
+          def initialize: (Hash[String, String] ci_provider_env_tags, Hash[String, String] local_git_tags, Hash[String, String] user_provided_tags) -> void
+
+          def check_for_discrepancies: () -> void
+
+          private
+
+          def normalize_value: (String?) -> String?
+        end
+      end
+    end
+  end
+end
