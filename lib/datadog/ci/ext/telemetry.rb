@@ -68,6 +68,9 @@ module Datadog
 
         METRIC_TEST_SESSION = "test_session"
 
+        METRIC_GIT_COMMIT_SHA_MATCH = "git.commit_sha_match"
+        METRIC_GIT_COMMIT_SHA_DISCREPANCY = "git.commit_sha_discrepancy"
+
         TAG_TEST_FRAMEWORK = "test_framework"
         TAG_EVENT_TYPE = "event_type"
         TAG_HAS_CODEOWNER = "has_codeowner"

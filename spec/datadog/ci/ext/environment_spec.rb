@@ -243,6 +243,31 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
           end
         end
       end
+
+      context "discrepancy telemetry" do
+        include_context "with git fixture", "gitdir_with_commit"
+        include_context "Telemetry spy"
+
+        context "when there's a commit SHA discrepancy between user provided and git client" do
+          let(:env) do
+            {
+              "DD_GIT_COMMIT_SHA" => "1234567890abcdef1234567890abcdef12345678",
+              "DD_GIT_REPOSITORY_URL" => "https://datadoghq.com/git/user-provided.git"
+            }
+          end
+
+          it "emits discrepancy telemetry" do
+            extracted_tags
+
+            discrepancy_metric = telemetry_metric(:inc, Datadog::CI::Ext::Telemetry::METRIC_GIT_COMMIT_SHA_DISCREPANCY)
+            expect(discrepancy_metric).not_to be_nil
+
+            match_metric = telemetry_metric(:inc, Datadog::CI::Ext::Telemetry::METRIC_GIT_COMMIT_SHA_MATCH)
+            expect(match_metric).not_to be_nil
+            expect(match_metric.tags).to eq({matched: "false"})
+          end
+        end
+      end
     end
   end
 end
