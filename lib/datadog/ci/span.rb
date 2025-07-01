@@ -171,6 +171,12 @@ module Datadog
         tracer_span.get_tag(Ext::Git::TAG_BRANCH)
       end
 
+      # Returns the git tag extracted from the environment.
+      # @return [String, nil] the tag or nil if not set.
+      def git_tag
+        tracer_span.get_tag(Ext::Git::TAG_TAG)
+      end
+
       # Returns the base commit SHA for the pull request, if available.
       # @return [String, nil] the base commit SHA or nil if not set.
       def base_commit_sha

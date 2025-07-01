@@ -110,6 +110,32 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
         end
       end
 
+      context "when git.branch is not present but git.tag is" do
+        let(:tracer_span) do
+          Datadog::Tracing::SpanOperation.new("session", service: service).tap do |span|
+            span.set_tags({
+              "git.repository_url" => "repository_url",
+              "git.tag" => "tag",
+              "git.commit.sha" => "commit_sha",
+              "os.platform" => "platform",
+              "os.architecture" => "arch",
+              "os.version" => "version",
+              "runtime.name" => "runtime_name",
+              "runtime.version" => "runtime_version"
+            })
+          end
+        end
+
+        it "requests the settings with the tag" do
+          subject
+
+          expect(api).to have_received(:api_request) do |args|
+            attributes = JSON.parse(args[:payload])["data"]["attributes"]
+            expect(attributes["branch"]).to eq("tag")
+          end
+        end
+      end
+
       context "parsing response" do
         context "when response is OK" do
           it "parses the response" do
