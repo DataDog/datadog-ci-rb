@@ -1,4 +1,6 @@
 require "time"
+require "stringio"
+require "ostruct"
 
 RSpec.describe "RSpec instrumentation" do
   let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
@@ -115,14 +117,17 @@ RSpec.describe "RSpec instrumentation" do
         end
       end
 
-      options_array = %w[--pattern none]
+      options_array = %w[--pattern none --format documentation]
       if dry_run
         options_array << "--dry-run"
       end
       options = ::RSpec::Core::ConfigurationOptions.new(options_array)
-      ::RSpec::Core::Runner.new(options).run(devnull, devnull)
 
-      spec
+      stdout = StringIO.new
+      stderr = StringIO.new
+      ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+
+      OpenStruct.new(spec: spec, stdout: stdout, stderr: stderr)
     end
   end
 
@@ -169,8 +174,8 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "142")
-      expect(first_test_span).to have_test_tag(:source_end, "144") unless PlatformHelpers.jruby?
+      expect(first_test_span).to have_test_tag(:source_start, "147")
+      expect(first_test_span).to have_test_tag(:source_end, "149") unless PlatformHelpers.jruby?
 
       expect(first_test_span).to have_test_tag(
         :codeowners,
@@ -583,7 +588,8 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "creates test suite span" do
-      spec = rspec_session_run
+      result = rspec_session_run
+      spec = result.spec
 
       expect(first_test_suite_span).not_to be_nil
 
@@ -601,7 +607,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "46")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "48")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -639,7 +645,8 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     context "with shared examples" do
-      let!(:spec) { rspec_session_run(with_shared_test: true) }
+      let!(:result) { rspec_session_run(with_shared_test: true) }
+      let!(:spec) { result.spec }
 
       it "creates correct test spans connects all tests to a single test suite" do
         shared_test_spans = test_spans.filter { |test_span| test_span.name == "nested shared examples adds 1 and 1" }
@@ -681,9 +688,12 @@ RSpec.describe "RSpec instrumentation" do
           end
 
           options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
-          ::RSpec::Core::Runner.new(options).run(devnull, devnull)
 
-          spec
+          stdout = StringIO.new
+          stderr = StringIO.new
+          ::RSpec::Core::Runner.new(options).run(stdout, stderr)
+
+          OpenStruct.new(spec: spec, stdout: stdout, stderr: stderr)
         end
       end
 
@@ -765,13 +775,16 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "skips test" do
-        rspec_session_run(with_failed_test: true)
+        result = rspec_session_run(with_failed_test: true)
 
         expect(test_spans).to have(2).items
         expect(test_spans).to have_tag_values_no_order(:status, ["skip", "fail"])
 
         itr_skipped_test = test_spans.find { |span| span.name == "nested foo" }
         expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
+
+        expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+        expect(result.stdout.string).to include("1 skipped by test impact analysis")
       end
 
       it "runs context hooks" do
@@ -942,7 +955,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "retries test until it passes" do
-      rspec_session_run(with_flaky_test: true)
+      result = rspec_session_run(with_flaky_test: true)
 
       # 1 initial run of flaky test + 4 retries until pass + 1 passing test = 6 spans
       expect(test_spans).to have(6).items
@@ -972,6 +985,13 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_suite_spans.first).to have_pass_status
 
       expect(test_session_span).to have_pass_status
+
+      expect(result.stdout.string).to include("Retried 4 times by Datadog Auto Test Retries")
+      expect(result.stdout.string).to include("Results were: 3 / 4 fail, 1 / 4 pass")
+      expect(result.stdout.string).to include("Flaky test detected")
+
+      expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).to include("1 flaky detected")
     end
   end
 
@@ -1082,7 +1102,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "retries the new test 10 times" do
-      rspec_session_run(with_failed_test: true)
+      result = rspec_session_run(with_failed_test: true)
 
       # 1 passing test + 10 new test retries + 1 failed test run = 12 spans
       expect(test_spans).to have(12).items
@@ -1113,6 +1133,10 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_session_span).to have_fail_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+
+      # validate that we have the Datadog's output
+      expect(result.stdout.string).to include("Retried 10 times by Datadog Early Flake Detection")
+      expect(result.stdout.string).to include("Results were: 10 / 10 pass")
     end
 
     context "when test is slower than 5 seconds" do
@@ -1372,7 +1396,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "retries the new test 10 times" do
-      rspec_session_run(with_flaky_test_that_fails_once: true)
+      result = rspec_session_run(with_flaky_test_that_fails_once: true)
 
       # 1 passing test + 1 flaky test run + 10 new test retries = 12 spans
       expect(test_spans).to have(12).items
@@ -1402,6 +1426,9 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+
+      expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).to include("1 flaky detected")
     end
   end
 
@@ -1464,7 +1491,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "runs failing test but ignores its failure" do
-      rspec_session_run(with_failed_test: true)
+      result = rspec_session_run(with_failed_test: true)
 
       expect(test_spans).to have(2).items
       quarantined_test_span = test_spans.find { |span| span.name == "nested fails" }
@@ -1479,6 +1506,10 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+      expect(result.stdout.string).to include("Test was quarantined by Datadog Flaky Test Management")
+
+      expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).to include("1 quarantined")
     end
   end
 
@@ -1534,7 +1565,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "runs the test and retries it" do
-      rspec_session_run
+      result = rspec_session_run
 
       # 1 original execution and 12 retries (attempt_to_fix_retries_count)
       expect(test_spans).to have(attempt_to_fix_retries_count + 1).items
@@ -1568,6 +1599,11 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+
+      expect(result.stdout.string).to include("Test was disabled by Datadog Flaky Test Management")
+
+      expect(result.stdout.string).to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).to include("1 disabled")
     end
   end
 
@@ -1723,6 +1759,29 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_suite_spans.first).to have_pass_status
 
       expect(test_session_span).to have_pass_status
+    end
+  end
+
+  context "when skipping tests and Datadog formatter is disabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec", datadog_formatter_enabled: false} }
+
+      let(:itr_enabled) { true }
+      let(:tests_skipping_enabled) { true }
+
+      let(:itr_skippable_tests) do
+        Set.new([
+          'SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{"arguments":{},"metadata":{"scoped_id":"1:1:1"}}'
+        ])
+      end
+    end
+
+    it "doesn't add Datadog output" do
+      result = rspec_session_run(with_failed_test: true)
+
+      expect(result.stdout.string).not_to include("Datadog Test Optimization Summary:")
+      expect(result.stdout.string).not_to include("1 skipped by test impact analysis")
     end
   end
 end

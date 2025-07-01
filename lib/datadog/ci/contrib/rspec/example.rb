@@ -74,6 +74,24 @@ module Datadog
                       exception: execution_result.pending_exception
                     )
                   end
+
+                  if datadog_configuration[:datadog_formatter_enabled]
+                    if test_span&.is_retry?
+                      metadata[Ext::METADATA_DD_RETRIES] ||= 0
+                      metadata[Ext::METADATA_DD_RETRY_RESULTS] ||= Hash.new(0)
+
+                      metadata[Ext::METADATA_DD_RETRIES] += 1
+                      metadata[Ext::METADATA_DD_RETRY_REASON] = test_span&.retry_reason
+                      metadata[Ext::METADATA_DD_RETRY_RESULTS][test_span&.status] += 1
+                    end
+
+                    metadata[Ext::METADATA_DD_QUARANTINED] = true if test_span&.quarantined?
+                    metadata[Ext::METADATA_DD_DISABLED] = true if test_span&.disabled?
+
+                    if test_span&.skipped_by_test_impact_analysis?
+                      metadata[Ext::METADATA_DD_SKIPPED_BY_ITR] = true
+                    end
+                  end
                 end
               end
 

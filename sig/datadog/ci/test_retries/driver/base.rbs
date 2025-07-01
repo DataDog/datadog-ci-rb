@@ -5,6 +5,8 @@ module Datadog
         class Base
           def should_retry?: () -> bool
 
+          def mark_as_retry: (Datadog::CI::Test test_span) -> void
+
           def record_retry: (Datadog::CI::Test test_span) -> void
 
           def record_duration: (Float duration) -> void

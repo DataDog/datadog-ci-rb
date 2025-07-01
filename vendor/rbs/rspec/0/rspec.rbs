@@ -61,3 +61,32 @@ class RSpec::Core::World
   def wants_to_quit: () -> bool
   def example_count: () -> Integer
 end
+
+module RSpec::Core::Notifications
+end
+
+class RSpec::Core::Notifications::ExampleNotification
+  def example: () -> RSpec::Core::Example
+end
+
+module RSpec::Core::Formatters
+  def self.register: (untyped formatter, *untyped method_names) -> void
+end
+
+class RSpec::Core::Formatters::BaseTextFormatter
+  def output: () -> IO
+end
+
+class RSpec::Core::Formatters::DocumentationFormatter
+  @group_level: Integer
+
+  def output: () -> IO
+
+  def current_indentation: () -> String
+
+  def example_started: (RSpec::Core::Notifications::ExampleNotification) -> void
+  def example_passed: (RSpec::Core::Notifications::ExampleNotification) -> void
+  def example_failed: (RSpec::Core::Notifications::ExampleNotification) -> void
+  def example_pending: (RSpec::Core::Notifications::ExampleNotification) -> void
+  def dump_summary: (untyped notification) -> void
+end

@@ -86,6 +86,12 @@ module Datadog
           end
         end
 
+        def record_test_started(test_span)
+          # mark test as retry in the beginning
+          # if this is a first execution, the current_retry_driver is nil and this is noop
+          current_retry_driver&.mark_as_retry(test_span)
+        end
+
         def record_test_finished(test_span)
           if current_retry_driver.nil?
             # we always run test at least once and after the first pass create a correct retry driver

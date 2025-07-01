@@ -23,6 +23,8 @@ module Datadog
 
       def skipped?: () -> bool
 
+      def status: () -> String?
+
       def passed!: () -> void
 
       def failed!: (?exception: untyped?) -> void

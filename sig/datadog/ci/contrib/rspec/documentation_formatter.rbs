@@ -1,0 +1,31 @@
+module Datadog
+  module CI
+    module Contrib
+      module RSpec
+        module DocumentationFormatter
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods : ::RSpec::Core::Formatters::DocumentationFormatter
+            @dd_flaky_tests: Integer
+            @dd_quarantined_tests: Integer
+            @dd_disabled_tests: Integer
+            @dd_skipped_by_tia_tests: Integer
+
+            def example_passed: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
+            def example_failed: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
+            def example_pending: (::RSpec::Core::Notifications::ExampleNotification notification) -> void
+            def dump_summary: (untyped notification) -> void
+
+            private
+
+            def dd_example_finished: (::RSpec::Core::Example example) -> void
+            def dd_retries_output: (::RSpec::Core::Example example) -> void
+            def dd_retry_source: (String reason) -> String
+            def dd_test_management_output: (::RSpec::Core::Example example) -> void
+            def dd_test_impact_analysis_output: (::RSpec::Core::Example example) -> void
+          end
+        end
+      end
+    end
+  end
+end
