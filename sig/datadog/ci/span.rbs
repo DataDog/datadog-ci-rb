@@ -59,6 +59,8 @@ module Datadog
 
       def git_branch: () -> String?
 
+      def git_tag: () -> String?
+
       def os_architecture: () -> String?
 
       def os_platform: () -> String?

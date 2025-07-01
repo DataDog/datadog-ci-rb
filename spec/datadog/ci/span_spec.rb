@@ -302,6 +302,20 @@ RSpec.describe Datadog::CI::Span do
     end
   end
 
+  describe "#git_tag" do
+    it "returns the git tag" do
+      expect(tracer_span).to receive(:get_tag).with("git.tag").and_return("v1.0.0")
+
+      expect(span.git_tag).to eq("v1.0.0")
+    end
+
+    it "returns nil if the tag is not set" do
+      expect(tracer_span).to receive(:get_tag).with("git.tag").and_return(nil)
+
+      expect(span.git_tag).to be_nil
+    end
+  end
+
   describe "#base_commit_sha" do
     it "returns the base commit SHA for the pull request" do
       expect(tracer_span).to receive(:get_tag).with("git.pull_request.base_branch_sha").and_return("base_sha")
