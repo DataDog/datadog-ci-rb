@@ -296,7 +296,6 @@ module Datadog
           test_optimisation.on_test_finished(test, maybe_remote_context)
 
           test_retries.record_test_finished(test)
-
           Telemetry.event_finished(test)
         end
 
