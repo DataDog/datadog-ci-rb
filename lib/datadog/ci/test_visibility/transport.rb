@@ -19,10 +19,6 @@ module Datadog
       class Transport < Datadog::CI::Transport::EventPlatformTransport
         attr_reader :serializers_factory, :dd_env
 
-        def self.log_once
-          @log_once ||= Datadog::Core::Utils::OnlyOnce.new
-        end
-
         def initialize(
           api:,
           dd_env:,
@@ -72,12 +68,17 @@ module Datadog
 
             encoded
           else
-            message = "Invalid event skipped: #{serializer} Errors: #{serializer.validation_errors}"
-            Datadog.logger.warn(message)
-            CI::Transport::Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
+            message = "Event with type #{serializer.event_type}(name=#{serializer.name}) is invalid: #{serializer.validation_errors}"
 
-            # log invalid message once as error to internal telemetry
-            self.class.log_once.run do
+            if serializer.event_type == "span"
+              # events of type span are often skipped because of missing resource field
+              # (because they are misconfigured in tests context)
+              Datadog.logger.debug(message)
+            else
+              Datadog.logger.warn(message)
+              CI::Transport::Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
+
+              # for CI events log all events to internal telemetry
               Core::Telemetry::Logger.error(message)
             end
 
