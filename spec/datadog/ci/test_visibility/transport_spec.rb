@@ -185,47 +185,64 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
 
       context "when some spans are broken" do
-        let(:expected_events_count) { 2 }
-        let(:http_spans) { spans.filter { |span| span.type == "http" } }
+        context "when span is invalid" do
+          let(:expected_events_count) { 2 }
 
-        before do
-          http_spans.each do |http_span|
-            http_span.start_time = Time.at(0)
+          let(:http_spans) { spans.filter { |span| span.type == "http" } }
+
+          before do
+            http_spans.each do |http_span|
+              http_span.start_time = Time.at(0)
+            end
           end
+
+          it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
+          it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 2
+          it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+          it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
+          it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
+          it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.bytes"
         end
 
-        it "filters out invalid events" do
-          subject
+        context "when test is invalid" do
+          let(:expected_events_count) { 3 }
+          let(:test_span) { first_test_span }
 
-          expect(api).to have_received(:citestcycle_request) do |args|
-            payload = MessagePack.unpack(args[:payload])
-
-            events = payload["events"]
-            expect(events.count).to eq(expected_events_count)
+          before do
+            test_span.start_time = Time.at(0)
           end
+
+          it "filters out invalid events" do
+            subject
+
+            expect(api).to have_received(:citestcycle_request) do |args|
+              payload = MessagePack.unpack(args[:payload])
+
+              events = payload["events"]
+              expect(events.count).to eq(expected_events_count)
+            end
+          end
+
+          it "logs warning that events were filtered out" do
+            subject
+
+            expect(Datadog.logger).to have_received(:warn).with(/must be greater than or equal to 946684800000000000/).once
+          end
+
+          it "sends telemetry log once" do
+            expect(Datadog::Core::Telemetry::Logger).to receive(:error).once
+
+            subject
+          end
+
+          it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 3
+          it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 3
+          it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
+          it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
+          it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
+          it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.bytes"
+          it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped"
         end
-
-        it "logs warning that events were filtered out" do
-          subject
-
-          expect(Datadog.logger).to have_received(:warn).with(/must be greater than or equal to 946684800000000000/).twice
-        end
-
-        it "sends telemetry log once" do
-          Datadog::CI::TestVisibility::Transport.log_once.send(:reset_ran_once_state_for_tests)
-
-          expect(Datadog::Core::Telemetry::Logger).to receive(:error).once
-
-          subject
-        end
-
-        it_behaves_like "emits telemetry metric", :inc, "events_enqueued_for_serialization", 2
-        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_count", 2
-        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.events_serialization_ms"
-        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.dropped"
-        it_behaves_like "emits telemetry metric", :inc, "endpoint_payload.requests"
-        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.requests_ms"
-        it_behaves_like "emits telemetry metric", :distribution, "endpoint_payload.bytes"
       end
 
       context "when chunking is used" do
@@ -277,9 +294,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
         expect(api).not_to have_received(:citestcycle_request)
       end
 
-      it "sends telemetry log once" do
-        Datadog::CI::TestVisibility::Transport.log_once.send(:reset_ran_once_state_for_tests)
-
+      it "sends telemetry logs" do
         expect(Datadog::Core::Telemetry::Logger).to receive(:error).once
 
         subject
