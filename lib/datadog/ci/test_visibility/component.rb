@@ -295,9 +295,9 @@ module Datadog
           test_optimisation.stop_coverage(test)
           test_optimisation.on_test_finished(test, maybe_remote_context)
 
-          Telemetry.event_finished(test)
-
           test_retries.record_test_finished(test)
+
+          Telemetry.event_finished(test)
         end
 
         def on_after_test_span_finished(tracer_span)
