@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [1.20.0] - 2025-07-03
+
+### Added
+
+* Add Datadog output to RSpec documentation formatter ([#355][])
+* Add Drone CI support and update CI envs handling ([#349][])
+
+### Fixed
+
+* FIX: send git.tag when requesting library settings if git.branch is not available ([#359][])
+
 ## [1.19.0] - 2025-06-16
 
 ### Changed
@@ -463,7 +474,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.19.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.0...main
+[1.20.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.16.0...v1.17.0
@@ -661,3 +673,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#329]: https://github.com/DataDog/datadog-ci-rb/issues/329
 [#335]: https://github.com/DataDog/datadog-ci-rb/issues/335
 [#339]: https://github.com/DataDog/datadog-ci-rb/issues/339
+[#349]: https://github.com/DataDog/datadog-ci-rb/issues/349
+[#355]: https://github.com/DataDog/datadog-ci-rb/issues/355
+[#359]: https://github.com/DataDog/datadog-ci-rb/issues/359
