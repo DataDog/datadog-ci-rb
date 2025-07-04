@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.20.1] - 2025-07-04
+
+### Fixed
+
+* Fix autoinstrumenting rspec ([#366][])
+
 ## [1.20.0] - 2025-07-03
 
 ### Added
@@ -474,7 +480,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.1...main
+[1.20.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.0...v1.20.1
 [1.20.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.17.0...v1.18.0
@@ -676,3 +683,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#349]: https://github.com/DataDog/datadog-ci-rb/issues/349
 [#355]: https://github.com/DataDog/datadog-ci-rb/issues/355
 [#359]: https://github.com/DataDog/datadog-ci-rb/issues/359
+[#366]: https://github.com/DataDog/datadog-ci-rb/issues/366
