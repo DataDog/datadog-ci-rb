@@ -19,7 +19,8 @@ module Datadog
 
         def initialize(api:, force_unshallow: false)
           @api = api
-          @force_unshallow = force_unshallow
+          # TODO remove
+          @force_unshallow = true
         end
 
         def call(repository_url)
