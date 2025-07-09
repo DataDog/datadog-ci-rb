@@ -46,12 +46,6 @@ module Datadog
         get_tag(Ext::Environment::TAG_JOB_NAME)
       end
 
-      # Returns the git commit message extracted from the environment.
-      # @return [String] the commit message.
-      def git_commit_message
-        get_tag(Ext::Git::TAG_COMMIT_MESSAGE)
-      end
-
       def skipping_tests?
         get_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED) == "true"
       end
