@@ -47,6 +47,8 @@ module Datadog
 
         POSSIBLE_BUNDLE_LOCATIONS = %w[vendor/bundle .bundle].freeze
 
+        ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA = "_dd.ci.environment.git_commit_head_sha"
+
         module_function
 
         def tags(env)
@@ -58,6 +60,12 @@ module Datadog
           tags.merge!(user_provided_tags)
 
           # Fill out tags from local git as fallback
+          #
+          # NOTE: we need to provide head commit sha as part of the environment if it was discovered from provider.
+          # This info will be used by LocalGit provider to extract commit message and user info for head commit.
+          # It is useful for CI providers that run jobs on artificial merge commits instead of a head commit of a
+          # feature branch
+          env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
           local_git_tags = Environment::Extractor.new(env, provider_klass: Providers::LocalGit).tags
           local_git_tags.each do |key, value|
             tags[key] ||= value

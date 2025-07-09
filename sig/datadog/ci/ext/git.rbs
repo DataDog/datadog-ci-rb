@@ -26,7 +26,21 @@ module Datadog
 
         TAG_COMMIT_SHA: "git.commit.sha"
 
-        TAG_COMMIT_HEAD_SHA: "git.commit.head_sha"
+        TAG_COMMIT_HEAD_SHA: "git.commit.head.sha"
+
+        TAG_COMMIT_HEAD_MESSAGE: "git.commit.head.message"
+
+        TAG_COMMIT_HEAD_AUTHOR_DATE: "git.commit.head.author.date"
+
+        TAG_COMMIT_HEAD_AUTHOR_EMAIL: "git.commit.head.author.email"
+
+        TAG_COMMIT_HEAD_AUTHOR_NAME: "git.commit.head.author.name"
+
+        TAG_COMMIT_HEAD_COMMITTER_DATE: "git.commit.head.committer.date"
+
+        TAG_COMMIT_HEAD_COMMITTER_EMAIL: "git.commit.head.committer.email"
+
+        TAG_COMMIT_HEAD_COMMITTER_NAME: "git.commit.head.committer.name"
 
         TAG_PULL_REQUEST_BASE_BRANCH: "git.pull_request.base_branch"
 

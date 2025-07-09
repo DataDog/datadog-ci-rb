@@ -36,22 +36,31 @@ module Datadog
               Environment::TAG_NODE_NAME => @provider.node_name,
               Environment::TAG_CI_ENV_VARS => @provider.ci_env_vars,
 
-              Git::TAG_BRANCH => @provider.git_branch,
               Git::TAG_REPOSITORY_URL => @provider.git_repository_url,
+              Git::TAG_BRANCH => @provider.git_branch,
               Git::TAG_TAG => @provider.git_tag,
+
+              Git::TAG_COMMIT_SHA => @provider.git_commit_sha,
+              Git::TAG_COMMIT_MESSAGE => @provider.git_commit_message,
               Git::TAG_COMMIT_AUTHOR_DATE => @provider.git_commit_author_date,
               Git::TAG_COMMIT_AUTHOR_EMAIL => @provider.git_commit_author_email,
               Git::TAG_COMMIT_AUTHOR_NAME => @provider.git_commit_author_name,
               Git::TAG_COMMIT_COMMITTER_DATE => @provider.git_commit_committer_date,
               Git::TAG_COMMIT_COMMITTER_EMAIL => @provider.git_commit_committer_email,
               Git::TAG_COMMIT_COMMITTER_NAME => @provider.git_commit_committer_name,
-              Git::TAG_COMMIT_MESSAGE => @provider.git_commit_message,
-              Git::TAG_COMMIT_SHA => @provider.git_commit_sha,
+
               Git::TAG_PULL_REQUEST_BASE_BRANCH => @provider.git_pull_request_base_branch,
               Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA => @provider.git_pull_request_base_branch_sha,
-              Git::TAG_COMMIT_HEAD_SHA => @provider.git_commit_head_sha,
+              Environment::TAG_PR_NUMBER => @provider.pr_number,
 
-              Environment::TAG_PR_NUMBER => @provider.pr_number
+              Git::TAG_COMMIT_HEAD_SHA => @provider.git_commit_head_sha,
+              Git::TAG_COMMIT_HEAD_MESSAGE => @provider.git_commit_head_message,
+              Git::TAG_COMMIT_HEAD_AUTHOR_DATE => @provider.git_commit_head_author_date,
+              Git::TAG_COMMIT_HEAD_AUTHOR_EMAIL => @provider.git_commit_head_author_email,
+              Git::TAG_COMMIT_HEAD_AUTHOR_NAME => @provider.git_commit_head_author_name,
+              Git::TAG_COMMIT_HEAD_COMMITTER_DATE => @provider.git_commit_head_committer_date,
+              Git::TAG_COMMIT_HEAD_COMMITTER_EMAIL => @provider.git_commit_head_committer_email,
+              Git::TAG_COMMIT_HEAD_COMMITTER_NAME => @provider.git_commit_head_committer_name
             }
 
             # Normalize Git references and filter sensitive data

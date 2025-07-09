@@ -37,7 +37,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::UserDefinedTags do
           "git.repository_url" => "git@github.com:DataDog/userrepo.git",
           "git.pull_request.base_branch" => "usersupplied-pullrequest-base-branch",
           "git.pull_request.base_branch_sha" => "usersupplied-pullrequest-base-branch-sha",
-          "git.commit.head_sha" => "usersupplied-commit-head-sha"
+          "git.commit.head.sha" => "usersupplied-commit-head-sha"
         }
       end
 

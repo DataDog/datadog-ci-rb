@@ -6,8 +6,11 @@ module Datadog
           class LocalGit < Base
             private
 
-            @author: Datadog::CI::Git::User
-            @committer: Datadog::CI::Git::User
+            @head_commit_sha_from_env: String?
+            @author: Datadog::CI::Git::User?
+            @committer: Datadog::CI::Git::User?
+            @head_author: Datadog::CI::Git::User?
+            @head_committer: Datadog::CI::Git::User?
 
             def git_repository_url: () -> String?
 
@@ -31,13 +34,33 @@ module Datadog
 
             def git_commit_committer_date: () -> String?
 
+            def git_commit_head_message: () -> String?
+
+            def git_commit_head_author_date: () -> String?
+
+            def git_commit_head_author_email: () -> String?
+
+            def git_commit_head_author_name: () -> String?
+
+            def git_commit_head_committer_date: () -> String?
+
+            def git_commit_head_committer_email: () -> String?
+
+            def git_commit_head_committer_name: () -> String?
+
             def workspace_path: () -> String?
 
-            def author: () -> Datadog::CI::Git::User
+            def author: () -> Datadog::CI::Git::User?
 
-            def committer: () -> Datadog::CI::Git::User
+            def committer: () -> Datadog::CI::Git::User?
+
+            def head_author: () -> Datadog::CI::Git::User?
+
+            def head_committer: () -> Datadog::CI::Git::User?
 
             def set_git_commit_users: () -> void
+
+            def head_commit_sha_from_env: () -> String?
           end
         end
       end
