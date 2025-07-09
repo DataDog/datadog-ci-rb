@@ -43,6 +43,36 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
       end
     end
 
+    context "when git commit head info is available" do
+      let(:tracer_span) do
+        Datadog::Tracing::SpanOperation.new("session", service: service).tap do |span|
+          span.set_tags({
+            "git.repository_url" => "repository_url",
+            "git.commit.message" => "Test commit message",
+            "git.commit.sha" => "test_sha",
+            "git.commit.head.message" => "Original test commit message",
+            "git.commit.head.sha" => "original_test_sha"
+          })
+        end
+      end
+
+      it "requests the unique tests with original commit info" do
+        subject
+
+        expect(api).to have_received(:api_request) do |args|
+          expect(args[:path]).to eq(path)
+
+          data = JSON.parse(args[:payload])["data"]
+
+          expect(data["type"]).to eq(Datadog::CI::Ext::Transport::DD_API_TEST_MANAGEMENT_TESTS_TYPE)
+
+          attributes = data["attributes"]
+          expect(attributes["commit_message"]).to eq("Original test commit message")
+          expect(attributes["sha"]).to eq("original_test_sha")
+        end
+      end
+    end
+
     context "parsing response" do
       subject(:response) { client.fetch(test_session) }
 

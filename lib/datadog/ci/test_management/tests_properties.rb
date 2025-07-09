@@ -118,8 +118,8 @@ module Datadog
               "type" => Ext::Transport::DD_API_TEST_MANAGEMENT_TESTS_TYPE,
               "attributes" => {
                 "repository_url" => test_session.git_repository_url,
-                "commit_message" => test_session.git_commit_message,
-                "sha" => test_session.git_commit_sha
+                "commit_message" => test_session.original_git_commit_message,
+                "sha" => test_session.original_git_commit_sha
               }
             }
           }.to_json
