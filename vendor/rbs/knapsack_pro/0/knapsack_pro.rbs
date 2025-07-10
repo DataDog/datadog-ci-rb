@@ -6,15 +6,37 @@ module KnapsackPro
       end
     end
   end
-end
 
-module KnapsackPro
   module Extensions
     module RSpecExtension
       def setup!: () -> void
 
       module Runner
       end
+    end
+  end
+
+  module Formatters
+    class RSpecJsonFormatter
+      def self.to_s: () -> String
+    end
+  end
+
+  module Adapters
+    module RSpecAdapter
+      def self.remove_formatters: (Array[String]) -> Array[String]
+    end
+  end
+
+  module Config
+    module Env
+      def self.ci_node_index: () -> Integer
+    end
+  end
+
+  module TestCaseDetectors
+    class RSpecTestExampleDetector
+      def test_dir: () -> String
     end
   end
 end

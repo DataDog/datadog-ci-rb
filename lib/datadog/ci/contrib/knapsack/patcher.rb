@@ -10,6 +10,8 @@ module Datadog
           include Datadog::CI::Contrib::Patcher
 
           def self.patch
+            require_relative "test_example_detector"
+
             if ::RSpec::Core::Runner.ancestors.include?(::KnapsackPro::Extensions::RSpecExtension::Runner)
               # knapsack already patched rspec runner
               require_relative "runner"
