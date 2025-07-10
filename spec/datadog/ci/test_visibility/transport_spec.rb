@@ -246,9 +246,9 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
 
       context "when chunking is used" do
-        # one test event is approximately 1200 bytes currently
+        # one test event is approximately 1400 bytes currently
         # ATTENTION: might break if more data is added to test spans in #produce_test_trace method
-        let(:max_payload_size) { 2500 }
+        let(:max_payload_size) { 3000 }
 
         it "sends events in two chunks" do
           responses = subject
