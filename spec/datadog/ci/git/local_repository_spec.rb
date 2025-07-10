@@ -352,6 +352,25 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         expect(committer.email).to eq("andrey.marchenko@datadoghq.com")
         expect(committer.date).to eq("2023-10-02T13:52:56+00:00")
       end
+
+      context "when commit sha is provided" do
+        subject do
+          with_custom_git_environment do
+            described_class.git_commit_users("c7f893648f656339f62fb7b4d8a6ecdf7d063835")
+          end
+        end
+
+        it "parses author and commiter from the provided commit" do
+          author, committer = subject
+
+          expect(author.name).to eq("Friendly bot")
+          expect(author.email).to eq("bot@friendly.test")
+          expect(author.date).to eq("2011-02-16T13:00:00+00:00")
+          expect(committer.name).to eq("Andrey Marchenko")
+          expect(committer.email).to eq("andrey.marchenko@datadoghq.com")
+          expect(committer.date).to eq("2023-10-02T13:52:56+00:00")
+        end
+      end
     end
 
     describe ".git_commits" do

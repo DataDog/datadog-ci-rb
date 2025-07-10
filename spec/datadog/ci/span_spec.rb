@@ -369,4 +369,60 @@ RSpec.describe Datadog::CI::Span do
       expect(span.runtime_version).to eq("version")
     end
   end
+
+  describe "#original_git_commit_sha" do
+    context "when head commit SHA is available" do
+      it "returns the head commit SHA" do
+        expect(span).to receive(:get_tag).with("git.commit.head.sha").and_return("head_sha")
+
+        expect(span.original_git_commit_sha).to eq("head_sha")
+      end
+    end
+
+    context "when head commit SHA is not available" do
+      it "falls back to regular commit SHA" do
+        expect(span).to receive(:get_tag).with("git.commit.head.sha").and_return(nil)
+        expect(span).to receive(:git_commit_sha).and_return("regular_sha")
+
+        expect(span.original_git_commit_sha).to eq("regular_sha")
+      end
+    end
+
+    context "when both head and regular commit SHA are not available" do
+      it "returns nil" do
+        expect(span).to receive(:get_tag).with("git.commit.head.sha").and_return(nil)
+        expect(span).to receive(:git_commit_sha).and_return(nil)
+
+        expect(span.original_git_commit_sha).to be_nil
+      end
+    end
+  end
+
+  describe "#original_git_commit_message" do
+    context "when head commit message is available" do
+      it "returns the head commit message" do
+        expect(span).to receive(:get_tag).with("git.commit.head.message").and_return("head_message")
+
+        expect(span.original_git_commit_message).to eq("head_message")
+      end
+    end
+
+    context "when head commit message is not available" do
+      it "falls back to regular commit message" do
+        expect(span).to receive(:get_tag).with("git.commit.head.message").and_return(nil)
+        expect(span).to receive(:git_commit_message).and_return("regular_message")
+
+        expect(span.original_git_commit_message).to eq("regular_message")
+      end
+    end
+
+    context "when both head and regular commit message are not available" do
+      it "returns nil" do
+        expect(span).to receive(:get_tag).with("git.commit.head.message").and_return(nil)
+        expect(span).to receive(:git_commit_message).and_return(nil)
+
+        expect(span.original_git_commit_message).to be_nil
+      end
+    end
+  end
 end

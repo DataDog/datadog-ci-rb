@@ -3,7 +3,7 @@ require_relative "../../../../lib/datadog/ci/git/local_repository"
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
   include_context "Telemetry spy"
 
-  let(:commits_count) { 2 }
+  let(:commits_count) { 4 }
 
   let(:tmpdir) { Dir.mktmpdir }
 
@@ -52,10 +52,10 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       system("git add README.md")
       system("git commit -m 'Initial commit'")
 
-      commits_count.times do
+      commits_count.times do |i|
         system("echo 'Hello, world!' >> README.md")
         system("git add README.md")
-        system("git commit -m 'Update README'")
+        system("git commit -m 'Update README #{i}'")
       end
 
       system("git push origin master")
@@ -119,6 +119,24 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       it "returns the commit message" do
         expect(subject).to eq("Initial commit\n\nMore details")
       end
+    end
+  end
+
+  context "when extracting commit message for a specific commit" do
+    let(:commit_sha) do
+      Dir.chdir(source_path) do
+        `git rev-parse HEAD~1`.strip
+      end
+    end
+
+    subject do
+      with_source_git_dir do
+        described_class.git_commit_message(commit_sha)
+      end
+    end
+
+    it "returns the commit message" do
+      expect(subject).to eq("Update README #{commits_count - 2}")
     end
   end
 
@@ -463,6 +481,17 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           expect(subject).to be_truthy
           # additional commits plus the initial commit
           expect(commits.size).to eq(commits_count + 1)
+        end
+      end
+
+      context "unshallow with parent_only" do
+        subject do
+          with_clone_git_dir { described_class.git_unshallow(parent_only: true) }
+        end
+
+        it "unshallows the repository" do
+          expect(subject).to be_truthy
+          expect(commits.size).to eq(2)
         end
       end
 

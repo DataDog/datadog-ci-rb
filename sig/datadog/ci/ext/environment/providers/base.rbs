@@ -66,6 +66,20 @@ module Datadog
 
             def git_commit_head_sha: () -> String?
 
+            def git_commit_head_message: () -> String?
+
+            def git_commit_head_author_date: () -> String?
+
+            def git_commit_head_author_email: () -> String?
+
+            def git_commit_head_author_name: () -> String?
+
+            def git_commit_head_committer_date: () -> String?
+
+            def git_commit_head_committer_email: () -> String?
+
+            def git_commit_head_committer_name: () -> String?
+
             def pr_number: () -> String?
 
             private

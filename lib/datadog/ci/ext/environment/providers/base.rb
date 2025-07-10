@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../../../git/local_repository"
+
 module Datadog
   module CI
     module Ext
@@ -103,6 +105,27 @@ module Datadog
             end
 
             def git_commit_head_sha
+            end
+
+            def git_commit_head_message
+            end
+
+            def git_commit_head_author_date
+            end
+
+            def git_commit_head_author_email
+            end
+
+            def git_commit_head_author_name
+            end
+
+            def git_commit_head_committer_date
+            end
+
+            def git_commit_head_committer_email
+            end
+
+            def git_commit_head_committer_name
             end
 
             def pr_number

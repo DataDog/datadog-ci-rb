@@ -57,6 +57,12 @@ module Datadog
 
       def git_commit_sha: () -> String?
 
+      def git_commit_message: () -> String?
+
+      def original_git_commit_sha: () -> String?
+
+      def original_git_commit_message: () -> String?
+
       def git_branch: () -> String?
 
       def git_tag: () -> String?

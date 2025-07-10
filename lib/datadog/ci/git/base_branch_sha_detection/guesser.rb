@@ -3,8 +3,6 @@
 require_relative "base"
 require_relative "branch_metric"
 
-require_relative "../local_repository"
-
 module Datadog
   module CI
     module Git

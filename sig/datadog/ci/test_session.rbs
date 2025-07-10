@@ -14,8 +14,6 @@ module Datadog
 
       def ci_job_name: () -> String?
 
-      def git_commit_message: () -> String?
-
       def skipping_tests?: () -> bool
 
       def code_coverage?: () -> bool

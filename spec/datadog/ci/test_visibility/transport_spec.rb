@@ -62,7 +62,7 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
               "_dd.library_capabilities.auto_test_retries" => "1",
               "_dd.library_capabilities.test_management.quarantine" => "1",
               "_dd.library_capabilities.test_management.disable" => "1",
-              "_dd.library_capabilities.test_management.attempt_to_fix" => "4",
+              "_dd.library_capabilities.test_management.attempt_to_fix" => "5",
               "_dd.test.is_user_provided_service" => "true"
             )
           end
@@ -246,9 +246,9 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
 
       context "when chunking is used" do
-        # one test event is approximately 1200 bytes currently
+        # one test event is approximately 1400 bytes currently
         # ATTENTION: might break if more data is added to test spans in #produce_test_trace method
-        let(:max_payload_size) { 2500 }
+        let(:max_payload_size) { 3000 }
 
         it "sends events in two chunks" do
           responses = subject

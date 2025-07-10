@@ -148,9 +148,67 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                 "git.repository_url" => env["DD_GIT_REPOSITORY_URL"],
                 "git.pull_request.base_branch" => env["DD_GIT_PULL_REQUEST_BASE_BRANCH"],
                 "git.pull_request.base_branch_sha" => env["DD_GIT_PULL_REQUEST_BASE_BRANCH_SHA"],
-                "git.commit.head_sha" => env["DD_GIT_COMMIT_HEAD_SHA"]
+                "git.commit.head.sha" => env["DD_GIT_COMMIT_HEAD_SHA"]
               }
             )
+          end
+
+          context "when head commit info was successfully extracted" do
+            let(:head_commit_message) { "head commit message" }
+            let(:shallow_clone) { false }
+
+            before do
+              allow(Datadog::CI::Git::LocalRepository).to receive(:git_shallow_clone?).and_return(shallow_clone)
+
+              allow(Datadog::CI::Git::LocalRepository).to receive(:git_commit_message).and_call_original
+              allow(Datadog::CI::Git::LocalRepository).to(
+                receive(:git_commit_message).with(env["DD_GIT_COMMIT_HEAD_SHA"]).and_return(head_commit_message)
+              )
+
+              allow(Datadog::CI::Git::LocalRepository).to receive(:git_commit_users).and_call_original
+              allow(Datadog::CI::Git::LocalRepository).to(
+                receive(:git_commit_users).with(env["DD_GIT_COMMIT_HEAD_SHA"]).and_return(
+                  [
+                    Datadog::CI::Git::User.new(
+                      "head commit author",
+                      "head commit author email",
+                      DateTime.parse("2021-06-18T18:35:10+00:00").to_time.to_i
+                    ),
+                    Datadog::CI::Git::User.new(
+                      "head commit committer",
+                      "head commit committer email",
+                      DateTime.parse("2021-06-19T18:35:10+00:00").to_time.to_i
+                    )
+                  ]
+                )
+              )
+            end
+
+            it "returns head commit info" do
+              is_expected.to include(
+                {
+                  "git.commit.head.message" => head_commit_message,
+                  "git.commit.head.author.name" => "head commit author",
+                  "git.commit.head.author.email" => "head commit author email",
+                  "git.commit.head.author.date" => "2021-06-18T18:35:10+00:00",
+                  "git.commit.head.committer.name" => "head commit committer",
+                  "git.commit.head.committer.email" => "head commit committer email",
+                  "git.commit.head.committer.date" => "2021-06-19T18:35:10+00:00"
+                }
+              )
+            end
+
+            context "when cloned repository is shallow" do
+              let(:shallow_clone) { true }
+
+              it "returns head commit info" do
+                expect(Datadog::CI::Git::LocalRepository).to receive(:git_unshallow).with(parent_only: true).and_return(true)
+
+                is_expected.to include(
+                  "git.commit.head.message" => head_commit_message
+                )
+              end
+            end
           end
         end
 

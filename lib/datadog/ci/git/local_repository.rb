@@ -143,16 +143,16 @@ module Datadog
           nil
         end
 
-        def self.git_commit_message
-          CLI.exec_git_command(["log", "-n", "1", "--format=%B"])
+        def self.git_commit_message(commit_sha = nil)
+          CLI.exec_git_command(["log", "-n", "1", "--format=%B", commit_sha].compact)
         rescue => e
           log_failure(e, "git commit message")
           nil
         end
 
-        def self.git_commit_users
+        def self.git_commit_users(commit_sha = nil)
           # Get committer and author information in one command.
-          output = CLI.exec_git_command(["show", "-s", "--format=%an\t%ae\t%at\t%cn\t%ce\t%ct"])
+          output = CLI.exec_git_command(["show", "-s", "--format=%an\t%ae\t%at\t%cn\t%ce\t%ct", commit_sha].compact)
           unless output
             Datadog.logger.debug(
               "Unable to read git commit users: git command output is nil"
@@ -268,7 +268,7 @@ module Datadog
           false
         end
 
-        def self.git_unshallow
+        def self.git_unshallow(parent_only: false)
           Telemetry.git_command(Ext::Telemetry::Command::UNSHALLOW)
           # @type var res: String?
           res = nil
@@ -289,10 +289,11 @@ module Datadog
 
               res =
                 begin
+                  unshallowing_depth = parent_only ? "--deepen=1" : "--shallow-since=\"1 month ago\""
                   # @type var cmd: Array[String]
                   cmd = [
                     "fetch",
-                    "--shallow-since=\"1 month ago\"",
+                    unshallowing_depth,
                     "--update-shallow",
                     "--filter=blob:none",
                     "--recurse-submodules=no",

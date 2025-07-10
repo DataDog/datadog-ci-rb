@@ -165,6 +165,30 @@ module Datadog
         tracer_span.get_tag(Ext::Git::TAG_COMMIT_SHA)
       end
 
+      # Returns the git commit message extracted from the environment.
+      # @return [String] the commit message.
+      def git_commit_message
+        get_tag(Ext::Git::TAG_COMMIT_MESSAGE)
+      end
+
+      # Returns the original last git commit SHA extracted from the environment.
+      # Original here means that it is the last commit that was pushed by the user,
+      # not the artifical merge commit created by CI provider
+      #
+      # @return [String] the commit SHA of the last commit.
+      def original_git_commit_sha
+        get_tag(Ext::Git::TAG_COMMIT_HEAD_SHA) || git_commit_sha
+      end
+
+      # Returns the original last git commit message extracted from the environment.
+      # Original here means that it is the last commit that was pushed by the user,
+      # not the artifical merge commit created by CI provider
+      #
+      # @return [String] the commit message of the last commit.
+      def original_git_commit_message
+        get_tag(Ext::Git::TAG_COMMIT_HEAD_MESSAGE) || git_commit_message
+      end
+
       # Returns the git branch name extracted from the environment.
       # @return [String] the branch.
       def git_branch
