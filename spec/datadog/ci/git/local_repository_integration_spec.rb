@@ -3,7 +3,7 @@ require_relative "../../../../lib/datadog/ci/git/local_repository"
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
   include_context "Telemetry spy"
 
-  let(:commits_count) { 2 }
+  let(:commits_count) { 4 }
 
   let(:tmpdir) { Dir.mktmpdir }
 
@@ -481,6 +481,17 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           expect(subject).to be_truthy
           # additional commits plus the initial commit
           expect(commits.size).to eq(commits_count + 1)
+        end
+      end
+
+      context "unshallow with parent_only" do
+        subject do
+          with_clone_git_dir { described_class.git_unshallow(parent_only: true) }
+        end
+
+        it "unshallows the repository" do
+          expect(subject).to be_truthy
+          expect(commits.size).to eq(2)
         end
       end
 

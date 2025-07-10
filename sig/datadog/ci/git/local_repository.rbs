@@ -36,7 +36,7 @@ module Datadog
 
         def self.git_shallow_clone?: () -> bool
 
-        def self.git_unshallow: () -> String?
+        def self.git_unshallow: (?parent_only: bool) -> String?
 
         def self.get_changes_since: (String? base_commit) -> Datadog::CI::Git::Diff
 

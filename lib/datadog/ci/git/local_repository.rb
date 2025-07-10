@@ -268,7 +268,7 @@ module Datadog
           false
         end
 
-        def self.git_unshallow
+        def self.git_unshallow(parent_only: false)
           Telemetry.git_command(Ext::Telemetry::Command::UNSHALLOW)
           # @type var res: String?
           res = nil
@@ -289,10 +289,11 @@ module Datadog
 
               res =
                 begin
+                  unshallowing_depth = parent_only ? "--deepen=1" : "--shallow-since=\"1 month ago\""
                   # @type var cmd: Array[String]
                   cmd = [
                     "fetch",
-                    "--shallow-since=\"1 month ago\"",
+                    unshallowing_depth,
                     "--update-shallow",
                     "--filter=blob:none",
                     "--recurse-submodules=no",

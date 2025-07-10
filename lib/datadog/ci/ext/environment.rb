@@ -59,13 +59,23 @@ module Datadog
           user_provided_tags = Environment::Extractor.new(env, provider_klass: Providers::UserDefinedTags).tags
           tags.merge!(user_provided_tags)
 
-          # Fill out tags from local git as fallback
-          #
           # NOTE: we need to provide head commit sha as part of the environment if it was discovered from provider.
-          # This info will be used by LocalGit provider to extract commit message and user info for head commit.
+          #
+          # This info will be later used by LocalGit provider to extract commit message and user info for head commit.
           # It is useful for CI providers that run jobs on artificial merge commits instead of a head commit of a
-          # feature branch
-          env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
+          # feature branch.
+          #
+          # NOTE 2: when we discover that head commit sha exists it means that we are running on an artificial merge
+          # commit created by CI provider. Most likely we also operate on a shallow clone of a repo - in this case
+          # we need to unshallow at least the parent of the current merge commit to be able to extract information
+          # from the real original commit.
+          if tags[Git::TAG_COMMIT_HEAD_SHA]
+            CI::Git::LocalRepository.git_unshallow(parent_only: true) if CI::Git::LocalRepository.git_shallow_clone?
+
+            env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
+          end
+
+          # Fill out tags from local git as fallback
           local_git_tags = Environment::Extractor.new(env, provider_klass: Providers::LocalGit).tags
           local_git_tags.each do |key, value|
             tags[key] ||= value
