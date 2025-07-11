@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module Contrib
+      module Knapsack
+        class TestExampleDetector < ::KnapsackPro::TestCaseDetectors::RSpecTestExampleDetector
+          def _dd_generate_json_report: (String? rspec_args) -> void
+
+          def _dd_report_dir: () -> String
+
+          def _dd_report_path: () -> String
+
+          def _dd_ensure_report_dir_exists: () -> void
+
+          def _dd_remove_old_json_report: () -> void
+        end
+      end
+    end
+  end
+end

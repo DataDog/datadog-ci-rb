@@ -90,3 +90,7 @@ class RSpec::Core::Formatters::DocumentationFormatter
   def example_pending: (RSpec::Core::Notifications::ExampleNotification) -> void
   def dump_summary: (untyped notification) -> void
 end
+
+module RSpec::Core::Version
+  STRING: String
+end
