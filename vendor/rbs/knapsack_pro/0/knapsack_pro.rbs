@@ -39,4 +39,11 @@ module KnapsackPro
       def test_dir: () -> String
     end
   end
+
+  class TestSuite
+    @all_test_files_to_run: Array[String]
+
+    def all_test_files_to_run: () -> Array[String]
+    def adapter_class: () -> untyped
+  end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Datadog
   module CI
     module Contrib
@@ -24,7 +26,8 @@ module Datadog
             cli_args = cli_args_without_formatters + cli_format + [
               "--dry-run",
               "--out", _dd_report_path,
-              "--default-path", test_dir
+              "--default-path", test_dir,
+              "spec" # TODO: this must be defined somewhere in knapsack configuration
             ]
 
             exit_code = begin

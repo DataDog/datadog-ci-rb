@@ -20,7 +20,9 @@ module Datadog
             !defined?(::KnapsackPro).nil? &&
               !defined?(::KnapsackPro::Extensions::RSpecExtension).nil? &&
               !defined?(::KnapsackPro::Extensions::RSpecExtension::Runner).nil? &&
-              !defined?(::KnapsackPro::TestCaseDetectors::RSpecTestExampleDetector).nil?
+              !defined?(::KnapsackPro::TestCaseDetectors::RSpecTestExampleDetector).nil? &&
+              !defined?(::KnapsackPro::Adapters::RSpecAdapter).nil? &&
+              !defined?(::KnapsackPro::TestSuite).nil?
           end
 
           def compatible?

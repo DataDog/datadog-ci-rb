@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module Contrib
+      module Knapsack
+        module RSpecAdapter
+          def self.included: (untyped base) -> untyped
+
+          module ClassMethods
+            def _dd_discover_test_examples: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end

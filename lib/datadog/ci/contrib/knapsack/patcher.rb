@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative "../patcher"
+require_relative "rspec_adapter"
+require_relative "test_suite"
 
 module Datadog
   module CI
@@ -10,7 +12,8 @@ module Datadog
           include Datadog::CI::Contrib::Patcher
 
           def self.patch
-            require_relative "test_example_detector"
+            ::KnapsackPro::Adapters::RSpecAdapter.include(Datadog::CI::Contrib::Knapsack::RSpecAdapter)
+            ::KnapsackPro::TestSuite.include(Datadog::CI::Contrib::Knapsack::TestSuite)
 
             if ::RSpec::Core::Runner.ancestors.include?(::KnapsackPro::Extensions::RSpecExtension::Runner)
               # knapsack already patched rspec runner
