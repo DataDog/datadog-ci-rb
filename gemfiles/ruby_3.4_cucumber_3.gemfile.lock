@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: a7d866ae26301c8a98dc6979e96a969f7f67d708
+  revision: 2a76c95e915fd38beb52316c9320db8cef80041c
   branch: master
   specs:
     datadog (2.18.0)
@@ -76,7 +76,7 @@ GEM
       ffi (~> 1.0)
     logger (1.7.0)
     msgpack (1.8.0)
-    multi_json (1.15.0)
+    multi_json (1.16.0)
     multi_test (1.1.0)
     os (1.1.4)
     pp (0.6.2)
