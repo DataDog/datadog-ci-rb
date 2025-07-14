@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.21.0] - 2025-07-14
+
+### Added
+
+* Support automated flaky test fixing flow for Github Action jobs with pull_request trigger ([#370][])
+
 ## [1.20.2] - 2025-07-04
 
 ### Fixed
@@ -486,7 +492,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.2...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.0...main
+[1.21.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.2...v1.21.0
 [1.20.2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.1...v1.20.2
 [1.20.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.0...v1.20.1
 [1.20.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.19.0...v1.20.0
@@ -691,3 +698,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#355]: https://github.com/DataDog/datadog-ci-rb/issues/355
 [#359]: https://github.com/DataDog/datadog-ci-rb/issues/359
 [#366]: https://github.com/DataDog/datadog-ci-rb/issues/366
+[#370]: https://github.com/DataDog/datadog-ci-rb/issues/370
