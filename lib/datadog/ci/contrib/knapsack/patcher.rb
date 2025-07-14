@@ -13,7 +13,9 @@ module Datadog
 
           def self.patch
             ::KnapsackPro::Adapters::RSpecAdapter.include(Datadog::CI::Contrib::Knapsack::RSpecAdapter)
-            ::KnapsackPro::TestSuite.include(Datadog::CI::Contrib::Knapsack::TestSuite)
+
+            # KnapsackPro::TestSuite is available for knapsack version >= 8.0.0
+            ::KnapsackPro::TestSuite.include(Datadog::CI::Contrib::Knapsack::TestSuite) if defined?(::KnapsackPro::TestSuite)
 
             if ::RSpec::Core::Runner.ancestors.include?(::KnapsackPro::Extensions::RSpecExtension::Runner)
               # knapsack already patched rspec runner
