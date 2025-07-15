@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: e3a154b5e00ac323031b8f0de87d8eb3b38375ba
+  revision: bf310ffeb8551e229301401689ebe16e36372f84
   branch: master
   specs:
     datadog (2.18.0)
@@ -49,7 +49,7 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    knapsack_pro (8.3.1)
+    knapsack_pro (8.3.2)
       rake
     libdatadog (18.1.0.1.0-aarch64-linux)
     libdatadog (18.1.0.1.0-x86_64-linux)
