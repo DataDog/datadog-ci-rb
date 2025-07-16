@@ -905,6 +905,82 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             .to(true)
         end
       end
+
+      describe "#test_discovery_mode_enabled" do
+        subject(:test_discovery_mode_enabled) { settings.ci.test_discovery_mode_enabled }
+
+        it { is_expected.to be false }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_TEST_DISCOVERY_MODE_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_TEST_DISCOVERY_MODE_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be false }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#test_discovery_mode_enabled=" do
+        it "updates the #test_discovery_mode_enabled setting" do
+          expect { settings.ci.test_discovery_mode_enabled = true }
+            .to change { settings.ci.test_discovery_mode_enabled }
+            .from(false)
+            .to(true)
+        end
+      end
+
+      describe "#test_discovery_output_path" do
+        subject(:test_discovery_output_path) { settings.ci.test_discovery_output_path }
+
+        it { is_expected.to be nil }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_TEST_DISCOVERY_OUTPUT_PATH}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_TEST_DISCOVERY_OUTPUT_PATH => output_path) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:output_path) { nil }
+
+            it { is_expected.to be nil }
+          end
+
+          context "is set to some value" do
+            let(:output_path) { "/tmp/test_discovery.json" }
+
+            it { is_expected.to eq output_path }
+          end
+        end
+      end
+
+      describe "#test_discovery_output_path=" do
+        it "updates the #test_discovery_output_path setting" do
+          expect { settings.ci.test_discovery_output_path = "/tmp/test_discovery.json" }
+            .to change { settings.ci.test_discovery_output_path }
+            .from(nil)
+            .to("/tmp/test_discovery.json")
+        end
+      end
     end
   end
 end
