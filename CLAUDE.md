@@ -1,17 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## Repository Overview
-
-This is Datadog's Test Optimization library for Ruby, which instruments tests to provide visibility into CI pipelines and optimize test runs. The library includes features like:
-
-- Test visibility (metrics and results collection)
-- Test impact analysis (selectively running tests affected by code changes)
-- Flaky test management
-- Auto test retries
-- Early flake detection
-- Code coverage tracking
+This is Datadog's Test Optimization library for Ruby, which instruments tests to provide visibility into CI pipelines and optimize test runs.
 
 ## Development Commands
 
@@ -203,6 +192,10 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 - Do not write types like `(nil | Type)`, use `Type?` instead
 - See `docs/StaticTypingGuide.md` for details
 
+## Memories
+
+- `lib/datadog/ci/configuration/settings.rb` file is an exception from RBS typing - these options are not defined anywhere in RBS files
+
 ## Testing
 
 - All changes should be covered by corresponding tests
@@ -213,3 +206,8 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 - New contrib folders should have a corresponding Rake task in `Rakefile`
 - New test tasks should be added to the test matrix in `TEST_METADATA`
 - CI runs tests against multiple Ruby versions (2.7, 3.0, 3.1, 3.2, 3.3, 3.4, jruby-9)
+- Always add tests for your changes
+
+## Best Practices
+
+- Always add RBS definitions for your changes, if not sure run `bundle exec rake steep:check` to see if there are type issues now

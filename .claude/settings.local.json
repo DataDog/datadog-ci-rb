@@ -3,7 +3,8 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(mv:*)",
-      "Bash(bundle exec rake steep:*)"
+      "Bash(bundle exec rake steep:*)",
+      "Bash(bundle exec rspec:*)"
     ],
     "deny": []
   }
