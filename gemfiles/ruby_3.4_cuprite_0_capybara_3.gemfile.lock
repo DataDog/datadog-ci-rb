@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: bf310ffeb8551e229301401689ebe16e36372f84
+  revision: 633b084b2808c1c5a3141b93f5adebadde7d8737
   branch: master
   specs:
     datadog (2.18.0)
@@ -80,7 +80,7 @@ GEM
     diff-lcs (1.6.2)
     docile (1.4.1)
     drb (2.2.3)
-    erb (5.0.1)
+    erb (5.0.2)
     ferrum (0.17.1)
       addressable (~> 2.5)
       base64 (~> 0.2)
@@ -96,7 +96,7 @@ GEM
     ffi (1.17.2-x86_64-linux-gnu)
     ffi (1.17.2-x86_64-linux-musl)
     hashdiff (1.2.0)
-    io-console (0.8.0)
+    io-console (0.8.1)
     irb (1.15.2)
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
