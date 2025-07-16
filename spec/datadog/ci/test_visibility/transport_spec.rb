@@ -246,9 +246,35 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
 
       context "when chunking is used" do
-        # one test event is approximately 1400 bytes currently
-        # ATTENTION: might break if more data is added to test spans in #produce_test_trace method
-        let(:max_payload_size) { 3000 }
+        # Calculate max_payload_size dynamically based on actual event size
+        # to ensure the test sends exactly 2 chunks regardless of event size variations
+        let(:max_payload_size) do
+          # Create a sample transport to calculate single event size
+          sample_transport = described_class.new(
+            api: api,
+            dd_env: dd_env,
+            serializers_factory: serializers_factory,
+            max_payload_size: 4 * 1024 * 1024
+          )
+
+          # Use the existing traces from the before block to calculate size
+          # We know there are 2 traces with 2 spans each = 4 events total
+          sample_trace = traces.first
+
+          # Encode the events to get actual size
+          encoded_events = sample_transport.send(:encode_events, [sample_trace])
+          single_event_size = encoded_events.first.size
+
+          # We need to account for the payload header size as well
+          # Create a minimal chunk with one event to understand the overhead
+          sample_chunk = encoded_events.first(1)
+          packed_payload = sample_transport.send(:pack_events, sample_chunk)
+          payload_overhead = packed_payload.size - single_event_size
+
+          # Set max_payload_size so that each chunk fits exactly 2 events
+          # This ensures 4 events will be split into 2 chunks
+          (single_event_size * 2) + payload_overhead + 1
+        end
 
         it "sends events in two chunks" do
           responses = subject
