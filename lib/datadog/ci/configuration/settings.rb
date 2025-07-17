@@ -157,9 +157,9 @@ module Datadog
                 o.default false
               end
 
-              option :test_discovery_mode_enabled do |o|
+              option :test_discovery_enabled do |o|
                 o.type :bool
-                o.env CI::Ext::Settings::ENV_TEST_DISCOVERY_MODE_ENABLED
+                o.env Ext::Settings::ENV_TEST_DISCOVERY_MODE_ENABLED
                 o.default false
               end
 

@@ -1,0 +1,18 @@
+module Datadog
+  module CI
+    module TestDiscovery
+      class Component
+        @enabled: bool
+        @output_path: String?
+
+        def initialize: (enabled: bool, output_path: String?) -> void
+
+        def configure: (untyped library_settings, untyped test_session) -> void
+
+        def disable_features_for_test_discovery!: (untyped settings) -> void
+
+        def shutdown!: () -> void
+      end
+    end
+  end
+end

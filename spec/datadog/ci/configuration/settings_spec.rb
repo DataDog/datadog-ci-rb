@@ -906,8 +906,8 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
-      describe "#test_discovery_mode_enabled" do
-        subject(:test_discovery_mode_enabled) { settings.ci.test_discovery_mode_enabled }
+      describe "#test_discovery_enabled" do
+        subject(:test_discovery_enabled) { settings.ci.test_discovery_enabled }
 
         it { is_expected.to be false }
 
@@ -938,10 +938,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
-      describe "#test_discovery_mode_enabled=" do
-        it "updates the #test_discovery_mode_enabled setting" do
-          expect { settings.ci.test_discovery_mode_enabled = true }
-            .to change { settings.ci.test_discovery_mode_enabled }
+      describe "#test_discovery_enabled=" do
+        it "updates the #test_discovery_enabled setting" do
+          expect { settings.ci.test_discovery_enabled = true }
+            .to change { settings.ci.test_discovery_enabled }
             .from(false)
             .to(true)
         end

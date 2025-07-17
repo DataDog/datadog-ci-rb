@@ -8,9 +8,9 @@ module Datadog
 
         @library_settings_client: Datadog::CI::Remote::LibrarySettingsClient
         @library_configuration: Datadog::CI::Remote::LibrarySettings
-        @test_discovery_mode_enabled: bool
+        @test_discovery_enabled: bool
 
-        def initialize: (library_settings_client: Datadog::CI::Remote::LibrarySettingsClient, ?test_discovery_mode_enabled: bool) -> void
+        def initialize: (library_settings_client: Datadog::CI::Remote::LibrarySettingsClient, ?test_discovery_enabled: bool) -> void
 
         def configure: (Datadog::CI::TestSession test_session) -> void
 
