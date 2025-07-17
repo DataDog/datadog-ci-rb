@@ -149,11 +149,11 @@ RSpec.describe Datadog::CI::Remote::Component do
       end
     end
 
-    context "when test discovery mode is enabled" do
+    context "when test discovery is enabled" do
       subject(:component) do
         described_class.new(
           library_settings_client: library_settings_client,
-          test_discovery_mode_enabled: true
+          test_discovery_enabled: true
         )
       end
 

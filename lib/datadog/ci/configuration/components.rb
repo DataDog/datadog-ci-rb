@@ -16,6 +16,7 @@ require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
+require_relative "../test_discovery/component"
 require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/known_tests"
@@ -37,7 +38,7 @@ module Datadog
       # Adds CI behavior to Datadog trace components
       module Components
         attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries,
-          :test_management, :agentless_logs_submission, :impacted_tests_detection
+          :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery
 
         def initialize(settings)
           @test_optimisation = nil
@@ -47,6 +48,7 @@ module Datadog
           @test_retries = TestRetries::NullComponent.new
           @test_management = TestManagement::NullComponent.new
           @impacted_tests_detection = nil
+          @test_discovery = nil
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -62,6 +64,7 @@ module Datadog
           @test_visibility&.shutdown!
           @test_optimisation&.shutdown!
           @agentless_logs_submission&.shutdown!
+          @test_discovery&.shutdown!
           @git_tree_upload_worker&.stop
         end
 
@@ -112,10 +115,17 @@ module Datadog
 
           settings.tracing.test_mode.writer_options = trace_writer_options
 
+          # @type ivar @test_discovery: Datadog::CI::TestDiscovery::Component
+          @test_discovery = TestDiscovery::Component.new(
+            enabled: settings.ci.test_discovery_enabled,
+            output_path: settings.ci.test_discovery_output_path
+          )
+          @test_discovery.disable_features_for_test_discovery!(settings)
+
           @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
           @ci_remote = Remote::Component.new(
             library_settings_client: build_library_settings_client(settings, test_visibility_api),
-            test_discovery_mode_enabled: settings.ci.test_discovery_mode_enabled
+            test_discovery_enabled: settings.ci.test_discovery_enabled
           )
           @test_retries = TestRetries::Component.new(
             retry_failed_tests_enabled: settings.ci.retry_failed_tests_enabled,

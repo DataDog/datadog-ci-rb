@@ -4,7 +4,9 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(bundle exec rake steep:*)",
-      "Bash(bundle exec rspec:*)"
+      "Bash(bundle exec rspec:*)",
+      "Bash(bundle exec rake:*)",
+      "Bash(bundle exec ruby:*)"
     ],
     "deny": []
   }
