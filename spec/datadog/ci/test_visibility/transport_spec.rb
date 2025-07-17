@@ -246,7 +246,22 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
 
       context "when chunking is used" do
-        let(:max_payload_size) { 3000 }
+        # Set max_payload_size to fit exactly 2 events of 10 bytes each
+        # With 4 events total, this forces exactly 2 chunks of 2 events each
+        let(:max_payload_size) { 21 }
+
+        before do
+          # Stub both the encoder and payload packing to return predictable sizes
+          # This completely eliminates environment-specific variations
+          allow(Datadog::Core::Encoding::MsgpackEncoder).to receive(:encode) do |encoder, serializer|
+            "0123456789" # 10 bytes
+          end
+
+          # Stub pack_events to return exactly the concatenated events without any header overhead
+          allow(transport).to receive(:pack_events) do |encoded_events|
+            encoded_events.join
+          end
+        end
 
         it "sends events in two chunks" do
           responses = subject
@@ -264,8 +279,6 @@ RSpec.describe Datadog::CI::TestVisibility::Transport do
       end
 
       context "when max_payload-size is too small" do
-        # one test event is approximately 1000 bytes currently
-        # ATTENTION: might break if more data is added to test spans in #produce_test_trace method
         let(:max_payload_size) { 1 }
 
         it "does not send events that are larger than max size" do
