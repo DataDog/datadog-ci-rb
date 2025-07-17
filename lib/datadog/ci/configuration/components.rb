@@ -114,7 +114,8 @@ module Datadog
 
           @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
           @ci_remote = Remote::Component.new(
-            library_settings_client: build_library_settings_client(settings, test_visibility_api)
+            library_settings_client: build_library_settings_client(settings, test_visibility_api),
+            test_discovery_mode_enabled: settings.ci.test_discovery_mode_enabled
           )
           @test_retries = TestRetries::Component.new(
             retry_failed_tests_enabled: settings.ci.retry_failed_tests_enabled,
