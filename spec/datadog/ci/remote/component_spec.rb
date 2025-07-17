@@ -148,5 +148,44 @@ RSpec.describe Datadog::CI::Remote::Component do
         subject
       end
     end
+
+    context "when test discovery mode is enabled" do
+      subject(:component) do
+        described_class.new(
+          library_settings_client: library_settings_client,
+          test_discovery_mode_enabled: true
+        )
+      end
+
+      before do
+        configurable_components.each do |component|
+          expect(component).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings), test_session)
+        end
+      end
+
+      it "skips backend fetching and uses default settings" do
+        expect(library_settings_client).not_to receive(:fetch)
+        expect(component).not_to receive(:load_component_state)
+        expect(component).not_to receive(:store_component_state)
+
+        component.configure(test_session)
+      end
+
+      it "creates library configuration with default settings" do
+        component.configure(test_session)
+
+        # Verify that the configuration has default settings (all features disabled)
+        library_config = component.instance_variable_get(:@library_configuration)
+        expect(library_config).to be_instance_of(Datadog::CI::Remote::LibrarySettings)
+        expect(library_config.itr_enabled?).to be false
+        expect(library_config.code_coverage_enabled?).to be false
+        expect(library_config.tests_skipping_enabled?).to be false
+        expect(library_config.flaky_test_retries_enabled?).to be false
+        expect(library_config.early_flake_detection_enabled?).to be false
+        expect(library_config.known_tests_enabled?).to be false
+        expect(library_config.test_management_enabled?).to be false
+        expect(library_config.impacted_tests_enabled?).to be false
+      end
+    end
   end
 end
