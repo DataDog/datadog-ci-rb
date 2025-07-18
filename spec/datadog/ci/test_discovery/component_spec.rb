@@ -228,14 +228,13 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
   end
 
   describe "#on_test_started" do
-    let(:test) { 
-      double("test", 
+    let(:test) {
+      double("test",
         mark_test_discovery_mode!: nil,
         name: "test_example",
-        test_suite_name: "ExampleSuite", 
+        test_suite_name: "ExampleSuite",
         source_file: "/path/to/test.rb",
-        datadog_test_id: "ExampleSuite.test_example.nil"
-      ) 
+        datadog_test_id: "ExampleSuite.test_example.nil")
     }
 
     context "when test discovery mode is enabled" do
@@ -291,7 +290,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
       it "does not write to output stream" do
         output_stream = instance_double(File, puts: nil)
         component.instance_variable_set(:@output_stream, output_stream)
-        
+
         component.on_test_started(test)
 
         expect(output_stream).not_to have_received(:puts)
