@@ -16,6 +16,8 @@ module Datadog
 
         def on_test_session_end: () -> void
 
+        def on_test_started: (untyped test) -> void
+
         def shutdown!: () -> void
       end
     end

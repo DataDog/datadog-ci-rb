@@ -226,4 +226,28 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
       end
     end
   end
+
+  describe "#on_test_started" do
+    let(:test) { double("test", mark_test_discovery_mode!: nil) }
+
+    context "when test discovery mode is enabled" do
+      let(:enabled) { true }
+
+      it "marks the test as being in test discovery mode" do
+        component.on_test_started(test)
+
+        expect(test).to have_received(:mark_test_discovery_mode!)
+      end
+    end
+
+    context "when test discovery mode is disabled" do
+      let(:enabled) { false }
+
+      it "does not mark the test" do
+        component.on_test_started(test)
+
+        expect(test).not_to have_received(:mark_test_discovery_mode!)
+      end
+    end
+  end
 end

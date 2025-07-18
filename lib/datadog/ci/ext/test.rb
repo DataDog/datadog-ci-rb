@@ -171,6 +171,7 @@ module Datadog
         module SkipReason
           TEST_IMPACT_ANALYSIS = "Skipped by Datadog's Test Impact Analysis"
           TEST_MANAGEMENT_DISABLED = "Flaky test is disabled by Datadog"
+          TEST_DISCOVERY_MODE = "Skipped by Datadog's Test Discovery Mode"
         end
       end
     end

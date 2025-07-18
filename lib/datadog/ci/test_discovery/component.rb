@@ -2,6 +2,7 @@
 
 require "fileutils"
 
+require_relative "../ext/test"
 require_relative "../ext/test_discovery"
 
 module Datadog
@@ -61,6 +62,13 @@ module Datadog
 
           @output_stream&.close
           @output_stream = nil
+        end
+
+        def on_test_started(test)
+          return unless @enabled
+
+          # Mark test as being in test discovery mode so it will be skipped
+          test.mark_test_discovery_mode!
         end
 
         def shutdown!

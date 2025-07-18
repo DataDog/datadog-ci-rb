@@ -276,6 +276,8 @@ module Datadog
           test_optimisation.start_coverage(test)
 
           test_retries.record_test_started(test)
+
+          test_discovery&.on_test_started(test)
         end
 
         def on_test_session_finished(test_session)

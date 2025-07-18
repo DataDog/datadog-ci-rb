@@ -2,6 +2,7 @@ module Datadog
   module CI
     class Test < Span
       @datadog_test_id: String
+      @in_test_discovery_mode: bool
 
       def datadog_test_id: () -> String
       def finish: () -> void
@@ -28,6 +29,8 @@ module Datadog
       def should_skip?: () -> bool
       def should_ignore_failures?: () -> bool
       def skipped_by_test_impact_analysis?: () -> bool
+      def in_test_discovery_mode?: () -> bool
+      def mark_test_discovery_mode!: () -> void
       def modified?: () -> bool
 
       private
