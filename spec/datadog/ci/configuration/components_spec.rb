@@ -340,6 +340,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                   it "disables other features" do
                     expect(settings.ci.test_discovery_enabled).to eq(true)
+                    expect(settings.ci.discard_traces).to eq(true)
                     expect(settings.ci.itr_enabled).to eq(false)
                     expect(settings.ci.agentless_logs_submission_enabled).to eq(false)
                   end
