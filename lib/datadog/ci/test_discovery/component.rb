@@ -20,6 +20,9 @@ module Datadog
         def disable_features_for_test_discovery!(settings)
           return unless @enabled
 
+          # in test discovery mode don't send anything to Datadog
+          settings.ci.discard_traces = true
+
           # Disable all feature flags when in test discovery mode
           settings.telemetry.enabled = false
           settings.ci.itr_enabled = false

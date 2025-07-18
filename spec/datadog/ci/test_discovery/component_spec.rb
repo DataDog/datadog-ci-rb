@@ -44,6 +44,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
 
     before do
       allow(settings).to receive(:ci).and_return(ci_settings)
+      allow(ci_settings).to receive(:discard_traces=)
       allow(ci_settings).to receive(:itr_enabled=)
       allow(ci_settings).to receive(:git_metadata_upload_enabled=)
       allow(ci_settings).to receive(:retry_failed_tests_enabled=)
@@ -61,6 +62,8 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
       it "disables all feature flags" do
         component.disable_features_for_test_discovery!(settings)
 
+        expect(telemetry).to have_received(:enabled=).with(false)
+        expect(ci_settings).to have_received(:discard_traces=).with(true)
         expect(ci_settings).to have_received(:itr_enabled=).with(false)
         expect(ci_settings).to have_received(:git_metadata_upload_enabled=).with(false)
         expect(ci_settings).to have_received(:retry_failed_tests_enabled=).with(false)
@@ -68,7 +71,6 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         expect(ci_settings).to have_received(:test_management_enabled=).with(false)
         expect(ci_settings).to have_received(:agentless_logs_submission_enabled=).with(false)
         expect(ci_settings).to have_received(:impacted_tests_detection_enabled=).with(false)
-        expect(telemetry).to have_received(:enabled=).with(false)
       end
     end
 
@@ -78,6 +80,8 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
       it "does not modify any settings" do
         component.disable_features_for_test_discovery!(settings)
 
+        expect(telemetry).not_to have_received(:enabled=)
+        expect(ci_settings).not_to have_received(:discard_traces=)
         expect(ci_settings).not_to have_received(:itr_enabled=)
         expect(ci_settings).not_to have_received(:git_metadata_upload_enabled=)
         expect(ci_settings).not_to have_received(:retry_failed_tests_enabled=)
@@ -85,7 +89,6 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         expect(ci_settings).not_to have_received(:test_management_enabled=)
         expect(ci_settings).not_to have_received(:agentless_logs_submission_enabled=)
         expect(ci_settings).not_to have_received(:impacted_tests_detection_enabled=)
-        expect(telemetry).not_to have_received(:enabled=).with(false)
       end
     end
   end
