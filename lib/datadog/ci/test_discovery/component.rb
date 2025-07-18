@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "json"
 
 require_relative "../ext/test"
 require_relative "../ext/test_discovery"
@@ -69,6 +70,18 @@ module Datadog
 
           # Mark test as being in test discovery mode so it will be skipped
           test.mark_test_discovery_mode!
+
+          # Write test information to output stream if available
+          return unless @output_stream
+
+          test_info = {
+            "name" => test.name,
+            "suite" => test.test_suite_name,
+            "sourceFile" => test.source_file,
+            "fqn" => test.datadog_test_id
+          }
+
+          @output_stream&.puts(JSON.generate(test_info))
         end
 
         def shutdown!
