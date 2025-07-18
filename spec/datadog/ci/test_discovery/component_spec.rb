@@ -92,4 +92,138 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
       end
     end
   end
+
+  describe "#on_test_session_start" do
+    let(:output_path) { "/tmp/test_discovery.json" }
+
+    context "when test discovery mode is enabled" do
+      let(:enabled) { true }
+
+      before do
+        allow(File).to receive(:open).with("/tmp/test_discovery.json", "w").and_return(double("file"))
+        allow(FileUtils).to receive(:mkdir_p)
+        allow(Dir).to receive(:exist?).with("/tmp").and_return(true)
+      end
+
+      it "opens output file for writing" do
+        component.on_test_session_start
+
+        expect(File).to have_received(:open).with("/tmp/test_discovery.json", "w")
+      end
+
+      context "when output_path is nil" do
+        let(:output_path) { nil }
+
+        before do
+          allow(File).to receive(:open).with("./.dd/test_discovery/tests.json", "w").and_return(double("file"))
+          allow(FileUtils).to receive(:mkdir_p)
+          allow(Dir).to receive(:exist?).with("./.dd/test_discovery").and_return(false)
+        end
+
+        it "uses default output path" do
+          component.on_test_session_start
+
+          expect(FileUtils).to have_received(:mkdir_p).with("./.dd/test_discovery")
+          expect(File).to have_received(:open).with("./.dd/test_discovery/tests.json", "w")
+        end
+      end
+
+      context "when output directory doesn't exist" do
+        before do
+          allow(Dir).to receive(:exist?).with("/tmp").and_return(false)
+        end
+
+        it "creates the output directory" do
+          component.on_test_session_start
+
+          expect(FileUtils).to have_received(:mkdir_p).with("/tmp")
+        end
+      end
+    end
+
+    context "when test discovery mode is disabled" do
+      let(:enabled) { false }
+
+      before do
+        allow(File).to receive(:open)
+      end
+
+      it "does not open output file" do
+        component.on_test_session_start
+
+        expect(File).not_to have_received(:open)
+      end
+    end
+  end
+
+  describe "#on_test_session_end" do
+    let(:test_session) { double("test_session") }
+    let(:output_stream) { double("output_stream", close: nil) }
+
+    before do
+      component.instance_variable_set(:@output_stream, output_stream)
+    end
+
+    context "when test discovery mode is enabled" do
+      let(:enabled) { true }
+
+      it "closes the output stream" do
+        component.on_test_session_end
+
+        expect(output_stream).to have_received(:close)
+        expect(component.instance_variable_get(:@output_stream)).to be_nil
+      end
+    end
+
+    context "when test discovery mode is disabled" do
+      let(:enabled) { false }
+
+      it "does not close the output stream" do
+        component.on_test_session_end
+
+        expect(output_stream).not_to have_received(:close)
+      end
+    end
+  end
+
+  describe "#shutdown!" do
+    context "when output stream is open" do
+      let(:output_stream) { double("output_stream", closed?: false, close: nil) }
+
+      before do
+        component.instance_variable_set(:@output_stream, output_stream)
+      end
+
+      it "closes the output stream" do
+        component.shutdown!
+
+        expect(output_stream).to have_received(:close)
+        expect(component.instance_variable_get(:@output_stream)).to be_nil
+      end
+    end
+
+    context "when output stream is already closed" do
+      let(:output_stream) { double("output_stream", closed?: true, close: nil) }
+
+      before do
+        component.instance_variable_set(:@output_stream, output_stream)
+      end
+
+      it "does not close the output stream" do
+        component.shutdown!
+
+        expect(output_stream).not_to have_received(:close)
+      end
+    end
+
+    context "when output stream is nil" do
+      before do
+        component.instance_variable_set(:@output_stream, nil)
+      end
+
+      it "does not raise an error" do
+        expect { component.shutdown! }.not_to raise_error
+      end
+    end
+  end
 end

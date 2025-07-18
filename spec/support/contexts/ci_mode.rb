@@ -72,6 +72,9 @@ RSpec.shared_context "CI mode activated" do
   let(:base_commit_sha) { "base_commit_sha" }
   let(:changed_files) { Set.new }
 
+  let(:test_discovery_enabled) { false }
+  let(:test_discovery_output_path) { nil }
+
   let(:test_visibility) { Datadog.send(:components).test_visibility }
 
   before do
@@ -178,6 +181,10 @@ RSpec.shared_context "CI mode activated" do
 
       # impacted tests detection
       c.ci.impacted_tests_detection_enabled = impacted_tests_enabled
+
+      # test discovery
+      c.ci.test_discovery_enabled = test_discovery_enabled
+      c.ci.test_discovery_output_path = test_discovery_output_path
 
       # instrumentation
       unless integration_name == :no_instrument
