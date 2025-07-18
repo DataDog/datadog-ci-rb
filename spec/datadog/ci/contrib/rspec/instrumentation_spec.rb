@@ -1802,6 +1802,29 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_spans).to all have_skip_status
 
       expect(File.exist?(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)).to be true
+
+      tests_json =
+        File.read(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)
+          .split("\n")
+          .map { |line| JSON.parse(line) }
+          .sort_by { |test| test["name"] }
+
+      expect(tests_json).to eq(
+        [
+          {
+            "name" => "nested fails",
+            "suite" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "sourceFile" => "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "fqn" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:2\"}}"
+          },
+          {
+            "name" => "nested foo",
+            "suite" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "sourceFile" => "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "fqn" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:1\"}}"
+          }
+        ]
+      )
     end
   end
 

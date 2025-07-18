@@ -228,7 +228,15 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
   end
 
   describe "#on_test_started" do
-    let(:test) { double("test", mark_test_discovery_mode!: nil) }
+    let(:test) { 
+      double("test", 
+        mark_test_discovery_mode!: nil,
+        name: "test_example",
+        test_suite_name: "ExampleSuite", 
+        source_file: "/path/to/test.rb",
+        datadog_test_id: "ExampleSuite.test_example.nil"
+      ) 
+    }
 
     context "when test discovery mode is enabled" do
       let(:enabled) { true }
@@ -237,6 +245,37 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         component.on_test_started(test)
 
         expect(test).to have_received(:mark_test_discovery_mode!)
+      end
+
+      context "when output stream is available" do
+        let(:output_stream) { instance_double(File, puts: nil) }
+
+        before do
+          component.instance_variable_set(:@output_stream, output_stream)
+        end
+
+        it "writes test information as JSON to output stream" do
+          component.on_test_started(test)
+
+          expected_json = JSON.generate({
+            "name" => "test_example",
+            "suite" => "ExampleSuite",
+            "sourceFile" => "/path/to/test.rb",
+            "fqn" => "ExampleSuite.test_example.nil"
+          })
+
+          expect(output_stream).to have_received(:puts).with(expected_json)
+        end
+      end
+
+      context "when output stream is not available" do
+        before do
+          component.instance_variable_set(:@output_stream, nil)
+        end
+
+        it "does not write to output stream" do
+          expect { component.on_test_started(test) }.not_to raise_error
+        end
       end
     end
 
@@ -247,6 +286,15 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         component.on_test_started(test)
 
         expect(test).not_to have_received(:mark_test_discovery_mode!)
+      end
+
+      it "does not write to output stream" do
+        output_stream = instance_double(File, puts: nil)
+        component.instance_variable_set(:@output_stream, output_stream)
+        
+        component.on_test_started(test)
+
+        expect(output_stream).not_to have_received(:puts)
       end
     end
   end
