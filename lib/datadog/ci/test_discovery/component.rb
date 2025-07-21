@@ -102,13 +102,6 @@ module Datadog
 
         private
 
-        # Thread-safe version that acquires mutex
-        def flush_buffer
-          @buffer_mutex.synchronize do
-            flush_buffer_unsafe
-          end
-        end
-
         # Unsafe version - caller must hold @buffer_mutex
         def flush_buffer_unsafe
           return unless @output_path && @buffer.any?
