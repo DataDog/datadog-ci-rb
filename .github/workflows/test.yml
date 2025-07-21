@@ -72,8 +72,8 @@ jobs:
       version: "9.4"
       alias: jruby-94
 
-  junit:
-    name: dd/junit
+  datadog-test-optimization:
+    name: dd/test-optimization
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     container:
