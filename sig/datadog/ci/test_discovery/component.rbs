@@ -19,6 +19,8 @@ module Datadog
         def on_test_started: (untyped test) -> void
 
         def shutdown!: () -> void
+
+        def enabled?: () -> bool
       end
     end
   end

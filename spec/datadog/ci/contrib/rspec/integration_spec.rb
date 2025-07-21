@@ -63,4 +63,32 @@ RSpec.describe Datadog::CI::Contrib::RSpec::Integration do
 
     it { is_expected.to be Datadog::CI::Contrib::RSpec::Patcher }
   end
+
+  describe "#new_configuration" do
+    subject(:new_configuration) { integration.new_configuration }
+
+    context "when test discovery component is enabled" do
+      before do
+        allow(integration).to receive(:test_discovery_component).and_return(
+          double("test_discovery_component", enabled?: true)
+        )
+      end
+
+      it "creates settings with dry_run_enabled set to true" do
+        expect(new_configuration.dry_run_enabled).to be true
+      end
+    end
+
+    context "when test discovery component is disabled" do
+      before do
+        allow(integration).to receive(:test_discovery_component).and_return(
+          double("test_discovery_component", enabled?: false)
+        )
+      end
+
+      it "creates settings with dry_run_enabled set to false" do
+        expect(new_configuration.dry_run_enabled).to be false
+      end
+    end
+  end
 end

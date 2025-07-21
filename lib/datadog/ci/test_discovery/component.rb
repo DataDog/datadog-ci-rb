@@ -24,6 +24,10 @@ module Datadog
           # This method is noop for this component, it is present for compatibility with other components
         end
 
+        def enabled?
+          @enabled
+        end
+
         def disable_features_for_test_discovery!(settings)
           return unless @enabled
 
