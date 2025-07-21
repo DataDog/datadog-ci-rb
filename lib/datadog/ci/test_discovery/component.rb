@@ -32,6 +32,8 @@ module Datadog
         def disable_features_for_test_discovery!(settings)
           return unless @enabled
 
+          Datadog.logger.debug("ATTENTION! Running in test discovery mode, disabling all features")
+
           # in test discovery mode don't send anything to Datadog
           settings.ci.discard_traces = true
 
@@ -60,6 +62,8 @@ module Datadog
           output_dir = File.dirname(output_path)
           FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
 
+          Datadog.logger.debug { "Test discovery output path: #{output_path}" }
+
           @buffer_mutex.synchronize { @buffer.clear }
         end
 
@@ -85,6 +89,8 @@ module Datadog
             "fqn" => test.datadog_test_id
           }
 
+          Datadog.logger.debug { "Discovered test: #{test_info}" }
+
           @buffer_mutex.synchronize do
             @buffer << test_info
 
@@ -108,6 +114,8 @@ module Datadog
 
           output_path = @output_path
           return unless output_path
+
+          Datadog.logger.debug { "Flushing test discovery buffer with #{@buffer.size} entries to #{output_path}" }
 
           File.open(output_path, "a") do |file|
             # disk IO latency is much bigger than time to serialize 10k JSON objects, so we do it in memory and then write to disk
