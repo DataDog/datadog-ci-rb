@@ -4,7 +4,8 @@ module Datadog
       class Component
         @enabled: bool
         @output_path: String?
-        @output_stream: File?
+        @buffer: Array[Hash[String, String]]
+        @buffer_mutex: Mutex
 
         def initialize: (enabled: bool, output_path: String?) -> void
 
@@ -21,6 +22,12 @@ module Datadog
         def shutdown!: () -> void
 
         def enabled?: () -> bool
+
+        private
+
+        def flush_buffer: () -> void
+
+        def flush_buffer_unsafe: () -> void
       end
     end
   end

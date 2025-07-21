@@ -19,6 +19,8 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
     it "stores the enabled and output_path settings" do
       expect(component.instance_variable_get(:@enabled)).to eq(enabled)
       expect(component.instance_variable_get(:@output_path)).to eq(output_path)
+      expect(component.instance_variable_get(:@buffer)).to eq([])
+      expect(component.instance_variable_get(:@buffer_mutex)).to be_a(Mutex)
     end
   end
 
@@ -31,9 +33,21 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
     end
   end
 
-  describe "#shutdown!" do
-    it "does not raise an error" do
-      expect { component.shutdown! }.not_to raise_error
+  describe "#enabled?" do
+    context "when enabled is true" do
+      let(:enabled) { true }
+
+      it "returns true" do
+        expect(component.enabled?).to be true
+      end
+    end
+
+    context "when enabled is false" do
+      let(:enabled) { false }
+
+      it "returns false" do
+        expect(component.enabled?).to be false
+      end
     end
   end
 
@@ -100,31 +114,30 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
       let(:enabled) { true }
 
       before do
-        allow(File).to receive(:open).with("/tmp/test_discovery.json", "w").and_return(double("file"))
         allow(FileUtils).to receive(:mkdir_p)
         allow(Dir).to receive(:exist?).with("/tmp").and_return(true)
       end
 
-      it "opens output file for writing" do
+      it "clears the buffer" do
+        component.instance_variable_set(:@buffer, ["old_data"])
         component.on_test_session_start
 
-        expect(File).to have_received(:open).with("/tmp/test_discovery.json", "w")
+        expect(component.instance_variable_get(:@buffer)).to eq([])
       end
 
       context "when output_path is nil" do
         let(:output_path) { nil }
 
         before do
-          allow(File).to receive(:open).with("./.dd/test_discovery/tests.json", "w").and_return(double("file"))
           allow(FileUtils).to receive(:mkdir_p)
           allow(Dir).to receive(:exist?).with("./.dd/test_discovery").and_return(false)
         end
 
-        it "uses default output path" do
+        it "uses default output path and creates directory" do
           component.on_test_session_start
 
           expect(FileUtils).to have_received(:mkdir_p).with("./.dd/test_discovery")
-          expect(File).to have_received(:open).with("./.dd/test_discovery/tests.json", "w")
+          expect(component.instance_variable_get(:@output_path)).to eq("./.dd/test_discovery/tests.json")
         end
       end
 
@@ -144,85 +157,106 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
     context "when test discovery mode is disabled" do
       let(:enabled) { false }
 
-      before do
-        allow(File).to receive(:open)
-      end
-
-      it "does not open output file" do
+      it "does not modify the buffer" do
+        component.instance_variable_set(:@buffer, ["existing_data"])
         component.on_test_session_start
 
-        expect(File).not_to have_received(:open)
+        expect(component.instance_variable_get(:@buffer)).to eq(["existing_data"])
       end
     end
   end
 
   describe "#on_test_session_end" do
-    let(:test_session) { double("test_session") }
-    let(:output_stream) { double("output_stream", close: nil) }
-
-    before do
-      component.instance_variable_set(:@output_stream, output_stream)
-    end
+    let(:output_path) { "/tmp/test_discovery.json" }
 
     context "when test discovery mode is enabled" do
       let(:enabled) { true }
+      let(:file_double) { double("file", puts: nil) }
 
-      it "closes the output stream" do
+      before do
+        allow(File).to receive(:open).with("/tmp/test_discovery.json", "a").and_yield(file_double)
+        component.instance_variable_set(:@buffer, [{"name" => "test1"}, {"name" => "test2"}])
+      end
+
+      it "flushes the buffer to file" do
         component.on_test_session_end
 
-        expect(output_stream).to have_received(:close)
-        expect(component.instance_variable_get(:@output_stream)).to be_nil
+        expect(File).to have_received(:open).with("/tmp/test_discovery.json", "a")
+        expect(file_double).to have_received(:puts).with(['{"name":"test1"}', '{"name":"test2"}'])
+        expect(component.instance_variable_get(:@buffer)).to be_empty
+      end
+
+      context "when buffer is empty" do
+        before do
+          component.instance_variable_set(:@buffer, [])
+        end
+
+        it "does not open file" do
+          component.on_test_session_end
+
+          expect(File).not_to have_received(:open)
+        end
       end
     end
 
     context "when test discovery mode is disabled" do
       let(:enabled) { false }
 
-      it "does not close the output stream" do
+      it "does not flush buffer" do
+        allow(File).to receive(:open)
         component.on_test_session_end
 
-        expect(output_stream).not_to have_received(:close)
+        expect(File).not_to have_received(:open)
       end
     end
   end
 
   describe "#shutdown!" do
-    context "when output stream is open" do
-      let(:output_stream) { double("output_stream", closed?: false, close: nil) }
+    let(:output_path) { "/tmp/test_discovery.json" }
+    let(:file_double) { double("file", puts: nil) }
+
+    context "when test discovery mode is enabled" do
+      let(:enabled) { true }
 
       before do
-        component.instance_variable_set(:@output_stream, output_stream)
+        allow(File).to receive(:open).with("/tmp/test_discovery.json", "a").and_yield(file_double)
       end
 
-      it "closes the output stream" do
-        component.shutdown!
+      context "when buffer has data" do
+        before do
+          component.instance_variable_set(:@buffer, [{"name" => "test1"}])
+        end
 
-        expect(output_stream).to have_received(:close)
-        expect(component.instance_variable_get(:@output_stream)).to be_nil
+        it "flushes the buffer" do
+          component.shutdown!
+
+          expect(File).to have_received(:open).with("/tmp/test_discovery.json", "a")
+          expect(file_double).to have_received(:puts).with(['{"name":"test1"}'])
+          expect(component.instance_variable_get(:@buffer)).to be_empty
+        end
+      end
+
+      context "when buffer is empty" do
+        before do
+          component.instance_variable_set(:@buffer, [])
+        end
+
+        it "does not open file" do
+          component.shutdown!
+
+          expect(File).not_to have_received(:open)
+        end
       end
     end
 
-    context "when output stream is already closed" do
-      let(:output_stream) { double("output_stream", closed?: true, close: nil) }
+    context "when test discovery mode is disabled" do
+      let(:enabled) { false }
 
-      before do
-        component.instance_variable_set(:@output_stream, output_stream)
-      end
-
-      it "does not close the output stream" do
+      it "does not flush buffer" do
+        allow(File).to receive(:open)
         component.shutdown!
 
-        expect(output_stream).not_to have_received(:close)
-      end
-    end
-
-    context "when output stream is nil" do
-      before do
-        component.instance_variable_set(:@output_stream, nil)
-      end
-
-      it "does not raise an error" do
-        expect { component.shutdown! }.not_to raise_error
+        expect(File).not_to have_received(:open)
       end
     end
   end
@@ -246,34 +280,35 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         expect(test).to have_received(:mark_test_discovery_mode!)
       end
 
-      context "when output stream is available" do
-        let(:output_stream) { instance_double(File, puts: nil) }
+      it "adds test information to buffer" do
+        component.on_test_started(test)
 
-        before do
-          component.instance_variable_set(:@output_stream, output_stream)
-        end
+        expected_test_info = {
+          "name" => "test_example",
+          "suite" => "ExampleSuite",
+          "sourceFile" => "/path/to/test.rb",
+          "fqn" => "ExampleSuite.test_example.nil"
+        }
 
-        it "writes test information as JSON to output stream" do
-          component.on_test_started(test)
-
-          expected_json = JSON.generate({
-            "name" => "test_example",
-            "suite" => "ExampleSuite",
-            "sourceFile" => "/path/to/test.rb",
-            "fqn" => "ExampleSuite.test_example.nil"
-          })
-
-          expect(output_stream).to have_received(:puts).with(expected_json)
-        end
+        expect(component.instance_variable_get(:@buffer)).to include(expected_test_info)
       end
 
-      context "when output stream is not available" do
+      context "when buffer reaches max size" do
+        let(:output_path) { "/tmp/test_discovery.json" }
+        let(:file_double) { double("file", puts: nil) }
+
         before do
-          component.instance_variable_set(:@output_stream, nil)
+          allow(File).to receive(:open).with("/tmp/test_discovery.json", "a").and_yield(file_double)
+          # Fill buffer to one less than max
+          buffer_data = Array.new(Datadog::CI::Ext::TestDiscovery::MAX_BUFFER_SIZE - 1) { {"name" => "existing_test"} }
+          component.instance_variable_set(:@buffer, buffer_data)
         end
 
-        it "does not write to output stream" do
-          expect { component.on_test_started(test) }.not_to raise_error
+        it "flushes the buffer when max size is reached" do
+          component.on_test_started(test)
+
+          expect(File).to have_received(:open).with("/tmp/test_discovery.json", "a")
+          expect(component.instance_variable_get(:@buffer)).to be_empty
         end
       end
     end
@@ -287,14 +322,46 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         expect(test).not_to have_received(:mark_test_discovery_mode!)
       end
 
-      it "does not write to output stream" do
-        output_stream = instance_double(File, puts: nil)
-        component.instance_variable_set(:@output_stream, output_stream)
-
+      it "does not add to buffer" do
+        initial_buffer = component.instance_variable_get(:@buffer)
         component.on_test_started(test)
 
-        expect(output_stream).not_to have_received(:puts)
+        expect(component.instance_variable_get(:@buffer)).to eq(initial_buffer)
       end
+    end
+  end
+
+  describe "thread safety" do
+    let(:enabled) { true }
+    let(:output_path) { "/tmp/test_discovery.json" }
+    let(:file_double) { double("file", puts: nil) }
+
+    before do
+      allow(File).to receive(:open).with("/tmp/test_discovery.json", "a").and_yield(file_double)
+    end
+
+    it "handles concurrent test additions safely" do
+      component.on_test_session_start
+
+      # Create multiple threads adding tests concurrently
+      threads = 10.times.map do |i|
+        Thread.new do
+          10.times do |j|
+            test = double("test_#{i}_#{j}",
+              mark_test_discovery_mode!: nil,
+              name: "test_#{i}_#{j}",
+              test_suite_name: "Suite#{i}",
+              source_file: "/path/test_#{i}_#{j}.rb",
+              datadog_test_id: "test_id_#{i}_#{j}")
+            component.on_test_started(test)
+          end
+        end
+      end
+
+      threads.each(&:join)
+
+      # All 100 tests should be in buffer
+      expect(component.instance_variable_get(:@buffer).size).to eq(100)
     end
   end
 end

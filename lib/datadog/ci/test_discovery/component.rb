@@ -2,7 +2,6 @@
 
 require "fileutils"
 require "json"
-
 require_relative "../ext/test"
 require_relative "../ext/test_discovery"
 
@@ -17,7 +16,9 @@ module Datadog
         )
           @enabled = enabled
           @output_path = output_path
-          @output_stream = nil
+
+          @buffer = []
+          @buffer_mutex = Mutex.new
         end
 
         def configure(library_settings, test_session)
@@ -59,24 +60,23 @@ module Datadog
           output_dir = File.dirname(output_path)
           FileUtils.mkdir_p(output_dir) unless Dir.exist?(output_dir)
 
-          @output_stream = File.open(output_path, "w")
+          @buffer_mutex.synchronize { @buffer.clear }
         end
 
         def on_test_session_end
           return unless @enabled
 
-          @output_stream&.close
-          @output_stream = nil
+          @buffer_mutex.synchronize do
+            flush_buffer_unsafe if @buffer.any?
+          end
         end
 
         def on_test_started(test)
           return unless @enabled
 
           # Mark test as being in test discovery mode so it will be skipped
+          # even if we are not running in dry run mode.
           test.mark_test_discovery_mode!
-
-          # Write test information to output stream if available
-          return unless @output_stream
 
           test_info = {
             "name" => test.name,
@@ -85,14 +85,44 @@ module Datadog
             "fqn" => test.datadog_test_id
           }
 
-          @output_stream&.puts(JSON.generate(test_info))
+          @buffer_mutex.synchronize do
+            @buffer << test_info
+
+            flush_buffer_unsafe if @buffer.size >= Ext::TestDiscovery::MAX_BUFFER_SIZE
+          end
         end
 
         def shutdown!
-          if @output_stream && !@output_stream&.closed?
-            @output_stream&.close
-            @output_stream = nil
+          return unless @enabled
+
+          @buffer_mutex.synchronize do
+            flush_buffer_unsafe if @buffer.any?
           end
+        end
+
+        private
+
+        # Thread-safe version that acquires mutex
+        def flush_buffer
+          @buffer_mutex.synchronize do
+            flush_buffer_unsafe
+          end
+        end
+
+        # Unsafe version - caller must hold @buffer_mutex
+        def flush_buffer_unsafe
+          return unless @output_path && @buffer.any?
+
+          output_path = @output_path
+          return unless output_path
+
+          File.open(output_path, "a") do |file|
+            # disk IO latency is much bigger than time to serialize 10k JSON objects, so we do it in memory and then write to disk
+            json_lines = @buffer.map { |test_info| JSON.generate(test_info) }
+            file.puts(json_lines)
+          end
+
+          @buffer.clear
         end
       end
     end
