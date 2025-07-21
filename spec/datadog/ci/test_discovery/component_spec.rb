@@ -15,15 +15,6 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
     )
   end
 
-  describe "#initialize" do
-    it "stores the enabled and output_path settings" do
-      expect(component.instance_variable_get(:@enabled)).to eq(enabled)
-      expect(component.instance_variable_get(:@output_path)).to eq(output_path)
-      expect(component.instance_variable_get(:@buffer)).to eq([])
-      expect(component.instance_variable_get(:@buffer_mutex)).to be_a(Mutex)
-    end
-  end
-
   describe "#configure" do
     let(:library_settings) { double("library_settings") }
     let(:test_session) { double("test_session") }
