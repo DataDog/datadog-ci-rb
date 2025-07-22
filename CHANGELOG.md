@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.21.1] - 2025-07-22
+
+### Fixed
+
+* fix: RSpec's DocumentationFormatter might not be present at instrumentation time ([#384][])
+* fix: do not crash when `Minitest.run` is called in a fork ([#383][])
+
 ## [1.21.0] - 2025-07-14
 
 ### Added
@@ -492,7 +499,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.1...main
+[1.21.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.0...v1.21.1
 [1.21.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.2...v1.21.0
 [1.20.2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.1...v1.20.2
 [1.20.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.0...v1.20.1
@@ -699,3 +707,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#359]: https://github.com/DataDog/datadog-ci-rb/issues/359
 [#366]: https://github.com/DataDog/datadog-ci-rb/issues/366
 [#370]: https://github.com/DataDog/datadog-ci-rb/issues/370
+[#383]: https://github.com/DataDog/datadog-ci-rb/issues/383
+[#384]: https://github.com/DataDog/datadog-ci-rb/issues/384
