@@ -215,7 +215,11 @@ module Datadog
         end
 
         def client_process?
-          forked? || @is_client_process
+          # We cannot assume here that every forked process is a client process
+          # there are examples of custom test runners that run tests in forks but don't have a test session
+          # started in the parent process.
+          # So we need to check if the process is forked and if the context service URI is not empty.
+          (forked? && !@context_service_uri.nil? && !@context_service_uri.empty?) || @is_client_process
         end
 
         private
@@ -446,6 +450,9 @@ module Datadog
         def start_drb_service
           return if @context_service_uri
           return if client_process?
+          # it doesn't make sense to start DRb in a fork - we are already running in a forked process
+          # and there is no parent process to communicate with
+          return if forked?
 
           @context_service = DRb.start_service("drbunix:", @context)
           @context_service_uri = @context_service.uri
