@@ -24,10 +24,7 @@ module Datadog
             !defined?(::RSpec).nil? && !defined?(::RSpec::Core).nil? &&
               !defined?(::RSpec::Core::Example).nil? &&
               !defined?(::RSpec::Core::Runner).nil? &&
-              !defined?(::RSpec::Core::ExampleGroup).nil? &&
-              !defined?(::RSpec::Core::Formatters::DocumentationFormatter).nil? &&
-              !defined?(::RSpec::Core::Formatters::BaseFormatter).nil? &&
-              !defined?(::RSpec::Core::Formatters::BaseTextFormatter).nil?
+              !defined?(::RSpec::Core::ExampleGroup).nil?
           end
 
           def compatible?

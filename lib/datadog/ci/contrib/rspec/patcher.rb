@@ -21,7 +21,13 @@ module Datadog
             ::RSpec::Core::Runner.include(Runner)
             ::RSpec::Core::Example.include(Example)
             ::RSpec::Core::ExampleGroup.include(ExampleGroup)
-            ::RSpec::Core::Formatters::DocumentationFormatter.include(DocumentationFormatter)
+
+            # only add DocumentationFormatter's patch if it's loaded at this point
+            if defined?(::RSpec::Core::Formatters::DocumentationFormatter) &&
+                defined?(::RSpec::Core::Formatters::BaseFormatter) &&
+                defined?(::RSpec::Core::Formatters::BaseTextFormatter)
+              ::RSpec::Core::Formatters::DocumentationFormatter.include(DocumentationFormatter)
+            end
           end
         end
       end
