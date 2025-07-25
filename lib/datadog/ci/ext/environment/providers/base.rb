@@ -18,6 +18,9 @@ module Datadog
               @env = env
             end
 
+            def job_id
+            end
+
             def job_name
             end
 

@@ -24,6 +24,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
       let(:expected_tags) do
         {
           "_dd.ci.env_vars" => "{\"GITHUB_SERVER_URL\":\"https://ghenterprise.com\",\"GITHUB_REPOSITORY\":\"ghactions-repo\",\"GITHUB_RUN_ID\":\"ghactions-pipeline-id\"}",
+          "ci.job.id" => "github-job-name",
           "ci.job.name" => "github-job-name",
           "ci.job.url" => "https://ghenterprise.com/ghactions-repo/commit/b9f0fb3fdbb94c9d24b2c75b49663122a529e123/checks",
           "ci.pipeline.id" => "ghactions-pipeline-id",
@@ -64,6 +65,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
       let(:expected_tags) do
         {
           "_dd.ci.env_vars" => "{\"GITHUB_SERVER_URL\":\"https://ghenterprise.com\",\"GITHUB_REPOSITORY\":\"ghactions-repo\",\"GITHUB_RUN_ID\":\"ghactions-pipeline-id\",\"GITHUB_RUN_ATTEMPT\":\"ghactions-run-attempt\"}",
+          "ci.job.id" => "github-job-name",
           "ci.job.name" => "github-job-name",
           "ci.job.url" => "https://ghenterprise.com/ghactions-repo/commit/b9f0fb3fdbb94c9d24b2c75b49663122a529e123/checks",
           "ci.pipeline.id" => "ghactions-pipeline-id",
@@ -108,6 +110,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
       let(:expected_tags) do
         {
           "_dd.ci.env_vars" => "{\"GITHUB_SERVER_URL\":\"https://ghenterprise.com\",\"GITHUB_REPOSITORY\":\"ghactions-repo\",\"GITHUB_RUN_ID\":\"ghactions-pipeline-id\",\"GITHUB_RUN_ATTEMPT\":\"ghactions-run-attempt\"}",
+          "ci.job.id" => "github-job-name",
           "ci.job.name" => "github-job-name",
           "ci.job.url" => "https://ghenterprise.com/ghactions-repo/commit/b9f0fb3fdbb94c9d24b2c75b49663122a529e123/checks",
           "ci.pipeline.id" => "ghactions-pipeline-id",

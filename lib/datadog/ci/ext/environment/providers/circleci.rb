@@ -20,6 +20,10 @@ module Datadog
               Provider::CIRCLECI
             end
 
+            def job_id
+              env["CIRCLE_BUILD_NUM"]
+            end
+
             def job_url
               env["CIRCLE_BUILD_URL"]
             end

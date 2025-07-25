@@ -3,6 +3,8 @@ module Datadog
     module Ext
       # Defines constants for CI tags
       module Environment
+        TAG_JOB_ID: String
+
         TAG_JOB_NAME: String
 
         TAG_JOB_URL: String

@@ -31,6 +31,10 @@ module Datadog
               "#{github_server_url}/#{env["GITHUB_REPOSITORY"]}/commit/#{env["GITHUB_SHA"]}/checks"
             end
 
+            def job_id
+              env["GITHUB_JOB"]
+            end
+
             def pipeline_id
               env["GITHUB_RUN_ID"]
             end

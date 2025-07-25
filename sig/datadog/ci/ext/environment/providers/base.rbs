@@ -12,6 +12,8 @@ module Datadog
 
             def initialize: (Hash[String, String?] env) -> void
 
+            def job_id: () -> String?
+
             def job_name: () -> nil
 
             def job_url: () -> nil

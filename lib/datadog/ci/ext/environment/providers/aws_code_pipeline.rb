@@ -20,6 +20,10 @@ module Datadog
               Provider::AWS
             end
 
+            def job_id
+              env["DD_ACTION_EXECUTION_ID"]
+            end
+
             def pipeline_id
               env["DD_PIPELINE_EXECUTION_ID"]
             end

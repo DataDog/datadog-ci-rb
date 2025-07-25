@@ -28,6 +28,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Buildkite do
       let(:expected_tags) do
         {
           "_dd.ci.env_vars" => "{\"BUILDKITE_BUILD_ID\":\"buildkite-pipeline-id\",\"BUILDKITE_JOB_ID\":\"buildkite-job-id\"}",
+          "ci.job.id" => "buildkite-job-id",
           "ci.job.url" => "https://buildkite-build-url.com#buildkite-job-id",
           "ci.pipeline.id" => "buildkite-pipeline-id",
           "ci.pipeline.name" => "buildkite-pipeline-name",

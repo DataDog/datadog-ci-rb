@@ -20,6 +20,10 @@ module Datadog
               Provider::AZURE
             end
 
+            def job_id
+              env["SYSTEM_JOBID"]
+            end
+
             def pipeline_url
               return unless url_defined?
 

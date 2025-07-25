@@ -30,6 +30,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Azure do
       let(:expected_tags) do
         {
           "_dd.ci.env_vars" => "{\"SYSTEM_TEAMPROJECTID\":\"azure-pipelines-project-id\",\"BUILD_BUILDID\":\"azure-pipelines-build-id\",\"SYSTEM_JOBID\":\"azure-pipelines-job-id\"}",
+          "ci.job.id" => "azure-pipelines-job-id",
           "ci.job.url" => "https://azure-pipelines-server-uri.com/azure-pipelines-project-id/_build/results?buildId=azure-pipelines-build-id&view=logs&j=azure-pipelines-job-id&t=azure-pipelines-task-id",
           "ci.pipeline.id" => "azure-pipelines-build-id",
           "ci.pipeline.name" => "azure-pipelines-name",

@@ -23,6 +23,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Circleci do
       let(:expected_tags) do
         {
           "_dd.ci.env_vars" => "{\"CIRCLE_WORKFLOW_ID\":\"circleci-pipeline-id\",\"CIRCLE_BUILD_NUM\":\"circleci-pipeline-number\"}",
+          "ci.job.id" => "circleci-pipeline-number",
           "ci.job.name" => "circleci-job-name",
           "ci.job.url" => "https://circleci-build-url.com/",
           "ci.pipeline.id" => "circleci-pipeline-id",

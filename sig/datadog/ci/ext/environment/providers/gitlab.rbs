@@ -8,6 +8,8 @@ module Datadog
 
             def provider_name: () -> "gitlab"
 
+            def job_id: () -> String?
+
             def job_name: () -> String?
 
             def job_url: () -> String?

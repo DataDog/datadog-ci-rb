@@ -20,6 +20,10 @@ module Datadog
               Provider::BUILDKITE
             end
 
+            def job_id
+              env["BUILDKITE_JOB_ID"]
+            end
+
             def job_url
               "#{env["BUILDKITE_BUILD_URL"]}##{env["BUILDKITE_JOB_ID"]}"
             end

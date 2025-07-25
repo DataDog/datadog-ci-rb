@@ -23,6 +23,7 @@ module Datadog
             return @tags if defined?(@tags)
 
             @tags = {
+              Environment::TAG_JOB_ID => @provider.job_id,
               Environment::TAG_JOB_NAME => @provider.job_name,
               Environment::TAG_JOB_URL => @provider.job_url,
               Environment::TAG_PIPELINE_ID => @provider.pipeline_id,

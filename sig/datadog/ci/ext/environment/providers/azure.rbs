@@ -9,6 +9,8 @@ module Datadog
 
             def provider_name: () -> "azurepipelines"
 
+            def job_id: () -> String?
+
             def pipeline_url: () -> String?
 
             def job_url: () -> String?
