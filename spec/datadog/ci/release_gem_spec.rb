@@ -58,6 +58,7 @@ RSpec.describe "gem release process" do
             |vendor/rbs
             |suppressions
             |.cursor
+            |.claude
           )/
         }x
 

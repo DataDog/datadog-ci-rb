@@ -1,0 +1,10 @@
+module Datadog
+  module CI
+    module Ext
+      module TestDiscovery
+        DEFAULT_OUTPUT_PATH: String
+        MAX_BUFFER_SIZE: Integer
+      end
+    end
+  end
+end

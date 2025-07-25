@@ -47,6 +47,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.ci.itr_code_coverage_use_single_threaded_mode = itr_code_coverage_use_single_threaded_mode
           settings.ci.itr_test_impact_analysis_use_allocation_tracing = itr_test_impact_analysis_use_allocation_tracing
           settings.ci.discard_traces = discard_traces
+          settings.ci.test_discovery_enabled = test_discovery_enabled
           settings.site = dd_site
           settings.api_key = api_key
 
@@ -120,6 +121,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:itr_code_coverage_use_single_threaded_mode) { false }
         let(:itr_test_impact_analysis_use_allocation_tracing) { true }
         let(:discard_traces) { false }
+        let(:test_discovery_enabled) { false }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -328,6 +330,19 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                       expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(false)
                     end
+                  end
+                end
+
+                context "when test discovery is enabled with other features" do
+                  let(:test_discovery_enabled) { true }
+                  let(:itr_enabled) { true }
+                  let(:agentless_logs_submission_enabled) { true }
+
+                  it "disables other features" do
+                    expect(settings.ci.test_discovery_enabled).to eq(true)
+                    expect(settings.ci.discard_traces).to eq(true)
+                    expect(settings.ci.itr_enabled).to eq(false)
+                    expect(settings.ci.agentless_logs_submission_enabled).to eq(false)
                   end
                 end
               end
