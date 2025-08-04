@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: c415d62a32cc431fcbaf6670e060c68b6056e5d1
+  revision: f6cfdc2431b5b01f6a69f82ac31655813cd07b1b
   branch: master
   specs:
-    datadog (2.19.0)
+    datadog (2.20.0)
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
       libdatadog (~> 18.1.0.1.0)
       libddwaf (~> 1.24.1.0.3)
@@ -115,7 +115,7 @@ GEM
       stringio
     public_suffix (6.0.2)
     racc (1.8.1)
-    rack (3.1.16)
+    rack (3.2.0)
     rack-test (2.2.0)
       rack (>= 1.3)
     rake (13.3.0)
@@ -124,7 +124,7 @@ GEM
     rdoc (6.14.2)
       erb
       psych (>= 4.0.0)
-    regexp_parser (2.10.0)
+    regexp_parser (2.11.0)
     reline (0.6.2)
       io-console (~> 0.5)
     rexml (3.4.1)
