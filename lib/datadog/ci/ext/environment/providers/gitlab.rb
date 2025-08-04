@@ -18,6 +18,10 @@ module Datadog
               Provider::GITLAB
             end
 
+            def job_id
+              env["CI_JOB_ID"]
+            end
+
             def job_name
               env["CI_JOB_NAME"]
             end

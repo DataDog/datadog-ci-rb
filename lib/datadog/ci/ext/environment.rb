@@ -13,6 +13,7 @@ module Datadog
     module Ext
       # Defines constants for CI tags
       module Environment
+        TAG_JOB_ID = "ci.job.id"
         TAG_JOB_NAME = "ci.job.name"
         TAG_JOB_URL = "ci.job.url"
         TAG_PIPELINE_ID = "ci.pipeline.id"
