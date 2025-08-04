@@ -1645,4 +1645,28 @@ RSpec.describe "Minitest instrumentation" do
       expect(test_session_span).to have_pass_status
     end
   end
+
+  context "test_suite_name method with path handling" do
+    it "handles relative paths as-is" do
+      klass = Class.new(Minitest::Test) do
+        def self.name
+          "RelativePathTest"
+        end
+
+        def test_method
+        end
+      end
+
+      # Mock the instance_method to return relative path
+      method_double = double("method")
+      allow(method_double).to receive(:source_location).and_return(["relative/path/to/test.rb", 10])
+      allow(klass).to receive(:instance_method).with(:test_method).and_return(method_double)
+
+      # Mock extract_source_location_from_class to return nil (to trigger fallback)
+      allow(Datadog::CI::Contrib::Minitest::Helpers).to receive(:extract_source_location_from_class).with(klass).and_return([])
+
+      suite_name = Datadog::CI::Contrib::Minitest::Helpers.test_suite_name(klass, :test_method)
+      expect(suite_name).to eq("RelativePathTest at relative/path/to/test.rb")
+    end
+  end
 end

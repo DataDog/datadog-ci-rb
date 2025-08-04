@@ -38,7 +38,18 @@ module Datadog
               source_location, = klass.instance_method(method_name).source_location
             end
 
-            source_file_path = Pathname.new(source_location.to_s).relative_path_from(Pathname.pwd).to_s
+            # According to https://github.com/DataDog/datadog-ci-rb/issues/386
+            # the source file path coould be relative when using minitest mixins.
+            #
+            # Note that it doesn't break for test suite source location in .start_test_suite method
+            # because it outputs path relative to the repository root.
+            #
+            # For backwards compatibility, we'll continue to use the relative path from the current
+            # working directory for test suite name.
+            source_file_path = Pathname.new(source_location.to_s)
+            if source_file_path.absolute?
+              source_file_path = source_file_path.relative_path_from(Pathname.pwd).to_s
+            end
 
             "#{klass.name} at #{source_file_path}"
           end
