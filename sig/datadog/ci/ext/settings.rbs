@@ -25,6 +25,7 @@ module Datadog
         ENV_IMPACTED_TESTS_DETECTION_ENABLED: String
         ENV_TEST_DISCOVERY_MODE_ENABLED: String
         ENV_TEST_DISCOVERY_OUTPUT_PATH: String
+        ENV_AUTO_INSTRUMENTATION_PROVIDER: String
 
         DD_SITE_ALLOWLIST: Array[String]
       end

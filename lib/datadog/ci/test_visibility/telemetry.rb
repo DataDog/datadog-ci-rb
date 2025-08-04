@@ -3,6 +3,7 @@
 require_relative "../contrib/instrumentation"
 require_relative "../ext/app_types"
 require_relative "../ext/environment"
+require_relative "../ext/settings"
 require_relative "../ext/telemetry"
 require_relative "../ext/test"
 require_relative "../utils/telemetry"
@@ -30,11 +31,13 @@ module Datadog
         end
 
         def self.test_session_started(test_session)
+          auto_injected = !ENV[Ext::Settings::ENV_AUTO_INSTRUMENTATION_PROVIDER].nil?
+
           Utils::Telemetry.inc(
             Ext::Telemetry::METRIC_TEST_SESSION,
             1,
             {
-              Ext::Telemetry::TAG_AUTO_INJECTED => Contrib::Instrumentation.auto_instrumented?.to_s,
+              Ext::Telemetry::TAG_AUTO_INJECTED => auto_injected.to_s,
               Ext::Telemetry::TAG_PROVIDER => test_session.ci_provider || Ext::Telemetry::Provider::UNSUPPORTED
             }
           )

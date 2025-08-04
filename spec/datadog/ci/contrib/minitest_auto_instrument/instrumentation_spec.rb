@@ -19,7 +19,9 @@ RSpec.describe "Minitest auto instrumentation" do
       end
     end
 
-    Minitest.run([])
+    ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_AUTO_INSTRUMENTATION_PROVIDER => "github") do
+      Minitest.run([])
+    end
   end
 
   it "instruments test session" do
