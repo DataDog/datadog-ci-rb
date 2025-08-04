@@ -239,7 +239,6 @@ module Datadog
           # Note that it will call this component back (unfortunate circular dependency).
           remote.configure(test_session)
 
-          # Signal test discovery component to begin outputting test results
           test_discovery&.on_test_session_start
         end
 
@@ -287,7 +286,6 @@ module Datadog
 
           Telemetry.event_finished(test_session)
 
-          # Signal test discovery component to close output
           test_discovery&.on_test_session_end
 
           Utils::FileStorage.cleanup
