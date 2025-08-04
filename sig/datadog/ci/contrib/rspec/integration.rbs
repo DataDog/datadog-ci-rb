@@ -16,6 +16,8 @@ module Datadog
           def new_configuration: () -> untyped
 
           def patcher: () -> untyped
+
+          def test_discovery_component: () -> Datadog::CI::TestDiscovery::Component?
         end
       end
     end

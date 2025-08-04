@@ -32,11 +32,20 @@ module Datadog
           end
 
           def new_configuration
-            Configuration::Settings.new
+            settings = Configuration::Settings.new
+            # if we are running in test discovery mode, we are most likely running in dry run - we need to allow it
+            settings.dry_run_enabled = true if test_discovery_component&.enabled?
+            settings
           end
 
           def patcher
             Patcher
+          end
+
+          def test_discovery_component
+            components = Datadog.send(:components)
+            return nil unless components.respond_to?(:test_discovery)
+            components.test_discovery
           end
         end
       end

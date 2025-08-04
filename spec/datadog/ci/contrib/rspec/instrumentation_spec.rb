@@ -1784,4 +1784,70 @@ RSpec.describe "RSpec instrumentation" do
       expect(result.stdout.string).not_to include("1 skipped by test impact analysis")
     end
   end
+
+  context "when test discovery is enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec", datadog_formatter_enabled: false} }
+
+      let(:test_discovery_enabled) { true }
+    end
+
+    after do
+      FileUtils.rm_rf(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)
+    end
+
+    it "creates JSON file with tests" do
+      rspec_session_run(with_failed_test: true, dry_run: true)
+      expect(test_spans).to all have_skip_status
+
+      expect(File.exist?(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)).to be true
+
+      tests_json =
+        File.read(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)
+          .split("\n")
+          .map { |line| JSON.parse(line) }
+          .sort_by { |test| test["name"] }
+
+      expect(tests_json).to eq(
+        [
+          {
+            "name" => "nested fails",
+            "suite" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "sourceFile" => "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "fqn" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:2\"}}"
+          },
+          {
+            "name" => "nested foo",
+            "suite" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "sourceFile" => "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "fqn" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:1\"}}"
+          }
+        ]
+      )
+    end
+  end
+
+  context "when test discovery is enabled and custom output path is used" do
+    let(:custom_output_path) { "/tmp/custom_output.json" }
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec", datadog_formatter_enabled: false} }
+
+      let(:test_discovery_enabled) { true }
+      let(:test_discovery_output_path) { custom_output_path }
+    end
+
+    after do
+      FileUtils.rm_rf(custom_output_path)
+    end
+
+    it "creates JSON file with tests" do
+      rspec_session_run(with_failed_test: true)
+      expect(test_spans).to all have_skip_status
+
+      expect(File.exist?(custom_output_path)).to be true
+    end
+  end
 end

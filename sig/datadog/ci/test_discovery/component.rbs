@@ -1,0 +1,32 @@
+module Datadog
+  module CI
+    module TestDiscovery
+      class Component
+        @enabled: bool
+        @output_path: String?
+        @buffer: Array[Hash[String, String]]
+        @buffer_mutex: Mutex
+
+        def initialize: (enabled: bool, output_path: String?) -> void
+
+        def configure: (untyped library_settings, untyped test_session) -> void
+
+        def disable_features_for_test_discovery!: (untyped settings) -> void
+
+        def on_test_session_start: () -> void
+
+        def on_test_session_end: () -> void
+
+        def on_test_started: (untyped test) -> void
+
+        def shutdown!: () -> void
+
+        def enabled?: () -> bool
+
+        private
+
+        def flush_buffer_unsafe: () -> void
+      end
+    end
+  end
+end

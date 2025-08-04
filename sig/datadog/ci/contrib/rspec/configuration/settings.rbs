@@ -4,6 +4,8 @@ module Datadog
       module RSpec
         module Configuration
           class Settings < Datadog::CI::Contrib::Settings
+            def dry_run_enabled: () -> bool
+            def dry_run_enabled=: (bool) -> bool
           end
         end
       end

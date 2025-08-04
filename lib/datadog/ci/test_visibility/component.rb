@@ -238,6 +238,8 @@ module Datadog
           # Signal Remote::Component to configure the library.
           # Note that it will call this component back (unfortunate circular dependency).
           remote.configure(test_session)
+
+          test_discovery&.on_test_session_start
         end
 
         # intentionally empty
@@ -273,6 +275,8 @@ module Datadog
           test_optimisation.start_coverage(test)
 
           test_retries.record_test_started(test)
+
+          test_discovery&.on_test_started(test)
         end
 
         def on_test_session_finished(test_session)
@@ -281,6 +285,8 @@ module Datadog
           TotalCoverage.extract_lines_pct(test_session)
 
           Telemetry.event_finished(test_session)
+
+          test_discovery&.on_test_session_end
 
           Utils::FileStorage.cleanup
         end
@@ -444,6 +450,10 @@ module Datadog
 
         def impacted_tests_detection
           Datadog.send(:components).impacted_tests_detection
+        end
+
+        def test_discovery
+          Datadog.send(:components).test_discovery
         end
 
         # DISTRIBUTED RUBY CONTEXT
