@@ -33,6 +33,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Gitlab do
       let(:expected_tags) do
         {
           "_dd.ci.env_vars" => "{\"CI_PROJECT_URL\":\"https://gitlab.com/repo\",\"CI_PIPELINE_ID\":\"gitlab-pipeline-id\",\"CI_JOB_ID\":\"gitlab-job-id\"}",
+          "ci.job.id" => "gitlab-job-id",
           "ci.job.name" => "gitlab-job-name",
           "ci.job.url" => "https://gitlab.com/job",
           "ci.pipeline.id" => "gitlab-pipeline-id",

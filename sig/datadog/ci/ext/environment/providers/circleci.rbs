@@ -6,6 +6,8 @@ module Datadog
           class Circleci < Base
             def provider_name: () -> "circleci"
 
+            def job_id: () -> String?
+
             def job_url: () -> String?
 
             def job_name: () -> String?

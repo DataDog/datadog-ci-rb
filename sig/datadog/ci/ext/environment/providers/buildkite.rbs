@@ -6,6 +6,8 @@ module Datadog
           class Buildkite < Base
             def provider_name: () -> "buildkite"
 
+            def job_id: () -> String?
+
             def job_url: () -> ::String
 
             def pipeline_id: () -> String?
