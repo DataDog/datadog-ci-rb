@@ -184,6 +184,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 
 ## Type Checking
 
+- Always add RBS definitions for your changes, if not sure run `bundle exec rake steep:check` to see if there are type issues now
 - RBS is used for static type checking
 - Type definitions are in the `sig/` directory
 - Update type definitions when modifying code
@@ -191,10 +192,6 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 - Avoid using `untyped` type, use it only when it is not feasible to derive the correct type
 - Do not write types like `(nil | Type)`, use `Type?` instead
 - See `docs/StaticTypingGuide.md` for details
-
-## Memories
-
-- `lib/datadog/ci/configuration/settings.rb` file is an exception from RBS typing - these options are not defined anywhere in RBS files
 
 ## Testing
 
@@ -208,6 +205,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 - CI runs tests against multiple Ruby versions (2.7, 3.0, 3.1, 3.2, 3.3, 3.4, jruby-9)
 - Always add tests for your changes
 
-## Best Practices
+## Memories
 
-- Always add RBS definitions for your changes, if not sure run `bundle exec rake steep:check` to see if there are type issues now
+- `lib/datadog/ci/configuration/settings.rb` file is an exception from RBS typing - these options are not defined anywhere in RBS files
+- Always run tests after adding or changing them

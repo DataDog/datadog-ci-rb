@@ -110,6 +110,17 @@ module Datadog
               nil
             end
 
+            def pr_number
+              event_json = github_event_json
+              return nil if event_json.nil?
+
+              event_json["number"]
+            rescue => e
+              Datadog.logger.error("Failed to extract PR number from GitHub Actions: #{e}")
+              Core::Telemetry::Logger.report(e, description: "Failed to extract PR number from GitHub Actions")
+              nil
+            end
+
             private
 
             def github_event_json
