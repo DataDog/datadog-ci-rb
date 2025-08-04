@@ -79,7 +79,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
           "git.repository_url" => "https://ghenterprise.com/ghactions-repo.git",
           "git.commit.head.sha" => "df289512a51123083a8e6931dd6f57bb3883d4c4",
           "git.pull_request.base_branch" => "github-base-ref",
-          "git.pull_request.base_branch_sha" => "52e0974c74d41160a03d59ddc73bb9f5adab054b"
+          "git.pull_request.base_branch_sha" => "52e0974c74d41160a03d59ddc73bb9f5adab054b",
+          "pr.number" => "1"
         }
       end
 
@@ -129,6 +130,57 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
       it "matches CI tags" do
         is_expected.to eq(expected_tags)
       end
+    end
+  end
+
+  describe "#pr_number" do
+    subject { described_class.new(env).pr_number }
+
+    context "without event.json" do
+      let(:env) do
+        {
+          "GITHUB_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123"
+        }
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with event.json" do
+      let(:env) do
+        {
+          "GITHUB_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+          "GITHUB_EVENT_PATH" => "./spec/support/fixtures/github_actions/github_event.json"
+        }
+      end
+
+      it { is_expected.to eq(1) }
+    end
+
+    context "with event.json that does not exist" do
+      let(:env) do
+        {
+          "GITHUB_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+          "GITHUB_EVENT_PATH" => "./spec/support/fixtures/github_actions/no_such_file.json"
+        }
+      end
+
+      it { is_expected.to be_nil }
+    end
+
+    context "with malformed event.json" do
+      let(:env) do
+        {
+          "GITHUB_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+          "GITHUB_EVENT_PATH" => "./spec/support/fixtures/github_actions/malformed_event.json"
+        }
+      end
+
+      before do
+        allow(File).to receive(:read).and_return("invalid json")
+      end
+
+      it { is_expected.to be_nil }
     end
   end
 end
