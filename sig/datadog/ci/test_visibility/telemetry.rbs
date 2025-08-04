@@ -12,6 +12,8 @@ module Datadog
         def self.event_tags_from_span: (Datadog::CI::Span span) -> ::Hash[String, String]
 
         def self.add_browser_tags!: (Datadog::CI::Span span, ::Hash[String, String] tags) -> void
+
+        def self.agentless_logs_component: () -> Datadog::CI::Logs::Component?
       end
     end
   end

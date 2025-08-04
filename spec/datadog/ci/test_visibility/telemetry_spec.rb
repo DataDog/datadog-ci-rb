@@ -299,7 +299,11 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
     subject(:test_session_started) { described_class.test_session_started(test_session) }
 
     let(:provider_tag) { "github" }
+    let(:agentless_logs_enabled_tag) { false }
+
     let(:expected_provider_telemetry_tag) { "github" }
+    let(:expected_auto_injected_telemetry_tag) { "false" }
+    let(:expected_agentless_logs_enabled_tag) { "false" }
 
     let(:test_session) do
       instance_double(
@@ -307,14 +311,20 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
         ci_provider: provider_tag
       )
     end
+    let(:agentless_logs_component) do
+      instance_double(Datadog::CI::Logs::Component, enabled: agentless_logs_enabled_tag)
+    end
 
     before do
+      allow(described_class).to receive(:agentless_logs_component).and_return(agentless_logs_component)
+
       expect(Datadog::CI::Utils::Telemetry).to receive(:inc)
         .with(
           Datadog::CI::Ext::Telemetry::METRIC_TEST_SESSION,
           1,
           {
-            Datadog::CI::Ext::Telemetry::TAG_AUTO_INJECTED => "false",
+            Datadog::CI::Ext::Telemetry::TAG_AUTO_INJECTED => expected_auto_injected_telemetry_tag,
+            Datadog::CI::Ext::Telemetry::TAG_AGENTLESS_LOG_SUBMISSION_ENABLED => expected_agentless_logs_enabled_tag,
             Datadog::CI::Ext::Telemetry::TAG_PROVIDER => expected_provider_telemetry_tag
           }
         )
@@ -325,6 +335,23 @@ RSpec.describe Datadog::CI::TestVisibility::Telemetry do
     context "when provider is not supported" do
       let(:provider_tag) { nil }
       let(:expected_provider_telemetry_tag) { Datadog::CI::Ext::Telemetry::Provider::UNSUPPORTED }
+
+      it { test_session_started }
+    end
+
+    context "when auto instrumentation is enabled" do
+      let(:expected_auto_injected_telemetry_tag) { "true" }
+
+      it do
+        ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_AUTO_INSTRUMENTATION_PROVIDER => "github") do
+          test_session_started
+        end
+      end
+    end
+
+    context "when agentless logs are enabled" do
+      let(:agentless_logs_enabled_tag) { true }
+      let(:expected_agentless_logs_enabled_tag) { "true" }
 
       it { test_session_started }
     end
