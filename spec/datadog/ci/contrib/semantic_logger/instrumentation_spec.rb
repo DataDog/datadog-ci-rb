@@ -37,6 +37,7 @@ RSpec.describe "SemanticLogger instrumentation" do
     let(:agentless_logs_enabled) { true }
     let(:api_key) { "dd-api-key" }
   end
+  include_context "Telemetry spy"
 
   before do
     app # Initialize app before enabling log injection
@@ -83,5 +84,9 @@ RSpec.describe "SemanticLogger instrumentation" do
     expect(log[:level]).to eq(:info)
     expect(log[:named_tags][:dd][:trace_id]).to eq(test_span.trace_id.to_s)
     expect(log[:named_tags][:dd][:service]).to eq("rails_test")
+
+    # test session telemetry metric is tagged with agentless_log_submission_enabled
+    test_session_started_metric = telemetry_metric(:inc, "test_session")
+    expect(test_session_started_metric.tags["agentless_log_submission_enabled"]).to eq("true")
   end
 end

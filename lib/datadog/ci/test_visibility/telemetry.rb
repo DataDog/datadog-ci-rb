@@ -32,12 +32,14 @@ module Datadog
 
         def self.test_session_started(test_session)
           auto_injected = !ENV[Ext::Settings::ENV_AUTO_INSTRUMENTATION_PROVIDER].nil?
+          agentless_logs_enabled = !!agentless_logs_component&.enabled
 
           Utils::Telemetry.inc(
             Ext::Telemetry::METRIC_TEST_SESSION,
             1,
             {
               Ext::Telemetry::TAG_AUTO_INJECTED => auto_injected.to_s,
+              Ext::Telemetry::TAG_AGENTLESS_LOG_SUBMISSION_ENABLED => agentless_logs_enabled.to_s,
               Ext::Telemetry::TAG_PROVIDER => test_session.ci_provider || Ext::Telemetry::Provider::UNSUPPORTED
             }
           )
@@ -88,6 +90,10 @@ module Datadog
           tags[Ext::Telemetry::TAG_IS_RUM] = "true" if span.get_tag(Ext::Test::TAG_IS_RUM_ACTIVE)
           browser_driver = span.get_tag(Ext::Test::TAG_BROWSER_DRIVER)
           tags[Ext::Telemetry::TAG_BROWSER_DRIVER] = browser_driver if browser_driver
+        end
+
+        def self.agentless_logs_component
+          Datadog.send(:components).agentless_logs_submission
         end
       end
     end

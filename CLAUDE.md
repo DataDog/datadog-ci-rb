@@ -209,3 +209,4 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 
 - `lib/datadog/ci/configuration/settings.rb` file is an exception from RBS typing - these options are not defined anywhere in RBS files
 - Always run tests after adding or changing them
+- Always run `bundle exec rake steep:check` and fix typing issues after code changes
