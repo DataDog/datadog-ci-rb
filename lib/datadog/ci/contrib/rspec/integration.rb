@@ -43,7 +43,9 @@ module Datadog
           end
 
           def test_discovery_component
-            Datadog.send(:components).test_discovery
+            components = Datadog.send(:components)
+            return nil unless components.respond_to?(:test_discovery)
+            components.test_discovery
           end
         end
       end
