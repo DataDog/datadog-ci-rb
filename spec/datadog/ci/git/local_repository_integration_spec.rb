@@ -484,17 +484,6 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
         end
       end
 
-      context "unshallow with parent_only" do
-        subject do
-          with_clone_git_dir { described_class.git_unshallow(parent_only: true) }
-        end
-
-        it "unshallows the repository" do
-          expect(subject).to be_truthy
-          expect(commits.size).to eq(2)
-        end
-      end
-
       context "when unshallow command fails" do
         before do
           head_commit = "sha"
@@ -520,6 +509,25 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
         # it signals error to the telemetry
         it_behaves_like "emits telemetry metric", :inc, "git.command_errors", 1
+      end
+    end
+
+    describe ".fetch_head_commit_sha" do
+      let(:commit_sha) do
+        with_source_git_dir do
+          `git rev-parse HEAD~1`.strip
+        end
+      end
+      subject { with_clone_git_dir { described_class.fetch_head_commit_sha(commit_sha) } }
+
+      it "fetches the commit" do
+        subject
+
+        git_commit_message = with_clone_git_dir do
+          described_class.git_commit_message(commit_sha)
+        end
+
+        expect(git_commit_message).to eq("Update README 2")
       end
     end
   end

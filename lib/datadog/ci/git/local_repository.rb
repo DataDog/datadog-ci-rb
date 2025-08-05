@@ -268,7 +268,7 @@ module Datadog
           false
         end
 
-        def self.git_unshallow(parent_only: false)
+        def self.git_unshallow
           Telemetry.git_command(Ext::Telemetry::Command::UNSHALLOW)
           # @type var res: String?
           res = nil
@@ -289,11 +289,10 @@ module Datadog
 
               res =
                 begin
-                  unshallowing_depth = parent_only ? "--deepen=1" : "--shallow-since=\"1 month ago\""
                   # @type var cmd: Array[String]
                   cmd = [
                     "fetch",
-                    unshallowing_depth,
+                    "--shallow-since=\"1 month ago\"",
                     "--update-shallow",
                     "--filter=blob:none",
                     "--recurse-submodules=no",
@@ -316,6 +315,32 @@ module Datadog
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::UNSHALLOW, duration_ms)
           res
+        end
+
+        def self.fetch_head_commit_sha(commit_sha)
+          remote = get_remote_name
+          # @type var res: String?
+          res = nil
+
+          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            cmd = [
+              "fetch",
+              "--update-shallow",
+              "--filter=blob:none",
+              "--recurse-submodules=no",
+              "--no-write-fetch-head",
+              remote,
+              commit_sha
+            ]
+            res = CLI.exec_git_command(cmd)
+          end
+
+          Telemetry.git_command_ms(Ext::Telemetry::Command::FETCH_HEAD_COMMIT_SHA, duration_ms)
+          res
+        rescue => e
+          log_failure(e, "git fetch_head_commit_sha")
+          Telemetry.track_error(e, Ext::Telemetry::Command::FETCH_HEAD_COMMIT_SHA)
+          nil
         end
 
         # Returns a Diff object with relative file paths for files that were changed since the given base_commit.
@@ -367,6 +392,19 @@ module Datadog
         rescue => e
           Datadog.logger.debug { "Error getting upstream: #{e}" }
           nil
+        end
+
+        def self.get_remote_name
+          upstream = LocalRepository.get_upstream_branch
+
+          if upstream
+            upstream.split("/").first
+          else
+            # Fallback to first remote if no upstream is set
+            first_remote_value = CLI.exec_git_command(["remote"])&.split("\n")&.first
+            Datadog.logger.debug { "First remote value: '#{first_remote_value}'" }
+            first_remote_value || "origin"
+          end
         end
 
         def self.filter_invalid_commits(commits)

@@ -202,7 +202,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
               let(:shallow_clone) { true }
 
               it "returns head commit info" do
-                expect(Datadog::CI::Git::LocalRepository).to receive(:git_unshallow).with(parent_only: true).and_return(true)
+                expect(Datadog::CI::Git::LocalRepository).to receive(:fetch_head_commit_sha).with("my-commit-head-sha").and_return(true)
 
                 is_expected.to include(
                   "git.commit.head.message" => head_commit_message
