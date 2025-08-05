@@ -84,7 +84,7 @@ module Datadog
               env["GITHUB_BASE_REF"]
             end
 
-            def git_pull_request_base_branch_sha
+            def git_pull_request_base_branch_head_sha
               return nil if git_pull_request_base_branch.nil?
 
               event_json = github_event_json
@@ -92,8 +92,8 @@ module Datadog
 
               event_json.dig("pull_request", "base", "sha")
             rescue => e
-              Datadog.logger.error("Failed to extract pull request base branch SHA from GitHub Actions: #{e}")
-              Core::Telemetry::Logger.report(e, description: "Failed to extract pull request base branch SHA from GitHub Actions")
+              Datadog.logger.error("Failed to extract pull request base branch head SHA from GitHub Actions: #{e}")
+              Core::Telemetry::Logger.report(e, description: "Failed to extract pull request base branch head SHA from GitHub Actions")
               nil
             end
 

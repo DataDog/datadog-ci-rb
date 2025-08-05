@@ -23,6 +23,7 @@ module Datadog
         # additional tags that we use for github actions jobs with "pull_request" target
         TAG_PULL_REQUEST_BASE_BRANCH = "git.pull_request.base_branch"
         TAG_PULL_REQUEST_BASE_BRANCH_SHA = "git.pull_request.base_branch_sha"
+        TAG_PULL_REQUEST_BASE_BRANCH_HEAD_SHA = "git.pull_request.base_branch_head_sha"
 
         TAG_COMMIT_HEAD_SHA = "git.commit.head.sha"
         TAG_COMMIT_HEAD_MESSAGE = "git.commit.head.message"

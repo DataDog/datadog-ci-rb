@@ -79,7 +79,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
           "git.repository_url" => "https://ghenterprise.com/ghactions-repo.git",
           "git.commit.head.sha" => "df289512a51123083a8e6931dd6f57bb3883d4c4",
           "git.pull_request.base_branch" => "github-base-ref",
-          "git.pull_request.base_branch_sha" => "52e0974c74d41160a03d59ddc73bb9f5adab054b",
+          "git.pull_request.base_branch_head_sha" => "52e0974c74d41160a03d59ddc73bb9f5adab054b",
           "pr.number" => "1"
         }
       end

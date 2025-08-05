@@ -52,6 +52,7 @@ module Datadog
 
               Git::TAG_PULL_REQUEST_BASE_BRANCH => @provider.git_pull_request_base_branch,
               Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA => @provider.git_pull_request_base_branch_sha,
+              Git::TAG_PULL_REQUEST_BASE_BRANCH_HEAD_SHA => @provider.git_pull_request_base_branch_head_sha,
               Environment::TAG_PR_NUMBER => @provider.pr_number,
 
               Git::TAG_COMMIT_HEAD_SHA => @provider.git_commit_head_sha,
