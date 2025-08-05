@@ -48,6 +48,16 @@ module Datadog
 
             def ci_env_vars: () -> String?
 
+            def git_pull_request_base_branch: () -> String?
+
+            def git_pull_request_base_branch_sha: () -> String?
+
+            def git_pull_request_base_branch_head_sha: () -> String?
+
+            def git_commit_head_sha: () -> String?
+
+            def pr_number: () -> String?
+
             private
 
             def extract_name_email: () -> [String?, String?]

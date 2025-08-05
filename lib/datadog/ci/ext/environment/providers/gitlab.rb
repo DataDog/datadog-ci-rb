@@ -108,6 +108,14 @@ module Datadog
               env["CI_MERGE_REQUEST_TARGET_BRANCH_NAME"]
             end
 
+            def git_pull_request_base_branch_sha
+              env["CI_MERGE_REQUEST_DIFF_BASE_SHA"]
+            end
+
+            def git_pull_request_base_branch_head_sha
+              env["CI_MERGE_REQUEST_TARGET_BRANCH_SHA"]
+            end
+
             def git_commit_head_sha
               env["CI_MERGE_REQUEST_SOURCE_BRANCH_SHA"]
             end

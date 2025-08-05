@@ -23,6 +23,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Gitlab do
           "CI_REPOSITORY_URL" => "https://gitlab.com/repo/myrepo.git",
           "CI_MERGE_REQUEST_TARGET_BRANCH_NAME" => "main",
           "CI_MERGE_REQUEST_TARGET_BRANCH_SHA" => "abc123",
+          "CI_MERGE_REQUEST_DIFF_BASE_SHA" => "ghi789",
           "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA" => "def456",
           "GITLAB_CI" => "gitlab"
         }
@@ -51,6 +52,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Gitlab do
           "git.commit.sha" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
           "git.commit.head.sha" => "def456",
           "git.pull_request.base_branch" => "main",
+          "git.pull_request.base_branch_sha" => "ghi789",
+          "git.pull_request.base_branch_head_sha" => "abc123",
           "git.repository_url" => "https://gitlab.com/repo/myrepo.git"
         }
       end

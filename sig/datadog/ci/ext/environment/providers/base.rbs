@@ -66,6 +66,8 @@ module Datadog
 
             def git_pull_request_base_branch_sha: () -> String?
 
+            def git_pull_request_base_branch_head_sha: () -> String?
+
             def git_commit_head_sha: () -> String?
 
             def git_commit_head_message: () -> String?
