@@ -10,7 +10,7 @@ module Datadog
         def self.base_branch_sha(base_branch)
           Datadog.logger.debug { "Base branch: '#{base_branch}'" }
 
-          remote_name = get_remote_name
+          remote_name = LocalRepository.get_remote_name
           Datadog.logger.debug { "Remote name: '#{remote_name}'" }
 
           source_branch = get_source_branch
@@ -25,20 +25,6 @@ module Datadog
           end
 
           strategy.call
-        end
-
-        def self.get_remote_name
-          # Try to find remote from upstream tracking
-          upstream = LocalRepository.get_upstream_branch
-
-          if upstream
-            upstream.split("/").first
-          else
-            # Fallback to first remote if no upstream is set
-            first_remote_value = CLI.exec_git_command(["remote"])&.split("\n")&.first
-            Datadog.logger.debug { "First remote value: '#{first_remote_value}'" }
-            first_remote_value || "origin"
-          end
         end
 
         def self.get_source_branch

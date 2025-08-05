@@ -71,7 +71,7 @@ module Datadog
           # we need to unshallow at least the parent of the current merge commit to be able to extract information
           # from the real original commit.
           if tags[Git::TAG_COMMIT_HEAD_SHA]
-            CI::Git::LocalRepository.git_unshallow(parent_only: true) if CI::Git::LocalRepository.git_shallow_clone?
+            CI::Git::LocalRepository.fetch_head_commit_sha(tags[Git::TAG_COMMIT_HEAD_SHA]) if CI::Git::LocalRepository.git_shallow_clone?
 
             env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
           end
