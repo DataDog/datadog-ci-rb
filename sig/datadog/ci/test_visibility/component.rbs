@@ -53,7 +53,7 @@ module Datadog
 
         def active_test_module: () -> Datadog::CI::TestModule?
 
-        def active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
+        def active_test_suite: (String? test_suite_name) -> Datadog::CI::TestSuite?
 
         def active_test: () -> Datadog::CI::Test?
 
@@ -91,6 +91,8 @@ module Datadog
         def set_codeowners: (Datadog::CI::Span span) -> void
 
         def null_span: () -> Datadog::CI::Span
+
+        def single_active_test_suite: () -> Datadog::CI::TestSuite?
 
         def skip_tracing: (?untyped block) -> untyped
 

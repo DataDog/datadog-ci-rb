@@ -230,16 +230,33 @@ RSpec.describe Datadog::CI do
     end
 
     describe "::active_test_suite" do
-      let(:test_suite_name) { "my-suite" }
-      subject(:active_test_suite) { described_class.active_test_suite(test_suite_name) }
-
       let(:ci_test_suite) { instance_double(Datadog::CI::TestSuite) }
 
-      before do
-        allow(test_visibility).to receive(:active_test_suite).with(test_suite_name).and_return(ci_test_suite)
+      context "when test_suite_name is provided" do
+        let(:test_suite_name) { "my-suite" }
+        subject(:active_test_suite) { described_class.active_test_suite(test_suite_name) }
+
+        before do
+          allow(test_visibility).to receive(:active_test_suite).with(test_suite_name).and_return(ci_test_suite)
+        end
+
+        it { is_expected.to be(ci_test_suite) }
       end
 
-      it { is_expected.to be(ci_test_suite) }
+      context "when test_suite_name is not provided" do
+        subject(:active_test_suite) { described_class.active_test_suite }
+
+        before do
+          allow(test_visibility).to receive(:active_test_suite).with(nil).and_return(ci_test_suite)
+        end
+
+        it { is_expected.to be(ci_test_suite) }
+
+        it "calls test_visibility with nil" do
+          active_test_suite
+          expect(test_visibility).to have_received(:active_test_suite).with(nil)
+        end
+      end
     end
   end
 

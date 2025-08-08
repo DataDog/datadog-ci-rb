@@ -752,6 +752,70 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         end
       end
 
+      describe "#active_test_suite" do
+        context "when test_suite_name is provided" do
+          subject { test_visibility.active_test_suite("my suite") }
+
+          context "when there is no active test suite" do
+            it { is_expected.to be_nil }
+          end
+
+          context "when test suite is started" do
+            let(:test_suite) { test_visibility.start_test_suite("my suite") }
+            before do
+              test_suite
+            end
+
+            it "returns the active test suite" do
+              expect(subject).to be(test_suite)
+            end
+          end
+
+          context "when test suite with a different name is started" do
+            let(:test_suite) { test_visibility.start_test_suite("my other suite") }
+            before do
+              test_suite
+            end
+
+            it "returns the active test suite" do
+              expect(subject).to be_nil
+            end
+          end
+        end
+
+        context "when test_suite_name is nil" do
+          subject { test_visibility.active_test_suite(nil) }
+
+          context "when there is no active test suite" do
+            it { is_expected.to be_nil }
+          end
+
+          context "when there is one active test suite" do
+            let(:test_suite) { test_visibility.start_test_suite("my suite") }
+            before do
+              test_suite
+            end
+
+            it "returns the single active test suite" do
+              expect(subject).to be(test_suite)
+            end
+          end
+
+          context "when there are multiple active test suites" do
+            let(:test_suite1) { test_visibility.start_test_suite("my suite 1") }
+            let(:test_suite2) { test_visibility.start_test_suite("my suite 2") }
+            before do
+              test_suite1
+              test_suite2
+            end
+
+            it "returns nil when there are multiple test suites" do
+              expect(subject).to be_nil
+            end
+          end
+        end
+      end
+
       describe "#active_test" do
         subject { test_visibility.active_test }
 

@@ -22,7 +22,7 @@ module Datadog
 
         def active_test_module: () -> nil
 
-        def active_test_suite: (String test_suite_name) -> nil
+        def active_test_suite: (String? test_suite_name) -> nil
 
         def active_test: () -> nil
 
