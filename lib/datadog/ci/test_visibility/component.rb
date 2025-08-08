@@ -162,6 +162,10 @@ module Datadog
         end
 
         def active_test_suite(test_suite_name)
+          # when test_suite_name is not provided (from public API most likely)
+          # we return the single active test suite because most of the time there is only one test suite running
+          return single_active_test_suite if test_suite_name.nil?
+
           # when fetching test_suite to use as test's context, try local context instance first
           local_test_suite = @context.active_test_suite(test_suite_name)
           return local_test_suite if local_test_suite
@@ -314,6 +318,14 @@ module Datadog
         end
 
         # HELPERS
+        def single_active_test_suite
+          # when fetching test_suite to use as test's context, try local context instance first
+          local_test_suite = @context.single_active_test_suite
+          return local_test_suite if local_test_suite
+
+          maybe_remote_context.single_active_test_suite
+        end
+
         def skip_tracing(block = nil)
           block&.call(nil)
         end
