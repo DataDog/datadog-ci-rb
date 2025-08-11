@@ -187,9 +187,21 @@ module Datadog
       # test_suite.finish
       # ```
       #
+      # Most of the time, there is only one active test suite - except when using minitest with parallel test runner,
+      # such as rails built-in test runner.
+      #
+      # When using RSpec or minitest without parallel test runner, there is only one active test suite, so you can use the following code to fetch it:
+      #
+      # ```
+      # test_suite = Datadog::CI.active_test_suite
+      # test_suite.finish
+      # ```
+      #
+      # @param test_suite_name [String?] the name of the test suite to fetch. Optional. When not provided, it assumes that there is a single active test suite and returns it. If there are multiple active test suites and test_suite_name is not provided, it returns nil.
+      #
       # @return [Datadog::CI::TestSuite] the active test suite
       # @return [nil] if no test suite with given name is active
-      def active_test_suite(test_suite_name)
+      def active_test_suite(test_suite_name = nil)
         test_visibility.active_test_suite(test_suite_name)
       end
 
