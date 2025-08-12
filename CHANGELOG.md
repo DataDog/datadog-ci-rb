@@ -1,5 +1,20 @@
 ## [Unreleased]
 
+## [1.22.0] - 2025-08-12
+
+### Added
+* Add pr_number extraction to GitHub Actions provider ([#390][])
+* Add ci.job.id tag to events ([#387][])
+* Test discovery mode - internal, intended for usage with Datadog test runner ([#378][])
+
+### Changed
+* fetch exact head commit instead of unshallowing parent for impacted tests detection ([#393][])
+
+### Fixed
+* Fix: make test_suite_name parameter optional for Datadog::CI.active_test_suite method ([#396][])
+* Fix handling of base branch commit SHA for Github Actions and Gitlab ([#394][])
+* fix Minitest's test suite name when encountering relative source file paths ([#391][])
+
 ## [1.21.1] - 2025-07-22
 
 ### Fixed
@@ -499,7 +514,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.0...main
+[1.22.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.1...v1.22.0
 [1.21.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.0...v1.21.1
 [1.21.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.2...v1.21.0
 [1.20.2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.1...v1.20.2
@@ -707,5 +723,12 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#359]: https://github.com/DataDog/datadog-ci-rb/issues/359
 [#366]: https://github.com/DataDog/datadog-ci-rb/issues/366
 [#370]: https://github.com/DataDog/datadog-ci-rb/issues/370
+[#378]: https://github.com/DataDog/datadog-ci-rb/issues/378
 [#383]: https://github.com/DataDog/datadog-ci-rb/issues/383
 [#384]: https://github.com/DataDog/datadog-ci-rb/issues/384
+[#387]: https://github.com/DataDog/datadog-ci-rb/issues/387
+[#390]: https://github.com/DataDog/datadog-ci-rb/issues/390
+[#391]: https://github.com/DataDog/datadog-ci-rb/issues/391
+[#393]: https://github.com/DataDog/datadog-ci-rb/issues/393
+[#394]: https://github.com/DataDog/datadog-ci-rb/issues/394
+[#396]: https://github.com/DataDog/datadog-ci-rb/issues/396
