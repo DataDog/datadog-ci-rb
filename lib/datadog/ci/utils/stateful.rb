@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "file_storage"
+require_relative "../ext/test_runner"
 
 module Datadog
   module CI
@@ -19,6 +20,11 @@ module Datadog
 
         # Load component state
         def load_component_state
+          # Check for Datadog Test Runner context first
+          if Dir.exist?(Ext::TestRunner::DATADOG_CONTEXT_PATH)
+            return true if restore_state_from_datadog_test_runner
+          end
+
           test_visibility_component = Datadog.send(:components).test_visibility
           return false unless test_visibility_component.client_process?
 
@@ -45,6 +51,10 @@ module Datadog
 
         def storage_key
           raise NotImplementedError, "Components must implement #storage_key"
+        end
+
+        def restore_state_from_datadog_test_runner
+          false
         end
       end
     end

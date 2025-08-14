@@ -11,6 +11,8 @@ module Datadog
         def restore_state: (Hash[Symbol, untyped] state) -> void
 
         def storage_key: () -> String
+
+        def restore_state_from_datadog_test_runner: () -> bool
       end
     end
   end

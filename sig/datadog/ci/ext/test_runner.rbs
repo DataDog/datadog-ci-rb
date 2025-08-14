@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Ext
+      module TestRunner
+        DATADOG_CONTEXT_PATH: String
+      end
+    end
+  end
+end
