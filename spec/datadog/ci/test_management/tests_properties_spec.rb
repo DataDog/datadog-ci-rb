@@ -250,4 +250,44 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
       end
     end
   end
+
+  describe Datadog::CI::TestManagement::TestsProperties::Response do
+    describe "with json keyword argument" do
+      let(:http_response) { double("http_response", ok?: true) }
+      let(:json_data) do
+        {
+          "data" => {
+            "attributes" => {
+              "modules" => {
+                "rspec" => {
+                  "suites" => {
+                    "TestSuite" => {
+                      "tests" => {
+                        "test1" => {"properties" => {"disabled" => "false", "quarantined" => "true"}},
+                        "test2" => {"properties" => {"disabled" => "true", "quarantined" => "false"}}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      end
+      
+      subject(:response) { described_class.new(http_response, json: json_data) }
+
+      it "uses provided json instead of parsing http response" do
+        expect(response.tests).to eq({
+          "TestSuite.test1." => {"disabled" => false, "quarantined" => true},
+          "TestSuite.test2." => {"disabled" => true, "quarantined" => false}
+        })
+      end
+
+      it "does not call JSON.parse on http response payload" do
+        expect(JSON).not_to receive(:parse)
+        response.tests
+      end
+    end
+  end
 end

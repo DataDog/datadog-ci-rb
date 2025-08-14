@@ -10,7 +10,7 @@ module Datadog
           @http_response: Datadog::CI::Transport::Adapters::Net::Response?
           @json: Hash[String, untyped]?
 
-          def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
+          def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response, ?json: Hash[String, untyped]?) -> void
 
           def ok?: () -> bool
 

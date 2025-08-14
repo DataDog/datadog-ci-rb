@@ -15,9 +15,9 @@ module Datadog
       # fetches and stores a map of tests to their test management properties from the backend
       class TestsProperties
         class Response
-          def initialize(http_response)
+          def initialize(http_response, json: nil)
             @http_response = http_response
-            @json = nil
+            @json = json
           end
 
           def ok?

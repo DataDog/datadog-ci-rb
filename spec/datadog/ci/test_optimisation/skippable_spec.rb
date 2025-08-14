@@ -227,4 +227,37 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
       end
     end
   end
+
+  describe Datadog::CI::TestOptimisation::Skippable::Response do
+    describe "with json keyword argument" do
+      let(:http_response) { double("http_response", ok?: true) }
+      let(:json_data) do
+        {
+          "meta" => {"correlation_id" => "test_correlation_123"},
+          "data" => [
+            {
+              "type" => "test",
+              "attributes" => {"suite" => "TestSuite", "name" => "test1", "parameters" => "params1"}
+            },
+            {
+              "type" => "test",
+              "attributes" => {"suite" => "TestSuite", "name" => "test2", "parameters" => nil}
+            }
+          ]
+        }
+      end
+      
+      subject(:response) { described_class.new(http_response, json: json_data) }
+
+      it "uses provided json instead of parsing http response" do
+        expect(response.correlation_id).to eq("test_correlation_123")
+        expect(response.tests).to eq(Set.new(["TestSuite.test1.params1", "TestSuite.test2."]))
+      end
+
+      it "does not call JSON.parse on http response payload" do
+        expect(JSON).not_to receive(:parse)
+        response.tests
+      end
+    end
+  end
 end

@@ -54,6 +54,19 @@ module Datadog
           FILE_STORAGE_KEY
         end
 
+        def restore_state_from_datadog_test_runner
+          Datadog.logger.debug { "Restoring library configuration from Datadog Test Runner context" }
+
+          settings = load_json(Ext::TestRunner::SETTINGS_FILE_NAME)
+          if settings.nil?
+            Datadog.logger.debug { "Restoring library configuration failed, will request again" }
+            false
+          end
+
+          @library_configuration = LibrarySettings.new(nil, json: settings)
+          true
+        end
+
         private
 
         def fetch_library_configuration(test_session)

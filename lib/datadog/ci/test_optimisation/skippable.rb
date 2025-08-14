@@ -14,9 +14,9 @@ module Datadog
     module TestOptimisation
       class Skippable
         class Response
-          def initialize(http_response)
+          def initialize(http_response, json: nil)
             @http_response = http_response
-            @json = nil
+            @json = json
           end
 
           def ok?

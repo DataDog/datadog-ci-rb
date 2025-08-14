@@ -287,4 +287,25 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
       end
     end
   end
+
+  describe Datadog::CI::Remote::LibrarySettings do
+    describe "with json keyword argument" do
+      let(:http_response) { double("http_response", ok?: false) }
+      let(:json_data) { {"itr_enabled" => "true", "code_coverage" => "1", "tests_skipping" => "false"} }
+
+      subject(:settings) { described_class.new(http_response, json: json_data) }
+
+      it "uses provided json instead of parsing http response" do
+        expect(settings.payload).to eq(json_data)
+        expect(settings.itr_enabled?).to be true
+        expect(settings.code_coverage_enabled?).to be true
+        expect(settings.tests_skipping_enabled?).to be false
+      end
+
+      it "does not call JSON.parse on http response payload" do
+        expect(JSON).not_to receive(:parse)
+        settings.payload
+      end
+    end
+  end
 end
