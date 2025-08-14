@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require_relative "file_storage"
 require_relative "../ext/test_runner"
 
@@ -22,6 +23,7 @@ module Datadog
         def load_component_state
           # Check for Datadog Test Runner context first
           if Dir.exist?(Ext::TestRunner::DATADOG_CONTEXT_PATH)
+            Datadog.logger.debug { "Datadog Test Runner context found" }
             return true if restore_state_from_datadog_test_runner
           end
 
@@ -55,6 +57,24 @@ module Datadog
 
         def restore_state_from_datadog_test_runner
           false
+        end
+
+        def load_json(file_name)
+          file_path = File.join(Ext::TestRunner::DATADOG_CONTEXT_PATH, file_name)
+
+          unless File.exist?(file_path)
+            Datadog.logger.debug { "JSON file not found: #{file_path}" }
+            return nil
+          end
+
+          content = File.read(file_path)
+          JSON.parse(content)
+        rescue JSON::ParserError => e
+          Datadog.logger.debug { "Failed to parse JSON file #{file_path}: #{e.message}" }
+          nil
+        rescue => e
+          Datadog.logger.debug { "Failed to load JSON file #{file_path}: #{e.message}" }
+          nil
         end
       end
     end

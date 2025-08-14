@@ -13,6 +13,8 @@ module Datadog
         def storage_key: () -> String
 
         def restore_state_from_datadog_test_runner: () -> bool
+
+        def load_json: (String file_name) -> Hash[untyped, untyped]?
       end
     end
   end
