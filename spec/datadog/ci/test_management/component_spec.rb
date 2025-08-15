@@ -147,6 +147,107 @@ RSpec.describe Datadog::CI::TestManagement::Component do
         end
       end
 
+      context "when test_management_tests.json file from Datadog Test Runner exists" do
+        let(:test_management_tests_file_path) { ".dd/context/test_management_tests.json" }
+
+        before do
+          # Create .dd/context folder if it doesn't exist
+          FileUtils.mkdir_p(".dd/context")
+
+          # Write test management data to the file
+          File.write(test_management_tests_file_path, JSON.pretty_generate(test_management_data))
+        end
+
+        after do
+          FileUtils.rm_rf(".dd")
+        end
+
+        context "and contains valid data" do
+          let(:test_management_data) do
+            {
+              "modules" => {
+                "rspec" => {
+                  "suites" => {
+                    "AdminControllerTest" => {
+                      "tests" => {
+                        "test_new" => {
+                          "properties" => {
+                            "disabled" => false,
+                            "quarantined" => true,
+                            "attempt_to_fix" => true
+                          }
+                        },
+                        "test_index" => {
+                          "properties" => {
+                            "disabled" => "true",
+                            "quarantined" => "false"
+                          }
+                        },
+                        "test_create" => {
+                          "properties" => {
+                            "disabled" => false,
+                            "quarantined" => true,
+                            "attempt_to_fix" => false
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          end
+
+          it "loads test management tests from the file" do
+            configure
+
+            expect(test_management.tests_properties).to include("AdminControllerTest.test_new.")
+            expect(test_management.tests_properties).to include("AdminControllerTest.test_index.")
+            expect(test_management.tests_properties).to include("AdminControllerTest.test_create.")
+            expect(test_management.tests_properties.size).to eq(3)
+          end
+
+          it "parses test properties correctly" do
+            configure
+
+            test_new_props = test_management.tests_properties["AdminControllerTest.test_new."]
+            expect(test_new_props["disabled"]).to be false
+            expect(test_new_props["quarantined"]).to be true
+            expect(test_new_props["attempt_to_fix"]).to be true
+
+            test_index_props = test_management.tests_properties["AdminControllerTest.test_index."]
+            expect(test_index_props["disabled"]).to be true
+            expect(test_index_props["quarantined"]).to be false
+
+            test_create_props = test_management.tests_properties["AdminControllerTest.test_create."]
+            expect(test_create_props["disabled"]).to be false
+            expect(test_create_props["quarantined"]).to be true
+            expect(test_create_props["attempt_to_fix"]).to be false
+          end
+
+          it "enables test management functionality" do
+            configure
+
+            expect(test_management.enabled).to be true
+          end
+        end
+
+        context "when test_management_tests.json file contains empty modules" do
+          let(:test_management_data) do
+            {
+              "modules" => {}
+            }
+          end
+
+          it "loads empty test management tests" do
+            configure
+
+            expect(test_management.tests_properties).to be_empty
+            expect(test_management.enabled).to be true
+          end
+        end
+      end
+
       describe "#tag_test_from_properties" do
         before do
           configure

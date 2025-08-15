@@ -6,6 +6,7 @@ require "datadog/core/telemetry/logging"
 
 require_relative "../ext/test"
 require_relative "../ext/telemetry"
+require_relative "../ext/test_runner"
 
 require_relative "../git/local_repository"
 
@@ -84,7 +85,11 @@ module Datadog
           load_datadog_cov! if @code_coverage_enabled
 
           # Load component state first, and if successful, skip fetching skippable tests
-          if skipping_tests? && !load_component_state
+          # Also try to restore from Datadog Test Runner context if available
+          if skipping_tests?
+            return if load_component_state
+            return if restore_state_from_datadog_test_runner
+
             fetch_skippable_tests(test_session)
             store_component_state if test_session.distributed
           end
@@ -210,7 +215,88 @@ module Datadog
           FILE_STORAGE_KEY
         end
 
+        def restore_state_from_datadog_test_runner
+          Datadog.logger.debug { "Restoring skippable tests from Datadog Test Runner context" }
+
+          skippable_tests_data = load_json(Ext::TestRunner::SKIPPABLE_TESTS_FILE_NAME)
+          if skippable_tests_data.nil?
+            Datadog.logger.debug { "Restoring skippable tests failed, will request again" }
+            return false
+          end
+
+          Datadog.logger.debug { "Restored skippable tests from Datadog Test Runner: #{skippable_tests_data}" }
+
+          transformed_data = transform_test_runner_data(skippable_tests_data)
+
+          Datadog.logger.debug { "Skippable tests after transformation: #{transformed_data}" }
+
+          # Use the Skippable::Response class to parse the transformed data
+          skippable_response = Skippable::Response.new(nil, json: transformed_data)
+
+          @mutex.synchronize do
+            @correlation_id = skippable_response.correlation_id
+            @skippable_tests = skippable_response.tests
+          end
+
+          Datadog.logger.debug { "Found [#{@skippable_tests.size}] skippable tests from context" }
+          Datadog.logger.debug { "ITR correlation ID from context: #{@correlation_id}" }
+
+          true
+        end
+
         private
+
+        # Transforms Test Runner skippable tests data format to the format expected by Skippable::Response
+        #
+        # Test Runner format:
+        # {
+        #   "correlationId": "abc123",
+        #   "skippableTests": {
+        #     "suite_name": {
+        #       "test_name": [{"suite": "suite_name", "name": "test_name", "parameters": "{...}", "configurations": {}}]
+        #     }
+        #   }
+        # }
+        #
+        # Expected format:
+        # {
+        #   "meta": {"correlation_id": "abc123"},
+        #   "data": [{"type": "test", "attributes": {"suite": "suite_name", "name": "test_name", "parameters": "{...}"}}]
+        # }
+        def transform_test_runner_data(skippable_tests_data)
+          skippable_tests = skippable_tests_data.fetch("skippableTests", {})
+
+          # Pre-calculate array size for better memory allocation
+          total_test_configs = skippable_tests.sum do |_, tests_hash|
+            tests_hash.sum { |_, test_configs| test_configs.size }
+          end
+
+          data_array = Array.new(total_test_configs)
+          index = 0
+
+          skippable_tests.each_value do |tests_hash|
+            tests_hash.each_value do |test_configs|
+              test_configs.each do |test_config|
+                data_array[index] = {
+                  "type" => Ext::Test::ITR_TEST_SKIPPING_MODE,
+                  "attributes" => {
+                    "suite" => test_config["suite"],
+                    "name" => test_config["name"],
+                    "parameters" => test_config["parameters"]
+                  }
+                }
+                index += 1
+              end
+            end
+          end
+
+          {
+            "meta" => {
+              "correlation_id" => skippable_tests_data["correlationId"]
+            },
+            "data" => data_array
+          }
+        end
 
         def write(event)
           # skip sending events if writer is not configured

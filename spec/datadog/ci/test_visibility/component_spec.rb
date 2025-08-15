@@ -1119,6 +1119,70 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           end
         end
       end
+
+      context "when known_tests.json file from Datadog Test Runner exists" do
+        let(:known_tests_file_path) { ".dd/context/known_tests.json" }
+
+        before do
+          # Create .dd/context folder if it doesn't exist
+          FileUtils.mkdir_p(".dd/context")
+
+          # Write settings to the file
+          File.write(known_tests_file_path, JSON.pretty_generate(known_tests_data))
+        end
+
+        after do
+          FileUtils.rm_rf(".dd")
+        end
+
+        context "and contains valid data" do
+          let(:known_tests_data) do
+            {
+              "tests" => {
+                "rspec" => {
+                  " at ./spec/requests/articles/org_redirect_spec.rb" => [
+                    "does not infinitely redirect"
+                  ],
+                  "/admin at ./spec/requests/admin/overview_spec.rb" => [
+                    "Notices does not show warning if deployed at is recent",
+                    "Last deployed and Latest Commit ID card shows the correct value if the Last deployed time is available"
+                  ]
+                }
+              }
+            }
+          end
+
+          it "loads known tests from the file" do
+            subject
+
+            expect(test_visibility.known_tests).to include(" at ./spec/requests/articles/org_redirect_spec.rb.does not infinitely redirect.")
+            expect(test_visibility.known_tests).to include("/admin at ./spec/requests/admin/overview_spec.rb.Notices does not show warning if deployed at is recent.")
+            expect(test_visibility.known_tests).to include("/admin at ./spec/requests/admin/overview_spec.rb.Last deployed and Latest Commit ID card shows the correct value if the Last deployed time is available.")
+            expect(test_visibility.known_tests.size).to eq(3)
+          end
+
+          it "enables known tests functionality" do
+            subject
+
+            expect(test_visibility.known_tests_enabled).to be true
+          end
+        end
+
+        context "when known_tests.json file contains empty tests" do
+          let(:known_tests_data) do
+            {
+              "tests" => {}
+            }
+          end
+
+          it "disables known tests functionality" do
+            subject
+
+            expect(test_visibility.known_tests_enabled).to be false
+            expect(test_visibility.known_tests).to be_empty
+          end
+        end
+      end
     end
 
     context "when known tests functionality is disabled" do

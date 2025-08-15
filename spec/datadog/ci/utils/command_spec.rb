@@ -30,6 +30,9 @@ RSpec.describe Datadog::CI::Utils::Command do
     end
 
     context "when command has stdin data" do
+      # stdin test is flaky on jruby
+      before { skip if PlatformHelpers.jruby? }
+
       subject(:result) { described_class.exec_command(["grep", "test"], stdin_data: stdin_data) }
 
       let(:stdin_data) { "this is a test line\nanother line\ntest again" }

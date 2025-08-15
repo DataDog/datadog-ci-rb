@@ -7,8 +7,11 @@
       "Bash(bundle exec rspec:*)",
       "Bash(bundle exec rake:*)",
       "Bash(bundle exec ruby:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ruby:*)",
+      "Bash(gh pr:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

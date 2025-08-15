@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Ext
+      module TestRunner
+        DATADOG_CONTEXT_PATH: String
+        SETTINGS_FILE_NAME: String
+        KNOWN_TESTS_FILE_NAME: String
+        TEST_MANAGEMENT_TESTS_FILE_NAME: String
+        SKIPPABLE_TESTS_FILE_NAME: String
+      end
+    end
+  end
+end

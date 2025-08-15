@@ -2,6 +2,7 @@
 
 require_relative "../ext/telemetry"
 require_relative "../ext/test"
+require_relative "../ext/test_runner"
 require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
 require_relative "../utils/test_run"
@@ -35,11 +36,11 @@ module Datadog
 
           test_session.set_tag(Ext::Test::TAG_TEST_MANAGEMENT_ENABLED, "true")
 
-          # Load component state first, and if successful, skip fetching tests properties
-          if !load_component_state
-            @tests_properties = @tests_properties_client.fetch(test_session)
-            store_component_state if test_session.distributed
-          end
+          return if restore_state_from_datadog_test_runner
+          return if load_component_state
+
+          @tests_properties = @tests_properties_client.fetch(test_session)
+          store_component_state if test_session.distributed
 
           Utils::Telemetry.distribution(
             Ext::Telemetry::METRIC_TEST_MANAGEMENT_TESTS_RESPONSE_TESTS,
@@ -72,6 +73,33 @@ module Datadog
           return false if test_properties.nil?
 
           test_properties.fetch("attempt_to_fix", false)
+        end
+
+        def restore_state_from_datadog_test_runner
+          Datadog.logger.debug { "Restoring test management tests from Datadog Test Runner context" }
+
+          test_management_data = load_json(Ext::TestRunner::TEST_MANAGEMENT_TESTS_FILE_NAME)
+          if test_management_data.nil?
+            Datadog.logger.debug { "Restoring test management tests failed, will request again" }
+            return false
+          end
+
+          Datadog.logger.debug { "Restored test management tests from Datadog Test Runner: #{test_management_data}" }
+
+          # Use the TestsProperties::Response class method to parse the JSON data
+          # Wrap the data in the expected backend API format
+          wrapped_data = {
+            "data" => {
+              "attributes" => test_management_data
+            }
+          }
+
+          tests_properties_response = TestsProperties::Response.new(nil, json: wrapped_data)
+          @tests_properties = tests_properties_response.tests
+
+          Datadog.logger.debug { "Found [#{@tests_properties.size}] test management tests from context" }
+
+          true
         end
 
         # Implementation of Stateful interface

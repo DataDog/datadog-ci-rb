@@ -6,6 +6,7 @@ require "rbconfig"
 require "datadog/core/utils/forking"
 
 require_relative "context"
+require_relative "known_tests"
 require_relative "telemetry"
 require_relative "total_coverage"
 
@@ -224,6 +225,36 @@ module Datadog
           # started in the parent process.
           # So we need to check if the process is forked and if the context service URI is not empty.
           (forked? && !@context_service_uri.nil? && !@context_service_uri.empty?) || @is_client_process
+        end
+
+        def restore_state_from_datadog_test_runner
+          Datadog.logger.debug { "Restoring known tests from Datadog Test Runner context" }
+
+          known_tests_data = load_json(Ext::TestRunner::KNOWN_TESTS_FILE_NAME)
+          if known_tests_data.nil?
+            Datadog.logger.debug { "Restoring known tests failed, will request again" }
+            return false
+          end
+
+          Datadog.logger.debug { "Restored known tests from Datadog Test Runner: #{known_tests_data}" }
+
+          # Use the KnownTests class method to parse the JSON data
+          known_tests_data = {
+            "data" => {
+              "attributes" => known_tests_data
+            }
+          }
+
+          @known_tests = KnownTests::Response.new(nil, json: known_tests_data).tests
+          @known_tests_enabled = !@known_tests.empty?
+
+          unless @known_tests_enabled
+            Datadog.logger.warn("Empty set of tests known to Datadog from context file")
+          end
+
+          Datadog.logger.debug { "Found [#{@known_tests.size}] known tests from context" }
+
+          true
         end
 
         private

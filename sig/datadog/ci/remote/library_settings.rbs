@@ -18,7 +18,7 @@ module Datadog
         @attempt_to_fix_retries_count: Integer
         @impacted_tests_enabled: bool
 
-        def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
+        def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response, ?json: Hash[String, untyped]?) -> void
 
         def ok?: () -> bool
 
