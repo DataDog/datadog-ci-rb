@@ -213,7 +213,7 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
     describe "with json keyword argument" do
       let(:http_response) { double("http_response", ok?: true) }
       let(:json_data) { {"data" => {"attributes" => {"tests" => {"rspec" => {"TestSuite" => ["test1", "test2"]}}}}} }
-      
+
       subject(:response) { described_class.new(http_response, json: json_data) }
 
       it "uses provided json instead of parsing http response" do

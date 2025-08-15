@@ -179,10 +179,8 @@ RSpec.describe Datadog::CI::Remote::Component do
       end
 
       before do
-        # Create .dd/context folder if it doesn't exist
         FileUtils.mkdir_p(".dd/context")
 
-        # Write settings to the file
         File.write(settings_file_path, JSON.pretty_generate(settings_json))
 
         configurable_components.each do |component|
@@ -191,7 +189,6 @@ RSpec.describe Datadog::CI::Remote::Component do
       end
 
       after do
-        # Clean up the settings file and directory structure
         FileUtils.rm_rf(".dd")
       end
 

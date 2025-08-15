@@ -4,6 +4,7 @@ module Datadog
       module TestRunner
         DATADOG_CONTEXT_PATH: String
         SETTINGS_FILE_NAME: String
+        KNOWN_TESTS_FILE_NAME: String
       end
     end
   end

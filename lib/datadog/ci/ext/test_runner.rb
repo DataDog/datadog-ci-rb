@@ -7,6 +7,7 @@ module Datadog
       module TestRunner
         DATADOG_CONTEXT_PATH = ".dd/context"
         SETTINGS_FILE_NAME = "settings.json"
+        KNOWN_TESTS_FILE_NAME = "known_tests.json"
       end
     end
   end

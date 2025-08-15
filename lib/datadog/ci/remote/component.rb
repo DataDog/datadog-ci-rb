@@ -63,6 +63,7 @@ module Datadog
             false
           end
 
+          Datadog.logger.debug { "Restored library configuration from Datadog Test Runner: #{settings}" }
           @library_configuration = LibrarySettings.new(nil, json: settings)
           true
         end
