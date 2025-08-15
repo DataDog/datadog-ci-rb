@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 43c11d802a440327aade07fae1e119c695541186
+  revision: 602b25966f36c9c5ce8d3f005e524999f441838d
   branch: master
   specs:
     datadog (2.20.0)
@@ -21,7 +21,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    activesupport (8.0.2)
+    activesupport (8.0.2.1)
       base64
       benchmark (>= 0.3)
       bigdecimal
