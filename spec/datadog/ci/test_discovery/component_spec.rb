@@ -253,13 +253,19 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
   end
 
   describe "#on_test_started" do
+    let(:test_suite) {
+      double("test_suite",
+        source_file: "/path/to/suite.rb")
+    }
+
     let(:test) {
       double("test",
         mark_test_discovery_mode!: nil,
         name: "test_example",
         test_suite_name: "ExampleSuite",
         source_file: "/path/to/test.rb",
-        datadog_test_id: "ExampleSuite.test_example.nil")
+        datadog_test_id: "ExampleSuite.test_example.nil",
+        test_suite: test_suite)
     }
 
     context "when test discovery mode is enabled" do
@@ -278,6 +284,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
           "name" => "test_example",
           "suite" => "ExampleSuite",
           "sourceFile" => "/path/to/test.rb",
+          "suiteSourceFile" => "/path/to/suite.rb",
           "fqn" => "ExampleSuite.test_example.nil"
         }
 
@@ -343,7 +350,8 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
               name: "test_#{i}_#{j}",
               test_suite_name: "Suite#{i}",
               source_file: "/path/test_#{i}_#{j}.rb",
-              datadog_test_id: "test_id_#{i}_#{j}")
+              datadog_test_id: "test_id_#{i}_#{j}",
+              test_suite: nil)
             component.on_test_started(test)
           end
         end

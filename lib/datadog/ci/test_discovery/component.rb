@@ -86,6 +86,7 @@ module Datadog
             "name" => test.name,
             "suite" => test.test_suite_name,
             "sourceFile" => test.source_file,
+            "suiteSourceFile" => test.test_suite&.source_file,
             "fqn" => test.datadog_test_id
           }
 
