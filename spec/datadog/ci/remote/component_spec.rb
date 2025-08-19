@@ -182,36 +182,59 @@ RSpec.describe Datadog::CI::Remote::Component do
         FileUtils.mkdir_p(".dd/context")
 
         File.write(settings_file_path, JSON.pretty_generate(settings_json))
-
-        configurable_components.each do |component|
-          expect(component).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings), test_session)
-        end
       end
 
       after do
         FileUtils.rm_rf(".dd")
       end
 
-      it "loads settings from file and does not make HTTP request to backend" do
-        expect(library_settings_client).not_to receive(:fetch)
-        expect(component).not_to receive(:store_component_state)
+      context "when settings.json file exists in context" do
+        before do
+          configurable_components.each do |component|
+            expect(component).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings), test_session)
+          end
+        end
 
-        component.configure(test_session)
+        it "loads settings from file and does not make HTTP request to backend" do
+          expect(library_settings_client).not_to receive(:fetch)
+          expect(component).not_to receive(:store_component_state)
+
+          component.configure(test_session)
+        end
+
+        it "creates library configuration with settings from file" do
+          component.configure(test_session)
+
+          library_config = component.instance_variable_get(:@library_configuration)
+          expect(library_config).to be_instance_of(Datadog::CI::Remote::LibrarySettings)
+          expect(library_config.itr_enabled?).to be true
+          expect(library_config.code_coverage_enabled?).to be true
+          expect(library_config.tests_skipping_enabled?).to be false
+          expect(library_config.flaky_test_retries_enabled?).to be true
+          expect(library_config.early_flake_detection_enabled?).to be true
+          expect(library_config.known_tests_enabled?).to be true
+          expect(library_config.test_management_enabled?).to be true
+          expect(library_config.impacted_tests_enabled?).to be false
+        end
       end
 
-      it "creates library configuration with settings from file" do
-        component.configure(test_session)
+      context "when JSON for settings does not exist" do
+        before do
+          allow(test_visibility).to receive(:client_process?).and_return(false)
 
-        library_config = component.instance_variable_get(:@library_configuration)
-        expect(library_config).to be_instance_of(Datadog::CI::Remote::LibrarySettings)
-        expect(library_config.itr_enabled?).to be true
-        expect(library_config.code_coverage_enabled?).to be true
-        expect(library_config.tests_skipping_enabled?).to be false
-        expect(library_config.flaky_test_retries_enabled?).to be true
-        expect(library_config.early_flake_detection_enabled?).to be true
-        expect(library_config.known_tests_enabled?).to be true
-        expect(library_config.test_management_enabled?).to be true
-        expect(library_config.impacted_tests_enabled?).to be false
+          FileUtils.rm_f(settings_file_path)
+
+          configurable_components.each do |component|
+            expect(component).to receive(:configure).with(library_configuration, test_session)
+          end
+        end
+
+        it "requests library configuration again" do
+          expect(library_settings_client).to receive(:fetch)
+            .with(test_session).and_return(library_configuration)
+
+          component.configure(test_session)
+        end
       end
     end
 

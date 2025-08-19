@@ -60,7 +60,7 @@ module Datadog
           settings = load_json(Ext::TestRunner::SETTINGS_FILE_NAME)
           if settings.nil?
             Datadog.logger.debug { "Restoring library configuration failed, will request again" }
-            false
+            return false
           end
 
           Datadog.logger.debug { "Restored library configuration from Datadog Test Runner: #{settings}" }
