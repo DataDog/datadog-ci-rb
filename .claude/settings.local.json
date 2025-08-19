@@ -6,9 +6,7 @@
       "Bash(bundle exec rake steep:*)",
       "Bash(bundle exec rspec:*)",
       "Bash(bundle exec rake:*)",
-      "Bash(bundle exec ruby:*)",
       "Bash(find:*)",
-      "Bash(ruby:*)",
       "Bash(gh pr:*)"
     ],
     "deny": [],
