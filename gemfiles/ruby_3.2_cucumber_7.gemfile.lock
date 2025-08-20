@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 43c11d802a440327aade07fae1e119c695541186
+  revision: 2aa94dd0d42bd118c4a5bcb872b7fa9ecd52b090
   branch: master
   specs:
     datadog (2.20.0)
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
       libdatadog (~> 18.1.0.1.0)
-      libddwaf (~> 1.24.1.0.3)
+      libddwaf (~> 1.24.1.1.0)
       logger
       msgpack
 
@@ -82,15 +82,15 @@ GEM
       reline (>= 0.4.2)
     libdatadog (18.1.0.1.0-aarch64-linux)
     libdatadog (18.1.0.1.0-x86_64-linux)
-    libddwaf (1.24.1.0.3-aarch64-linux)
+    libddwaf (1.24.1.1.0-aarch64-linux)
       ffi (~> 1.0)
-    libddwaf (1.24.1.0.3-x86_64-linux)
+    libddwaf (1.24.1.1.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     mime-types (3.7.0)
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
-    mime-types-data (3.2025.0805)
+    mime-types-data (3.2025.0819)
     msgpack (1.8.0)
     multi_test (0.1.2)
     os (1.1.4)
@@ -124,7 +124,7 @@ GEM
     rspec-mocks (3.13.5)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
-    rspec-support (3.13.4)
+    rspec-support (3.13.5)
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
     simplecov (0.22.0)
