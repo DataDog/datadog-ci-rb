@@ -35,7 +35,7 @@ module Datadog
           # launch configuration workers
           configuration_workers.each(&:perform)
 
-          # block until all workers are done (or 60 seconds has passed)
+          # block until all workers are done
           configuration_workers.each(&:wait_until_done)
         end
 
