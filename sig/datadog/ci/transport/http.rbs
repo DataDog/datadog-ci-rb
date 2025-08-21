@@ -14,6 +14,10 @@ module Datadog
         MAX_RETRIES: 3
         INITIAL_BACKOFF: 1
         MAX_BACKOFF: 30
+        MAX_RETRY_TIME: 50
+
+        NON_RETRIABLE_ERRORS: Array[singleton(StandardError)]
+        RETRIABLE_ERRORS: Array[singleton(StandardError)]
 
         def initialize: (host: String, port: Integer, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
 
@@ -23,7 +27,7 @@ module Datadog
 
         def adapter: () -> Datadog::CI::Transport::Adapters::Net
 
-        def perform_http_call: (payload: String, headers: Hash[String, String], path: String, verb: String, ?retries: Integer, ?backoff: Integer) -> Datadog::CI::Transport::Adapters::Net::Response
+        def perform_http_call: (payload: String, headers: Hash[String, String], path: String, verb: String, ?retries: Integer, ?backoff: Integer, ?retry_start_time: Numeric) -> Datadog::CI::Transport::Adapters::Net::Response
 
         class ErrorResponse < Datadog::CI::Transport::Adapters::Net::Response
           def initialize: (StandardError error) -> void

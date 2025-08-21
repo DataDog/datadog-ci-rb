@@ -280,6 +280,84 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           end
         end
       end
+
+      context "when non-retriable errors occur" do
+        shared_examples "non-retriable error behavior" do |error_class|
+          it "fails immediately without retries" do
+            expect(adapter).to receive(:call).and_raise(error_class).once
+            
+            expect(response).to be_a(described_class::ErrorResponse)
+            expect(response.error).to be_kind_of(error_class)
+          end
+        end
+
+        context "with Timeout::Error" do
+          include_examples "non-retriable error behavior", Timeout::Error
+        end
+
+        context "with Errno::EINVAL" do
+          include_examples "non-retriable error behavior", Errno::EINVAL
+        end
+
+        context "with Net::HTTPBadResponse" do
+          include_examples "non-retriable error behavior", Net::HTTPBadResponse
+        end
+      end
+
+      context "when retriable errors occur" do
+        shared_examples "retriable error behavior" do |error_class|
+          context "when succeeds after retries" do
+            before do
+              expect(adapter).to receive(:call).and_raise(error_class).exactly(described_class::MAX_RETRIES).times
+              expect(adapter).to receive(:call).and_return(http_response)
+            end
+
+            it "retries and eventually succeeds" do
+              is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
+              expect(response.code).to eq(200)
+            end
+          end
+
+          context "when retries are exhausted" do
+            before do
+              expect(adapter).to receive(:call).and_raise(error_class).exactly(described_class::MAX_RETRIES + 1).times
+            end
+
+            it "returns ErrorResponse after all retries" do
+              expect(response).to be_a(described_class::ErrorResponse)
+              expect(response.error).to be_kind_of(error_class)
+            end
+          end
+        end
+
+        context "with Errno::ECONNRESET" do
+          include_examples "retriable error behavior", Errno::ECONNRESET
+        end
+
+        context "with EOFError" do
+          include_examples "retriable error behavior", EOFError
+        end
+
+        context "with SocketError" do
+          include_examples "retriable error behavior", SocketError
+        end
+      end
+
+      context "when retry time limit is exceeded" do
+        let(:request_options) { {backoff: 0} }
+
+        before do
+          # Mock time to simulate long retry duration - start time and check time
+          allow(Datadog::Core::Utils::Time).to receive(:get_time).and_return(0, 0, 51) # start=0s, first call=0s, check=51s
+          
+          expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).once
+        end
+
+        it "stops retrying after MAX_RETRY_TIME and returns error response" do
+          expect(response).to be_a(described_class::ErrorResponse)
+          expect(response.error).to be_kind_of(Errno::ECONNRESET)
+        end
+      end
     end
   end
 end

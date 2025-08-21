@@ -24,6 +24,21 @@ module Datadog
         MAX_RETRIES = 3
         INITIAL_BACKOFF = 1
         MAX_BACKOFF = 30
+        MAX_RETRY_TIME = 50
+
+        # Errors that should not be retried - fail fast
+        NON_RETRIABLE_ERRORS = [
+          Timeout::Error,      # Don't slow down customers with timeouts
+          Errno::EINVAL,       # Invalid argument
+          Net::HTTPBadResponse # Malformed response - likely persistent issue
+        ].freeze
+
+        # Errors that can be retried - transient network issues
+        RETRIABLE_ERRORS = [
+          Errno::ECONNRESET, # Connection reset by peer
+          EOFError,          # Unexpected connection close
+          SocketError        # DNS/network issues
+        ].freeze
 
         def initialize(host:, port:, timeout: DEFAULT_TIMEOUT, ssl: true, compress: false)
           @host = host
@@ -78,7 +93,7 @@ module Datadog
 
         private
 
-        def perform_http_call(path:, payload:, headers:, verb:, retries: MAX_RETRIES, backoff: INITIAL_BACKOFF)
+        def perform_http_call(path:, payload:, headers:, verb:, retries: MAX_RETRIES, backoff: INITIAL_BACKOFF, retry_start_time: Core::Utils::Time.get_time)
           response = nil
 
           begin
@@ -98,10 +113,21 @@ module Datadog
             else
               return response
             end
-          rescue Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, EOFError, SocketError, Net::HTTPBadResponse => e
-            Datadog.logger.debug { "Failed to send request with #{e} (#{e.message})" }
-
+          rescue *NON_RETRIABLE_ERRORS => e
+            Datadog.logger.debug { "Failed to send request with non-retriable error #{e} (#{e.message})" }
+            return ErrorResponse.new(e)
+          rescue *RETRIABLE_ERRORS => e
+            Datadog.logger.debug { "Failed to send request with retriable error #{e} (#{e.message})" }
             response = ErrorResponse.new(e)
+          end
+
+          # Check if we've exceeded the maximum retry time
+          elapsed_time_seconds = Core::Utils::Time.get_time - retry_start_time
+          if elapsed_time_seconds >= MAX_RETRY_TIME
+            Datadog.logger.error(
+              "Failed to send request after #{elapsed_time_seconds.round(2)} seconds (exceeded MAX_RETRY_TIME of #{MAX_RETRY_TIME}s)"
+            )
+            return response
           end
 
           if retries.positive? && backoff <= MAX_BACKOFF
@@ -113,7 +139,8 @@ module Datadog
               headers: headers,
               verb: verb,
               retries: retries - 1,
-              backoff: backoff * 2
+              backoff: backoff * 2,
+              retry_start_time: retry_start_time
             )
           else
             Datadog.logger.error(
