@@ -285,7 +285,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         shared_examples "non-retriable error behavior" do |error_class|
           it "fails immediately without retries" do
             expect(adapter).to receive(:call).and_raise(error_class).once
-            
+
             expect(response).to be_a(described_class::ErrorResponse)
             expect(response.error).to be_kind_of(error_class)
           end
@@ -349,7 +349,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         before do
           # Mock time to simulate long retry duration - start time and check time
           allow(Datadog::Core::Utils::Time).to receive(:get_time).and_return(0, 0, 51) # start=0s, first call=0s, check=51s
-          
+
           expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).once
         end
 
