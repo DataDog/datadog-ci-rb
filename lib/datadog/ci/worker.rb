@@ -11,13 +11,12 @@ module Datadog
       include Datadog::Core::Workers::Async::Thread
 
       DEFAULT_SHUTDOWN_TIMEOUT = 60
-      DEFAULT_WAIT_TIMEOUT = 60
 
       def stop(timeout = DEFAULT_SHUTDOWN_TIMEOUT)
         join(timeout)
       end
 
-      def wait_until_done(timeout = DEFAULT_WAIT_TIMEOUT)
+      def wait_until_done(timeout = nil)
         join(timeout)
       end
 
