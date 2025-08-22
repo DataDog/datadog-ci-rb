@@ -124,8 +124,8 @@ module Datadog
           # Check if we've exceeded the maximum retry time
           elapsed_time_seconds = Core::Utils::Time.get_time - retry_start_time
           if elapsed_time_seconds >= MAX_RETRY_TIME
-            Datadog.logger.error(
-              "Failed to send request after #{elapsed_time_seconds.round(2)} seconds (exceeded MAX_RETRY_TIME of #{MAX_RETRY_TIME}s)"
+            Datadog.logger.debug(
+              "Failed to send request to #{path} after #{elapsed_time_seconds.round(2)} seconds (exceeded MAX_RETRY_TIME of #{MAX_RETRY_TIME}s)"
             )
             return response
           end
@@ -143,8 +143,8 @@ module Datadog
               retry_start_time: retry_start_time
             )
           else
-            Datadog.logger.error(
-              "Failed to send request after #{MAX_RETRIES - retries} retries (current backoff value #{backoff})"
+            Datadog.logger.debug(
+              "Failed to send request to #{path} after #{MAX_RETRIES - retries} retries (current backoff value #{backoff})"
             )
 
             response
