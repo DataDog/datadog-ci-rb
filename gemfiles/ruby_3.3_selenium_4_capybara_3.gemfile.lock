@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2aa94dd0d42bd118c4a5bcb872b7fa9ecd52b090
+  revision: 319db663d28c784f03fea550c24756f46b3748b4
   branch: master
   specs:
     datadog (2.20.0)
@@ -145,7 +145,7 @@ GEM
     rspec-support (3.13.5)
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
-    rubyzip (3.0.1)
+    rubyzip (3.0.2)
     selenium-webdriver (4.35.0)
       base64 (~> 0.2)
       logger (~> 1.4)
