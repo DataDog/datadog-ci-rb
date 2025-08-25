@@ -1815,12 +1815,14 @@ RSpec.describe "RSpec instrumentation" do
             "name" => "nested fails",
             "suite" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
             "sourceFile" => "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "suiteSourceFile" => "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
             "fqn" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:2\"}}"
           },
           {
             "name" => "nested foo",
             "suite" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
             "sourceFile" => "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
+            "suiteSourceFile" => "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb",
             "fqn" => "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:1\"}}"
           }
         ]
