@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.22.1] - 2025-08-25
+
+### Fixed
+
+* Fix configuration race condition that caused undefined library behaviour (marking old tests as new as an example) ([#402][])
+
 ## [1.22.0] - 2025-08-12
 
 ### Added
@@ -514,7 +520,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.1...main
+[1.22.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.0...v1.22.1
 [1.22.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.1...v1.22.0
 [1.21.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.0...v1.21.1
 [1.21.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.20.2...v1.21.0
@@ -732,3 +739,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#393]: https://github.com/DataDog/datadog-ci-rb/issues/393
 [#394]: https://github.com/DataDog/datadog-ci-rb/issues/394
 [#396]: https://github.com/DataDog/datadog-ci-rb/issues/396
+[#402]: https://github.com/DataDog/datadog-ci-rb/issues/402
