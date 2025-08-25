@@ -14,9 +14,12 @@ module Datadog
     module TestOptimisation
       class Skippable
         class Response
-          def initialize(http_response, json: nil)
-            @http_response = http_response
-            @json = json
+          def self.from_http_response(http_response)
+            new(http_response, nil)
+          end
+
+          def self.from_json(json)
+            new(nil, json)
           end
 
           def ok?
@@ -50,6 +53,11 @@ module Datadog
 
           private
 
+          def initialize(http_response, json)
+            @http_response = http_response
+            @json = json
+          end
+
           def payload
             cached = @json
             return cached unless cached.nil?
@@ -74,7 +82,7 @@ module Datadog
 
         def fetch_skippable_tests(test_session)
           api = @api
-          return Response.new(nil) unless api
+          return Response.from_http_response(nil) unless api
 
           request_payload = payload(test_session)
           Datadog.logger.debug("Fetching skippable tests with request: #{request_payload}")
@@ -105,7 +113,7 @@ module Datadog
             )
           end
 
-          Response.new(http_response)
+          Response.from_http_response(http_response)
         end
 
         private

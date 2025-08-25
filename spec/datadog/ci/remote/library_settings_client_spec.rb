@@ -293,7 +293,7 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
       let(:http_response) { double("http_response", ok?: false) }
       let(:json_data) { {"itr_enabled" => "true", "code_coverage" => "1", "tests_skipping" => "false"} }
 
-      subject(:settings) { described_class.new(http_response, json: json_data) }
+      subject(:settings) { described_class.from_json(json_data) }
 
       it "uses provided json instead of parsing http response" do
         expect(settings.payload).to eq(json_data)

@@ -18,7 +18,9 @@ module Datadog
         @attempt_to_fix_retries_count: Integer
         @impacted_tests_enabled: bool
 
-        def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response, ?json: Hash[String, untyped]?) -> void
+        def self.from_http_response: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> LibrarySettings
+
+        def self.from_json: (Hash[String, untyped] json) -> LibrarySettings
 
         def ok?: () -> bool
 
@@ -49,6 +51,8 @@ module Datadog
         def impacted_tests_enabled?: () -> bool
 
         private
+
+        def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response, Hash[String, untyped]? json) -> void
 
         def early_flake_detection_payload: () -> Hash[String, untyped]
 

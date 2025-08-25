@@ -15,9 +15,12 @@ module Datadog
       # fetches and stores a map of tests to their test management properties from the backend
       class TestsProperties
         class Response
-          def initialize(http_response, json: nil)
-            @http_response = http_response
-            @json = json
+          def self.from_http_response(http_response)
+            new(http_response, nil)
+          end
+
+          def self.from_json(json)
+            new(nil, json)
           end
 
           def ok?
@@ -50,6 +53,11 @@ module Datadog
           end
 
           private
+
+          def initialize(http_response, json)
+            @http_response = http_response
+            @json = json
+          end
 
           def payload
             cached = @json
@@ -106,7 +114,7 @@ module Datadog
             )
           end
 
-          Response.new(http_response).tests
+          Response.from_http_response(http_response).tests
         end
 
         private

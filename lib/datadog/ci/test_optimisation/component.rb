@@ -231,7 +231,7 @@ module Datadog
           Datadog.logger.debug { "Skippable tests after transformation: #{transformed_data}" }
 
           # Use the Skippable::Response class to parse the transformed data
-          skippable_response = Skippable::Response.new(nil, json: transformed_data)
+          skippable_response = Skippable::Response.from_json(transformed_data)
 
           @mutex.synchronize do
             @correlation_id = skippable_response.correlation_id

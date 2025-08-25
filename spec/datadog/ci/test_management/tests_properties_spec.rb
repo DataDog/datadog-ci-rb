@@ -275,7 +275,7 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
         }
       end
 
-      subject(:response) { described_class.new(http_response, json: json_data) }
+      subject(:response) { described_class.from_json(json_data) }
 
       it "uses provided json instead of parsing http response" do
         expect(response.tests).to eq({

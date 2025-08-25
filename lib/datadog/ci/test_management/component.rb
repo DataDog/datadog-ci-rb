@@ -94,7 +94,7 @@ module Datadog
             }
           }
 
-          tests_properties_response = TestsProperties::Response.new(nil, json: wrapped_data)
+          tests_properties_response = TestsProperties::Response.from_json(wrapped_data)
           @tests_properties = tests_properties_response.tests
 
           Datadog.logger.debug { "Found [#{@tests_properties.size}] test management tests from context" }

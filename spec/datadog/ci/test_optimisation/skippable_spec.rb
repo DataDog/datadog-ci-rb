@@ -247,7 +247,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Skippable do
         }
       end
 
-      subject(:response) { described_class.new(http_response, json: json_data) }
+      subject(:response) { described_class.from_json(json_data) }
 
       it "uses provided json instead of parsing http response" do
         expect(response.correlation_id).to eq("test_correlation_123")

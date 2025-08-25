@@ -14,9 +14,12 @@ module Datadog
     module Remote
       # Wrapper around the settings HTTP response
       class LibrarySettings
-        def initialize(http_response, json: nil)
-          @http_response = http_response
-          @json = json
+        def self.from_http_response(http_response)
+          new(http_response, nil)
+        end
+
+        def self.from_json(json)
+          new(nil, json)
         end
 
         def ok?
@@ -147,6 +150,11 @@ module Datadog
         end
 
         private
+
+        def initialize(http_response, json)
+          @http_response = http_response
+          @json = json
+        end
 
         def test_management_payload
           payload.fetch(
