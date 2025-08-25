@@ -214,7 +214,7 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
       let(:http_response) { double("http_response", ok?: true) }
       let(:json_data) { {"data" => {"attributes" => {"tests" => {"rspec" => {"TestSuite" => ["test1", "test2"]}}}}} }
 
-      subject(:response) { described_class.new(http_response, json: json_data) }
+      subject(:response) { described_class.from_json(json_data) }
 
       it "uses provided json instead of parsing http response" do
         expect(response.tests).to eq(Set.new(["TestSuite.test1.", "TestSuite.test2."]))

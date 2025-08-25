@@ -1128,7 +1128,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
           FileUtils.mkdir_p(".dd/context")
 
           # Write settings to the file
-          File.write(known_tests_file_path, JSON.pretty_generate(known_tests_data))
+          File.write(known_tests_file_path, known_tests_data)
         end
 
         after do
@@ -1137,7 +1137,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
         context "and contains valid data" do
           let(:known_tests_data) do
-            {
+            JSON.pretty_generate({
               "tests" => {
                 "rspec" => {
                   " at ./spec/requests/articles/org_redirect_spec.rb" => [
@@ -1149,7 +1149,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
                   ]
                 }
               }
-            }
+            })
           end
 
           it "loads known tests from the file" do
@@ -1170,9 +1170,9 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
         context "when known_tests.json file contains empty tests" do
           let(:known_tests_data) do
-            {
+            JSON.pretty_generate({
               "tests" => {}
-            }
+            })
           end
 
           it "disables known tests functionality" do
@@ -1180,6 +1180,19 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
             expect(test_visibility.known_tests_enabled).to be false
             expect(test_visibility.known_tests).to be_empty
+          end
+        end
+
+        context "when known_tests.json file contents are invalid" do
+          let(:known_tests_data) do
+            "not json"
+          end
+
+          it "requests the known tests from the backend again" do
+            subject
+
+            expect(test_visibility.known_tests_enabled).to be true
+            expect(test_visibility.known_tests).to eq(known_tests)
           end
         end
       end

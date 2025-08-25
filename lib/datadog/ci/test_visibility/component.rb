@@ -245,11 +245,11 @@ module Datadog
             }
           }
 
-          @known_tests = KnownTests::Response.new(nil, json: known_tests_data).tests
+          @known_tests = KnownTests::Response.from_json(known_tests_data).tests
           @known_tests_enabled = !@known_tests.empty?
 
           unless @known_tests_enabled
-            Datadog.logger.warn("Empty set of tests known to Datadog from context file")
+            Datadog.logger.debug("Empty set of known tests from the Datadog Test Runner context file")
           end
 
           Datadog.logger.debug { "Found [#{@known_tests.size}] known tests from context" }
@@ -429,6 +429,9 @@ module Datadog
         end
 
         def new_test?(test_span)
+          # check if @known_tests set is empty again
+          # to ensure that we don't tag tests as new unnecessarily
+          @known_tests_enabled = false if @known_tests_enabled && @known_tests.empty?
           return false unless @known_tests_enabled
 
           test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)
