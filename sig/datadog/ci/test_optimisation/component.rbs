@@ -64,7 +64,11 @@ module Datadog
 
         def storage_key: () -> String
 
+        def restore_state_from_datadog_test_runner: () -> bool
+
         private
+
+        def transform_test_runner_data: (Hash[String, untyped] skippable_tests_data) -> Hash[String, untyped]
 
         def coverage_collector: () -> Datadog::CI::TestOptimisation::Coverage::DDCov?
 

@@ -6,6 +6,7 @@ require "rbconfig"
 require "datadog/core/utils/forking"
 
 require_relative "context"
+require_relative "known_tests"
 require_relative "telemetry"
 require_relative "total_coverage"
 
@@ -226,6 +227,36 @@ module Datadog
           (forked? && !@context_service_uri.nil? && !@context_service_uri.empty?) || @is_client_process
         end
 
+        def restore_state_from_datadog_test_runner
+          Datadog.logger.debug { "Restoring known tests from Datadog Test Runner context" }
+
+          known_tests_data = load_json(Ext::TestRunner::KNOWN_TESTS_FILE_NAME)
+          if known_tests_data.nil?
+            Datadog.logger.debug { "Restoring known tests failed, will request again" }
+            return false
+          end
+
+          Datadog.logger.debug { "Restored known tests from Datadog Test Runner: #{known_tests_data}" }
+
+          # Use the KnownTests class method to parse the JSON data
+          known_tests_data = {
+            "data" => {
+              "attributes" => known_tests_data
+            }
+          }
+
+          @known_tests = KnownTests::Response.from_json(known_tests_data).tests
+          @known_tests_enabled = !@known_tests.empty?
+
+          unless @known_tests_enabled
+            Datadog.logger.debug("Empty set of known tests from the Datadog Test Runner context file")
+          end
+
+          Datadog.logger.debug { "Found [#{@known_tests.size}] known tests from context" }
+
+          true
+        end
+
         private
 
         # DOMAIN EVENTS
@@ -398,6 +429,9 @@ module Datadog
         end
 
         def new_test?(test_span)
+          # check if @known_tests set is empty again
+          # to ensure that we don't tag tests as new unnecessarily
+          @known_tests_enabled = false if @known_tests_enabled && @known_tests.empty?
           return false unless @known_tests_enabled
 
           test_id = Utils::TestRun.datadog_test_id(test_span.name, test_span.test_suite_name)

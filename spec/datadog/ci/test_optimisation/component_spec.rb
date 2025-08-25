@@ -225,6 +225,98 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
     end
 
+    context "when skippable_tests.json file from Datadog Test Runner exists" do
+      let(:tests_skipping_enabled) { true }
+      let(:skippable_tests_file_path) { ".dd/context/skippable_tests.json" }
+
+      before do
+        # Create .dd/context folder if it doesn't exist
+        FileUtils.mkdir_p(".dd/context")
+
+        # Write skippable tests data to the file
+        File.write(skippable_tests_file_path, JSON.pretty_generate(skippable_tests_data))
+
+        # Ensure no state in file storage
+        allow(Datadog::CI::Utils::FileStorage).to receive(:retrieve)
+          .with(described_class::FILE_STORAGE_KEY)
+          .and_return(nil)
+      end
+
+      after do
+        FileUtils.rm_rf(".dd")
+      end
+
+      context "and contains valid data" do
+        let(:skippable_tests_data) do
+          {
+            "correlationId" => "ff290c827effa555f26e890267cf5e63",
+            "skippableTests" => {
+              " at ./spec/requests/articles/org_redirect_spec.rb" => {
+                "does not infinitely redirect" => [
+                  {
+                    "suite" => " at ./spec/requests/articles/org_redirect_spec.rb",
+                    "name" => "does not infinitely redirect",
+                    "parameters" => "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1\"}}",
+                    "configurations" => {}
+                  }
+                ]
+              },
+              "AdminControllerTest" => {
+                "test_index" => [
+                  {
+                    "suite" => "AdminControllerTest",
+                    "name" => "test_index",
+                    "parameters" => "{\"arguments\":{}}",
+                    "configurations" => {}
+                  }
+                ]
+              }
+            }
+          }
+        end
+
+        it "loads skippable tests from the file" do
+          configure
+
+          expect(component.correlation_id).to eq("ff290c827effa555f26e890267cf5e63")
+          expect(component.skippable_tests.size).to eq(2)
+          expect(component.skippable_tests).to include(" at ./spec/requests/articles/org_redirect_spec.rb.does not infinitely redirect.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1\"}}")
+          expect(component.skippable_tests).to include("AdminControllerTest.test_index.{\"arguments\":{}}")
+        end
+
+        it "enables test optimization functionality" do
+          configure
+
+          expect(component.enabled?).to be true
+          expect(component.skipping_tests?).to be true
+        end
+
+        it "does not call skippable tests API" do
+          expect(Datadog::CI::TestOptimisation::Skippable).not_to receive(:new)
+
+          configure
+        end
+      end
+
+      context "when skippable_tests.json file contains empty skippableTests" do
+        let(:skippable_tests_data) do
+          {
+            "correlationId" => "empty123",
+            "skippableTests" => {}
+          }
+        end
+
+        it "loads empty skippable tests" do
+          configure
+
+          expect(component.correlation_id).to eq("empty123")
+          expect(component.skippable_tests).to be_empty
+          expect(component.enabled?).to be true
+          expect(component.skipping_tests?).to be true
+        end
+      end
+    end
+
     context "when ITR is disabled locally" do
       let(:local_itr_enabled) { false }
 

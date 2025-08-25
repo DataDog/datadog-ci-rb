@@ -54,11 +54,25 @@ module Datadog
           FILE_STORAGE_KEY
         end
 
+        def restore_state_from_datadog_test_runner
+          Datadog.logger.debug { "Restoring library configuration from Datadog Test Runner context" }
+
+          settings = load_json(Ext::TestRunner::SETTINGS_FILE_NAME)
+          if settings.nil?
+            Datadog.logger.debug { "Restoring library configuration failed, will request again" }
+            return false
+          end
+
+          Datadog.logger.debug { "Restored library configuration from Datadog Test Runner: #{settings}" }
+          @library_configuration = LibrarySettings.from_json(settings)
+          true
+        end
+
         private
 
         def fetch_library_configuration(test_session)
           # In test discovery mode, skip backend fetching and use default settings (everything is disabled)
-          return @library_configuration = LibrarySettings.new(nil) if @test_discovery_enabled
+          return @library_configuration = LibrarySettings.from_http_response(nil) if @test_discovery_enabled
 
           # skip backend request if library configuration was loaded by a different process and stored on disk
           library_configuration_loaded = load_component_state

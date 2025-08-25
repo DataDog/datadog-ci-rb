@@ -25,7 +25,7 @@ module Datadog
 
         def fetch(test_session)
           api = @api
-          return LibrarySettings.new(nil) unless api
+          return LibrarySettings.from_http_response(nil) unless api
 
           request_payload = payload(test_session)
           Datadog.logger.debug("Fetching library settings with request: #{request_payload}")
@@ -51,7 +51,7 @@ module Datadog
             )
           end
 
-          library_settings = LibrarySettings.new(http_response)
+          library_settings = LibrarySettings.from_http_response(http_response)
 
           Utils::Telemetry.inc(
             Ext::Telemetry::METRIC_GIT_REQUESTS_SETTINGS_RESPONSE,

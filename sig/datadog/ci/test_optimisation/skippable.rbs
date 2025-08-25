@@ -10,7 +10,9 @@ module Datadog
           @http_response: Datadog::CI::Transport::Adapters::Net::Response?
           @json: Hash[String, untyped]?
 
-          def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> void
+          def self.from_http_response: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> Response
+
+          def self.from_json: (Hash[String, untyped] json) -> Response
 
           def ok?: () -> bool
 
@@ -21,6 +23,8 @@ module Datadog
           def error_message: () -> String?
 
           private
+
+          def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response, Hash[String, untyped]? json) -> void
 
           def payload: () -> Hash[String, untyped]
         end
