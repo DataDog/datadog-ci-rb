@@ -85,6 +85,7 @@ def self.with_ci_queue_minitest_gem(minitest_versions: 5, ci_queue_versions: 0)
         gem "minitest", "~> #{minitest_v}"
         gem "ci-queue", "~> #{ci_queue_v}"
         gem "minitest-reporters", "~> 1"
+        gem "concurrent-ruby"
       end
     end
   end
@@ -94,6 +95,7 @@ def self.with_ci_queue_rspec_gem(rspec_versions: 3, ci_queue_versions: 0)
   Array(rspec_versions).each do |rspec_v|
     Array(ci_queue_versions).each do |ci_queue_v|
       appraise "ci-queue-#{ci_queue_v}-rspec-#{rspec_v}" do
+        gem "concurrent-ruby"
         gem "rspec", "~> #{rspec_v}"
         gem "ci-queue", "~> #{ci_queue_v}"
       end

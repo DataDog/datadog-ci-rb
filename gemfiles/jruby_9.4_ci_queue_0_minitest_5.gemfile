@@ -17,6 +17,7 @@ gem "os"
 gem "minitest", "~> 5"
 gem "ci-queue", "~> 0"
 gem "minitest-reporters", "~> 1"
+gem "concurrent-ruby"
 
 group :check do
 

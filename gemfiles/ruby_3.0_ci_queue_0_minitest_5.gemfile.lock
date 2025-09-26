@@ -34,6 +34,7 @@ GEM
     ci-queue (0.78.0)
       logger
     climate_control (1.2.0)
+    concurrent-ruby (1.3.5)
     crack (1.0.0)
       bigdecimal
       rexml
@@ -126,6 +127,7 @@ DEPENDENCIES
   appraisal
   ci-queue (~> 0)
   climate_control
+  concurrent-ruby
   datadog!
   datadog-ci!
   debug
@@ -142,4 +144,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.5.23
+   2.3.26
