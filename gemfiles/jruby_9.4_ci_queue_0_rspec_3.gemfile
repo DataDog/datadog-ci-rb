@@ -14,6 +14,7 @@ gem "rake"
 gem "yard"
 gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "master"
 gem "os"
+gem "concurrent-ruby"
 gem "ci-queue", "~> 0"
 
 group :check do
