@@ -6,7 +6,7 @@ module Datadog
       # Defines constants for test discovery mode
       module TestDiscovery
         # Default output path for test discovery mode
-        DEFAULT_OUTPUT_PATH = "./.dd/test_discovery/tests.json"
+        DEFAULT_OUTPUT_PATH = "./#{DDTest::PLAN_FOLDER}/test_discovery/tests.json"
 
         # Maximum buffer size before writing to file
         MAX_BUFFER_SIZE = 10_000

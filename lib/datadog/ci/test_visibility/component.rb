@@ -228,15 +228,15 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring known tests from Datadog Test Runner context" }
+          Datadog.logger.debug { "Restoring known tests from DDTest cache" }
 
-          known_tests_data = load_json(Ext::TestRunner::KNOWN_TESTS_FILE_NAME)
+          known_tests_data = load_json(Ext::DDTest::KNOWN_TESTS_FILE_NAME)
           if known_tests_data.nil?
             Datadog.logger.debug { "Restoring known tests failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored known tests from Datadog Test Runner: #{known_tests_data}" }
+          Datadog.logger.debug { "Restored known tests from DDTest: #{known_tests_data}" }
 
           # Use the KnownTests class method to parse the JSON data
           known_tests_data = {
@@ -249,7 +249,7 @@ module Datadog
           @known_tests_enabled = !@known_tests.empty?
 
           unless @known_tests_enabled
-            Datadog.logger.debug("Empty set of known tests from the Datadog Test Runner context file")
+            Datadog.logger.debug("Empty set of known tests from the DDTest cache file")
           end
 
           Datadog.logger.debug { "Found [#{@known_tests.size}] known tests from context" }

@@ -147,19 +147,19 @@ RSpec.describe Datadog::CI::TestManagement::Component do
         end
       end
 
-      context "when test_management_tests.json file from Datadog Test Runner exists" do
-        let(:test_management_tests_file_path) { ".dd/context/test_management_tests.json" }
+      context "when test_management_tests.json file from DDTest exists" do
+        let(:test_management_tests_file_path) { "#{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH}/test_management_tests.json" }
 
         before do
-          # Create .dd/context folder if it doesn't exist
-          FileUtils.mkdir_p(".dd/context")
+          # Create #{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
+          FileUtils.mkdir_p(Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
 
           # Write test management data to the file
           File.write(test_management_tests_file_path, JSON.pretty_generate(test_management_data))
         end
 
         after do
-          FileUtils.rm_rf(".dd")
+          FileUtils.rm_rf(Datadog::CI::Ext::DDTest::PLAN_FOLDER)
         end
 
         context "and contains valid data" do
