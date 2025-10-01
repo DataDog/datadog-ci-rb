@@ -149,9 +149,9 @@ RSpec.describe Datadog::CI::Remote::Component do
       end
     end
 
-    context "when .dd/context/settings.json file exists" do
+    context "when settings.json file exists in DDTest cache" do
       let(:require_git) { false }
-      let(:settings_file_path) { ".dd/context/settings.json" }
+      let(:settings_file_path) { "#{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH}/settings.json" }
       let(:settings_json) do
         {
           "code_coverage" => true,
@@ -179,13 +179,13 @@ RSpec.describe Datadog::CI::Remote::Component do
       end
 
       before do
-        FileUtils.mkdir_p(".dd/context")
+        FileUtils.mkdir_p(Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
 
         File.write(settings_file_path, JSON.pretty_generate(settings_json))
       end
 
       after do
-        FileUtils.rm_rf(".dd")
+        FileUtils.rm_rf(Datadog::CI::Ext::DDTest::PLAN_FOLDER)
       end
 
       context "when settings.json file exists in context" do

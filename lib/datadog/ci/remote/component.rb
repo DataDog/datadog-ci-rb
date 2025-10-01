@@ -55,15 +55,15 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring library configuration from Datadog Test Runner context" }
+          Datadog.logger.debug { "Restoring library configuration from DDTest cache" }
 
-          settings = load_json(Ext::TestRunner::SETTINGS_FILE_NAME)
+          settings = load_json(Ext::DDTest::SETTINGS_FILE_NAME)
           if settings.nil?
             Datadog.logger.debug { "Restoring library configuration failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored library configuration from Datadog Test Runner: #{settings}" }
+          Datadog.logger.debug { "Restored library configuration from DDTest: #{settings}" }
           @library_configuration = LibrarySettings.from_json(settings)
           true
         end

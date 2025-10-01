@@ -2,7 +2,7 @@
 
 require "json"
 require_relative "file_storage"
-require_relative "../ext/test_runner"
+require_relative "../ext/dd_test"
 
 module Datadog
   module CI
@@ -21,9 +21,9 @@ module Datadog
 
         # Load component state
         def load_component_state
-          # Check for Datadog Test Runner context first
-          if Dir.exist?(Ext::TestRunner::DATADOG_CONTEXT_PATH)
-            Datadog.logger.debug { "Datadog Test Runner context found" }
+          # Check for DDTest cache first
+          if Dir.exist?(Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
+            Datadog.logger.debug { "DDTest cache found" }
             return true if restore_state_from_datadog_test_runner
           end
 
@@ -60,7 +60,7 @@ module Datadog
         end
 
         def load_json(file_name)
-          file_path = File.join(Ext::TestRunner::DATADOG_CONTEXT_PATH, file_name)
+          file_path = File.join(Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH, file_name)
 
           unless File.exist?(file_path)
             Datadog.logger.debug { "JSON file not found: #{file_path}" }

@@ -225,13 +225,13 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
     end
 
-    context "when skippable_tests.json file from Datadog Test Runner exists" do
+    context "when skippable_tests.json file from DDTest exists" do
       let(:tests_skipping_enabled) { true }
-      let(:skippable_tests_file_path) { ".dd/context/skippable_tests.json" }
+      let(:skippable_tests_file_path) { "#{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH}/skippable_tests.json" }
 
       before do
-        # Create .dd/context folder if it doesn't exist
-        FileUtils.mkdir_p(".dd/context")
+        # Create #{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
+        FileUtils.mkdir_p(Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
 
         # Write skippable tests data to the file
         File.write(skippable_tests_file_path, JSON.pretty_generate(skippable_tests_data))
@@ -243,7 +243,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       after do
-        FileUtils.rm_rf(".dd")
+        FileUtils.rm_rf(Datadog::CI::Ext::DDTest::PLAN_FOLDER)
       end
 
       context "and contains valid data" do

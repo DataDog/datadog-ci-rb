@@ -2,7 +2,7 @@
 
 require_relative "../ext/telemetry"
 require_relative "../ext/test"
-require_relative "../ext/test_runner"
+require_relative "../ext/dd_test"
 require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
 require_relative "../utils/test_run"
@@ -76,15 +76,15 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring test management tests from Datadog Test Runner context" }
+          Datadog.logger.debug { "Restoring test management tests from DDTest cache" }
 
-          test_management_data = load_json(Ext::TestRunner::TEST_MANAGEMENT_TESTS_FILE_NAME)
+          test_management_data = load_json(Ext::DDTest::TEST_MANAGEMENT_TESTS_FILE_NAME)
           if test_management_data.nil?
             Datadog.logger.debug { "Restoring test management tests failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored test management tests from Datadog Test Runner: #{test_management_data}" }
+          Datadog.logger.debug { "Restored test management tests from DDTest: #{test_management_data}" }
 
           # Use the TestsProperties::Response class method to parse the JSON data
           # Wrap the data in the expected backend API format

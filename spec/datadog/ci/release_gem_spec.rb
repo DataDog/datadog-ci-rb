@@ -28,6 +28,7 @@ RSpec.describe "gem release process" do
            |\.simplecov
            |\.yardopts
            |Appraisals
+           |AGENTS.md
            |CLAUDE.md
            |CODE_OF_CONDUCT.md
            |CONTRIBUTING.md

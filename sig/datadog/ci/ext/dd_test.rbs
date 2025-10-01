@@ -1,8 +1,9 @@
 module Datadog
   module CI
     module Ext
-      module TestRunner
-        DATADOG_CONTEXT_PATH: String
+      module DDTest
+        PLAN_FOLDER: String
+        TESTOPTIMIZATION_CACHE_PATH: String
         SETTINGS_FILE_NAME: String
         KNOWN_TESTS_FILE_NAME: String
         TEST_MANAGEMENT_TESTS_FILE_NAME: String

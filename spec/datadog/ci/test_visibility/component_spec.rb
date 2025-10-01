@@ -1120,19 +1120,19 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
         end
       end
 
-      context "when known_tests.json file from Datadog Test Runner exists" do
-        let(:known_tests_file_path) { ".dd/context/known_tests.json" }
+      context "when known_tests.json file from DDTest exists" do
+        let(:known_tests_file_path) { "#{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH}/known_tests.json" }
 
         before do
-          # Create .dd/context folder if it doesn't exist
-          FileUtils.mkdir_p(".dd/context")
+          # Create #{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
+          FileUtils.mkdir_p(Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
 
           # Write settings to the file
           File.write(known_tests_file_path, known_tests_data)
         end
 
         after do
-          FileUtils.rm_rf(".dd")
+          FileUtils.rm_rf(Datadog::CI::Ext::DDTest::PLAN_FOLDER)
         end
 
         context "and contains valid data" do

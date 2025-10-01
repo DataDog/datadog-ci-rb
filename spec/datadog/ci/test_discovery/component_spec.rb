@@ -121,14 +121,14 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
 
         before do
           allow(FileUtils).to receive(:mkdir_p)
-          allow(Dir).to receive(:exist?).with("./.dd/test_discovery").and_return(false)
+          allow(Dir).to receive(:exist?).with("./#{Datadog::CI::Ext::DDTest::PLAN_FOLDER}/test_discovery").and_return(false)
         end
 
         it "uses default output path and creates directory" do
           component.on_test_session_start
 
-          expect(FileUtils).to have_received(:mkdir_p).with("./.dd/test_discovery")
-          expect(component.instance_variable_get(:@output_path)).to eq("./.dd/test_discovery/tests.json")
+          expect(FileUtils).to have_received(:mkdir_p).with("./#{Datadog::CI::Ext::DDTest::PLAN_FOLDER}/test_discovery")
+          expect(component.instance_variable_get(:@output_path)).to eq("./#{Datadog::CI::Ext::DDTest::PLAN_FOLDER}/test_discovery/tests.json")
         end
       end
 

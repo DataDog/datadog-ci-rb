@@ -6,7 +6,7 @@ require "datadog/core/telemetry/logging"
 
 require_relative "../ext/test"
 require_relative "../ext/telemetry"
-require_relative "../ext/test_runner"
+require_relative "../ext/dd_test"
 
 require_relative "../git/local_repository"
 
@@ -85,7 +85,7 @@ module Datadog
           load_datadog_cov! if @code_coverage_enabled
 
           # Load component state first, and if successful, skip fetching skippable tests
-          # Also try to restore from Datadog Test Runner context if available
+          # Also try to restore from DDTest cache if available
           if skipping_tests?
             return if load_component_state
             return if restore_state_from_datadog_test_runner
@@ -216,15 +216,15 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring skippable tests from Datadog Test Runner context" }
+          Datadog.logger.debug { "Restoring skippable tests from DDTest cache" }
 
-          skippable_tests_data = load_json(Ext::TestRunner::SKIPPABLE_TESTS_FILE_NAME)
+          skippable_tests_data = load_json(Ext::DDTest::SKIPPABLE_TESTS_FILE_NAME)
           if skippable_tests_data.nil?
             Datadog.logger.debug { "Restoring skippable tests failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored skippable tests from Datadog Test Runner: #{skippable_tests_data}" }
+          Datadog.logger.debug { "Restored skippable tests from DDTest: #{skippable_tests_data}" }
 
           transformed_data = transform_test_runner_data(skippable_tests_data)
 
