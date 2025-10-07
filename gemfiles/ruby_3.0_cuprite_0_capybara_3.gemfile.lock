@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: f773763882fc3c0a2d59b7e9d4ab37b112daa2a3
+  revision: 0a324919cf2c73e0f5d288bdc5e718adb61c9ef1
   branch: master
   specs:
     datadog (2.22.0)
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
       libdatadog (~> 18.1.0.1.0)
-      libddwaf (~> 1.25.1.0.1)
+      libddwaf (~> 1.25.1.1.0)
       logger
       msgpack
 
@@ -99,9 +99,9 @@ GEM
       reline (>= 0.4.2)
     libdatadog (18.1.0.1.0-aarch64-linux)
     libdatadog (18.1.0.1.0-x86_64-linux)
-    libddwaf (1.25.1.0.1-aarch64-linux)
+    libddwaf (1.25.1.1.0-aarch64-linux)
       ffi (~> 1.0)
-    libddwaf (1.25.1.0.1-x86_64-linux)
+    libddwaf (1.25.1.1.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     matrix (0.4.3)
@@ -114,7 +114,7 @@ GEM
     nokogiri (1.17.2-x86_64-linux)
       racc (~> 1.4)
     os (1.1.4)
-    pp (0.6.2)
+    pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
     psych (5.2.6)
@@ -128,9 +128,10 @@ GEM
     rake (13.3.0)
     rake-compiler (1.3.0)
       rake
-    rdoc (6.14.2)
+    rdoc (6.15.0)
       erb
       psych (>= 4.0.0)
+      tsort
     regexp_parser (2.11.3)
     reline (0.6.2)
       io-console (~> 0.5)
@@ -163,6 +164,7 @@ GEM
       ffi (~> 1.1)
       memoist3 (~> 1.0.0)
     thor (1.4.0)
+    tsort (0.2.0)
     webmock (3.25.1)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
