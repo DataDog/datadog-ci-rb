@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: f773763882fc3c0a2d59b7e9d4ab37b112daa2a3
+  revision: 0a324919cf2c73e0f5d288bdc5e718adb61c9ef1
   branch: master
   specs:
     datadog (2.22.0)
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
       libdatadog (~> 18.1.0.1.0)
-      libddwaf (~> 1.25.1.0.1)
+      libddwaf (~> 1.25.1.1.0)
       logger
       msgpack
 
@@ -78,7 +78,7 @@ GEM
     diff-lcs (1.6.2)
     docile (1.4.1)
     drb (2.2.3)
-    erb (5.0.2)
+    erb (5.0.3)
     ffi (1.17.2-aarch64-linux-gnu)
     ffi (1.17.2-x86_64-linux-gnu)
     hashdiff (1.2.1)
@@ -91,9 +91,9 @@ GEM
       reline (>= 0.4.2)
     libdatadog (18.1.0.1.0-aarch64-linux)
     libdatadog (18.1.0.1.0-x86_64-linux)
-    libddwaf (1.25.1.0.1-aarch64-linux)
+    libddwaf (1.25.1.1.0-aarch64-linux)
       ffi (~> 1.0)
-    libddwaf (1.25.1.0.1-x86_64-linux)
+    libddwaf (1.25.1.1.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     memoist3 (1.0.0)
@@ -102,7 +102,7 @@ GEM
     msgpack (1.8.0)
     multi_test (0.1.2)
     os (1.1.4)
-    pp (0.6.2)
+    pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
     protobuf-cucumber (3.10.8)
@@ -117,9 +117,10 @@ GEM
     rake (13.3.0)
     rake-compiler (1.3.0)
       rake
-    rdoc (6.14.2)
+    rdoc (6.15.0)
       erb
       psych (>= 4.0.0)
+      tsort
     reline (0.6.2)
       io-console (~> 0.5)
     rexml (3.4.4)
@@ -152,6 +153,7 @@ GEM
       memoist3 (~> 1.0.0)
     thor (1.4.0)
     thread_safe (0.3.6)
+    tsort (0.2.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     webmock (3.25.1)
