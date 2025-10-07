@@ -9,8 +9,6 @@ module Datadog
       module Store
         # This context is shared between threads and represents the current test session and test module.
         class Process
-          attr_reader :readonly_test_session, :readonly_test_module
-
           def initialize
             # we are using Monitor instead of Mutex because it is reentrant
             @mutex = Monitor.new
@@ -52,11 +50,11 @@ module Datadog
           end
 
           def active_test_module
-            @test_module
+            @mutex.synchronize { @test_module }
           end
 
           def active_test_session
-            @test_session
+            @mutex.synchronize { @test_session }
           end
 
           def active_test_suite(test_suite_name)
@@ -82,16 +80,28 @@ module Datadog
             @mutex.synchronize { @test_suites.delete(test_suite_name) }
           end
 
+          def readonly_test_session
+            @mutex.synchronize { @readonly_test_session }
+          end
+
+          def readonly_test_module
+            @mutex.synchronize { @readonly_test_module }
+          end
+
           def set_readonly_test_session(remote_test_session)
             return if remote_test_session.nil?
 
-            @readonly_test_session = Datadog::CI::ReadonlyTestSession.new(remote_test_session)
+            @mutex.synchronize do
+              @readonly_test_session = Datadog::CI::ReadonlyTestSession.new(remote_test_session)
+            end
           end
 
           def set_readonly_test_module(remote_test_module)
             return if remote_test_module.nil?
 
-            @readonly_test_module = Datadog::CI::ReadonlyTestModule.new(remote_test_module)
+            @mutex.synchronize do
+              @readonly_test_module = Datadog::CI::ReadonlyTestModule.new(remote_test_module)
+            end
           end
         end
       end
