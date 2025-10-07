@@ -2,7 +2,6 @@
 
 require_relative "../../ext/test"
 require_relative "ext"
-require_relative "helpers"
 
 module Datadog
   module CI

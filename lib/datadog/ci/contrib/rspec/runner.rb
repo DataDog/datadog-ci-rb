@@ -3,7 +3,6 @@
 require_relative "../../ext/test"
 require_relative "../instrumentation"
 require_relative "ext"
-require_relative "helpers"
 
 module Datadog
   module CI
@@ -33,7 +32,8 @@ module Datadog
 
               result = super
               return result unless test_module && test_session
-              return result if Helpers.parallel_tests?
+              # distributed test session must end in the parent process (for RSpec it would be parallel_tests CLI)
+              return result if test_session.distributed
 
               if result != 0
                 test_module.failed!
