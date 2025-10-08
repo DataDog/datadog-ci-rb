@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [1.23.0] - 2025-10-08
+
+
+### Changed
+* In test discovery mode output suiteSourceFile for each test ([#400][])
+* DDTest integration changes ([#407][])
+* Support context propagation from Datadog test runner ([#399][])
+
+### Fixed
+* Fix issue when parallel_tests doesn't track test sessions when using manual instrumentation ([#410][])
+
 ## [1.22.1] - 2025-08-25
 
 ### Fixed
@@ -520,7 +531,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.0...main
+[1.23.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.1...v1.23.0
 [1.22.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.0...v1.22.1
 [1.22.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.1...v1.22.0
 [1.21.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.0...v1.21.1
@@ -739,4 +751,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#393]: https://github.com/DataDog/datadog-ci-rb/issues/393
 [#394]: https://github.com/DataDog/datadog-ci-rb/issues/394
 [#396]: https://github.com/DataDog/datadog-ci-rb/issues/396
+[#399]: https://github.com/DataDog/datadog-ci-rb/issues/399
+[#400]: https://github.com/DataDog/datadog-ci-rb/issues/400
 [#402]: https://github.com/DataDog/datadog-ci-rb/issues/402
+[#407]: https://github.com/DataDog/datadog-ci-rb/issues/407
+[#410]: https://github.com/DataDog/datadog-ci-rb/issues/410
