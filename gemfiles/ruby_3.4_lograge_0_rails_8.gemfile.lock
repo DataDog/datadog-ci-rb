@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 0a324919cf2c73e0f5d288bdc5e718adb61c9ef1
+  revision: c0f2229c832db93832beec486c296551c4756a50
   branch: master
   specs:
     datadog (2.22.0)
@@ -100,7 +100,7 @@ GEM
       thor (>= 0.14.0)
     base64 (0.3.0)
     benchmark (0.4.1)
-    bigdecimal (3.2.3)
+    bigdecimal (3.3.0)
     builder (3.3.0)
     climate_control (1.2.0)
     concurrent-ruby (1.3.5)
@@ -166,7 +166,7 @@ GEM
       net-smtp
     marcel (1.1.0)
     mini_mime (1.1.5)
-    minitest (5.25.5)
+    minitest (5.26.0)
     msgpack (1.8.0)
     net-imap (0.5.12)
       date
@@ -203,7 +203,7 @@ GEM
       stringio
     public_suffix (6.0.2)
     racc (1.8.1)
-    rack (3.2.1)
+    rack (3.2.2)
     rack-session (2.1.1)
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
@@ -283,7 +283,7 @@ GEM
     tsort (0.2.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
-    uri (1.0.3)
+    uri (1.0.4)
     useragent (0.16.11)
     webmock (3.25.1)
       addressable (>= 2.8.0)

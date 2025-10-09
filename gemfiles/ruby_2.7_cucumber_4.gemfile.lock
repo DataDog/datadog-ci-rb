@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 0a324919cf2c73e0f5d288bdc5e718adb61c9ef1
+  revision: c0f2229c832db93832beec486c296551c4756a50
   branch: master
   specs:
     datadog (2.22.0)
@@ -32,7 +32,7 @@ GEM
       bundler
       rake
       thor (>= 0.14.0)
-    bigdecimal (3.2.3)
+    bigdecimal (3.3.0)
     builder (3.3.0)
     cgi (0.5.0)
     climate_control (1.2.0)
@@ -100,7 +100,7 @@ GEM
     logger (1.7.0)
     memoist3 (1.0.0)
     middleware (0.1.0)
-    minitest (5.25.5)
+    minitest (5.26.0)
     msgpack (1.8.0)
     multi_test (0.1.2)
     os (1.1.4)
