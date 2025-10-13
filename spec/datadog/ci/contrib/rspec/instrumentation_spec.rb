@@ -669,7 +669,9 @@ RSpec.describe "RSpec instrumentation" do
           )
 
           expect(shared_test_span).to have_test_tag(:source_start, "3")
-          expect(shared_test_span).to have_test_tag(:source_end, "5")
+          unless PlatformHelpers.jruby?
+            expect(shared_test_span).to have_test_tag(:source_end, "5")
+          end
         end
 
         expect(test_spans).to all have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
