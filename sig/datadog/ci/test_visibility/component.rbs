@@ -90,6 +90,8 @@ module Datadog
 
         def set_codeowners: (Datadog::CI::Span span) -> void
 
+        def validate_source_location: (Datadog::CI::Test test) -> void
+
         def null_span: () -> Datadog::CI::Span
 
         def single_active_test_suite: () -> Datadog::CI::TestSuite?

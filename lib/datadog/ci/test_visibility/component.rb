@@ -340,6 +340,8 @@ module Datadog
           test_optimisation.stop_coverage(test)
           test_optimisation.on_test_finished(test, maybe_remote_context)
 
+          validate_source_location(test)
+
           test_retries.record_test_finished(test)
           Telemetry.event_finished(test)
         end
@@ -373,6 +375,27 @@ module Datadog
           source = span.source_file
           owners = @codeowners.list_owners(source) if source
           span.set_tag(Ext::Test::TAG_CODEOWNERS, owners) unless owners.nil?
+        end
+
+        def validate_source_location(test)
+          source_start = test.get_tag(Ext::Test::TAG_SOURCE_START)
+          source_end = test.get_tag(Ext::Test::TAG_SOURCE_END)
+
+          return if source_start.nil? || source_end.nil?
+          # tags must be strings, if they are not, they were redefined by someone
+          return unless source_start.is_a?(String) && source_end.is_a?(String)
+
+          start_line = source_start.to_i
+          end_line = source_end.to_i
+
+          if end_line < start_line
+            Datadog.logger.debug do
+              "Invalid source location for test [#{test.name}]: " \
+              "end line (#{end_line}) is before the start line (#{start_line}). " \
+              "Removing #{Ext::Test::TAG_SOURCE_END} tag."
+            end
+            test.clear_tag(Ext::Test::TAG_SOURCE_END)
+          end
         end
 
         def fix_test_suite!(test)
