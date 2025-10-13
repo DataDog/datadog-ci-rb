@@ -23,6 +23,7 @@ RSpec.describe "RSpec instrumentation" do
     with_canceled_test: false,
     with_flaky_test_that_fails_once: false,
     with_test_outside_context: false,
+    with_invalid_end_line: false,
     unskippable: {
       test: false,
       context: false,
@@ -108,6 +109,13 @@ RSpec.describe "RSpec instrumentation" do
               expect(1 + 1).to eq(34)
             end
           end
+
+          if with_invalid_end_line
+            it "invalid end line" do
+              Datadog::CI.active_test&.set_tag(Datadog::CI::Ext::Test::TAG_SOURCE_END, "1")
+              expect(1 + 1).to eq(2)
+            end
+          end
         end
 
         if with_test_outside_context
@@ -174,8 +182,8 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "147")
-      expect(first_test_span).to have_test_tag(:source_end, "149") unless PlatformHelpers.jruby?
+      expect(first_test_span).to have_test_tag(:source_start, "155")
+      expect(first_test_span).to have_test_tag(:source_end, "157") unless PlatformHelpers.jruby?
 
       expect(first_test_span).to have_test_tag(
         :codeowners,
@@ -607,7 +615,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "48")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "49")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -659,9 +667,24 @@ RSpec.describe "RSpec instrumentation" do
             :parameters,
             "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:#{2 + index}:1\"}}"
           )
+
+          expect(shared_test_span).to have_test_tag(:source_start, "3")
+          unless PlatformHelpers.jruby?
+            expect(shared_test_span).to have_test_tag(:source_end, "5")
+          end
         end
 
         expect(test_spans).to all have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
+      end
+    end
+
+    context "with invalid end line" do
+      it "creates test span without source end line" do
+        rspec_session_run(with_invalid_end_line: true)
+
+        invalid_end_line_test = test_spans.find { |span| span.name == "nested invalid end line" }
+        expect(invalid_end_line_test).to have_test_tag(:source_start)
+        expect(invalid_end_line_test).not_to have_test_tag(:source_end)
       end
     end
 
