@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.23.1] - 2025-10-14
+
+========== Changelog ==========
+### Fixed
+* Drop source end line when it is before start line ([#414][])
+
 ## [1.23.0] - 2025-10-08
 
 
@@ -531,7 +537,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.1...main
+[1.23.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.0...v1.23.1
 [1.23.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.1...v1.23.0
 [1.22.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.0...v1.22.1
 [1.22.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.21.1...v1.22.0
@@ -756,3 +763,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#402]: https://github.com/DataDog/datadog-ci-rb/issues/402
 [#407]: https://github.com/DataDog/datadog-ci-rb/issues/407
 [#410]: https://github.com/DataDog/datadog-ci-rb/issues/410
+[#414]: https://github.com/DataDog/datadog-ci-rb/issues/414
