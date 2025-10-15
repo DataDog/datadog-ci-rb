@@ -126,6 +126,18 @@ RSpec.describe Datadog::CI::Test do
     it { is_expected.to eq("test module id") }
   end
 
+  describe "#test_module_name" do
+    subject(:test_module_name) { ci_test.test_module_name }
+
+    before do
+      allow(tracer_span).to(
+        receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_MODULE).and_return("test module name")
+      )
+    end
+
+    it { is_expected.to eq("test module name") }
+  end
+
   describe "#test_session_id" do
     subject(:test_session_id) { ci_test.test_session_id }
 

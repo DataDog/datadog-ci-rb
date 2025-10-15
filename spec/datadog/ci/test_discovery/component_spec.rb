@@ -263,6 +263,8 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         mark_test_discovery_mode!: nil,
         name: "test_example",
         test_suite_name: "ExampleSuite",
+        test_module_name: "ExampleModule",
+        parameters: "{a: 1, b: 2}",
         source_file: "/path/to/test.rb",
         datadog_test_id: "ExampleSuite.test_example.nil",
         test_suite: test_suite)
@@ -283,9 +285,9 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         expected_test_info = {
           "name" => "test_example",
           "suite" => "ExampleSuite",
-          "sourceFile" => "/path/to/test.rb",
-          "suiteSourceFile" => "/path/to/suite.rb",
-          "fqn" => "ExampleSuite.test_example.nil"
+          "module" => "ExampleModule",
+          "parameters" => "{a: 1, b: 2}",
+          "suiteSourceFile" => "/path/to/suite.rb"
         }
 
         expect(component.instance_variable_get(:@buffer)).to include(expected_test_info)
@@ -351,6 +353,8 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
               test_suite_name: "Suite#{i}",
               source_file: "/path/test_#{i}_#{j}.rb",
               datadog_test_id: "test_id_#{i}_#{j}",
+              test_module_name: "Module#{i}",
+              parameters: "{a: #{i}, b: #{j}}",
               test_suite: nil)
             component.on_test_started(test)
           end
