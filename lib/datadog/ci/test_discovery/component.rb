@@ -85,9 +85,9 @@ module Datadog
           test_info = {
             "name" => test.name,
             "suite" => test.test_suite_name,
-            "sourceFile" => test.source_file,
-            "suiteSourceFile" => test.test_suite&.source_file,
-            "fqn" => test.datadog_test_id
+            "module" => test.test_module_name,
+            "parameters" => test.parameters,
+            "suiteSourceFile" => test.test_suite&.source_file
           }
 
           Datadog.logger.debug { "Discovered test: #{test_info}" }
