@@ -10,6 +10,7 @@ require_relative "packfiles"
 
 require_relative "../ext/telemetry"
 require_relative "../utils/telemetry"
+require_relative "../utils/test_run"
 
 module Datadog
   module CI
@@ -30,6 +31,11 @@ module Datadog
 
           if test_visibility_component.client_process?
             Datadog.logger.debug("Test visibility component is running in client process, aborting git upload")
+            return
+          end
+
+          if Utils::TestRun.test_optimization_data_cached?
+            Datadog.logger.debug("DDTest cache found, git upload already done by DDTest tool, skipping git upload")
             return
           end
 
