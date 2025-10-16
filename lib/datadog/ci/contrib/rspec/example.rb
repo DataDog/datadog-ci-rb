@@ -21,8 +21,6 @@ module Datadog
             def run(*args)
               return super unless datadog_configuration[:enabled]
               return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
-              # in dry run mode that we use for test discovery we are not interested in tests skipped by a test framework
-              return super if ::RSpec.configuration.dry_run? && metadata[:skip]
 
               test_suite_span = test_visibility_component.start_test_suite(datadog_test_suite_name) if ci_queue?
 
@@ -131,37 +129,6 @@ module Datadog
               )
             end
 
-            def datadog_unskippable?
-              !!metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
-            end
-
-            private
-
-            def fetch_top_level_example_group
-              example_group = metadata[:example_group]
-              parent_example_group = example_group[:parent_example_group]
-
-              return example_group unless parent_example_group
-
-              res = parent_example_group
-              while (parent = res[:parent_example_group])
-                res = parent
-              end
-              res
-            end
-
-            def datadog_integration
-              CI::Contrib::Instrumentation.fetch_integration(:rspec)
-            end
-
-            def datadog_configuration
-              Datadog.configuration.ci[:rspec]
-            end
-
-            def datadog_test_suite_description
-              @datadog_test_suite_description ||= fetch_top_level_example_group[:description]
-            end
-
             def datadog_test_name
               return @datadog_test_name if defined?(@datadog_test_name)
 
@@ -195,6 +162,41 @@ module Datadog
               @datadog_test_parameters = Utils::TestRun.test_parameters(
                 metadata: {"scoped_id" => metadata[:scoped_id]}
               )
+            end
+
+            def datadog_unskippable?
+              !!metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
+            end
+
+            def datadog_test_suite_source_file_path
+              Git::LocalRepository.relative_to_root(metadata[:rerun_file_path])
+            end
+
+            private
+
+            def fetch_top_level_example_group
+              example_group = metadata[:example_group]
+              parent_example_group = example_group[:parent_example_group]
+
+              return example_group unless parent_example_group
+
+              res = parent_example_group
+              while (parent = res[:parent_example_group])
+                res = parent
+              end
+              res
+            end
+
+            def datadog_integration
+              CI::Contrib::Instrumentation.fetch_integration(:rspec)
+            end
+
+            def datadog_configuration
+              Datadog.configuration.ci[:rspec]
+            end
+
+            def datadog_test_suite_description
+              @datadog_test_suite_description ||= fetch_top_level_example_group[:description]
             end
 
             def test_visibility_component

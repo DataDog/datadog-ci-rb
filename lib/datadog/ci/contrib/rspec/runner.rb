@@ -16,8 +16,16 @@ module Datadog
 
           module InstanceMethods
             def run_specs(*args)
-              return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
               return super unless datadog_configuration[:enabled]
+
+              if test_discovery_component.enabled?
+                discover_tests
+
+                # don't run the tests, we just needed to discover them and now we can return
+                return
+              end
+
+              return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
 
               test_session = test_visibility_component.start_test_session(
                 tags: {
@@ -60,6 +68,30 @@ module Datadog
 
             def test_visibility_component
               Datadog.send(:components).test_visibility
+            end
+
+            def test_discovery_component
+              Datadog.send(:components).test_discovery
+            end
+
+            def discover_tests
+              test_discovery_component.start
+
+              examples = ::RSpec.world.all_examples
+
+              examples.each do |example|
+                next if example.metadata[:skip]
+
+                test_discovery_component.record_test(
+                  name: example.datadog_test_name,
+                  suite: example.datadog_test_suite_name,
+                  parameters: example.datadog_test_parameters,
+                  module_name: Ext::FRAMEWORK,
+                  source_file: example.datadog_test_suite_source_file_path
+                )
+              end
+
+              test_discovery_component.finish
             end
           end
         end

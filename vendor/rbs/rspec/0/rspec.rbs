@@ -60,6 +60,7 @@ end
 class RSpec::Core::World
   def wants_to_quit: () -> bool
   def example_count: () -> Integer
+  def all_examples: () -> Array[untyped]
 end
 
 module RSpec::Core::Notifications

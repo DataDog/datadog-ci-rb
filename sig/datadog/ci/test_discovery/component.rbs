@@ -4,7 +4,7 @@ module Datadog
       class Component
         @enabled: bool
         @output_path: String?
-        @buffer: Array[Hash[String, String]]
+        @buffer: Array[Hash[String, String?]]
         @buffer_mutex: Mutex
 
         def initialize: (enabled: bool, output_path: String?) -> void
@@ -13,11 +13,11 @@ module Datadog
 
         def disable_features_for_test_discovery!: (untyped settings) -> void
 
-        def on_test_session_start: () -> void
+        def start: () -> void
 
-        def on_test_session_end: () -> void
+        def finish: () -> void
 
-        def on_test_started: (untyped test) -> void
+        def record_test: (name: String?, suite: String?, module_name: String?, parameters: String?, source_file: String?) -> void
 
         def shutdown!: () -> void
 

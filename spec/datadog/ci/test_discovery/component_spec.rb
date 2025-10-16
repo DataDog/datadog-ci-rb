@@ -98,7 +98,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
     end
   end
 
-  describe "#on_test_session_start" do
+  describe "#start" do
     let(:output_path) { "/tmp/test_discovery.json" }
 
     context "when test discovery mode is enabled" do
@@ -111,7 +111,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
 
       it "clears the buffer" do
         component.instance_variable_set(:@buffer, ["old_data"])
-        component.on_test_session_start
+        component.start
 
         expect(component.instance_variable_get(:@buffer)).to eq([])
       end
@@ -125,7 +125,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         end
 
         it "uses default output path and creates directory" do
-          component.on_test_session_start
+          component.start
 
           expect(FileUtils).to have_received(:mkdir_p).with("./#{Datadog::CI::Ext::DDTest::PLAN_FOLDER}/test_discovery")
           expect(component.instance_variable_get(:@output_path)).to eq("./#{Datadog::CI::Ext::DDTest::PLAN_FOLDER}/test_discovery/tests.json")
@@ -138,7 +138,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         end
 
         it "creates the output directory" do
-          component.on_test_session_start
+          component.start
 
           expect(FileUtils).to have_received(:mkdir_p).with("/tmp")
         end
@@ -150,14 +150,14 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
 
       it "does not modify the buffer" do
         component.instance_variable_set(:@buffer, ["existing_data"])
-        component.on_test_session_start
+        component.start
 
         expect(component.instance_variable_get(:@buffer)).to eq(["existing_data"])
       end
     end
   end
 
-  describe "#on_test_session_end" do
+  describe "#finish" do
     let(:output_path) { "/tmp/test_discovery.json" }
 
     context "when test discovery mode is enabled" do
@@ -170,7 +170,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
       end
 
       it "flushes the buffer to file" do
-        component.on_test_session_end
+        component.finish
 
         expect(File).to have_received(:open).with("/tmp/test_discovery.json", "a")
         expect(file_double).to have_received(:puts).with(['{"name":"test1"}', '{"name":"test2"}'])
@@ -183,7 +183,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         end
 
         it "does not open file" do
-          component.on_test_session_end
+          component.finish
 
           expect(File).not_to have_received(:open)
         end
@@ -195,7 +195,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
 
       it "does not flush buffer" do
         allow(File).to receive(:open)
-        component.on_test_session_end
+        component.finish
 
         expect(File).not_to have_received(:open)
       end
@@ -252,35 +252,22 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
     end
   end
 
-  describe "#on_test_started" do
-    let(:test_suite) {
-      double("test_suite",
-        source_file: "/path/to/suite.rb")
-    }
-
-    let(:test) {
-      double("test",
-        mark_test_discovery_mode!: nil,
+  describe "#record_test" do
+    let(:test) do
+      {
         name: "test_example",
-        test_suite_name: "ExampleSuite",
-        test_module_name: "ExampleModule",
+        suite: "ExampleSuite",
+        module_name: "ExampleModule",
         parameters: "{a: 1, b: 2}",
-        source_file: "/path/to/test.rb",
-        datadog_test_id: "ExampleSuite.test_example.nil",
-        test_suite: test_suite)
-    }
+        source_file: "/path/to/suite.rb"
+      }
+    end
 
     context "when test discovery mode is enabled" do
       let(:enabled) { true }
 
-      it "marks the test as being in test discovery mode" do
-        component.on_test_started(test)
-
-        expect(test).to have_received(:mark_test_discovery_mode!)
-      end
-
       it "adds test information to buffer" do
-        component.on_test_started(test)
+        component.record_test(**test)
 
         expected_test_info = {
           "name" => "test_example",
@@ -305,7 +292,7 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         end
 
         it "flushes the buffer when max size is reached" do
-          component.on_test_started(test)
+          component.record_test(**test)
 
           expect(File).to have_received(:open).with("/tmp/test_discovery.json", "a")
           expect(component.instance_variable_get(:@buffer)).to be_empty
@@ -316,15 +303,9 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
     context "when test discovery mode is disabled" do
       let(:enabled) { false }
 
-      it "does not mark the test" do
-        component.on_test_started(test)
-
-        expect(test).not_to have_received(:mark_test_discovery_mode!)
-      end
-
       it "does not add to buffer" do
         initial_buffer = component.instance_variable_get(:@buffer)
-        component.on_test_started(test)
+        component.record_test(**test)
 
         expect(component.instance_variable_get(:@buffer)).to eq(initial_buffer)
       end
@@ -341,22 +322,19 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
     end
 
     it "handles concurrent test additions safely" do
-      component.on_test_session_start
+      component.start
 
       # Create multiple threads adding tests concurrently
       threads = 10.times.map do |i|
         Thread.new do
           10.times do |j|
-            test = double("test_#{i}_#{j}",
-              mark_test_discovery_mode!: nil,
+            component.record_test(
               name: "test_#{i}_#{j}",
-              test_suite_name: "Suite#{i}",
-              source_file: "/path/test_#{i}_#{j}.rb",
-              datadog_test_id: "test_id_#{i}_#{j}",
-              test_module_name: "Module#{i}",
+              suite: "Suite#{i}",
+              module_name: "Module#{i}",
               parameters: "{a: #{i}, b: #{j}}",
-              test_suite: nil)
-            component.on_test_started(test)
+              source_file: "/path/test_#{i}_#{j}.rb"
+            )
           end
         end
       end

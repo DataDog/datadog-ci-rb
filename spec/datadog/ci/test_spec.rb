@@ -584,21 +584,8 @@ RSpec.describe Datadog::CI::Test do
   describe "#datadog_skip_reason" do
     subject(:datadog_skip_reason) { ci_test.datadog_skip_reason }
 
-    context "when in test discovery mode" do
-      before do
-        allow(ci_test).to(
-          receive(:in_test_discovery_mode?).and_return(true)
-        )
-      end
-
-      it { is_expected.to eq(Datadog::CI::Ext::Test::SkipReason::TEST_DISCOVERY_MODE) }
-    end
-
     context "when skipped by ITR" do
       before do
-        allow(ci_test).to(
-          receive(:in_test_discovery_mode?).and_return(false)
-        )
         allow(ci_test).to(
           receive(:skipped_by_test_impact_analysis?).and_return(true)
         )
@@ -609,9 +596,6 @@ RSpec.describe Datadog::CI::Test do
 
     context "when disabled" do
       before do
-        allow(ci_test).to(
-          receive(:in_test_discovery_mode?).and_return(false)
-        )
         allow(ci_test).to(
           receive(:skipped_by_test_impact_analysis?).and_return(false)
         )
@@ -625,9 +609,6 @@ RSpec.describe Datadog::CI::Test do
 
     context "when neither is true" do
       before do
-        allow(ci_test).to(
-          receive(:in_test_discovery_mode?).and_return(false)
-        )
         allow(ci_test).to(
           receive(:skipped_by_test_impact_analysis?).and_return(false)
         )
@@ -646,21 +627,8 @@ RSpec.describe Datadog::CI::Test do
   describe "#should_skip?" do
     subject(:should_skip) { ci_test.should_skip? }
 
-    context "when in test discovery mode" do
-      before do
-        allow(ci_test).to(
-          receive(:in_test_discovery_mode?).and_return(true)
-        )
-      end
-
-      it { is_expected.to be true }
-    end
-
     context "when skipped by ITR" do
       before do
-        allow(ci_test).to(
-          receive(:in_test_discovery_mode?).and_return(false)
-        )
         allow(ci_test).to(
           receive(:skipped_by_test_impact_analysis?).and_return(true)
         )
@@ -671,9 +639,6 @@ RSpec.describe Datadog::CI::Test do
 
     context "when disabled" do
       before do
-        allow(ci_test).to(
-          receive(:in_test_discovery_mode?).and_return(false)
-        )
         allow(ci_test).to(
           receive(:skipped_by_test_impact_analysis?).and_return(false)
         )
@@ -697,9 +662,6 @@ RSpec.describe Datadog::CI::Test do
 
     context "when neither is true" do
       before do
-        allow(ci_test).to(
-          receive(:in_test_discovery_mode?).and_return(false)
-        )
         allow(ci_test).to(
           receive(:skipped_by_test_impact_analysis?).and_return(false)
         )
@@ -734,37 +696,6 @@ RSpec.describe Datadog::CI::Test do
         allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED).and_return(nil)
       end
       it { is_expected.to be false }
-    end
-  end
-
-  describe "#in_test_discovery_mode?" do
-    subject(:in_test_discovery_mode) { ci_test.in_test_discovery_mode? }
-
-    context "when @in_test_discovery_mode is true" do
-      before { ci_test.instance_variable_set(:@in_test_discovery_mode, true) }
-      it { is_expected.to be true }
-    end
-
-    context "when @in_test_discovery_mode is false" do
-      before { ci_test.instance_variable_set(:@in_test_discovery_mode, false) }
-      it { is_expected.to be false }
-    end
-
-    context "when @in_test_discovery_mode is nil" do
-      before { ci_test.instance_variable_set(:@in_test_discovery_mode, nil) }
-      it { is_expected.to be false }
-    end
-  end
-
-  describe "#mark_test_discovery_mode!" do
-    it "sets @in_test_discovery_mode to true" do
-      ci_test.mark_test_discovery_mode!
-      expect(ci_test.instance_variable_get(:@in_test_discovery_mode)).to be true
-    end
-
-    it "causes in_test_discovery_mode? to return true" do
-      ci_test.mark_test_discovery_mode!
-      expect(ci_test.in_test_discovery_mode?).to be true
     end
   end
 end

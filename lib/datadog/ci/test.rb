@@ -222,9 +222,7 @@ module Datadog
 
       # @internal
       def datadog_skip_reason
-        if in_test_discovery_mode?
-          Ext::Test::SkipReason::TEST_DISCOVERY_MODE
-        elsif skipped_by_test_impact_analysis?
+        if skipped_by_test_impact_analysis?
           Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS
         elsif disabled? || quarantined?
           Ext::Test::SkipReason::TEST_MANAGEMENT_DISABLED
@@ -233,7 +231,7 @@ module Datadog
 
       # @internal
       def should_skip?
-        in_test_discovery_mode? || skipped_by_test_impact_analysis? || (disabled? && !attempt_to_fix?)
+        skipped_by_test_impact_analysis? || (disabled? && !attempt_to_fix?)
       end
 
       # @internal
@@ -244,16 +242,6 @@ module Datadog
       # @internal
       def skipped_by_test_impact_analysis?
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
-      end
-
-      # @internal
-      def in_test_discovery_mode?
-        !!@in_test_discovery_mode
-      end
-
-      # @internal
-      def mark_test_discovery_mode!
-        @in_test_discovery_mode = true
       end
 
       private
