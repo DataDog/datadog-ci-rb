@@ -14,6 +14,8 @@ module Datadog
         def self.custom_configuration: (Hash[String, String]? env_tags) -> Hash[String, String]
 
         def self.virtual_cpu_count: () -> Integer
+
+        def self.test_optimization_data_cached?: () -> bool
       end
     end
   end

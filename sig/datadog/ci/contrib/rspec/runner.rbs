@@ -15,6 +15,10 @@ module Datadog
             def datadog_configuration: () -> untyped
 
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+
+            def test_discovery_component: () -> Datadog::CI::TestDiscovery::Component
+
+            def discover_tests: () -> void
           end
         end
       end

@@ -19,6 +19,10 @@ module Datadog
 
             def datadog_test_id: () -> String
             def datadog_fqn_test_id: () -> String
+            def datadog_test_name: () -> String
+            def datadog_test_suite_name: () -> String
+            def datadog_test_parameters: () -> String
+            def datadog_test_suite_source_file_path: () -> String
             def datadog_unskippable?: () -> bool
 
             private
@@ -29,11 +33,7 @@ module Datadog
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
             def test_retries_component: () -> Datadog::CI::TestRetries::Component
             def ci_queue?: () -> bool
-
             def datadog_test_suite_description: () -> String
-            def datadog_test_name: () -> String
-            def datadog_test_suite_name: () -> String
-            def datadog_test_parameters: () -> String
           end
         end
       end

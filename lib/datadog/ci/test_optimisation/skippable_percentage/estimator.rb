@@ -24,6 +24,11 @@ module Datadog
           end
 
           def call
+            Datadog::Core.log_deprecation do
+              "Skippable percentage command is deprecated and will be removed in 2.0. Use DDTest tool instead." \
+                "More information: https://github.com/DataDog/ddtest "
+            end
+
             return 0.0 if @failed
 
             Datadog.configure do |c|

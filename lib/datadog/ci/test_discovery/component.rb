@@ -48,7 +48,7 @@ module Datadog
           settings.ci.impacted_tests_detection_enabled = false
         end
 
-        def on_test_session_start
+        def start
           return unless @enabled
 
           if @output_path.nil? || @output_path&.empty?
@@ -67,7 +67,7 @@ module Datadog
           @buffer_mutex.synchronize { @buffer.clear }
         end
 
-        def on_test_session_end
+        def finish
           return unless @enabled
 
           @buffer_mutex.synchronize do
@@ -75,19 +75,13 @@ module Datadog
           end
         end
 
-        def on_test_started(test)
-          return unless @enabled
-
-          # Mark test as being in test discovery mode so it will be skipped
-          # even if we are not running in dry run mode.
-          test.mark_test_discovery_mode!
-
+        def record_test(name:, suite:, module_name:, parameters:, source_file:)
           test_info = {
-            "name" => test.name,
-            "suite" => test.test_suite_name,
-            "module" => test.test_module_name,
-            "parameters" => test.parameters,
-            "suiteSourceFile" => test.test_suite&.source_file
+            "name" => name,
+            "suite" => suite,
+            "module" => module_name,
+            "parameters" => parameters,
+            "suiteSourceFile" => source_file
           }
 
           Datadog.logger.debug { "Discovered test: #{test_info}" }

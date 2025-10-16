@@ -50,6 +50,19 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
       end
     end
 
+    context "when the DDTest cache is found" do
+      before do
+        allow(Datadog::CI::Utils::TestRun).to receive(:test_optimization_data_cached?).and_return(true)
+      end
+
+      it "logs a debug message and aborts the git upload" do
+        expect(Datadog.logger).to receive(:debug).with("DDTest cache found, git upload already done by DDTest tool, skipping git upload")
+        expect(Datadog::CI::Git::LocalRepository).not_to receive(:git_commits)
+
+        subject
+      end
+    end
+
     context "when API is configured" do
       before do
         expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(latest_commits)

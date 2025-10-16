@@ -24,6 +24,7 @@ RSpec.describe "RSpec instrumentation" do
     with_flaky_test_that_fails_once: false,
     with_test_outside_context: false,
     with_invalid_end_line: false,
+    with_skipped_test: false,
     unskippable: {
       test: false,
       context: false,
@@ -116,6 +117,12 @@ RSpec.describe "RSpec instrumentation" do
               expect(1 + 1).to eq(2)
             end
           end
+
+          if with_skipped_test
+            xit "skipped" do
+              expect(1 + 1).to eq(2)
+            end
+          end
         end
 
         if with_test_outside_context
@@ -182,8 +189,8 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "155")
-      expect(first_test_span).to have_test_tag(:source_end, "157") unless PlatformHelpers.jruby?
+      expect(first_test_span).to have_test_tag(:source_start, "162")
+      expect(first_test_span).to have_test_tag(:source_end, "164") unless PlatformHelpers.jruby?
 
       expect(first_test_span).to have_test_tag(
         :codeowners,
@@ -615,7 +622,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "49")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "50")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -649,6 +656,15 @@ RSpec.describe "RSpec instrumentation" do
         rspec_session_run(with_failed_test: true)
 
         expect(first_test_suite_span).to have_fail_status
+      end
+    end
+
+    context "with skipped test" do
+      it "creates test span with skipped status" do
+        rspec_session_run(with_skipped_test: true)
+
+        skipped_test = test_spans.find { |span| span.name == "nested skipped" }
+        expect(skipped_test).to have_skip_status
       end
     end
 
@@ -1821,7 +1837,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "creates JSON file with tests" do
-      rspec_session_run(with_failed_test: true, dry_run: true)
+      rspec_session_run(with_failed_test: true, with_skipped_test: true, dry_run: true)
       expect(test_spans).to all have_skip_status
 
       expect(File.exist?(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)).to be true

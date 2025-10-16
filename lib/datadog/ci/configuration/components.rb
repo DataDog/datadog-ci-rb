@@ -96,6 +96,14 @@ module Datadog
           # timecop configuration
           configure_time_providers(settings)
 
+          # first check if we are in test discovery mode and configure library accordingly
+          # @type ivar @test_discovery: Datadog::CI::TestDiscovery::Component
+          @test_discovery = TestDiscovery::Component.new(
+            enabled: settings.ci.test_discovery_enabled,
+            output_path: settings.ci.test_discovery_output_path
+          )
+          @test_discovery.disable_features_for_test_discovery!(settings)
+
           # Configure Datadog::Tracing module
 
           # No need not use 128-bit trace ids for test visibility,
@@ -114,13 +122,6 @@ module Datadog
           trace_writer_options[:transport] = tracing_transport if tracing_transport
 
           settings.tracing.test_mode.writer_options = trace_writer_options
-
-          # @type ivar @test_discovery: Datadog::CI::TestDiscovery::Component
-          @test_discovery = TestDiscovery::Component.new(
-            enabled: settings.ci.test_discovery_enabled,
-            output_path: settings.ci.test_discovery_output_path
-          )
-          @test_discovery.disable_features_for_test_discovery!(settings)
 
           @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
           @ci_remote = Remote::Component.new(

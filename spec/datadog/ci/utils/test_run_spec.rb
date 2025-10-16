@@ -64,4 +64,30 @@ RSpec.describe ::Datadog::CI::Utils::TestRun do
 
     it { is_expected.to eq(::Etc.nprocessors) }
   end
+
+  describe ".test_optimization_data_cached?" do
+    subject { described_class.test_optimization_data_cached? }
+
+    let(:cache_path) { Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH }
+
+    context "when the cache directory exists" do
+      before do
+        FileUtils.mkdir_p(cache_path)
+      end
+
+      after do
+        FileUtils.rm_rf(cache_path)
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when the cache directory does not exist" do
+      before do
+        FileUtils.rm_rf(cache_path) if Dir.exist?(cache_path)
+      end
+
+      it { is_expected.to be false }
+    end
+  end
 end
