@@ -2,6 +2,7 @@
 
 require "json"
 require_relative "file_storage"
+require_relative "test_run"
 require_relative "../ext/dd_test"
 
 module Datadog
@@ -22,7 +23,7 @@ module Datadog
         # Load component state
         def load_component_state
           # Check for DDTest cache first
-          if Dir.exist?(Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
+          if TestRun.test_optimization_data_cached?
             Datadog.logger.debug { "DDTest cache found" }
             return true if restore_state_from_datadog_test_runner
           end
