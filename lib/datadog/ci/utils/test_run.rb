@@ -2,6 +2,8 @@
 
 require "etc"
 
+require_relative "../ext/dd_test"
+
 module Datadog
   module CI
     module Utils
@@ -41,6 +43,10 @@ module Datadog
           return @virtual_cpu_count if defined?(@virtual_cpu_count)
 
           @virtual_cpu_count = ::Etc.nprocessors
+        end
+
+        def self.test_optimization_data_cached?
+          Dir.exist?(Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
         end
       end
     end
