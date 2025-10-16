@@ -19,8 +19,10 @@ module Datadog
 
           module InstanceMethods
             def run(*args)
-              return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
               return super unless datadog_configuration[:enabled]
+              return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
+              # in dry run mode that we use for test discovery we are not interested in tests skipped by a test framework
+              return super if ::RSpec.configuration.dry_run? && metadata[:skip]
 
               test_suite_span = test_visibility_component.start_test_suite(datadog_test_suite_name) if ci_queue?
 
