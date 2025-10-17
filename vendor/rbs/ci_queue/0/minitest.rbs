@@ -2,6 +2,8 @@ module Minitest
   def init_plugins: (*untyped) -> void
 
   def run_one_method: (untyped klass, String method_name) -> void
+
+  def run: (*untyped) -> untyped
 end
 
 module Minitest::Queue

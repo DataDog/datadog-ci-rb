@@ -1669,4 +1669,75 @@ RSpec.describe "Minitest instrumentation" do
       expect(suite_name).to eq("RelativePathTest at relative/path/to/test.rb")
     end
   end
+
+  context "test discovery is enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:test_discovery_enabled) { true }
+    end
+
+    after do
+      FileUtils.rm_rf(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class TestSuiteForDiscovery < Minitest::Test
+        def test_passed
+          assert true
+        end
+
+        def test_failed
+          assert 1 + 1 == 3
+        end
+
+        def test_skipped
+          skip "Skip!"
+        end
+      end
+    end
+
+    it "creates JSON file with tests" do
+      expect(test_spans).to be_empty
+      expect(File.exist?(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)).to be true
+
+      tests_json =
+        File.read(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)
+          .split("\n")
+          .map { |line| JSON.parse(line) }
+          .sort_by { |test| test["name"] }
+
+      expect(tests_json).to eq(
+        [
+          {
+            "name" => "test_failed",
+            "suite" => "TestSuiteForDiscovery at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
+            "module" => "minitest",
+            "parameters" => nil,
+            "suiteSourceFile" => "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+          },
+          {
+            "name" => "test_passed",
+            "suite" => "TestSuiteForDiscovery at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
+            "module" => "minitest",
+            "parameters" => nil,
+            "suiteSourceFile" => "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+          },
+          {
+            "name" => "test_skipped",
+            "suite" => "TestSuiteForDiscovery at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
+            "module" => "minitest",
+            "parameters" => nil,
+            "suiteSourceFile" => "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+          }
+        ]
+      )
+    end
+  end
 end
