@@ -56,8 +56,10 @@ module Datadog
 
             def run(*args)
               if datadog_configuration[:enabled] && test_discovery_component.enabled?
+                ::Minitest.seed = 1
                 discover_tests
-                return
+
+                return true
               end
               super
             end
