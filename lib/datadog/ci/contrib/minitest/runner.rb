@@ -93,7 +93,7 @@ module Datadog
                 test_class.runnable_methods.each do |test_method|
                   test_suite_name = Helpers.test_suite_name(test_class, test_method)
 
-                  source_path = Helpers.extract_source_location_from_class(test_class)&.first
+                  source_path = Helpers.extract_runnable_source_location(test_class, test_method)&.first
                   source_path = Git::LocalRepository.relative_to_root(source_path) if source_path
 
                   test_discovery_component.record_test(

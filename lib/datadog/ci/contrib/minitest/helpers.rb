@@ -10,7 +10,7 @@ module Datadog
             return nil if method.nil?
 
             test_suite_name = test_suite_name(klass, method)
-            source_file, line_number = extract_source_location_from_class(klass)
+            source_file, line_number = extract_runnable_source_location(klass, method)
 
             test_suite_tags = if source_file
               {
@@ -32,11 +32,7 @@ module Datadog
           end
 
           def self.test_suite_name(klass, method_name)
-            source_location = extract_source_location_from_class(klass)&.first
-            # if we are in anonymous class, fallback to the method source location
-            if source_location.nil?
-              source_location, = klass.instance_method(method_name).source_location
-            end
+            source_location = extract_runnable_source_location(klass, method_name)&.first
 
             # According to https://github.com/DataDog/datadog-ci-rb/issues/386
             # the source file path coould be relative when using minitest mixins.
@@ -52,6 +48,14 @@ module Datadog
             end
 
             "#{klass.name} at #{source_file_path}"
+          end
+
+          def self.extract_runnable_source_location(klass, method_name)
+            source_location = extract_source_location_from_class(klass)
+            if source_location.nil? || source_location.empty?
+              return klass.instance_method(method_name).source_location
+            end
+            source_location
           end
 
           def self.parallel?(klass)
