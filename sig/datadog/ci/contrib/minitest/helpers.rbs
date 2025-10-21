@@ -10,6 +10,8 @@ module Datadog
           def self.parallel?: (untyped klass) -> bool
 
           def self.extract_source_location_from_class: (untyped klass) -> Array[::String]
+
+          def self.extract_runnable_source_location: (untyped klass, String? method_name) -> Array[::String]
         end
       end
     end

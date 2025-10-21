@@ -10,6 +10,8 @@ module Datadog
 
             def run_one_method: (untyped klass, String method_name) -> untyped
 
+            def run: (*untyped) -> untyped
+
             private
 
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
@@ -19,6 +21,10 @@ module Datadog
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
 
             def test_retries_component: () -> Datadog::CI::TestRetries::Component
+
+            def test_discovery_component: () -> Datadog::CI::TestDiscovery::Component
+
+            def discover_tests: () -> void
           end
         end
       end

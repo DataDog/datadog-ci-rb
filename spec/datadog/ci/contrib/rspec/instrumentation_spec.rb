@@ -1838,7 +1838,7 @@ RSpec.describe "RSpec instrumentation" do
 
     it "creates JSON file with tests" do
       rspec_session_run(with_failed_test: true, with_skipped_test: true, dry_run: true)
-      expect(test_spans).to all have_skip_status
+      expect(test_spans).to be_empty
 
       expect(File.exist?(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)).to be true
 

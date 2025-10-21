@@ -54,6 +54,16 @@ module Datadog
               result
             end
 
+            def run(*args)
+              if datadog_configuration[:enabled] && test_discovery_component.enabled?
+                ::Minitest.seed = 1
+                discover_tests
+
+                return true
+              end
+              super
+            end
+
             private
 
             def datadog_integration
@@ -70,6 +80,33 @@ module Datadog
 
             def test_retries_component
               Datadog.send(:components).test_retries
+            end
+
+            def test_discovery_component
+              Datadog.send(:components).test_discovery
+            end
+
+            def discover_tests
+              test_discovery_component.start
+
+              ::Minitest::Runnable.runnables.each do |test_class|
+                test_class.runnable_methods.each do |test_method|
+                  test_suite_name = Helpers.test_suite_name(test_class, test_method)
+
+                  source_path = Helpers.extract_runnable_source_location(test_class, test_method)&.first
+                  source_path = Git::LocalRepository.relative_to_root(source_path) if source_path
+
+                  test_discovery_component.record_test(
+                    name: test_method,
+                    suite: test_suite_name,
+                    parameters: nil,
+                    module_name: Ext::FRAMEWORK,
+                    source_file: source_path
+                  )
+                end
+              end
+
+              test_discovery_component.finish
             end
           end
         end
