@@ -19,7 +19,7 @@ jobs:
     container:
       image: ghcr.io/datadog/images-rb/engines/${{ inputs.engine }}:${{ inputs.version }}
     outputs:
-      batches: "${{ steps.set-batches.outputs.batches }}"
+      batches: '${{ steps.set-batches.outputs.batches }}'
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - run: bundle lock
@@ -27,14 +27,14 @@ jobs:
         with:
           name: lock-${{ inputs.alias }}-${{ github.run_id }}
           retention-days: 1
-          path: "*.lock"
+          path: '*.lock'
       - run: bundle install
       - id: set-batches
         run: |
           batches_json=$(bundle exec rake github:generate_matrix)
           echo "batches=$(echo "$batches_json")" >> $GITHUB_OUTPUT
   build-test:
-    name: "${{ matrix.task }} (${{ matrix.group }})"
+    name: '${{ matrix.task }} (${{ matrix.group }})'
     needs:
       - batch
     runs-on: ubuntu-24.04
@@ -42,11 +42,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: "${{ fromJSON(needs.batch.outputs.batches) }}"
+        include: '${{ fromJSON(needs.batch.outputs.batches) }}'
     container:
-      image: ghcr.io/datadog/images-rb/engines/${{ inputs.engine }}:${{ inputs.version }}
+      image: ghcr.io/datadog/images-rb/engines/${{ inputs.engine }}:${{ inputs.version }}-gnu-gcc
       env:
-        BUNDLE_GEMFILE: "${{ matrix.gemfile }}"
+        BUNDLE_GEMFILE: '${{ matrix.gemfile }}'
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Configure Git
