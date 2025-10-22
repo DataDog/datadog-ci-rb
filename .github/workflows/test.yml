@@ -12,64 +12,73 @@ on:
     - cron: 0 */4 * * 1-5
 
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
+  group: '${{ github.workflow }}-${{ github.ref }}'
   cancel-in-progress: "${{ github.ref != 'refs/heads/main' }}"
 
 jobs:
-  ruby-34:
-    name: "Ruby 3.4"
+  # ADD NEW RUBIES HERE
+  ruby-35:
+    name: 'Ruby 3.5'
     uses: ./.github/workflows/_unit_test.yml
     with:
       engine: ruby
-      version: "3.4"
+      version: '3.5'
+      alias: ruby-35
+
+  ruby-34:
+    name: 'Ruby 3.4'
+    uses: ./.github/workflows/_unit_test.yml
+    with:
+      engine: ruby
+      version: '3.4'
       alias: ruby-34
 
   ruby-33:
-    name: "Ruby 3.3"
+    name: 'Ruby 3.3'
     uses: ./.github/workflows/_unit_test.yml
     with:
       engine: ruby
-      version: "3.3"
+      version: '3.3'
       alias: ruby-33
 
   ruby-32:
-    name: "Ruby 3.2"
+    name: 'Ruby 3.2'
     uses: ./.github/workflows/_unit_test.yml
     with:
       engine: ruby
-      version: "3.2"
+      version: '3.2'
       alias: ruby-32
 
   ruby-31:
-    name: "Ruby 3.1"
+    name: 'Ruby 3.1'
     uses: ./.github/workflows/_unit_test.yml
     with:
       engine: ruby
-      version: "3.1"
+      version: '3.1'
       alias: ruby-31
 
   ruby-30:
-    name: "Ruby 3.0"
+    name: 'Ruby 3.0'
     uses: ./.github/workflows/_unit_test.yml
     with:
       engine: ruby
-      version: "3.0"
+      version: '3.0'
       alias: ruby-30
 
   ruby-27:
-    name: "Ruby 2.7"
+    name: 'Ruby 2.7'
     uses: ./.github/workflows/_unit_test.yml
     with:
       engine: ruby
-      version: "2.7"
+      version: '2.7'
       alias: ruby-27
 
   jruby-94:
-    name: "JRuby 9.4"
+    name: 'JRuby 9.4'
     uses: ./.github/workflows/_unit_test.yml
     with:
       engine: jruby
-      version: "9.4"
+      version: '9.4'
       alias: jruby-94
 
   datadog-test-optimization:
@@ -79,12 +88,14 @@ jobs:
     container:
       image: datadog/ci
       env:
-        DD_API_KEY: "${{ secrets.DD_API_KEY }}"
+        DD_API_KEY: '${{ secrets.DD_API_KEY }}'
         DD_ENV: ci
         DATADOG_SITE: datadoghq.com
         DD_SERVICE: datadog-ci-rb
-        DD_GIT_REPOSITORY_URL: "${{ github.repositoryUrl }}"
+        DD_GIT_REPOSITORY_URL: '${{ github.repositoryUrl }}'
     needs:
+      # ADD NEW RUBIES HERE
+      - ruby-35
       - ruby-34
       - ruby-33
       - ruby-32
@@ -136,6 +147,8 @@ jobs:
     name: complete
     runs-on: ubuntu-24.04
     needs:
+      # ADD NEW RUBIES HERE
+      - ruby-35
       - ruby-34
       - ruby-33
       - ruby-32
