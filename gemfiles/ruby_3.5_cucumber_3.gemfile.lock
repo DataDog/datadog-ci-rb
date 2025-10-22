@@ -78,6 +78,7 @@ GEM
     multi_json (1.17.0)
     multi_test (1.1.0)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -139,6 +140,7 @@ DEPENDENCIES
   datadog-ci!
   debug
   os
+  ostruct
   rake
   rake-compiler
   rspec

@@ -44,31 +44,31 @@ GEM
     crack (1.0.0)
       bigdecimal
       rexml
-    cucumber (9.2.1)
+    cucumber (10.1.1)
+      base64 (~> 0.2)
       builder (~> 3.2)
       cucumber-ci-environment (> 9, < 11)
-      cucumber-core (> 13, < 14)
-      cucumber-cucumber-expressions (~> 17.0)
-      cucumber-gherkin (> 24, < 28)
+      cucumber-core (> 15, < 17)
+      cucumber-cucumber-expressions (> 17, < 19)
       cucumber-html-formatter (> 20.3, < 22)
-      cucumber-messages (> 19, < 25)
       diff-lcs (~> 1.5)
+      logger (~> 1.6)
       mini_mime (~> 1.1)
       multi_test (~> 1.1)
-      sys-uname (~> 1.2)
+      sys-uname (~> 1.3)
     cucumber-ci-environment (10.0.1)
-    cucumber-core (13.0.3)
-      cucumber-gherkin (>= 27, < 28)
-      cucumber-messages (>= 20, < 23)
-      cucumber-tag-expressions (> 5, < 7)
-    cucumber-cucumber-expressions (17.1.0)
+    cucumber-core (15.3.0)
+      cucumber-gherkin (> 27, < 35)
+      cucumber-messages (> 26, < 30)
+      cucumber-tag-expressions (> 5, < 9)
+    cucumber-cucumber-expressions (18.0.1)
       bigdecimal
-    cucumber-gherkin (27.0.0)
-      cucumber-messages (>= 19.1.4, < 23)
+    cucumber-gherkin (34.0.0)
+      cucumber-messages (> 25, < 29)
     cucumber-html-formatter (21.15.1)
       cucumber-messages (> 19, < 28)
-    cucumber-messages (22.0.0)
-    cucumber-tag-expressions (6.1.2)
+    cucumber-messages (27.2.0)
+    cucumber-tag-expressions (8.0.0)
     cuprite (0.17)
       capybara (~> 3.0)
       ferrum (~> 0.17.0)
@@ -111,6 +111,7 @@ GEM
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -183,12 +184,13 @@ DEPENDENCIES
   appraisal
   capybara (~> 3)
   climate_control
-  cucumber (~> 9)
+  cucumber (~> 10)
   cuprite (~> 0)
   datadog!
   datadog-ci!
   debug
   os
+  ostruct
   rake
   rake-compiler
   rspec

@@ -58,6 +58,7 @@ GEM
     minitest (5.26.0)
     msgpack (1.8.0)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -119,6 +120,7 @@ DEPENDENCIES
   debug
   minitest (~> 5)
   os
+  ostruct
   rake
   rake-compiler
   rspec

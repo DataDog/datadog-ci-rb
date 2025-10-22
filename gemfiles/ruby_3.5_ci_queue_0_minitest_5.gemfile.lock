@@ -68,6 +68,7 @@ GEM
       ruby-progressbar
     msgpack (1.8.0)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -133,6 +134,7 @@ DEPENDENCIES
   minitest (~> 5)
   minitest-reporters (~> 1)
   os
+  ostruct
   rake
   rake-compiler
   rspec
