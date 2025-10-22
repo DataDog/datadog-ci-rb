@@ -49,6 +49,8 @@ end
 
 def self.with_cucumber_gem(versions:)
   Array(versions).each do |v|
+    next if v < 9 && Gem::Version.new("3.4") <= RUBY_VERSION
+    next if v < 10 && Gem::Version.new("3.5") <= RUBY_VERSION
     next if v == 10 && Gem::Version.new("3.1") > RUBY_VERSION
 
     appraise "cucumber-#{v}" do
