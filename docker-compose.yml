@@ -72,6 +72,18 @@ services:
     volumes:
       - .:/app
       - bundle-3.4:/usr/local/bundle
+  datadog-ci-3.5:
+    image: ghcr.io/datadog/images-rb/engines/ruby:3.5-gnu-gcc
+    working_dir: /app
+    command: /bin/bash
+    env_file: ./.env
+    environment:
+      BUNDLE_GEMFILE: /app/Gemfile-3.5
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/app
+      - bundle-3.5:/usr/local/bundle
   # ADD NEW RUBIES HERE
   datadog-ci-jruby-9.4:
     image: ghcr.io/datadog/images-rb/engines/jruby:9.4
@@ -92,4 +104,5 @@ volumes:
   bundle-3.2:
   bundle-3.3:
   bundle-3.4:
+  bundle-3.5:
   bundle-jruby-9.4: # ADD NEW RUBIES HERE

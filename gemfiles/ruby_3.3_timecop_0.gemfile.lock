@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2f20b9af1225f2c5af5340d203c0611634f5939d
+  revision: 96fa034076717a7d059785dc19459ea9d8b98882
   branch: master
   specs:
     datadog (2.23.0)
@@ -63,6 +63,7 @@ GEM
     minitest (5.26.0)
     msgpack (1.8.0)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -80,7 +81,7 @@ GEM
     reline (0.6.2)
       io-console (~> 0.5)
     rexml (3.4.4)
-    rspec (3.13.1)
+    rspec (3.13.2)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
       rspec-mocks (~> 3.13.0)
@@ -126,6 +127,7 @@ DEPENDENCIES
   debug
   minitest (~> 5)
   os
+  ostruct
   rake
   rake-compiler
   rspec
@@ -137,4 +139,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.7.2
+   2.4.19

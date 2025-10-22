@@ -13,9 +13,13 @@ gem "climate_control"
 gem "webmock"
 gem "rake"
 gem "yard"
+gem "ostruct"
 gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "master"
 gem "os"
-gem "cucumber", "~> 7"
+gem "rails", "~> 5"
+gem "base64"
+gem "mutex_m"
+gem "drb"
 
 group :check do
 
