@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2f20b9af1225f2c5af5340d203c0611634f5939d
+  revision: 6bb4e4c522eb36e008a0bd2f7629617090f896ba
   branch: master
   specs:
     datadog (2.23.0)
@@ -208,7 +208,7 @@ GEM
     reline (0.6.2)
       io-console (~> 0.5)
     rexml (3.4.4)
-    rspec (3.13.1)
+    rspec (3.13.2)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
       rspec-mocks (~> 3.13.0)
