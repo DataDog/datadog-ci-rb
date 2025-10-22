@@ -156,7 +156,7 @@ def self.with_selenium_gem(selenium_versions: 4, capybara_versions: 3)
         gem "capybara", "~> #{capybara_v}"
         gem "selenium-webdriver", "~> #{selenium_v}"
 
-        gem "cucumber", "~> 9"
+        gem "cucumber", "~> 10"
       end
     end
   end
@@ -179,7 +179,7 @@ def self.with_cuprite_gem(cuprite_versions: 0, capybara_versions: 3)
         gem "capybara", "~> #{capybara_v}"
         gem "cuprite", "~> #{cuprite_v}"
 
-        gem "cucumber", "~> 9"
+        gem "cucumber", "~> 10"
       end
     end
   end
@@ -231,9 +231,9 @@ with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_rails_gem(versions: 5..7)
 with_rails_gem(versions: 8) if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
 with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..8)
-with_selenium_gem if Gem::Version.new("3.0") <= RUBY_VERSION
+with_selenium_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_timecop_gem
-with_cuprite_gem if Gem::Version.new("3.0") <= RUBY_VERSION
+with_cuprite_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_lograge_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
 with_semantic_logger_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
 

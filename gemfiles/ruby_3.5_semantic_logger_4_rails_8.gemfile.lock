@@ -167,6 +167,7 @@ GEM
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -283,6 +284,7 @@ DEPENDENCIES
   datadog-ci!
   debug
   os
+  ostruct
   rails (~> 8)
   rails_semantic_logger (~> 4)
   rake

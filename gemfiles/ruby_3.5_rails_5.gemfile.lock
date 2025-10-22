@@ -135,6 +135,7 @@ GEM
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -244,6 +245,7 @@ DEPENDENCIES
   drb
   mutex_m
   os
+  ostruct
   rails (~> 5)
   rake
   rake-compiler
