@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2f20b9af1225f2c5af5340d203c0611634f5939d
+  revision: 05d35a28221bf1cea0a559cb766af4e34ecbdad7
   branch: master
   specs:
     datadog (2.23.0)
@@ -29,7 +29,7 @@ GEM
       thor (>= 0.14.0)
     bigdecimal (3.3.1)
     climate_control (1.2.0)
-    crack (1.0.0)
+    crack (1.0.1)
       bigdecimal
       rexml
     datadog-ruby_core_source (3.4.1)
@@ -78,7 +78,7 @@ GEM
     reline (0.6.2)
       io-console (~> 0.5)
     rexml (3.4.4)
-    rspec (3.13.1)
+    rspec (3.13.2)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
       rspec-mocks (~> 3.13.0)
