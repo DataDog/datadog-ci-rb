@@ -23,6 +23,7 @@ gem "climate_control"
 gem "webmock"
 gem "rake"
 gem "yard"
+gem "ostruct" # for RSpec instrumentation spec
 
 # test against gem datadog from master
 gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "master"
