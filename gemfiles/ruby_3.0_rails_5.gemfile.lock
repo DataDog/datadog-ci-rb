@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: f060ebffbd2ae4cec2be852d184456a859aeadf0
+  revision: b31a1571e7aa6fdf72007e003db4ed901142e77e
   branch: master
   specs:
     datadog (2.23.0)
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
-      libdatadog (~> 22.0.1.1.0)
-      libddwaf (~> 1.25.1.1.0)
+      libdatadog (~> 23.0.0.1.0)
+      libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
 
@@ -102,11 +102,11 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    libdatadog (22.0.1.1.0-aarch64-linux)
-    libdatadog (22.0.1.1.0-x86_64-linux)
-    libddwaf (1.25.1.1.0-aarch64-linux)
+    libdatadog (23.0.0.1.0-aarch64-linux)
+    libdatadog (23.0.0.1.0-x86_64-linux)
+    libddwaf (1.30.0.0.0-aarch64-linux)
       ffi (~> 1.0)
-    libddwaf (1.25.1.1.0-x86_64-linux)
+    libddwaf (1.30.0.0.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     loofah (2.24.1)
@@ -121,7 +121,7 @@ GEM
     marcel (1.0.4)
     method_source (1.1.0)
     mini_mime (1.1.5)
-    minitest (5.26.0)
+    minitest (5.26.1)
     msgpack (1.8.0)
     net-imap (0.4.22)
       date
@@ -138,6 +138,7 @@ GEM
     nokogiri (1.17.2-x86_64-linux)
       racc (~> 1.4)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -182,7 +183,7 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
-    reline (0.6.2)
+    reline (0.6.3)
       io-console (~> 0.5)
     rexml (3.4.4)
     rspec (3.13.2)
@@ -216,7 +217,7 @@ GEM
       actionpack (>= 5.2)
       activesupport (>= 5.2)
       sprockets (>= 3.0.0)
-    stringio (3.1.7)
+    stringio (3.1.8)
     thor (1.4.0)
     thread_safe (0.3.6)
     timeout (0.4.4)
@@ -244,6 +245,7 @@ DEPENDENCIES
   datadog-ci!
   debug
   os
+  ostruct
   rails (~> 5)
   rake
   rake-compiler
@@ -255,4 +257,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.5.23
+   2.3.26

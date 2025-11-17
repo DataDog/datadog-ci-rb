@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: f060ebffbd2ae4cec2be852d184456a859aeadf0
+  revision: b31a1571e7aa6fdf72007e003db4ed901142e77e
   branch: master
   specs:
     datadog (2.23.0)
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
-      libdatadog (~> 22.0.1.1.0)
-      libddwaf (~> 1.25.1.1.0)
+      libdatadog (~> 23.0.0.1.0)
+      libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
 
@@ -101,11 +101,11 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    libdatadog (22.0.1.1.0-aarch64-linux)
-    libdatadog (22.0.1.1.0-x86_64-linux)
-    libddwaf (1.25.1.1.0-aarch64-linux)
+    libdatadog (23.0.0.1.0-aarch64-linux)
+    libdatadog (23.0.0.1.0-x86_64-linux)
+    libddwaf (1.30.0.0.0-aarch64-linux)
       ffi (~> 1.0)
-    libddwaf (1.25.1.1.0-x86_64-linux)
+    libddwaf (1.30.0.0.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     memoist3 (1.0.0)
@@ -114,11 +114,12 @@ GEM
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
     mime-types-data (3.2025.0924)
-    minitest (5.26.0)
+    minitest (5.26.1)
     msgpack (1.8.0)
     multi_test (0.1.2)
     mutex_m (0.3.0)
     os (1.1.4)
+    ostruct (0.6.3)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -138,7 +139,7 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
-    reline (0.6.2)
+    reline (0.6.3)
       io-console (~> 0.5)
     rexml (3.4.4)
     rspec (3.13.2)
@@ -165,7 +166,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
-    stringio (3.1.7)
+    stringio (3.1.8)
     sys-uname (1.4.1)
       ffi (~> 1.1)
       memoist3 (~> 1.0.0)
@@ -193,6 +194,7 @@ DEPENDENCIES
   datadog-ci!
   debug
   os
+  ostruct
   rake
   rake-compiler
   rspec
@@ -203,4 +205,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.4.22
+   2.3.26
