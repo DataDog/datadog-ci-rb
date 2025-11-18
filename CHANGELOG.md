@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [1.23.2] - 2025-11-18
+
+### Added
+* Test discovery mode for minitest ([#418][])
+
+### Changed
+* DDTest integration, tests discovery: change format of tests.json file ([#416][])
+
+### Fixed
+* Fix: rename wrong test.retry_reason value for Auto Test Retries feature ([#425][])
+
 ## [1.23.1] - 2025-10-14
 
 ========== Changelog ==========
@@ -537,7 +548,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.2...main
+[1.23.2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.1...v1.23.2
 [1.23.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.0...v1.23.1
 [1.23.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.1...v1.23.0
 [1.22.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.0...v1.22.1
@@ -764,3 +776,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#407]: https://github.com/DataDog/datadog-ci-rb/issues/407
 [#410]: https://github.com/DataDog/datadog-ci-rb/issues/410
 [#414]: https://github.com/DataDog/datadog-ci-rb/issues/414
+[#416]: https://github.com/DataDog/datadog-ci-rb/issues/416
+[#418]: https://github.com/DataDog/datadog-ci-rb/issues/418
+[#425]: https://github.com/DataDog/datadog-ci-rb/issues/425
