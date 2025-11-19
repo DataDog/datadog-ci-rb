@@ -1,0 +1,10 @@
+module Datadog
+  module CI
+    module Remote
+      class NullComponent
+        def configure: (Datadog::CI::TestSession test_session) -> void
+      end
+    end
+  end
+end
+

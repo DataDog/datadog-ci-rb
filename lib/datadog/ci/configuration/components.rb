@@ -5,18 +5,22 @@ require "datadog/core/telemetry/ext"
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
 require_relative "../impacted_tests_detection/component"
+require_relative "../impacted_tests_detection/null_component"
 require_relative "../logs/component"
 require_relative "../logs/transport"
+require_relative "../remote/null_component"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
 require_relative "../test_management/null_component"
 require_relative "../test_management/tests_properties"
+require_relative "../test_optimisation/null_component"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
 require_relative "../test_discovery/component"
+require_relative "../test_discovery/null_component"
 require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/known_tests"
@@ -41,14 +45,14 @@ module Datadog
           :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery
 
         def initialize(settings)
-          @test_optimisation = nil
+          @test_optimisation = TestOptimisation::NullComponent.new
           @test_visibility = TestVisibility::NullComponent.new
           @git_tree_upload_worker = DummyWorker.new
-          @ci_remote = nil
+          @ci_remote = Remote::NullComponent.new
           @test_retries = TestRetries::NullComponent.new
           @test_management = TestManagement::NullComponent.new
-          @impacted_tests_detection = nil
-          @test_discovery = nil
+          @impacted_tests_detection = ImpactedTestsDetection::NullComponent.new
+          @test_discovery = TestDiscovery::NullComponent.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled

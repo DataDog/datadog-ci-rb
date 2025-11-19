@@ -1,0 +1,18 @@
+module Datadog
+  module CI
+    module ImpactedTestsDetection
+      class NullComponent
+        def initialize: () -> void
+
+        def configure: (?untyped library_settings, ?untyped test_session) -> void
+
+        def enabled?: () -> false
+
+        def modified?: (untyped test_span) -> false
+
+        def tag_modified_test: (untyped test_span) -> void
+      end
+    end
+  end
+end
+

@@ -3,24 +3,24 @@ module Datadog
     module Configuration
       module Components : Datadog::Core::Configuration::Components
         @test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
-        @test_optimisation: Datadog::CI::TestOptimisation::Component?
+        @test_optimisation: Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent
         @git_tree_upload_worker: Datadog::CI::Worker
-        @ci_remote: Datadog::CI::Remote::Component?
+        @ci_remote: Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent
         @custom_configuration: Hash[String, String]
         @test_management: Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent
         @agentless_logs_submission: Datadog::CI::Logs::Component
-        @impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component
-        @test_discovery: Datadog::CI::TestDiscovery::Component?
+        @impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component | Datadog::CI::ImpactedTestsDetection::NullComponent
+        @test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
 
         attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
-        attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component?
+        attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent
         attr_reader git_tree_upload_worker: Datadog::CI::Worker
-        attr_reader ci_remote: Datadog::CI::Remote::Component?
+        attr_reader ci_remote: Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent
         attr_reader test_retries: Datadog::CI::TestRetries::Component
         attr_reader test_management: Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent
         attr_reader agentless_logs_submission: Datadog::CI::Logs::Component
-        attr_reader impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component
-        attr_reader test_discovery: Datadog::CI::TestDiscovery::Component?
+        attr_reader impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component | Datadog::CI::ImpactedTestsDetection::NullComponent
+        attr_reader test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
 
         def initialize: (untyped settings) -> void
 
