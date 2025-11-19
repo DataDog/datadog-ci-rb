@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.23.3] - 2025-11-19
+
+### Fixed
+
+* Fix nil error for test discovery component by introducing NullObject pattern for all components of Datadog Test Optimization ([#430][])
+
 ## [1.23.2] - 2025-11-18
 
 ### Added
@@ -548,7 +554,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.2...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.3...main
+[1.23.3]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.2...v1.23.3
 [1.23.2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.1...v1.23.2
 [1.23.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.0...v1.23.1
 [1.23.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.22.1...v1.23.0
@@ -779,3 +786,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#416]: https://github.com/DataDog/datadog-ci-rb/issues/416
 [#418]: https://github.com/DataDog/datadog-ci-rb/issues/418
 [#425]: https://github.com/DataDog/datadog-ci-rb/issues/425
+[#430]: https://github.com/DataDog/datadog-ci-rb/issues/430
