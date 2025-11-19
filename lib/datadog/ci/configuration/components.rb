@@ -8,6 +8,7 @@ require_relative "../impacted_tests_detection/component"
 require_relative "../impacted_tests_detection/null_component"
 require_relative "../logs/component"
 require_relative "../logs/transport"
+require_relative "../remote/null_component"
 require_relative "../remote/component"
 require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
@@ -46,7 +47,7 @@ module Datadog
           @test_optimisation = nil
           @test_visibility = TestVisibility::NullComponent.new
           @git_tree_upload_worker = DummyWorker.new
-          @ci_remote = nil
+          @ci_remote = Remote::NullComponent.new
           @test_retries = TestRetries::NullComponent.new
           @test_management = TestManagement::NullComponent.new
           @impacted_tests_detection = ImpactedTestsDetection::NullComponent.new
