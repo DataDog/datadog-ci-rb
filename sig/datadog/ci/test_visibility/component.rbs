@@ -144,7 +144,7 @@ module Datadog
 
         def impacted_tests_detection: () -> Datadog::CI::ImpactedTestsDetection::Component
 
-        def test_discovery: () -> Datadog::CI::TestDiscovery::Component?
+        def test_discovery: () -> (Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent)
       end
     end
   end

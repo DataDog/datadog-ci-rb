@@ -22,7 +22,7 @@ module Datadog
 
             def test_retries_component: () -> Datadog::CI::TestRetries::Component
 
-            def test_discovery_component: () -> Datadog::CI::TestDiscovery::Component
+            def test_discovery_component: () -> (Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent)
 
             def discover_tests: () -> void
           end

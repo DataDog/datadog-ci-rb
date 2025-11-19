@@ -1,0 +1,24 @@
+module Datadog
+  module CI
+    module TestDiscovery
+      class NullComponent
+        def initialize: () -> void
+
+        def configure: (?untyped library_settings, ?untyped test_session) -> void
+
+        def disable_features_for_test_discovery!: (?untyped settings) -> void
+
+        def start: () -> void
+
+        def finish: () -> void
+
+        def record_test: (name: String?, suite: String?, module_name: String?, parameters: String?, source_file: String?) -> void
+
+        def shutdown!: () -> void
+
+        def enabled?: () -> bool
+      end
+    end
+  end
+end
+

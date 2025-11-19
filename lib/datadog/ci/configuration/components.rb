@@ -17,6 +17,7 @@ require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
 require_relative "../test_discovery/component"
+require_relative "../test_discovery/null_component"
 require_relative "../test_visibility/component"
 require_relative "../test_visibility/flush"
 require_relative "../test_visibility/known_tests"
@@ -48,7 +49,7 @@ module Datadog
           @test_retries = TestRetries::NullComponent.new
           @test_management = TestManagement::NullComponent.new
           @impacted_tests_detection = nil
-          @test_discovery = nil
+          @test_discovery = TestDiscovery::NullComponent.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled

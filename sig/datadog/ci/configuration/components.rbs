@@ -10,7 +10,7 @@ module Datadog
         @test_management: Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent
         @agentless_logs_submission: Datadog::CI::Logs::Component
         @impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component
-        @test_discovery: Datadog::CI::TestDiscovery::Component?
+        @test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
 
         attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
         attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component?
@@ -20,7 +20,7 @@ module Datadog
         attr_reader test_management: Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent
         attr_reader agentless_logs_submission: Datadog::CI::Logs::Component
         attr_reader impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component
-        attr_reader test_discovery: Datadog::CI::TestDiscovery::Component?
+        attr_reader test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
 
         def initialize: (untyped settings) -> void
 

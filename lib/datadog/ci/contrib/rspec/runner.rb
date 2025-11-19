@@ -18,8 +18,10 @@ module Datadog
             def run_specs(*args)
               return super unless datadog_configuration[:enabled]
 
-              if test_discovery_component.enabled?
-                discover_tests
+              discovery_component = test_discovery_component
+
+              if discovery_component&.enabled?
+                discover_tests(discovery_component)
 
                 # don't run the tests, we just needed to discover them and now we can return
                 return
@@ -74,15 +76,15 @@ module Datadog
               Datadog.send(:components).test_discovery
             end
 
-            def discover_tests
-              test_discovery_component.start
+            def discover_tests(component)
+              component.start
 
               examples = ::RSpec.world.all_examples
 
               examples.each do |example|
                 next if example.metadata[:skip]
 
-                test_discovery_component.record_test(
+                component.record_test(
                   name: example.datadog_test_name,
                   suite: example.datadog_test_suite_name,
                   parameters: example.datadog_test_parameters,
@@ -91,7 +93,7 @@ module Datadog
                 )
               end
 
-              test_discovery_component.finish
+              component.finish
             end
           end
         end
