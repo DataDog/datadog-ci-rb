@@ -5,6 +5,7 @@ require "datadog/core/telemetry/ext"
 require_relative "../ext/settings"
 require_relative "../git/tree_uploader"
 require_relative "../impacted_tests_detection/component"
+require_relative "../impacted_tests_detection/null_component"
 require_relative "../logs/component"
 require_relative "../logs/transport"
 require_relative "../remote/component"
@@ -48,7 +49,7 @@ module Datadog
           @ci_remote = nil
           @test_retries = TestRetries::NullComponent.new
           @test_management = TestManagement::NullComponent.new
-          @impacted_tests_detection = nil
+          @impacted_tests_detection = ImpactedTestsDetection::NullComponent.new
           @test_discovery = TestDiscovery::NullComponent.new
 
           # Activate CI mode if enabled

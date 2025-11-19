@@ -1879,10 +1879,27 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "runs specs without raising errors and without test discovery output" do
-      rspec_session_run
+      expect { rspec_session_run }.not_to raise_error
 
       expect(test_session_span).to be_nil
       expect(File.exist?(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)).to be false
+      expect(test_spans).to be_empty
+    end
+  end
+
+  context "when impacted tests detection is enabled but CI mode initialization fails" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:agentless_mode_enabled) { true }
+      let(:api_key) { nil }
+      let(:impacted_tests_enabled) { true }
+    end
+
+    it "runs specs without raising errors" do
+      expect { rspec_session_run }.not_to raise_error
+
+      expect(test_session_span).to be_nil
       expect(test_spans).to be_empty
     end
   end
