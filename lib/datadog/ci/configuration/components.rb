@@ -14,6 +14,7 @@ require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
 require_relative "../test_management/null_component"
 require_relative "../test_management/tests_properties"
+require_relative "../test_optimisation/null_component"
 require_relative "../test_optimisation/component"
 require_relative "../test_optimisation/coverage/transport"
 require_relative "../test_retries/component"
@@ -44,7 +45,7 @@ module Datadog
           :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery
 
         def initialize(settings)
-          @test_optimisation = nil
+          @test_optimisation = TestOptimisation::NullComponent.new
           @test_visibility = TestVisibility::NullComponent.new
           @git_tree_upload_worker = DummyWorker.new
           @ci_remote = Remote::NullComponent.new
