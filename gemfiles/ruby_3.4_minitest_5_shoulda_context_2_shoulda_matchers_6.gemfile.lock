@@ -1,11 +1,11 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: f33bab70db8fe719e432208bfa8ddfb4c1e27cbe
+  revision: ae94edc1bfb4c019405aac090504cecfecbbc510
   branch: master
   specs:
     datadog (2.23.0)
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
-      libdatadog (~> 24.0.0.1.0)
+      libdatadog (~> 24.0.1.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -44,7 +44,7 @@ GEM
     bigdecimal (3.3.1)
     climate_control (1.2.0)
     concurrent-ruby (1.3.5)
-    connection_pool (2.5.4)
+    connection_pool (2.5.5)
     crack (1.0.1)
       bigdecimal
       rexml
@@ -68,14 +68,14 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (2.16.0)
-    libdatadog (24.0.0.1.0)
-    libdatadog (24.0.0.1.0-aarch64-linux)
+    libdatadog (24.0.1.1.0)
+    libdatadog (24.0.1.1.0-aarch64-linux)
     libddwaf (1.30.0.0.0)
       ffi (~> 1.0)
     libddwaf (1.30.0.0.0-aarch64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
-    minitest (5.26.1)
+    minitest (5.26.2)
     msgpack (1.8.0)
     os (1.1.4)
     ostruct (0.6.3)
