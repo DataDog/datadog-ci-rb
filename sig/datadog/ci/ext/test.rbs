@@ -14,6 +14,8 @@ module Datadog
 
         TAG_STATUS: "test.status"
 
+        TAG_FINAL_STATUS: "test.final_status"
+
         TAG_SUITE: "test.suite"
 
         TAG_MODULE: "test.module"

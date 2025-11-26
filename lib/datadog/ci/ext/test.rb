@@ -14,6 +14,7 @@ module Datadog
         TAG_NAME = "test.name"
         TAG_SKIP_REASON = "test.skip_reason"
         TAG_STATUS = "test.status"
+        TAG_FINAL_STATUS = "test.final_status"
         TAG_SUITE = "test.suite"
         TAG_MODULE = "test.module"
         TAG_TYPE = "test.type"
