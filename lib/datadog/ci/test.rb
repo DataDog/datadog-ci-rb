@@ -244,6 +244,23 @@ module Datadog
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
 
+      # @internal
+      def record_final_status
+        status = get_tag(Ext::Test::TAG_STATUS)
+        return if status.nil?
+
+        if [Ext::Test::Status::PASS, Ext::Test::Status::SKIP].include?(status)
+          set_tag(Ext::Test::TAG_FINAL_STATUS, status)
+          return
+        end
+
+        if should_ignore_failures?
+          set_tag(Ext::Test::TAG_FINAL_STATUS, Ext::Test::Status::PASS)
+        else
+          set_tag(Ext::Test::TAG_FINAL_STATUS, Ext::Test::Status::FAIL)
+        end
+      end
+
       private
 
       def record_test_result(datadog_status)

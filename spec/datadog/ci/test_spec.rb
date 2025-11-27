@@ -581,6 +581,87 @@ RSpec.describe Datadog::CI::Test do
     end
   end
 
+  describe "#record_final_status" do
+    subject(:record_final_status) { ci_test.record_final_status }
+
+    before do
+      allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_STATUS).and_return(status)
+    end
+
+    context "when status tag is missing" do
+      let(:status) { nil }
+
+      it "does not set final status tag" do
+        expect(tracer_span).not_to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+          anything
+        )
+
+        record_final_status
+      end
+    end
+
+    context "when status is pass" do
+      let(:status) { Datadog::CI::Ext::Test::Status::PASS }
+
+      it "persists final status as pass" do
+        expect(tracer_span).to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+          Datadog::CI::Ext::Test::Status::PASS
+        )
+
+        record_final_status
+      end
+    end
+
+    context "when status is skip" do
+      let(:status) { Datadog::CI::Ext::Test::Status::SKIP }
+
+      it "persists final status as skip" do
+        expect(tracer_span).to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+          Datadog::CI::Ext::Test::Status::SKIP
+        )
+
+        record_final_status
+      end
+    end
+
+    context "when status is fail" do
+      let(:status) { Datadog::CI::Ext::Test::Status::FAIL }
+
+      before do
+        allow(ci_test).to receive(:should_ignore_failures?).and_return(ignore_failures)
+      end
+
+      context "and failures should be ignored" do
+        let(:ignore_failures) { true }
+
+        it "stores final status as pass" do
+          expect(tracer_span).to receive(:set_tag).with(
+            Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+            Datadog::CI::Ext::Test::Status::PASS
+          )
+
+          record_final_status
+        end
+      end
+
+      context "and failures should not be ignored" do
+        let(:ignore_failures) { false }
+
+        it "stores final status as fail" do
+          expect(tracer_span).to receive(:set_tag).with(
+            Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+            Datadog::CI::Ext::Test::Status::FAIL
+          )
+
+          record_final_status
+        end
+      end
+    end
+  end
+
   describe "#datadog_skip_reason" do
     subject(:datadog_skip_reason) { ci_test.datadog_skip_reason }
 
