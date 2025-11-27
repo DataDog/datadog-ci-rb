@@ -201,7 +201,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
 
     let(:tracer_span) do
-      instance_double(Datadog::Tracing::SpanOperation, duration: 1.2, set_tag: true)
+      instance_double(Datadog::Tracing::SpanOperation, start_time: Time.now, set_tag: true)
     end
     let(:test_span) do
       instance_double(
@@ -217,7 +217,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         test_suite_name: "mysuite",
         attempt_to_fix?: test_attempt_to_fix,
         all_executions_failed?: false,
-        all_executions_passed?: false
+        all_executions_passed?: false,
+        peek_duration: 1.2,
+        record_final_status: true
       )
     end
 
@@ -232,7 +234,6 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
         # run callbacks manually
         Datadog.send(:components).test_visibility.send(:on_test_finished, test_span)
-        Datadog.send(:components).test_visibility.send(:on_after_test_span_finished, tracer_span)
       end
 
       runs_count
@@ -270,9 +271,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       it { is_expected.to eq(11) }
 
       context "when test duration increases" do
-        let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, set_tag: true) }
         before do
-          allow(tracer_span).to receive(:duration).and_return(5.1, 10.1, 30.1, 600.1)
+          allow(test_span).to receive(:peek_duration).and_return(5.1, 10.1, 30.1, 600.1)
         end
 
         # 5.1s (5 retries) -> 10.1s (3 retries) -> 30.1s (2 retries) -> done => 3 executions in total

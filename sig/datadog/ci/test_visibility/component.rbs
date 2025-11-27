@@ -116,10 +116,6 @@ module Datadog
 
         def on_test_finished: (Datadog::CI::Test test) -> void
 
-        def on_after_test_span_finished: (Datadog::Tracing::SpanOperation span) -> void
-
-        def subscribe_to_after_stop_event: (Datadog::Tracing::SpanOperation span) -> void
-
         def override_logical_test_session_name!: (Datadog::CI::TestSession test_session) -> void
 
         def mark_test_as_new: (Datadog::CI::Test test_span) -> void
