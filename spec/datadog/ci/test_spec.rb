@@ -5,6 +5,7 @@ RSpec.describe Datadog::CI::Test do
 
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true) }
   let(:test_visibility) { spy("test_visibility") }
+
   subject(:ci_test) { described_class.new(tracer_span) }
 
   before { allow_any_instance_of(described_class).to receive(:test_visibility).and_return(test_visibility) }
@@ -777,6 +778,80 @@ RSpec.describe Datadog::CI::Test do
         allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED).and_return(nil)
       end
       it { is_expected.to be false }
+    end
+  end
+
+  describe "#peek_duration" do
+    include_context "CI mode activated"
+
+    let(:test_name) { "peek duration spec" }
+    let(:test_suite_name) { "peek duration suite" }
+    let(:peek_duration_test_visibility) { Datadog.send(:components).test_visibility }
+
+    before do
+      # Remove the test_visibility stub for these tests since we need the real component
+      allow_any_instance_of(described_class).to receive(:test_visibility).and_call_original
+
+      @started_peek_duration_tests = []
+    end
+
+    after do
+      @started_peek_duration_tests&.each do |test|
+        next if test.tracer_span.finished?
+        test.finish
+      end
+      allow(Time).to receive(:now).and_call_original
+    end
+
+    def start_peek_duration_test
+      peek_duration_test_visibility.trace_test(test_name, test_suite_name).tap do |test|
+        expect(test).to be_a(described_class)
+        @started_peek_duration_tests << test
+      end
+    end
+
+    def stub_time_now(*values)
+      allow(Time).to receive(:now).and_return(*values)
+    end
+
+    context "while the test is running" do
+      it "returns the elapsed seconds relative to the test start time" do
+        real_test = start_peek_duration_test
+        start_time = real_test.tracer_span.start_time
+        future_time = start_time + 2.5
+
+        stub_time_now(future_time)
+
+        expect(real_test.peek_duration).to be_within(1e-9).of(2.5)
+      end
+    end
+
+    context "when invoked multiple times" do
+      it "uses the latest wall time on every call" do
+        real_test = start_peek_duration_test
+        start_time = real_test.tracer_span.start_time
+
+        stub_time_now(start_time + 0.5, start_time + 1.25, start_time + 3.0)
+
+        expect(real_test.peek_duration).to be_within(1e-9).of(0.5)
+        expect(real_test.peek_duration).to be_within(1e-9).of(1.25)
+        expect(real_test.peek_duration).to be_within(1e-9).of(3.0)
+      end
+    end
+
+    context "after the test has finished" do
+      it "relies on the recorded start time and the current wall time" do
+        real_test = start_peek_duration_test
+        real_test.finish
+
+        finished_at = real_test.tracer_span.end_time
+        later_time = finished_at + 4.2
+
+        stub_time_now(later_time)
+
+        expected_duration = later_time - real_test.tracer_span.start_time
+        expect(real_test.peek_duration).to be_within(1e-9).of(expected_duration)
+      end
     end
   end
 end
