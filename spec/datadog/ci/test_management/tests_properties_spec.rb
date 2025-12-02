@@ -18,7 +18,8 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
         span.set_tags({
           "git.repository_url" => "repository_url",
           "git.commit.message" => "Test commit message",
-          "git.commit.sha" => "test_sha"
+          "git.commit.sha" => "test_sha",
+          "git.branch" => "main"
         })
       end
     end
@@ -40,6 +41,7 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
         expect(attributes["repository_url"]).to eq("repository_url")
         expect(attributes["commit_message"]).to eq("Test commit message")
         expect(attributes["sha"]).to eq("test_sha")
+        expect(attributes["branch"]).to eq("main")
       end
     end
 
@@ -51,7 +53,8 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
             "git.commit.message" => "Test commit message",
             "git.commit.sha" => "test_sha",
             "git.commit.head.message" => "Original test commit message",
-            "git.commit.head.sha" => "original_test_sha"
+            "git.commit.head.sha" => "original_test_sha",
+            "git.branch" => "feature-branch"
           })
         end
       end
@@ -69,6 +72,7 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
           attributes = data["attributes"]
           expect(attributes["commit_message"]).to eq("Original test commit message")
           expect(attributes["sha"]).to eq("original_test_sha")
+          expect(attributes["branch"]).to eq("feature-branch")
         end
       end
     end

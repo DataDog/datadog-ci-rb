@@ -127,7 +127,8 @@ module Datadog
               "attributes" => {
                 "repository_url" => test_session.git_repository_url,
                 "commit_message" => test_session.original_git_commit_message,
-                "sha" => test_session.original_git_commit_sha
+                "sha" => test_session.original_git_commit_sha,
+                "branch" => test_session.git_branch
               }
             }
           }.to_json
