@@ -25,10 +25,9 @@ module Datadog
         attr_reader root: String
         attr_reader dependencies_cache: Hash[String, Set[String]]
 
-        def normalize_bundle_location: (String? bundle_location) -> String?
-
         def trackable_file?: (String? path) -> bool
 
+        def each_ruby_file: () { (String) -> void } -> void
       end
     end
   end

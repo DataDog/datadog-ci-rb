@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "set"
+require "prism"
 
 require_relative "../git/local_repository"
 
@@ -16,7 +17,7 @@ module Datadog
 
         def initialize(bundle_location: nil)
           @root = Git::LocalRepository.root
-          @bundle_location = Git::LocalRepository.relative_to_root(bundle_location)
+          @bundle_location = bundle_location
 
           @constants_defined_by_file = Hash.new { |hash, key| hash[key] = Set.new }
           @constants_used_by_file = Hash.new { |hash, key| hash[key] = Set.new }
@@ -26,7 +27,19 @@ module Datadog
         end
 
         def load
-          # implemented in later steps
+          return if root.nil? || root.empty?
+          return unless Dir.exist?(root)
+
+          each_ruby_file do |absolute_path|
+            next unless trackable_file?(absolute_path)
+
+            result = Prism.parse_file(absolute_path)
+            next unless result.success?
+
+            result.value
+          rescue => e
+            Datadog.logger.warn { "DependenciesTracker failed to parse #{absolute_path}: #{e.class} - #{e.message}" }
+          end
         end
 
         def fetch_dependencies(_source_path)
@@ -42,7 +55,11 @@ module Datadog
           return false if path.nil? || path.empty?
           return true if bundle_location.nil? || bundle_location.empty?
 
-          !path&.start_with?("#{bundle_location}#{File::SEPARATOR}")
+          path != bundle_location && !path.start_with?("#{bundle_location}#{File::SEPARATOR}")
+        end
+
+        def each_ruby_file(&block)
+          Dir.glob(File.join(root, "**", "*.rb")).each(&block)
         end
       end
     end
