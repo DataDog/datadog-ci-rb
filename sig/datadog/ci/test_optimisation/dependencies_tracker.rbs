@@ -2,6 +2,10 @@ module Datadog
   module CI
     module TestOptimisation
       class DependenciesTracker
+        CONSTANT_WRITE_NODE_CLASSES: Array[untyped]
+        CONSTANT_PATH_WRITE_NODE_CLASSES: Array[untyped]
+        MODULE_OR_CLASS_NODE_CLASSES: Array[untyped]
+
         @root: String
         @bundle_location: String?
         @constants_defined_by_file: Hash[String, Set[String]]
@@ -30,11 +34,29 @@ module Datadog
 
         def process_ast: (String file_path, untyped node) -> void
 
-        def walk_ast: (untyped node) { (Hash[Symbol, untyped]) -> void } -> void
+        def walk_ast: (untyped node, Array[String] namespace) { (Hash[Symbol, untyped]) -> void } -> void
 
-        def emit_constant_event: (untyped node) -> Hash[Symbol, untyped]
+        def constant_definition_name: (untyped node, Array[String] namespace) -> String?
 
         def constant_reference_node?: (untyped node) -> bool
+
+        def constant_write_node?: (untyped node) -> bool
+
+        def constant_path_write_node?: (untyped node) -> bool
+
+        def module_or_class_node?: (untyped node) -> bool
+
+        def extract_constant_path_name: (untyped node) -> String?
+
+        def definition_target_node: (untyped node) -> untyped
+
+        def skip_definition_child?: (untyped node, untyped child) -> bool
+
+        def qualified_constant_name: (String? raw_name, Array[String] namespace_stack) -> String?
+
+        def absolute_constant_reference?: (String name) -> bool
+
+        def constant_reference_candidates: (String raw_name, Array[String] namespace_stack) -> Array[String]
       end
     end
   end
