@@ -17,6 +17,7 @@ PATH
       datadog (~> 2.4)
       drb
       msgpack
+      prism
 
 GEM
   remote: https://rubygems.org/
@@ -48,6 +49,7 @@ GEM
     msgpack (1.8.0-java)
     os (1.1.4)
     ostruct (0.6.3)
+    prism (1.6.0)
     public_suffix (6.0.2)
     rake (13.3.1)
     rake-compiler (1.3.0)

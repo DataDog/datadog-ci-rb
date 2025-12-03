@@ -8,6 +8,7 @@ target :lib do
   ignore "lib/datadog/ci/configuration/settings.rb"
 
   library "pathname"
+  library "find"
   library "json"
   library "logger"
   library "date"
@@ -19,6 +20,7 @@ target :lib do
   library "fileutils"
   library "socket"
   library "optparse"
+  library "prism"
 
   repo_path "vendor/rbs"
   library "ddtrace"

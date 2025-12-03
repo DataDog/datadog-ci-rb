@@ -1,0 +1,36 @@
+module Datadog
+  module CI
+    module TestOptimisation
+      class DependenciesTracker
+        @root: String
+        @bundle_location: String?
+        @constants_defined_by_file: Hash[String, Set[String]]
+        @constants_used_by_file: Hash[String, Set[String]]
+        @requires_by_file: Hash[String, Set[String]]
+        @dependencies_cache: Hash[String, Set[String]]
+
+        attr_reader bundle_location: String?
+        attr_reader constants_defined_by_file: Hash[String, Set[String]]
+        attr_reader constants_used_by_file: Hash[String, Set[String]]
+        attr_reader requires_by_file: Hash[String, Set[String]]
+
+        def initialize: (?bundle_location: String?) -> void
+
+        def load: () -> void
+
+        def fetch_dependencies: (String source_path) -> Set[String]
+
+        private
+
+        attr_reader root: String
+        attr_reader dependencies_cache: Hash[String, Set[String]]
+
+        def normalize_bundle_location: (String? bundle_location) -> String?
+
+        def trackable_file?: (String? path) -> bool
+
+      end
+    end
+  end
+end
+

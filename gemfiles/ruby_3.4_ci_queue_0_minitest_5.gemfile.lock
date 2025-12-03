@@ -17,6 +17,7 @@ PATH
       datadog (~> 2.4)
       drb
       msgpack
+      prism
 
 GEM
   remote: https://rubygems.org/
@@ -73,6 +74,7 @@ GEM
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
+    prism (1.6.0)
     psych (5.2.6)
       date
       stringio
