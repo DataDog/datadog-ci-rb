@@ -5,6 +5,17 @@ require "fileutils"
 
 require_relative "../../../../lib/datadog/ci/test_optimisation/dependencies_tracker"
 
+def write_ruby_file(root, relative_path, contents)
+  absolute_path = File.join(root, relative_path)
+  FileUtils.mkdir_p(File.dirname(absolute_path))
+  File.write(absolute_path, contents)
+  absolute_path
+end
+
+def constants_for(tracker, root, relative_path)
+  tracker.constants_used_by_file[File.join(root, relative_path)]
+end
+
 RSpec.describe Datadog::CI::TestOptimisation::DependenciesTracker do
   subject(:tracker) { described_class.new(bundle_location: bundle_location) }
 
@@ -69,17 +80,142 @@ RSpec.describe Datadog::CI::TestOptimisation::DependenciesTracker do
     let(:bundle_location) { File.join(root_path, "bundle") }
 
     before do
-      File.write(File.join(tmp_root, "app.rb"), "module App; end\n")
-      FileUtils.mkdir_p(File.join(tmp_root, "bundle"))
-      File.write(File.join(tmp_root, "bundle", "ignored.rb"), "module Ignored; end\n")
+      write_ruby_file(
+        root_path,
+        "lib/token.rb",
+        <<~RUBY
+          module Token
+            NUMBER = "NUMBER"
+            PLUS = "PLUS"
+          end
+        RUBY
+      )
+
+      write_ruby_file(
+        root_path,
+        "lib/tokenizer.rb",
+        <<~RUBY
+          require_relative "token"
+
+          module Tokenizer
+            class Lexer
+              def initialize(buffer)
+                Token::NUMBER
+                Token::PLUS
+                ::String
+                ::Kernel
+              end
+            end
+          end
+        RUBY
+      )
+
+      write_ruby_file(
+        root_path,
+        "lib/ast/nodes.rb",
+        <<~RUBY
+          module AST
+            class Node; end
+
+            class NumberNode < Node
+            end
+
+            class BinaryNode < Node
+              TYPE = :binary
+            end
+          end
+        RUBY
+      )
+
+      write_ruby_file(
+        root_path,
+        "lib/builders/addition.rb",
+        <<~RUBY
+          require_relative "../ast/nodes"
+          require_relative "../token"
+
+          module Builders
+            class Addition
+              def initialize
+                AST::BinaryNode
+                Token::PLUS
+                Token::NUMBER
+                ::Kernel.warn(nil)
+              end
+            end
+          end
+        RUBY
+      )
+
+      write_ruby_file(
+        root_path,
+        "lib/parser.rb",
+        <<~RUBY
+          require_relative "tokenizer"
+          require_relative "builders/addition"
+          require_relative "ast/nodes"
+
+          module Parser
+            class Engine
+              def parse(buffer)
+                lexer = Tokenizer::Lexer.new(buffer)
+                Builders::Addition.new
+                AST::NumberNode
+                AST::BinaryNode::TYPE
+                ::Math::PI
+                ::Kernel.warn(SOME_CONST)
+                lexer
+              end
+            end
+          end
+        RUBY
+      )
+
+      write_ruby_file(root_path, "bundle/ignored.rb", "module Ignored; Ghost::Dependency; end\n")
     end
 
     after do
       FileUtils.remove_entry(tmp_root)
     end
 
-    it "parses Ruby files under the repository root without raising errors" do
-      expect { tracker.load }.not_to raise_error
+    it "records constant usage for parser files" do
+      tracker.load
+
+      parser_constants = constants_for(tracker, root_path, "lib/parser.rb")
+      expect(parser_constants).to include("Tokenizer")
+      expect(parser_constants).to include("Tokenizer::Lexer")
+      expect(parser_constants).to include("Builders")
+      expect(parser_constants).to include("Builders::Addition")
+      expect(parser_constants).to include("AST::NumberNode")
+      expect(parser_constants).to include("AST::BinaryNode")
+      expect(parser_constants).to include("AST::BinaryNode::TYPE")
+      expect(parser_constants).to include("::Math::PI")
+      expect(parser_constants).to include("::Kernel")
+      expect(parser_constants).to include("SOME_CONST")
+    end
+
+    it "records constant usage for supporting files" do
+      tracker.load
+
+      tokenizer_constants = constants_for(tracker, root_path, "lib/tokenizer.rb")
+      expect(tokenizer_constants).to include("Token")
+      expect(tokenizer_constants).to include("Token::NUMBER")
+      expect(tokenizer_constants).to include("Token::PLUS")
+      expect(tokenizer_constants).to include("::String")
+      expect(tokenizer_constants).to include("::Kernel")
+
+      builder_constants = constants_for(tracker, root_path, "lib/builders/addition.rb")
+      expect(builder_constants).to include("AST::BinaryNode")
+      expect(builder_constants).to include("Token::PLUS")
+      expect(builder_constants).to include("Token::NUMBER")
+      expect(builder_constants).to include("::Kernel")
+    end
+
+    it "ignores files under bundle location" do
+      tracker.load
+
+      ignored_file = File.join(root_path, "bundle", "ignored.rb")
+      expect(tracker.constants_used_by_file).not_to have_key(ignored_file)
     end
   end
 end

@@ -21,7 +21,6 @@ module Datadog
 
           @constants_defined_by_file = Hash.new { |hash, key| hash[key] = Set.new }
           @constants_used_by_file = Hash.new { |hash, key| hash[key] = Set.new }
-          @requires_by_file = Hash.new { |hash, key| hash[key] = Set.new }
 
           @dependencies_cache = {}
         end
@@ -36,7 +35,7 @@ module Datadog
             result = Prism.parse_file(absolute_path)
             next unless result.success?
 
-            result.value
+            process_ast(absolute_path, result.value)
           rescue => e
             Datadog.logger.warn { "DependenciesTracker failed to parse #{absolute_path}: #{e.class} - #{e.message}" }
           end
@@ -60,6 +59,41 @@ module Datadog
 
         def each_ruby_file(&block)
           Dir.glob(File.join(root, "**", "*.rb")).each(&block)
+        end
+
+        def process_ast(file_path, node)
+          return if node.nil?
+
+          walk_ast(node) do |event|
+            case event[:type]
+            when :const
+              constant_name = event[:full]
+              next if constant_name.nil? || constant_name.empty?
+
+              constants_used_by_file[file_path] << constant_name
+            end
+          end
+        end
+
+        def walk_ast(node, &block)
+          return unless node
+
+          if constant_reference_node?(node)
+            event = emit_constant_event(node)
+            block&.call(event)
+          end
+
+          node.child_nodes.each do |child|
+            walk_ast(child, &block) if child
+          end
+        end
+
+        def emit_constant_event(node)
+          {type: :const, full: node.full_name}
+        end
+
+        def constant_reference_node?(node)
+          node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
         end
       end
     end

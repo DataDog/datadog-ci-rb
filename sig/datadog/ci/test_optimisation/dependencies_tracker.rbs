@@ -6,7 +6,6 @@ module Datadog
         @bundle_location: String?
         @constants_defined_by_file: Hash[String, Set[String]]
         @constants_used_by_file: Hash[String, Set[String]]
-        @requires_by_file: Hash[String, Set[String]]
         @dependencies_cache: Hash[String, Set[String]]
 
         attr_reader bundle_location: String?
@@ -28,6 +27,14 @@ module Datadog
         def trackable_file?: (String? path) -> bool
 
         def each_ruby_file: () { (String) -> void } -> void
+
+        def process_ast: (String file_path, untyped node) -> void
+
+        def walk_ast: (untyped node) { (Hash[Symbol, untyped]) -> void } -> void
+
+        def emit_constant_event: (untyped node) -> Hash[Symbol, untyped]
+
+        def constant_reference_node?: (untyped node) -> bool
       end
     end
   end
