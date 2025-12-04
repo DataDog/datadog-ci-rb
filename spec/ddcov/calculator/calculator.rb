@@ -4,6 +4,7 @@ require_relative "operations/add"
 require_relative "operations/divide"
 require_relative "operations/multiply"
 require_relative "operations/subtract"
+require_relative "operations/symbols"
 
 class Calculator
   def initialize
@@ -27,5 +28,9 @@ class Calculator
 
   def divide(a, b)
     @divider.call(a, b)
+  end
+
+  def operation_symbol(operation)
+    OPERATIONS_SYMBOLS.fetch(operation)
   end
 end
