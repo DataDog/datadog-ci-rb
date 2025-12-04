@@ -15,6 +15,7 @@ require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
+require_relative "dependencies_tracker"
 require_relative "skippable"
 require_relative "telemetry"
 
@@ -65,6 +66,8 @@ module Datadog
 
           @mutex = Mutex.new
 
+          @dependencies_tracker = DependenciesTracker.new(bundle_location: @bundle_location)
+
           Datadog.logger.debug("TestOptimisation initialized with enabled: #{@enabled}")
         end
 
@@ -82,7 +85,15 @@ module Datadog
           # we skip tests, not suites
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
 
-          load_datadog_cov! if @code_coverage_enabled
+          if @code_coverage_enabled
+            load_datadog_cov!
+
+            start = Time.now
+            # code coverage might be disabled at this point if we couldn't load the native extension
+            @dependencies_tracker.load if @code_coverage_enabled
+            elapsed = Time.now - start
+            Datadog.logger.debug("DependenciesTracker.load took #{elapsed.round(3)}s")
+          end
 
           # Load component state first, and if successful, skip fetching skippable tests
           # Also try to restore from DDTest cache if available
@@ -135,6 +146,8 @@ module Datadog
 
           # cucumber's gherkin files are not covered by the code coverage collector
           ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
+
+          augment_coverage_with_dependencies(coverage)
 
           Telemetry.code_coverage_files(coverage.size)
 
@@ -359,6 +372,17 @@ module Datadog
 
         def git_tree_upload_worker
           Datadog.send(:components).git_tree_upload_worker
+        end
+
+        def augment_coverage_with_dependencies(coverage)
+          coverage.keys.each do |file_path|
+            dependencies = @dependencies_tracker.fetch_dependencies(file_path)
+            dependencies.each do |dependency_path|
+              coverage[dependency_path] = true
+            end
+          end
+        rescue => e
+          Datadog.logger.warn { "Failed to augment coverage with dependencies: #{e.class} - #{e.message}" }
         end
       end
     end

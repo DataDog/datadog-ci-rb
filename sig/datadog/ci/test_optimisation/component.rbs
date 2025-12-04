@@ -23,6 +23,7 @@ module Datadog
         @use_allocation_tracing: bool
 
         @mutex: Thread::Mutex
+        @dependencies_tracker: Datadog::CI::TestOptimisation::DependenciesTracker
 
         attr_reader skippable_tests: Set[String]
         attr_reader correlation_id: String?
@@ -85,6 +86,8 @@ module Datadog
         def code_coverage_mode: () -> Datadog::CI::TestOptimisation::Coverage::DDCov::threading_mode
 
         def git_tree_upload_worker: () -> Datadog::CI::Worker
+
+        def augment_coverage_with_dependencies: (Hash[String, untyped] coverage) -> void
       end
     end
   end

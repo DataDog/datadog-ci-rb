@@ -28,14 +28,42 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
   let(:code_coverage_enabled) { true }
   let(:tests_skipping_enabled) { true }
 
+  let(:dependencies_tracker) { instance_double(Datadog::CI::TestOptimisation::DependenciesTracker, load: nil) }
+
   let(:configure) { component.configure(remote_configuration, test_session) }
 
   before do
     allow(writer).to receive(:write)
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
+    allow(Datadog::CI::TestOptimisation::DependenciesTracker).to receive(:new).and_return(dependencies_tracker)
+    allow(dependencies_tracker).to receive(:fetch_dependencies).and_return(Set.new)
   end
 
   describe "#configure" do
+    context "when code coverage is enabled" do
+      let(:tests_skipping_enabled) { false }
+      before do
+        allow(component).to receive(:load_datadog_cov!)
+      end
+
+      it "loads dependencies tracker" do
+        configure
+
+        expect(dependencies_tracker).to have_received(:load)
+      end
+    end
+
+    context "when code coverage is disabled" do
+      let(:tests_skipping_enabled) { false }
+      let(:code_coverage_enabled) { false }
+
+      it "does not load dependencies tracker" do
+        configure
+
+        expect(dependencies_tracker).not_to have_received(:load)
+      end
+    end
+
     context "when ITR is disabled in remote configuration" do
       let(:itr_enabled) { false }
 
@@ -419,25 +447,24 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
 
     context "when coverage was collected" do
+      let(:dependency_file) { File.join(Datadog::CI::Git::LocalRepository.root, "lib/bar.rb") }
+
       before do
+        allow(dependencies_tracker).to receive(:fetch_dependencies).and_return(Set[dependency_file])
         component.start_coverage(test_span)
         expect(1 + 1).to eq(2)
       end
 
       it "creates coverage event and writes it" do
-        expect(subject).not_to be_nil
+        event = subject
 
-        expect(writer).to have_received(:write) do |event|
-          expect(event.test_id).to eq("1")
-          expect(event.test_suite_id).to eq("2")
-          expect(event.test_session_id).to eq("3")
-
-          expect(event.coverage.size).to be > 0
-        end
+        expect(event).not_to be_nil
+        expect(event.coverage).to include(dependency_file)
+        expect(writer).to have_received(:write).with(event)
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FINISHED, 1
-      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 5.0
+      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 6.0
     end
 
     context "when test is skipped" do
