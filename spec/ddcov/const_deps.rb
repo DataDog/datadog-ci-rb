@@ -18,7 +18,7 @@ module ConstDeps
 
   module Filters
     def self.project_file?(path)
-      return false unless path && path.end_with?(".rb")
+      return false unless path&.end_with?(".rb")
       full = File.expand_path(path)
       return false unless full.start_with?(PROJECT_ROOT)
       # Skip vendored/gems; tweak for your repo
@@ -109,11 +109,10 @@ module ConstDeps
 
     # Resolve "Foo::Bar" (or "::Foo::Bar") into [owner_module, :Bar, [file, line]] or nil
     def resolve_const_ref(ref)
-      absolute = ref.start_with?("::")
       parts = ref.split("::").reject(&:empty?) # drop leading "" for absolute
       return nil if parts.empty?
 
-      owner = absolute ? Object : Object # You can refine lexical owners if needed
+      owner = Object # You can refine lexical owners if needed
       # Walk owners for nested path, stopping before the final name
       parts[0...-1].each do |seg|
         return nil unless safe_const_defined?(owner, seg)
