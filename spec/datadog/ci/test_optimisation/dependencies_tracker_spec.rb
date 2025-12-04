@@ -268,5 +268,38 @@ RSpec.describe Datadog::CI::TestOptimisation::DependenciesTracker do
       ignored_file = File.join(root_path, "bundle", "ignored.rb")
       expect(tracker.constant_definitions.value?(ignored_file)).to be false
     end
+
+    describe "#fetch_dependencies" do
+      before { tracker.load }
+
+      it "returns files defining referenced constants for parser" do
+        parser_path = File.join(root_path, "lib/parser.rb")
+        dependencies = tracker.fetch_dependencies(parser_path)
+
+        expect(dependencies).to eq(
+          Set[
+            File.join(root_path, "lib/tokenizer.rb"),
+            File.join(root_path, "lib/builders/addition.rb"),
+            File.join(root_path, "lib/ast/nodes.rb"),
+            File.join(root_path, "lib/parser.rb")
+          ]
+        )
+      end
+
+      it "returns files defining referenced constants for supporting file" do
+        tokenizer_path = File.join(root_path, "lib/tokenizer.rb")
+        dependencies = tracker.fetch_dependencies(tokenizer_path)
+
+        expect(dependencies).to eq(
+          Set[
+            File.join(root_path, "lib/token.rb")
+          ]
+        )
+      end
+
+      it "returns empty set for unknown file" do
+        expect(tracker.fetch_dependencies(File.join(root_path, "lib/missing.rb"))).to eq(Set.new)
+      end
+    end
   end
 end

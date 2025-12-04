@@ -60,9 +60,22 @@ module Datadog
           end
         end
 
-        def fetch_dependencies(_source_path)
-          # implemented in later steps
-          Set.new
+        def fetch_dependencies(source_path)
+          return Set.new if source_path.nil? || source_path.empty?
+
+          constants = constants_used_by_file[source_path]
+          return Set.new if constants.nil? || constants.empty?
+
+          dependencies = Set.new
+
+          constants.each do |constant_name|
+            definition_path = constant_definitions[constant_name]
+            next if definition_path.nil?
+
+            dependencies << definition_path
+          end
+
+          dependencies
         end
 
         private
