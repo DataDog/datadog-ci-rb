@@ -15,7 +15,6 @@ module Datadog
         attr_reader bundle_location: String?
         attr_reader constant_definitions: Hash[String, String]
         attr_reader constants_used_by_file: Hash[String, Set[String]]
-        attr_reader requires_by_file: Hash[String, Set[String]]
 
         def initialize: (?bundle_location: String?) -> void
 

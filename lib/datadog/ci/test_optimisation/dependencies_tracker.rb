@@ -32,7 +32,7 @@ module Datadog
         ].freeze
 
         attr_reader :bundle_location, :constant_definitions,
-          :constants_used_by_file, :requires_by_file
+          :constants_used_by_file
 
         def initialize(bundle_location: nil)
           @root = Git::LocalRepository.root
