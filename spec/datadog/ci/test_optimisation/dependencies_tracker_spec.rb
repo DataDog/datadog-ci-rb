@@ -300,6 +300,16 @@ RSpec.describe Datadog::CI::TestOptimisation::DependenciesTracker do
       it "returns empty set for unknown file" do
         expect(tracker.fetch_dependencies(File.join(root_path, "lib/missing.rb"))).to eq(Set.new)
       end
+
+      it "memoizes results per source path" do
+        parser_path = File.join(root_path, "lib/parser.rb")
+        first = tracker.fetch_dependencies(parser_path)
+        tracker.constant_definitions.clear
+
+        second = tracker.fetch_dependencies(parser_path)
+
+        expect(second).to eq(first)
+      end
     end
   end
 end

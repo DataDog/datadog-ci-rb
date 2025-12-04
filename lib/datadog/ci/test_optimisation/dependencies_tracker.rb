@@ -62,6 +62,7 @@ module Datadog
 
         def fetch_dependencies(source_path)
           return Set.new if source_path.nil? || source_path.empty?
+          return dependencies_cache[source_path] if dependencies_cache.key?(source_path)
 
           constants = constants_used_by_file[source_path]
           return Set.new if constants.nil? || constants.empty?
@@ -75,7 +76,7 @@ module Datadog
             dependencies << definition_path
           end
 
-          dependencies
+          dependencies_cache[source_path] = dependencies
         end
 
         private
