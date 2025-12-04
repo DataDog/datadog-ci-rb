@@ -80,11 +80,6 @@ module Datadog
           @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
           @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled?
 
-          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
-          test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
-          # we skip tests, not suites
-          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
-
           if @code_coverage_enabled
             load_datadog_cov!
 
@@ -104,6 +99,11 @@ module Datadog
             fetch_skippable_tests(test_session)
             store_component_state if test_session.distributed
           end
+
+          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
+          test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
+          # we skip tests, not suites
+          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
 
           Datadog.logger.debug("Configured TestOptimisation with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
         end
