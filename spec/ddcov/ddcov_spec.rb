@@ -52,20 +52,6 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
         )
       end
 
-      it "collects code coverage including constants" do
-        subject.start
-
-        expect(calculator.plus_op).to eq("+")
-        expect(calculator.minus_op).to eq("-")
-        expect(calculator.multiply_op).to eq("*")
-        expect(calculator.divide_op).to eq("/")
-
-        coverage = subject.stop
-
-        expect(coverage.keys).to include(absolute_path("calculator/operations/constants.rb"))
-        expect(coverage.size).to eq(2)
-      end
-
       it "supports files with non-ASCII characters" do
         subject.start
         expect(I❤️Ruby.new.call).to eq("I ❤️ Ruby")

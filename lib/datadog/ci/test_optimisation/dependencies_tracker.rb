@@ -31,14 +31,14 @@ module Datadog
           Prism::ClassNode
         ].freeze
 
-        attr_reader :bundle_location, :constants_defined_by_file,
+        attr_reader :bundle_location, :constant_definitions,
           :constants_used_by_file, :requires_by_file
 
         def initialize(bundle_location: nil)
           @root = Git::LocalRepository.root
           @bundle_location = bundle_location
 
-          @constants_defined_by_file = Hash.new { |hash, key| hash[key] = Set.new }
+          @constant_definitions = {}
           @constants_used_by_file = Hash.new { |hash, key| hash[key] = Set.new }
 
           @dependencies_cache = {}
@@ -91,7 +91,7 @@ module Datadog
             when :const
               constants_used_by_file[file_path] << constant_name
             when :const_def
-              constants_defined_by_file[file_path] << constant_name
+              constant_definitions[constant_name] ||= file_path
             end
           end
         end
