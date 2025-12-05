@@ -336,4 +336,82 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       end
     end
   end
+
+  describe "#record_test_finished" do
+    let(:test_span) do
+      instance_double(
+        Datadog::CI::Test,
+        name: "test",
+        test_suite_name: "suite",
+        failed?: test_failed,
+        passed?: !test_failed,
+        skipped?: false,
+        is_new?: false,
+        attempt_to_fix?: false,
+        modified?: false,
+        all_executions_failed?: false,
+        all_executions_passed?: false,
+        peek_duration: 1.0,
+        set_tag: nil,
+        record_final_status: nil
+      )
+    end
+
+    let(:test_failed) { false }
+
+    context "when test is run only once (no retries)" do
+      before do
+        component.configure(library_settings, test_session)
+        component.reset_retries!
+      end
+
+      it "records final status on the test span" do
+        component.record_test_finished(test_span)
+
+        expect(test_span).to have_received(:record_final_status).once
+      end
+    end
+
+    context "when test is retried" do
+      let(:remote_flaky_test_retries_enabled) { true }
+      let(:test_failed) { true }
+      let(:retry_failed_tests_max_attempts) { 2 }
+
+      before do
+        component.configure(library_settings, test_session)
+        component.reset_retries!
+      end
+
+      it "records final status only on the last retry" do
+        # First execution - creates the retry driver, should record final status if no retry
+        # but since test failed and retry is enabled, we will retry
+        component.record_test_finished(test_span)
+        expect(test_span).not_to have_received(:record_final_status)
+
+        # First retry - should not record final status yet
+        component.record_test_finished(test_span)
+        expect(test_span).not_to have_received(:record_final_status)
+
+        # Second retry (last one) - should record final status
+        component.record_test_finished(test_span)
+        expect(test_span).to have_received(:record_final_status).once
+      end
+    end
+
+    context "when test passes on first execution" do
+      let(:remote_flaky_test_retries_enabled) { true }
+      let(:test_failed) { false }
+
+      before do
+        component.configure(library_settings, test_session)
+        component.reset_retries!
+      end
+
+      it "records final status immediately" do
+        component.record_test_finished(test_span)
+
+        expect(test_span).to have_received(:record_final_status).once
+      end
+    end
+  end
 end
