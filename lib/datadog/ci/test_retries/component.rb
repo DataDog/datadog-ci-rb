@@ -107,7 +107,7 @@ module Datadog
           end
 
           # Some retry strategies such as Early Flake Detection change the number of retries based on
-          # how the test was.
+          # how long the test was.
           current_retry_driver&.record_duration(test_span.peek_duration)
 
           # We need to set the final status of the test (what will be reported to the test framework) on the last execution
