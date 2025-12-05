@@ -530,6 +530,14 @@ RSpec.describe "Cucumber instrumentation" do
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(0)
 
+      # if the cucumber's built in retry mechanism is used the Datadog library cannot check if the failure is final or not
+      # this is the current limitation of our solution
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(8)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(3)
+
       expect(test_spans_by_test_name["this scenario just passes"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -567,6 +575,13 @@ RSpec.describe "Cucumber instrumentation" do
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(0)
 
+      # check final statuses (both flaky scenarios passed on last retry + one passing scenario)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(3)
+
       expect(test_spans_by_test_name["this scenario just passes"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -592,6 +607,13 @@ RSpec.describe "Cucumber instrumentation" do
         # count how many spans were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
         expect(new_tests_count).to eq(0)
+
+        # check final statuses (two flaky scenarios failed, one passing scenario)
+        final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+        expect(final_status_fail_tests).to eq(2)
+
+        final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+        expect(final_status_pass_tests).to eq(1)
 
         failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
         expect(failed_spans).to have(4).items
@@ -621,6 +643,13 @@ RSpec.describe "Cucumber instrumentation" do
         # count how many spans were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
         expect(new_tests_count).to eq(0)
+
+        # check final statuses (two flaky scenarios failed, one passing scenario)
+        final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+        expect(final_status_fail_tests).to eq(1)
+
+        final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+        expect(final_status_pass_tests).to eq(2)
 
         failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
         expect(failed_spans).to have(5).items
@@ -669,6 +698,13 @@ RSpec.describe "Cucumber instrumentation" do
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(12)
+
+      # check final statuses (passing scenario succeeded, others were skipped)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
@@ -781,6 +817,13 @@ RSpec.describe "Cucumber instrumentation" do
       failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
       expect(failed_all_retries_count).to eq(1)
 
+      # check final statuses (attempt_to_fix kept failing)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(0)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
 
@@ -834,6 +877,13 @@ RSpec.describe "Cucumber instrumentation" do
       # modified tests - all tests are marked as modified because we don't have end lines in cucumber
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
       expect(modified_count).to eq(14)
+
+      # check final statuses (one test passed, others were skipped)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
