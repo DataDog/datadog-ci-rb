@@ -184,6 +184,7 @@ RSpec.describe "RSpec instrumentation" do
       )
 
       expect(first_test_span).to have_pass_status
+      expect(first_test_span).to have_test_tag(:final_status, "pass")
 
       expect(first_test_span).to have_test_tag(
         :source_file,
@@ -1018,6 +1019,10 @@ RSpec.describe "RSpec instrumentation" do
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 4)
 
+      # check that we set final status on last retry - once for flaky test, once for normal test
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
+
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -1064,6 +1069,16 @@ RSpec.describe "RSpec instrumentation" do
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 3)
 
+      # check that we set final status on last retry
+
+      # there is one test that passed and was not retried
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
+      # there is one test that failed on all retries
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -1104,6 +1119,14 @@ RSpec.describe "RSpec instrumentation" do
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 5)
+
+      # check that we set final status on last retry for both failed tests
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(2)
+
+      # there is one test that passed and was not retried
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
 
       # it retried failing test 5 times
       expect(test_spans_by_test_name["nested fails"]).to have(6).items
@@ -1167,6 +1190,13 @@ RSpec.describe "RSpec instrumentation" do
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
 
+      # check final statuses
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
 
@@ -1180,7 +1210,7 @@ RSpec.describe "RSpec instrumentation" do
 
     context "when test is slower than 5 seconds" do
       before do
-        allow_any_instance_of(Datadog::Tracing::SpanOperation).to receive(:duration).and_return(6.0)
+        allow_any_instance_of(Datadog::CI::Test).to receive(:peek_duration).and_return(6.0)
       end
 
       it "retries the new test 5 times" do
@@ -1205,6 +1235,13 @@ RSpec.describe "RSpec instrumentation" do
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
         expect(new_tests_count).to eq(6)
 
+        # check final statuses
+        final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+        expect(final_status_fail_tests).to eq(1)
+
+        final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+        expect(final_status_pass_tests).to eq(1)
+
         expect(test_suite_spans).to have(1).item
         expect(test_session_span).to have_fail_status
         expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
@@ -1213,7 +1250,7 @@ RSpec.describe "RSpec instrumentation" do
 
     context "when test is slower than 10 minutes" do
       before do
-        allow_any_instance_of(Datadog::Tracing::SpanOperation).to receive(:duration).and_return(601.0)
+        allow_any_instance_of(Datadog::CI::Test).to receive(:peek_duration).and_return(601.0)
       end
 
       it "doesn't retry the new test" do
@@ -1234,6 +1271,13 @@ RSpec.describe "RSpec instrumentation" do
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
         expect(new_tests_count).to eq(1)
 
+        # check final statuses
+        final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+        expect(final_status_fail_tests).to eq(1)
+
+        final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+        expect(final_status_pass_tests).to eq(1)
+
         expect(test_suite_spans).to have(1).item
         expect(test_session_span).to have_fail_status
         expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
@@ -1248,7 +1292,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:early_flake_detection_enabled) { true }
     end
 
-    it "retries the new test 10 times and the flaky test until it passes" do
+    it "doesn't retry" do
       rspec_session_run
 
       expect(test_spans).to have(1).item
@@ -1309,6 +1353,15 @@ RSpec.describe "RSpec instrumentation" do
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
 
+      # check final statuses
+      # 0 failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      # 2 passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
 
@@ -1360,6 +1413,15 @@ RSpec.describe "RSpec instrumentation" do
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(22)
+
+      # check final statuses
+      # 0 failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      # 2 passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
@@ -1414,6 +1476,15 @@ RSpec.describe "RSpec instrumentation" do
       fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
       expect(fix_passed_tests_count).to eq(0)
 
+      # check final statuses
+      # 1 test failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
+      # 1 test passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
 
@@ -1460,6 +1531,15 @@ RSpec.describe "RSpec instrumentation" do
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
 
+      # check final statuses
+      # no tests failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      # 2 tests passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
 
@@ -1495,7 +1575,7 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
 
-    it "retries first test only and then bails out of retrying new tests" do
+    it "skips the test even though it wasn't known" do
       rspec_session_run
 
       # 1 test skipped by ITR
@@ -1540,6 +1620,15 @@ RSpec.describe "RSpec instrumentation" do
       expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
       expect(quarantined_test_span).not_to have_test_tag(:is_attempt_to_fix)
 
+      # check final statuses
+      # no tests failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      # 2 tests passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
 
@@ -1581,6 +1670,19 @@ RSpec.describe "RSpec instrumentation" do
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
+
+      # check final statuses
+      # no tests failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      # one test passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
+      # disabled test is skipped
+      final_status_skip_tests = test_spans.count { |span| span.get_tag("test.final_status") == "skip" }
+      expect(final_status_skip_tests).to eq(1)
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
@@ -1632,6 +1734,15 @@ RSpec.describe "RSpec instrumentation" do
       # we set test.test_management.attempt_to_fix_passed tag on the last retry here
       fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
       expect(fix_passed_tests_count).to eq(1)
+
+      # check final statuses
+      # 0 failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      # 1 test passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
@@ -1700,6 +1811,15 @@ RSpec.describe "RSpec instrumentation" do
       fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
       expect(fix_passed_tests_count).to eq(1)
 
+      # check final statuses
+      # 0 failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      # 1 test passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
 
@@ -1750,6 +1870,15 @@ RSpec.describe "RSpec instrumentation" do
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
       expect(modified_count).to eq(22)
 
+      # check final statuses
+      # 1 failed all retries
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
+      # 1 passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
 
@@ -1793,6 +1922,15 @@ RSpec.describe "RSpec instrumentation" do
       # count how many test spans were marked as modified
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
       expect(modified_count).to eq(0)
+
+      # check final statuses
+      # 0 failed
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      # 1 passed
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status

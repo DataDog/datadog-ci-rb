@@ -121,8 +121,6 @@ module Datadog
 
           if block
             @context.trace_test(test_name, test_suite, service: service, tags: tags) do |test|
-              subscribe_to_after_stop_event(test.tracer_span)
-
               on_test_started(test)
               res = block.call(test)
               on_test_finished(test)
@@ -130,7 +128,6 @@ module Datadog
             end
           else
             test = @context.trace_test(test_name, test_suite, service: service, tags: tags)
-            subscribe_to_after_stop_event(test.tracer_span)
             on_test_started(test)
             test
           end
@@ -340,10 +337,6 @@ module Datadog
           Telemetry.event_finished(test)
         end
 
-        def on_after_test_span_finished(tracer_span)
-          test_retries.record_test_span_duration(tracer_span)
-        end
-
         # HELPERS
         def single_active_test_suite
           # when fetching test_suite to use as test's context, try local context instance first
@@ -355,14 +348,6 @@ module Datadog
 
         def skip_tracing(block = nil)
           block&.call(nil)
-        end
-
-        def subscribe_to_after_stop_event(tracer_span)
-          events = tracer_span.send(:events)
-
-          events.after_stop.subscribe do |span|
-            on_after_test_span_finished(span)
-          end
         end
 
         def set_codeowners(span)

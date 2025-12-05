@@ -1025,6 +1025,10 @@ RSpec.describe "Minitest instrumentation" do
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 4)
 
+      # check final statuses (one passed test, flaky test passed on last retry)
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
+
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -1086,6 +1090,13 @@ RSpec.describe "Minitest instrumentation" do
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 3)
+
+      # check final statuses (one passed test, flaky test failed after retries)
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
 
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
@@ -1158,6 +1169,13 @@ RSpec.describe "Minitest instrumentation" do
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 5)
 
+      # check final statuses (two failed tests, one passed test)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(2)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_fail_status
 
@@ -1227,6 +1245,13 @@ RSpec.describe "Minitest instrumentation" do
       failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
       expect(failed_all_retries_count).to eq(1)
 
+      # check final statuses (one failed test, two passed tests)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
+
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
       expect(test_suite_spans).to have(1).item
@@ -1281,6 +1306,13 @@ RSpec.describe "Minitest instrumentation" do
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
 
+      # check final statuses (both tests passed)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
+
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
 
@@ -1332,6 +1364,13 @@ RSpec.describe "Minitest instrumentation" do
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(12)
+
+      # check final statuses (both tests passed)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
@@ -1399,6 +1438,13 @@ RSpec.describe "Minitest instrumentation" do
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
       expect(new_tests_count).to eq(11)
+
+      # check final statuses (no tests failed, two tests passed)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
@@ -1606,7 +1652,7 @@ RSpec.describe "Minitest instrumentation" do
       end
       let(:changed_files) do
         Set.new([
-          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1622:1622"
+          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1667:1667"
         ])
       end
     end
@@ -1624,7 +1670,7 @@ RSpec.describe "Minitest instrumentation" do
       end
     end
 
-    it "retries each of the modified tests 10 times" do
+    it "retries the modified test 10 times" do
       expect(test_spans).to have(11).items
 
       # count how many tests were marked as retries
@@ -1638,6 +1684,13 @@ RSpec.describe "Minitest instrumentation" do
       # count how many test spans were marked as modified
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
       expect(modified_count).to eq(11)
+
+      # check final statuses (single test passed after retries)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status

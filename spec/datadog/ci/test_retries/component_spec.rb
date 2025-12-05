@@ -201,7 +201,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
 
     let(:tracer_span) do
-      instance_double(Datadog::Tracing::SpanOperation, duration: 1.2, set_tag: true)
+      instance_double(Datadog::Tracing::SpanOperation, start_time: Time.now, set_tag: true)
     end
     let(:test_span) do
       instance_double(
@@ -217,7 +217,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         test_suite_name: "mysuite",
         attempt_to_fix?: test_attempt_to_fix,
         all_executions_failed?: false,
-        all_executions_passed?: false
+        all_executions_passed?: false,
+        peek_duration: 1.2,
+        record_final_status: true
       )
     end
 
@@ -232,7 +234,6 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
         # run callbacks manually
         Datadog.send(:components).test_visibility.send(:on_test_finished, test_span)
-        Datadog.send(:components).test_visibility.send(:on_after_test_span_finished, tracer_span)
       end
 
       runs_count
@@ -270,9 +271,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       it { is_expected.to eq(11) }
 
       context "when test duration increases" do
-        let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, set_tag: true) }
         before do
-          allow(tracer_span).to receive(:duration).and_return(5.1, 10.1, 30.1, 600.1)
+          allow(test_span).to receive(:peek_duration).and_return(5.1, 10.1, 30.1, 600.1)
         end
 
         # 5.1s (5 retries) -> 10.1s (3 retries) -> 30.1s (2 retries) -> done => 3 executions in total
@@ -333,6 +333,84 @@ RSpec.describe Datadog::CI::TestRetries::Component do
           subject
           expect(test_span).to have_received(:set_tag).with(Datadog::CI::Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "false")
         end
+      end
+    end
+  end
+
+  describe "#record_test_finished" do
+    let(:test_span) do
+      instance_double(
+        Datadog::CI::Test,
+        name: "test",
+        test_suite_name: "suite",
+        failed?: test_failed,
+        passed?: !test_failed,
+        skipped?: false,
+        is_new?: false,
+        attempt_to_fix?: false,
+        modified?: false,
+        all_executions_failed?: false,
+        all_executions_passed?: false,
+        peek_duration: 1.0,
+        set_tag: nil,
+        record_final_status: nil
+      )
+    end
+
+    let(:test_failed) { false }
+
+    context "when test is run only once (no retries)" do
+      before do
+        component.configure(library_settings, test_session)
+        component.reset_retries!
+      end
+
+      it "records final status on the test span" do
+        component.record_test_finished(test_span)
+
+        expect(test_span).to have_received(:record_final_status).once
+      end
+    end
+
+    context "when test is retried" do
+      let(:remote_flaky_test_retries_enabled) { true }
+      let(:test_failed) { true }
+      let(:retry_failed_tests_max_attempts) { 2 }
+
+      before do
+        component.configure(library_settings, test_session)
+        component.reset_retries!
+      end
+
+      it "records final status only on the last retry" do
+        # First execution - creates the retry driver, should record final status if no retry
+        # but since test failed and retry is enabled, we will retry
+        component.record_test_finished(test_span)
+        expect(test_span).not_to have_received(:record_final_status)
+
+        # First retry - should not record final status yet
+        component.record_test_finished(test_span)
+        expect(test_span).not_to have_received(:record_final_status)
+
+        # Second retry (last one) - should record final status
+        component.record_test_finished(test_span)
+        expect(test_span).to have_received(:record_final_status).once
+      end
+    end
+
+    context "when test passes on first execution" do
+      let(:remote_flaky_test_retries_enabled) { true }
+      let(:test_failed) { false }
+
+      before do
+        component.configure(library_settings, test_session)
+        component.reset_retries!
+      end
+
+      it "records final status immediately" do
+        component.record_test_finished(test_span)
+
+        expect(test_span).to have_received(:record_final_status).once
       end
     end
   end

@@ -244,6 +244,32 @@ module Datadog
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
 
+      # @internal
+      def record_final_status
+        status = get_tag(Ext::Test::TAG_STATUS)
+        return if status.nil?
+
+        if [Ext::Test::Status::PASS, Ext::Test::Status::SKIP].include?(status)
+          set_tag(Ext::Test::TAG_FINAL_STATUS, status)
+          return
+        end
+
+        if should_ignore_failures?
+          set_tag(Ext::Test::TAG_FINAL_STATUS, Ext::Test::Status::PASS)
+        else
+          set_tag(Ext::Test::TAG_FINAL_STATUS, Ext::Test::Status::FAIL)
+        end
+      end
+
+      # @internal
+      def peek_duration
+        end_time = Core::Utils::Time.now.utc
+        start_time = tracer_span.start_time
+
+        return 0.0 if start_time.nil? || end_time.nil?
+        end_time - start_time
+      end
+
       private
 
       def record_test_result(datadog_status)

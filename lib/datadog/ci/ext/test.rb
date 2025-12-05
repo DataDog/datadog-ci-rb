@@ -13,7 +13,21 @@ module Datadog
         TAG_FRAMEWORK_VERSION = "test.framework_version"
         TAG_NAME = "test.name"
         TAG_SKIP_REASON = "test.skip_reason"
+
+        # Status is the result of a single test run
+        # See the [Datadog::CI::Ext::Test::Status] module for the list of possible values of this tag
         TAG_STATUS = "test.status"
+        # Final status is the result that Datadog reports after all retries for a given test. It might be different
+        # from the status of the given test run:
+        #
+        # Example: new test was retried 10 times by Early Flake Detection. It succeeded 9 times and failed once.
+        # The final status will be "pass" because we keep CI green for flaky tests.
+        #
+        # This tag is useful to create monitors on hard failures: if test.final_status is "fail", then CI is red.
+        #
+        # See the [Datadog::CI::Ext::Test::Status] module for the list of possible values of this tag
+        TAG_FINAL_STATUS = "test.final_status"
+
         TAG_SUITE = "test.suite"
         TAG_MODULE = "test.module"
         TAG_TYPE = "test.type"

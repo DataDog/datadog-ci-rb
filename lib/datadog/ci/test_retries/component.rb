@@ -94,18 +94,27 @@ module Datadog
 
         def record_test_finished(test_span)
           if current_retry_driver.nil?
-            # we always run test at least once and after the first pass create a correct retry driver
+            # We always run test at least once and after the first pass create a correct retry driver
             self.current_retry_driver = build_driver(test_span)
           else
-            # after each retry we record the result, the driver will decide if we should retry again
+            # After each retry we let the driver to record the result.
+            # Then the driver will decide if we should retry again.
             current_retry_driver&.record_retry(test_span)
 
+            # We know that the test was already retried at least once so if we should not retry anymore, then this
+            # is the last retry.
             tag_last_retry(test_span) unless should_retry?
           end
-        end
 
-        def record_test_span_duration(tracer_span)
-          current_retry_driver&.record_duration(tracer_span.duration)
+          # Some retry strategies such as Early Flake Detection change the number of retries based on
+          # how long the test was.
+          current_retry_driver&.record_duration(test_span.peek_duration)
+
+          # We need to set the final status of the test (what will be reported to the test framework) on the last execution
+          # no matter if test was retried or not
+          #
+          # If we should not retry at this point, it means that this execution is the last one (it might the only one as well).
+          test_span.record_final_status unless should_retry?
         end
 
         # this API is targeted on Cucumber instrumentation or any other that cannot leverage #with_retries method
