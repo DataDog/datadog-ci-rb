@@ -95,7 +95,7 @@ jobs:
         DD_GIT_REPOSITORY_URL: '${{ github.repositoryUrl }}'
     needs:
       # ADD NEW RUBIES HERE
-      - ruby-35
+      - ruby-40
       - ruby-34
       - ruby-33
       - ruby-32
@@ -148,7 +148,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs:
       # ADD NEW RUBIES HERE
-      - ruby-35
+      - ruby-40
       - ruby-34
       - ruby-33
       - ruby-32
