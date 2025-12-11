@@ -156,12 +156,12 @@ static VALUE dd_cov_allocate(VALUE klass) {
 
 // Checks if the filename is located under the root folder of the project (but
 // not in the ignored folder) and adds it to the impacted_files hash.
-static void record_impacted_file(struct dd_cov_data *dd_cov_data,
+static bool record_impacted_file(struct dd_cov_data *dd_cov_data,
                                  VALUE filename) {
   char *filename_ptr = RSTRING_PTR(filename);
   // if the current filename is not located under the root, we skip it
   if (strncmp(dd_cov_data->root, filename_ptr, dd_cov_data->root_len) != 0) {
-    return;
+    return false;
   }
 
   // if ignored_path is provided and the current filename is located under the
@@ -170,10 +170,11 @@ static void record_impacted_file(struct dd_cov_data *dd_cov_data,
   if (dd_cov_data->ignored_path_len != 0 &&
       strncmp(dd_cov_data->ignored_path, filename_ptr,
               dd_cov_data->ignored_path_len) == 0) {
-    return;
+    return false;
   }
 
   rb_hash_aset(dd_cov_data->impacted_files, filename, Qtrue);
+  return true;
 }
 
 // Executed on RUBY_EVENT_LINE event and captures the filename from
@@ -238,8 +239,7 @@ static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
     return false;
   }
 
-  record_impacted_file(dd_cov_data, filename);
-  return true;
+  return record_impacted_file(dd_cov_data, filename);
 }
 
 // This function is called for each class that was instantiated during the test
