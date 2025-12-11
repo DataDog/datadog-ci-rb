@@ -344,8 +344,10 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
           end
 
           coverage = subject.stop
-          expect(coverage.size).to eq(1)
+          expect(coverage.size).to eq(3)
           expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+          expect(coverage.keys).to include(absolute_path("app/model/my_parent_model.rb"))
+          expect(coverage.keys).to include(absolute_path("app/model/my_grandparent_model.rb"))
         end
 
         it "tracks coverage for structs" do
