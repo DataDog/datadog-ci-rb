@@ -221,29 +221,38 @@ static VALUE safely_get_source_location(VALUE klass_name) {
   return rescue_nil(get_source_location, klass_name);
 }
 
-// This function is called for each class that was instantiated during the test
-// run.
-static int process_instantiated_klass(st_data_t key, st_data_t _value,
-                                      st_data_t data) {
-  VALUE klass = (VALUE)key;
-  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
-
+static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
+                                  VALUE klass) {
   VALUE klass_name = rb_class_name(klass);
   if (klass_name == Qnil) {
-    return ST_CONTINUE;
+    return false;
   }
 
   VALUE source_location = safely_get_source_location(klass_name);
   if (source_location == Qnil || RARRAY_LEN(source_location) == 0) {
-    return ST_CONTINUE;
+    return false;
   }
 
   VALUE filename = RARRAY_AREF(source_location, 0);
   if (filename == Qnil || !RB_TYPE_P(filename, T_STRING)) {
-    return ST_CONTINUE;
+    return false;
   }
 
   record_impacted_file(dd_cov_data, filename);
+  return true;
+}
+
+// This function is called for each class that was instantiated during the test
+// run.
+static int each_instantiated_klass(st_data_t key, st_data_t _value,
+                                   st_data_t data) {
+  VALUE klass = (VALUE)key;
+  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+
+  while (klass != Qnil && record_impacted_klass(dd_cov_data, klass)) {
+    klass = rb_class_superclass(klass);
+  }
+
   return ST_CONTINUE;
 }
 
@@ -385,7 +394,7 @@ static VALUE dd_cov_stop(VALUE self) {
   }
 
   // process classes covered by allocation tracing
-  st_foreach(dd_cov_data->klasses_table, process_instantiated_klass,
+  st_foreach(dd_cov_data->klasses_table, each_instantiated_klass,
              (st_data_t)dd_cov_data);
   st_clear(dd_cov_data->klasses_table);
 
