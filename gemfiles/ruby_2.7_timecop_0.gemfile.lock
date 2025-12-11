@@ -1,9 +1,10 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 508ecc657479284693780cc9c46dfb4425e9ce51
+  revision: 6cb632a8089d21b2b5a7ca3ca5a198dcaa566bef
   branch: master
   specs:
     datadog (2.23.0)
+      cgi
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
       libdatadog (~> 24.0.1.1.0)
       libddwaf (~> 1.30.0.0.0)
@@ -102,7 +103,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
-    stringio (3.1.8)
+    stringio (3.1.9)
     thor (1.4.0)
     timecop (0.9.10)
     tsort (0.2.0)
@@ -136,4 +137,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.4.22
+   2.3.26
