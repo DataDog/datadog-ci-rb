@@ -1,11 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: b31a1571e7aa6fdf72007e003db4ed901142e77e
+  revision: 6cb632a8089d21b2b5a7ca3ca5a198dcaa566bef
   branch: master
   specs:
     datadog (2.23.0)
+      cgi
       datadog-ruby_core_source (~> 3.4, >= 3.4.1)
-      libdatadog (~> 23.0.0.1.0)
+      libdatadog (~> 24.0.1.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -21,8 +22,8 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.7)
-      public_suffix (>= 2.0.2, < 7.0)
+    addressable (2.8.8)
+      public_suffix (>= 2.0.2, < 8.0)
     ansi (1.5.0)
     appraisal (2.5.0)
       bundler
@@ -30,6 +31,7 @@ GEM
       thor (>= 0.14.0)
     bigdecimal (3.3.1-java)
     builder (3.3.0)
+    cgi (0.5.0-java)
     ci-queue (0.79.0)
       logger
     climate_control (1.2.0)
@@ -43,11 +45,11 @@ GEM
     drb (2.2.3)
     ffi (1.17.2-java)
     hashdiff (1.2.1)
-    libdatadog (23.0.0.1.0)
+    libdatadog (24.0.1.1.0)
     libddwaf (1.30.0.0.0)
       ffi (~> 1.0)
     logger (1.7.0)
-    minitest (5.26.1)
+    minitest (5.26.2)
     minitest-reporters (1.7.1)
       ansi
       builder
