@@ -5,6 +5,7 @@ require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 require_relative "app/model/my_model"
 require_relative "app/model/my_model_❤️"
 require_relative "app/model/my_struct"
+require_relative "app/model/dynamic_model"
 require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
 
@@ -73,6 +74,21 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
 
           expect(coverage.size).to eq(1)
           expect(coverage.keys).to include(absolute_path("calculator/calculator.rb"))
+        end
+      end
+
+      context "when ignored_path equals root" do
+        let(:ignored_path) { absolute_path("calculator") }
+
+        it "collects no coverage since everything is ignored" do
+          subject.start
+
+          expect(calculator.add(1, 2)).to eq(3)
+          expect(calculator.subtract(1, 2)).to eq(-1)
+
+          coverage = subject.stop
+
+          expect(coverage).to be_empty
         end
       end
     end
@@ -163,6 +179,59 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
         expect(coverage.size).to eq(2)
         expect(coverage.keys).to include(absolute_path("calculator/operations/divide.rb"))
         expect(coverage.keys).to include(absolute_path("calculator/operations/helpers/calculator_logger.rb"))
+      end
+
+      it "does not crash on eval'd code and still tracks regular coverage" do
+        subject.start
+
+        # eval'd code has no source file - should not crash
+        eval("1 + 1", binding, __FILE__, __LINE__)
+        eval("def dynamic_method; 42; end", binding, __FILE__, __LINE__)
+        dynamic_method
+
+        # Regular code should still be tracked
+        expect(calculator.add(1, 2)).to eq(3)
+
+        coverage = subject.stop
+        expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
+      end
+
+      it "tracks coverage for code that raises exceptions" do
+        subject.start
+
+        begin
+          calculator.divide(1, 0)
+        rescue ZeroDivisionError
+          # Expected - division by zero
+        end
+
+        coverage = subject.stop
+
+        # Coverage should still be recorded for code that was executed before the exception
+        expect(coverage.keys).to include(absolute_path("calculator/operations/divide.rb"))
+        expect(coverage.keys).to include(absolute_path("calculator/operations/helpers/calculator_logger.rb"))
+      end
+
+      it "does not crash on dynamically defined methods via define_method" do
+        klass = Class.new do
+          define_method(:dynamic_add) do |a, b|
+            a + b
+          end
+        end
+
+        subject.start
+
+        # Dynamic method execution - the method itself has no file source
+        result = klass.new.dynamic_add(1, 2)
+        expect(result).to eq(3)
+
+        # Also call regular tracked code
+        expect(calculator.add(1, 2)).to eq(3)
+
+        coverage = subject.stop
+
+        # Regular code should still be tracked
+        expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
       end
 
       context "multi threaded execution" do
@@ -468,6 +537,70 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
             coverage = subject.stop
             expect(coverage.size).to eq(1)
             expect(coverage.keys).to include(absolute_path("app/model/measure.rb"))
+          end
+        end
+
+        context "GC stress during coverage collection" do
+          it "survives GC during allocation tracing" do
+            subject.start
+
+            10_000.times do |i|
+              MyModel.new
+              GC.start(full_mark: true, immediate_sweep: true) if i % 100 == 0
+            end
+
+            coverage = subject.stop
+            expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+            expect(coverage.keys).to include(absolute_path("app/model/my_parent_model.rb"))
+            expect(coverage.keys).to include(absolute_path("app/model/my_grandparent_model.rb"))
+            expect(coverage.keys).to include(absolute_path("app/concerns/queryable.rb"))
+          end
+        end
+
+        context "BasicObject subclasses" do
+          it "handles objects that inherit from BasicObject without crashing" do
+            # BasicObject doesn't have the standard Object methods like `class`
+            # This tests that the C extension handles edge cases gracefully
+            klass = Class.new(BasicObject) do
+              def initialize
+              end
+            end
+
+            subject.start
+
+            # BasicObject subclass allocation - should not crash
+            klass.new
+
+            # Normal allocation to verify coverage still works
+            MyModel.new
+
+            coverage = subject.stop
+            expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+          end
+        end
+
+        context "rapid start/stop cycles" do
+          it "handles many rapid start/stop cycles with allocation tracing" do
+            100.times do
+              subject.start
+              MyModel.new
+              coverage = subject.stop
+              expect(coverage.keys).to include(absolute_path("app/model/my_model.rb"))
+            end
+          end
+        end
+
+        context "method_missing dynamic dispatch" do
+          it "tracks coverage for classes using method_missing" do
+            subject.start
+
+            model = DynamicModel.new
+            result = model.any_method_name(1, 2, 3)
+
+            coverage = subject.stop
+
+            expect(result).to eq("called any_method_name with [1, 2, 3]")
+            expect(coverage.keys).to include(absolute_path("app/model/dynamic_model.rb"))
           end
         end
       end
