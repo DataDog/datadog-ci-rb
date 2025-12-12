@@ -1,0 +1,2 @@
+module Queryable
+end

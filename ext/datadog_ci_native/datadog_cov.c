@@ -156,12 +156,12 @@ static VALUE dd_cov_allocate(VALUE klass) {
 
 // Checks if the filename is located under the root folder of the project (but
 // not in the ignored folder) and adds it to the impacted_files hash.
-static void record_impacted_file(struct dd_cov_data *dd_cov_data,
+static bool record_impacted_file(struct dd_cov_data *dd_cov_data,
                                  VALUE filename) {
   char *filename_ptr = RSTRING_PTR(filename);
   // if the current filename is not located under the root, we skip it
   if (strncmp(dd_cov_data->root, filename_ptr, dd_cov_data->root_len) != 0) {
-    return;
+    return false;
   }
 
   // if ignored_path is provided and the current filename is located under the
@@ -170,10 +170,11 @@ static void record_impacted_file(struct dd_cov_data *dd_cov_data,
   if (dd_cov_data->ignored_path_len != 0 &&
       strncmp(dd_cov_data->ignored_path, filename_ptr,
               dd_cov_data->ignored_path_len) == 0) {
-    return;
+    return false;
   }
 
   rb_hash_aset(dd_cov_data->impacted_files, filename, Qtrue);
+  return true;
 }
 
 // Executed on RUBY_EVENT_LINE event and captures the filename from
@@ -221,29 +222,61 @@ static VALUE safely_get_source_location(VALUE klass_name) {
   return rescue_nil(get_source_location, klass_name);
 }
 
-// This function is called for each class that was instantiated during the test
-// run.
-static int process_instantiated_klass(st_data_t key, st_data_t _value,
-                                      st_data_t data) {
-  VALUE klass = (VALUE)key;
-  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+// Safely get class name, returns Qnil on any error
+static VALUE safely_get_class_name(VALUE klass) {
+  return rescue_nil(rb_class_name, klass);
+}
 
-  VALUE klass_name = rb_class_name(klass);
+// Safely get module ancestors, returns Qnil on any error
+static VALUE safely_get_mod_ancestors(VALUE klass) {
+  return rescue_nil(rb_mod_ancestors, klass);
+}
+
+static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
+                                  VALUE klass) {
+  VALUE klass_name = safely_get_class_name(klass);
   if (klass_name == Qnil) {
-    return ST_CONTINUE;
+    return false;
   }
 
   VALUE source_location = safely_get_source_location(klass_name);
-  if (source_location == Qnil || RARRAY_LEN(source_location) == 0) {
-    return ST_CONTINUE;
+  if (source_location == Qnil || !RB_TYPE_P(source_location, T_ARRAY) ||
+      RARRAY_LEN(source_location) == 0) {
+    return false;
   }
 
   VALUE filename = RARRAY_AREF(source_location, 0);
   if (filename == Qnil || !RB_TYPE_P(filename, T_STRING)) {
+    return false;
+  }
+
+  return record_impacted_file(dd_cov_data, filename);
+}
+
+// This function is called for each class that was instantiated during the test
+// run.
+static int each_instantiated_klass(st_data_t key, st_data_t _value,
+                                   st_data_t data) {
+  VALUE klass = (VALUE)key;
+  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+
+  // rb_mod_ancestors returns an array containing the "klass" itself
+  // and all the parent classes and/or included/prepended modules
+  VALUE ancestors = safely_get_mod_ancestors(klass);
+  if (ancestors == Qnil || !RB_TYPE_P(ancestors, T_ARRAY)) {
     return ST_CONTINUE;
   }
 
-  record_impacted_file(dd_cov_data, filename);
+  long len = RARRAY_LEN(ancestors);
+  for (long i = 0; i < len; i++) {
+    VALUE mod = rb_ary_entry(ancestors, i);
+    if (mod == Qnil) {
+      continue;
+    }
+
+    record_impacted_klass(dd_cov_data, mod);
+  }
+
   return ST_CONTINUE;
 }
 
@@ -385,7 +418,7 @@ static VALUE dd_cov_stop(VALUE self) {
   }
 
   // process classes covered by allocation tracing
-  st_foreach(dd_cov_data->klasses_table, process_instantiated_klass,
+  st_foreach(dd_cov_data->klasses_table, each_instantiated_klass,
              (st_data_t)dd_cov_data);
   st_clear(dd_cov_data->klasses_table);
 
