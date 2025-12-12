@@ -263,6 +263,10 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
   // rb_mod_ancestors returns an array containing the "klass" itself
   // and all the parent classes and/or included/prepended modules
   VALUE ancestors = safely_get_mod_ancestors(klass);
+  if (ancestors == Qnil || !RB_TYPE_P(ancestors, T_ARRAY)) {
+    return ST_CONTINUE;
+  }
+
   long len = RARRAY_LEN(ancestors);
   for (long i = 0; i < len; i++) {
     VALUE mod = rb_ary_entry(ancestors, i);
