@@ -249,8 +249,11 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
   VALUE klass = (VALUE)key;
   struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
 
-  while (klass != Qnil && record_impacted_klass(dd_cov_data, klass)) {
-    klass = rb_class_superclass(klass);
+  VALUE ancestors = rb_mod_ancestors(klass);
+  long len = RARRAY_LEN(ancestors);
+  for (long i = 0; i < len; i++) {
+    VALUE mod = rb_ary_entry(ancestors, i);
+    record_impacted_klass(dd_cov_data, mod);
   }
 
   return ST_CONTINUE;
