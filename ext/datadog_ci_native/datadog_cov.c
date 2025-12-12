@@ -270,6 +270,10 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
   long len = RARRAY_LEN(ancestors);
   for (long i = 0; i < len; i++) {
     VALUE mod = rb_ary_entry(ancestors, i);
+    if (mod == Qnil) {
+      continue;
+    }
+
     record_impacted_klass(dd_cov_data, mod);
   }
 
