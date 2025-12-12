@@ -222,15 +222,26 @@ static VALUE safely_get_source_location(VALUE klass_name) {
   return rescue_nil(get_source_location, klass_name);
 }
 
+// Safely get class name, returns Qnil on any error
+static VALUE safely_get_class_name(VALUE klass) {
+  return rescue_nil(rb_class_name, klass);
+}
+
+// Safely get module ancestors, returns Qnil on any error
+static VALUE safely_get_mod_ancestors(VALUE klass) {
+  return rescue_nil(rb_mod_ancestors, klass);
+}
+
 static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
                                   VALUE klass) {
-  VALUE klass_name = rb_class_name(klass);
+  VALUE klass_name = safely_get_class_name(klass);
   if (klass_name == Qnil) {
     return false;
   }
 
   VALUE source_location = safely_get_source_location(klass_name);
-  if (source_location == Qnil || RARRAY_LEN(source_location) == 0) {
+  if (source_location == Qnil || !RB_TYPE_P(source_location, T_ARRAY) ||
+      RARRAY_LEN(source_location) == 0) {
     return false;
   }
 
@@ -249,7 +260,9 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
   VALUE klass = (VALUE)key;
   struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
 
-  VALUE ancestors = rb_mod_ancestors(klass);
+  // rb_mod_ancestors returns an array containing the "klass" itself
+  // and all the parent classes and/or included/prepended modules
+  VALUE ancestors = safely_get_mod_ancestors(klass);
   long len = RARRAY_LEN(ancestors);
   for (long i = 0; i < len; i++) {
     VALUE mod = rb_ary_entry(ancestors, i);
