@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 80b8b5a2511167933ddde6126a366521b01556f5
+  revision: 792b0b3800b505462b82d6cc10806ee3ed13bac7
   branch: master
   specs:
-    datadog (2.23.0)
+    datadog (2.24.0)
       cgi
       datadog-ruby_core_source (~> 3.4, >= 3.4.2)
       libdatadog (~> 24.0.1.1.0)
@@ -213,7 +213,7 @@ CHECKSUMS
   cucumber-html-formatter (22.2.0) sha256=e92fed01ee5a120690da89152ddbe71b77aa56b058228f9df81c6bf8cd4b6980
   cucumber-messages (29.0.1) sha256=77bd8ad859ae35fd4e076cd32fce940963317e17229dd51c7844ac11766a6cb9
   cucumber-tag-expressions (8.1.0) sha256=9bd8c4b6654f8e5bf2a9c99329b6f32136a75e50cd39d4cfb3927d0fa9f52e21
-  datadog (2.23.0)
+  datadog (2.24.0)
   datadog-ci (1.23.3)
   datadog-ruby_core_source (3.4.2) sha256=d770cf275807e69079461b32360fc92e49c684568dbb0704499eb4ee34a99170
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
@@ -275,4 +275,4 @@ CHECKSUMS
   yard (0.9.38) sha256=721fb82afb10532aa49860655f6cc2eaa7130889df291b052e1e6b268283010f
 
 BUNDLED WITH
-  4.0.0
+   2.7.2
