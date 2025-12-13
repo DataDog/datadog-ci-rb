@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 80b8b5a2511167933ddde6126a366521b01556f5
+  revision: 792b0b3800b505462b82d6cc10806ee3ed13bac7
   branch: master
   specs:
-    datadog (2.23.0)
+    datadog (2.24.0)
       cgi
       datadog-ruby_core_source (~> 3.4, >= 3.4.2)
       libdatadog (~> 24.0.1.1.0)
@@ -134,7 +134,7 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    json (2.17.1)
+    json (2.18.0)
     libdatadog (24.0.1.1.0)
     libdatadog (24.0.1.1.0-aarch64-linux)
     libddwaf (1.30.0.0.0)
@@ -154,7 +154,7 @@ GEM
     marcel (1.1.0)
     mini_mime (1.1.5)
     mini_portile2 (2.8.9)
-    minitest (5.26.2)
+    minitest (5.27.0)
     msgpack (1.8.0)
     net-imap (0.5.12)
       date
@@ -316,7 +316,7 @@ CHECKSUMS
   connection_pool (3.0.2) sha256=33fff5ba71a12d2aa26cb72b1db8bba2a1a01823559fb01d29eb74c286e62e0a
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
   crass (1.0.6) sha256=dc516022a56e7b3b156099abc81b6d2b08ea1ed12676ac7a5657617f012bd45d
-  datadog (2.23.0)
+  datadog (2.24.0)
   datadog-ci (1.23.3)
   datadog-ruby_core_source (3.4.2) sha256=d770cf275807e69079461b32360fc92e49c684568dbb0704499eb4ee34a99170
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
@@ -332,7 +332,7 @@ CHECKSUMS
   i18n (1.14.7) sha256=ceba573f8138ff2c0915427f1fc5bdf4aa3ab8ae88c8ce255eb3ecf0a11a5d0f
   io-console (0.8.1) sha256=1e15440a6b2f67b6ea496df7c474ed62c860ad11237f29b3bd187f054b925fcb
   irb (1.15.3) sha256=4349edff1efa7ff7bfd34cb9df74a133a588ba88c2718098b3b4468b81184aaa
-  json (2.17.1) sha256=e0e4824541336a44915436f53e7ea74c687314fb8f88080fa1456f6a34ead92e
+  json (2.18.0) sha256=b10506aee4183f5cf49e0efc48073d7b75843ce3782c68dbeb763351c08fd505
   libdatadog (24.0.1.1.0) sha256=5f911a5598deb11f8c4179077a46e50a57b778b87a152bf23859ae6e557b1751
   libdatadog (24.0.1.1.0-aarch64-linux) sha256=aa1fad15d3fb1039164c5bbf481f76acc6f3d230e8ff160d3792bf9e87ba5075
   libddwaf (1.30.0.0.0) sha256=d5c350555ec5bdfb99534b37ad578163c83642ca03cecb3bae30fd29dc47d4fc
@@ -343,7 +343,7 @@ CHECKSUMS
   marcel (1.1.0) sha256=fdcfcfa33cc52e93c4308d40e4090a5d4ea279e160a7f6af988260fa970e0bee
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
   mini_portile2 (2.8.9) sha256=0cd7c7f824e010c072e33f68bc02d85a00aeb6fce05bb4819c03dfd3c140c289
-  minitest (5.26.2) sha256=f021118a6185b9ba9f5af71f2ba103ad770c75afde9f2ab8da512677c550cde3
+  minitest (5.27.0) sha256=2d3b17f8a36fe7801c1adcffdbc38233b938eb0b4966e97a6739055a45fa77d5
   msgpack (1.8.0) sha256=e64ce0212000d016809f5048b48eb3a65ffb169db22238fb4b72472fecb2d732
   net-imap (0.5.12) sha256=cb8cd05bd353fcc19b6cbc530a9cb06b577a969ea10b7ddb0f37787f74be4444
   net-pop (0.1.2) sha256=848b4e982013c15b2f0382792268763b748cce91c9e91e36b0f27ed26420dff3
@@ -396,4 +396,4 @@ CHECKSUMS
   zeitwerk (2.7.3) sha256=b2e86b4a9b57d26ba68a15230dcc7fe6f040f06831ce64417b0621ad96ba3e85
 
 BUNDLED WITH
-  4.0.0
+   2.7.2

@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 80b8b5a2511167933ddde6126a366521b01556f5
+  revision: 792b0b3800b505462b82d6cc10806ee3ed13bac7
   branch: master
   specs:
-    datadog (2.23.0)
+    datadog (2.24.0)
       cgi
       datadog-ruby_core_source (~> 3.4, >= 3.4.2)
       libdatadog (~> 24.0.1.1.0)
@@ -57,7 +57,7 @@ GEM
     libddwaf (1.30.0.0.0-aarch64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
-    minitest (5.26.2)
+    minitest (5.27.0)
     msgpack (1.8.0)
     os (1.1.4)
     ostruct (0.6.3)
@@ -139,7 +139,7 @@ CHECKSUMS
   cgi (0.5.1) sha256=e93fcafc69b8a934fe1e6146121fa35430efa8b4a4047c4893764067036f18e9
   climate_control (1.2.0) sha256=36b21896193fa8c8536fa1cd843a07cf8ddbd03aaba43665e26c53ec1bd70aa5
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
-  datadog (2.23.0)
+  datadog (2.24.0)
   datadog-ci (1.23.3)
   datadog-ruby_core_source (3.4.2) sha256=d770cf275807e69079461b32360fc92e49c684568dbb0704499eb4ee34a99170
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
@@ -157,7 +157,7 @@ CHECKSUMS
   libddwaf (1.30.0.0.0) sha256=d5c350555ec5bdfb99534b37ad578163c83642ca03cecb3bae30fd29dc47d4fc
   libddwaf (1.30.0.0.0-aarch64-linux) sha256=b901cf0be4cc8a0c0fc34845f8f283b791a2fa0fc6a80d88992f111242813daa
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
-  minitest (5.26.2) sha256=f021118a6185b9ba9f5af71f2ba103ad770c75afde9f2ab8da512677c550cde3
+  minitest (5.27.0) sha256=2d3b17f8a36fe7801c1adcffdbc38233b938eb0b4966e97a6739055a45fa77d5
   msgpack (1.8.0) sha256=e64ce0212000d016809f5048b48eb3a65ffb169db22238fb4b72472fecb2d732
   os (1.1.4) sha256=57816d6a334e7bd6aed048f4b0308226c5fb027433b67d90a9ab435f35108d3f
   ostruct (0.6.3) sha256=95a2ed4a4bd1d190784e666b47b2d3f078e4a9efda2fccf18f84ddc6538ed912
@@ -187,4 +187,4 @@ CHECKSUMS
   yard (0.9.38) sha256=721fb82afb10532aa49860655f6cc2eaa7130889df291b052e1e6b268283010f
 
 BUNDLED WITH
-  4.0.0
+   2.7.2
