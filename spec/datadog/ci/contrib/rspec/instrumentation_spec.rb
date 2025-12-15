@@ -787,11 +787,13 @@ RSpec.describe "RSpec instrumentation" do
       expect_non_empty_coverages
 
       # collects coverage from shared context files
+      # and from constants used in the shared context
       shared_context_test = test_spans.find { |span| span.name == "nested is 42" }
       shared_context_coverage = find_coverage_for_test(shared_context_test)
 
       expect(shared_context_coverage.coverage).to eq({
-        File.join(__dir__, "some_shared_context.rb") => true
+        File.join(__dir__, "some_shared_context.rb") => true,
+        File.join(__dir__, "some_constants.rb") => true
       })
     end
   end

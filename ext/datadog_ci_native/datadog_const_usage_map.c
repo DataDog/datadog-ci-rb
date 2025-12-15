@@ -96,7 +96,8 @@ struct populate_data {
 };
 
 /* Forward declaration */
-static void scan_value_for_constants(VALUE obj, VALUE const_locations);
+static void scan_value_for_constants(VALUE obj, VALUE const_locations,
+                                     struct populate_data *pd);
 
 static void process_iseq(VALUE iseq, struct populate_data *pd) {
   /* RubyVM::InstructionSequence#absolute_path
@@ -147,7 +148,7 @@ static void process_iseq(VALUE iseq, struct populate_data *pd) {
 
   /* Scan this ISeq's body for constant references and resolve their
      source locations */
-  scan_value_for_constants(body, const_locations);
+  scan_value_for_constants(body, const_locations, pd);
 }
 
 static int os_each_iseq_cb(void *vstart, void *vend, size_t stride,
@@ -165,7 +166,23 @@ static int os_each_iseq_cb(void *vstart, void *vend, size_t stride,
   return 0;
 }
 
-static void scan_value_for_constants(VALUE obj, VALUE const_locations) {
+/* Check if a file path is under root_path and not under ignored_path */
+static bool is_path_included(const char *file_path_ptr,
+                             struct populate_data *pd) {
+  /* Must be under root_path */
+  if (strncmp(pd->root_path, file_path_ptr, pd->root_path_len) != 0) {
+    return false;
+  }
+  /* Must not be under ignored_path */
+  if (pd->ignored_path_len > 0 &&
+      strncmp(pd->ignored_path, file_path_ptr, pd->ignored_path_len) == 0) {
+    return false;
+  }
+  return true;
+}
+
+static void scan_value_for_constants(VALUE obj, VALUE const_locations,
+                                     struct populate_data *pd) {
   switch (TYPE(obj)) {
   case T_ARRAY: {
     long len = RARRAY_LEN(obj);
@@ -181,7 +198,8 @@ static void scan_value_for_constants(VALUE obj, VALUE const_locations) {
           /* Convert symbol to string and resolve location */
           VALUE const_name_str = rb_sym2str(const_name);
           VALUE file_path = resolve_const_to_file(const_name_str);
-          if (!NIL_P(file_path)) {
+          if (!NIL_P(file_path) &&
+              is_path_included(RSTRING_PTR(file_path), pd)) {
             rb_hash_aset(const_locations, file_path, Qtrue);
           }
         }
@@ -211,7 +229,8 @@ static void scan_value_for_constants(VALUE obj, VALUE const_locations) {
             /* Resolve the constant to its source file */
             if (RSTRING_LEN(const_name_str) > 0) {
               VALUE file_path = resolve_const_to_file(const_name_str);
-              if (!NIL_P(file_path)) {
+              if (!NIL_P(file_path) &&
+                  is_path_included(RSTRING_PTR(file_path), pd)) {
                 rb_hash_aset(const_locations, file_path, Qtrue);
               }
             }
@@ -223,7 +242,7 @@ static void scan_value_for_constants(VALUE obj, VALUE const_locations) {
     /* Recurse into all elements */
     for (long i = 0; i < len; i++) {
       VALUE elem = rb_ary_entry(obj, i);
-      scan_value_for_constants(elem, const_locations);
+      scan_value_for_constants(elem, const_locations, pd);
     }
     break;
   }
@@ -235,8 +254,8 @@ static void scan_value_for_constants(VALUE obj, VALUE const_locations) {
     for (long i = 0; i < len; i++) {
       VALUE key = rb_ary_entry(keys, i);
       VALUE val = rb_hash_aref(obj, key);
-      scan_value_for_constants(key, const_locations);
-      scan_value_for_constants(val, const_locations);
+      scan_value_for_constants(key, const_locations, pd);
+      scan_value_for_constants(val, const_locations, pd);
     }
     break;
   }

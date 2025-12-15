@@ -10,6 +10,8 @@ require_relative "../ext/dd_test"
 
 require_relative "../git/local_repository"
 
+require_relative "../source_code/const_usage"
+
 require_relative "../utils/parsing"
 require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
@@ -135,6 +137,14 @@ module Datadog
 
           # cucumber's gherkin files are not covered by the code coverage collector
           ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
+
+          # enrich with static dependencies collected from iseqs
+          static_dependencies_map = {}
+          coverage.keys.each do |file|
+            dependencies = Datadog::CI::SourceCode::ConstUsage.fetch_dependencies(file)
+            static_dependencies_map.merge!(dependencies) if dependencies
+          end
+          coverage.merge!(static_dependencies_map)
 
           Telemetry.code_coverage_files(coverage.size)
 
@@ -316,6 +326,9 @@ module Datadog
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
           Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
+
+          # populate the map of the source code
+          Datadog::CI::SourceCode::ConstUsage.populate!(Git::LocalRepository.root, @bundle_location)
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
           Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")

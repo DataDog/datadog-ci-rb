@@ -12,11 +12,12 @@ module Datadog
           CONST_MAP_AVAILABLE = false
         end
 
-        def self.constants_used_in_file(file)
+        def self.fetch_dependencies(file)
           return nil unless CONST_MAP_AVAILABLE
+          return nil unless @file_to_const_map
           return nil if file.nil?
 
-          @file_to_const_map.fetch(file, [])
+          @file_to_const_map.fetch(file, {})
         end
 
         def self.usage_map

@@ -9,8 +9,6 @@ require_relative "app/model/dynamic_model"
 require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
 
-require_relative "../../lib/datadog/ci/source_code/const_usage"
-
 RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
   let(:ignored_path) { nil }
   let(:threading_mode) { :multi }
@@ -40,9 +38,6 @@ RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
       let(:root) { absolute_path("calculator") }
 
       it "collects code coverage including Calculator and operations" do
-        Datadog::CI::SourceCode::ConstUsage.populate!(root, ignored_path)
-        p Datadog::CI::SourceCode::ConstUsage.usage_map
-
         subject.start
 
         expect(calculator.add(1, 2)).to eq(3)
