@@ -8,4 +8,5 @@ void Init_datadog_ci_native(void) {
 
   // Utils::SourceCode
   Init_datadog_source_code();
+  Init_datadog_const_usage_map();
 }
