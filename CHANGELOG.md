@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [1.24.0] - 2025-12-15
+
+### Added
+* Create final status tag on test events ([#433][])
+
+### Changed
+* Add `branch` parameter to `/test-management/tests` request ([#436][])
+
+### Fixed
+* Fix an inheritance blind spot for Test Impact Analysis ([#440][])
+
 ## [1.23.3] - 2025-11-19
 
 ### Fixed
@@ -554,7 +565,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.3...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.24.0...main
+[1.24.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.3...v1.24.0
 [1.23.3]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.2...v1.23.3
 [1.23.2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.1...v1.23.2
 [1.23.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.0...v1.23.1
@@ -787,3 +799,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#418]: https://github.com/DataDog/datadog-ci-rb/issues/418
 [#425]: https://github.com/DataDog/datadog-ci-rb/issues/425
 [#430]: https://github.com/DataDog/datadog-ci-rb/issues/430
+[#433]: https://github.com/DataDog/datadog-ci-rb/issues/433
+[#436]: https://github.com/DataDog/datadog-ci-rb/issues/436
+[#440]: https://github.com/DataDog/datadog-ci-rb/issues/440
