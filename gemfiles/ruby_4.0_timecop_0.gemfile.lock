@@ -14,7 +14,7 @@ GIT
 PATH
   remote: ..
   specs:
-    datadog-ci (1.23.3)
+    datadog-ci (1.24.0)
       datadog (~> 2.4)
       drb
       msgpack
@@ -142,7 +142,7 @@ CHECKSUMS
   climate_control (1.2.0) sha256=36b21896193fa8c8536fa1cd843a07cf8ddbd03aaba43665e26c53ec1bd70aa5
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
   datadog (2.24.0)
-  datadog-ci (1.23.3)
+  datadog-ci (1.24.0)
   datadog-ruby_core_source (3.4.2) sha256=d770cf275807e69079461b32360fc92e49c684568dbb0704499eb4ee34a99170
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
   debug (1.11.0) sha256=1425db64cfa0130c952684e3dc974985be201dd62899bf4bbe3f8b5d6cf1aef2
