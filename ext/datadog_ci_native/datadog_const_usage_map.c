@@ -85,29 +85,85 @@ static VALUE resolve_const_to_file(VALUE const_name_str) {
   return filename;
 }
 
-// implementatuion
+// implementation
 
-struct os_each_iseq_data {
-  VALUE array; /* Array of RubyVM::InstructionSequence */
+struct populate_data {
+  VALUE self; /* Module to read @file_to_const_map from (GC-safe) */
+  const char *root_path;
+  long root_path_len;
+  const char *ignored_path;
+  long ignored_path_len;
 };
+
+/* Forward declaration */
+static void scan_value_for_constants(VALUE obj, VALUE const_locations);
+
+static void process_iseq(VALUE iseq, struct populate_data *pd) {
+  /* RubyVM::InstructionSequence#absolute_path
+     nil for eval'd code; we only care about real files. */
+  VALUE path = rb_funcall(iseq, id_absolute_path, 0);
+  if (NIL_P(path) || !RB_TYPE_P(path, T_STRING)) {
+    return;
+  }
+
+  /* Filter: only include files under root_path */
+  const char *path_ptr = RSTRING_PTR(path);
+  if (strncmp(pd->root_path, path_ptr, pd->root_path_len) != 0) {
+    return;
+  }
+
+  /* Filter: exclude files under ignored_path */
+  if (pd->ignored_path_len > 0 &&
+      strncmp(pd->ignored_path, path_ptr, pd->ignored_path_len) == 0) {
+    return;
+  }
+
+  /* RubyVM::InstructionSequence#to_a (SimpleDataFormat)
+     ["YARVInstructionSequence/SimpleDataFormat", major, minor, fmt_type,
+      misc, label, path, absolute_path, first_lineno, type, locals, args,
+      catch_table, body]
+     body is the last element.
+  */
+  VALUE arr = rb_funcall(iseq, id_to_a, 0);
+  if (TYPE(arr) != T_ARRAY)
+    return;
+  long len = RARRAY_LEN(arr);
+  if (len <= 0)
+    return;
+
+  VALUE body = rb_ary_entry(arr, len - 1);
+  if (TYPE(body) != T_ARRAY)
+    return;
+
+  /* Re-read from ivar to get GC-safe reference (compacting GC may move it) */
+  VALUE file_to_const_map = rb_ivar_get(pd->self, id_ivar_file_map);
+
+  /* Get or create const_locations hash for this file */
+  VALUE const_locations = rb_hash_aref(file_to_const_map, path);
+  if (NIL_P(const_locations)) {
+    const_locations = rb_hash_new();
+    rb_hash_aset(file_to_const_map, path, const_locations);
+  }
+
+  /* Scan this ISeq's body for constant references and resolve their
+     source locations */
+  scan_value_for_constants(body, const_locations);
+}
 
 static int os_each_iseq_cb(void *vstart, void *vend, size_t stride,
                            void *data) {
-  struct os_each_iseq_data *d = (struct os_each_iseq_data *)data;
-  VALUE array = d->array;
+  struct populate_data *pd = (struct populate_data *)data;
 
   VALUE v = (VALUE)vstart;
   for (; v != (VALUE)vend; v += stride) {
     if (imemo_iseq_p(v)) {
       VALUE iseq = rb_iseqw_new((void *)v);
-      rb_ary_push(array, iseq);
+      process_iseq(iseq, pd);
     }
   }
 
   return 0;
 }
-
-static void scan_value_for_constants(VALUE obj, VALUE const_locations);
 
 static void scan_value_for_constants(VALUE obj, VALUE const_locations) {
   switch (TYPE(obj)) {
@@ -217,81 +273,30 @@ static VALUE iseq_const_usage_populate(VALUE self, VALUE rb_root_path,
   if (!RB_TYPE_P(rb_root_path, T_STRING)) {
     rb_raise(rb_eArgError, "root_path must be a String");
   }
-  const char *root_path = RSTRING_PTR(rb_root_path);
-  long root_path_len = RSTRING_LEN(rb_root_path);
+
+  /* Setup populate_data struct with all context needed for callback */
+  struct populate_data pd;
+  pd.self = self; /* Store self to re-read ivar (GC-safe) */
+  pd.root_path = RSTRING_PTR(rb_root_path);
+  pd.root_path_len = RSTRING_LEN(rb_root_path);
 
   /* Extract ignored_path (can be nil) */
-  const char *ignored_path = NULL;
-  long ignored_path_len = 0;
+  pd.ignored_path = NULL;
+  pd.ignored_path_len = 0;
   if (RB_TYPE_P(rb_ignored_path, T_STRING)) {
-    ignored_path = RSTRING_PTR(rb_ignored_path);
-    ignored_path_len = RSTRING_LEN(rb_ignored_path);
+    pd.ignored_path = RSTRING_PTR(rb_ignored_path);
+    pd.ignored_path_len = RSTRING_LEN(rb_ignored_path);
   }
 
-  /* Reset map: @file_to_const_map = {} */
+  /* Reset map: @file_to_const_map = {} (stored as ivar, GC-rooted) */
   VALUE file_to_const_map = rb_hash_new();
   rb_ivar_set(self, id_ivar_file_map, file_to_const_map);
 
-  /* Collect all live ISeqs from the VM */
-  struct os_each_iseq_data d;
-  d.array = rb_ary_new();
-  rb_objspace_each_objects(os_each_iseq_cb, &d);
-  RB_GC_GUARD(d.array);
+  /* Walk all live ISeqs and process them directly */
+  rb_objspace_each_objects(os_each_iseq_cb, &pd);
 
-  long num_iseqs = RARRAY_LEN(d.array);
-
-  for (long i = 0; i < num_iseqs; i++) {
-    VALUE iseq = rb_ary_entry(d.array, i);
-
-    /* RubyVM::InstructionSequence#absolute_path
-       nil for eval'd code; we only care about real files. */
-    VALUE path = rb_funcall(iseq, id_absolute_path, 0);
-    if (NIL_P(path) || !RB_TYPE_P(path, T_STRING)) {
-      continue;
-    }
-
-    /* Filter: only include files under root_path */
-    const char *path_ptr = RSTRING_PTR(path);
-    if (strncmp(root_path, path_ptr, root_path_len) != 0) {
-      continue;
-    }
-
-    /* Filter: exclude files under ignored_path */
-    if (ignored_path_len > 0 &&
-        strncmp(ignored_path, path_ptr, ignored_path_len) == 0) {
-      continue;
-    }
-
-    /* RubyVM::InstructionSequence#to_a (SimpleDataFormat)
-       ["YARVInstructionSequence/SimpleDataFormat", major, minor, fmt_type,
-        misc, label, path, absolute_path, first_lineno, type, locals, args,
-        catch_table, body]
-       body is the last element.
-    */
-    VALUE arr = rb_funcall(iseq, id_to_a, 0);
-    if (TYPE(arr) != T_ARRAY)
-      continue;
-    long len = RARRAY_LEN(arr);
-    if (len <= 0)
-      continue;
-
-    VALUE body = rb_ary_entry(arr, len - 1);
-    if (TYPE(body) != T_ARRAY)
-      continue;
-
-    /* Get or create const_locations hash for this file */
-    VALUE const_locations = rb_hash_aref(file_to_const_map, path);
-    if (NIL_P(const_locations)) {
-      const_locations = rb_hash_new();
-      rb_hash_aset(file_to_const_map, path, const_locations);
-    }
-
-    /* Scan this ISeq's body for constant references and resolve their
-       source locations */
-    scan_value_for_constants(body, const_locations);
-  }
-
-  return file_to_const_map;
+  /* Re-read from ivar to return the (possibly moved) VALUE */
+  return rb_ivar_get(self, id_ivar_file_map);
 }
 
 void Init_datadog_const_usage_map(void) {
