@@ -77,6 +77,8 @@ module Datadog
 
         def populate_static_dependencies_map!: () -> void
 
+        def enrich_coverage_with_static_dependencies: (Hash[String, untyped] coverage) -> void
+
         def write: (Datadog::CI::TestOptimisation::Coverage::Event event) -> void
 
         def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void

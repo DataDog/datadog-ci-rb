@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+
+module Datadog
+  module CI
+    module SourceCode
+      module StaticDependencies
+        NATIVE_EXTENSION_AVAILABLE: bool
+
+        @dependencies_map: Hash[String, Hash[String, bool]]?
+
+        def self.fetch_static_dependencies: (String? file) -> Hash[String, bool]
+
+        def self.populate!: (String root_path, String? ignored_path) -> void
+      end
+    end
+  end
+end
+

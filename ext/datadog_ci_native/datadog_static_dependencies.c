@@ -7,7 +7,7 @@ static ID id_opt_getconstant_path;
 static ID id_keys;
 static ID id_to_a;
 static ID id_absolute_path;
-static ID id_ivar_file_map;
+static ID id_ivar_deps_map;
 static ID id_const_source_location;
 
 /* ---- Internal MRI functions -------------------- */
@@ -137,7 +137,7 @@ static void process_iseq(VALUE iseq, struct populate_data *pd) {
     return;
 
   /* Re-read from ivar to get GC-safe reference (compacting GC may move it) */
-  VALUE file_to_const_map = rb_ivar_get(pd->self, id_ivar_file_map);
+  VALUE file_to_const_map = rb_ivar_get(pd->self, id_ivar_deps_map);
 
   /* Get or create const_locations hash for this file */
   VALUE const_locations = rb_hash_aref(file_to_const_map, path);
@@ -268,7 +268,7 @@ static void scan_value_for_constants(VALUE obj, VALUE const_locations,
 
 /* ---- populate! implementation ------------------------------------------ */
 /*
- * ISeqConstUsage.populate!(root_path, ignored_path)
+ * StaticDependencies.populate!(root_path, ignored_path)
  *
  * Walk all live ISeqs, group by absolute_path, and for each file build
  * a set { file_path(String) => true } of source files where referenced
@@ -302,27 +302,29 @@ static VALUE iseq_const_usage_populate(VALUE self, VALUE rb_root_path,
   /* Extract ignored_path (can be nil) */
   pd.ignored_path = NULL;
   pd.ignored_path_len = 0;
-  if (RB_TYPE_P(rb_ignored_path, T_STRING)) {
+  if (rb_ignored_path != Qnil && RB_TYPE_P(rb_ignored_path, T_STRING) &&
+      RSTRING_LEN(rb_ignored_path) > 0) {
     pd.ignored_path = RSTRING_PTR(rb_ignored_path);
     pd.ignored_path_len = RSTRING_LEN(rb_ignored_path);
   }
 
   /* Reset map: @file_to_const_map = {} (stored as ivar, GC-rooted) */
   VALUE file_to_const_map = rb_hash_new();
-  rb_ivar_set(self, id_ivar_file_map, file_to_const_map);
+  rb_ivar_set(self, id_ivar_deps_map, file_to_const_map);
 
   /* Walk all live ISeqs and process them directly */
   rb_objspace_each_objects(os_each_iseq_cb, &pd);
 
   /* Re-read from ivar to return the (possibly moved) VALUE */
-  return rb_ivar_get(self, id_ivar_file_map);
+  return rb_ivar_get(self, id_ivar_deps_map);
 }
 
-void Init_datadog_const_usage_map(void) {
+void Init_datadog_static_dependencies_map(void) {
   VALUE mDatadog = rb_define_module("Datadog");
   VALUE mCI = rb_define_module_under(mDatadog, "CI");
   VALUE mSourceCode = rb_define_module_under(mCI, "SourceCode");
-  VALUE mConstUsage = rb_define_module_under(mSourceCode, "ConstUsage");
+  VALUE mStaticDependencies =
+      rb_define_module_under(mSourceCode, "StaticDependencies");
 
   id_getconstant = rb_intern("getconstant");
   id_opt_getconstant_path = rb_intern("opt_getconstant_path");
@@ -330,13 +332,13 @@ void Init_datadog_const_usage_map(void) {
   id_to_a = rb_intern("to_a");
   id_absolute_path = rb_intern("absolute_path");
   id_const_source_location = rb_intern("const_source_location");
-  id_ivar_file_map = rb_intern("@file_to_const_map");
+  id_ivar_deps_map = rb_intern("@dependencies_map");
 
-  /* Initialize @file_to_const_map = {} */
-  VALUE file_to_const_map = rb_hash_new();
-  rb_ivar_set(mConstUsage, id_ivar_file_map, file_to_const_map);
+  /* Initialize @dependencies_map = {} */
+  VALUE dependencies_map = rb_hash_new();
+  rb_ivar_set(mStaticDependencies, id_ivar_deps_map, dependencies_map);
 
   /* Ruby APIs */
-  rb_define_singleton_method(mConstUsage, "populate!",
+  rb_define_singleton_method(mStaticDependencies, "populate!",
                              iseq_const_usage_populate, 2);
 }

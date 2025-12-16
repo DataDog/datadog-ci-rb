@@ -10,7 +10,7 @@ require_relative "../ext/dd_test"
 
 require_relative "../git/local_repository"
 
-require_relative "../source_code/const_usage"
+require_relative "../source_code/static_dependencies"
 
 require_relative "../utils/parsing"
 require_relative "../utils/stateful"
@@ -139,20 +139,13 @@ module Datadog
             return
           end
 
+          # cucumber's gherkin files are not covered by the code coverage collector - we add them here explicitly
           test_source_file = test.source_file
-
-          # cucumber's gherkin files are not covered by the code coverage collector
           ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
 
-          # enrich with static dependencies collected from iseqs
-          if @static_dependencies_tracking_enabled
-            static_dependencies_map = {}
-            coverage.keys.each do |file|
-              dependencies = Datadog::CI::SourceCode::ConstUsage.fetch_dependencies(file)
-              static_dependencies_map.merge!(dependencies) if dependencies
-            end
-            coverage.merge!(static_dependencies_map)
-          end
+          # if we have static dependencies tracking enabled then we can make the coverage
+          # more precise by fetching which files we depend on based on constants usage
+          enrich_coverage_with_static_dependencies(coverage)
 
           Telemetry.code_coverage_files(coverage.size)
 
@@ -345,7 +338,19 @@ module Datadog
           return unless @code_coverage_enabled
           return unless @static_dependencies_tracking_enabled
 
-          Datadog::CI::SourceCode::ConstUsage.populate!(Git::LocalRepository.root, @bundle_location)
+          Datadog::CI::SourceCode::StaticDependencies.populate!(Git::LocalRepository.root, @bundle_location)
+        end
+
+        def enrich_coverage_with_static_dependencies(coverage)
+          return unless @static_dependencies_tracking_enabled
+
+          static_dependencies_map = {}
+          coverage.keys.each do |file|
+            static_dependencies_map.merge!(
+              Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
+            )
+          end
+          coverage.merge!(static_dependencies_map)
         end
 
         def ensure_test_source_covered(test_source_file, coverage)
