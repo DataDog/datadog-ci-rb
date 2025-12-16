@@ -1,6 +1,8 @@
 #include <ruby.h>
 #include <stdbool.h>
 
+#include "datadog_common.h"
+
 /* ---- IDs / ivar names --------------------------------------------------- */
 static ID id_getconstant;
 static ID id_opt_getconstant_path;
@@ -8,7 +10,6 @@ static ID id_keys;
 static ID id_to_a;
 static ID id_absolute_path;
 static ID id_ivar_deps_map;
-static ID id_const_source_location;
 
 /* ---- Internal MRI functions -------------------- */
 /* These are declared in Ruby's internal headers; we just prototype them.   */
@@ -27,7 +28,6 @@ void rb_objspace_each_objects(int (*callback)(void *start, void *end,
 #define IMEMO_MASK 0x0f
 
 static int imemo_type(VALUE imemo) {
-  /* Same bit pattern dd-trace relies on; see their ruby_helpers.c. */
   return (RBASIC(imemo)->flags >> FL_USHIFT) & IMEMO_MASK;
 }
 
@@ -41,37 +41,22 @@ static bool imemo_iseq_p(VALUE v) {
   return true;
 }
 
-/* ---- Safe exception handling -------------------------------------------- */
+// implementation
+struct populate_data {
+  VALUE self; /* Module to read @file_to_const_map from (GC-safe) */
+  const char *root_path;
+  long root_path_len;
+  const char *ignored_path;
+  long ignored_path_len;
+};
 
-// Equivalent to Ruby "begin/rescue nil" call, where we call a C function and
-// swallow the exception if it occurs - const_source_location often fails with
-// exceptions for classes that are defined in C or for anonymous classes.
-static VALUE rescue_nil(VALUE (*function_to_call_safely)(VALUE),
-                        VALUE function_to_call_safely_arg) {
-  int exception_state;
-  // rb_protect sets exception_state to non-zero if an exception occurs
-  VALUE result = rb_protect(function_to_call_safely,
-                            function_to_call_safely_arg, &exception_state);
-  if (exception_state != 0) {
-    rb_set_errinfo(Qnil); // Clear the exception
-    return Qnil;
-  }
-  return result;
-}
-
-// Get source location for a given constant name string
-static VALUE get_const_source_location(VALUE const_name_str) {
-  return rb_funcall(rb_cObject, id_const_source_location, 1, const_name_str);
-}
-
-// Get source location for a given constant name and swallow any exceptions
-static VALUE safely_get_const_source_location(VALUE const_name_str) {
-  return rescue_nil(get_const_source_location, const_name_str);
-}
+/* Forward declaration */
+static void scan_value_for_constants(VALUE obj, VALUE const_locations,
+                                     struct populate_data *pd);
 
 // Resolve constant name to its source file path, returns Qnil if not found
 static VALUE resolve_const_to_file(VALUE const_name_str) {
-  VALUE source_location = safely_get_const_source_location(const_name_str);
+  VALUE source_location = dd_safely_get_const_source_location(const_name_str);
   if (NIL_P(source_location) || !RB_TYPE_P(source_location, T_ARRAY) ||
       RARRAY_LEN(source_location) == 0) {
     return Qnil;
@@ -84,20 +69,6 @@ static VALUE resolve_const_to_file(VALUE const_name_str) {
 
   return filename;
 }
-
-// implementation
-
-struct populate_data {
-  VALUE self; /* Module to read @file_to_const_map from (GC-safe) */
-  const char *root_path;
-  long root_path_len;
-  const char *ignored_path;
-  long ignored_path_len;
-};
-
-/* Forward declaration */
-static void scan_value_for_constants(VALUE obj, VALUE const_locations,
-                                     struct populate_data *pd);
 
 static void process_iseq(VALUE iseq, struct populate_data *pd) {
   /* RubyVM::InstructionSequence#absolute_path
@@ -331,7 +302,6 @@ void Init_datadog_static_dependencies_map(void) {
   id_keys = rb_intern("keys");
   id_to_a = rb_intern("to_a");
   id_absolute_path = rb_intern("absolute_path");
-  id_const_source_location = rb_intern("const_source_location");
   id_ivar_deps_map = rb_intern("@dependencies_map");
 
   /* Initialize @dependencies_map = {} */
