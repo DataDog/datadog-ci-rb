@@ -26,22 +26,6 @@ struct populate_data {
 static void scan_value_for_constants(VALUE obj, VALUE const_locations,
                                      struct populate_data *pd);
 
-// Resolve constant name to its source file path, returns Qnil if not found
-static VALUE resolve_const_to_file(VALUE const_name_str) {
-  VALUE source_location = dd_safely_get_const_source_location(const_name_str);
-  if (NIL_P(source_location) || !RB_TYPE_P(source_location, T_ARRAY) ||
-      RARRAY_LEN(source_location) == 0) {
-    return Qnil;
-  }
-
-  VALUE filename = RARRAY_AREF(source_location, 0);
-  if (NIL_P(filename) || !RB_TYPE_P(filename, T_STRING)) {
-    return Qnil;
-  }
-
-  return filename;
-}
-
 static void process_iseq(VALUE iseq, struct populate_data *pd) {
   /* RubyVM::InstructionSequence#absolute_path
      nil for eval'd code; we only care about real files. */
@@ -79,7 +63,6 @@ static void process_iseq(VALUE iseq, struct populate_data *pd) {
   if (TYPE(body) != T_ARRAY)
     return;
 
-  /* Re-read from ivar to get GC-safe reference (compacting GC may move it) */
   VALUE file_to_const_map = rb_ivar_get(pd->self, id_ivar_deps_map);
 
   /* Get or create const_locations hash for this file */
@@ -140,7 +123,7 @@ static void scan_value_for_constants(VALUE obj, VALUE const_locations,
         if (SYMBOL_P(const_name)) {
           /* Convert symbol to string and resolve location */
           VALUE const_name_str = rb_sym2str(const_name);
-          VALUE file_path = resolve_const_to_file(const_name_str);
+          VALUE file_path = dd_resolve_const_to_file(const_name_str);
           if (!NIL_P(file_path) &&
               is_path_included(RSTRING_PTR(file_path), pd)) {
             rb_hash_aset(const_locations, file_path, Qtrue);
@@ -171,7 +154,7 @@ static void scan_value_for_constants(VALUE obj, VALUE const_locations,
             }
             /* Resolve the constant to its source file */
             if (RSTRING_LEN(const_name_str) > 0) {
-              VALUE file_path = resolve_const_to_file(const_name_str);
+              VALUE file_path = dd_resolve_const_to_file(const_name_str);
               if (!NIL_P(file_path) &&
                   is_path_included(RSTRING_PTR(file_path), pd)) {
                 rb_hash_aset(const_locations, file_path, Qtrue);

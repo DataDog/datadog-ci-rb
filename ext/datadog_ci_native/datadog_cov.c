@@ -201,14 +201,8 @@ static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
     return false;
   }
 
-  VALUE source_location = dd_safely_get_const_source_location(klass_name);
-  if (source_location == Qnil || !RB_TYPE_P(source_location, T_ARRAY) ||
-      RARRAY_LEN(source_location) == 0) {
-    return false;
-  }
-
-  VALUE filename = RARRAY_AREF(source_location, 0);
-  if (filename == Qnil || !RB_TYPE_P(filename, T_STRING)) {
+  VALUE filename = dd_resolve_const_to_file(klass_name);
+  if (filename == Qnil) {
     return false;
   }
 

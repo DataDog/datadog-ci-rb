@@ -33,4 +33,11 @@ VALUE dd_get_const_source_location(VALUE const_name_str);
  */
 VALUE dd_safely_get_const_source_location(VALUE const_name_str);
 
+/**
+ * Resolve a constant name to its source file path.
+ * Returns the filename (String) where the constant is defined, or Qnil if not
+ * found.
+ */
+VALUE dd_resolve_const_to_file(VALUE const_name_str);
+
 #endif /* DATADOG_COMMON_H */
