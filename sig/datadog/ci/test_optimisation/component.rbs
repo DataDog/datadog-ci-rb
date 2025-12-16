@@ -21,6 +21,7 @@ module Datadog
         @bundle_location: String?
         @use_single_threaded_coverage: bool
         @use_allocation_tracing: bool
+        @static_dependencies_tracking_enabled: bool
 
         @mutex: Thread::Mutex
 
@@ -31,7 +32,7 @@ module Datadog
         attr_reader test_skipping_enabled: bool
         attr_reader skippable_tests_fetch_error: String?
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 
@@ -73,6 +74,8 @@ module Datadog
         def coverage_collector: () -> Datadog::CI::TestOptimisation::Coverage::DDCov?
 
         def load_datadog_cov!: () -> void
+
+        def populate_static_dependencies_map!: () -> void
 
         def write: (Datadog::CI::TestOptimisation::Coverage::Event event) -> void
 

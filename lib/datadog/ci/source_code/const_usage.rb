@@ -19,10 +19,6 @@ module Datadog
 
           @file_to_const_map.fetch(file, {})
         end
-
-        def self.usage_map
-          @file_to_const_map
-        end
       end
     end
   end

@@ -981,6 +981,47 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             .to("/tmp/test_discovery.json")
         end
       end
+
+      describe "#tia_static_dependencies_tracking_enabled" do
+        subject(:tia_static_dependencies_tracking_enabled) { settings.ci.tia_static_dependencies_tracking_enabled }
+
+        it { is_expected.to be false }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_TIA_STATIC_DEPENDENCIES_TRACKING_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_TIA_STATIC_DEPENDENCIES_TRACKING_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be false }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#tia_static_dependencies_tracking_enabled=" do
+        it "updates the #tia_static_dependencies_tracking_enabled setting" do
+          expect { settings.ci.tia_static_dependencies_tracking_enabled = true }
+            .to change { settings.ci.tia_static_dependencies_tracking_enabled }
+            .from(false)
+            .to(true)
+        end
+      end
     end
   end
 end

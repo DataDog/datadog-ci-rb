@@ -192,7 +192,8 @@ module Datadog
             enabled: settings.ci.enabled && settings.ci.itr_enabled,
             bundle_location: settings.ci.itr_code_coverage_excluded_bundle_path,
             use_single_threaded_coverage: settings.ci.itr_code_coverage_use_single_threaded_mode,
-            use_allocation_tracing: settings.ci.itr_test_impact_analysis_use_allocation_tracing
+            use_allocation_tracing: settings.ci.itr_test_impact_analysis_use_allocation_tracing,
+            static_dependencies_tracking_enabled: settings.ci.tia_static_dependencies_tracking_enabled
           )
         end
 

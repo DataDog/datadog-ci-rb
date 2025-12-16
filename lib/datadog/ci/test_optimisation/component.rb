@@ -42,7 +42,8 @@ module Datadog
           enabled: false,
           bundle_location: nil,
           use_single_threaded_coverage: false,
-          use_allocation_tracing: true
+          use_allocation_tracing: true,
+          static_dependencies_tracking_enabled: false
         )
           @enabled = enabled
           @api = api
@@ -56,6 +57,7 @@ module Datadog
           end
           @use_single_threaded_coverage = use_single_threaded_coverage
           @use_allocation_tracing = use_allocation_tracing
+          @static_dependencies_tracking_enabled = static_dependencies_tracking_enabled
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false
@@ -84,7 +86,11 @@ module Datadog
           # we skip tests, not suites
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
 
-          load_datadog_cov! if @code_coverage_enabled
+          if @code_coverage_enabled
+            load_datadog_cov!
+
+            populate_static_dependencies_map!
+          end
 
           # Load component state first, and if successful, skip fetching skippable tests
           # Also try to restore from DDTest cache if available
@@ -139,12 +145,14 @@ module Datadog
           ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
 
           # enrich with static dependencies collected from iseqs
-          static_dependencies_map = {}
-          coverage.keys.each do |file|
-            dependencies = Datadog::CI::SourceCode::ConstUsage.fetch_dependencies(file)
-            static_dependencies_map.merge!(dependencies) if dependencies
+          if @static_dependencies_tracking_enabled
+            static_dependencies_map = {}
+            coverage.keys.each do |file|
+              dependencies = Datadog::CI::SourceCode::ConstUsage.fetch_dependencies(file)
+              static_dependencies_map.merge!(dependencies) if dependencies
+            end
+            coverage.merge!(static_dependencies_map)
           end
-          coverage.merge!(static_dependencies_map)
 
           Telemetry.code_coverage_files(coverage.size)
 
@@ -326,14 +334,18 @@ module Datadog
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
           Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
-
-          # populate the map of the source code
-          Datadog::CI::SourceCode::ConstUsage.populate!(Git::LocalRepository.root, @bundle_location)
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
           Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")
 
           @code_coverage_enabled = false
+        end
+
+        def populate_static_dependencies_map!
+          return unless @code_coverage_enabled
+          return unless @static_dependencies_tracking_enabled
+
+          Datadog::CI::SourceCode::ConstUsage.populate!(Git::LocalRepository.root, @bundle_location)
         end
 
         def ensure_test_source_covered(test_source_file, coverage)
