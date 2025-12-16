@@ -2,6 +2,8 @@
 #include <stdbool.h>
 
 #include "datadog_common.h"
+#include "imemo_helpers.h"
+#include "ruby_internal.h"
 
 /* ---- IDs / ivar names --------------------------------------------------- */
 static ID id_getconstant;
@@ -10,36 +12,6 @@ static ID id_keys;
 static ID id_to_a;
 static ID id_absolute_path;
 static ID id_ivar_deps_map;
-
-/* ---- Internal MRI functions -------------------- */
-/* These are declared in Ruby's internal headers; we just prototype them.   */
-/* The linker will resolve them from libruby.                               */
-
-VALUE rb_iseqw_new(const void *iseq); /* wrap internal iseq pointer as
-                                         RubyVM::InstructionSequence */
-int rb_objspace_internal_object_p(VALUE obj);
-void rb_objspace_each_objects(int (*callback)(void *start, void *end,
-                                              size_t stride, void *data),
-                              void *data);
-
-/* ---- IMEMO constants and helpers ------------------------ */
-
-#define IMEMO_TYPE_ISEQ 7
-#define IMEMO_MASK 0x0f
-
-static int imemo_type(VALUE imemo) {
-  return (RBASIC(imemo)->flags >> FL_USHIFT) & IMEMO_MASK;
-}
-
-static bool imemo_iseq_p(VALUE v) {
-  if (!rb_objspace_internal_object_p(v))
-    return false;
-  if (!RB_TYPE_P(v, T_IMEMO))
-    return false;
-  if (imemo_type(v) != IMEMO_TYPE_ISEQ)
-    return false;
-  return true;
-}
 
 // implementation
 struct populate_data {
@@ -128,7 +100,7 @@ static int os_each_iseq_cb(void *vstart, void *vend, size_t stride,
 
   VALUE v = (VALUE)vstart;
   for (; v != (VALUE)vend; v += stride) {
-    if (imemo_iseq_p(v)) {
+    if (dd_imemo_iseq_p(v)) {
       VALUE iseq = rb_iseqw_new((void *)v);
       process_iseq(iseq, pd);
     }
