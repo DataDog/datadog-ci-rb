@@ -4,6 +4,8 @@
 
 #include <stdbool.h>
 
+#include "datadog_common.h"
+
 // This is a native extension that collects a list of Ruby files that were
 // executed during the test run. It is used to optimize the test suite by
 // running only the tests that are affected by the changes.
@@ -15,35 +17,6 @@ enum threading_mode { single, multi };
 
 // functions declarations
 static void on_newobj_event(VALUE tracepoint_data, void *data);
-
-// utility functions
-static char *ruby_strndup(const char *str, size_t size) {
-  char *dup;
-
-  dup = xmalloc(size + 1);
-  memcpy(dup, str, size);
-  dup[size] = '\0';
-
-  return dup;
-}
-
-// Equivalent to Ruby "begin/rescue nil" call, where we call a C function and
-// swallow the exception if it occurs - const_source_location often fails with
-// exceptions for classes that are defined in C or for anonymous classes.
-static VALUE rescue_nil(VALUE (*function_to_call_safely)(VALUE),
-                        VALUE function_to_call_safely_arg) {
-  int exception_state;
-  // rb_protect sets exception_state to non-zero if an exception occurs
-  // see
-  // https://github.com/ruby/ruby/blob/3219ecf4f659908674f534491d8934ba54e1143d/include/ruby/internal/intern/proc.h#L349
-  VALUE result = rb_protect(function_to_call_safely,
-                            function_to_call_safely_arg, &exception_state);
-  if (exception_state != 0) {
-    return Qnil;
-  }
-
-  return result;
-}
 
 static int mark_key_for_gc_i(st_data_t key, st_data_t _value, st_data_t _data) {
   VALUE klass = (VALUE)key;
@@ -211,25 +184,14 @@ static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
   record_impacted_file(dd_cov_data, filename);
 }
 
-// Get source location for a given class name
-static VALUE get_source_location(VALUE klass_name) {
-  return rb_funcall(rb_cObject, rb_intern("const_source_location"), 1,
-                    klass_name);
-}
-
-// Get source location for a given class name and swallow any exceptions
-static VALUE safely_get_source_location(VALUE klass_name) {
-  return rescue_nil(get_source_location, klass_name);
-}
-
 // Safely get class name, returns Qnil on any error
 static VALUE safely_get_class_name(VALUE klass) {
-  return rescue_nil(rb_class_name, klass);
+  return dd_rescue_nil(rb_class_name, klass);
 }
 
 // Safely get module ancestors, returns Qnil on any error
 static VALUE safely_get_mod_ancestors(VALUE klass) {
-  return rescue_nil(rb_mod_ancestors, klass);
+  return dd_rescue_nil(rb_mod_ancestors, klass);
 }
 
 static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
@@ -239,7 +201,7 @@ static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
     return false;
   }
 
-  VALUE source_location = safely_get_source_location(klass_name);
+  VALUE source_location = dd_safely_get_const_source_location(klass_name);
   if (source_location == Qnil || !RB_TYPE_P(source_location, T_ARRAY) ||
       RARRAY_LEN(source_location) == 0) {
     return false;
@@ -349,12 +311,13 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
 
   dd_cov_data->threading_mode = threading_mode;
   dd_cov_data->root_len = RSTRING_LEN(rb_root);
-  dd_cov_data->root = ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
+  dd_cov_data->root =
+      dd_ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
 
   if (RTEST(rb_ignored_path)) {
     dd_cov_data->ignored_path_len = RSTRING_LEN(rb_ignored_path);
-    dd_cov_data->ignored_path = ruby_strndup(RSTRING_PTR(rb_ignored_path),
-                                             dd_cov_data->ignored_path_len);
+    dd_cov_data->ignored_path = dd_ruby_strndup(RSTRING_PTR(rb_ignored_path),
+                                                dd_cov_data->ignored_path_len);
   }
 
   if (rb_allocation_tracing_enabled == Qtrue) {
