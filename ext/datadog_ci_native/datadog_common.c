@@ -32,3 +32,18 @@ VALUE dd_get_const_source_location(VALUE const_name_str) {
 VALUE dd_safely_get_const_source_location(VALUE const_name_str) {
   return dd_rescue_nil(dd_get_const_source_location, const_name_str);
 }
+
+VALUE dd_resolve_const_to_file(VALUE const_name_str) {
+  VALUE source_location = dd_safely_get_const_source_location(const_name_str);
+  if (NIL_P(source_location) || !RB_TYPE_P(source_location, T_ARRAY) ||
+      RARRAY_LEN(source_location) == 0) {
+    return Qnil;
+  }
+
+  VALUE filename = RARRAY_AREF(source_location, 0);
+  if (NIL_P(filename) || !RB_TYPE_P(filename, T_STRING)) {
+    return Qnil;
+  }
+
+  return filename;
+}
