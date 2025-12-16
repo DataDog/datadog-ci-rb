@@ -295,7 +295,7 @@ static VALUE iseq_const_usage_populate(VALUE self, VALUE rb_root_path,
 
   /* Setup populate_data struct with all context needed for callback */
   struct populate_data pd;
-  pd.self = self; /* Store self to re-read ivar (GC-safe) */
+  pd.self = self;
   pd.root_path = RSTRING_PTR(rb_root_path);
   pd.root_path_len = RSTRING_LEN(rb_root_path);
 

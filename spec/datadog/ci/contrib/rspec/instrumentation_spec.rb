@@ -2,6 +2,8 @@ require "time"
 require "stringio"
 require "ostruct"
 
+require_relative "some_constants"
+
 RSpec.describe "RSpec instrumentation" do
   let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
   let(:before_all_spy) { spy(:before_all, call: nil) }
@@ -60,7 +62,7 @@ RSpec.describe "RSpec instrumentation" do
           let(:let_value) { current_let_value += 1 }
 
           it "foo", test_meta do
-            expect(1 + 1).to eq(2)
+            expect(41 + 1).to eq(Constants::MY_CONSTANT)
           end
 
           if with_failed_test
@@ -190,8 +192,8 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "162")
-      expect(first_test_span).to have_test_tag(:source_end, "164") unless PlatformHelpers.jruby?
+      expect(first_test_span).to have_test_tag(:source_start, "164")
+      expect(first_test_span).to have_test_tag(:source_end, "166") unless PlatformHelpers.jruby?
 
       expect(first_test_span).to have_test_tag(
         :codeowners,
@@ -623,7 +625,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "50")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "52")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -792,8 +794,7 @@ RSpec.describe "RSpec instrumentation" do
       shared_context_coverage = find_coverage_for_test(shared_context_test)
 
       expect(shared_context_coverage.coverage).to eq({
-        File.join(__dir__, "some_shared_context.rb") => true,
-        File.join(__dir__, "some_constants.rb") => true
+        File.join(__dir__, "some_shared_context.rb") => true
       })
     end
   end

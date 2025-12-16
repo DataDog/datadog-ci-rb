@@ -46,6 +46,7 @@ RSpec.describe "Minitest instrumentation" do
       let(:itr_enabled) { true }
       let(:code_coverage_enabled) { true }
       let(:tests_skipping_enabled) { true }
+      let(:static_dependencies_tracking_enabled) { true }
     end
 
     before do
@@ -89,8 +90,8 @@ RSpec.describe "Minitest instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(:source_start, "62")
-      expect(span).to have_test_tag(:source_end, "63") unless PlatformHelpers.jruby?
+      expect(span).to have_test_tag(:source_start, "63")
+      expect(span).to have_test_tag(:source_end, "64") unless PlatformHelpers.jruby?
 
       expect(span).to have_test_tag(
         :codeowners,
@@ -495,7 +496,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "422")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "423")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -541,6 +542,7 @@ RSpec.describe "Minitest instrumentation" do
           test_span = test_spans.find { |span| span.get_tag("test.name") == "test_pass_other" }
           cov_event = find_coverage_for_test(test_span)
           expect(cov_event.coverage.keys).to include(absolute_path("helpers/addition_helper.rb"))
+          expect(cov_event.coverage.keys).to include(absolute_path("helpers/constants.rb"))
           expect(cov_event.coverage.keys).to include(absolute_path("helpers/simple_model.rb"))
         end
 
@@ -1652,7 +1654,7 @@ RSpec.describe "Minitest instrumentation" do
       end
       let(:changed_files) do
         Set.new([
-          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1667:1667"
+          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1669:1669"
         ])
       end
     end

@@ -168,6 +168,12 @@ module Datadog
                 o.env CI::Ext::Settings::ENV_TEST_DISCOVERY_OUTPUT_PATH
               end
 
+              option :tia_static_dependencies_tracking_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_TIA_STATIC_DEPENDENCIES_TRACKING_ENABLED
+                o.default false
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
