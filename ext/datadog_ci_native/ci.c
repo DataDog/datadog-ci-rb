@@ -1,6 +1,6 @@
-#include "datadog_const_usage_map.h"
 #include "datadog_cov.h"
 #include "datadog_source_code.h"
+#include "datadog_static_dependencies.h"
 
 void Init_datadog_ci_native(void) {
   // Coverage::DDCov
@@ -8,5 +8,5 @@ void Init_datadog_ci_native(void) {
 
   // Utils::SourceCode
   Init_datadog_source_code();
-  Init_datadog_const_usage_map();
+  Init_datadog_static_dependencies_map();
 }
