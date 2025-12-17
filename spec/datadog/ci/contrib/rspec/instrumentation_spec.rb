@@ -770,6 +770,7 @@ RSpec.describe "RSpec instrumentation" do
 
       let(:itr_enabled) { true }
       let(:code_coverage_enabled) { true }
+      let(:static_dependencies_tracking_enabled) { true }
     end
 
     it "collects code coverage" do
@@ -789,13 +790,19 @@ RSpec.describe "RSpec instrumentation" do
       expect_non_empty_coverages
 
       # collects coverage from shared context files
-      # and from constants used in the shared context
       shared_context_test = test_spans.find { |span| span.name == "nested is 42" }
       shared_context_coverage = find_coverage_for_test(shared_context_test)
 
-      expect(shared_context_coverage.coverage).to eq({
-        File.join(__dir__, "some_shared_context.rb") => true
-      })
+      if Datadog::CI::SourceCode::StaticDependencies::STATIC_DEPENDENCIES_AVAILABLE
+        expect(shared_context_coverage.coverage).to eq({
+          File.join(__dir__, "some_shared_context.rb") => true,
+          File.join(__dir__, "some_constants.rb") => true
+        })
+      else
+        expect(shared_context_coverage.coverage).to eq({
+          File.join(__dir__, "some_shared_context.rb") => true
+        })
+      end
     end
   end
 
