@@ -2,8 +2,6 @@
 #include <ruby.h>
 #include <string.h>
 
-/* ---- Path filtering ----------------------------------------------------- */
-
 bool dd_ci_is_path_included(const char *path, const char *root_path,
                             long root_path_len, const char *ignored_path,
                             long ignored_path_len) {
@@ -16,8 +14,6 @@ bool dd_ci_is_path_included(const char *path, const char *root_path,
   }
   return true;
 }
-
-/* ---- Utility functions -------------------------------------------------- */
 
 char *dd_ci_ruby_strndup(const char *str, size_t size) {
   char *dup;
