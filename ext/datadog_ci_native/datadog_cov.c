@@ -186,12 +186,12 @@ static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
 
 // Safely get class name, returns Qnil on any error
 static VALUE safely_get_class_name(VALUE klass) {
-  return dd_rescue_nil(rb_class_name, klass);
+  return dd_ci_rescue_nil(rb_class_name, klass);
 }
 
 // Safely get module ancestors, returns Qnil on any error
 static VALUE safely_get_mod_ancestors(VALUE klass) {
-  return dd_rescue_nil(rb_mod_ancestors, klass);
+  return dd_ci_rescue_nil(rb_mod_ancestors, klass);
 }
 
 static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
@@ -201,7 +201,7 @@ static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
     return false;
   }
 
-  VALUE filename = dd_resolve_const_to_file(klass_name);
+  VALUE filename = dd_ci_resolve_const_to_file(klass_name);
   if (filename == Qnil) {
     return false;
   }
@@ -306,11 +306,11 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
   dd_cov_data->threading_mode = threading_mode;
   dd_cov_data->root_len = RSTRING_LEN(rb_root);
   dd_cov_data->root =
-      dd_ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
+      dd_ci_ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
 
   if (RTEST(rb_ignored_path)) {
     dd_cov_data->ignored_path_len = RSTRING_LEN(rb_ignored_path);
-    dd_cov_data->ignored_path = dd_ruby_strndup(RSTRING_PTR(rb_ignored_path),
+    dd_cov_data->ignored_path = dd_ci_ruby_strndup(RSTRING_PTR(rb_ignored_path),
                                                 dd_cov_data->ignored_path_len);
   }
 

@@ -45,7 +45,7 @@ static bool is_path_included(const char *file_path_ptr,
  */
 static void resolve_and_store_constant(VALUE const_name_str, VALUE deps_hash,
                                        struct populate_data *pd) {
-  VALUE file_path = dd_resolve_const_to_file(const_name_str);
+  VALUE file_path = dd_ci_resolve_const_to_file(const_name_str);
   if (NIL_P(file_path)) {
     return;
   }
@@ -275,7 +275,7 @@ static int os_each_iseq_cb(void *vstart, void *vend, size_t stride,
   struct populate_data *pd = (struct populate_data *)data;
 
   for (VALUE v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-    if (dd_imemo_iseq_p(v)) {
+    if (dd_ci_imemo_iseq_p(v)) {
       VALUE iseq = rb_iseqw_new((void *)v);
       process_iseq(iseq, pd);
     }
