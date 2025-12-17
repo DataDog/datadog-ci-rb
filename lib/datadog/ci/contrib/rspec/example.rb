@@ -2,7 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
-require_relative "../../utils/source_code"
+require_relative "../../source_code/method_inspect"
 require_relative "../../utils/test_run"
 require_relative "../instrumentation"
 require_relative "ext"
@@ -36,7 +36,7 @@ module Datadog
                 CI::Ext::Test::TAG_PARAMETERS => datadog_test_parameters
               }
 
-              end_line = Utils::SourceCode.last_line(@example_block)
+              end_line = SourceCode::MethodInspect.last_line(@example_block)
               tags[CI::Ext::Test::TAG_SOURCE_END] = end_line.to_s if end_line
 
               test_retries_component.with_retries do

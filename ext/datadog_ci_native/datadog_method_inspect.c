@@ -11,12 +11,12 @@ static VALUE last_line_from_iseq(VALUE self, VALUE iseqw) {
   return INT2NUM(line);
 }
 
-void Init_datadog_source_code(void) {
+void Init_datadog_method_inspect(void) {
   VALUE mDatadog = rb_define_module("Datadog");
   VALUE mCI = rb_define_module_under(mDatadog, "CI");
-  VALUE mUtils = rb_define_module_under(mCI, "Utils");
-  VALUE mSourceCode = rb_define_module_under(mUtils, "SourceCode");
+  VALUE mSourceCode = rb_define_module_under(mCI, "SourceCode");
+  VALUE mMethodInspect = rb_define_module_under(mSourceCode, "MethodInspect");
 
-  rb_define_singleton_method(mSourceCode, "_native_last_line_from_iseq",
+  rb_define_singleton_method(mMethodInspect, "_native_last_line_from_iseq",
                              last_line_from_iseq, 1);
 }

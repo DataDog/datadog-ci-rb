@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "../../../../lib/datadog/ci/utils/source_code"
+require_relative "../../../../lib/datadog/ci/source_code/method_inspect"
 require "spec_helper"
 
-RSpec.describe Datadog::CI::Utils::SourceCode do
+RSpec.describe Datadog::CI::SourceCode::MethodInspect do
   let(:dummy_class) do
     Class.new do
       def foo
@@ -26,7 +26,7 @@ RSpec.describe Datadog::CI::Utils::SourceCode do
       before { skip if PlatformHelpers.jruby? }
 
       before do
-        stub_const("Datadog::CI::Utils::SourceCode::LAST_LINE_AVAILABLE", true)
+        stub_const("Datadog::CI::SourceCode::MethodInspect::LAST_LINE_AVAILABLE", true)
       end
 
       context "with a method" do
@@ -54,7 +54,7 @@ RSpec.describe Datadog::CI::Utils::SourceCode do
 
     context "when LAST_LINE_AVAILABLE is false" do
       before do
-        stub_const("Datadog::CI::Utils::SourceCode::LAST_LINE_AVAILABLE", false)
+        stub_const("Datadog::CI::SourceCode::MethodInspect::LAST_LINE_AVAILABLE", false)
       end
 
       let(:target) { foo_proc }
