@@ -15,7 +15,7 @@ static ID id_ivar_deps_map;
 
 // implementation
 struct populate_data {
-  VALUE self; /* Module to read @file_to_const_map from (GC-safe) */
+  VALUE deps_map;
   const char *root_path;
   long root_path_len;
   const char *ignored_path;
@@ -63,13 +63,11 @@ static void process_iseq(VALUE iseq, struct populate_data *pd) {
   if (TYPE(body) != T_ARRAY)
     return;
 
-  VALUE file_to_const_map = rb_ivar_get(pd->self, id_ivar_deps_map);
-
   /* Get or create const_locations hash for this file */
-  VALUE const_locations = rb_hash_aref(file_to_const_map, path);
+  VALUE const_locations = rb_hash_aref(pd->deps_map, path);
   if (NIL_P(const_locations)) {
     const_locations = rb_hash_new();
-    rb_hash_aset(file_to_const_map, path, const_locations);
+    rb_hash_aset(pd->deps_map, path, const_locations);
   }
 
   /* Scan this ISeq's body for constant references and resolve their
@@ -219,9 +217,13 @@ static VALUE iseq_const_usage_populate(VALUE self, VALUE rb_root_path,
     rb_raise(rb_eArgError, "root_path must be a String");
   }
 
+  /* Reset map: @dependencies_map = {} (stored as ivar, GC-rooted) */
+  VALUE deps_map = rb_hash_new();
+  rb_ivar_set(self, id_ivar_deps_map, deps_map);
+
   /* Setup populate_data struct with all context needed for callback */
   struct populate_data pd;
-  pd.self = self;
+  pd.deps_map = deps_map;
   pd.root_path = RSTRING_PTR(rb_root_path);
   pd.root_path_len = RSTRING_LEN(rb_root_path);
 
@@ -234,15 +236,10 @@ static VALUE iseq_const_usage_populate(VALUE self, VALUE rb_root_path,
     pd.ignored_path_len = RSTRING_LEN(rb_ignored_path);
   }
 
-  /* Reset map: @file_to_const_map = {} (stored as ivar, GC-rooted) */
-  VALUE file_to_const_map = rb_hash_new();
-  rb_ivar_set(self, id_ivar_deps_map, file_to_const_map);
-
   /* Walk all live ISeqs and process them directly */
   rb_objspace_each_objects(os_each_iseq_cb, &pd);
 
-  /* Re-read from ivar to return the (possibly moved) VALUE */
-  return rb_ivar_get(self, id_ivar_deps_map);
+  return deps_map;
 }
 
 void Init_datadog_static_dependencies_map(void) {
