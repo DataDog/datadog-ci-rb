@@ -131,18 +131,9 @@ static VALUE dd_cov_allocate(VALUE klass) {
 // not in the ignored folder) and adds it to the impacted_files hash.
 static bool record_impacted_file(struct dd_cov_data *dd_cov_data,
                                  VALUE filename) {
-  char *filename_ptr = RSTRING_PTR(filename);
-  // if the current filename is not located under the root, we skip it
-  if (strncmp(dd_cov_data->root, filename_ptr, dd_cov_data->root_len) != 0) {
-    return false;
-  }
-
-  // if ignored_path is provided and the current filename is located under the
-  // ignored_path, we skip it too this is useful for ignoring bundled gems
-  // location
-  if (dd_cov_data->ignored_path_len != 0 &&
-      strncmp(dd_cov_data->ignored_path, filename_ptr,
-              dd_cov_data->ignored_path_len) == 0) {
+  if (!dd_ci_is_path_included(RSTRING_PTR(filename), dd_cov_data->root,
+                              dd_cov_data->root_len, dd_cov_data->ignored_path,
+                              dd_cov_data->ignored_path_len)) {
     return false;
   }
 
@@ -310,8 +301,8 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
 
   if (RTEST(rb_ignored_path)) {
     dd_cov_data->ignored_path_len = RSTRING_LEN(rb_ignored_path);
-    dd_cov_data->ignored_path = dd_ci_ruby_strndup(RSTRING_PTR(rb_ignored_path),
-                                                dd_cov_data->ignored_path_len);
+    dd_cov_data->ignored_path = dd_ci_ruby_strndup(
+        RSTRING_PTR(rb_ignored_path), dd_cov_data->ignored_path_len);
   }
 
   if (rb_allocation_tracing_enabled == Qtrue) {

@@ -22,21 +22,6 @@ struct populate_data {
   long ignored_path_len;
 };
 
-/* ---- Path filtering ----------------------------------------------------- */
-
-/* Check if a file path is under root_path and not under ignored_path */
-static bool is_path_included(const char *file_path_ptr,
-                             struct populate_data *pd) {
-  if (strncmp(pd->root_path, file_path_ptr, pd->root_path_len) != 0) {
-    return false;
-  }
-  if (pd->ignored_path_len > 0 &&
-      strncmp(pd->ignored_path, file_path_ptr, pd->ignored_path_len) == 0) {
-    return false;
-  }
-  return true;
-}
-
 /* ---- Constant resolution helpers ---------------------------------------- */
 
 /*
@@ -49,7 +34,9 @@ static void resolve_and_store_constant(VALUE const_name_str, VALUE deps_hash,
   if (NIL_P(file_path)) {
     return;
   }
-  if (!is_path_included(RSTRING_PTR(file_path), pd)) {
+  if (!dd_ci_is_path_included(RSTRING_PTR(file_path), pd->root_path,
+                              pd->root_path_len, pd->ignored_path,
+                              pd->ignored_path_len)) {
     return;
   }
   rb_hash_aset(deps_hash, file_path, Qtrue);
@@ -243,7 +230,9 @@ static void process_iseq(VALUE iseq, struct populate_data *pd) {
   if (NIL_P(path)) {
     return;
   }
-  if (!is_path_included(RSTRING_PTR(path), pd)) {
+  if (!dd_ci_is_path_included(RSTRING_PTR(path), pd->root_path,
+                              pd->root_path_len, pd->ignored_path,
+                              pd->ignored_path_len)) {
     return;
   }
 

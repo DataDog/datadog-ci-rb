@@ -1,5 +1,23 @@
 #include "datadog_common.h"
 #include <ruby.h>
+#include <string.h>
+
+/* ---- Path filtering ----------------------------------------------------- */
+
+bool dd_ci_is_path_included(const char *path, const char *root_path,
+                            long root_path_len, const char *ignored_path,
+                            long ignored_path_len) {
+  if (strncmp(root_path, path, root_path_len) != 0) {
+    return false;
+  }
+  if (ignored_path_len > 0 &&
+      strncmp(ignored_path, path, ignored_path_len) == 0) {
+    return false;
+  }
+  return true;
+}
+
+/* ---- Utility functions -------------------------------------------------- */
 
 char *dd_ci_ruby_strndup(const char *str, size_t size) {
   char *dup;
