@@ -4,7 +4,7 @@ module Datadog
   module CI
     module SourceCode
       module StaticDependencies
-        NATIVE_EXTENSION_AVAILABLE: bool
+        STATIC_DEPENDENCIES_AVAILABLE: bool
 
         @dependencies_map: Hash[String, Hash[String, bool]]?
 
