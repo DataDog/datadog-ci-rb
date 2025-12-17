@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 792b0b3800b505462b82d6cc10806ee3ed13bac7
+  revision: 47b3890ab5909aacf11cb9f0206e0343700f14a5
   branch: master
   specs:
     datadog (2.24.0)
@@ -71,7 +71,7 @@ GEM
       thor (>= 0.14.0)
     arel (9.0.0)
     base64 (0.3.0)
-    bigdecimal (3.3.1)
+    bigdecimal (4.0.0)
     builder (3.3.0)
     cgi (0.5.1)
     climate_control (1.2.0)
@@ -99,7 +99,7 @@ GEM
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     io-console (0.8.2)
-    irb (1.15.3)
+    irb (1.16.0)
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
@@ -110,7 +110,7 @@ GEM
     libddwaf (1.30.0.0.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
-    loofah (2.24.1)
+    loofah (2.25.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
     mail (2.9.0)

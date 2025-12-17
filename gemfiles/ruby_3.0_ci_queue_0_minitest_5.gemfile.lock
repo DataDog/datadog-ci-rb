@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 792b0b3800b505462b82d6cc10806ee3ed13bac7
+  revision: 47b3890ab5909aacf11cb9f0206e0343700f14a5
   branch: master
   specs:
     datadog (2.24.0)
@@ -29,7 +29,7 @@ GEM
       bundler
       rake
       thor (>= 0.14.0)
-    bigdecimal (3.3.1)
+    bigdecimal (4.0.0)
     builder (3.3.0)
     cgi (0.5.1)
     ci-queue (0.81.0)
@@ -53,7 +53,7 @@ GEM
     ffi (1.17.2-x86_64-linux-gnu)
     hashdiff (1.2.1)
     io-console (0.8.2)
-    irb (1.15.3)
+    irb (1.16.0)
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
