@@ -275,18 +275,38 @@ static int os_each_iseq_cb(void *vstart, void *vend, size_t stride,
 /* ---- initialize the temp C struct that we use to pass data to the callback -
  */
 
+/*
+ * Initialize populate_data by duplicating string paths.
+ *
+ * We must duplicate root_path and ignored_path because the iteration
+ * calls Ruby APIs (to_a, const_source_location, etc.) which can trigger
+ * GC/compaction, potentially moving the underlying Ruby strings while
+ * we still hold C pointers to their contents.
+ */
 static void init_populate_data(struct populate_data *pd, VALUE deps_map,
                                VALUE rb_root_path, VALUE rb_ignored_path) {
   pd->deps_map = deps_map;
-  pd->root_path = RSTRING_PTR(rb_root_path);
   pd->root_path_len = RSTRING_LEN(rb_root_path);
+  pd->root_path =
+      dd_ci_ruby_strndup(RSTRING_PTR(rb_root_path), pd->root_path_len);
 
   pd->ignored_path = NULL;
   pd->ignored_path_len = 0;
   if (rb_ignored_path != Qnil && RB_TYPE_P(rb_ignored_path, T_STRING) &&
       RSTRING_LEN(rb_ignored_path) > 0) {
-    pd->ignored_path = RSTRING_PTR(rb_ignored_path);
     pd->ignored_path_len = RSTRING_LEN(rb_ignored_path);
+    pd->ignored_path =
+        dd_ci_ruby_strndup(RSTRING_PTR(rb_ignored_path), pd->ignored_path_len);
+  }
+}
+
+/*
+ * Free memory allocated by init_populate_data.
+ */
+static void free_populate_data(struct populate_data *pd) {
+  xfree((void *)pd->root_path);
+  if (pd->ignored_path != NULL) {
+    xfree((void *)pd->ignored_path);
   }
 }
 
@@ -324,6 +344,8 @@ static VALUE iseq_const_usage_populate(VALUE self, VALUE rb_root_path,
   init_populate_data(&pd, deps_map, rb_root_path, rb_ignored_path);
 
   rb_objspace_each_objects(os_each_iseq_cb, &pd);
+
+  free_populate_data(&pd);
 
   return deps_map;
 }
