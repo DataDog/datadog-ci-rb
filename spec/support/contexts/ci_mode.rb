@@ -27,6 +27,7 @@ RSpec.shared_context "CI mode activated" do
   let(:force_test_level_visibility) { false }
   let(:itr_enabled) { false }
   let(:code_coverage_enabled) { false }
+  let(:static_dependencies_tracking_enabled) { false }
   let(:tests_skipping_enabled) { false }
   let(:git_metadata_upload_enabled) { false }
   let(:require_git) { false }
@@ -168,6 +169,7 @@ RSpec.shared_context "CI mode activated" do
       c.ci.git_metadata_upload_enabled = git_metadata_upload_enabled
       c.ci.itr_code_coverage_excluded_bundle_path = bundle_path
       c.ci.itr_code_coverage_use_single_threaded_mode = use_single_threaded_coverage
+      c.ci.tia_static_dependencies_tracking_enabled = static_dependencies_tracking_enabled
 
       # test retries
       c.ci.retry_failed_tests_max_attempts = retry_failed_tests_max_attempts

@@ -2,8 +2,8 @@
 
 module Datadog
   module CI
-    module Utils
-      module SourceCode
+    module SourceCode
+      module MethodInspect
         begin
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
@@ -22,7 +22,7 @@ module Datadog
           return nil unless iseq.is_a?(RubyVM::InstructionSequence)
           # steep:ignore:end
 
-          # this function is implemented in ext/datadog_ci_native/datadog_source_code.c
+          # this function is implemented in ext/datadog_ci_native/datadog_method_inspect.c
           _native_last_line_from_iseq(iseq)
         end
       end
