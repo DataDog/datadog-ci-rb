@@ -10,8 +10,6 @@ module Datadog
 
             def run: (untyped klass, untyped method_name, untyped reporter) -> untyped
 
-            def dd_run_with_retries: (untyped klass, untyped method_name) -> untyped
-
             private
 
             def datadog_configuration: () -> untyped

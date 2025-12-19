@@ -10,9 +10,7 @@ module Minitest::Queue
 end
 
 class Minitest::Runnable
-  def self.dd_run_with_retries: (untyped klass, String method_name) -> untyped
 end
-
 
 class Minitest::Parallel::Executor
   def size: () -> Integer

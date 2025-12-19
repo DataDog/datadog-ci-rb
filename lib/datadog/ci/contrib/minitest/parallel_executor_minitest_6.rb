@@ -27,7 +27,7 @@ module Datadog
                   while (job = queue.pop)
                     klass, method, reporter = job
                     reporter.synchronize { reporter.prerecord klass, method }
-                    result = ::Minitest::Runnable.dd_run_with_retries(klass, method)
+                    result = ::Minitest.run_one_method(klass, method)
                     reporter.synchronize { reporter.record result }
                   end
                 end

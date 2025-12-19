@@ -10,6 +10,8 @@ module Datadog
 
             def run_one_method: (untyped klass, String method_name) -> untyped
 
+            def old_run_one_method: (untyped klass, String method_name) -> untyped
+
             def run: (*untyped) -> untyped
 
             private
