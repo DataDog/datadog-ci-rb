@@ -8,3 +8,12 @@ end
 
 module Minitest::Queue
 end
+
+class Minitest::Runnable
+end
+
+class Minitest::Parallel::Executor
+  def size: () -> Integer
+
+  def start: () -> void
+end

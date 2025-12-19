@@ -13,8 +13,7 @@ module Datadog
         end
 
         def with_retries(&block)
-          no_action = proc {}
-          yield no_action
+          yield
         end
 
         def reset_retries!

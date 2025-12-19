@@ -14,7 +14,11 @@ RSpec.describe Datadog::CI::Contrib::Minitest::Patcher do
     context "Minitest::Runnable is patched" do
       let(:runnable) { Minitest::Runnable }
       it "has a custom bases" do
-        expect(runnable.ancestors).to include(Datadog::CI::Contrib::Minitest::Runnable)
+        if ::Minitest::Runnable.respond_to?(:run_suite)
+          expect(runnable.ancestors).to include(Datadog::CI::Contrib::Minitest::RunnableMinitest6)
+        else
+          expect(runnable.ancestors).to include(Datadog::CI::Contrib::Minitest::Runnable)
+        end
       end
     end
 

@@ -5,6 +5,9 @@ require_relative "reporter"
 require_relative "test"
 require_relative "runnable"
 
+require_relative "runnable_minitest_6"
+require_relative "parallel_executor_minitest_6"
+
 module Datadog
   module CI
     module Contrib
@@ -18,8 +21,15 @@ module Datadog
           def patch
             # test session start
             ::Minitest.include(Runner)
+
             # test suites (when not executed concurrently)
-            ::Minitest::Runnable.include(Runnable)
+            if ::Minitest::Runnable.respond_to?(:run_suite)
+              ::Minitest::Runnable.include(RunnableMinitest6)
+              ::Minitest::Parallel::Executor.include(ParallelExecutorMinitest6)
+            else
+              ::Minitest::Runnable.include(Runnable)
+            end
+
             # tests; test suites (when executed concurrently)
             ::Minitest::Test.include(Test)
             # test session finish

@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module Contrib
+      module Minitest
+        module ParallelExecutorMinitest6
+          def self.included: (untyped base) -> untyped
+
+          module InstanceMethods : Minitest::Parallel::Executor
+            @pool: untyped
+
+            def start: () -> untyped
+
+            private
+
+            def datadog_configuration: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end

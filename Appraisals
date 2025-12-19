@@ -74,6 +74,8 @@ end
 
 def self.with_minitest_gem(versions: 5)
   Array(versions).each do |v|
+    next if v > 5 && (RUBY_ENGINE.include?("jruby") || Gem::Version.new("3.2") > RUBY_VERSION)
+
     appraise "minitest-#{v}" do
       gem "minitest", "~> #{v}"
     end
@@ -204,6 +206,7 @@ def self.with_lograge_gem(rails_versions: 8, lograge_versions: 0)
       appraise "lograge-#{lograge_v}-rails-#{rails_v}" do
         gem "lograge", "~> #{lograge_v}"
         gem "rails", "~> #{rails_v}"
+        gem "minitest", "~> 5"
       end
     end
   end
@@ -214,8 +217,8 @@ def self.with_semantic_logger_gem(rails_versions: 8, semantic_logger_versions: 4
     Array(semantic_logger_versions).each do |semantic_logger_v|
       appraise "semantic_logger-#{semantic_logger_v}-rails-#{rails_v}" do
         gem "rails", "~> #{rails_v}"
-
         gem "rails_semantic_logger", "~> #{semantic_logger_v}"
+        gem "minitest", "~> 5"
       end
     end
   end
@@ -223,7 +226,7 @@ end
 
 major, minor, = RUBY_VERSION.segments
 
-with_minitest_gem
+with_minitest_gem(versions: 5..6)
 with_rspec_gem
 with_cucumber_gem(versions: 3..10)
 with_ci_queue_minitest_gem
@@ -244,5 +247,3 @@ ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 appraisals.each do |appraisal|
   appraisal.name.prepend("#{ruby_runtime}-")
 end
-
-# vim: ft=ruby

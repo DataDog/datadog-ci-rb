@@ -35,14 +35,20 @@ module Datadog
               test_visibility_component.start_test_module(Ext::FRAMEWORK)
             end
 
+            def old_run_one_method(klass, method_name)
+              result = klass.new(method_name).run
+              raise "#{klass}#run _must_ return a Result" unless ::Minitest::Result === result
+              result
+            end
+
             def run_one_method(klass, method_name)
-              return super unless datadog_configuration[:enabled]
+              return old_run_one_method(klass, method_name) unless datadog_configuration[:enabled]
 
               # @type var result: untyped
               result = nil
 
               test_retries_component.with_retries do
-                result = super
+                result = old_run_one_method(klass, method_name)
               end
 
               # get the current test suite and mark this method as done, so we can check if all tests were executed

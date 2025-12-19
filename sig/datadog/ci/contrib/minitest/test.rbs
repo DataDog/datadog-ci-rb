@@ -28,7 +28,7 @@ module Datadog
 
             def datadog_configuration: () -> untyped
 
-            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+            def _dd_test_visibility_component: () -> Datadog::CI::TestVisibility::Component
 
             def finish_with_result: (Datadog::CI::Span? span, String result_code) -> void
           end
