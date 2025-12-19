@@ -25,12 +25,9 @@ module Datadog
             # test suites (when not executed concurrently)
             if ::Minitest::Runnable.respond_to?(:run_suite)
               ::Minitest::Runnable.include(RunnableMinitest6)
+              ::Minitest::Parallel::Executor.include(ParallelExecutorMinitest6)
             else
               ::Minitest::Runnable.include(Runnable)
-            end
-
-            unless ::Minitest::Runnable.respond_to?(:run_one_method)
-              ::Minitest::Parallel::Executor.include(ParallelExecutorMinitest6)
             end
 
             # tests; test suites (when executed concurrently)
