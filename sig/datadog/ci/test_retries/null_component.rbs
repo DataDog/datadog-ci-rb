@@ -17,8 +17,6 @@ module Datadog
         def initialize: () -> void
 
         def configure: (untyped library_settings) -> nil
-
-        def with_retries: () { (untyped) -> untyped } -> untyped
       end
     end
   end

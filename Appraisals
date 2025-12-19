@@ -74,6 +74,8 @@ end
 
 def self.with_minitest_gem(versions: 5)
   Array(versions).each do |v|
+    next if v > 5 && (RUBY_ENGINE.include?("jruby") || Gem::Version.new("3.2") > RUBY_VERSION)
+
     appraise "minitest-#{v}" do
       gem "minitest", "~> #{v}"
     end
@@ -223,7 +225,7 @@ end
 
 major, minor, = RUBY_VERSION.segments
 
-with_minitest_gem
+with_minitest_gem(versions: 5..6)
 with_rspec_gem
 with_cucumber_gem(versions: 3..10)
 with_ci_queue_minitest_gem
@@ -244,5 +246,3 @@ ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 appraisals.each do |appraisal|
   appraisal.name.prepend("#{ruby_runtime}-")
 end
-
-# vim: ft=ruby

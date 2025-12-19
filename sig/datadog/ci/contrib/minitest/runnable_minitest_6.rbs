@@ -1,0 +1,27 @@
+module Datadog
+  module CI
+    module Contrib
+      module Minitest
+        module RunnableMinitest6
+          def self.included: (untyped base) -> untyped
+
+          module ClassMethods
+            def run_suite: (*untyped args) -> untyped
+
+            def run: (untyped klass, untyped method_name, untyped reporter) -> untyped
+
+            def dd_run_with_retries: (untyped klass, untyped method_name) -> untyped
+
+            private
+
+            def datadog_configuration: () -> untyped
+
+            def _dd_test_visibility_component: () -> (Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent)
+
+            def _dd_test_retries_component: () -> (Datadog::CI::TestRetries::Component | Datadog::CI::TestRetries::NullComponent)
+          end
+        end
+      end
+    end
+  end
+end

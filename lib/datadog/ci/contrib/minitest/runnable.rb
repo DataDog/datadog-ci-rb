@@ -20,7 +20,6 @@ module Datadog
               return results unless test_suite
 
               test_suite.finish
-
               results
             end
 
@@ -28,10 +27,6 @@ module Datadog
 
             def datadog_configuration
               Datadog.configuration.ci[:minitest]
-            end
-
-            def test_visibility_component
-              Datadog.send(:components).test_visibility
             end
           end
         end

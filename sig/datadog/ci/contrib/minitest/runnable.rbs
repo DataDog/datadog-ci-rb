@@ -16,8 +16,6 @@ module Datadog
             def test_order: () -> (nil | :parallel | :random | :sorted | :alpha)
 
             def runnable_methods: () -> Array[String]
-
-            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
           end
         end
       end
