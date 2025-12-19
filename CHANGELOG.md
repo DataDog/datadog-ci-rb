@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.25.0] - 2025-12-19
+
+### Added
+* Minitest 6.0 support ([#446][])
+* Support Ruby 4.0 ([#444][])
+
 ## [1.24.0] - 2025-12-15
 
 ### Added
@@ -565,7 +571,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.24.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.25.0...main
+[1.25.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.24.0...v1.25.0
 [1.24.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.3...v1.24.0
 [1.23.3]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.2...v1.23.3
 [1.23.2]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.1...v1.23.2
@@ -802,3 +809,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#433]: https://github.com/DataDog/datadog-ci-rb/issues/433
 [#436]: https://github.com/DataDog/datadog-ci-rb/issues/436
 [#440]: https://github.com/DataDog/datadog-ci-rb/issues/440
+[#444]: https://github.com/DataDog/datadog-ci-rb/issues/444
+[#446]: https://github.com/DataDog/datadog-ci-rb/issues/446
