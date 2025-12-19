@@ -172,8 +172,7 @@ GEM
       net-smtp
     marcel (1.1.0)
     mini_mime (1.1.5)
-    minitest (6.0.0)
-      prism (~> 1.5)
+    minitest (5.27.0)
     msgpack (1.8.0)
     net-imap (0.6.2)
       date
@@ -206,7 +205,6 @@ GEM
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
-    prism (1.7.0)
     psych (5.3.1)
       date
       stringio
@@ -323,6 +321,7 @@ DEPENDENCIES
   datadog-ci!
   debug
   lograge (~> 0)
+  minitest (~> 5)
   os
   ostruct
   rails (~> 8)

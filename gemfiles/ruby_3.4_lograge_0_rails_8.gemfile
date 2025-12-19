@@ -18,6 +18,7 @@ gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "maste
 gem "os"
 gem "lograge", "~> 0"
 gem "rails", "~> 8"
+gem "minitest", "~> 5"
 
 group :check do
 

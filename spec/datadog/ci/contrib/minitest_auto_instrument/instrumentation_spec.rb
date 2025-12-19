@@ -6,18 +6,7 @@ RSpec.describe "Minitest auto instrumentation" do
 
   before do
     require_relative "../../../../../lib/datadog/ci/auto_instrument"
-
-    require "minitest"
-
-    class SomeTest < Minitest::Test
-      def test_pass
-        assert true
-      end
-
-      def test_pass_other
-        assert true
-      end
-    end
+    require_relative "some_test"
 
     ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_AUTO_INSTRUMENTATION_PROVIDER => "github") do
       Minitest.run([])
@@ -30,7 +19,7 @@ RSpec.describe "Minitest auto instrumentation" do
 
     expect(first_test_suite_span).not_to be_nil
     expect(first_test_suite_span.name).to eq(
-      "SomeTest at spec/datadog/ci/contrib/minitest_auto_instrument/instrumentation_spec.rb"
+      "SomeTest at spec/datadog/ci/contrib/minitest_auto_instrument/some_test.rb"
     )
 
     expect(test_spans).to have(2).items
