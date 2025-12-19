@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../ext/test"
-require_relative "../../git/local_repository"
-require_relative "../../utils/source_code"
-require_relative "../instrumentation"
-require_relative "ext"
-require_relative "helpers"
-
 module Datadog
   module CI
     module Contrib
