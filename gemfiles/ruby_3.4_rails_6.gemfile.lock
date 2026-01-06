@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2cb8be7f56cd6016624ab0055fc96eec99d641b1
+  revision: e5573b69aa0a42a54d9159769e66402315b079e4
   branch: master
   specs:
     datadog (2.24.0)
@@ -107,18 +107,18 @@ GEM
     drb (2.2.3)
     erb (6.0.1)
     erubi (1.13.1)
-    ffi (1.17.2-aarch64-linux-gnu)
-    ffi (1.17.2-aarch64-linux-musl)
-    ffi (1.17.2-arm-linux-gnu)
-    ffi (1.17.2-arm-linux-musl)
-    ffi (1.17.2-arm64-darwin)
-    ffi (1.17.2-x86_64-darwin)
-    ffi (1.17.2-x86_64-linux-gnu)
-    ffi (1.17.2-x86_64-linux-musl)
+    ffi (1.17.3-aarch64-linux-gnu)
+    ffi (1.17.3-aarch64-linux-musl)
+    ffi (1.17.3-arm-linux-gnu)
+    ffi (1.17.3-arm-linux-musl)
+    ffi (1.17.3-arm64-darwin)
+    ffi (1.17.3-x86_64-darwin)
+    ffi (1.17.3-x86_64-linux-gnu)
+    ffi (1.17.3-x86_64-linux-musl)
     globalid (1.3.0)
       activesupport (>= 6.1)
     hashdiff (1.2.1)
-    i18n (1.14.7)
+    i18n (1.14.8)
       concurrent-ruby (~> 1.0)
     io-console (0.8.2)
     irb (1.16.0)
@@ -151,7 +151,7 @@ GEM
     marcel (1.1.0)
     method_source (1.1.0)
     mini_mime (1.1.5)
-    minitest (6.0.0)
+    minitest (6.0.1)
       prism (~> 1.5)
     msgpack (1.8.0)
     mutex_m (0.3.0)
@@ -165,21 +165,21 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.5)
-    nokogiri (1.18.10-aarch64-linux-gnu)
+    nokogiri (1.19.0-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.18.10-aarch64-linux-musl)
+    nokogiri (1.19.0-aarch64-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.18.10-arm-linux-gnu)
+    nokogiri (1.19.0-arm-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.18.10-arm-linux-musl)
+    nokogiri (1.19.0-arm-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.18.10-arm64-darwin)
+    nokogiri (1.19.0-arm64-darwin)
       racc (~> 1.4)
-    nokogiri (1.18.10-x86_64-darwin)
+    nokogiri (1.19.0-x86_64-darwin)
       racc (~> 1.4)
-    nokogiri (1.18.10-x86_64-linux-gnu)
+    nokogiri (1.19.0-x86_64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.18.10-x86_64-linux-musl)
+    nokogiri (1.19.0-x86_64-linux-musl)
       racc (~> 1.4)
     os (1.1.4)
     ostruct (0.6.3)
@@ -190,7 +190,7 @@ GEM
     psych (5.3.1)
       date
       stringio
-    public_suffix (7.0.0)
+    public_suffix (7.0.2)
     racc (1.8.1)
     rack (2.2.21)
     rack-test (2.2.0)
@@ -226,7 +226,7 @@ GEM
     rake (13.3.1)
     rake-compiler (1.3.1)
       rake
-    rdoc (7.0.1)
+    rdoc (7.0.3)
       erb
       psych (>= 4.0.0)
       tsort
@@ -314,4 +314,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.5.17
+   2.7.2
