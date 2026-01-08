@@ -43,7 +43,7 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
   end
 
   # Skip all native extension tests if not available
-  context "when static dependencies tracking is available", skip: !Datadog::CI::SourceCode::ISeqCollector::ISEQ_COLLECTOR_AVAILABLE do
+  context "when static dependencies tracking is available", skip: !Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE do
     describe ".populate!" do
       subject(:populate) { described_class.populate!(root_path, ignored_path) }
 
@@ -368,7 +368,7 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
 
   context "when native extension is NOT available" do
     before do
-      stub_const("Datadog::CI::SourceCode::ISeqCollector::ISEQ_COLLECTOR_AVAILABLE", false)
+      stub_const("Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE", false)
     end
 
     describe ".fetch_static_dependencies" do
@@ -386,7 +386,7 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
     end
   end
 
-  describe "constant name pattern coverage" do
+  describe "constant name pattern coverage", skip: !Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE do
     before do
       described_class.populate!(root_path, ignored_path)
     end
@@ -516,7 +516,7 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
     end
   end
 
-  describe "edge cases and error handling" do
+  describe "edge cases and error handling", skip: !Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE do
     it "handles rapid consecutive populate! calls" do
       10.times do
         result = described_class.populate!(root_path, nil)
@@ -550,7 +550,7 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
     end
   end
 
-  describe "integration with actual Ruby code execution" do
+  describe "integration with actual Ruby code execution", skip: !Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE do
     before do
       described_class.populate!(root_path, nil)
     end
@@ -600,7 +600,7 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
   #
   # ============================================================================
 
-  describe "known limitations" do
+  describe "known limitations", skip: !Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE do
     before do
       described_class.populate!(root_path, nil)
     end

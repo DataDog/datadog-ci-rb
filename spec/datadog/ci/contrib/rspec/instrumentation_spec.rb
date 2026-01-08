@@ -793,7 +793,7 @@ RSpec.describe "RSpec instrumentation" do
       shared_context_test = test_spans.find { |span| span.name == "nested is 42" }
       shared_context_coverage = find_coverage_for_test(shared_context_test)
 
-      if Datadog::CI::SourceCode::ISeqCollector::ISEQ_COLLECTOR_AVAILABLE
+      if Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
         expect(shared_context_coverage.coverage).to eq({
           File.join(__dir__, "some_shared_context.rb") => true,
           File.join(__dir__, "some_constants.rb") => true

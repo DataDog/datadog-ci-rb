@@ -4,7 +4,7 @@ module Datadog
   module CI
     module SourceCode
       module ISeqCollector
-        ISEQ_COLLECTOR_AVAILABLE: bool
+        STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE: bool
 
         def self.collect: () -> Array[RubyVM::InstructionSequence]
 

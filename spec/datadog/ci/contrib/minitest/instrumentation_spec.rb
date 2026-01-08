@@ -542,7 +542,7 @@ RSpec.describe "Minitest instrumentation" do
           test_span = test_spans.find { |span| span.get_tag("test.name") == "test_pass_other" }
           cov_event = find_coverage_for_test(test_span)
           expect(cov_event.coverage.keys).to include(absolute_path("helpers/addition_helper.rb"))
-          expect(cov_event.coverage.keys).to include(absolute_path("helpers/constants.rb")) if Datadog::CI::SourceCode::ISeqCollector::ISEQ_COLLECTOR_AVAILABLE
+          expect(cov_event.coverage.keys).to include(absolute_path("helpers/constants.rb")) if Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
           expect(cov_event.coverage.keys).to include(absolute_path("helpers/simple_model.rb"))
         end
 

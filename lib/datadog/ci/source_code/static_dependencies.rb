@@ -10,7 +10,7 @@ module Datadog
       #
       # @api private
       module ISeqCollector
-        ISEQ_COLLECTOR_AVAILABLE = begin
+        STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE = begin
           # We support Ruby >= 3.2 even though technically it is possible to support 3.1
           # The issue is that Ruby 3.1 and earlier doesn't have opt_getconstant_path YARV instruction
           # which makes it a lot harder to parse fully qualified constant access.
@@ -31,7 +31,7 @@ module Datadog
         #
         # @return [Array<RubyVM::InstructionSequence>] Array of all live ISeqs
         def self.collect
-          return [] unless ISEQ_COLLECTOR_AVAILABLE
+          return [] unless STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
 
           collect_iseqs
         end

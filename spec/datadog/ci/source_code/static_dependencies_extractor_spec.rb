@@ -14,7 +14,7 @@ require "#{fixture_base}/consumers/multi_deps_consumer"
 require "#{fixture_base}/consumers/no_deps_consumer"
 require "#{fixture_base}/ignored/ignored_constant"
 
-RSpec.describe Datadog::CI::SourceCode::StaticDependenciesExtractor do
+RSpec.describe Datadog::CI::SourceCode::StaticDependenciesExtractor, skip: !Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE do
   let(:fixture_base) { File.expand_path("static_dependencies/fixtures", __dir__) }
   let(:root_path) { fixture_base }
   let(:ignored_path) { nil }
