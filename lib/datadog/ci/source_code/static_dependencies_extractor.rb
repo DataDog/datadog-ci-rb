@@ -6,7 +6,7 @@ require_relative "constant_resolver"
 module Datadog
   module CI
     module SourceCode
-      # ISeqProcessor extracts static constant dependencies from Ruby bytecode.
+      # StaticDependenciesExtractor extracts static constant dependencies from Ruby bytecode.
       #
       # For each ISeq (compiled Ruby code), it:
       # 1. Extracts the source file path
@@ -15,16 +15,14 @@ module Datadog
       # 4. Resolves constants to their source file locations
       # 5. Filters dependency paths by root_path and ignored_path
       #
-      # This class mirrors the process_iseq function from datadog_static_dependencies.c.
-      #
       # @example
-      #   processor = ISeqProcessor.new("/app", "/app/vendor")
+      #   extractor = StaticDependenciesExtractor.new("/app", "/app/vendor")
       #   iseq = RubyVM::InstructionSequence.of(some_method)
-      #   processor.process(iseq)
-      #   deps = processor.dependencies_map
+      #   extractor.extract(iseq)
+      #   deps = extractor.dependencies_map
       #   # => { "/app/foo.rb" => { "/app/bar.rb" => true } }
       #
-      class ISeqProcessor
+      class StaticDependenciesExtractor
         # BytecodeScanner scans Ruby bytecode instructions for constant references.
         #
         # This class traverses the ISeq#to_a representation to find:
@@ -146,7 +144,7 @@ module Datadog
         # @return [String, nil] Ignored path prefix for exclusion
         attr_reader :ignored_path
 
-        # Initialize a new ISeqProcessor.
+        # Initialize a new StaticDependenciesExtractor.
         #
         # @param root_path [String] Only process files under this path
         # @param ignored_path [String, nil] Exclude files under this path
@@ -157,11 +155,11 @@ module Datadog
           @bytecode_scanner = BytecodeScanner.new
         end
 
-        # Process an ISeq and extract its constant dependencies.
+        # Extract constant dependencies from an ISeq.
         #
         # @param iseq [RubyVM::InstructionSequence] The instruction sequence to process
         # @return [void]
-        def process(iseq)
+        def extract(iseq)
           path = extract_absolute_path(iseq)
           return if path.nil?
           return unless PathFilter.included?(path, root_path, ignored_path)

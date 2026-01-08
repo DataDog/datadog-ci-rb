@@ -3,7 +3,7 @@
 module Datadog
   module CI
     module SourceCode
-      class ISeqProcessor
+      class StaticDependenciesExtractor
         # Internal class for scanning bytecode for constant references.
         # @api private
         class BytecodeScanner
@@ -41,7 +41,7 @@ module Datadog
 
         def initialize: (String root_path, String? ignored_path) -> void
 
-        def process: (RubyVM::InstructionSequence iseq) -> void
+        def extract: (RubyVM::InstructionSequence iseq) -> void
 
         def reset: () -> void
 

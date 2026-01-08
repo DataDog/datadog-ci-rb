@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "iseq_processor"
+require_relative "static_dependencies_extractor"
 
 module Datadog
   module CI
@@ -37,13 +37,13 @@ module Datadog
         def self.populate!(root_path, ignored_path = nil)
           raise ArgumentError, "root_path must be a String and not nil" if root_path.nil? || !root_path.is_a?(String)
 
-          processor = ISeqProcessor.new(root_path, ignored_path)
+          extractor = StaticDependenciesExtractor.new(root_path, ignored_path)
 
           ISeqCollector.collect.each do |iseq|
-            processor.process(iseq)
+            extractor.extract(iseq)
           end
 
-          @dependencies_map = processor.dependencies_map
+          @dependencies_map = extractor.dependencies_map
         end
 
         # Fetch static dependencies for a given file.

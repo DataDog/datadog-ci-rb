@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "datadog/ci/source_code/iseq_processor"
+require "datadog/ci/source_code/static_dependencies_extractor"
 
 # Load fixtures for integration tests
 fixture_base = File.expand_path("static_dependencies/fixtures", __dir__)
@@ -14,12 +14,12 @@ require "#{fixture_base}/consumers/multi_deps_consumer"
 require "#{fixture_base}/consumers/no_deps_consumer"
 require "#{fixture_base}/ignored/ignored_constant"
 
-RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
+RSpec.describe Datadog::CI::SourceCode::StaticDependenciesExtractor do
   let(:fixture_base) { File.expand_path("static_dependencies/fixtures", __dir__) }
   let(:root_path) { fixture_base }
   let(:ignored_path) { nil }
 
-  subject(:processor) { described_class.new(root_path, ignored_path) }
+  subject(:extractor) { described_class.new(root_path, ignored_path) }
 
   def absolute_fixture_path(relative_path)
     File.join(fixture_base, relative_path)
@@ -27,50 +27,50 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
 
   describe "#initialize" do
     it "sets root_path" do
-      expect(processor.root_path).to eq(root_path)
+      expect(extractor.root_path).to eq(root_path)
     end
 
     it "sets ignored_path" do
-      processor_with_ignored = described_class.new(root_path, "/ignored")
-      expect(processor_with_ignored.ignored_path).to eq("/ignored")
+      extractor_with_ignored = described_class.new(root_path, "/ignored")
+      expect(extractor_with_ignored.ignored_path).to eq("/ignored")
     end
 
     it "initializes empty dependencies_map" do
-      expect(processor.dependencies_map).to eq({})
+      expect(extractor.dependencies_map).to eq({})
     end
 
     context "with nil ignored_path" do
       let(:ignored_path) { nil }
 
       it "allows nil ignored_path" do
-        expect(processor.ignored_path).to be_nil
+        expect(extractor.ignored_path).to be_nil
       end
     end
   end
 
-  describe "#process" do
+  describe "#extract" do
     context "with valid ISeq" do
       let(:iseq) { RubyVM::InstructionSequence.of(FullyQualifiedConsumer.instance_method(:use_base)) }
 
-      it "processes the ISeq without error" do
-        expect { processor.process(iseq) }.not_to raise_error
+      it "extracts from the ISeq without error" do
+        expect { extractor.extract(iseq) }.not_to raise_error
       end
 
       it "adds entry to dependencies_map" do
-        processor.process(iseq)
-        expect(processor.dependencies_map).not_to be_empty
+        extractor.extract(iseq)
+        expect(extractor.dependencies_map).not_to be_empty
       end
 
       it "maps the source file to its dependencies" do
-        processor.process(iseq)
+        extractor.extract(iseq)
         consumer_path = absolute_fixture_path("consumers/fully_qualified_consumer.rb")
-        expect(processor.dependencies_map).to have_key(consumer_path)
+        expect(extractor.dependencies_map).to have_key(consumer_path)
       end
 
       it "resolves constant dependencies" do
-        processor.process(iseq)
+        extractor.extract(iseq)
         consumer_path = absolute_fixture_path("consumers/fully_qualified_consumer.rb")
-        deps = processor.dependencies_map[consumer_path]
+        deps = extractor.dependencies_map[consumer_path]
 
         expect(deps).to have_key(absolute_fixture_path("constants/base_constant.rb"))
       end
@@ -80,8 +80,8 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
       let(:iseq) { RubyVM::InstructionSequence.of(RSpec.method(:describe)) }
 
       it "does not add to dependencies_map" do
-        processor.process(iseq)
-        expect(processor.dependencies_map).to be_empty
+        extractor.extract(iseq)
+        expect(extractor.dependencies_map).to be_empty
       end
     end
 
@@ -92,8 +92,8 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
       end
 
       it "does not add to dependencies_map" do
-        processor.process(iseq)
-        expect(processor.dependencies_map).to be_empty
+        extractor.extract(iseq)
+        expect(extractor.dependencies_map).to be_empty
       end
     end
 
@@ -105,8 +105,8 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
       end
 
       it "excludes files under ignored_path" do
-        processor.process(ignored_method_iseq)
-        expect(processor.dependencies_map).to be_empty
+        extractor.extract(ignored_method_iseq)
+        expect(extractor.dependencies_map).to be_empty
       end
     end
 
@@ -116,10 +116,10 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
 
       it "accumulates dependencies when processing same file multiple times" do
         # Process the method that uses all constants
-        processor.process(iseq_multi)
+        extractor.extract(iseq_multi)
 
         consumer_path = absolute_fixture_path("consumers/multi_deps_consumer.rb")
-        deps = processor.dependencies_map[consumer_path]
+        deps = extractor.dependencies_map[consumer_path]
 
         expect(deps.keys).to include(
           absolute_fixture_path("constants/base_constant.rb"),
@@ -128,10 +128,10 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
       end
 
       it "processes multiple files independently" do
-        processor.process(iseq_multi)
-        processor.process(iseq_fully_qualified)
+        extractor.extract(iseq_multi)
+        extractor.extract(iseq_fully_qualified)
 
-        expect(processor.dependencies_map.keys).to include(
+        expect(extractor.dependencies_map.keys).to include(
           absolute_fixture_path("consumers/multi_deps_consumer.rb"),
           absolute_fixture_path("consumers/fully_qualified_consumer.rb")
         )
@@ -142,12 +142,12 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
       let(:iseq) { RubyVM::InstructionSequence.of(NoDepsConsumer.instance_method(:compute)) }
 
       it "creates entry with no fixture dependencies" do
-        processor.process(iseq)
+        extractor.extract(iseq)
         consumer_path = absolute_fixture_path("consumers/no_deps_consumer.rb")
 
         # Entry exists but might have no dependencies (or dependencies outside fixtures)
-        expect(processor.dependencies_map).to have_key(consumer_path)
-        fixture_deps = processor.dependencies_map[consumer_path].keys.select { |k| k.start_with?(fixture_base) }
+        expect(extractor.dependencies_map).to have_key(consumer_path)
+        fixture_deps = extractor.dependencies_map[consumer_path].keys.select { |k| k.start_with?(fixture_base) }
         expect(fixture_deps).to be_empty
       end
     end
@@ -157,15 +157,15 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
       let(:iseq) { RubyVM::InstructionSequence.of(FullyQualifiedConsumer.instance_method(:use_base)) }
 
       it "includes source file under root_path" do
-        processor.process(iseq)
+        extractor.extract(iseq)
         consumer_path = absolute_fixture_path("consumers/fully_qualified_consumer.rb")
-        expect(processor.dependencies_map).to have_key(consumer_path)
+        expect(extractor.dependencies_map).to have_key(consumer_path)
       end
 
       it "does not include dependency files outside root_path" do
-        processor.process(iseq)
+        extractor.extract(iseq)
         consumer_path = absolute_fixture_path("consumers/fully_qualified_consumer.rb")
-        deps = processor.dependencies_map[consumer_path] || {}
+        deps = extractor.dependencies_map[consumer_path] || {}
 
         # Dependencies to /constants/ should be filtered out
         constant_deps = deps.keys.select { |k| k.include?("/constants/") }
@@ -178,15 +178,15 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
     let(:iseq) { RubyVM::InstructionSequence.of(FullyQualifiedConsumer.instance_method(:use_base)) }
 
     before do
-      processor.process(iseq)
+      extractor.extract(iseq)
     end
 
     it "clears the dependencies_map" do
-      expect(processor.dependencies_map).not_to be_empty
+      expect(extractor.dependencies_map).not_to be_empty
 
-      processor.reset
+      extractor.reset
 
-      expect(processor.dependencies_map).to eq({})
+      expect(extractor.dependencies_map).to eq({})
     end
   end
 
@@ -194,10 +194,10 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
     let(:iseq) { RubyVM::InstructionSequence.of(MultiDepsConsumer.instance_method(:use_all)) }
 
     it "correctly resolves multiple dependencies from a single method" do
-      processor.process(iseq)
+      extractor.extract(iseq)
 
       consumer_path = absolute_fixture_path("consumers/multi_deps_consumer.rb")
-      deps = processor.dependencies_map[consumer_path]
+      deps = extractor.dependencies_map[consumer_path]
 
       expected_deps = [
         absolute_fixture_path("constants/base_constant.rb"),
@@ -218,10 +218,10 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
 
       threads = 3.times.map do |i|
         Thread.new do
-          thread_processor = described_class.new(root_path, ignored_path)
+          thread_extractor = described_class.new(root_path, ignored_path)
           iseq = RubyVM::InstructionSequence.of(FullyQualifiedConsumer.instance_method(:use_base))
-          thread_processor.process(iseq)
-          results << thread_processor.dependencies_map.dup
+          thread_extractor.extract(iseq)
+          results << thread_extractor.dependencies_map.dup
         end
       end
 
@@ -236,7 +236,7 @@ RSpec.describe Datadog::CI::SourceCode::ISeqProcessor do
   end
 end
 
-RSpec.describe Datadog::CI::SourceCode::ISeqProcessor::BytecodeScanner do
+RSpec.describe Datadog::CI::SourceCode::StaticDependenciesExtractor::BytecodeScanner do
   subject(:scanner) { described_class.new }
 
   describe "#scan" do
