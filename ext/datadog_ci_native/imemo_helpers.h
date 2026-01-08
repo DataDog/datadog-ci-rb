@@ -5,6 +5,14 @@
 #include <stdbool.h>
 
 /*
+  Here we are using the same trick that debug gem uses here:
+
+  https://github.com/ruby/debug/blob/master/ext/debug/iseq_collector.c
+
+  These functions allow us to check if the VALUE is an ISeq object
+*/
+
+/*
  * IMEMO (internal memo) helpers for working with Ruby's internal objects.
  */
 
