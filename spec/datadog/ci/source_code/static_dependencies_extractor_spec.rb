@@ -236,7 +236,7 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependenciesExtractor, skip: !Data
   end
 end
 
-RSpec.describe Datadog::CI::SourceCode::StaticDependenciesExtractor::BytecodeScanner do
+RSpec.describe Datadog::CI::SourceCode::StaticDependenciesExtractor::BytecodeScanner, skip: !Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE do
   subject(:scanner) { described_class.new }
 
   describe "#scan" do
