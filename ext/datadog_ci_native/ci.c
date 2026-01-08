@@ -1,6 +1,6 @@
 #include "datadog_cov.h"
 #include "datadog_method_inspect.h"
-#include "datadog_static_dependencies.h"
+#include "iseq_collector.h"
 
 void Init_datadog_ci_native(void) {
   // Coverage::DDCov
@@ -8,5 +8,5 @@ void Init_datadog_ci_native(void) {
 
   // SourceCode
   Init_datadog_method_inspect();
-  Init_datadog_static_dependencies_map();
+  Init_iseq_collector();
 }

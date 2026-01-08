@@ -42,14 +42,8 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
     File.join(fixture_base, relative_path)
   end
 
-  describe "::STATIC_DEPENDENCIES_AVAILABLE" do
-    it "is a boolean" do
-      expect([true, false]).to include(described_class::STATIC_DEPENDENCIES_AVAILABLE)
-    end
-  end
-
   # Skip all native extension tests if not available
-  context "when static dependencies tracking is available", skip: !Datadog::CI::SourceCode::StaticDependencies::STATIC_DEPENDENCIES_AVAILABLE do
+  context "when static dependencies tracking is available", skip: !Datadog::CI::SourceCode::ISeqCollector::ISEQ_COLLECTOR_AVAILABLE do
     describe ".populate!" do
       subject(:populate) { described_class.populate!(root_path, ignored_path) }
 
@@ -374,7 +368,7 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
 
   context "when native extension is NOT available" do
     before do
-      stub_const("Datadog::CI::SourceCode::StaticDependencies::STATIC_DEPENDENCIES_AVAILABLE", false)
+      stub_const("Datadog::CI::SourceCode::ISeqCollector::ISEQ_COLLECTOR_AVAILABLE", false)
     end
 
     describe ".fetch_static_dependencies" do
@@ -394,7 +388,6 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
 
   describe "constant name pattern coverage" do
     before do
-      skip unless Datadog::CI::SourceCode::StaticDependencies::STATIC_DEPENDENCIES_AVAILABLE
       described_class.populate!(root_path, ignored_path)
     end
 
@@ -524,10 +517,6 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
   end
 
   describe "edge cases and error handling" do
-    before do
-      skip unless Datadog::CI::SourceCode::StaticDependencies::STATIC_DEPENDENCIES_AVAILABLE
-    end
-
     it "handles rapid consecutive populate! calls" do
       10.times do
         result = described_class.populate!(root_path, nil)
@@ -563,7 +552,6 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
 
   describe "integration with actual Ruby code execution" do
     before do
-      skip unless Datadog::CI::SourceCode::StaticDependencies::STATIC_DEPENDENCIES_AVAILABLE
       described_class.populate!(root_path, nil)
     end
 
@@ -614,7 +602,6 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependencies do
 
   describe "known limitations" do
     before do
-      skip unless Datadog::CI::SourceCode::StaticDependencies::STATIC_DEPENDENCIES_AVAILABLE
       described_class.populate!(root_path, nil)
     end
 
