@@ -11,9 +11,21 @@ module Datadog
       # @api private
       module ISeqCollector
         ISEQ_COLLECTOR_AVAILABLE = begin
-          require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
-          true
-        rescue LoadError
+          begin
+            # We support Ruby >= 3.2 even though technically it is possible to support 3.1
+            # The issue is that Ruby 3.1 and earlier doesn't have opt_getconstant_path YARV instruction
+            # which makes it a lot harder to parse fully qualified constant access.
+            #
+            # See the PR https://github.com/DataDog/datadog-ci-rb/pull/442 for more context
+            if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.2")
+              require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+              true
+            else
+              false
+            end
+          rescue
+            LoadError
+          end
           false
         end
 
