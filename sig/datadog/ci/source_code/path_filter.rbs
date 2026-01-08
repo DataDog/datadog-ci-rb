@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+module Datadog
+  module CI
+    module SourceCode
+      module PathFilter
+        def self.included?: (String path, String root_path, String? ignored_path) -> bool
+      end
+    end
+  end
+end

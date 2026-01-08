@@ -1,0 +1,60 @@
+# frozen_string_literal: true
+
+module Datadog
+  module CI
+    module SourceCode
+      class ISeqProcessor
+        # Internal class for scanning bytecode for constant references.
+        # @api private
+        class BytecodeScanner
+          type instruction = Array[Symbol | untyped]
+          type iseq_body = Array[untyped]
+
+          def scan: (iseq_body body) -> Array[String]
+
+          def build_constant_path: (Array[Symbol] symbol_array) -> String
+
+          private
+
+          def scan_value: (untyped value, Array[String] constants) -> void
+
+          def scan_array: (Array[untyped] arr, Array[String] constants) -> void
+
+          def scan_hash: (Hash[untyped, untyped] hash, Array[String] constants) -> void
+
+          def handle_instruction: (Array[untyped] arr, Array[String] constants) -> void
+
+          def handle_getconstant: (instruction instruction, Array[String] constants) -> void
+
+          def handle_opt_getconstant_path: (instruction instruction, Array[String] constants) -> void
+        end
+
+        type dependencies_hash = Hash[String, bool]
+
+        attr_reader dependencies_map: Hash[String, dependencies_hash]
+
+        attr_reader root_path: String
+
+        attr_reader ignored_path: String?
+
+        @bytecode_scanner: BytecodeScanner
+
+        def initialize: (String root_path, String? ignored_path) -> void
+
+        def process: (RubyVM::InstructionSequence iseq) -> void
+
+        def reset: () -> void
+
+        private
+
+        def extract_absolute_path: (RubyVM::InstructionSequence iseq) -> String?
+
+        def extract_body: (RubyVM::InstructionSequence iseq) -> Array[untyped]?
+
+        def get_or_create_deps: (String path) -> dependencies_hash
+
+        def resolve_and_store_dependency: (String constant_name, dependencies_hash deps) -> void
+      end
+    end
+  end
+end
