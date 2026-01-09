@@ -2,7 +2,7 @@
 
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
-require_relative "../../utils/source_code"
+require_relative "../../source_code/method_inspect"
 require_relative "../instrumentation"
 require_relative "ext"
 require_relative "helpers"
@@ -38,7 +38,7 @@ module Datadog
               # try to find out where test method starts and ends
               test_method = method(name)
               source_file, first_line_number = test_method.source_location
-              last_line_number = Utils::SourceCode.last_line(test_method)
+              last_line_number = SourceCode::MethodInspect.last_line(test_method)
 
               tags[CI::Ext::Test::TAG_SOURCE_FILE] = Git::LocalRepository.relative_to_root(source_file) if source_file
               tags[CI::Ext::Test::TAG_SOURCE_START] = first_line_number.to_s if first_line_number

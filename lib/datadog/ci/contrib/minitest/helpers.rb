@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../../source_code/constant_resolver"
+
 module Datadog
   module CI
     module Contrib
@@ -66,9 +68,7 @@ module Datadog
           def self.extract_source_location_from_class(klass)
             return [] if klass.nil? || klass.name.nil?
 
-            klass.const_source_location(klass.name)
-          rescue
-            []
+            SourceCode::ConstantResolver.safely_get_const_source_location(klass.name) || []
           end
         end
       end

@@ -1,0 +1,23 @@
+# frozen_string_literal: true
+
+module Datadog
+  module CI
+    module SourceCode
+      module ISeqCollector
+        STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE: bool
+
+        def self.collect: () -> Array[RubyVM::InstructionSequence]
+
+        def self.collect_iseqs: () -> Array[RubyVM::InstructionSequence]
+      end
+
+      module StaticDependencies
+        @dependencies_map: Hash[String, Hash[String, bool]]?
+
+        def self.populate!: (String root_path, String? ignored_path) -> Hash[String, Hash[String, bool]]
+
+        def self.fetch_static_dependencies: (String? file) -> Hash[String, bool]
+      end
+    end
+  end
+end

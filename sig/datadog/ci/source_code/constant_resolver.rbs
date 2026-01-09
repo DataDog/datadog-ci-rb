@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+module Datadog
+  module CI
+    module SourceCode
+      module ConstantResolver
+        def self.resolve_path: (String constant_name) -> String?
+
+        def self.safely_get_const_source_location: (String constant_name) -> ([String, Integer] | [])?
+      end
+    end
+  end
+end

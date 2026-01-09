@@ -1,0 +1,3 @@
+module Operations
+  PLUS = :+
+end

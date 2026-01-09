@@ -2,8 +2,8 @@
 
 module Datadog
   module CI
-    module Utils
-      module SourceCode
+    module SourceCode
+      module MethodInspect
         LAST_LINE_AVAILABLE: bool
 
         def self.last_line: (Proc? | Method? target) -> Integer?
@@ -13,3 +13,4 @@ module Datadog
     end
   end
 end
+
