@@ -225,7 +225,7 @@ module Datadog
         # @param deps [Hash{String => Boolean}]
         # @return [void]
         def resolve_and_store_dependency(constant_name, deps)
-          file_path = ConstantResolver.resolve(constant_name)
+          file_path = ConstantResolver.resolve_path(constant_name)
           return if file_path.nil?
           return unless PathFilter.included?(file_path, root_path, ignored_path)
 

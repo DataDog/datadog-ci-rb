@@ -14,7 +14,7 @@ module Datadog
         #
         # @param constant_name [String] The fully qualified constant name (e.g., "Foo::Bar::Baz")
         # @return [String, nil] The absolute file path where the constant is defined, or nil if not found
-        def self.resolve(constant_name)
+        def self.resolve_path(constant_name)
           return nil unless constant_name.is_a?(String)
           return nil if constant_name.empty?
 

@@ -4,15 +4,15 @@ require "spec_helper"
 require "datadog/ci/source_code/constant_resolver"
 
 RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
-  describe ".resolve" do
-    subject(:resolve) { described_class.resolve(constant_name) }
+  describe ".resolve_path" do
+    subject(:resolve_path) { described_class.resolve_path(constant_name) }
 
     context "with existing constant" do
       let(:constant_name) { "RSpec" }
 
       it "returns the source file path" do
-        expect(resolve).to be_a(String)
-        expect(resolve).to end_with(".rb")
+        expect(resolve_path).to be_a(String)
+        expect(resolve_path).to end_with(".rb")
       end
     end
 
@@ -20,8 +20,8 @@ RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
       let(:constant_name) { "RSpec::Core::Runner" }
 
       it "returns the source file path" do
-        expect(resolve).to be_a(String)
-        expect(resolve).to include("rspec")
+        expect(resolve_path).to be_a(String)
+        expect(resolve_path).to include("rspec")
       end
     end
 
@@ -29,7 +29,7 @@ RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
       let(:constant_name) { "NonExistentModule::DoesNotExist" }
 
       it "returns nil" do
-        expect(resolve).to be_nil
+        expect(resolve_path).to be_nil
       end
     end
 
@@ -37,7 +37,7 @@ RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
       let(:constant_name) { "String" }
 
       it "returns nil (no source location for C-defined constants)" do
-        expect(resolve).to be_nil
+        expect(resolve_path).to be_nil
       end
     end
 
@@ -45,7 +45,7 @@ RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
       let(:constant_name) { "" }
 
       it "returns nil" do
-        expect(resolve).to be_nil
+        expect(resolve_path).to be_nil
       end
     end
 
@@ -53,7 +53,7 @@ RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
       let(:constant_name) { nil }
 
       it "returns nil" do
-        expect(resolve).to be_nil
+        expect(resolve_path).to be_nil
       end
     end
 
@@ -61,7 +61,7 @@ RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
       let(:constant_name) { 123 }
 
       it "returns nil" do
-        expect(resolve).to be_nil
+        expect(resolve_path).to be_nil
       end
     end
 
@@ -69,7 +69,7 @@ RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
       let(:constant_name) { ":::" }
 
       it "returns nil without raising" do
-        expect(resolve).to be_nil
+        expect(resolve_path).to be_nil
       end
     end
 
@@ -77,7 +77,7 @@ RSpec.describe Datadog::CI::SourceCode::ConstantResolver do
       let(:constant_name) { "some invalid!! constant" }
 
       it "returns nil without raising" do
-        expect(resolve).to be_nil
+        expect(resolve_path).to be_nil
       end
     end
   end
