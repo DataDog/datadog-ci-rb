@@ -1,11 +1,11 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: e5573b69aa0a42a54d9159769e66402315b079e4
+  revision: 916d16ec0af8c02ff9ed5aaab994575889f65027
   branch: master
   specs:
-    datadog (2.24.0)
+    datadog (2.25.0)
       cgi
-      datadog-ruby_core_source (~> 3.4, >= 3.4.2)
+      datadog-ruby_core_source (~> 3.5, >= 3.5.0)
       libdatadog (~> 24.0.1.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
@@ -34,7 +34,7 @@ GEM
     crack (1.0.1)
       bigdecimal
       rexml
-    datadog-ruby_core_source (3.4.3)
+    datadog-ruby_core_source (3.5.0)
     date (3.5.1)
     debug (1.11.1)
       irb (~> 1.10)
@@ -104,7 +104,7 @@ GEM
     simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
     stringio (3.2.0)
-    thor (1.4.0)
+    thor (1.5.0)
     tsort (0.2.0)
     webmock (3.26.1)
       addressable (>= 2.8.0)
@@ -141,9 +141,9 @@ CHECKSUMS
   cgi (0.5.1) sha256=e93fcafc69b8a934fe1e6146121fa35430efa8b4a4047c4893764067036f18e9
   climate_control (1.2.0) sha256=36b21896193fa8c8536fa1cd843a07cf8ddbd03aaba43665e26c53ec1bd70aa5
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
-  datadog (2.24.0)
+  datadog (2.25.0)
   datadog-ci (1.26.0)
-  datadog-ruby_core_source (3.4.3) sha256=ad9f6f51fb92a39b1f39acf9a3fefd837ccace764e954d55d7c151ffa400e8c0
+  datadog-ruby_core_source (3.5.0) sha256=5cf9924ac6d7e8b52d65aa25a9be0e8f981612bb85063b3dc3d425bf7de3c56e
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
@@ -184,7 +184,7 @@ CHECKSUMS
   simplecov-html (0.13.2) sha256=bd0b8e54e7c2d7685927e8d6286466359b6f16b18cb0df47b508e8d73c777246
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
-  thor (1.4.0) sha256=8763e822ccb0f1d7bee88cde131b19a65606657b847cc7b7b4b82e772bcd8a3d
+  thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
   webmock (3.26.1) sha256=4f696fb57c90a827c20aadb2d4f9058bbff10f7f043bd0d4c3f58791143b1cd7
   yard (0.9.38) sha256=721fb82afb10532aa49860655f6cc2eaa7130889df291b052e1e6b268283010f
