@@ -1,11 +1,11 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: e5573b69aa0a42a54d9159769e66402315b079e4
+  revision: 916d16ec0af8c02ff9ed5aaab994575889f65027
   branch: master
   specs:
-    datadog (2.24.0)
+    datadog (2.25.0)
       cgi
-      datadog-ruby_core_source (~> 3.4, >= 3.4.2)
+      datadog-ruby_core_source (~> 3.5, >= 3.5.0)
       libdatadog (~> 24.0.1.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
@@ -80,7 +80,7 @@ GEM
       bigdecimal
       rexml
     crass (1.0.6)
-    datadog-ruby_core_source (3.4.3)
+    datadog-ruby_core_source (3.5.0)
     date (3.5.1)
     debug (1.11.1)
       irb (~> 1.10)
@@ -221,7 +221,7 @@ GEM
       activesupport (>= 5.2)
       sprockets (>= 3.0.0)
     stringio (3.2.0)
-    thor (1.4.0)
+    thor (1.5.0)
     thread_safe (0.3.6)
     timeout (0.6.0)
     tsort (0.2.0)
@@ -283,9 +283,9 @@ CHECKSUMS
   concurrent-ruby (1.3.6) sha256=6b56837e1e7e5292f9864f34b69c5a2cbc75c0cf5338f1ce9903d10fa762d5ab
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
   crass (1.0.6) sha256=dc516022a56e7b3b156099abc81b6d2b08ea1ed12676ac7a5657617f012bd45d
-  datadog (2.24.0)
+  datadog (2.25.0)
   datadog-ci (1.26.0)
-  datadog-ruby_core_source (3.4.3) sha256=ad9f6f51fb92a39b1f39acf9a3fefd837ccace764e954d55d7c151ffa400e8c0
+  datadog-ruby_core_source (3.5.0) sha256=5cf9924ac6d7e8b52d65aa25a9be0e8f981612bb85063b3dc3d425bf7de3c56e
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
@@ -352,7 +352,7 @@ CHECKSUMS
   sprockets (4.2.2) sha256=761e5a49f1c288704763f73139763564c845a8f856d52fba013458f8af1b59b1
   sprockets-rails (3.4.2) sha256=36d6327757ccf7460a00d1d52b2d5ef0019a4670503046a129fa1fb1300931ad
   stringio (3.2.0) sha256=c37cb2e58b4ffbd33fe5cd948c05934af997b36e0b6ca6fdf43afa234cf222e1
-  thor (1.4.0) sha256=8763e822ccb0f1d7bee88cde131b19a65606657b847cc7b7b4b82e772bcd8a3d
+  thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   thread_safe (0.3.6) sha256=9ed7072821b51c57e8d6b7011a8e282e25aeea3a4065eab326e43f66f063b05a
   timeout (0.6.0) sha256=6d722ad619f96ee383a0c557ec6eb8c4ecb08af3af62098a0be5057bf00de1af
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
