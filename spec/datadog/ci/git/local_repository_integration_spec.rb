@@ -486,16 +486,21 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
       context "when unshallow command fails" do
         before do
+          # Clear the safe_directory cache
+          Datadog::CI::Git::CLI.remove_instance_variable(:@safe_directory) if Datadog::CI::Git::CLI.instance_variable_defined?(:@safe_directory)
+
           head_commit = "sha"
+          # The safe directory will be computed by traversing up from pwd to find .git
+          # We need to use a matcher that accepts any safe.directory value
           allow(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original
           allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-            .with(["git", "rev-parse", "HEAD"], stdin_data: nil, timeout: Datadog::CI::Git::CLI::SHORT_TIMEOUT)
+            .with(array_including("rev-parse", "HEAD"), stdin_data: nil, timeout: Datadog::CI::Git::CLI::SHORT_TIMEOUT)
             .and_return([head_commit, double(success?: true)])
 
           # Mock the fetch command with the head commit to fail
           allow(Datadog::CI::Utils::Command).to receive(:exec_command)
             .with(
-              ["git", "fetch", "--shallow-since=\"1 month ago\"", "--update-shallow", "--filter=blob:none", "--recurse-submodules=no", "origin", head_commit],
+              array_including("fetch", "--shallow-since=\"1 month ago\"", "--update-shallow", "--filter=blob:none", "--recurse-submodules=no", "origin", head_commit),
               stdin_data: nil, timeout: Datadog::CI::Git::CLI::UNSHALLOW_TIMEOUT
             )
             .and_return(["error", double(success?: false, to_i: 1)])
@@ -625,6 +630,25 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
 
       it { is_expected.to be_falsey }
+    end
+  end
+
+  describe "safe.directory handling" do
+    # Clear the cache before each test
+    before do
+      Datadog::CI::Git::CLI.remove_instance_variable(:@safe_directory) if Datadog::CI::Git::CLI.instance_variable_defined?(:@safe_directory)
+    end
+
+    it "finds the repository root by traversing up from current directory" do
+      # The safe_directory method should find the .git folder and return its parent
+      result = Datadog::CI::Git::CLI.safe_directory
+      expect(File.directory?(File.join(result, ".git"))).to be true
+    end
+
+    it "git commands work when safe.directory is set" do
+      # These commands should work because safe.directory is automatically set
+      expect(described_class.git_commit_sha).to be_a(String)
+      expect(described_class.git_commit_sha).to match(/^\h{40}$/)
     end
   end
 end
