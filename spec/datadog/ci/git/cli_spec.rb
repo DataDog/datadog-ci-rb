@@ -221,21 +221,21 @@ RSpec.describe Datadog::CI::Git::CLI do
 
     it "finds the repository root by traversing up from current directory" do
       result = described_class.safe_directory
-      expect(File.directory?(File.join(result, ".git"))).to be true
+      expect(File.exist?(File.join(result, ".git"))).to be true
     end
   end
 
   describe ".find_git_directory" do
-    context "when .git folder exists in parent directory" do
+    context "when .git directory exists in parent directory" do
       it "returns the directory containing .git" do
         # Start from a subdirectory within the repo
         start_dir = File.join(Dir.pwd, "lib")
         result = described_class.find_git_directory(start_dir)
-        expect(File.directory?(File.join(result, ".git"))).to be true
+        expect(File.exist?(File.join(result, ".git"))).to be true
       end
     end
 
-    context "when .git folder exists in current directory" do
+    context "when .git directory exists in current directory" do
       it "returns the current directory" do
         # We're in the repo root
         result = described_class.find_git_directory(Dir.pwd)
@@ -243,9 +243,38 @@ RSpec.describe Datadog::CI::Git::CLI do
       end
     end
 
-    context "when no .git folder is found" do
+    context "when .git is a file (worktrees/submodules)" do
+      let(:tmpdir) { Dir.mktmpdir }
+      let(:worktree_path) { File.join(tmpdir, "worktree") }
+      let(:subdir_path) { File.join(worktree_path, "subdir", "nested") }
+
+      before do
+        # Create a fake worktree structure where .git is a file
+        FileUtils.mkdir_p(subdir_path)
+        # In worktrees/submodules, .git is a file containing "gitdir: /path/to/git"
+        File.write(File.join(worktree_path, ".git"), "gitdir: /some/path/.git/worktrees/test")
+      end
+
+      after do
+        FileUtils.remove_entry(tmpdir)
+      end
+
+      it "returns the directory containing the .git file" do
+        result = described_class.find_git_directory(subdir_path)
+        expect(result).to eq(worktree_path)
+      end
+
+      it "detects .git as a file, not just a directory" do
+        git_path = File.join(worktree_path, ".git")
+        expect(File.exist?(git_path)).to be true
+        expect(File.file?(git_path)).to be true
+        expect(File.directory?(git_path)).to be false
+      end
+    end
+
+    context "when no .git is found" do
       it "returns the original directory" do
-        # Use /tmp which shouldn't have a .git folder
+        # Use /tmp which shouldn't have a .git
         result = described_class.find_git_directory("/tmp")
         expect(result).to eq("/tmp")
       end

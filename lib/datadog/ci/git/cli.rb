@@ -75,20 +75,24 @@ module Datadog
           @safe_directory
         end
 
-        # Traverses up from the given directory to find the nearest .git folder.
+        # Traverses up from the given directory to find the nearest .git folder or file.
         # Returns the repository root (parent of .git) if found, otherwise the original directory.
+        #
+        # Note: .git can be either a directory (regular repos) or a file (worktrees/submodules).
+        # In worktrees and submodules, .git is a file containing a pointer to the actual git directory.
         #
         # @param start_dir [String] The directory to start searching from
         # @return [String] The repository root path or the start directory if not found
         def self.find_git_directory(start_dir)
-          Datadog.logger.debug { "Searching for .git directory starting from: #{start_dir}" }
+          Datadog.logger.debug { "Searching for .git starting from: #{start_dir}" }
           current_dir = File.expand_path(start_dir)
 
           loop do
             git_path = File.join(current_dir, ".git")
 
-            if File.directory?(git_path)
-              Datadog.logger.debug { "Found .git directory at: #{git_path}" }
+            # Check for both directory (.git in regular repos) and file (.git in worktrees/submodules)
+            if File.exist?(git_path)
+              Datadog.logger.debug { "Found .git at: #{git_path} (#{File.directory?(git_path) ? "directory" : "file"})" }
               return current_dir
             end
 
@@ -101,7 +105,7 @@ module Datadog
           end
 
           # Fallback to original directory if no .git found
-          Datadog.logger.debug { "No .git directory found, using fallback: #{start_dir}" }
+          Datadog.logger.debug { "No .git found, using fallback: #{start_dir}" }
           start_dir
         end
       end
