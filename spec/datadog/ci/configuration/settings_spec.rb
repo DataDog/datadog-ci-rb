@@ -60,9 +60,9 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
         it { is_expected.to be false }
 
-        context "when #{Datadog::CI::Ext::Settings::ENV_MODE_ENABLED}" do
+        context "when #{Datadog::CI::Ext::Settings::ENV_ENABLED}" do
           around do |example|
-            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_MODE_ENABLED => enable) do
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_ENABLED => enable) do
               example.run
             end
           end
@@ -79,10 +79,82 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             it { is_expected.to be true }
           end
 
+          context "is set to 1" do
+            let(:enable) { "1" }
+
+            it { is_expected.to be true }
+          end
+
           context "is set to false" do
             let(:enable) { "false" }
 
             it { is_expected.to be false }
+          end
+        end
+
+        context "when deprecated #{Datadog::CI::Ext::Settings::ENV_MODE_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_MODE_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be false }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it "returns true and logs deprecation warning" do
+              expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+
+              is_expected.to be true
+            end
+          end
+
+          context "is set to 1" do
+            let(:enable) { "1" }
+
+            it "returns true and logs deprecation warning" do
+              expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+
+              is_expected.to be true
+            end
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it "returns false and logs deprecation warning" do
+              expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+
+              is_expected.to be false
+            end
+          end
+        end
+
+        context "when both #{Datadog::CI::Ext::Settings::ENV_ENABLED} and #{Datadog::CI::Ext::Settings::ENV_MODE_ENABLED} are set" do
+          around do |example|
+            ClimateControl.modify(
+              Datadog::CI::Ext::Settings::ENV_ENABLED => new_env_value,
+              Datadog::CI::Ext::Settings::ENV_MODE_ENABLED => old_env_value
+            ) do
+              example.run
+            end
+          end
+
+          context "new env var takes precedence" do
+            let(:new_env_value) { "true" }
+            let(:old_env_value) { "false" }
+
+            it "uses the new env var value and does not log deprecation" do
+              expect(Datadog::Core).not_to receive(:log_deprecation)
+
+              is_expected.to be true
+            end
           end
         end
       end
