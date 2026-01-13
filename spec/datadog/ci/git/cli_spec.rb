@@ -211,12 +211,15 @@ RSpec.describe Datadog::CI::Git::CLI do
       described_class.remove_instance_variable(:@safe_directory) if described_class.instance_variable_defined?(:@safe_directory)
     end
 
-    it "caches the result" do
+    it "caches the result by only calling find_git_directory once" do
+      # Spy on find_git_directory to verify it's only called once
+      allow(described_class).to receive(:find_git_directory).and_call_original
+
       first_result = described_class.safe_directory
       second_result = described_class.safe_directory
 
       expect(first_result).to eq(second_result)
-      expect(described_class.instance_variable_get(:@safe_directory)).to eq(first_result)
+      expect(described_class).to have_received(:find_git_directory).once
     end
 
     it "finds the repository root by traversing up from current directory" do
