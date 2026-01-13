@@ -105,8 +105,11 @@ module Datadog
             response = fetch_page(api, test_session, page_state: page_state)
 
             if response.nil?
-              Datadog.logger.debug { "Stopping known tests fetch: request for page ##{page_number} failed" }
-              break
+              Datadog.logger.debug(
+                "Failed to fetch known tests page ##{page_number}, bailing out of known tests fetch. " \
+                "Early flake detection will not work."
+              )
+              return Set.new
             end
 
             page_tests = response.tests

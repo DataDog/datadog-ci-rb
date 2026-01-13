@@ -282,6 +282,62 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
             expect(second_payload["data"]["attributes"]["page_info"]["page_state"]).to eq("next_page_cursor")
           end
         end
+
+        context "when a subsequent page request fails" do
+          let(:first_page_response) do
+            double(
+              "http_response",
+              ok?: true,
+              payload: {
+                data: {
+                  id: "page1",
+                  type: "ci_app_libraries_tests",
+                  attributes: {
+                    tests: {
+                      "rspec" => {
+                        "FirstSuite" => ["test1", "test2"]
+                      }
+                    },
+                    page_info: {
+                      cursor: "next_page_cursor",
+                      size: 2,
+                      has_next: true
+                    }
+                  }
+                }
+              }.to_json,
+              request_compressed: false,
+              duration_ms: 1.0,
+              gzipped_content?: false,
+              response_size: 150
+            )
+          end
+
+          let(:failed_page_response) do
+            double(
+              "http_response",
+              ok?: false,
+              payload: "",
+              request_compressed: false,
+              duration_ms: 1.0,
+              gzipped_content?: false,
+              response_size: 0,
+              telemetry_error_type: nil,
+              code: 500
+            )
+          end
+
+          # Override parent's before block
+          let(:http_response) { first_page_response }
+
+          before do
+            allow(api).to receive(:api_request).and_return(first_page_response, failed_page_response)
+          end
+
+          it "returns empty set of known tests" do
+            expect(response).to be_empty
+          end
+        end
       end
 
       context "when there is no api" do
