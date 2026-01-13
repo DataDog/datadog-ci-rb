@@ -25,6 +25,10 @@ module Datadog
 
         # Execute a git command with optional stdin input and timeout
         #
+        # All git commands are executed with the `-c safe.directory` option
+        # to handle cases where the repository is owned by a different user
+        # (common in CI environments with containerized builds).
+        #
         # @param cmd [Array<String>] The git command as an array of strings
         # @param stdin [String, nil] Optional stdin data to pass to the command
         # @param timeout [Integer] Timeout in seconds for the command execution
@@ -33,7 +37,11 @@ module Datadog
         def self.exec_git_command(cmd, stdin: nil, timeout: SHORT_TIMEOUT)
           # @type var out: String
           # @type var status: Process::Status?
-          out, status = Utils::Command.exec_command(["git"] + cmd, stdin_data: stdin, timeout: timeout)
+          out, status = Utils::Command.exec_command(
+            ["git", "-c", "safe.directory=#{safe_directory}"] + cmd,
+            stdin_data: stdin,
+            timeout: timeout
+          )
 
           if status.nil? || !status.success?
             # Convert command to string representation for error message
@@ -49,6 +57,56 @@ module Datadog
           return nil if out.empty?
 
           out
+        end
+
+        # Returns the directory to use for git's safe.directory config.
+        # This is cached to avoid repeated filesystem lookups.
+        #
+        # Traverses up from current directory to find the nearest .git folder
+        # and returns its parent (the repository root). Falls back to current
+        # working directory if no .git folder is found.
+        #
+        # @return [String] The safe directory path
+        def self.safe_directory
+          return @safe_directory if defined?(@safe_directory)
+
+          @safe_directory = find_git_directory(Dir.pwd)
+          Datadog.logger.debug { "Git safe.directory configured to: #{@safe_directory}" }
+          @safe_directory
+        end
+
+        # Traverses up from the given directory to find the nearest .git folder or file.
+        # Returns the repository root (parent of .git) if found, otherwise the original directory.
+        #
+        # Note: .git can be either a directory (regular repos) or a file (worktrees/submodules).
+        # In worktrees and submodules, .git is a file containing a pointer to the actual git directory.
+        #
+        # @param start_dir [String] The directory to start searching from
+        # @return [String] The repository root path or the start directory if not found
+        def self.find_git_directory(start_dir)
+          Datadog.logger.debug { "Searching for .git starting from: #{start_dir}" }
+          current_dir = File.expand_path(start_dir)
+
+          loop do
+            git_path = File.join(current_dir, ".git")
+
+            # Check for both directory (.git in regular repos) and file (.git in worktrees/submodules)
+            if File.exist?(git_path)
+              Datadog.logger.debug { "Found .git at: #{git_path} (#{File.directory?(git_path) ? "directory" : "file"})" }
+              return current_dir
+            end
+
+            parent_dir = File.dirname(current_dir)
+
+            # Reached the root directory
+            break if parent_dir == current_dir
+
+            current_dir = parent_dir
+          end
+
+          # Fallback to original directory if no .git found
+          Datadog.logger.debug { "No .git found, using fallback: #{start_dir}" }
+          start_dir
         end
       end
     end

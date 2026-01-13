@@ -5,10 +5,22 @@ require "spec_helper"
 require "datadog/ci/git/cli"
 
 RSpec.describe Datadog::CI::Git::CLI do
+  # Clear the safe_directory cache before each test
+  before do
+    described_class.remove_instance_variable(:@safe_directory) if described_class.instance_variable_defined?(:@safe_directory)
+  end
+
   describe ".exec_git_command" do
     let(:command) { ["rev-parse", "HEAD"] }
     let(:stdin_data) { nil }
     let(:timeout) { described_class::SHORT_TIMEOUT }
+    # Use the actual computed safe directory for tests
+    let(:safe_dir) { described_class.safe_directory }
+
+    # Helper to build the expected git command with safe.directory
+    def git_command_with_safe_dir(cmd, safe_directory: described_class.safe_directory)
+      ["git", "-c", "safe.directory=#{safe_directory}"] + cmd
+    end
 
     context "when command succeeds" do
       let(:output) { "abc123\n" }
@@ -16,7 +28,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
+          .with(git_command_with_safe_dir(command), stdin_data: stdin_data, timeout: timeout)
           .and_return([output, status])
       end
 
@@ -41,7 +53,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
+          .with(git_command_with_safe_dir(command), stdin_data: stdin_data, timeout: timeout)
           .and_return([output, status])
       end
 
@@ -65,7 +77,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
+          .with(git_command_with_safe_dir(command), stdin_data: stdin_data, timeout: timeout)
           .and_return([output, status])
       end
 
@@ -87,7 +99,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
+          .with(git_command_with_safe_dir(command), stdin_data: stdin_data, timeout: timeout)
           .and_return([output, status])
       end
 
@@ -95,7 +107,7 @@ RSpec.describe Datadog::CI::Git::CLI do
         result = described_class.exec_git_command(command, stdin: stdin_data, timeout: timeout)
         expect(result).to eq(output)
         expect(Datadog::CI::Utils::Command).to have_received(:exec_command)
-          .with(["git"] + command, stdin_data: stdin_data, timeout: timeout)
+          .with(git_command_with_safe_dir(command), stdin_data: stdin_data, timeout: timeout)
       end
     end
 
@@ -106,7 +118,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(["git"] + command, stdin_data: stdin_data, timeout: custom_timeout)
+          .with(git_command_with_safe_dir(command), stdin_data: stdin_data, timeout: custom_timeout)
           .and_return([output, status])
       end
 
@@ -114,7 +126,7 @@ RSpec.describe Datadog::CI::Git::CLI do
         result = described_class.exec_git_command(command, timeout: custom_timeout)
         expect(result).to eq(output)
         expect(Datadog::CI::Utils::Command).to have_received(:exec_command)
-          .with(["git"] + command, stdin_data: nil, timeout: custom_timeout)
+          .with(git_command_with_safe_dir(command), stdin_data: nil, timeout: custom_timeout)
       end
     end
 
@@ -124,7 +136,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command)
-          .with(["git"] + command, stdin_data: nil, timeout: described_class::SHORT_TIMEOUT)
+          .with(git_command_with_safe_dir(command), stdin_data: nil, timeout: described_class::SHORT_TIMEOUT)
           .and_return([output, status])
       end
 
@@ -132,7 +144,7 @@ RSpec.describe Datadog::CI::Git::CLI do
         result = described_class.exec_git_command(command)
         expect(result).to eq(output)
         expect(Datadog::CI::Utils::Command).to have_received(:exec_command)
-          .with(["git"] + command, stdin_data: nil, timeout: described_class::SHORT_TIMEOUT)
+          .with(git_command_with_safe_dir(command), stdin_data: nil, timeout: described_class::SHORT_TIMEOUT)
       end
     end
   end
@@ -189,6 +201,85 @@ RSpec.describe Datadog::CI::Git::CLI do
     describe "::UNSHALLOW_TIMEOUT" do
       it "is defined as 500 seconds" do
         expect(described_class::UNSHALLOW_TIMEOUT).to eq(500)
+      end
+    end
+  end
+
+  describe ".safe_directory" do
+    # Clear cache before each test
+    before do
+      described_class.remove_instance_variable(:@safe_directory) if described_class.instance_variable_defined?(:@safe_directory)
+    end
+
+    it "caches the result by only calling find_git_directory once" do
+      # Spy on find_git_directory to verify it's only called once
+      allow(described_class).to receive(:find_git_directory).and_call_original
+
+      first_result = described_class.safe_directory
+      second_result = described_class.safe_directory
+
+      expect(first_result).to eq(second_result)
+      expect(described_class).to have_received(:find_git_directory).once
+    end
+
+    it "finds the repository root by traversing up from current directory" do
+      result = described_class.safe_directory
+      expect(File.exist?(File.join(result, ".git"))).to be true
+    end
+  end
+
+  describe ".find_git_directory" do
+    context "when .git directory exists in parent directory" do
+      it "returns the directory containing .git" do
+        # Start from a subdirectory within the repo
+        start_dir = File.join(Dir.pwd, "lib")
+        result = described_class.find_git_directory(start_dir)
+        expect(File.exist?(File.join(result, ".git"))).to be true
+      end
+    end
+
+    context "when .git directory exists in current directory" do
+      it "returns the current directory" do
+        # We're in the repo root
+        result = described_class.find_git_directory(Dir.pwd)
+        expect(result).to eq(File.expand_path(Dir.pwd))
+      end
+    end
+
+    context "when .git is a file (worktrees/submodules)" do
+      let(:tmpdir) { Dir.mktmpdir }
+      let(:worktree_path) { File.join(tmpdir, "worktree") }
+      let(:subdir_path) { File.join(worktree_path, "subdir", "nested") }
+
+      before do
+        # Create a fake worktree structure where .git is a file
+        FileUtils.mkdir_p(subdir_path)
+        # In worktrees/submodules, .git is a file containing "gitdir: /path/to/git"
+        File.write(File.join(worktree_path, ".git"), "gitdir: /some/path/.git/worktrees/test")
+      end
+
+      after do
+        FileUtils.remove_entry(tmpdir)
+      end
+
+      it "returns the directory containing the .git file" do
+        result = described_class.find_git_directory(subdir_path)
+        expect(result).to eq(worktree_path)
+      end
+
+      it "detects .git as a file, not just a directory" do
+        git_path = File.join(worktree_path, ".git")
+        expect(File.exist?(git_path)).to be true
+        expect(File.file?(git_path)).to be true
+        expect(File.directory?(git_path)).to be false
+      end
+    end
+
+    context "when no .git is found" do
+      it "returns the original directory" do
+        # Use /tmp which shouldn't have a .git
+        result = described_class.find_git_directory("/tmp")
+        expect(result).to eq("/tmp")
       end
     end
   end
