@@ -3,6 +3,7 @@
 require_relative "../contrib/instrumentation"
 require_relative "../ext/settings"
 require_relative "../utils/bundle"
+require_relative "../utils/parsing"
 
 module Datadog
   module CI
@@ -19,8 +20,19 @@ module Datadog
             settings :ci do
               option :enabled do |o|
                 o.type :bool
-                o.env CI::Ext::Settings::ENV_MODE_ENABLED
-                o.default false
+                o.env CI::Ext::Settings::ENV_ENABLED
+                o.default do
+                  env_value = ENV[CI::Ext::Settings::ENV_MODE_ENABLED]
+                  if env_value && !ENV[CI::Ext::Settings::ENV_ENABLED]
+                    Datadog::Core.log_deprecation do
+                      "#{CI::Ext::Settings::ENV_MODE_ENABLED} environment variable is deprecated, " \
+                        "use #{CI::Ext::Settings::ENV_ENABLED} instead."
+                    end
+                    Utils::Parsing.convert_to_bool(env_value)
+                  else
+                    false
+                  end
+                end
               end
 
               option :test_session_name do |o|
