@@ -71,6 +71,8 @@ module Datadog
           return @safe_directory if defined?(@safe_directory)
 
           @safe_directory = find_git_directory(Dir.pwd)
+          Datadog.logger.debug { "Git safe.directory configured to: #{@safe_directory}" }
+          @safe_directory
         end
 
         # Traverses up from the given directory to find the nearest .git folder.
@@ -79,12 +81,14 @@ module Datadog
         # @param start_dir [String] The directory to start searching from
         # @return [String] The repository root path or the start directory if not found
         def self.find_git_directory(start_dir)
+          Datadog.logger.debug { "Searching for .git directory starting from: #{start_dir}" }
           current_dir = File.expand_path(start_dir)
 
           loop do
             git_path = File.join(current_dir, ".git")
 
             if File.directory?(git_path)
+              Datadog.logger.debug { "Found .git directory at: #{git_path}" }
               return current_dir
             end
 
@@ -97,6 +101,7 @@ module Datadog
           end
 
           # Fallback to original directory if no .git found
+          Datadog.logger.debug { "No .git directory found, using fallback: #{start_dir}" }
           start_dir
         end
       end
