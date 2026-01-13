@@ -33,7 +33,7 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
 
     let(:path) { Datadog::CI::Ext::Transport::DD_API_UNIQUE_TESTS_PATH }
 
-    it "requests the unique tests" do
+    it "requests the unique tests with page_info" do
       subject
 
       expect(api).to have_received(:api_request) do |args|
@@ -55,6 +55,10 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
         expect(configurations["os.version"]).to eq("version")
         expect(configurations["runtime.name"]).to eq("runtime_name")
         expect(configurations["runtime.version"]).to eq("runtime_version")
+
+        page_info = attributes["page_info"]
+        expect(page_info["page_size"]).to eq(described_class::DEFAULT_PAGE_SIZE)
+        expect(page_info["page_state"]).to be_nil
       end
     end
 
@@ -178,6 +182,106 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
             expect(response).to be_empty
           end
         end
+
+        context "when response contains multiple pages" do
+          let(:first_page_response) do
+            double(
+              "http_response",
+              ok?: true,
+              payload: {
+                data: {
+                  id: "page1",
+                  type: "ci_app_libraries_tests",
+                  attributes: {
+                    tests: {
+                      "rspec" => {
+                        "FirstSuite" => ["test1", "test2"]
+                      }
+                    },
+                    page_info: {
+                      cursor: "next_page_cursor",
+                      size: 2,
+                      has_next: true
+                    }
+                  }
+                }
+              }.to_json,
+              request_compressed: false,
+              duration_ms: 1.0,
+              gzipped_content?: false,
+              response_size: 150
+            )
+          end
+
+          let(:second_page_response) do
+            double(
+              "http_response",
+              ok?: true,
+              payload: {
+                data: {
+                  id: "page2",
+                  type: "ci_app_libraries_tests",
+                  attributes: {
+                    tests: {
+                      "rspec" => {
+                        "SecondSuite" => ["test3", "test4"]
+                      }
+                    },
+                    page_info: {
+                      size: 2,
+                      has_next: false
+                    }
+                  }
+                }
+              }.to_json,
+              request_compressed: false,
+              duration_ms: 1.0,
+              gzipped_content?: false,
+              response_size: 150
+            )
+          end
+
+          # Override parent's before block
+          let(:http_response) { first_page_response }
+
+          before do
+            allow(api).to receive(:api_request).and_return(first_page_response, second_page_response)
+          end
+
+          it "fetches all pages and merges tests" do
+            expect(response).to eq(
+              Set.new([
+                "FirstSuite.test1.",
+                "FirstSuite.test2.",
+                "SecondSuite.test3.",
+                "SecondSuite.test4."
+              ])
+            )
+          end
+
+          it "makes two API requests" do
+            response
+            expect(api).to have_received(:api_request).twice
+          end
+
+          it "passes page_state in the second request" do
+            requests = []
+            allow(api).to receive(:api_request) do |args|
+              requests << args
+              (requests.length == 1) ? first_page_response : second_page_response
+            end
+
+            client.fetch(test_session)
+
+            expect(requests.length).to eq(2)
+
+            first_payload = JSON.parse(requests[0][:payload])
+            expect(first_payload["data"]["attributes"]["page_info"]["page_state"]).to be_nil
+
+            second_payload = JSON.parse(requests[1][:payload])
+            expect(second_payload["data"]["attributes"]["page_info"]["page_state"]).to eq("next_page_cursor")
+          end
+        end
       end
 
       context "when there is no api" do
@@ -223,6 +327,94 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
       it "does not call JSON.parse on http response payload" do
         expect(JSON).not_to receive(:parse)
         response.tests
+      end
+    end
+
+    describe "#cursor" do
+      context "when page_info contains cursor" do
+        let(:json_data) do
+          {
+            "data" => {
+              "attributes" => {
+                "tests" => {},
+                "page_info" => {
+                  "cursor" => "next_cursor_token",
+                  "has_next" => true
+                }
+              }
+            }
+          }
+        end
+
+        subject(:response) { described_class.from_json(json_data) }
+
+        it "returns the cursor" do
+          expect(response.cursor).to eq("next_cursor_token")
+        end
+      end
+
+      context "when page_info does not contain cursor" do
+        let(:json_data) { {"data" => {"attributes" => {"tests" => {}}}} }
+
+        subject(:response) { described_class.from_json(json_data) }
+
+        it "returns nil" do
+          expect(response.cursor).to be_nil
+        end
+      end
+    end
+
+    describe "#has_next?" do
+      context "when page_info indicates more pages" do
+        let(:json_data) do
+          {
+            "data" => {
+              "attributes" => {
+                "tests" => {},
+                "page_info" => {
+                  "has_next" => true
+                }
+              }
+            }
+          }
+        end
+
+        subject(:response) { described_class.from_json(json_data) }
+
+        it "returns true" do
+          expect(response.has_next?).to be true
+        end
+      end
+
+      context "when page_info indicates no more pages" do
+        let(:json_data) do
+          {
+            "data" => {
+              "attributes" => {
+                "tests" => {},
+                "page_info" => {
+                  "has_next" => false
+                }
+              }
+            }
+          }
+        end
+
+        subject(:response) { described_class.from_json(json_data) }
+
+        it "returns false" do
+          expect(response.has_next?).to be false
+        end
+      end
+
+      context "when page_info is not present" do
+        let(:json_data) { {"data" => {"attributes" => {"tests" => {}}}} }
+
+        subject(:response) { described_class.from_json(json_data) }
+
+        it "returns false" do
+          expect(response.has_next?).to be false
+        end
       end
     end
   end

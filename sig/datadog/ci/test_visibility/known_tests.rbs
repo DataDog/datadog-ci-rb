@@ -2,6 +2,8 @@ module Datadog
   module CI
     module TestVisibility
       class KnownTests
+        DEFAULT_PAGE_SIZE: Integer
+
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
         @config_tags: Hash[String, String]
@@ -16,15 +18,19 @@ module Datadog
 
           def ok?: () -> bool
 
-          def correlation_id: () -> String?
-
           def tests: () -> Set[String]
+
+          def cursor: () -> String?
+
+          def has_next?: () -> bool
 
           private
 
           def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response, Hash[String, untyped]? json) -> void
 
           def payload: () -> Hash[String, untyped]
+
+          def page_info: () -> Hash[String, untyped]
         end
 
         def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String]) -> void
@@ -33,7 +39,9 @@ module Datadog
 
         private
 
-        def payload: (Datadog::CI::TestSession test_session) -> String
+        def fetch_page: (Datadog::CI::Transport::Api::Base api, Datadog::CI::TestSession test_session, ?page_state: String?) -> Response?
+
+        def payload: (Datadog::CI::TestSession test_session, ?page_state: String?) -> String
       end
     end
   end
