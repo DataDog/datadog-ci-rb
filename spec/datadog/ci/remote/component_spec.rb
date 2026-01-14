@@ -12,6 +12,7 @@ RSpec.describe Datadog::CI::Remote::Component do
   let(:test_visibility) { instance_double(Datadog::CI::TestVisibility::Component) }
   let(:test_management) { instance_double(Datadog::CI::TestManagement::Component) }
   let(:impacted_tests_detection) { instance_double(Datadog::CI::ImpactedTestsDetection::Component) }
+  let(:code_coverage) { instance_double(Datadog::CI::CodeCoverage::Component) }
 
   let(:configurable_components) do
     [
@@ -30,6 +31,7 @@ RSpec.describe Datadog::CI::Remote::Component do
     allow(Datadog.send(:components)).to receive(:test_visibility).and_return(test_visibility)
     allow(Datadog.send(:components)).to receive(:test_management).and_return(test_management)
     allow(Datadog.send(:components)).to receive(:impacted_tests_detection).and_return(impacted_tests_detection)
+    allow(Datadog.send(:components)).to receive(:code_coverage).and_return(code_coverage)
   end
 
   describe "#configure" do
@@ -53,6 +55,8 @@ RSpec.describe Datadog::CI::Remote::Component do
         configurable_components.each do |component|
           expect(component).to receive(:configure).with(library_configuration, test_session)
         end
+
+        expect(code_coverage).to receive(:configure).with(library_configuration)
       end
 
       it { subject }
@@ -80,6 +84,8 @@ RSpec.describe Datadog::CI::Remote::Component do
         configurable_components.each do |component|
           expect(component).to receive(:configure).with(library_configuration, test_session)
         end
+
+        expect(code_coverage).to receive(:configure).with(library_configuration)
       end
 
       it { subject }
@@ -104,6 +110,8 @@ RSpec.describe Datadog::CI::Remote::Component do
           configurable_components.each do |component|
             allow(component).to receive(:configure).with(library_configuration, test_session)
           end
+
+          allow(code_coverage).to receive(:configure).with(library_configuration)
         end
 
         it "stores component state when test session is distributed" do
@@ -136,6 +144,8 @@ RSpec.describe Datadog::CI::Remote::Component do
         configurable_components.each do |component|
           expect(component).to receive(:configure).with(library_configuration, test_session)
         end
+
+        expect(code_coverage).to receive(:configure).with(library_configuration)
 
         # Mock store_component_state for verification
         allow(component).to receive(:store_component_state)
@@ -193,6 +203,8 @@ RSpec.describe Datadog::CI::Remote::Component do
           configurable_components.each do |component|
             expect(component).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings), test_session)
           end
+
+          expect(code_coverage).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings))
         end
 
         it "loads settings from file and does not make HTTP request to backend" do
@@ -215,6 +227,7 @@ RSpec.describe Datadog::CI::Remote::Component do
           expect(library_config.known_tests_enabled?).to be true
           expect(library_config.test_management_enabled?).to be true
           expect(library_config.impacted_tests_enabled?).to be false
+          expect(library_config.coverage_report_upload_enabled?).to be false
         end
       end
 
@@ -227,6 +240,8 @@ RSpec.describe Datadog::CI::Remote::Component do
           configurable_components.each do |component|
             expect(component).to receive(:configure).with(library_configuration, test_session)
           end
+
+          expect(code_coverage).to receive(:configure).with(library_configuration)
         end
 
         it "requests library configuration again" do
@@ -250,6 +265,8 @@ RSpec.describe Datadog::CI::Remote::Component do
         configurable_components.each do |component|
           expect(component).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings), test_session)
         end
+
+        expect(code_coverage).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings))
       end
 
       it "skips backend fetching and uses default settings" do
@@ -274,6 +291,7 @@ RSpec.describe Datadog::CI::Remote::Component do
         expect(library_config.known_tests_enabled?).to be false
         expect(library_config.test_management_enabled?).to be false
         expect(library_config.impacted_tests_enabled?).to be false
+        expect(library_config.coverage_report_upload_enabled?).to be false
       end
     end
   end

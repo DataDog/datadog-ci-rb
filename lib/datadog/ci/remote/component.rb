@@ -29,7 +29,8 @@ module Datadog
             Worker.new { test_retries.configure(@library_configuration, test_session) },
             Worker.new { test_visibility.configure(@library_configuration, test_session) },
             Worker.new { test_management.configure(@library_configuration, test_session) },
-            Worker.new { impacted_tests_detection.configure(@library_configuration, test_session) }
+            Worker.new { impacted_tests_detection.configure(@library_configuration, test_session) },
+            Worker.new { code_coverage.configure(@library_configuration) }
           ]
 
           # launch configuration workers
@@ -122,6 +123,10 @@ module Datadog
 
         def git_tree_upload_worker
           Datadog.send(:components).git_tree_upload_worker
+        end
+
+        def code_coverage
+          Datadog.send(:components).code_coverage
         end
       end
     end
