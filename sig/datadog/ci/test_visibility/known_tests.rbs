@@ -39,7 +39,7 @@ module Datadog
 
         private
 
-        def fetch_page: (Datadog::CI::Transport::Api::Base api, Datadog::CI::TestSession test_session, ?page_state: String?) -> Response?
+        def fetch_page: (Datadog::CI::Transport::Api::Base api, Datadog::CI::TestSession test_session, ?page_state: String?) -> Response
 
         def payload: (Datadog::CI::TestSession test_session, ?page_state: String?) -> String
       end

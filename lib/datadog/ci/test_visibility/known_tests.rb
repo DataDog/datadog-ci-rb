@@ -104,7 +104,7 @@ module Datadog
 
             response = fetch_page(api, test_session, page_state: page_state)
 
-            if response.nil?
+            unless response.ok?
               Datadog.logger.debug(
                 "Failed to fetch known tests page ##{page_number}, bailing out of known tests fetch. " \
                 "Early flake detection will not work."
@@ -159,7 +159,6 @@ module Datadog
               error_type: http_response.telemetry_error_type,
               status_code: http_response.code
             )
-            return nil
           end
 
           Response.from_http_response(http_response)
