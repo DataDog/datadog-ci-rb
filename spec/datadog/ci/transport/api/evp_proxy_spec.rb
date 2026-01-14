@@ -202,6 +202,70 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
         end.to raise_error(NotImplementedError, "Logs intake is not supported in EVP proxy mode")
       end
     end
+
+    describe "#cicovreprt_request" do
+      before do
+        expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+        expect(SecureRandom).to receive(:uuid).and_return("abc123")
+      end
+
+      let(:cicovreprt_headers) do
+        {
+          "Content-Type" => "multipart/form-data; boundary=abc123",
+          "X-Datadog-EVP-Subdomain" => "ci-intake"
+        }
+      end
+
+      let(:expected_payload) do
+        [
+          "--abc123",
+          'Content-Disposition: form-data; name="event"; filename="event.json"',
+          "Content-Type: application/json",
+          "",
+          '{"type":"coverage_report"}',
+          "--abc123",
+          'Content-Disposition: form-data; name="coverage"; filename="coverage.gz"',
+          "Content-Type: application/octet-stream",
+          "",
+          "compressed_coverage",
+          "--abc123--"
+        ].join("\r\n")
+      end
+
+      it "produces correct headers, constructs multipart payload, and forwards request to HTTP layer" do
+        expect(intake_http).to receive(:request).with(
+          path: "/evp_proxy/v2/path",
+          payload: expected_payload,
+          verb: "post",
+          headers: cicovreprt_headers
+        )
+
+        subject.cicovreprt_request(
+          path: "/path",
+          event_payload: '{"type":"coverage_report"}',
+          coverage_report_compressed: "compressed_coverage"
+        )
+      end
+
+      context "with container id" do
+        let(:container_id) { "container-id" }
+
+        it "adds an additional Datadog-Container-ID header" do
+          expect(intake_http).to receive(:request).with(
+            path: "/evp_proxy/v2/path",
+            payload: expected_payload,
+            verb: "post",
+            headers: cicovreprt_headers.merge("Datadog-Container-ID" => "container-id")
+          )
+
+          subject.cicovreprt_request(
+            path: "/path",
+            event_payload: '{"type":"coverage_report"}',
+            coverage_report_compressed: "compressed_coverage"
+          )
+        end
+      end
+    end
   end
 
   context "with evp proxy v4" do
