@@ -39,6 +39,7 @@ RSpec.shared_context "CI mode activated" do
   let(:faulty_session_threshold) { 30 }
   let(:test_management_enabled) { false }
   let(:attempt_to_fix_retries_count) { 12 }
+  let(:coverage_report_upload_enabled) { false }
 
   let(:retry_failed_tests_max_attempts) { 5 }
   let(:retry_failed_tests_total_limit) { 100 }
@@ -107,7 +108,8 @@ RSpec.shared_context "CI mode activated" do
         known_tests_enabled?: known_tests_enabled,
         test_management_enabled?: test_management_enabled,
         attempt_to_fix_retries_count: attempt_to_fix_retries_count,
-        impacted_tests_enabled?: impacted_tests_enabled
+        impacted_tests_enabled?: impacted_tests_enabled,
+        coverage_report_upload_enabled?: coverage_report_upload_enabled
       ),
       # This is for the second call to fetch_library_settings
       instance_double(
@@ -128,7 +130,8 @@ RSpec.shared_context "CI mode activated" do
         known_tests_enabled?: known_tests_enabled,
         test_management_enabled?: test_management_enabled,
         attempt_to_fix_retries_count: attempt_to_fix_retries_count,
-        impacted_tests_enabled?: impacted_tests_enabled
+        impacted_tests_enabled?: impacted_tests_enabled,
+        coverage_report_upload_enabled?: coverage_report_upload_enabled
       )
     )
     allow_any_instance_of(Datadog::CI::TestOptimisation::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
