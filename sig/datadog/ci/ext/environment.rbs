@@ -55,7 +55,13 @@ module Datadog
 
         ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA: String
 
+        @tags: Hash[String, String]?
+
         def self?.tags: (untyped env) -> Hash[String, String]
+
+        def self?.reset!: () -> nil
+
+        def self?.extract_tags: (untyped env) -> Hash[String, String]
 
         def self?.ensure_post_conditions: (Hash[String, String] tags) -> void
 

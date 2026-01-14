@@ -53,6 +53,14 @@ module Datadog
         module_function
 
         def tags(env)
+          @tags ||= extract_tags(env).freeze
+        end
+
+        def reset!
+          @tags = nil
+        end
+
+        def extract_tags(env)
           # Extract metadata from CI provider environment variables
           tags = Environment::Extractor.new(env).tags
 
@@ -90,6 +98,8 @@ module Datadog
 
           tags
         end
+
+        private_class_method :extract_tags
 
         def ensure_post_conditions(tags)
           validate_repository_url(tags[Git::TAG_REPOSITORY_URL])
