@@ -17,6 +17,7 @@ module Datadog
         @test_management_enabled: bool
         @attempt_to_fix_retries_count: Integer
         @impacted_tests_enabled: bool
+        @coverage_report_upload_enabled: bool
 
         def self.from_http_response: (Datadog::CI::Transport::Adapters::Net::Response? http_response) -> LibrarySettings
 
@@ -49,6 +50,8 @@ module Datadog
         def attempt_to_fix_retries_count: () -> Integer
 
         def impacted_tests_enabled?: () -> bool
+
+        def coverage_report_upload_enabled?: () -> bool
 
         private
 
