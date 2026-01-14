@@ -14,7 +14,7 @@ module Datadog
 
           def logs_intake_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
-          def cicovreprt_request: (path: String, event_payload: String, coverage_report_compressed: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
+          def cicovreprt_request: (path: String, event_payload: String, compressed_coverage_report: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
           private
 

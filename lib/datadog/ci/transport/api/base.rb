@@ -42,7 +42,7 @@ module Datadog
             headers[Ext::Transport::HEADER_CONTENT_TYPE] ||= Ext::Transport::CONTENT_TYPE_JSON
           end
 
-          def cicovreprt_request(path:, event_payload:, coverage_report_compressed:, headers: {}, verb: "post")
+          def cicovreprt_request(path:, event_payload:, compressed_coverage_report:, headers: {}, verb: "post")
             cicovreprt_request_boundary = ::SecureRandom.uuid
 
             headers[Ext::Transport::HEADER_CONTENT_TYPE] ||=
@@ -58,7 +58,7 @@ module Datadog
               'Content-Disposition: form-data; name="coverage"; filename="coverage.gz"',
               "Content-Type: application/octet-stream",
               "",
-              coverage_report_compressed,
+              compressed_coverage_report,
               "--#{cicovreprt_request_boundary}--"
             ].join("\r\n")
           end

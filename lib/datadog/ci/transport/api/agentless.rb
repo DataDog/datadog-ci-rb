@@ -50,7 +50,7 @@ module Datadog
             perform_request(@logs_intake_http, path: path, payload: payload, headers: headers, verb: verb)
           end
 
-          def cicovreprt_request(path:, event_payload:, coverage_report_compressed:, headers: {}, verb: "post")
+          def cicovreprt_request(path:, event_payload:, compressed_coverage_report:, headers: {}, verb: "post")
             super
 
             perform_request(@cicovreprt_http, path: path, payload: @cicovreprt_payload, headers: headers, verb: verb)

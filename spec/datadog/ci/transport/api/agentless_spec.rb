@@ -319,7 +319,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         subject.cicovreprt_request(
           path: "path",
           event_payload: '{"type":"coverage_report"}',
-          coverage_report_compressed: "compressed_coverage"
+          compressed_coverage_report: "compressed_coverage"
         )
 
         expect(cicovreprt_http).to have_received(:request) do |args|
