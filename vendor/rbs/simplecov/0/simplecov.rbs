@@ -1,6 +1,8 @@
 module SimpleCov
   def self.running: () -> bool
 
+  def self.coverage_path: () -> String
+
   def add_not_loaded_files: (untyped result) -> untyped
 
   def self.__dd_peek_result: () -> SimpleCov::Result?
