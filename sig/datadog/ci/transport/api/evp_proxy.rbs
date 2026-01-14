@@ -18,6 +18,8 @@ module Datadog
 
           def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
+          def cicovreprt_request: (path: String, event: String, coverage: String, ?headers: Hash[String, String], ?verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
+
           private
 
           def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String) -> Datadog::CI::Transport::Adapters::Net::Response
