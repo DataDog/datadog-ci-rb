@@ -1094,6 +1094,47 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             .to(true)
         end
       end
+
+      describe "#code_coverage_report_upload_enabled" do
+        subject(:code_coverage_report_upload_enabled) { settings.ci.code_coverage_report_upload_enabled }
+
+        it { is_expected.to be true }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_CODE_COVERAGE_REPORT_UPLOAD_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_CODE_COVERAGE_REPORT_UPLOAD_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#code_coverage_report_upload_enabled=" do
+        it "updates the #code_coverage_report_upload_enabled setting" do
+          expect { settings.ci.code_coverage_report_upload_enabled = false }
+            .to change { settings.ci.code_coverage_report_upload_enabled }
+            .from(true)
+            .to(false)
+        end
+      end
     end
   end
 end
