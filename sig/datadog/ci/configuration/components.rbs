@@ -11,6 +11,7 @@ module Datadog
         @agentless_logs_submission: Datadog::CI::Logs::Component
         @impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component | Datadog::CI::ImpactedTestsDetection::NullComponent
         @test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
+        @code_coverage: Datadog::CI::CodeCoverage::Component | Datadog::CI::CodeCoverage::NullComponent
 
         attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
         attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent
@@ -21,6 +22,7 @@ module Datadog
         attr_reader agentless_logs_submission: Datadog::CI::Logs::Component
         attr_reader impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component | Datadog::CI::ImpactedTestsDetection::NullComponent
         attr_reader test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
+        attr_reader code_coverage: Datadog::CI::CodeCoverage::Component | Datadog::CI::CodeCoverage::NullComponent
 
         def initialize: (untyped settings) -> void
 
@@ -47,6 +49,8 @@ module Datadog
         def build_logs_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 
         def build_agentless_logs_component: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Logs::Component
+
+        def build_code_coverage: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> (Datadog::CI::CodeCoverage::Component | Datadog::CI::CodeCoverage::NullComponent)
 
         def custom_configuration: (untyped settings) -> Hash[String, String]
 
