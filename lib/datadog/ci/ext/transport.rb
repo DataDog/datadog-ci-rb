@@ -28,6 +28,9 @@ module Datadog
         TEST_COVERAGE_INTAKE_HOST_PREFIX = "citestcov-intake"
         TEST_COVERAGE_INTAKE_PATH = "/api/v2/citestcov"
 
+        CODE_COVERAGE_REPORT_INTAKE_HOST_PREFIX = "ci-intake"
+        CODE_COVERAGE_REPORT_INTAKE_PATH = "/api/v2/cicovreprt"
+
         LOGS_INTAKE_HOST_PREFIX = "http-intake.logs"
 
         DD_API_HOST_PREFIX = "api"

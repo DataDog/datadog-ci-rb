@@ -96,6 +96,14 @@ module Datadog
 
         METRIC_CODE_COVERAGE_FILES: "code_coverage.files"
 
+        METRIC_COVERAGE_UPLOAD_REQUEST: "coverage_upload.request"
+
+        METRIC_COVERAGE_UPLOAD_REQUEST_ERRORS: "coverage_upload.request_errors"
+
+        METRIC_COVERAGE_UPLOAD_REQUEST_MS: "coverage_upload.request_ms"
+
+        METRIC_COVERAGE_UPLOAD_REQUEST_BYTES: "coverage_upload.request_bytes"
+
         METRIC_TEST_SESSION: "test_session"
 
         METRIC_GIT_COMMIT_SHA_MATCH: "git.commit_sha_match"
