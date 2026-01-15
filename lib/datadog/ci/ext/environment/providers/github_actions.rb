@@ -15,6 +15,9 @@ module Datadog
           # Github Actions: https://github.com/features/actions
           # Environment variables docs: https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
           class GithubActions < Base
+            # Default path to GitHub Actions runner diagnostics folder
+            GITHUB_RUNNER_DIAG_PATH = "/home/runner/actions-runner/_diag"
+
             def self.handles?(env)
               env.key?("GITHUB_SHA")
             end
@@ -28,11 +31,16 @@ module Datadog
             end
 
             def job_url
-              "#{github_server_url}/#{env["GITHUB_REPOSITORY"]}/commit/#{env["GITHUB_SHA"]}/checks"
+              numeric_id = numeric_job_id
+              if numeric_id
+                "#{github_server_url}/#{env["GITHUB_REPOSITORY"]}/actions/runs/#{env["GITHUB_RUN_ID"]}/job/#{numeric_id}"
+              else
+                "#{github_server_url}/#{env["GITHUB_REPOSITORY"]}/commit/#{env["GITHUB_SHA"]}/checks"
+              end
             end
 
             def job_id
-              env["GITHUB_JOB"]
+              numeric_job_id || env["GITHUB_JOB"]
             end
 
             def pipeline_id
@@ -140,6 +148,73 @@ module Datadog
               return @github_server_url if defined?(@github_server_url)
 
               @github_server_url ||= Datadog::Core::Utils::Url.filter_basic_auth(env["GITHUB_SERVER_URL"])
+            end
+
+            # Extracts numeric job ID from GitHub Actions runner diagnostics files.
+            # The runner stores diagnostics in Worker_*.log files with JSON content.
+            # This is a workaround since GitHub doesn't expose the numeric job ID via environment variables.
+            def numeric_job_id
+              return @numeric_job_id if defined?(@numeric_job_id)
+
+              @numeric_job_id = extract_numeric_job_id_from_diag_files
+            end
+
+            def extract_numeric_job_id_from_diag_files
+              return nil unless Dir.exist?(GITHUB_RUNNER_DIAG_PATH)
+
+              worker_files = Dir.glob(File.join(GITHUB_RUNNER_DIAG_PATH, "Worker_*.log")).sort
+              return nil if worker_files.empty?
+
+              # Use the most recent worker file (last in sorted order)
+              worker_file = worker_files.last
+              extract_check_run_id_from_worker_file(worker_file)
+            rescue => e
+              Datadog.logger.debug("Failed to extract numeric job ID from GitHub Actions runner diagnostics: #{e}")
+              nil
+            end
+
+            def extract_check_run_id_from_worker_file(file_path)
+              return nil unless File.exist?(file_path)
+
+              File.foreach(file_path) do |line|
+                # Each line in the Worker log file can contain JSON data
+                # We're looking for the "job" object with "check_run_id" in its "d" array
+                next unless line.include?('"check_run_id"')
+
+                check_run_id = parse_check_run_id_from_line(line)
+                return check_run_id if check_run_id
+              end
+
+              nil
+            rescue => e
+              Datadog.logger.debug("Failed to parse Worker log file #{file_path}: #{e}")
+              nil
+            end
+
+            def parse_check_run_id_from_line(line)
+              # Find JSON object in the line - it may be prefixed with timestamp
+              json_start = line.index("{")
+              return nil unless json_start
+
+              json_str = line[json_start..] || ""
+              json_data = JSON.parse(json_str)
+
+              # Navigate to job.d array and find check_run_id
+              job_data = json_data.dig("job", "d")
+              return nil unless job_data.is_a?(Array)
+
+              job_data.each do |item|
+                next unless item.is_a?(Hash)
+                next unless item["k"] == "check_run_id"
+
+                value = item["v"]
+                # The value might be a float (55411116365.0), convert to integer string
+                return value.to_i.to_s if value
+              end
+
+              nil
+            rescue JSON::ParserError
+              nil
             end
           end
         end
