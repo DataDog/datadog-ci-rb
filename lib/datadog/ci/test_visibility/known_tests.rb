@@ -13,6 +13,8 @@ module Datadog
     module TestVisibility
       # fetches and stores a list of known tests from the backend
       class KnownTests
+        DEFAULT_PAGE_SIZE = 2000
+
         class Response
           def self.from_http_response(http_response)
             new(http_response, nil)
@@ -45,6 +47,14 @@ module Datadog
             res
           end
 
+          def cursor
+            page_info.fetch("cursor", nil)
+          end
+
+          def has_next?
+            page_info.fetch("has_next", false)
+          end
+
           private
 
           def initialize(http_response, json)
@@ -66,6 +76,13 @@ module Datadog
               @json = {}
             end
           end
+
+          def page_info
+            payload
+              .fetch("data", {})
+              .fetch("attributes", {})
+              .fetch("page_info", {})
+          end
         end
 
         def initialize(dd_env:, api: nil, config_tags: {})
@@ -78,8 +95,45 @@ module Datadog
           api = @api
           return Set.new unless api
 
-          request_payload = payload(test_session)
-          Datadog.logger.debug("Fetching unique known tests with request: #{request_payload}")
+          result = Set.new
+          page_state = nil
+          page_number = 1
+
+          loop do
+            Datadog.logger.debug { "Fetching known tests page ##{page_number}#{" with cursor" if page_state}" }
+
+            response = fetch_page(api, test_session, page_state: page_state)
+
+            unless response.ok?
+              Datadog.logger.debug(
+                "Failed to fetch known tests page ##{page_number}, bailing out of known tests fetch. " \
+                "Early flake detection will not work."
+              )
+              return Set.new
+            end
+
+            page_tests = response.tests
+            result.merge(page_tests)
+            Datadog.logger.debug { "Received #{page_tests.size} known tests from page ##{page_number} (total so far: #{result.size})" }
+
+            unless response.has_next?
+              Datadog.logger.debug { "Stopping known tests fetch: no more pages after page ##{page_number}" }
+              break
+            end
+
+            page_state = response.cursor
+            page_number += 1
+          end
+
+          Datadog.logger.debug { "Finished fetching known tests: #{result.size} tests total from #{page_number} page(s)" }
+          result
+        end
+
+        private
+
+        def fetch_page(api, test_session, page_state: nil)
+          request_payload = payload(test_session, page_state: page_state)
+          Datadog.logger.debug { "Known tests request payload: #{request_payload}" }
 
           http_response = api.api_request(
             path: Ext::Transport::DD_API_UNIQUE_TESTS_PATH,
@@ -107,12 +161,12 @@ module Datadog
             )
           end
 
-          Response.from_http_response(http_response).tests
+          Response.from_http_response(http_response)
         end
 
-        private
+        def payload(test_session, page_state: nil)
+          page_info = page_state ? {"page_size" => DEFAULT_PAGE_SIZE, "page_state" => page_state} : {"page_size" => DEFAULT_PAGE_SIZE}
 
-        def payload(test_session)
           {
             "data" => {
               "id" => Datadog::Core::Environment::Identity.id,
@@ -129,7 +183,8 @@ module Datadog
                   Ext::Test::TAG_RUNTIME_NAME => test_session.runtime_name,
                   Ext::Test::TAG_RUNTIME_VERSION => test_session.runtime_version,
                   "custom" => @config_tags
-                }
+                },
+                "page_info" => page_info
               }
             }
           }.to_json
