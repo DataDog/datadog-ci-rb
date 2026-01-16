@@ -150,13 +150,14 @@ module Datadog
               @github_server_url ||= Datadog::Core::Utils::Url.filter_basic_auth(env["GITHUB_SERVER_URL"])
             end
 
-            # Extracts numeric job ID from GitHub Actions runner diagnostics files.
-            # The runner stores diagnostics in Worker_*.log files with JSON content.
-            # This is a workaround since GitHub doesn't expose the numeric job ID via environment variables.
+            # Returns numeric job ID from environment variable or runner diagnostics.
+            # Priority:
+            # 1. JOB_CHECK_RUN_ID environment variable (GitHub Actions feature pending)
+            # 2. Worker_*.log files in the runner's _diag folder (fallback)
             def numeric_job_id
               return @numeric_job_id if defined?(@numeric_job_id)
 
-              @numeric_job_id = extract_numeric_job_id_from_diag_files
+              @numeric_job_id = env["JOB_CHECK_RUN_ID"] || extract_numeric_job_id_from_diag_files
             end
 
             def extract_numeric_job_id_from_diag_files

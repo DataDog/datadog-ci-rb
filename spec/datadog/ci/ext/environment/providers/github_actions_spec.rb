@@ -249,6 +249,36 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
       it { is_expected.to eq("github-job-name") }
     end
 
+    context "with JOB_CHECK_RUN_ID environment variable" do
+      let(:env) do
+        {
+          "GITHUB_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+          "GITHUB_JOB" => "github-job-name",
+          "JOB_CHECK_RUN_ID" => "99999999999"
+        }
+      end
+
+      it "returns JOB_CHECK_RUN_ID value" do
+        expect(job_id).to eq("99999999999")
+      end
+    end
+
+    context "with JOB_CHECK_RUN_ID taking precedence over runner diagnostics" do
+      let(:env) do
+        {
+          "GITHUB_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+          "GITHUB_JOB" => "github-job-name",
+          "JOB_CHECK_RUN_ID" => "99999999999"
+        }
+      end
+
+      it "returns JOB_CHECK_RUN_ID value instead of value from diagnostics file" do
+        with_runner_diag_path("./spec/support/fixtures/github_actions/_diag") do
+          expect(job_id).to eq("99999999999")
+        end
+      end
+    end
+
     context "with runner diagnostics containing numeric job ID" do
       it "returns numeric job ID" do
         with_runner_diag_path("./spec/support/fixtures/github_actions/_diag") do
@@ -328,6 +358,40 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
 
     context "without runner diagnostics" do
       it { is_expected.to eq("https://github.com/owner/repo/commit/b9f0fb3fdbb94c9d24b2c75b49663122a529e123/checks") }
+    end
+
+    context "with JOB_CHECK_RUN_ID environment variable" do
+      let(:env) do
+        {
+          "GITHUB_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+          "GITHUB_SERVER_URL" => "https://github.com",
+          "GITHUB_REPOSITORY" => "owner/repo",
+          "GITHUB_RUN_ID" => "12345",
+          "JOB_CHECK_RUN_ID" => "99999999999"
+        }
+      end
+
+      it "returns URL with JOB_CHECK_RUN_ID value" do
+        expect(job_url).to eq("https://github.com/owner/repo/actions/runs/12345/job/99999999999")
+      end
+    end
+
+    context "with JOB_CHECK_RUN_ID taking precedence over runner diagnostics" do
+      let(:env) do
+        {
+          "GITHUB_SHA" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
+          "GITHUB_SERVER_URL" => "https://github.com",
+          "GITHUB_REPOSITORY" => "owner/repo",
+          "GITHUB_RUN_ID" => "12345",
+          "JOB_CHECK_RUN_ID" => "99999999999"
+        }
+      end
+
+      it "returns URL with JOB_CHECK_RUN_ID value instead of diagnostics file value" do
+        with_runner_diag_path("./spec/support/fixtures/github_actions/_diag") do
+          expect(job_url).to eq("https://github.com/owner/repo/actions/runs/12345/job/99999999999")
+        end
+      end
     end
 
     context "with runner diagnostics containing numeric job ID" do
