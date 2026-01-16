@@ -287,6 +287,14 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
       end
     end
 
+    context "with runner diagnostics file containing multiple jobs (self-hosted runner)" do
+      it "returns the last check_run_id from the file" do
+        with_runner_diag_path("./spec/support/fixtures/github_actions/_diag_multiple_jobs") do
+          expect(job_id).to eq("33333333333")
+        end
+      end
+    end
+
     context "with non-existent diag path" do
       it "falls back to GITHUB_JOB" do
         with_runner_diag_path("./spec/support/fixtures/github_actions/non_existent_diag") do

@@ -177,16 +177,20 @@ module Datadog
             def extract_check_run_id_from_worker_file(file_path)
               return nil unless File.exist?(file_path)
 
+              # On self-hosted runners, Worker_*.log files can be appended across multiple jobs.
+              # We scan the entire file and return the last check_run_id found to get the current job's ID.
+              last_check_run_id = nil
+
               File.foreach(file_path) do |line|
                 # Each line in the Worker log file can contain JSON data
                 # We're looking for the "job" object with "check_run_id" in its "d" array
                 next unless line.include?('"check_run_id"')
 
                 check_run_id = parse_check_run_id_from_line(line)
-                return check_run_id if check_run_id
+                last_check_run_id = check_run_id if check_run_id
               end
 
-              nil
+              last_check_run_id
             rescue => e
               Datadog.logger.debug("Failed to parse Worker log file #{file_path}: #{e}")
               nil
