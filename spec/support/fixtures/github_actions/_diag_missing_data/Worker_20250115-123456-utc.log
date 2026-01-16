@@ -1,0 +1,3 @@
+[2025-01-15 12:34:56Z INFO Worker] Starting worker
+[2025-01-15 12:34:57Z INFO Worker] {"inputs":{"t":2},"job":{"t":2,"d":[{"k":"some_other_key","v":"some_value"}]},"matrix":null}
+[2025-01-15 12:34:58Z INFO Worker] Job completed

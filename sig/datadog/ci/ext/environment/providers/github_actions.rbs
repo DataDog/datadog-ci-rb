@@ -4,9 +4,13 @@ module Datadog
       module Environment
         module Providers
           class GithubActions < Base
+            GITHUB_RUNNER_DIAG_PATHS: Array[String]
+            CHECK_RUN_ID_REGEX: Regexp
+
             @ref: String
             @github_server_url: String?
             @github_event_json: Hash[String, untyped]?
+            @numeric_job_id: String?
 
             def self.handles?: (Hash[String, String] env) -> bool
 
@@ -15,6 +19,8 @@ module Datadog
             def job_name: () -> String?
 
             def job_url: () -> String
+
+            def job_id: () -> String?
 
             def pipeline_id: () -> String?
 
@@ -40,11 +46,19 @@ module Datadog
 
             def git_commit_head_sha: () -> String?
 
+            def pr_number: () -> Integer?
+
             private
 
             def github_event_json: () -> Hash[String, untyped]?
 
             def github_server_url: () -> String?
+
+            def numeric_job_id: () -> String?
+
+            def extract_numeric_job_id_from_diag_files: () -> String?
+
+            def extract_check_run_id_from_worker_file: (String file_path) -> String?
           end
         end
       end
