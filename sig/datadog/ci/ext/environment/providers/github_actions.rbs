@@ -5,6 +5,7 @@ module Datadog
         module Providers
           class GithubActions < Base
             GITHUB_RUNNER_DIAG_PATHS: Array[String]
+            CHECK_RUN_ID_REGEX: Regexp
 
             @ref: String
             @github_server_url: String?
@@ -58,8 +59,6 @@ module Datadog
             def extract_numeric_job_id_from_diag_files: () -> String?
 
             def extract_check_run_id_from_worker_file: (String file_path) -> String?
-
-            def parse_check_run_id_from_line: (String line) -> String?
           end
         end
       end

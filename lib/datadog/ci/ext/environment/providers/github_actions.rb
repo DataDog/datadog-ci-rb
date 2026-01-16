@@ -183,51 +183,25 @@ module Datadog
               nil
             end
 
+            # Regex to extract check_run_id value from Worker log files.
+            # The log format varies between GitHub-hosted and self-hosted runners,
+            # so we use regex instead of JSON parsing for robustness.
+            # Matches patterns like: "k": "check_run_id" ... "v": 12345 or "v": 12345.0
+            CHECK_RUN_ID_REGEX = /"k":\s*"check_run_id"[^}]*"v":\s*(\d+)(?:\.\d+)?/
+
             def extract_check_run_id_from_worker_file(file_path)
               return nil unless File.exist?(file_path)
 
-              # On self-hosted runners, Worker_*.log files can be appended across multiple jobs.
-              # We scan the entire file and return the last check_run_id found to get the current job's ID.
-              last_check_run_id = nil
+              content = File.read(file_path)
 
-              File.foreach(file_path) do |line|
-                # Each line in the Worker log file can contain JSON data
-                # We're looking for the "job" object with "check_run_id" in its "d" array
-                next unless line.include?('"check_run_id"')
-
-                check_run_id = parse_check_run_id_from_line(line)
-                last_check_run_id = check_run_id if check_run_id
-              end
-
-              last_check_run_id
+              # Find all check_run_id values in the file.
+              # On self-hosted runners, Worker_*.log files can be appended across multiple jobs,
+              # so we use the last match to get the current job's ID.
+              # flatten because scan with capture groups returns Array[Array[String]]
+              matches = content.scan(CHECK_RUN_ID_REGEX).flatten
+              matches.last
             rescue => e
               Datadog.logger.debug("Failed to parse Worker log file #{file_path}: #{e}")
-              nil
-            end
-
-            def parse_check_run_id_from_line(line)
-              # Find JSON object in the line - it may be prefixed with timestamp
-              json_start = line.index("{")
-              return nil unless json_start
-
-              json_str = line[json_start..] || ""
-              json_data = JSON.parse(json_str)
-
-              # Navigate to job.d array and find check_run_id
-              job_data = json_data.dig("job", "d")
-              return nil unless job_data.is_a?(Array)
-
-              job_data.each do |item|
-                next unless item.is_a?(Hash)
-                next unless item["k"] == "check_run_id"
-
-                value = item["v"]
-                # The value might be a float (55411116365.0), convert to integer string
-                return value.to_i.to_s if value
-              end
-
-              nil
-            rescue JSON::ParserError
               nil
             end
           end
