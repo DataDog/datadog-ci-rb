@@ -4,7 +4,7 @@ module Datadog
       module Environment
         module Providers
           class GithubActions < Base
-            GITHUB_RUNNER_DIAG_PATH: String
+            GITHUB_RUNNER_DIAG_PATHS: Array[String]
 
             @ref: String
             @github_server_url: String?

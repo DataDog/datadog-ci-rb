@@ -15,8 +15,12 @@ module Datadog
           # Github Actions: https://github.com/features/actions
           # Environment variables docs: https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
           class GithubActions < Base
-            # Default path to GitHub Actions runner diagnostics folder
-            GITHUB_RUNNER_DIAG_PATH = "/home/runner/actions-runner/_diag"
+            # Paths to GitHub Actions runner diagnostics folder
+            # GitHub-hosted (SaaS) runners use the cached path, self-hosted runners use the non-cached path
+            GITHUB_RUNNER_DIAG_PATHS = [
+              "/home/runner/actions-runner/cached/_diag", # GitHub-hosted (SaaS) runners
+              "/home/runner/actions-runner/_diag"         # Self-hosted runners
+            ].freeze
 
             def self.handles?(env)
               env.key?("GITHUB_SHA")
@@ -161,14 +165,19 @@ module Datadog
             end
 
             def extract_numeric_job_id_from_diag_files
-              return nil unless Dir.exist?(GITHUB_RUNNER_DIAG_PATH)
+              GITHUB_RUNNER_DIAG_PATHS.each do |diag_path|
+                next unless Dir.exist?(diag_path)
 
-              worker_files = Dir.glob(File.join(GITHUB_RUNNER_DIAG_PATH, "Worker_*.log")).sort
-              return nil if worker_files.empty?
+                worker_files = Dir.glob(File.join(diag_path, "Worker_*.log")).sort
+                next if worker_files.empty?
 
-              # Use the most recent worker file (last in sorted order)
-              worker_file = worker_files.last
-              extract_check_run_id_from_worker_file(worker_file)
+                # Use the most recent worker file (last in sorted order)
+                worker_file = worker_files.last
+                check_run_id = extract_check_run_id_from_worker_file(worker_file)
+                return check_run_id if check_run_id
+              end
+
+              nil
             rescue => e
               Datadog.logger.debug("Failed to extract numeric job ID from GitHub Actions runner diagnostics: #{e}")
               nil

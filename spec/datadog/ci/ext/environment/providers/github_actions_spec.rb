@@ -1,12 +1,12 @@
 RSpec.describe ::Datadog::CI::Ext::Environment::Providers::GithubActions do
   def with_runner_diag_path(path)
-    original_path = described_class::GITHUB_RUNNER_DIAG_PATH
-    described_class.send(:remove_const, :GITHUB_RUNNER_DIAG_PATH)
-    described_class.const_set(:GITHUB_RUNNER_DIAG_PATH, path)
+    original_paths = described_class::GITHUB_RUNNER_DIAG_PATHS
+    described_class.send(:remove_const, :GITHUB_RUNNER_DIAG_PATHS)
+    described_class.const_set(:GITHUB_RUNNER_DIAG_PATHS, [path].freeze)
     yield
   ensure
-    described_class.send(:remove_const, :GITHUB_RUNNER_DIAG_PATH)
-    described_class.const_set(:GITHUB_RUNNER_DIAG_PATH, original_path)
+    described_class.send(:remove_const, :GITHUB_RUNNER_DIAG_PATHS)
+    described_class.const_set(:GITHUB_RUNNER_DIAG_PATHS, original_paths)
   end
 
   describe ".tags" do
