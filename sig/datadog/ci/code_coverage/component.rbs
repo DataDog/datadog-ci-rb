@@ -1,0 +1,26 @@
+module Datadog
+  module CI
+    module CodeCoverage
+      class Component
+        COVERAGE_REPORT_TYPE: "coverage_report"
+
+        attr_reader enabled: bool
+
+        @enabled: bool
+        @transport: Datadog::CI::CodeCoverage::Transport
+
+        def initialize: (enabled: bool, transport: Datadog::CI::CodeCoverage::Transport) -> void
+
+        def configure: (Datadog::CI::Remote::LibrarySettings library_configuration) -> void
+
+        def upload: (serialized_report: String?, format: String) -> Datadog::CI::Transport::Adapters::Net::Response?
+
+        def shutdown!: () -> void
+
+        private
+
+        def build_event: (String format) -> Hash[String, untyped]
+      end
+    end
+  end
+end

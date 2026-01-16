@@ -28,6 +28,9 @@ module Datadog
         TEST_COVERAGE_INTAKE_HOST_PREFIX = "citestcov-intake"
         TEST_COVERAGE_INTAKE_PATH = "/api/v2/citestcov"
 
+        CODE_COVERAGE_REPORT_INTAKE_HOST_PREFIX = "ci-intake"
+        CODE_COVERAGE_REPORT_INTAKE_PATH = "/api/v2/cicovreprt"
+
         LOGS_INTAKE_HOST_PREFIX = "http-intake.logs"
 
         DD_API_HOST_PREFIX = "api"
@@ -49,6 +52,7 @@ module Datadog
         DD_API_SETTINGS_RESPONSE_ATTEMPT_TO_FIX_RETRIES_KEY = "attempt_to_fix_retries"
         DD_API_SETTINGS_RESPONSE_DEFAULT = {DD_API_SETTINGS_RESPONSE_ITR_ENABLED_KEY => false}.freeze
         DD_API_SETTINGS_RESPONSE_IMPACTED_TESTS_ENABLED_KEY = "impacted_tests_enabled"
+        DD_API_SETTINGS_RESPONSE_COVERAGE_REPORT_UPLOAD_KEY = "coverage_report_upload_enabled"
 
         DD_API_GIT_SEARCH_COMMITS_PATH = "/api/v2/git/repository/search_commits"
 

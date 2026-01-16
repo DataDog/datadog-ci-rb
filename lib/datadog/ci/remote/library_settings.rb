@@ -117,6 +117,14 @@ module Datadog
           )
         end
 
+        def coverage_report_upload_enabled?
+          return @coverage_report_upload_enabled if defined?(@coverage_report_upload_enabled)
+
+          @coverage_report_upload_enabled = Utils::Parsing.convert_to_bool(
+            payload.fetch(Ext::Transport::DD_API_SETTINGS_RESPONSE_COVERAGE_REPORT_UPLOAD_KEY, false)
+          )
+        end
+
         def slow_test_retries
           return @slow_test_retries if defined?(@slow_test_retries)
 

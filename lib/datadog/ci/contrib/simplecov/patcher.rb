@@ -2,6 +2,7 @@
 
 require_relative "../patcher"
 
+require_relative "report_uploader"
 require_relative "result_extractor"
 
 module Datadog
@@ -16,6 +17,7 @@ module Datadog
 
           def patch
             ::SimpleCov.include(ResultExtractor)
+            ::SimpleCov.include(ReportUploader)
           end
         end
       end

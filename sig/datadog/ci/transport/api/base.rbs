@@ -4,6 +4,7 @@ module Datadog
       module Api
         class Base
           @citestcov_payload: String
+          @cicovreprt_payload: String
 
           def api_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
@@ -12,6 +13,8 @@ module Datadog
           def citestcov_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
           def logs_intake_request: (path: String, payload: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
+
+          def cicovreprt_request: (path: String, event_payload: String, compressed_coverage_report: String, ?headers: Hash[String, String], ?verb: ::String) -> untyped
 
           private
 

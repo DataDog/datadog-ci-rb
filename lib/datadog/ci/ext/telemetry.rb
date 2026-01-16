@@ -54,6 +54,11 @@ module Datadog
         METRIC_CODE_COVERAGE_IS_EMPTY = "code_coverage.is_empty"
         METRIC_CODE_COVERAGE_FILES = "code_coverage.files"
 
+        METRIC_COVERAGE_UPLOAD_REQUEST = "coverage_upload.request"
+        METRIC_COVERAGE_UPLOAD_REQUEST_ERRORS = "coverage_upload.request_errors"
+        METRIC_COVERAGE_UPLOAD_REQUEST_MS = "coverage_upload.request_ms"
+        METRIC_COVERAGE_UPLOAD_REQUEST_BYTES = "coverage_upload.request_bytes"
+
         METRIC_KNOWN_TESTS_REQUEST = "known_tests.request"
         METRIC_KNOWN_TESTS_REQUEST_MS = "known_tests.request_ms"
         METRIC_KNOWN_TESTS_REQUEST_ERRORS = "known_tests.request_errors"

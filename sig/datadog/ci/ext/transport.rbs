@@ -34,6 +34,10 @@ module Datadog
 
         TEST_COVERAGE_INTAKE_PATH: "/api/v2/citestcov"
 
+        CODE_COVERAGE_REPORT_INTAKE_HOST_PREFIX: "ci-intake"
+
+        CODE_COVERAGE_REPORT_INTAKE_PATH: "/api/v2/cicovreprt"
+
         LOGS_INTAKE_HOST_PREFIX: "http-intake.logs"
 
         DD_API_HOST_PREFIX: "api"
@@ -97,6 +101,8 @@ module Datadog
         GZIP_MAGIC_NUMBER: String
 
         DD_API_SETTINGS_RESPONSE_IMPACTED_TESTS_ENABLED_KEY: "impacted_tests_enabled"
+
+        DD_API_SETTINGS_RESPONSE_COVERAGE_REPORT_UPLOAD_KEY: "coverage_report_upload_enabled"
       end
     end
   end

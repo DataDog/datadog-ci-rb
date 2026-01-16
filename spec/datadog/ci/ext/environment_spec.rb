@@ -8,6 +8,10 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
     allow(logger).to receive(:error)
   end
 
+  after do
+    described_class.reset!
+  end
+
   describe ".tags" do
     subject(:extracted_tags) do
       ClimateControl.modify(environment_variables) { described_class.tags(env) }
@@ -326,6 +330,38 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
           end
         end
       end
+
+      context "memoization" do
+        include_context "with git fixture", "gitdir_with_commit"
+
+        it "memoizes tags and returns the same frozen hash on subsequent calls" do
+          first_call = described_class.tags(env)
+          second_call = described_class.tags(env)
+
+          expect(first_call).to be(second_call)
+          expect(first_call).to be_frozen
+        end
+
+        it "returns memoized tags even when called with different env argument" do
+          first_call = described_class.tags(env)
+          second_call = described_class.tags({"DIFFERENT" => "env"})
+
+          expect(first_call).to be(second_call)
+        end
+      end
+    end
+  end
+
+  describe ".reset!" do
+    include_context "with git fixture", "gitdir_with_commit"
+
+    it "clears memoized tags" do
+      first_call = described_class.tags({})
+      described_class.reset!
+      second_call = described_class.tags({})
+
+      expect(first_call).not_to be(second_call)
+      expect(first_call).to eq(second_call)
     end
   end
 end

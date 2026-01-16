@@ -41,7 +41,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
         citestcycle_url: "https://citestcycle-intake.datadoghq.com:443",
         api_url: "https://api.datadoghq.com:443",
         citestcov_url: "https://citestcov-intake.datadoghq.com:443",
-        logs_intake_url: "https://http-intake.logs.datadoghq.com:443"
+        logs_intake_url: "https://http-intake.logs.datadoghq.com:443",
+        cicovreprt_url: "https://ci-intake.datadoghq.com:443"
       ).and_return(api)
 
       expect(subject).to eq(api)
@@ -56,7 +57,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
           citestcycle_url: "http://localhost:5555",
           api_url: "http://localhost:5555",
           citestcov_url: "http://localhost:5555",
-          logs_intake_url: "http://localhost:5555"
+          logs_intake_url: "http://localhost:5555",
+          cicovreprt_url: "http://localhost:5555"
         ).and_return(api)
 
         expect(subject).to eq(api)
@@ -72,7 +74,8 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
           citestcycle_url: "https://citestcycle-intake.datadoghq.eu:443",
           api_url: "https://api.datadoghq.eu:443",
           citestcov_url: "https://citestcov-intake.datadoghq.eu:443",
-          logs_intake_url: "https://http-intake.logs.datadoghq.eu:443"
+          logs_intake_url: "https://http-intake.logs.datadoghq.eu:443",
+          cicovreprt_url: "https://ci-intake.datadoghq.eu:443"
         ).and_return(api)
 
         expect(subject).to eq(api)

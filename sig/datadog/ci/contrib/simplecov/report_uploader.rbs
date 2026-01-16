@@ -1,0 +1,25 @@
+module Datadog
+  module CI
+    module Contrib
+      module Simplecov
+        module ReportUploader
+          def self.included: (untyped base) -> untyped
+
+          module ClassMethods
+            include ::SimpleCov
+
+            def process_results_and_report_error: (*untyped args) -> untyped
+
+            private
+
+            def upload_coverage_report: () -> void
+
+            def read_coverage_result: () -> String?
+
+            def datadog_configuration: () -> untyped
+          end
+        end
+      end
+    end
+  end
+end

@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module CodeCoverage
+      class NullComponent
+        attr_reader enabled: bool
+
+        @enabled: bool
+
+        def initialize: () -> void
+
+        def configure: (Datadog::CI::Remote::LibrarySettings library_configuration) -> void
+
+        def upload: (serialized_report: String?, format: String) -> nil
+
+        def shutdown!: () -> nil
+      end
+    end
+  end
+end

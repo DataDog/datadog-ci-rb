@@ -186,6 +186,12 @@ module Datadog
                 o.default false
               end
 
+              option :code_coverage_report_upload_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_CODE_COVERAGE_REPORT_UPLOAD_ENABLED
+                o.default true
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

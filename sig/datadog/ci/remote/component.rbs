@@ -36,6 +36,8 @@ module Datadog
         def git_tree_upload_worker: () -> Datadog::CI::Worker
 
         def impacted_tests_detection: () -> (Datadog::CI::ImpactedTestsDetection::Component | Datadog::CI::ImpactedTestsDetection::NullComponent)
+
+        def code_coverage: () -> (Datadog::CI::CodeCoverage::Component | Datadog::CI::CodeCoverage::NullComponent)
       end
     end
   end

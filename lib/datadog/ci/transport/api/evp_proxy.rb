@@ -50,6 +50,14 @@ module Datadog
             raise NotImplementedError, "Logs intake is not supported in EVP proxy mode"
           end
 
+          def cicovreprt_request(path:, event_payload:, compressed_coverage_report:, headers: {}, verb: "post")
+            super
+
+            headers[Ext::Transport::HEADER_EVP_SUBDOMAIN] = Ext::Transport::CODE_COVERAGE_REPORT_INTAKE_HOST_PREFIX
+
+            perform_request(@agent_intake_http, path: path, payload: @cicovreprt_payload, headers: headers, verb: verb)
+          end
+
           private
 
           def perform_request(http_client, path:, payload:, headers:, verb:)

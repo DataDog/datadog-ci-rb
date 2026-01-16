@@ -3,6 +3,9 @@
 require "datadog/core/telemetry/ext"
 
 require_relative "../ext/settings"
+require_relative "../code_coverage/component"
+require_relative "../code_coverage/null_component"
+require_relative "../code_coverage/transport"
 require_relative "../git/tree_uploader"
 require_relative "../impacted_tests_detection/component"
 require_relative "../impacted_tests_detection/null_component"
@@ -42,7 +45,7 @@ module Datadog
       # Adds CI behavior to Datadog trace components
       module Components
         attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries,
-          :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery
+          :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery, :code_coverage
 
         def initialize(settings)
           @test_optimisation = TestOptimisation::NullComponent.new
@@ -53,6 +56,7 @@ module Datadog
           @test_management = TestManagement::NullComponent.new
           @impacted_tests_detection = ImpactedTestsDetection::NullComponent.new
           @test_discovery = TestDiscovery::NullComponent.new
+          @code_coverage = CodeCoverage::NullComponent.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -69,6 +73,7 @@ module Datadog
           @test_optimisation&.shutdown!
           @agentless_logs_submission&.shutdown!
           @test_discovery&.shutdown!
+          @code_coverage&.shutdown!
           @git_tree_upload_worker&.stop
         end
 
@@ -158,6 +163,8 @@ module Datadog
           @agentless_logs_submission = build_agentless_logs_component(settings, test_visibility_api)
 
           @impacted_tests_detection = ImpactedTestsDetection::Component.new(enabled: settings.ci.impacted_tests_detection_enabled)
+
+          @code_coverage = build_code_coverage(settings, test_visibility_api)
         end
 
         def build_test_optimisation(settings, test_visibility_api)
@@ -280,6 +287,15 @@ module Datadog
             api: api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings)
+          )
+        end
+
+        def build_code_coverage(settings, api)
+          return CodeCoverage::NullComponent.new if api.nil? || settings.ci.discard_traces
+
+          CodeCoverage::Component.new(
+            enabled: settings.ci.code_coverage_report_upload_enabled,
+            transport: CodeCoverage::Transport.new(api: api)
           )
         end
 

@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module CodeCoverage
+      class Transport
+        attr_reader api: Datadog::CI::Transport::Api::Base?
+
+        @api: Datadog::CI::Transport::Api::Base?
+
+        def initialize: (api: Datadog::CI::Transport::Api::Base?) -> void
+
+        def send_coverage_report: (event: Hash[String, untyped], coverage_report: String) -> Datadog::CI::Transport::Adapters::Net::Response?
+      end
+    end
+  end
+end
