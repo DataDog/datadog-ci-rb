@@ -2,8 +2,6 @@ module Datadog
   module CI
     module TestVisibility
       class KnownTests
-        DEFAULT_PAGE_SIZE: Integer
-
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
         @config_tags: Hash[String, String]
