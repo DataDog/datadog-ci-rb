@@ -36,7 +36,7 @@ module Datadog
 
         attr_reader remote: Datadog::Core::Remote::Component
 
-        def initialize: (untyped settings) -> untyped
+        def initialize: (untyped settings, ?logger: Datadog::Core::Logger?) -> untyped
 
         def startup!: (untyped settings) -> untyped
 

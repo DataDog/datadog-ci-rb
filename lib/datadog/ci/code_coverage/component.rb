@@ -47,7 +47,7 @@ module Datadog
           {
             "type" => COVERAGE_REPORT_TYPE,
             "format" => format
-          }.merge(Ext::Environment.tags(ENV))
+          }.merge(Ext::Environment.tags(DATADOG_ENV))
         end
       end
     end

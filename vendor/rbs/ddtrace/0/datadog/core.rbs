@@ -3,5 +3,7 @@ module Datadog
     def self.log_deprecation: () ?{() -> untyped} -> untyped
   end
 
+  DATADOG_ENV: Core::Configuration::ConfigHelper
+
   extend Core::Configuration
 end

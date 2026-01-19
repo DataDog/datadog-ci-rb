@@ -28,7 +28,7 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
   let(:serialized_report) { '{"app/file.rb":[1,2,null,3]}' }
 
   before do
-    allow(Datadog::CI::Ext::Environment).to receive(:tags).with(ENV).and_return(environment_tags)
+    allow(Datadog::CI::Ext::Environment).to receive(:tags).with(::Datadog::DATADOG_ENV).and_return(environment_tags)
   end
 
   describe "#initialize" do

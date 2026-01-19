@@ -14,7 +14,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
   end
 
   shared_examples_for "span with environment tags" do
-    let(:environment_tags) { Datadog::CI::Ext::Environment.tags(ENV) }
+    let(:environment_tags) { Datadog::CI::Ext::Environment.tags(::Datadog::DATADOG_ENV) }
     let(:span_under_test) { subject }
 
     it "has all the environment tags" do

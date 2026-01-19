@@ -63,7 +63,16 @@ module Datadog
             activate_ci!(settings)
           end
 
-          super
+          # Log deprecations from environment variables, local configuration file and fleet configuration file for CI configurations.
+          # Option 2: Monkey-patch ::Datadog::Core::Configuration::DEPRECATIONS
+          logger = ::Datadog::Core::Configuration::Components.build_logger(settings)
+          ::Datadog::Core::Configuration::Deprecations.log_deprecations_from_all_sources(
+            logger,
+            deprecations: Datadog::CI::Configuration::DEPRECATIONS,
+            alias_to_canonical: Datadog::CI::Configuration::ALIAS_TO_CANONICAL
+          )
+
+          super(settings, logger: logger)
         end
 
         def shutdown!(replacement = nil)
@@ -351,7 +360,7 @@ module Datadog
           # in development environment Datadog's telemetry is disabled by default
           # for test visibility we want to enable it by default unless explicitly disabled
           # NOTE: before agentless mode is released, we only enable telemetry when running with Datadog Agent
-          env_telemetry_enabled = ENV[Core::Telemetry::Ext::ENV_ENABLED]
+          env_telemetry_enabled = DATADOG_ENV[Core::Telemetry::Ext::ENV_ENABLED]
           settings.telemetry.enabled = env_telemetry_enabled.nil? || Utils::Parsing.convert_to_bool(env_telemetry_enabled)
 
           return unless settings.telemetry.enabled
