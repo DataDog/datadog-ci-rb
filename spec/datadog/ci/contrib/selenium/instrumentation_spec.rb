@@ -59,9 +59,11 @@ RSpec.describe "Browser tests with selenium" do
   let(:visited_urls) { [] }
 
   before do
-    allow_any_instance_of(Selenium::WebDriver::Firefox::Driver).to receive(:initialize_local_driver).and_return(
+    # Support both selenium-webdriver 4.39.0 (returns values) and 4.40.0+ (yields to block)
+    allow_any_instance_of(Selenium::WebDriver::Firefox::Driver).to receive(:initialize_local_driver) do |_instance, *_args, &block|
+      block&.call(capabilities, "http://www.example.com")
       [capabilities, "http://www.example.com"]
-    )
+    end
     expect(Selenium::WebDriver::Remote::Bridge).to receive(:new).and_return(bridge)
     allow(bridge).to receive(:execute_script) do |script|
       executed_scripts << script
