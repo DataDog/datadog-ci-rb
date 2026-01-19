@@ -426,11 +426,18 @@ module Datadog
   end
 
   # Monkey-patch DATADOG_ENV to use datadog-ci-rb envs
-  DATADOG_ENV = ::Datadog::Core::Configuration::ConfigHelper.new(
-    supported_configurations: Datadog::CI::Configuration::SUPPORTED_CONFIGURATION_NAMES + ::Datadog::Core::Configuration::SUPPORTED_CONFIGURATION_NAMES,
-    aliases: Datadog::CI::Configuration::ALIASES.merge(::Datadog::Core::Configuration::ALIASES),
-    alias_to_canonical: Datadog::CI::Configuration::ALIAS_TO_CANONICAL.merge(::Datadog::Core::Configuration::ALIAS_TO_CANONICAL)
-  )
+  # Only add datadog-ci-rb env vars if Datadog gem version is >= 2.27.0.
+  DATADOG_ENV = if Gem::Version.new(::Datadog::VERSION::STRING) >= Gem::Version.new("2.27.0")
+    ::Datadog::Core::Configuration::ConfigHelper.new(
+      supported_configurations: Datadog::CI::Configuration::SUPPORTED_CONFIGURATION_NAMES + ::Datadog::Core::Configuration::SUPPORTED_CONFIGURATION_NAMES,
+      aliases: Datadog::CI::Configuration::ALIASES.merge(::Datadog::Core::Configuration::ALIASES),
+      alias_to_canonical: Datadog::CI::Configuration::ALIAS_TO_CANONICAL.merge(::Datadog::Core::Configuration::ALIAS_TO_CANONICAL)
+    )
+  elsif defined?(::Datadog::DATADOG_ENV)
+    ::Datadog::DATADOG_ENV
+  else
+    ENV
+  end
 end
 
 # Integrations

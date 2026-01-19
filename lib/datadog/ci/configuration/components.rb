@@ -63,16 +63,17 @@ module Datadog
             activate_ci!(settings)
           end
 
-          # Log deprecations from environment variables, local configuration file and fleet configuration file for CI configurations.
-          # Option 2: Monkey-patch ::Datadog::Core::Configuration::DEPRECATIONS
-          logger = ::Datadog::Core::Configuration::Components.build_logger(settings)
-          ::Datadog::Core::Configuration::Deprecations.log_deprecations_from_all_sources(
-            logger,
-            deprecations: Datadog::CI::Configuration::DEPRECATIONS,
-            alias_to_canonical: Datadog::CI::Configuration::ALIAS_TO_CANONICAL
-          )
+          super
 
-          super(settings, logger: logger)
+          if Gem::Version.new(::Datadog::VERSION::STRING) >= Gem::Version.new("2.27.0")
+            # Log deprecations from environment variables, local configuration file and fleet configuration file for CI configurations.
+            # Option 2: Monkey-patch ::Datadog::Core::Configuration::DEPRECATIONS
+            ::Datadog::Core::Configuration::Deprecations.log_deprecations_from_all_sources(
+              @logger,
+              deprecations: Datadog::CI::Configuration::DEPRECATIONS,
+              alias_to_canonical: Datadog::CI::Configuration::ALIAS_TO_CANONICAL
+            )
+          end
         end
 
         def shutdown!(replacement = nil)
