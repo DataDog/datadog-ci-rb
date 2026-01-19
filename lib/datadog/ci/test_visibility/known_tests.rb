@@ -13,8 +13,6 @@ module Datadog
     module TestVisibility
       # fetches and stores a list of known tests from the backend
       class KnownTests
-        DEFAULT_PAGE_SIZE = 2000
-
         class Response
           def self.from_http_response(http_response)
             new(http_response, nil)
@@ -165,7 +163,7 @@ module Datadog
         end
 
         def payload(test_session, page_state: nil)
-          page_info = page_state ? {"page_size" => DEFAULT_PAGE_SIZE, "page_state" => page_state} : {"page_size" => DEFAULT_PAGE_SIZE}
+          page_info = page_state ? {"page_state" => page_state} : {}
 
           {
             "data" => {

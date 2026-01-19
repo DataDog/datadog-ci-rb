@@ -33,7 +33,7 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
 
     let(:path) { Datadog::CI::Ext::Transport::DD_API_UNIQUE_TESTS_PATH }
 
-    it "requests the unique tests with page_info" do
+    it "requests the unique tests with empty page_info to use backend defaults" do
       subject
 
       expect(api).to have_received(:api_request) do |args|
@@ -57,8 +57,7 @@ RSpec.describe Datadog::CI::TestVisibility::KnownTests do
         expect(configurations["runtime.version"]).to eq("runtime_version")
 
         page_info = attributes["page_info"]
-        expect(page_info["page_size"]).to eq(described_class::DEFAULT_PAGE_SIZE)
-        expect(page_info["page_state"]).to be_nil
+        expect(page_info).to eq({})
       end
     end
 
