@@ -793,16 +793,87 @@ RSpec.describe "RSpec instrumentation" do
       shared_context_test = test_spans.find { |span| span.name == "nested is 42" }
       shared_context_coverage = find_coverage_for_test(shared_context_test)
 
+      expect(shared_context_coverage.coverage.keys).to include(
+        File.join(__dir__, "some_shared_context.rb")
+      )
+
       if Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
-        expect(shared_context_coverage.coverage).to eq({
-          File.join(__dir__, "some_shared_context.rb") => true,
-          File.join(__dir__, "some_constants.rb") => true
-        })
-      else
-        expect(shared_context_coverage.coverage).to eq({
-          File.join(__dir__, "some_shared_context.rb") => true
-        })
+        expect(shared_context_coverage.coverage.keys).to include(
+          File.join(__dir__, "some_constants.rb")
+        )
       end
+    end
+  end
+
+  context "with context coverage from before(:context) hooks" do
+    before { skip if PlatformHelpers.jruby? }
+
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      # Explicitly disable static dependencies tracking to ensure
+      # fixture files are only included via context coverage
+      let(:static_dependencies_tracking_enabled) { false }
+    end
+
+    it "collects coverage from code executed in before(:context) hooks" do
+      with_new_rspec_environment do
+        # Load the helpers inside the RSpec environment
+        require_relative "fixtures/user"
+        require_relative "fixtures/order"
+
+        RSpec.describe "ContextCoverageTest" do
+          # Top-level before(:context) - executes before any test
+          user = nil
+          before(:context) do
+            user = ContextCoverageHelper::User.new("John", "Doe")
+            user.full_name
+          end
+
+          context "nested context" do
+            # Nested before(:context) - executes before tests in this context
+            order = nil
+            before(:context) do
+              order = ContextCoverageHelper::Order.new
+              order.add_item(10)
+              order.add_item(20)
+              order.total
+            end
+
+            it "runs a simple test" do
+              expect(1 + 1).to eq(2)
+            end
+          end
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        stdout = StringIO.new
+        stderr = StringIO.new
+        ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+      end
+
+      expect(test_session_span).not_to be_nil
+      expect(test_session_span).to have_test_tag(:code_coverage_enabled, "true")
+
+      expect(test_spans).to have(1).item
+      expect(coverage_events).to have(1).item
+
+      # Verify that the test coverage includes the fixture files
+      # These files are only called in before(:context) hooks, not in the test itself
+      test_span = test_spans.first
+      test_coverage = find_coverage_for_test(test_span)
+
+      expect(test_coverage.coverage.keys).to include(
+        File.join(__dir__, "fixtures/user.rb"),
+        File.join(__dir__, "fixtures/order.rb")
+      )
     end
   end
 

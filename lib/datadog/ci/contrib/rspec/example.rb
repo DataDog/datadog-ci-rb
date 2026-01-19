@@ -46,6 +46,9 @@ module Datadog
                   tags: tags,
                   service: datadog_configuration[:service_name]
                 ) do |test_span|
+                  # Set context IDs on the test span for TIA context coverage merging
+                  test_span&.context_ids = datadog_context_ids
+
                   test_span&.itr_unskippable! if datadog_unskippable?
 
                   metadata[:skip] = test_span&.datadog_skip_reason if test_span&.should_skip?
@@ -170,6 +173,30 @@ module Datadog
 
             def datadog_test_suite_source_file_path
               Git::LocalRepository.relative_to_root(metadata[:rerun_file_path])
+            end
+
+            # Returns list of context IDs for this example, from outermost to innermost.
+            # Used for merging context-level coverage into test coverage.
+            def datadog_context_ids
+              return @datadog_context_ids if defined?(@datadog_context_ids)
+
+              context_ids = []
+              example_group = metadata[:example_group]
+
+              # Walk up the example group hierarchy to build the context chain
+              while example_group
+                # Use scoped_id as the stable identifier, fallback to file:line
+                context_id = example_group[:scoped_id] ||
+                  "#{example_group[:file_path]}:#{example_group[:line_number]}"
+                context_ids.unshift(context_id) # Add to front to maintain outer-to-inner order
+                example_group = example_group[:parent_example_group]
+              end
+
+              Datadog.logger.debug do
+                "RSpec: Built context chain for test [#{datadog_test_name}]: #{context_ids.inspect}"
+              end
+
+              @datadog_context_ids = context_ids
             end
 
             private

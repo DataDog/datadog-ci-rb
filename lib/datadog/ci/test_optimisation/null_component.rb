@@ -34,11 +34,28 @@ module Datadog
           false
         end
 
-        def start_coverage(_test)
+        def start_coverage
         end
 
-        def stop_coverage(_test)
+        def stop_coverage
           nil
+        end
+
+        def on_test_context_started(_context_id)
+        end
+
+        def on_test_started(_test)
+        end
+
+        def on_test_finished(_test, _context)
+          nil
+        end
+
+        def clear_context_coverage(_context_id)
+        end
+
+        def context_coverage_enabled?
+          false
         end
 
         def mark_if_skippable(_test)
@@ -46,9 +63,6 @@ module Datadog
 
         def skippable?(_datadog_test_id)
           false
-        end
-
-        def on_test_finished(_test, _context)
         end
 
         def write_test_session_tags(_test_session, _skipped_tests_count)

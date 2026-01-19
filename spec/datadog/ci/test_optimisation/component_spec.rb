@@ -330,12 +330,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
     end
   end
 
-  describe "#start_coverage" do
-    subject { component.start_coverage(test_span) }
-
-    let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
-    let(:test_span) { Datadog::CI::Test.new(tracer_span) }
-
+  describe "#start_coverage and #stop_coverage (low-level)" do
     before do
       configure
     end
@@ -347,8 +342,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       it "does not start coverage" do
         expect(component).not_to receive(:coverage_collector)
 
-        subject
-        expect(component.stop_coverage(test_span)).to be_nil
+        component.start_coverage
+        expect(component.stop_coverage).to be_nil
       end
     end
 
@@ -360,8 +355,8 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       it "does not start coverage" do
         expect(component).not_to receive(:coverage_collector)
 
-        subject
-        expect(component.stop_coverage(test_span)).to be_nil
+        component.start_coverage
+        expect(component.stop_coverage).to be_nil
       end
     end
 
@@ -372,16 +367,17 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
         skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
       end
 
-      it "starts coverage" do
+      it "starts and stops coverage, returning raw coverage hash" do
         expect(component).to receive(:coverage_collector).twice.and_call_original
 
-        subject
+        component.start_coverage
         expect(1 + 1).to eq(2)
-        coverage_event = component.stop_coverage(test_span)
-        expect(coverage_event.coverage.size).to be > 0
-      end
+        coverage = component.stop_coverage
 
-      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_STARTED, 1
+        # stop_coverage now returns raw coverage hash, not an event
+        expect(coverage).to be_a(Hash)
+        expect(coverage.size).to be > 0
+      end
     end
 
     context "when JRuby and code coverage is enabled" do
@@ -395,18 +391,19 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
         expect(component).not_to receive(:coverage_collector)
         expect(component.code_coverage?).to be(false)
 
-        component.start_coverage(test_span)
-        expect(component.stop_coverage(test_span)).to be_nil
+        component.start_coverage
+        expect(component.stop_coverage).to be_nil
       end
     end
   end
 
-  describe "#stop_coverage" do
-    subject { component.stop_coverage(test_span) }
-
+  describe "#on_test_finished (full lifecycle with event writing and ITR stats)" do
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
-    let(:test_span) { Datadog::CI::Test.new(tracer_span) }
+    let(:test_span) { Datadog::CI::Test.new(test_tracer_span) }
     let(:tests_skipping_enabled) { false }
+    let(:context) { instance_double(Datadog::CI::TestVisibility::Context, incr_tests_skipped_by_tia_count: nil) }
+
+    subject { component.on_test_finished(test_span, context) }
 
     before do
       skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
@@ -416,11 +413,13 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       allow(test_span).to receive(:id).and_return(1)
       allow(test_span).to receive(:test_suite_id).and_return(2)
       allow(test_span).to receive(:test_session_id).and_return(3)
+
+      test_span.context_ids = []
     end
 
     context "when coverage was collected" do
       before do
-        component.start_coverage(test_span)
+        component.on_test_started(test_span)
         expect(1 + 1).to eq(2)
       end
 
@@ -442,7 +441,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
 
     context "when test is skipped" do
       before do
-        component.start_coverage(test_span)
+        component.on_test_started(test_span)
         expect(1 + 1).to eq(2)
         test_span.skipped!
       end
@@ -477,6 +476,330 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_IS_EMPTY, 1
+    end
+  end
+
+  describe "#context_coverage_enabled?" do
+    context "when code coverage is enabled and multi-threaded mode" do
+      let(:tests_skipping_enabled) { false }
+
+      before do
+        skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
+        configure
+      end
+
+      it "returns true" do
+        expect(component.context_coverage_enabled?).to be true
+      end
+    end
+
+    context "when single-threaded coverage mode is enabled" do
+      let(:single_threaded_component) do
+        described_class.new(
+          api: api,
+          dd_env: "dd_env",
+          coverage_writer: writer,
+          enabled: true,
+          use_single_threaded_coverage: true
+        )
+      end
+
+      let(:tests_skipping_enabled) { false }
+
+      before do
+        skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
+        single_threaded_component.configure(remote_configuration, test_session)
+      end
+
+      it "returns false" do
+        expect(single_threaded_component.context_coverage_enabled?).to be false
+      end
+    end
+
+    context "when code coverage is disabled" do
+      let(:code_coverage_enabled) { false }
+      let(:tests_skipping_enabled) { false }
+
+      before { configure }
+
+      it "returns false" do
+        expect(component.context_coverage_enabled?).to be false
+      end
+    end
+  end
+
+  describe "#on_test_context_started" do
+    let(:context_id) { "1:1" }
+    let(:tests_skipping_enabled) { false }
+
+    before do
+      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
+      configure
+    end
+
+    context "when context coverage is enabled (multi-threaded mode)" do
+      it "starts coverage collection for the context" do
+        expect(component).to receive(:coverage_collector).and_call_original
+
+        component.on_test_context_started(context_id)
+      end
+    end
+
+    context "when single-threaded coverage mode is enabled" do
+      let(:single_threaded_component) do
+        described_class.new(
+          api: api,
+          dd_env: "dd_env",
+          coverage_writer: writer,
+          enabled: true,
+          use_single_threaded_coverage: true
+        )
+      end
+
+      before do
+        single_threaded_component.configure(remote_configuration, test_session)
+      end
+
+      it "does not start context coverage collection" do
+        expect(single_threaded_component).not_to receive(:coverage_collector)
+
+        single_threaded_component.on_test_context_started(context_id)
+      end
+    end
+
+    context "when code coverage is disabled" do
+      let(:code_coverage_enabled) { false }
+
+      it "does not start context coverage collection" do
+        expect(component).not_to receive(:coverage_collector)
+
+        component.on_test_context_started(context_id)
+      end
+    end
+  end
+
+  describe "#on_test_started and #on_test_finished (context coverage integration)" do
+    let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
+    let(:test_span) { Datadog::CI::Test.new(test_tracer_span) }
+    let(:tests_skipping_enabled) { false }
+    let(:context_ids) { ["1", "1:1"] }
+    let(:context) { instance_double(Datadog::CI::TestVisibility::Context, incr_tests_skipped_by_tia_count: nil) }
+
+    before do
+      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
+      configure
+
+      allow(test_span).to receive(:id).and_return(1)
+      allow(test_span).to receive(:test_suite_id).and_return(2)
+      allow(test_span).to receive(:test_session_id).and_return(3)
+    end
+
+    context "when context coverage was collected" do
+      before do
+        # Simulate context coverage collection
+        component.on_test_context_started("1")
+        # Execute some code to be covered
+        expect(1 + 1).to eq(2)
+      end
+
+      it "stores context coverage when test starts and merges it when test finishes" do
+        # Set context IDs on test span
+        test_span.context_ids = context_ids
+
+        # Start test coverage (this stops context coverage and stores it)
+        component.on_test_started(test_span)
+
+        # Verify context coverage was stored
+        context_coverages = component.instance_variable_get(:@context_coverages)
+        expect(context_coverages["1"]).not_to be_nil
+        expect(context_coverages["1"].size).to be > 0
+
+        # Execute test code
+        expect(2 + 2).to eq(4)
+
+        # Finish test coverage
+        event = component.on_test_finished(test_span, context)
+
+        expect(event).not_to be_nil
+        expect(event.coverage.size).to be > 0
+        expect(writer).to have_received(:write)
+      end
+    end
+
+    context "when no context coverage was collected" do
+      it "creates coverage event with only test coverage" do
+        test_span.context_ids = []
+        component.on_test_started(test_span)
+
+        # Execute test code
+        expect(2 + 2).to eq(4)
+
+        event = component.on_test_finished(test_span, context)
+
+        expect(event).not_to be_nil
+        expect(event.coverage.size).to be > 0
+        expect(writer).to have_received(:write)
+      end
+    end
+
+    context "when test is skipped" do
+      it "does not write coverage event" do
+        test_span.context_ids = []
+        component.on_test_started(test_span)
+        expect(2 + 2).to eq(4)
+        test_span.skipped!
+
+        event = component.on_test_finished(test_span, context)
+
+        expect(event).to be_nil
+        expect(writer).not_to have_received(:write)
+      end
+    end
+
+    context "when single-threaded coverage mode is enabled" do
+      let(:single_threaded_component) do
+        described_class.new(
+          api: api,
+          dd_env: "dd_env",
+          coverage_writer: writer,
+          enabled: true,
+          use_single_threaded_coverage: true
+        )
+      end
+
+      before do
+        single_threaded_component.configure(remote_configuration, test_session)
+      end
+
+      it "does not merge context coverage but still collects test coverage" do
+        # Try to start context coverage (should be skipped)
+        single_threaded_component.on_test_context_started("1")
+        expect(1 + 1).to eq(2)
+
+        # Set context IDs on test span
+        test_span.context_ids = ["1"]
+
+        # Start test coverage
+        single_threaded_component.on_test_started(test_span)
+
+        # Execute test code
+        expect(2 + 2).to eq(4)
+
+        # Finish test coverage
+        event = single_threaded_component.on_test_finished(test_span, context)
+
+        expect(event).not_to be_nil
+        # Context coverage should not be stored in single-threaded mode
+        context_coverages = single_threaded_component.instance_variable_get(:@context_coverages)
+        expect(context_coverages).to be_empty
+      end
+    end
+  end
+
+  describe "#clear_context_coverage" do
+    let(:context_id) { "1:1" }
+    let(:tests_skipping_enabled) { false }
+
+    before do
+      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
+      configure
+    end
+
+    context "when context coverage exists" do
+      before do
+        # Store some context coverage
+        component.instance_variable_get(:@context_coverages)[context_id] = {"file.rb" => true}
+      end
+
+      it "removes the context coverage" do
+        component.clear_context_coverage(context_id)
+
+        context_coverages = component.instance_variable_get(:@context_coverages)
+        expect(context_coverages[context_id]).to be_nil
+      end
+    end
+
+    context "when context coverage does not exist" do
+      it "does not raise an error" do
+        expect { component.clear_context_coverage(context_id) }.not_to raise_error
+      end
+    end
+
+    context "when single-threaded coverage mode is enabled" do
+      subject(:component) do
+        described_class.new(
+          api: api,
+          dd_env: "dd_env",
+          coverage_writer: writer,
+          enabled: true,
+          use_single_threaded_coverage: true
+        )
+      end
+
+      it "does nothing" do
+        # Should not raise and should not try to access mutex
+        expect { component.clear_context_coverage(context_id) }.not_to raise_error
+      end
+    end
+  end
+
+  describe "context coverage merging with multiple contexts" do
+    let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
+    let(:test_span) { Datadog::CI::Test.new(test_tracer_span) }
+    let(:tests_skipping_enabled) { false }
+    let(:context) { instance_double(Datadog::CI::TestVisibility::Context, incr_tests_skipped_by_tia_count: nil) }
+
+    before do
+      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
+      configure
+
+      allow(test_span).to receive(:id).and_return(1)
+      allow(test_span).to receive(:test_suite_id).and_return(2)
+      allow(test_span).to receive(:test_session_id).and_return(3)
+    end
+
+    it "merges coverage from multiple context levels" do
+      # Manually set up context coverages to simulate multiple nested contexts
+      context_coverages = component.instance_variable_get(:@context_coverages)
+      context_coverages["1"] = {"/path/to/outer_context_file.rb" => true}
+      context_coverages["1:1"] = {"/path/to/inner_context_file.rb" => true}
+
+      # Set context IDs on test span
+      test_span.context_ids = ["1", "1:1"]
+
+      # Start test coverage
+      component.on_test_started(test_span)
+
+      # Execute test code
+      expect(2 + 2).to eq(4)
+
+      # Finish test coverage
+      event = component.on_test_finished(test_span, context)
+
+      expect(event).not_to be_nil
+      # Coverage should include files from both contexts
+      expect(event.coverage.keys).to include("/path/to/outer_context_file.rb")
+      expect(event.coverage.keys).to include("/path/to/inner_context_file.rb")
+    end
+
+    it "does not duplicate files already in test coverage" do
+      # Set up context coverage with a file
+      context_coverages = component.instance_variable_get(:@context_coverages)
+      context_coverages["1"] = {"/path/to/shared_file.rb" => true}
+
+      # Set context IDs on test span
+      test_span.context_ids = ["1"]
+
+      component.on_test_started(test_span)
+
+      # The coverage collector will collect its own files during test execution
+      expect(2 + 2).to eq(4)
+
+      event = component.on_test_finished(test_span, context)
+
+      expect(event).not_to be_nil
+      # File from context should be included
+      expect(event.coverage.keys).to include("/path/to/shared_file.rb")
     end
   end
 

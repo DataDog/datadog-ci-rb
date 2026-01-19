@@ -19,15 +19,23 @@ module Datadog
 
         def code_coverage?: () -> bool
 
-        def start_coverage: (Datadog::CI::Test test) -> void
+        def start_coverage: () -> void
 
-        def stop_coverage: (Datadog::CI::Test test) -> Datadog::CI::TestOptimisation::Coverage::Event?
+        def stop_coverage: () -> Hash[String, untyped]?
+
+        def on_test_context_started: (String context_id) -> void
+
+        def on_test_started: (Datadog::CI::Test test) -> void
+
+        def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestVisibility::Context context) -> Datadog::CI::TestOptimisation::Coverage::Event?
+
+        def clear_context_coverage: (String context_id) -> void
+
+        def context_coverage_enabled?: () -> bool
 
         def mark_if_skippable: (Datadog::CI::Test test) -> void
 
         def skippable?: (String datadog_test_id) -> bool
-
-        def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestVisibility::Context context) -> void
 
         def write_test_session_tags: (Datadog::CI::TestSession test_session, Integer skipped_tests_count) -> void
 

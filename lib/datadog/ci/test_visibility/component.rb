@@ -302,7 +302,7 @@ module Datadog
           test_management.tag_test_from_properties(test)
 
           test_optimisation.mark_if_skippable(test)
-          test_optimisation.start_coverage(test)
+          test_optimisation.on_test_started(test)
 
           test_retries.record_test_started(test)
         end
@@ -328,7 +328,6 @@ module Datadog
         end
 
         def on_test_finished(test)
-          test_optimisation.stop_coverage(test)
           test_optimisation.on_test_finished(test, maybe_remote_context)
 
           validate_source_location(test)

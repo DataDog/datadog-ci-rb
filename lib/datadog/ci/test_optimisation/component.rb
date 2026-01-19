@@ -69,6 +69,16 @@ module Datadog
 
           @mutex = Mutex.new
 
+          # Context coverage: stores coverage collected during before(:context)/before(:all) hooks
+          # keyed by context_id (e.g., RSpec scoped_id for example groups)
+          # Only used when use_single_threaded_coverage is false (multi-threaded mode)
+          @context_coverages = {}
+          @context_coverages_mutex = Mutex.new
+
+          # Currently active context ID for context coverage collection
+          @current_context_id = nil
+          @current_context_id_mutex = Mutex.new
+
           Datadog.logger.debug("TestOptimisation initialized with enabled: #{@enabled}")
         end
 
@@ -117,50 +127,153 @@ module Datadog
           @code_coverage_enabled
         end
 
-        def start_coverage(test)
+        # Starts coverage collection.
+        # This is a low-level method that only starts the collector.
+        #
+        # @return [void]
+        def start_coverage
           return if !enabled? || !code_coverage?
 
-          Telemetry.code_coverage_started(test)
           coverage_collector&.start
         end
 
-        def stop_coverage(test)
+        # Stops coverage collection and returns raw coverage data.
+        # This is a low-level method that only stops the collector.
+        #
+        # @return [Hash, nil] Raw coverage data or nil
+        def stop_coverage
           return if !enabled? || !code_coverage?
 
-          Telemetry.code_coverage_finished(test)
+          coverage_collector&.stop
+        end
 
-          coverage = coverage_collector&.stop
+        # Called when a test context (e.g., RSpec example group with before(:context)) starts.
+        # Starts collecting coverage that will be merged into all tests within this context.
+        #
+        # @param context_id [String] A stable identifier for the context (e.g., RSpec scoped_id)
+        # @return [void]
+        def on_test_context_started(context_id)
+          return unless context_coverage_enabled?
 
-          # if test was skipped, we discard coverage data
-          return if test.skipped?
+          Datadog.logger.debug { "Starting context coverage collection for context [#{context_id}]" }
 
-          if coverage.nil? || coverage.empty?
-            Telemetry.code_coverage_is_empty
-            return
+          # Store the context_id we're collecting for
+          @current_context_id_mutex.synchronize do
+            @current_context_id = context_id
           end
 
-          # cucumber's gherkin files are not covered by the code coverage collector - we add them here explicitly
-          test_source_file = test.source_file
-          ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
+          coverage_collector&.start
+        end
 
-          # if we have static dependencies tracking enabled then we can make the coverage
-          # more precise by fetching which files we depend on based on constants usage
-          enrich_coverage_with_static_dependencies(coverage)
+        # Called when a test starts within a context. This method:
+        # 1. Stops any in-progress context coverage collection and stores it
+        # 2. Starts coverage collection for the test itself
+        #
+        # @param test [Datadog::CI::Test] The test that is starting
+        # @return [void]
+        def on_test_started(test)
+          return if !enabled? || !code_coverage?
 
-          Telemetry.code_coverage_files(coverage.size)
+          # Stop any in-progress context coverage and store it
+          stop_context_coverage_and_store
 
-          event = Coverage::Event.new(
-            test_id: test.id.to_s,
-            test_suite_id: test.test_suite_id.to_s,
-            test_session_id: test.test_session_id.to_s,
-            coverage: coverage
-          )
+          Telemetry.code_coverage_started(test)
 
-          Datadog.logger.debug { "Writing coverage event \n #{event.pretty_inspect}" }
+          context_ids = test.context_ids || []
 
-          write(event)
+          Datadog.logger.debug do
+            "Starting test coverage for [#{test.name}] with context chain: #{context_ids.inspect}"
+          end
 
-          event
+          coverage_collector&.start
+        end
+
+        # Called when a test finishes. This method:
+        # 1. Stops test coverage collection
+        # 2. Merges context coverage from all relevant contexts
+        # 3. Writes the combined coverage event
+        # 4. Records ITR statistics if test was skipped by TIA
+        #
+        # @param test [Datadog::CI::Test] The test that finished
+        # @param context [Datadog::CI::TestVisibility::Context] The test visibility context for ITR stats
+        # @return [Datadog::CI::TestOptimisation::Coverage::Event, nil] The coverage event or nil
+        def on_test_finished(test, context)
+          coverage_event = nil
+
+          # Handle code coverage
+          if enabled? && code_coverage?
+            Telemetry.code_coverage_finished(test)
+
+            coverage = coverage_collector&.stop
+
+            # Retrieve the context chain for this test
+            context_ids = test.context_ids || []
+
+            # if test was skipped, we discard coverage data
+            unless test.skipped?
+              coverage ||= {}
+
+              # Merge context coverage from all relevant contexts
+              merge_context_coverages_into_test(coverage, context_ids)
+
+              if coverage.empty?
+                Telemetry.code_coverage_is_empty
+              else
+                # cucumber's gherkin files are not covered by the code coverage collector - we add them here explicitly
+                test_source_file = test.source_file
+                ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
+
+                # if we have static dependencies tracking enabled then we can make the coverage
+                # more precise by fetching which files we depend on based on constants usage
+                enrich_coverage_with_static_dependencies(coverage)
+
+                Telemetry.code_coverage_files(coverage.size)
+
+                coverage_event = Coverage::Event.new(
+                  test_id: test.id.to_s,
+                  test_suite_id: test.test_suite_id.to_s,
+                  test_session_id: test.test_session_id.to_s,
+                  coverage: coverage
+                )
+
+                Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }
+
+                write(coverage_event)
+              end
+            end
+          end
+
+          # Handle ITR statistics
+          if test.skipped? && test.skipped_by_test_impact_analysis?
+            Telemetry.itr_skipped
+            context.incr_tests_skipped_by_tia_count
+          end
+
+          coverage_event
+        end
+
+        # Clears stored context coverage for a specific context.
+        # Should be called when a context finishes (e.g., after(:context) completes).
+        #
+        # @param context_id [String] The context ID to clear
+        # @return [void]
+        def clear_context_coverage(context_id)
+          return unless context_coverage_enabled?
+
+          @context_coverages_mutex.synchronize do
+            removed = @context_coverages.delete(context_id)
+            if removed
+              Datadog.logger.debug { "Cleared context coverage for [#{context_id}]" }
+            end
+          end
+        end
+
+        # Returns whether context coverage collection is enabled.
+        # Context coverage is disabled in single-threaded mode.
+        #
+        # @return [Boolean]
+        def context_coverage_enabled?
+          enabled? && code_coverage? && !@use_single_threaded_coverage
         end
 
         def skippable?(datadog_test_id)
@@ -179,14 +292,6 @@ module Datadog
           else
             Datadog.logger.debug { "Test is not skippable: #{test.datadog_test_id}" }
           end
-        end
-
-        def on_test_finished(test, context)
-          return if !test.skipped? || !test.skipped_by_test_impact_analysis?
-
-          Telemetry.itr_skipped
-
-          context.incr_tests_skipped_by_tia_count
         end
 
         def write_test_session_tags(test_session, skipped_tests_count)
@@ -389,6 +494,62 @@ module Datadog
 
         def git_tree_upload_worker
           Datadog.send(:components).git_tree_upload_worker
+        end
+
+        # Stops any in-progress context coverage collection and stores it.
+        # Called when a test starts to capture coverage from before(:context) hooks.
+        def stop_context_coverage_and_store
+          return unless context_coverage_enabled?
+
+          context_id = @current_context_id_mutex.synchronize do
+            id = @current_context_id
+            @current_context_id = nil
+            id
+          end
+          return if context_id.nil?
+
+          coverage = coverage_collector&.stop
+          return if coverage.nil? || coverage.empty?
+
+          @context_coverages_mutex.synchronize do
+            @context_coverages[context_id] = coverage
+          end
+
+          Datadog.logger.debug do
+            "Stored context coverage for [#{context_id}] with #{coverage.size} files"
+          end
+        end
+
+        # Merges context coverage from all relevant contexts into the test's coverage.
+        #
+        # @param coverage [Hash] The test's coverage hash to merge into
+        # @param context_ids [Array<String>] List of context IDs to merge coverage from
+        def merge_context_coverages_into_test(coverage, context_ids)
+          return if @use_single_threaded_coverage
+          return if context_ids.empty?
+
+          merged_files_count = 0
+
+          @context_coverages_mutex.synchronize do
+            context_ids.each do |context_id|
+              context_coverage = @context_coverages[context_id]
+              next unless context_coverage
+
+              context_coverage.each do |file, _|
+                unless coverage.key?(file)
+                  coverage[file] = true
+                  merged_files_count += 1
+                end
+              end
+            end
+          end
+
+          if merged_files_count > 0
+            Datadog.logger.debug do
+              "Merged #{merged_files_count} files from context coverage " \
+              "(contexts: #{context_ids.inspect}) into test coverage"
+            end
+          end
         end
       end
     end

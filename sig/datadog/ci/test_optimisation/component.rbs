@@ -25,6 +25,14 @@ module Datadog
 
         @mutex: Thread::Mutex
 
+        # Context coverage: stores coverage collected during before(:context)/before(:all) hooks
+        @context_coverages: Hash[String, Hash[String, untyped]]
+        @context_coverages_mutex: Thread::Mutex
+
+        # Currently active context ID for context coverage collection
+        @current_context_id: String?
+        @current_context_id_mutex: Thread::Mutex
+
         attr_reader skippable_tests: Set[String]
         attr_reader correlation_id: String?
         attr_reader enabled: bool
@@ -42,15 +50,24 @@ module Datadog
 
         def code_coverage?: () -> bool
 
-        def start_coverage: (Datadog::CI::Test test) -> void
+        def start_coverage: () -> void
 
-        def stop_coverage: (Datadog::CI::Test test) -> Datadog::CI::TestOptimisation::Coverage::Event?
+        def stop_coverage: () -> Hash[String, untyped]?
+
+        # Context coverage lifecycle methods
+        def on_test_context_started: (String context_id) -> void
+
+        def on_test_started: (Datadog::CI::Test test) -> void
+
+        def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestVisibility::Context context) -> Datadog::CI::TestOptimisation::Coverage::Event?
+
+        def clear_context_coverage: (String context_id) -> void
+
+        def context_coverage_enabled?: () -> bool
 
         def skippable?: (String datadog_test_id) -> bool
 
         def mark_if_skippable: (Datadog::CI::Test test) -> void
-
-        def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestVisibility::Context context) -> void
 
         def write_test_session_tags: (Datadog::CI::TestSession test_session, Integer skipped_tests_count) -> void
 
@@ -90,6 +107,12 @@ module Datadog
         def code_coverage_mode: () -> Datadog::CI::TestOptimisation::Coverage::DDCov::threading_mode
 
         def git_tree_upload_worker: () -> Datadog::CI::Worker
+
+        # Context coverage private helpers
+        def stop_context_coverage_and_store: () -> void
+
+        def merge_context_coverages_into_test: (Hash[String, untyped] coverage, Array[String] context_ids) -> void
+
       end
     end
   end

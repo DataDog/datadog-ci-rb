@@ -14,6 +14,7 @@ module Datadog
             @datadog_test_suite_name: String
             @datadog_test_parameters: String
             @datadog_fqn_test_id: String
+            @datadog_context_ids: Array[String]
 
             def run: (untyped example_group_instance, untyped reporter) -> untyped
 
@@ -24,6 +25,7 @@ module Datadog
             def datadog_test_parameters: () -> String
             def datadog_test_suite_source_file_path: () -> String
             def datadog_unskippable?: () -> bool
+            def datadog_context_ids: () -> Array[String]
 
             private
 
