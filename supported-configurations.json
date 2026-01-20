@@ -2,140 +2,7 @@
   "__comment": "See https://github.com/DataDog/dd-trace-rb/blob/master/docs/AccessEnvironmentVariables.md. Also PLEASE KEEP THE KEYS SORTED :)",
   "version": "2",
   "supportedConfigurations": {
-    "DD_CIVISIBILITY_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TEST_OPTIMIZATION_DISCOVERY_FILE": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_GIT_METADATA_UPLOAD_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_FLAKY_RETRY_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_FLAKY_RETRY_COUNT": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_TOTAL_FLAKY_RETRY_COUNT": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_EARLY_FLAKE_DETECTION_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TEST_MANAGEMENT_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TEST_OPTIMIZATION_TIA_STATIC_DEPS_COVERAGE_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TEST_SESSION_NAME": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TEST_VISIBILITY_DRB_SERVER_URI": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_CODE_COVERAGE_REPORT_UPLOAD_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_AGENTLESS_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_AGENTLESS_URL": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_FORCE_TEST_LEVEL_VISIBILITY": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_ITR_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_ITR_TEST_IMPACT_ANALYSIS_USE_ALLOCATION_TRACING": [
+    "DD_ACTION_EXECUTION_ID": [
       {
         "version": "A",
         "type": null,
@@ -156,21 +23,28 @@
         "default": null
       }
     ],
-    "DD_TEST_OPTIMIZATION_DISCOVERY_ENABLED": [
+    "DD_CIVISIBILITY_AGENTLESS_ENABLED": [
       {
         "version": "A",
         "type": null,
         "default": null
       }
     ],
-    "DD_TRACE_RSPEC_ENABLED": [
+    "DD_CIVISIBILITY_AGENTLESS_URL": [
       {
         "version": "A",
         "type": null,
         "default": null
       }
     ],
-    "DD_CIVISIBILITY_SELENIUM_ENABLED": [
+    "DD_CIVISIBILITY_AUTO_INSTRUMENTATION_PROVIDER": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_CODE_COVERAGE_REPORT_UPLOAD_ENABLED": [
       {
         "version": "A",
         "type": null,
@@ -184,7 +58,112 @@
         "default": null
       }
     ],
+    "DD_CIVISIBILITY_EARLY_FLAKE_DETECTION_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_EXPERIMENTAL_TEST_SUITE_LEVEL_VISIBILITY_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_FLAKY_RETRY_COUNT": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_FLAKY_RETRY_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_FORCE_TEST_LEVEL_VISIBILITY": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_GIT_METADATA_UPLOAD_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_IMPACTED_TESTS_DETECTION_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_ITR_CODE_COVERAGE_USE_SINGLE_THREADED_MODE": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_ITR_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_ITR_TEST_IMPACT_ANALYSIS_USE_ALLOCATION_TRACING": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_RUM_FLUSH_WAIT_MILLIS": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_SELENIUM_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
     "DD_CIVISIBILITY_SIMPLECOV_INSTRUMENTATION_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_CIVISIBILITY_TOTAL_FLAKY_RETRY_COUNT": [
       {
         "version": "A",
         "type": null,
@@ -212,105 +191,14 @@
         "default": null
       }
     ],
-    "DD_TRACE_RSPEC_DATADOG_FORMATTER_ENABLED": [
+    "DD_CUSTOM_TRACE_ID": [
       {
         "version": "A",
         "type": null,
         "default": null
       }
     ],
-    "DD_CIVISIBILITY_RUM_FLUSH_WAIT_MILLIS": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TRACE_CUCUMBER_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TRACE_MINITEST_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TRACE_PARALLEL_TESTS_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_AUTO_INSTRUMENTATION_PROVIDER": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_ITR_CODE_COVERAGE_USE_SINGLE_THREADED_MODE": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_CIVISIBILITY_EXPERIMENTAL_TEST_SUITE_LEVEL_VISIBILITY_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_TRACE_CI_ENABLED": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_GIT_COMMIT_HEAD_SHA": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_GIT_PULL_REQUEST_BASE_BRANCH_SHA": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_GIT_PULL_REQUEST_BASE_BRANCH": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_GIT_COMMIT_COMMITTER_DATE": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_GIT_COMMIT_COMMITTER_EMAIL": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_GIT_COMMIT_COMMITTER_NAME": [
+    "DD_GIT_BRANCH": [
       {
         "version": "A",
         "type": null,
@@ -338,21 +226,35 @@
         "default": null
       }
     ],
+    "DD_GIT_COMMIT_COMMITTER_DATE": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_GIT_COMMIT_COMMITTER_EMAIL": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_GIT_COMMIT_COMMITTER_NAME": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_GIT_COMMIT_HEAD_SHA": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
     "DD_GIT_COMMIT_MESSAGE": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_GIT_TAG": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_GIT_BRANCH": [
       {
         "version": "A",
         "type": null,
@@ -366,6 +268,20 @@
         "default": null
       }
     ],
+    "DD_GIT_PULL_REQUEST_BASE_BRANCH": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_GIT_PULL_REQUEST_BASE_BRANCH_SHA": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
     "DD_GIT_REPOSITORY_URL": [
       {
         "version": "A",
@@ -373,14 +289,7 @@
         "default": null
       }
     ],
-    "DD_CUSTOM_TRACE_ID": [
-      {
-        "version": "A",
-        "type": null,
-        "default": null
-      }
-    ],
-    "DD_ACTION_EXECUTION_ID": [
+    "DD_GIT_TAG": [
       {
         "version": "A",
         "type": null,
@@ -388,6 +297,97 @@
       }
     ],
     "DD_PIPELINE_EXECUTION_ID": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TEST_MANAGEMENT_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TEST_OPTIMIZATION_DISCOVERY_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TEST_OPTIMIZATION_DISCOVERY_FILE": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TEST_OPTIMIZATION_TIA_STATIC_DEPS_COVERAGE_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TEST_SESSION_NAME": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TEST_VISIBILITY_DRB_SERVER_URI": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TRACE_CI_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TRACE_CUCUMBER_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TRACE_MINITEST_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TRACE_PARALLEL_TESTS_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TRACE_RSPEC_DATADOG_FORMATTER_ENABLED": [
+      {
+        "version": "A",
+        "type": null,
+        "default": null
+      }
+    ],
+    "DD_TRACE_RSPEC_ENABLED": [
       {
         "version": "A",
         "type": null,
