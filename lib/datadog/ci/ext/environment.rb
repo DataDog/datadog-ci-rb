@@ -81,7 +81,13 @@ module Datadog
           if tags[Git::TAG_COMMIT_HEAD_SHA]
             CI::Git::LocalRepository.fetch_head_commit_sha(tags[Git::TAG_COMMIT_HEAD_SHA]) if CI::Git::LocalRepository.git_shallow_clone?
 
-            env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
+            # This is a solution that should work for all versions of dd-trace-rb that implements config inversion.
+            # A proper solution would be to add a new method []= to the ConfigHelper class, but it would not be backward compatible.
+            if defined?(::Datadog::Core::Configuration::ConfigHelper) && env.is_a?(::Datadog::Core::Configuration::ConfigHelper)
+              env.instance_variable_get(:@source_env)[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
+            else
+              env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
+            end
           end
 
           # Fill out tags from local git as fallback
