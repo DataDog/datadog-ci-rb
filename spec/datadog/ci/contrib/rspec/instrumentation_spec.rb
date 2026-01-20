@@ -1000,6 +1000,10 @@ RSpec.describe "RSpec instrumentation" do
 
             context "inner context without tests" do
               # No tests here, just nested context
+              before(:context) do
+                order = ContextCoverageHelper::Order.new
+                order.add_item(10)
+              end
             end
           end
 
