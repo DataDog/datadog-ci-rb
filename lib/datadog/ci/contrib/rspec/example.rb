@@ -46,6 +46,9 @@ module Datadog
                   tags: tags,
                   service: datadog_configuration[:service_name]
                 ) do |test_span|
+                  # Set context IDs on the test span for TIA context coverage merging
+                  test_span&.context_ids = datadog_context_ids
+
                   test_span&.itr_unskippable! if datadog_unskippable?
 
                   metadata[:skip] = test_span&.datadog_skip_reason if test_span&.should_skip?
@@ -172,19 +175,45 @@ module Datadog
               Git::LocalRepository.relative_to_root(metadata[:rerun_file_path])
             end
 
+            # Returns list of context IDs for this example, from outermost to innermost.
+            # Used for merging context-level coverage into test coverage.
+            def datadog_context_ids
+              traverse_example_group_hierarchy unless defined?(@datadog_context_ids)
+              @datadog_context_ids
+            end
+
             private
 
-            def fetch_top_level_example_group
+            def datadog_top_level_example_group
+              traverse_example_group_hierarchy unless defined?(@datadog_top_level_example_group)
+              @datadog_top_level_example_group
+            end
+
+            # Traverses the example group hierarchy once, populating both
+            # @datadog_context_ids and @top_level_example_group.
+            def traverse_example_group_hierarchy
+              context_ids = []
               example_group = metadata[:example_group]
-              parent_example_group = example_group[:parent_example_group]
+              top_level = example_group
 
-              return example_group unless parent_example_group
+              # Walk up the example group hierarchy
+              while example_group
+                # Use scoped_id as the stable identifier, fallback to file:line
+                context_id = example_group[:scoped_id] ||
+                  "#{example_group[:file_path]}:#{example_group[:line_number]}"
 
-              res = parent_example_group
-              while (parent = res[:parent_example_group])
-                res = parent
+                context_ids << context_id
+                top_level = example_group
+
+                example_group = example_group[:parent_example_group]
               end
-              res
+
+              @datadog_context_ids = context_ids
+              @datadog_top_level_example_group = top_level
+
+              Datadog.logger.debug do
+                "RSpec: Built context chain for the test: #{context_ids.inspect}"
+              end
             end
 
             def datadog_integration
@@ -196,7 +225,7 @@ module Datadog
             end
 
             def datadog_test_suite_description
-              @datadog_test_suite_description ||= fetch_top_level_example_group[:description]
+              @datadog_test_suite_description ||= datadog_top_level_example_group[:description]
             end
 
             def test_visibility_component

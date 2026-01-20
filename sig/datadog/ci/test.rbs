@@ -3,6 +3,10 @@ module Datadog
     class Test < Span
       @datadog_test_id: String
       @in_test_discovery_mode: bool
+      @context_ids: Array[String]?
+
+      # Context IDs for this test (used for TIA context coverage merging)
+      attr_accessor context_ids: Array[String]?
 
       def datadog_test_id: () -> String
       def finish: () -> void

@@ -12,6 +12,11 @@ module Datadog
     #
     # @public_api
     class Test < Span
+      # Context IDs for this test (used for TIA context coverage merging).
+      # Contains list of context identifiers from outermost to innermost.
+      # @return [Array<String>] list of context IDs
+      attr_accessor :context_ids
+
       # @return [String] the name of the test.
       def name
         get_tag(Ext::Test::TAG_NAME)

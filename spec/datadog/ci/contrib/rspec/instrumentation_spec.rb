@@ -793,16 +793,287 @@ RSpec.describe "RSpec instrumentation" do
       shared_context_test = test_spans.find { |span| span.name == "nested is 42" }
       shared_context_coverage = find_coverage_for_test(shared_context_test)
 
+      expect(shared_context_coverage.coverage.keys).to include(
+        File.join(__dir__, "some_shared_context.rb")
+      )
+
       if Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
-        expect(shared_context_coverage.coverage).to eq({
-          File.join(__dir__, "some_shared_context.rb") => true,
-          File.join(__dir__, "some_constants.rb") => true
-        })
-      else
-        expect(shared_context_coverage.coverage).to eq({
-          File.join(__dir__, "some_shared_context.rb") => true
-        })
+        expect(shared_context_coverage.coverage.keys).to include(
+          File.join(__dir__, "some_constants.rb")
+        )
       end
+    end
+  end
+
+  context "with context coverage from before(:context) hooks" do
+    before { skip if PlatformHelpers.jruby? }
+
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      # Explicitly disable static dependencies tracking to ensure
+      # fixture files are only included via context coverage
+      let(:static_dependencies_tracking_enabled) { false }
+    end
+
+    it "collects coverage from code executed in before(:context) hooks" do
+      with_new_rspec_environment do
+        # Load the helpers inside the RSpec environment
+        require_relative "fixtures/user"
+        require_relative "fixtures/order"
+
+        RSpec.describe "ContextCoverageTest" do
+          # Top-level before(:context) - executes before any test
+          user = nil
+          before(:context) do
+            user = ContextCoverageHelper::User.new("John", "Doe")
+            user.full_name
+          end
+
+          context "nested context" do
+            # Nested before(:context) - executes before tests in this context
+            order = nil
+            before(:context) do
+              order = ContextCoverageHelper::Order.new
+              order.add_item(10)
+              order.add_item(20)
+              order.total
+            end
+
+            it "runs a simple test" do
+              expect(1 + 1).to eq(2)
+            end
+          end
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        stdout = StringIO.new
+        stderr = StringIO.new
+        ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+      end
+
+      expect(test_session_span).not_to be_nil
+      expect(test_session_span).to have_test_tag(:code_coverage_enabled, "true")
+
+      expect(test_spans).to have(1).item
+      expect(coverage_events).to have(1).item
+
+      # Verify that the test coverage includes the fixture files
+      # These files are only called in before(:context) hooks, not in the test itself
+      test_span = test_spans.first
+      test_coverage = find_coverage_for_test(test_span)
+
+      expect(test_coverage.coverage.keys).to include(
+        File.join(__dir__, "fixtures/user.rb"),
+        File.join(__dir__, "fixtures/order.rb")
+      )
+    end
+  end
+
+  context "with nested sibling contexts and outer before(:context) hooks" do
+    before { skip if PlatformHelpers.jruby? }
+
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      # Explicitly disable static dependencies tracking to ensure
+      # fixture files are only included via context coverage
+      let(:static_dependencies_tracking_enabled) { false }
+    end
+
+    it "includes outer context coverage in all nested sibling contexts" do
+      with_new_rspec_environment do
+        # Load the helpers inside the RSpec environment
+        require_relative "fixtures/outer_context"
+        require_relative "fixtures/user"
+        require_relative "fixtures/order"
+
+        RSpec.describe "OuterContextCoverageTest" do
+          # Outer before(:context) - executes code in outer_context.rb
+          before(:context) do
+            ContextCoverageHelper::OuterContext.setup
+          end
+
+          context "first nested context" do
+            before(:context) do
+              user = ContextCoverageHelper::User.new("John", "Doe")
+              user.full_name
+            end
+
+            it "runs first test" do
+              expect(1 + 1).to eq(2)
+            end
+          end
+
+          context "second nested context" do
+            before(:context) do
+              order = ContextCoverageHelper::Order.new
+              order.add_item(10)
+            end
+
+            it "runs second test" do
+              expect(2 + 2).to eq(4)
+            end
+          end
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        stdout = StringIO.new
+        stderr = StringIO.new
+        ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+      end
+
+      expect(test_session_span).not_to be_nil
+      expect(test_spans).to have(2).items
+      expect(coverage_events).to have(2).items
+
+      first_test = test_spans.find { |span| span.name.include?("first") }
+      second_test = test_spans.find { |span| span.name.include?("second") }
+
+      expect(first_test).not_to be_nil, "Could not find first test. Test names: #{test_spans.map(&:name).inspect}"
+      expect(second_test).not_to be_nil, "Could not find second test. Test names: #{test_spans.map(&:name).inspect}"
+
+      first_coverage = find_coverage_for_test(first_test)
+      second_coverage = find_coverage_for_test(second_test)
+
+      outer_context_file = File.join(__dir__, "fixtures/outer_context.rb")
+
+      # Both tests should include outer context coverage
+      expect(first_coverage.coverage.keys).to include(outer_context_file)
+      expect(second_coverage.coverage.keys).to include(outer_context_file)
+
+      # Both tests should also have their own nested context's fixture files
+      expect(first_coverage.coverage.keys).to include(File.join(__dir__, "fixtures/user.rb"))
+      expect(second_coverage.coverage.keys).to include(File.join(__dir__, "fixtures/order.rb"))
+    end
+  end
+
+  context "with nested contexts without tests and a test outside of contexts" do
+    before { skip if PlatformHelpers.jruby? }
+
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      # Explicitly disable static dependencies tracking to ensure
+      # fixture files are only included via context coverage
+      let(:static_dependencies_tracking_enabled) { false }
+    end
+
+    it "test outside contexts does not include context coverage" do
+      with_new_rspec_environment do
+        # Load the helpers inside the RSpec environment
+        require_relative "fixtures/outer_context"
+        require_relative "fixtures/user"
+
+        RSpec.describe "ContextsWithoutTestsTest" do
+          # Outer before(:context) - executes code in outer_context.rb
+          before(:context) do
+            ContextCoverageHelper::OuterContext.setup
+          end
+
+          context "outer context without tests" do
+            before(:context) do
+              user = ContextCoverageHelper::User.new("John", "Doe")
+              user.full_name
+            end
+
+            context "inner context without tests" do
+              # No tests here, just nested context
+              before(:context) do
+                order = ContextCoverageHelper::Order.new
+                order.add_item(10)
+              end
+            end
+          end
+
+          # This test is NOT inside any nested context
+          it "runs outside of nested contexts" do
+            expect(1 + 1).to eq(2)
+          end
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        stdout = StringIO.new
+        stderr = StringIO.new
+        ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+      end
+
+      expect(test_session_span).not_to be_nil
+      expect(test_spans).to have(1).item
+      expect(coverage_events).to have(1).item
+
+      test_span = test_spans.first
+      test_coverage = find_coverage_for_test(test_span)
+
+      outer_context_file = File.join(__dir__, "fixtures/outer_context.rb")
+      user_file = File.join(__dir__, "fixtures/user.rb")
+
+      # The test outside of nested contexts should NOT have coverage from those contexts
+      # It should only have coverage from its own execution
+      expect(test_coverage.coverage.keys).not_to include(user_file),
+        "Test should not include user.rb from nested context's before(:context)"
+
+      # But it SHOULD include outer_context.rb because the test is still
+      # inside the top-level describe block which has before(:context)
+      expect(test_coverage.coverage.keys).to include(outer_context_file),
+        "Test should include outer_context.rb from top-level before(:context)"
+    end
+  end
+
+  context "with debug logging enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+    end
+
+    it "works with " do
+      expect do
+        with_new_rspec_environment do
+          # Enable debug logging INSIDE the rspec environment to ensure it's active
+          # when the test examples run
+          original_level = Datadog.logger.level
+          Datadog.logger.level = Logger::DEBUG
+
+          RSpec.describe "DebugLoggingTest" do
+            context "nested context" do
+              it "runs without stack overflow" do
+                expect(1 + 1).to eq(2)
+              end
+            end
+          end
+
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+          stdout = StringIO.new
+          stderr = StringIO.new
+          ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+
+          Datadog.logger.level = original_level
+        end
+      end.not_to raise_error
+
+      expect(test_spans).to have(1).item
+      expect(first_test_span).to have_pass_status
     end
   end
 
