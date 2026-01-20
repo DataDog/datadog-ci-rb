@@ -529,27 +529,17 @@ module Datadog
           return if @use_single_threaded_coverage
           return if context_ids.empty?
 
-          merged_files_count = 0
-
           @context_coverages_mutex.synchronize do
             context_ids.each do |context_id|
               context_coverage = @context_coverages[context_id]
               next unless context_coverage
 
-              context_coverage.each do |file, _|
-                unless coverage.key?(file)
-                  coverage[file] = true
-                  merged_files_count += 1
-                end
-              end
+              coverage.merge!(context_coverage)
             end
           end
 
-          if merged_files_count > 0
-            Datadog.logger.debug do
-              "Merged #{merged_files_count} files from context coverage " \
-              "(contexts: #{context_ids.inspect}) into test coverage"
-            end
+          Datadog.logger.debug do
+            "Merged context coverage for contexts: #{context_ids.inspect} into test coverage"
           end
         end
       end
