@@ -178,18 +178,32 @@ module Datadog
             # Returns list of context IDs for this example, from outermost to innermost.
             # Used for merging context-level coverage into test coverage.
             def datadog_context_ids
-              return @datadog_context_ids if defined?(@datadog_context_ids)
+              traverse_example_group_hierarchy unless defined?(@datadog_context_ids)
+              @datadog_context_ids
+            end
 
+            private
+
+            def datadog_top_level_example_group
+              traverse_example_group_hierarchy unless defined?(@datadog_top_level_example_group)
+              @datadog_top_level_example_group
+            end
+
+            # Traverses the example group hierarchy once, populating both
+            # @datadog_context_ids and @top_level_example_group.
+            def traverse_example_group_hierarchy
               context_ids = []
               example_group = metadata[:example_group]
+              top_level = example_group
 
-              # Walk up the example group hierarchy to build the context chain
+              # Walk up the example group hierarchy
               while example_group
                 # Use scoped_id as the stable identifier, fallback to file:line
                 context_id = example_group[:scoped_id] ||
                   "#{example_group[:file_path]}:#{example_group[:line_number]}"
 
                 context_ids << context_id
+                top_level = example_group
 
                 example_group = example_group[:parent_example_group]
               end
@@ -199,21 +213,7 @@ module Datadog
               end
 
               @datadog_context_ids = context_ids
-            end
-
-            private
-
-            def fetch_top_level_example_group
-              example_group = metadata[:example_group]
-              parent_example_group = example_group[:parent_example_group]
-
-              return example_group unless parent_example_group
-
-              res = parent_example_group
-              while (parent = res[:parent_example_group])
-                res = parent
-              end
-              res
+              @datadog_top_level_example_group = top_level
             end
 
             def datadog_integration
@@ -225,7 +225,7 @@ module Datadog
             end
 
             def datadog_test_suite_description
-              @datadog_test_suite_description ||= fetch_top_level_example_group[:description]
+              @datadog_test_suite_description ||= datadog_top_level_example_group[:description]
             end
 
             def test_visibility_component

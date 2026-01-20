@@ -15,6 +15,7 @@ module Datadog
             @datadog_test_parameters: String
             @datadog_fqn_test_id: String
             @datadog_context_ids: Array[String]
+            @datadog_top_level_example_group: Hash[Symbol, untyped]
 
             def run: (untyped example_group_instance, untyped reporter) -> untyped
 
@@ -29,7 +30,8 @@ module Datadog
 
             private
 
-            def fetch_top_level_example_group: () -> Hash[Symbol, untyped]
+            def datadog_top_level_example_group: () -> Hash[Symbol, untyped]
+            def traverse_example_group_hierarchy: () -> void
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
             def datadog_configuration: () -> untyped
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
