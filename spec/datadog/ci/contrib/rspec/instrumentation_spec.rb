@@ -962,6 +962,81 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
+  context "with nested contexts without tests and a test outside of contexts" do
+    before { skip if PlatformHelpers.jruby? }
+
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      # Explicitly disable static dependencies tracking to ensure
+      # fixture files are only included via context coverage
+      let(:static_dependencies_tracking_enabled) { false }
+    end
+
+    it "test outside contexts does not include context coverage" do
+      with_new_rspec_environment do
+        # Load the helpers inside the RSpec environment
+        require_relative "fixtures/outer_context"
+        require_relative "fixtures/user"
+
+        RSpec.describe "ContextsWithoutTestsTest" do
+          # Outer before(:context) - executes code in outer_context.rb
+          before(:context) do
+            ContextCoverageHelper::OuterContext.setup
+          end
+
+          context "outer context without tests" do
+            before(:context) do
+              user = ContextCoverageHelper::User.new("John", "Doe")
+              user.full_name
+            end
+
+            context "inner context without tests" do
+              # No tests here, just nested context
+            end
+          end
+
+          # This test is NOT inside any nested context
+          it "runs outside of nested contexts" do
+            expect(1 + 1).to eq(2)
+          end
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        stdout = StringIO.new
+        stderr = StringIO.new
+        ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+      end
+
+      expect(test_session_span).not_to be_nil
+      expect(test_spans).to have(1).item
+      expect(coverage_events).to have(1).item
+
+      test_span = test_spans.first
+      test_coverage = find_coverage_for_test(test_span)
+
+      outer_context_file = File.join(__dir__, "fixtures/outer_context.rb")
+      user_file = File.join(__dir__, "fixtures/user.rb")
+
+      # The test outside of nested contexts should NOT have coverage from those contexts
+      # It should only have coverage from its own execution
+      expect(test_coverage.coverage.keys).not_to include(user_file),
+        "Test should not include user.rb from nested context's before(:context)"
+
+      # But it SHOULD include outer_context.rb because the test is still
+      # inside the top-level describe block which has before(:context)
+      expect(test_coverage.coverage.keys).to include(outer_context_file),
+        "Test should include outer_context.rb from top-level before(:context)"
+    end
+  end
+
   context "when skipping tests" do
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }
