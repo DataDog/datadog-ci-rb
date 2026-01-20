@@ -188,7 +188,9 @@ module Datadog
                 # Use scoped_id as the stable identifier, fallback to file:line
                 context_id = example_group[:scoped_id] ||
                   "#{example_group[:file_path]}:#{example_group[:line_number]}"
-                context_ids.unshift(context_id) # Add to front to maintain outer-to-inner order
+
+                context_ids << context_id
+
                 example_group = example_group[:parent_example_group]
               end
 
