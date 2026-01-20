@@ -436,7 +436,7 @@ RSpec.describe Datadog::CI::TestOptimisation::Component do
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FINISHED, 1
-      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 5.0
+      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 6.0
     end
 
     context "when test is skipped" do

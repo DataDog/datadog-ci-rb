@@ -198,56 +198,54 @@ module Datadog
         # @param context [Datadog::CI::TestVisibility::Context] The test visibility context for ITR stats
         # @return [Datadog::CI::TestOptimisation::Coverage::Event, nil] The coverage event or nil
         def on_test_finished(test, context)
-          coverage_event = nil
-
-          # Handle code coverage
-          if enabled? && code_coverage?
-            Telemetry.code_coverage_finished(test)
-
-            coverage = coverage_collector&.stop
-
-            # Retrieve the context chain for this test
-            context_ids = test.context_ids || []
-
-            # if test was skipped, we discard coverage data
-            unless test.skipped?
-              coverage ||= {}
-
-              # Merge context coverage from all relevant contexts
-              merge_context_coverages_into_test(coverage, context_ids)
-
-              if coverage.empty?
-                Telemetry.code_coverage_is_empty
-              else
-                # cucumber's gherkin files are not covered by the code coverage collector - we add them here explicitly
-                test_source_file = test.source_file
-                ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
-
-                # if we have static dependencies tracking enabled then we can make the coverage
-                # more precise by fetching which files we depend on based on constants usage
-                enrich_coverage_with_static_dependencies(coverage)
-
-                Telemetry.code_coverage_files(coverage.size)
-
-                coverage_event = Coverage::Event.new(
-                  test_id: test.id.to_s,
-                  test_suite_id: test.test_suite_id.to_s,
-                  test_session_id: test.test_session_id.to_s,
-                  coverage: coverage
-                )
-
-                Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }
-
-                write(coverage_event)
-              end
-            end
-          end
+          return unless enabled?
 
           # Handle ITR statistics
-          if test.skipped? && test.skipped_by_test_impact_analysis?
+          if test.skipped_by_test_impact_analysis?
             Telemetry.itr_skipped
+
             context.incr_tests_skipped_by_tia_count
           end
+
+          # Handle code coverage
+          return unless code_coverage?
+          Telemetry.code_coverage_finished(test)
+
+          coverage = coverage_collector&.stop
+
+          # if test was skipped, we discard coverage data
+          return if test.skipped?
+          coverage ||= {}
+
+          # Merge context coverage from all relevant contexts
+          context_ids = test.context_ids || []
+          merge_context_coverages_into_test(coverage, context_ids)
+
+          if coverage.empty?
+            Telemetry.code_coverage_is_empty
+            return
+          end
+
+          # cucumber's gherkin files are not covered by the code coverage collector - we add them here explicitly
+          test_source_file = test.source_file
+          ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
+
+          # if we have static dependencies tracking enabled then we can make the coverage
+          # more precise by fetching which files we depend on based on constants usage
+          enrich_coverage_with_static_dependencies(coverage)
+
+          Telemetry.code_coverage_files(coverage.size)
+
+          coverage_event = Coverage::Event.new(
+            test_id: test.id.to_s,
+            test_suite_id: test.test_suite_id.to_s,
+            test_session_id: test.test_session_id.to_s,
+            coverage: coverage
+          )
+
+          Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }
+
+          write(coverage_event)
 
           coverage_event
         end
@@ -261,10 +259,9 @@ module Datadog
           return unless context_coverage_enabled?
 
           @context_coverages_mutex.synchronize do
-            removed = @context_coverages.delete(context_id)
-            if removed
-              Datadog.logger.debug { "Cleared context coverage for [#{context_id}]" }
-            end
+            @context_coverages.delete(context_id)
+
+            Datadog.logger.debug { "Cleared context coverage for [#{context_id}]" }
           end
         end
 
