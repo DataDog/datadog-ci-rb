@@ -1041,6 +1041,42 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
+  context "with debug logging enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+    end
+
+    it "works with " do
+      expect do
+        with_new_rspec_environment do
+          # Enable debug logging INSIDE the rspec environment to ensure it's active
+          # when the test examples run
+          original_level = Datadog.logger.level
+          Datadog.logger.level = Logger::DEBUG
+
+          RSpec.describe "DebugLoggingTest" do
+            context "nested context" do
+              it "runs without stack overflow" do
+                expect(1 + 1).to eq(2)
+              end
+            end
+          end
+
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+          stdout = StringIO.new
+          stderr = StringIO.new
+          ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+
+          Datadog.logger.level = original_level
+        end
+      end.not_to raise_error
+
+      expect(test_spans).to have(1).item
+      expect(first_test_span).to have_pass_status
+    end
+  end
+
   context "when skipping tests" do
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }

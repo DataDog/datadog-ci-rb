@@ -208,12 +208,12 @@ module Datadog
                 example_group = example_group[:parent_example_group]
               end
 
-              Datadog.logger.debug do
-                "RSpec: Built context chain for test [#{datadog_test_name}]: #{context_ids.inspect}"
-              end
-
               @datadog_context_ids = context_ids
               @datadog_top_level_example_group = top_level
+
+              Datadog.logger.debug do
+                "RSpec: Built context chain for the test: #{context_ids.inspect}"
+              end
             end
 
             def datadog_integration
