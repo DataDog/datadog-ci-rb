@@ -5,3 +5,6 @@ ignore:
   - 'gemfiles/**/*'
   - 'tasks/**/*'
   - 'yard/**/*'
+
+extend_config:
+  - .customcops.yml
