@@ -24,6 +24,8 @@ module Datadog
 
         def attempt_to_fix?: (String datadog_fqn_test_id) -> bool
 
+        def disabled?: (String datadog_fqn_test_id) -> bool
+
         def restore_state_from_datadog_test_runner: () -> bool
 
         # Implementation of Stateful interface

@@ -71,8 +71,20 @@ module Datadog
 
             def all_examples_skipped_by_datadog?
               descendant_filtered_examples.all? do |example|
-                !example.datadog_unskippable? && test_optimisation_component&.skippable?(example.datadog_test_id) &&
-                  !test_management_component&.attempt_to_fix?(example.datadog_fqn_test_id)
+                datadog_test_id = example.datadog_test_id
+                datadog_fqn_test_id = example.datadog_fqn_test_id
+
+                # Don't skip if the test is marked as attempt_to_fix (it should run and be retried)
+                next false if test_management_component&.attempt_to_fix?(datadog_fqn_test_id)
+
+                # Skip by Test Impact Analysis: test is skippable and not marked as unskippable
+                tia_skipped = !example.datadog_unskippable? &&
+                  test_optimisation_component&.skippable?(datadog_test_id)
+
+                # Skip by Test Management: test is disabled
+                test_management_disabled = test_management_component&.disabled?(datadog_fqn_test_id)
+
+                tia_skipped || test_management_disabled
               end
             end
 

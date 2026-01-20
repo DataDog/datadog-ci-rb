@@ -15,6 +15,10 @@ module Datadog
         def configure: (untyped _, untyped _) -> nil
 
         def tag_test_from_properties: (untyped _) -> nil
+
+        def attempt_to_fix?: (String _datadog_fqn_test_id) -> bool
+
+        def disabled?: (String _datadog_fqn_test_id) -> bool
       end
     end
   end

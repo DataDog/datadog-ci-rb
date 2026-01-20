@@ -1970,6 +1970,72 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
+  context "session with test management enabled and all tests are disabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo." => {
+            "quarantined" => false,
+            "disabled" => true
+          },
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails." => {
+            "quarantined" => false,
+            "disabled" => true
+          }
+        }
+      end
+    end
+
+    it "skips tests and suite" do
+      rspec_session_run(with_failed_test: true)
+
+      expect(test_spans).to have(2).items
+      expect(test_spans).to all have_skip_status
+      expect(test_spans).to all have_test_tag(:is_test_disabled)
+      expect(first_test_suite_span).to have_skip_status
+    end
+
+    it "does not run context hooks" do
+      rspec_session_run(with_failed_test: true)
+
+      expect(before_all_spy).not_to have_received(:call)
+      expect(before_context_spy).not_to have_received(:call)
+    end
+
+    it "runs top-level hook when there is a test not disabled by test management, but it skips hooks for the context where all tests are disabled" do
+      rspec_session_run(with_failed_test: true, with_test_outside_context: true)
+
+      expect(before_all_spy).to have_received(:call)
+      expect(before_context_spy).not_to have_received(:call)
+    end
+
+    context "but some test is an attempt to fix" do
+      let(:test_properties) do
+        {
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested foo." => {
+            "quarantined" => false,
+            "disabled" => true,
+            "attempt_to_fix" => true
+          },
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails." => {
+            "quarantined" => false,
+            "disabled" => true
+          }
+        }
+      end
+
+      it "does not skip context hooks because attempt_to_fix test should run" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(before_all_spy).to have_received(:call)
+        expect(before_context_spy).to have_received(:call)
+      end
+    end
+  end
+
   context "session with test management enabled and a test is both disabled and attempt_to_fix" do
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }

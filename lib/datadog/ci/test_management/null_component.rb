@@ -19,6 +19,14 @@ module Datadog
 
         def tag_test_from_properties(_)
         end
+
+        def attempt_to_fix?(_datadog_fqn_test_id)
+          false
+        end
+
+        def disabled?(_datadog_fqn_test_id)
+          false
+        end
       end
     end
   end
