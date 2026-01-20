@@ -1,0 +1,18 @@
+module Datadog
+  module VERSION
+    MAJOR: Integer
+
+    MINOR: Integer
+
+    PATCH: Integer
+
+    PRE: String?
+
+    BUILD: String?
+
+    STRING: String
+
+    MINIMUM_RUBY_VERSION: String
+    MAXIMUM_RUBY_VERSION: String
+  end
+end
