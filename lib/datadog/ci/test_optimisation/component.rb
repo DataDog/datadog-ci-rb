@@ -155,6 +155,10 @@ module Datadog
         def on_test_context_started(context_id)
           return unless context_coverage_enabled?
 
+          # Stop and store any existing context coverage before starting new one.
+          # This ensures that outer context coverage is preserved when nested contexts start.
+          stop_context_coverage_and_store
+
           Datadog.logger.debug { "Starting context coverage collection for context [#{context_id}]" }
 
           # Store the context_id we're collecting for

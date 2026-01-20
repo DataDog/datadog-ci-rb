@@ -877,6 +877,91 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
+  context "with nested sibling contexts and outer before(:context) hooks" do
+    before { skip if PlatformHelpers.jruby? }
+
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      # Explicitly disable static dependencies tracking to ensure
+      # fixture files are only included via context coverage
+      let(:static_dependencies_tracking_enabled) { false }
+    end
+
+    it "includes outer context coverage in all nested sibling contexts" do
+      with_new_rspec_environment do
+        # Load the helpers inside the RSpec environment
+        require_relative "fixtures/outer_context"
+        require_relative "fixtures/user"
+        require_relative "fixtures/order"
+
+        RSpec.describe "OuterContextCoverageTest" do
+          # Outer before(:context) - executes code in outer_context.rb
+          before(:context) do
+            ContextCoverageHelper::OuterContext.setup
+          end
+
+          context "first nested context" do
+            before(:context) do
+              user = ContextCoverageHelper::User.new("John", "Doe")
+              user.full_name
+            end
+
+            it "runs first test" do
+              expect(1 + 1).to eq(2)
+            end
+          end
+
+          context "second nested context" do
+            before(:context) do
+              order = ContextCoverageHelper::Order.new
+              order.add_item(10)
+            end
+
+            it "runs second test" do
+              expect(2 + 2).to eq(4)
+            end
+          end
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        stdout = StringIO.new
+        stderr = StringIO.new
+        ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+      end
+
+      expect(test_session_span).not_to be_nil
+      expect(test_spans).to have(2).items
+      expect(coverage_events).to have(2).items
+
+      first_test = test_spans.find { |span| span.name.include?("first") }
+      second_test = test_spans.find { |span| span.name.include?("second") }
+
+      expect(first_test).not_to be_nil, "Could not find first test. Test names: #{test_spans.map(&:name).inspect}"
+      expect(second_test).not_to be_nil, "Could not find second test. Test names: #{test_spans.map(&:name).inspect}"
+
+      first_coverage = find_coverage_for_test(first_test)
+      second_coverage = find_coverage_for_test(second_test)
+
+      outer_context_file = File.join(__dir__, "fixtures/outer_context.rb")
+
+      # Both tests should include outer context coverage
+      expect(first_coverage.coverage.keys).to include(outer_context_file)
+      expect(second_coverage.coverage.keys).to include(outer_context_file)
+
+      # Both tests should also have their own nested context's fixture files
+      expect(first_coverage.coverage.keys).to include(File.join(__dir__, "fixtures/user.rb"))
+      expect(second_coverage.coverage.keys).to include(File.join(__dir__, "fixtures/order.rb"))
+    end
+  end
+
   context "when skipping tests" do
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }
