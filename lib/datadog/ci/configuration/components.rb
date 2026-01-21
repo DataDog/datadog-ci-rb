@@ -65,9 +65,8 @@ module Datadog
 
           super
 
-          if Gem::Version.new(::Datadog::VERSION::STRING) >= Gem::Version.new("2.27.0")
-            # Log deprecations from environment variables, local configuration file and fleet configuration file for CI configurations.
-            # Option 2: Monkey-patch ::Datadog::Core::Configuration::DEPRECATIONS
+          if defined?(::Datadog::Core::Configuration::Deprecations)
+            # For versions < 2.28.0, this will do nothing, as it uses a single OnlyOnce instance for all deprecations.
             ::Datadog::Core::Configuration::Deprecations.log_deprecations_from_all_sources(
               @logger,
               deprecations: Datadog::CI::Configuration::DEPRECATIONS,
