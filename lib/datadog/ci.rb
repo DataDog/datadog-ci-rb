@@ -439,7 +439,7 @@ module Datadog
       ::Datadog::DATADOG_ENV
     end
   else
-    ENV
+    ENV # rubocop:disable CustomCops/EnvUsageCop
   end
 end
 

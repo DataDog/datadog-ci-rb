@@ -17,8 +17,8 @@ module Datadog
               "-rdatadog/ci/auto_instrument"
             ]
 
-            existing_rubyopt = ENV["RUBYOPT"]
-            ENV["RUBYOPT"] = existing_rubyopt ? "#{existing_rubyopt} #{rubyopts.join(" ")}" : rubyopts.join(" ")
+            existing_rubyopt = ENV["RUBYOPT"] # rubocop:disable CustomCops/EnvUsageCop
+            ENV["RUBYOPT"] = existing_rubyopt ? "#{existing_rubyopt} #{rubyopts.join(" ")}" : rubyopts.join(" ") # rubocop:disable CustomCops/EnvUsageCop
 
             Kernel.exec(*@args)
           end
