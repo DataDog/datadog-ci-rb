@@ -363,4 +363,68 @@ RSpec.describe Datadog::CI::TestManagement::Component do
       end
     end
   end
+
+  describe "#disabled?" do
+    let(:component) do
+      described_class.new(
+        tests_properties_client: tests_properties_client,
+        enabled: enabled
+      )
+    end
+
+    let(:tests_properties) do
+      {
+        "suite.disabled_test." => {
+          "disabled" => true,
+          "quarantined" => false,
+          "attempt_to_fix" => false
+        },
+        "suite.not_disabled_test." => {
+          "disabled" => false,
+          "quarantined" => true,
+          "attempt_to_fix" => false
+        }
+      }
+    end
+
+    let(:tests_properties_client) do
+      instance_double(
+        Datadog::CI::TestManagement::TestsProperties,
+        fetch: tests_properties
+      )
+    end
+
+    before do
+      component.configure(
+        instance_double(Datadog::CI::Remote::LibrarySettings, test_management_enabled?: true),
+        instance_double(Datadog::CI::TestSession, distributed: false, set_tag: true)
+      )
+    end
+
+    context "when test management is enabled" do
+      let(:enabled) { true }
+
+      it "returns true for disabled test" do
+        expect(component.disabled?("suite.disabled_test.")).to be true
+      end
+
+      it "returns false for test without disabled property" do
+        expect(component.disabled?("suite.not_disabled_test.")).to be false
+      end
+
+      it "returns false for non-existent test" do
+        expect(component.disabled?("non.existent.test.")).to be false
+      end
+    end
+
+    context "when test management is disabled" do
+      let(:enabled) { false }
+
+      it "returns false regardless of test properties" do
+        expect(component.disabled?("suite.disabled_test.")).to be false
+        expect(component.disabled?("suite.not_disabled_test.")).to be false
+        expect(component.disabled?("non.existent.test.")).to be false
+      end
+    end
+  end
 end

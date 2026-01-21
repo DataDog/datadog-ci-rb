@@ -75,6 +75,15 @@ module Datadog
           test_properties.fetch("attempt_to_fix", false)
         end
 
+        def disabled?(datadog_fqn_test_id)
+          return false unless @enabled
+
+          test_properties = @tests_properties[datadog_fqn_test_id]
+          return false if test_properties.nil?
+
+          test_properties.fetch("disabled", false)
+        end
+
         def restore_state_from_datadog_test_runner
           Datadog.logger.debug { "Restoring test management tests from DDTest cache" }
 
