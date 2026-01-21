@@ -2038,6 +2038,73 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
+  context "session with test management enabled and a flaky test is attempt_to_fix" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested flaky." => {
+            "quarantined" => false,
+            "disabled" => false,
+            "attempt_to_fix" => true
+          }
+        }
+      end
+    end
+
+    it "fails the build because some retries failed" do
+      rspec_session_run(with_flaky_test: true)
+
+      # 1 passing test + 1 original flaky test execution + 12 retries (attempt_to_fix_retries_count defined in ci_mode.rb) = 14 spans
+      expect(test_spans).to have(attempt_to_fix_retries_count + 2).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+
+      # the passing test runs once
+      expect(test_spans_by_test_name["nested foo"]).to have(1).item
+
+      # flaky test: 1 original + 12 retries
+      flaky_test_spans = test_spans_by_test_name["nested flaky"]
+      expect(flaky_test_spans).to have(attempt_to_fix_retries_count + 1).items
+
+      # some retries failed, some passed
+      failed_flaky_spans = flaky_test_spans.count { |span| span.get_tag("test.status") == "fail" }
+      passed_flaky_spans = flaky_test_spans.count { |span| span.get_tag("test.status") == "pass" }
+      expect(failed_flaky_spans).to be > 0
+      expect(passed_flaky_spans).to be > 0
+
+      # count how many tests were marked as attempt_to_fix
+      attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
+      expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
+
+      # check retry reasons
+      retry_reasons = flaky_test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["attempt_to_fix"] * attempt_to_fix_retries_count)
+
+      # attempt_to_fix test should NOT have attempt_to_fix_passed tag because some retries failed
+      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
+      expect(fix_passed_tests_count).to eq(0)
+
+      # check final statuses
+      # flaky test failed because some retries failed (attempt_to_fix doesn't ignore failures)
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
+      # 1 test passed (the non-flaky one)
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_fail_status
+
+      # session should fail because attempt_to_fix test had failures
+      expect(test_session_span).to have_fail_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
   context "session with test management and test impact analysis enabled and a test is both attempt_to_fix and skipped" do
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }

@@ -241,7 +241,10 @@ module Datadog
 
       # @internal
       def should_ignore_failures?
-        quarantined? || disabled? || any_retry_passed?
+        return true if quarantined? || disabled?
+        return false if attempt_to_fix?
+
+        any_retry_passed?
       end
 
       # @internal

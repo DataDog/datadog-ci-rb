@@ -558,7 +558,52 @@ RSpec.describe Datadog::CI::Test do
           receive(:disabled?).and_return(false)
         )
         allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(false)
+        )
+        allow(ci_test).to(
           receive(:any_retry_passed?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when attempt_to_fix and any retry passed" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(true)
+        )
+        allow(ci_test).to(
+          receive(:any_retry_passed?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when attempt_to_fix but also quarantined" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when attempt_to_fix but also disabled" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(true)
         )
       end
 
@@ -572,6 +617,9 @@ RSpec.describe Datadog::CI::Test do
         )
         allow(ci_test).to(
           receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(false)
         )
         allow(ci_test).to(
           receive(:any_retry_passed?).and_return(false)
