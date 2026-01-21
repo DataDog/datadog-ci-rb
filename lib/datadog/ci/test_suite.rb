@@ -19,6 +19,10 @@ module Datadog
         # counts how many times every test in this suite was executed with each status:
         #   { "MySuite.mytest.a:1" => { "pass" => 3, "fail" => 2 } }
         @execution_stats_per_test = {}
+
+        # tracks final status for each test (the status that is reported after all retries):
+        #   { "MySuite.mytest.a:1" => "pass" }
+        @final_statuses_per_test = {}
       end
 
       # Finishes this test suite.
@@ -43,6 +47,13 @@ module Datadog
       end
 
       # @internal
+      def record_test_final_status(test_id, final_status)
+        synchronize do
+          @final_statuses_per_test[test_id] = final_status
+        end
+      end
+
+      # @internal
       def any_passed?
         synchronize do
           @execution_stats_per_test.any? do |_, stats|
@@ -63,8 +74,7 @@ module Datadog
       def all_executions_failed?(test_id)
         synchronize do
           stats = @execution_stats_per_test[test_id]
-          stats && (stats[Ext::Test::Status::FAIL] > 0 || stats[Ext::Test::ExecutionStatsStatus::FAIL_IGNORED] > 0) &&
-            stats[Ext::Test::Status::PASS] == 0
+          stats && stats[Ext::Test::Status::FAIL] > 0 && stats[Ext::Test::Status::PASS] == 0
         end
       end
 
@@ -72,8 +82,7 @@ module Datadog
       def all_executions_passed?(test_id)
         synchronize do
           stats = @execution_stats_per_test[test_id]
-          stats && stats[Ext::Test::Status::PASS] > 0 && stats[Ext::Test::Status::FAIL] == 0 &&
-            stats[Ext::Test::ExecutionStatsStatus::FAIL_IGNORED] == 0
+          stats && stats[Ext::Test::Status::PASS] > 0 && stats[Ext::Test::Status::FAIL] == 0
         end
       end
 
@@ -106,9 +115,9 @@ module Datadog
 
       def set_status_from_stats!
         synchronize do
-          # count how many tests passed, failed and skipped
-          test_suite_stats = @execution_stats_per_test.each_with_object(Hash.new(0)) do |(_test_id, stats), acc|
-            acc[derive_test_status_from_execution_stats(stats)] += 1
+          # count how many tests have each final status
+          test_suite_stats = @final_statuses_per_test.each_with_object(Hash.new(0)) do |(_test_id, final_status), acc|
+            acc[final_status] += 1
           end
 
           # test suite is considered failed if at least one test failed
@@ -121,20 +130,6 @@ module Datadog
           else
             passed!
           end
-        end
-      end
-
-      def derive_test_status_from_execution_stats(test_execution_stats)
-        # test is passed if it passed at least once or it failed but fail was ignored
-        if test_execution_stats[Ext::Test::Status::PASS] > 0 ||
-            test_execution_stats[Ext::Test::ExecutionStatsStatus::FAIL_IGNORED] > 0
-          Ext::Test::Status::PASS
-        # if test was never passed, it is failed if it failed at least once
-        elsif test_execution_stats[Ext::Test::Status::FAIL] > 0
-          Ext::Test::Status::FAIL
-        # otherwise it is skipped
-        else
-          Ext::Test::Status::SKIP
         end
       end
     end

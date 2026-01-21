@@ -40,6 +40,8 @@ module Datadog
 
       private
 
+      def compute_final_status: (String status) -> String
+
       def record_test_result: (String datadog_status) -> void
     end
   end

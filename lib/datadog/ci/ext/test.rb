@@ -155,11 +155,6 @@ module Datadog
           SKIP = "skip"
         end
 
-        # test statuses that we use for execution stats but don't report to Datadog (e.g. fail_ignored)
-        module ExecutionStatsStatus
-          FAIL_IGNORED = "fail_ignored"
-        end
-
         # test types (e.g. test, benchmark, browser)
         module Type
           TEST = "test"

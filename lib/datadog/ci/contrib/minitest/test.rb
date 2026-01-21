@@ -64,7 +64,7 @@ module Datadog
 
               finish_with_result(test_span, result_code)
 
-              # remove failures if test passed at least once on retries or quarantined
+              # remove failures if failure can be ignored because of retries
               self.failures = [] if test_span.should_ignore_failures?
 
               super

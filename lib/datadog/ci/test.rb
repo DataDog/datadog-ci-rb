@@ -171,13 +171,7 @@ module Datadog
       def failed!(exception: nil)
         super
 
-        # if we should ignore failures, we consider this test to be passed
-        if should_ignore_failures?
-          # use a special "fail_ignored" status to mark this test as failed but ignored
-          record_test_result(Ext::Test::ExecutionStatsStatus::FAIL_IGNORED)
-        else
-          record_test_result(Ext::Test::Status::FAIL)
-        end
+        record_test_result(Ext::Test::Status::FAIL)
       end
 
       # Sets the status of the span to "skip".
@@ -257,16 +251,9 @@ module Datadog
         status = get_tag(Ext::Test::TAG_STATUS)
         return if status.nil?
 
-        if [Ext::Test::Status::PASS, Ext::Test::Status::SKIP].include?(status)
-          set_tag(Ext::Test::TAG_FINAL_STATUS, status)
-          return
-        end
-
-        if should_ignore_failures?
-          set_tag(Ext::Test::TAG_FINAL_STATUS, Ext::Test::Status::PASS)
-        else
-          set_tag(Ext::Test::TAG_FINAL_STATUS, Ext::Test::Status::FAIL)
-        end
+        final_status = compute_final_status(status)
+        set_tag(Ext::Test::TAG_FINAL_STATUS, final_status)
+        test_suite&.record_test_final_status(datadog_test_id, final_status)
       end
 
       # @internal
@@ -279,6 +266,20 @@ module Datadog
       end
 
       private
+
+      def compute_final_status(status)
+        # Skip status is always preserved
+        return status if status == Ext::Test::Status::SKIP
+
+        # For attempt_to_fix tests (not quarantined/disabled), any failure means the fix didn't work
+        if attempt_to_fix? && !quarantined? && !disabled?
+          return all_executions_passed? ? Ext::Test::Status::PASS : Ext::Test::Status::FAIL
+        end
+
+        return status if status == Ext::Test::Status::PASS
+
+        should_ignore_failures? ? Ext::Test::Status::PASS : Ext::Test::Status::FAIL
+      end
 
       def record_test_result(datadog_status)
         # if this test was already executed in this test suite, mark it as retried

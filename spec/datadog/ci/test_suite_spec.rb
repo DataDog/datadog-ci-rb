@@ -32,9 +32,9 @@ RSpec.describe Datadog::CI::TestSuite do
 
       context "and there are test failures" do
         before do
-          ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::PASS)
-          ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
-          ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::FAIL)
+          ci_test_suite.record_test_final_status("t1", Datadog::CI::Ext::Test::Status::PASS)
+          ci_test_suite.record_test_final_status("t2", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_final_status("t3", Datadog::CI::Ext::Test::Status::FAIL)
         end
 
         it "sets the status to fail" do
@@ -51,9 +51,9 @@ RSpec.describe Datadog::CI::TestSuite do
 
       context "and there are only skipped tests" do
         before do
-          ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::SKIP)
-          ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
-          ci_test_suite.record_test_result("t3", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_final_status("t1", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_final_status("t2", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_final_status("t3", Datadog::CI::Ext::Test::Status::SKIP)
         end
 
         it "sets the status to skip" do
@@ -69,10 +69,9 @@ RSpec.describe Datadog::CI::TestSuite do
 
       context "and there are some passed tests" do
         before do
-          2.times do |i|
-            ci_test_suite.record_test_result("t#{i}", Datadog::CI::Ext::Test::Status::SKIP)
-          end
-          ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::PASS)
+          ci_test_suite.record_test_final_status("t0", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_final_status("t1", Datadog::CI::Ext::Test::Status::SKIP)
+          ci_test_suite.record_test_final_status("t2", Datadog::CI::Ext::Test::Status::PASS)
         end
 
         it "sets the status to pass" do
@@ -88,9 +87,9 @@ RSpec.describe Datadog::CI::TestSuite do
 
       context "some tests were retried and succeeeded on retries" do
         before do
-          ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::FAIL)
-          ci_test_suite.record_test_result("t1", Datadog::CI::Ext::Test::Status::PASS)
-          ci_test_suite.record_test_result("t2", Datadog::CI::Ext::Test::Status::SKIP)
+          # Final status is computed by the test itself, so we just record the final status
+          ci_test_suite.record_test_final_status("t1", Datadog::CI::Ext::Test::Status::PASS)
+          ci_test_suite.record_test_final_status("t2", Datadog::CI::Ext::Test::Status::SKIP)
         end
 
         it "sets the status to pass" do
