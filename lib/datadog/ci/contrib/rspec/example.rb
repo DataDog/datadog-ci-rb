@@ -39,6 +39,9 @@ module Datadog
               end_line = SourceCode::MethodInspect.last_line(@example_block)
               tags[CI::Ext::Test::TAG_SOURCE_END] = end_line.to_s if end_line
 
+              # we keep track of the last test failure if we encounter any
+              test_failure = nil
+
               test_retries_component.with_retries do
                 test_visibility_component.trace_test(
                   datadog_test_name,
@@ -68,8 +71,10 @@ module Datadog
                     test_span&.passed!
                   when :failed
                     test_span&.failed!(exception: execution_result.exception)
+
                     # if any of the retries passed or test is quarantined, we don't fail the test run
                     @exception = nil if test_span&.should_ignore_failures?
+                    test_failure = @exception
                   else
                     # :pending or nil
                     test_span&.skipped!(
@@ -94,6 +99,12 @@ module Datadog
                     if test_span&.skipped_by_test_impact_analysis?
                       metadata[Ext::METADATA_DD_SKIPPED_BY_ITR] = true
                     end
+                  end
+
+                  # at this point if we have encountered any test failure in any of the previous retries
+                  # we restore the @exception internal state if we should not skip failures for this run
+                  if test_failure && !test_span&.should_ignore_failures?
+                    @exception = test_failure
                   end
                 end
               end

@@ -2,9 +2,12 @@ module Datadog
   module CI
     class TestSuite < ConcurrentSpan
       @execution_stats_per_test: Hash[String, Hash[String, Integer]]
+      @final_statuses_per_test: Hash[String, String]
       @expected_tests_set: Set[String]
 
       def record_test_result: (String test_id, String datadog_test_status) -> void
+
+      def record_test_final_status: (String test_id, String final_status) -> void
 
       def any_passed?: () -> bool
 
@@ -23,8 +26,6 @@ module Datadog
       private
 
       def set_status_from_stats!: () -> void
-
-      def derive_test_status_from_execution_stats: (Hash[String, Integer] test_stats) -> String
     end
   end
 end

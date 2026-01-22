@@ -416,13 +416,13 @@ RSpec.describe Datadog::CI::Test do
       context "and when test is quarantined" do
         let(:is_quarantined) { "true" }
 
-        it "records the test result as fail_ignored" do
+        it "records the test result as fail" do
           expect(tracer_span).to receive(:set_tag).with("test.status", "fail")
           expect(tracer_span).to receive(:status=).with(1)
 
           ci_test.failed!
 
-          expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "fail_ignored")
+          expect(test_suite).to have_received(:record_test_result).with("test suite name.test name.", "fail")
         end
       end
 
@@ -558,7 +558,52 @@ RSpec.describe Datadog::CI::Test do
           receive(:disabled?).and_return(false)
         )
         allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(false)
+        )
+        allow(ci_test).to(
           receive(:any_retry_passed?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when attempt_to_fix and any retry passed" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(true)
+        )
+        allow(ci_test).to(
+          receive(:any_retry_passed?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be false }
+    end
+
+    context "when attempt_to_fix but also quarantined" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(true)
+        )
+      end
+
+      it { is_expected.to be true }
+    end
+
+    context "when attempt_to_fix but also disabled" do
+      before do
+        allow(ci_test).to(
+          receive(:quarantined?).and_return(false)
+        )
+        allow(ci_test).to(
+          receive(:disabled?).and_return(true)
         )
       end
 
@@ -574,6 +619,9 @@ RSpec.describe Datadog::CI::Test do
           receive(:disabled?).and_return(false)
         )
         allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(false)
+        )
+        allow(ci_test).to(
           receive(:any_retry_passed?).and_return(false)
         )
       end
@@ -585,8 +633,15 @@ RSpec.describe Datadog::CI::Test do
   describe "#record_final_status" do
     subject(:record_final_status) { ci_test.record_final_status }
 
+    let(:test_suite) { instance_double(Datadog::CI::TestSuite, record_test_final_status: true) }
+
     before do
       allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_STATUS).and_return(status)
+      allow(tracer_span).to receive(:get_tag).with("test.name").and_return("test name")
+      allow(tracer_span).to receive(:get_tag).with("test.suite").and_return("test suite name")
+      allow(tracer_span).to receive(:get_tag).with("test.parameters").and_return(nil)
+      allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_ATTEMPT_TO_FIX).and_return(nil)
+      allow(ci_test).to receive(:test_suite).and_return(test_suite)
     end
 
     context "when status tag is missing" do
@@ -600,6 +655,12 @@ RSpec.describe Datadog::CI::Test do
 
         record_final_status
       end
+
+      it "does not call test_suite.record_test_final_status" do
+        record_final_status
+
+        expect(test_suite).not_to have_received(:record_test_final_status)
+      end
     end
 
     context "when status is pass" do
@@ -612,6 +673,88 @@ RSpec.describe Datadog::CI::Test do
         )
 
         record_final_status
+      end
+
+      it "records final status in test suite" do
+        expect(tracer_span).to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+          Datadog::CI::Ext::Test::Status::PASS
+        )
+
+        record_final_status
+
+        expect(test_suite).to have_received(:record_test_final_status).with(
+          "test suite name.test name.",
+          Datadog::CI::Ext::Test::Status::PASS
+        )
+      end
+
+      context "when test is attempt_to_fix" do
+        before do
+          allow(ci_test).to receive(:attempt_to_fix?).and_return(true)
+          allow(ci_test).to receive(:quarantined?).and_return(false)
+          allow(ci_test).to receive(:disabled?).and_return(false)
+        end
+
+        context "and all executions passed" do
+          before do
+            allow(ci_test).to receive(:all_executions_passed?).and_return(true)
+          end
+
+          it "persists final status as pass" do
+            expect(tracer_span).to receive(:set_tag).with(
+              Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+              Datadog::CI::Ext::Test::Status::PASS
+            )
+
+            record_final_status
+          end
+        end
+
+        context "and some executions failed" do
+          before do
+            allow(ci_test).to receive(:all_executions_passed?).and_return(false)
+          end
+
+          it "persists final status as fail" do
+            expect(tracer_span).to receive(:set_tag).with(
+              Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+              Datadog::CI::Ext::Test::Status::FAIL
+            )
+
+            record_final_status
+          end
+        end
+
+        context "but test is also quarantined" do
+          before do
+            allow(ci_test).to receive(:quarantined?).and_return(true)
+          end
+
+          it "persists final status as pass (quarantined takes precedence)" do
+            expect(tracer_span).to receive(:set_tag).with(
+              Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+              Datadog::CI::Ext::Test::Status::PASS
+            )
+
+            record_final_status
+          end
+        end
+
+        context "but test is also disabled" do
+          before do
+            allow(ci_test).to receive(:disabled?).and_return(true)
+          end
+
+          it "persists final status as pass (disabled takes precedence)" do
+            expect(tracer_span).to receive(:set_tag).with(
+              Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
+              Datadog::CI::Ext::Test::Status::PASS
+            )
+
+            record_final_status
+          end
+        end
       end
     end
 
