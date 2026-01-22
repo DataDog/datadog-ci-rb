@@ -1,5 +1,25 @@
 ## [Unreleased]
 
+## [1.27.0] - 2026-01-22
+
+
+### Added
+
+* Add context-level code coverage tracking for RSpec to improve Test Impact Analysis correctness ([#460][])
+* Add automatic uploading of code coverage reports to Datadog Code Coverage product ([#456][])
+
+### Changed
+
+* Use pagination for known tests API ([#455][]) ([#458][])
+* GitHub Actions: extract numeric job ID for accurate job URLs ([#457][])
+
+### Fixed
+
+* RSpec: take into account Test Management disabled tests when deciding to skip context hooks ([#463][])
+* Fix for attempt-to-fix flow: don't mask failures for flaky tests being fixed ([#464][])
+* Pass -c safe.directory to all git commands to fix dubious ownership errors ([#454][])
+* fix: rename DD_TRACE_CI_ENABLED to DD_CIVISIBILITY_ENABLED with backwards compatibility ([#453][])
+
 ## [1.26.0] - 2026-01-09
 
 ========== Changelog ==========
@@ -578,7 +598,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.26.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.27.0...main
+[1.27.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.26.0...v1.27.0
 [1.26.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.25.0...v1.26.0
 [1.25.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.24.0...v1.25.0
 [1.24.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.23.3...v1.24.0
@@ -820,3 +841,12 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#442]: https://github.com/DataDog/datadog-ci-rb/issues/442
 [#444]: https://github.com/DataDog/datadog-ci-rb/issues/444
 [#446]: https://github.com/DataDog/datadog-ci-rb/issues/446
+[#453]: https://github.com/DataDog/datadog-ci-rb/issues/453
+[#454]: https://github.com/DataDog/datadog-ci-rb/issues/454
+[#455]: https://github.com/DataDog/datadog-ci-rb/issues/455
+[#456]: https://github.com/DataDog/datadog-ci-rb/issues/456
+[#457]: https://github.com/DataDog/datadog-ci-rb/issues/457
+[#458]: https://github.com/DataDog/datadog-ci-rb/issues/458
+[#460]: https://github.com/DataDog/datadog-ci-rb/issues/460
+[#463]: https://github.com/DataDog/datadog-ci-rb/issues/463
+[#464]: https://github.com/DataDog/datadog-ci-rb/issues/464
