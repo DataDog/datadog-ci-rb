@@ -4,7 +4,7 @@ module Datadog
   module CI
     module VERSION
       MAJOR = 1
-      MINOR = 26
+      MINOR = 27
       PATCH = 0
       PRE = nil
       BUILD = nil
