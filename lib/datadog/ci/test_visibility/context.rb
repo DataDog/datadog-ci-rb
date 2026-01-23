@@ -234,7 +234,7 @@ module Datadog
 
         # TAGGING
         def set_initial_tags(ci_span, tags)
-          @environment_tags ||= Ext::Environment.tags(ENV).freeze
+          @environment_tags ||= Ext::Environment.tags(DATADOG_ENV).freeze
 
           ci_span.set_default_tags
           ci_span.set_environment_runtime_tags

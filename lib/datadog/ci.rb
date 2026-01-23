@@ -5,6 +5,7 @@ require_relative "ci/utils/configuration"
 require_relative "ci/utils/telemetry"
 require_relative "ci/ext/app_types"
 require_relative "ci/ext/telemetry"
+require_relative "ci/configuration/supported_configurations"
 
 require "datadog"
 require "datadog/core"
@@ -422,6 +423,23 @@ module Datadog
         components.test_retries
       end
     end
+  end
+
+  # Monkey-patch DATADOG_ENV to use datadog-ci-rb envs
+  DATADOG_ENV = if defined?(::Datadog::DATADOG_ENV)
+    # Only add datadog-ci-rb env vars if config helper supports datadog-ci-rb
+    # []= was introduced when we added compatibility with datadog-ci-rb
+    if ::Datadog::DATADOG_ENV.respond_to?(:[]=)
+      ::Datadog::Core::Configuration::ConfigHelper.new(
+        supported_configurations: Datadog::CI::Configuration::SUPPORTED_CONFIGURATION_NAMES + ::Datadog::Core::Configuration::SUPPORTED_CONFIGURATION_NAMES,
+        aliases: Datadog::CI::Configuration::ALIASES.merge(::Datadog::Core::Configuration::ALIASES),
+        alias_to_canonical: Datadog::CI::Configuration::ALIAS_TO_CANONICAL.merge(::Datadog::Core::Configuration::ALIAS_TO_CANONICAL)
+      )
+    else
+      ::Datadog::DATADOG_ENV
+    end
+  else
+    ENV
   end
 end
 

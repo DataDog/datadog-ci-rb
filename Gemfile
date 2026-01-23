@@ -26,7 +26,7 @@ gem "yard"
 gem "ostruct" # for RSpec instrumentation spec
 
 # test against gem datadog from master
-gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "master"
+gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "vpellan/config-inversion-datadog-ci-rb"
 
 # platform helpers
 gem "os"

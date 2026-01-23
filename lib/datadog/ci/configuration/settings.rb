@@ -22,8 +22,8 @@ module Datadog
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_ENABLED
                 o.default do
-                  env_value = ENV[CI::Ext::Settings::ENV_MODE_ENABLED]
-                  if env_value && !ENV[CI::Ext::Settings::ENV_ENABLED]
+                  env_value = DATADOG_ENV[CI::Ext::Settings::ENV_MODE_ENABLED]
+                  if env_value && !DATADOG_ENV[CI::Ext::Settings::ENV_ENABLED]
                     Datadog::Core.log_deprecation do
                       "#{CI::Ext::Settings::ENV_MODE_ENABLED} environment variable is deprecated, " \
                         "use #{CI::Ext::Settings::ENV_ENABLED} instead."

@@ -98,3 +98,9 @@ RSpec.configure do |config|
     Datadog.configuration.reset!
   end
 end
+
+# Enable raising errors when accessing unknown datadog/otel environment variables
+# (Default is to return `nil`). See docs/AccessEnvironmentVariables.md for details.
+#
+# TODO: Add a check to ensure this is enabled
+::Datadog::DATADOG_ENV.instance_variable_set(:@raise_on_unknown_env_var, true)

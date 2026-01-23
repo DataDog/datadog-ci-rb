@@ -64,6 +64,15 @@ module Datadog
           end
 
           super
+
+          if defined?(::Datadog::Core::Configuration::Deprecations)
+            # For versions < 2.28.0, this will do nothing, as it uses a single OnlyOnce instance for all deprecations.
+            ::Datadog::Core::Configuration::Deprecations.log_deprecations_from_all_sources(
+              @logger,
+              deprecations: Datadog::CI::Configuration::DEPRECATIONS,
+              alias_to_canonical: Datadog::CI::Configuration::ALIAS_TO_CANONICAL
+            )
+          end
         end
 
         def shutdown!(replacement = nil)
@@ -351,7 +360,7 @@ module Datadog
           # in development environment Datadog's telemetry is disabled by default
           # for test visibility we want to enable it by default unless explicitly disabled
           # NOTE: before agentless mode is released, we only enable telemetry when running with Datadog Agent
-          env_telemetry_enabled = ENV[Core::Telemetry::Ext::ENV_ENABLED]
+          env_telemetry_enabled = DATADOG_ENV[Core::Telemetry::Ext::ENV_ENABLED]
           settings.telemetry.enabled = env_telemetry_enabled.nil? || Utils::Parsing.convert_to_bool(env_telemetry_enabled)
 
           return unless settings.telemetry.enabled

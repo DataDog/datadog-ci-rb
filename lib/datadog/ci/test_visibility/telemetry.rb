@@ -31,7 +31,7 @@ module Datadog
         end
 
         def self.test_session_started(test_session)
-          auto_injected = !ENV[Ext::Settings::ENV_AUTO_INSTRUMENTATION_PROVIDER].nil?
+          auto_injected = !DATADOG_ENV[Ext::Settings::ENV_AUTO_INSTRUMENTATION_PROVIDER].nil?
           agentless_logs_enabled = !!agentless_logs_component&.enabled
 
           Utils::Telemetry.inc(

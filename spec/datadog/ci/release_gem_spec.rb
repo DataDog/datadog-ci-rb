@@ -18,6 +18,7 @@ RSpec.describe "gem release process" do
         single_files_excluded = /
           ^
           (
+           |\.customcops.yml
            |\.env
            |\.gitignore
            |\.rspec
@@ -37,6 +38,7 @@ RSpec.describe "gem release process" do
            |Gemfile-.*
            |Rakefile
            |Steepfile
+           |supported-configurations.json
            |datadog-ci\.gemspec
            |docker-compose\.yml
           )
@@ -54,6 +56,7 @@ RSpec.describe "gem release process" do
             | bin
             |gemfiles
             |integration
+            |rubocop
             |tasks
             |yard
             |vendor/rbs
