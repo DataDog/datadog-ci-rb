@@ -1,0 +1,26 @@
+module Datadog
+  module CI
+    module TestTracing
+      module Serializers
+        class TestSuite < Base
+          CONTENT_FIELDS: Array[String | Hash[String, String]]
+          CONTENT_MAP_SIZE: Integer
+          REQUIRED_FIELDS: Array[String]
+
+          def content_fields: () -> Array[String | Hash[String, String]]
+          def content_map_size: () -> Integer
+
+          def type: () -> ::String
+
+          def name: () -> ::String
+
+          def resource: () -> ::String
+
+          private
+
+          def required_fields: () -> Array[String]
+        end
+      end
+    end
+  end
+end

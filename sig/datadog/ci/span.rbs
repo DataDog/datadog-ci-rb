@@ -83,7 +83,7 @@ module Datadog
 
       private
 
-      def test_visibility: () -> Datadog::CI::TestVisibility::Component
+      def test_tracing: () -> Datadog::CI::TestTracing::Component
     end
   end
 end

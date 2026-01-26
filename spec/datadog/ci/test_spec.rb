@@ -4,11 +4,11 @@ RSpec.describe Datadog::CI::Test do
   include_context "Telemetry spy"
 
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true) }
-  let(:test_visibility) { spy("test_visibility") }
+  let(:test_tracing) { spy("test_tracing") }
 
   subject(:ci_test) { described_class.new(tracer_span) }
 
-  before { allow_any_instance_of(described_class).to receive(:test_visibility).and_return(test_visibility) }
+  before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
 
   describe "#name" do
     subject(:name) { ci_test.name }
@@ -29,7 +29,7 @@ RSpec.describe Datadog::CI::Test do
 
     it "deactivates the test" do
       ci_test.finish
-      expect(test_visibility).to have_received(:deactivate_test)
+      expect(test_tracing).to have_received(:deactivate_test)
     end
 
     context "when test is a retry" do
@@ -929,11 +929,11 @@ RSpec.describe Datadog::CI::Test do
 
     let(:test_name) { "peek duration spec" }
     let(:test_suite_name) { "peek duration suite" }
-    let(:peek_duration_test_visibility) { Datadog.send(:components).test_visibility }
+    let(:peek_duration_test_tracing) { Datadog.send(:components).test_tracing }
 
     before do
-      # Remove the test_visibility stub for these tests since we need the real component
-      allow_any_instance_of(described_class).to receive(:test_visibility).and_call_original
+      # Remove the test_tracing stub for these tests since we need the real component
+      allow_any_instance_of(described_class).to receive(:test_tracing).and_call_original
 
       @started_peek_duration_tests = []
     end
@@ -947,7 +947,7 @@ RSpec.describe Datadog::CI::Test do
     end
 
     def start_peek_duration_test
-      peek_duration_test_visibility.trace_test(test_name, test_suite_name).tap do |test|
+      peek_duration_test_tracing.trace_test(test_name, test_suite_name).tap do |test|
         expect(test).to be_a(described_class)
         @started_peek_duration_tests << test
       end

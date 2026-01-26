@@ -2,7 +2,7 @@ module Datadog
   module CI
     module Configuration
       module Components : Datadog::Core::Configuration::Components
-        @test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
+        @test_tracing: Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent
         @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         @git_tree_upload_worker: Datadog::CI::Worker
         @ci_remote: Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent
@@ -13,7 +13,7 @@ module Datadog
         @test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
         @code_coverage: Datadog::CI::CodeCoverage::Component | Datadog::CI::CodeCoverage::NullComponent
 
-        attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
+        attr_reader test_tracing: Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent
         attr_reader test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         attr_reader git_tree_upload_worker: Datadog::CI::Worker
         attr_reader ci_remote: Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent
@@ -32,11 +32,11 @@ module Datadog
 
         def build_test_visibility_api: (untyped settings) -> Datadog::CI::Transport::Api::Base?
 
-        def serializers_factory: (untyped settings) -> (singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel))
+        def serializers_factory: (untyped settings) -> (singleton(Datadog::CI::TestTracing::Serializers::Factories::TestSuiteLevel) | singleton(Datadog::CI::TestTracing::Serializers::Factories::TestLevel))
 
         def check_dd_site: (untyped settings) -> void
 
-        def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> (Datadog::CI::TestVisibility::Transport? | Datadog::CI::TestVisibility::NullTransport)
+        def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> (Datadog::CI::TestTracing::Transport? | Datadog::CI::TestTracing::NullTransport)
 
         def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 
@@ -44,7 +44,7 @@ module Datadog
 
         def build_library_settings_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Remote::LibrarySettingsClient
 
-        def build_known_tests_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestVisibility::KnownTests
+        def build_known_tests_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestTracing::KnownTests
 
         def build_logs_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 

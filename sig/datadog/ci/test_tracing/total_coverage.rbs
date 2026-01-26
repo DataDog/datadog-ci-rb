@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module TestTracing
+      module TotalCoverage
+        def self.extract_lines_pct: (Datadog::CI::TestSession test_session) -> void
+      end
+    end
+  end
+end

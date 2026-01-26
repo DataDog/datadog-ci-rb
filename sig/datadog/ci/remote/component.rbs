@@ -27,7 +27,7 @@ module Datadog
 
         def test_management: () -> Datadog::CI::TestManagement::Component
 
-        def test_visibility: () -> Datadog::CI::TestVisibility::Component
+        def test_tracing: () -> Datadog::CI::TestTracing::Component
 
         def test_impact_analysis: () -> Datadog::CI::TestImpactAnalysis::Component
 

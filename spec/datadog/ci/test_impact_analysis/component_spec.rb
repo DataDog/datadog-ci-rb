@@ -168,8 +168,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
     context "when in a client process" do
       before do
-        allow(Datadog.send(:components)).to receive(:test_visibility).and_return(
-          instance_double(Datadog::CI::TestVisibility::Component, client_process?: true)
+        allow(Datadog.send(:components)).to receive(:test_tracing).and_return(
+          instance_double(Datadog::CI::TestTracing::Component, client_process?: true)
         )
         allow(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:new)
       end
@@ -401,7 +401,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
     let(:test_span) { Datadog::CI::Test.new(test_tracer_span) }
     let(:tests_skipping_enabled) { false }
-    let(:context) { instance_double(Datadog::CI::TestVisibility::Context, incr_tests_skipped_by_tia_count: nil) }
+    let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
 
     subject { component.on_test_finished(test_span, context) }
 
@@ -583,7 +583,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:test_span) { Datadog::CI::Test.new(test_tracer_span) }
     let(:tests_skipping_enabled) { false }
     let(:context_ids) { ["1", "1:1"] }
-    let(:context) { instance_double(Datadog::CI::TestVisibility::Context, incr_tests_skipped_by_tia_count: nil) }
+    let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
 
     before do
       skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
@@ -747,7 +747,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
     let(:test_span) { Datadog::CI::Test.new(test_tracer_span) }
     let(:tests_skipping_enabled) { false }
-    let(:context) { instance_double(Datadog::CI::TestVisibility::Context, incr_tests_skipped_by_tia_count: nil) }
+    let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
 
     before do
       skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
@@ -878,7 +878,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     subject { component.on_test_finished(test_span, testvis_context) }
 
     let(:testvis_context) do
-      spy(Datadog::CI::TestVisibility::Context)
+      spy(Datadog::CI::TestTracing::Context)
     end
 
     context "test is skipped by framework" do

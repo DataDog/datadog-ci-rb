@@ -22,7 +22,7 @@ module Datadog
 
           def test_impact_analysis: () -> Datadog::CI::TestImpactAnalysis::Component
 
-          def test_visibility: () -> Datadog::CI::TestVisibility::Component
+          def test_tracing: () -> Datadog::CI::TestTracing::Component
         end
       end
     end

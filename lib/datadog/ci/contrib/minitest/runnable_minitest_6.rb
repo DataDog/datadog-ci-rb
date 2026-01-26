@@ -34,8 +34,8 @@ module Datadog
               Datadog.configuration.ci[:minitest]
             end
 
-            def _dd_test_visibility_component
-              Datadog.send(:components).test_visibility
+            def _dd_test_tracing_component
+              Datadog.send(:components).test_tracing
             end
 
             def _dd_test_retries_component

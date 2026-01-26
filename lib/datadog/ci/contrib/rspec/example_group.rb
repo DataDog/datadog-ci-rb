@@ -41,7 +41,7 @@ module Datadog
                 }
 
                 test_suite =
-                  test_visibility_component&.start_test_suite(
+                  test_tracing_component&.start_test_suite(
                     suite_name,
                     tags: suite_tags,
                     service: datadog_configuration[:service_name]
@@ -101,8 +101,8 @@ module Datadog
               Datadog.configuration.ci[:rspec]
             end
 
-            def test_visibility_component
-              Datadog.send(:components).test_visibility
+            def test_tracing_component
+              Datadog.send(:components).test_tracing
             end
 
             def test_impact_analysis_component

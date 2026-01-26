@@ -9,7 +9,7 @@ RSpec.describe Datadog::CI::Remote::Component do
   let(:git_tree_upload_worker) { instance_double(Datadog::CI::Worker) }
   let(:test_impact_analysis) { instance_double(Datadog::CI::TestImpactAnalysis::Component) }
   let(:test_retries) { instance_double(Datadog::CI::TestRetries::Component) }
-  let(:test_visibility) { instance_double(Datadog::CI::TestVisibility::Component) }
+  let(:test_tracing) { instance_double(Datadog::CI::TestTracing::Component) }
   let(:test_management) { instance_double(Datadog::CI::TestManagement::Component) }
   let(:impacted_tests_detection) { instance_double(Datadog::CI::ImpactedTestsDetection::Component) }
   let(:code_coverage) { instance_double(Datadog::CI::CodeCoverage::Component) }
@@ -18,7 +18,7 @@ RSpec.describe Datadog::CI::Remote::Component do
     [
       test_impact_analysis,
       test_retries,
-      test_visibility,
+      test_tracing,
       test_management,
       impacted_tests_detection
     ]
@@ -28,7 +28,7 @@ RSpec.describe Datadog::CI::Remote::Component do
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_tree_upload_worker)
     allow(Datadog.send(:components)).to receive(:test_impact_analysis).and_return(test_impact_analysis)
     allow(Datadog.send(:components)).to receive(:test_retries).and_return(test_retries)
-    allow(Datadog.send(:components)).to receive(:test_visibility).and_return(test_visibility)
+    allow(Datadog.send(:components)).to receive(:test_tracing).and_return(test_tracing)
     allow(Datadog.send(:components)).to receive(:test_management).and_return(test_management)
     allow(Datadog.send(:components)).to receive(:impacted_tests_detection).and_return(impacted_tests_detection)
     allow(Datadog.send(:components)).to receive(:code_coverage).and_return(code_coverage)
@@ -135,8 +135,8 @@ RSpec.describe Datadog::CI::Remote::Component do
         # and actually restore the state properly
         allow(component).to receive(:load_component_state).and_call_original
 
-        # Need to mock test_visibility.client_process? which is called in load_component_state
-        allow(test_visibility).to receive(:client_process?).and_return(true)
+        # Need to mock test_tracing.client_process? which is called in load_component_state
+        allow(test_tracing).to receive(:client_process?).and_return(true)
 
         # Should not fetch configuration
         expect(library_settings_client).not_to receive(:fetch)
@@ -233,7 +233,7 @@ RSpec.describe Datadog::CI::Remote::Component do
 
       context "when JSON for settings does not exist" do
         before do
-          allow(test_visibility).to receive(:client_process?).and_return(false)
+          allow(test_tracing).to receive(:client_process?).and_return(false)
 
           FileUtils.rm_f(settings_file_path)
 

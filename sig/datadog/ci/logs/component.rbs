@@ -16,7 +16,7 @@ module Datadog
 
         def add_common_tags!: (Hash[Symbol | String, untyped] event) -> void
 
-        def test_visibility: () -> Datadog::CI::TestVisibility::Component
+        def test_tracing: () -> Datadog::CI::TestTracing::Component
       end
     end
   end

@@ -29,7 +29,7 @@ module Datadog
 
               return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
 
-              test_session = test_visibility_component.start_test_session(
+              test_session = test_tracing_component.start_test_session(
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
@@ -38,7 +38,7 @@ module Datadog
                 estimated_total_tests_count: ::RSpec.world.example_count
               )
 
-              test_module = test_visibility_component.start_test_module(Ext::FRAMEWORK)
+              test_module = test_tracing_component.start_test_module(Ext::FRAMEWORK)
 
               result = super
               return result unless test_module && test_session
@@ -68,8 +68,8 @@ module Datadog
               Datadog.configuration.ci[:rspec]
             end
 
-            def test_visibility_component
-              Datadog.send(:components).test_visibility
+            def test_tracing_component
+              Datadog.send(:components).test_tracing
             end
 
             def test_discovery_component

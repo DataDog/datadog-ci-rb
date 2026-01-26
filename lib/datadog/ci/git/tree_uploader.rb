@@ -29,8 +29,8 @@ module Datadog
             return
           end
 
-          if test_visibility_component.client_process?
-            Datadog.logger.debug("Test visibility component is running in client process, aborting git upload")
+          if test_tracing_component.client_process?
+            Datadog.logger.debug("Test tracing component is running in client process, aborting git upload")
             return
           end
 
@@ -110,8 +110,8 @@ module Datadog
           end
         end
 
-        def test_visibility_component
-          Datadog.send(:components).test_visibility
+        def test_tracing_component
+          Datadog.send(:components).test_tracing
         end
       end
     end

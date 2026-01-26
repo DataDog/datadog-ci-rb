@@ -36,14 +36,14 @@ module Datadog
           end
 
           def on_test_run_started(event)
-            test_visibility_component.start_test_session(
+            test_tracing_component.start_test_session(
               tags: {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                 CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
               },
               service: datadog_configuration[:service_name]
             )
-            test_visibility_component.start_test_module(Ext::FRAMEWORK)
+            test_tracing_component.start_test_module(Ext::FRAMEWORK)
           end
 
           def on_test_run_finished(event)
@@ -78,7 +78,7 @@ module Datadog
               )
             end
 
-            test_span = test_visibility_component.trace_test(
+            test_span = test_tracing_component.trace_test(
               event.test_case.name,
               test_suite_name,
               tags: tags,
@@ -90,18 +90,18 @@ module Datadog
           end
 
           def on_test_case_finished(event)
-            test_span = test_visibility_component.active_test
+            test_span = test_tracing_component.active_test
             return if test_span.nil?
 
             finish_span(test_span, event.result)
           end
 
           def on_test_step_started(event)
-            test_visibility_component.trace(event.test_step.to_s, type: Ext::STEP_SPAN_TYPE)
+            test_tracing_component.trace(event.test_step.to_s, type: Ext::STEP_SPAN_TYPE)
           end
 
           def on_test_step_finished(event)
-            current_step_span = test_visibility_component.active_span
+            current_step_span = test_tracing_component.active_span
             return if current_step_span.nil?
 
             finish_span(current_step_span, event.result)
@@ -135,8 +135,8 @@ module Datadog
           end
 
           def finish_session(result)
-            test_session = test_visibility_component.active_test_session
-            test_module = test_visibility_component.active_test_module
+            test_session = test_tracing_component.active_test_session
+            test_module = test_tracing_component.active_test_module
 
             return unless test_session && test_module
 
@@ -155,7 +155,7 @@ module Datadog
           def start_test_suite(test_suite_name, tags: {})
             finish_current_test_suite
 
-            @current_test_suite = test_visibility_component.start_test_suite(test_suite_name, tags: tags)
+            @current_test_suite = test_tracing_component.start_test_suite(test_suite_name, tags: tags)
           end
 
           def finish_current_test_suite
@@ -208,8 +208,8 @@ module Datadog
             Datadog.configuration.ci[:cucumber]
           end
 
-          def test_visibility_component
-            Datadog.send(:components).test_visibility
+          def test_tracing_component
+            Datadog.send(:components).test_tracing
           end
 
           def test_suite_source_file_tags(test_case)

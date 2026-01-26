@@ -22,11 +22,11 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
     let(:backend_commits) { %w[c7f893648f656339f62fb7b4d8a6ecdf7d063835] }
 
     let(:search_commits) { double("search_commits", call: backend_commits) }
-    let(:test_visibility_component) { double("test_visibility_component", client_process?: false) }
+    let(:test_tracing_component) { double("test_tracing_component", client_process?: false) }
 
     before do
       allow(Datadog::CI::Git::SearchCommits).to receive(:new).with(api: api).and_return(search_commits)
-      allow(tree_uploader).to receive(:test_visibility_component).and_return(test_visibility_component)
+      allow(tree_uploader).to receive(:test_tracing_component).and_return(test_tracing_component)
     end
 
     context "when the API is not configured" do
@@ -40,7 +40,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
     end
 
     context "when running in a client process" do
-      let(:test_visibility_component) { double("test_visibility_component", client_process?: true) }
+      let(:test_tracing_component) { double("test_tracing_component", client_process?: true) }
 
       it "logs a debug message and aborts the git upload" do
         expect(Datadog.logger).to receive(:debug).with("Test visibility component is running in client process, aborting git upload")

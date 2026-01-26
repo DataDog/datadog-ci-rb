@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# CI mode shared context sets up the CI test_visibility and configures the CI mode for tracer like customers do.
+# CI mode shared context sets up the CI test_tracing and configures the CI mode for tracer like customers do.
 # Example usage:
 #
 # include_context "CI mode activated" do
@@ -77,7 +77,7 @@ RSpec.shared_context "CI mode activated" do
   let(:test_discovery_enabled) { false }
   let(:test_discovery_output_path) { nil }
 
-  let(:test_visibility) { Datadog.send(:components).test_visibility }
+  let(:test_tracing) { Datadog.send(:components).test_tracing }
 
   before do
     setup_test_coverage_writer!
@@ -137,7 +137,7 @@ RSpec.shared_context "CI mode activated" do
     allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
     allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::Transport).to receive(:send_events).and_return([])
 
-    allow_any_instance_of(Datadog::CI::TestVisibility::KnownTests).to receive(:fetch).and_return(known_tests)
+    allow_any_instance_of(Datadog::CI::TestTracing::KnownTests).to receive(:fetch).and_return(known_tests)
 
     allow_any_instance_of(Datadog::CI::TestManagement::TestsProperties).to receive(:fetch).and_return(test_properties)
 
@@ -202,7 +202,7 @@ RSpec.shared_context "CI mode activated" do
     ::Datadog::Tracing.shutdown!
 
     Datadog::CI.send(:test_impact_analysis)&.shutdown!
-    Datadog::CI.send(:test_visibility)&.shutdown!
+    Datadog::CI.send(:test_tracing)&.shutdown!
 
     Datadog.configure do |c|
       c.ci.enabled = false

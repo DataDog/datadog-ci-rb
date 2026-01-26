@@ -31,7 +31,7 @@ module Datadog
 
     def self.components: () -> Datadog::CI::Configuration::Components
 
-    def self.test_visibility: () -> (Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent)
+    def self.test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 
     def self.test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
 

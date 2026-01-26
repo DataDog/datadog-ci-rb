@@ -95,8 +95,8 @@ RSpec.describe Datadog::CI::TestManagement::Component do
 
       context "when in a client process" do
         before do
-          allow(Datadog.send(:components)).to receive(:test_visibility).and_return(
-            instance_double(Datadog::CI::TestVisibility::Component, client_process?: true)
+          allow(Datadog.send(:components)).to receive(:test_tracing).and_return(
+            instance_double(Datadog::CI::TestTracing::Component, client_process?: true)
           )
           allow(Datadog::CI::TestManagement::TestsProperties).to receive(:new)
         end

@@ -29,7 +29,7 @@ module Datadog
         private
 
         def add_common_tags!(event)
-          test_session = test_visibility.active_test_session
+          test_session = test_tracing.active_test_session
 
           event[:ddsource] ||= "ruby"
           event[:ddtags] ||= "datadog.product:citest"
@@ -37,8 +37,8 @@ module Datadog
           event[:hostname] ||= Datadog::Core::Environment::Platform.hostname
         end
 
-        def test_visibility
-          ::Datadog.send(:components).test_visibility
+        def test_tracing
+          ::Datadog.send(:components).test_tracing
         end
       end
     end

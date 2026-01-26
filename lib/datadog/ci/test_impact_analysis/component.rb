@@ -199,7 +199,7 @@ module Datadog
         # 4. Records ITR statistics if test was skipped by TIA
         #
         # @param test [Datadog::CI::Test] The test that finished
-        # @param context [Datadog::CI::TestVisibility::Context] The test visibility context for ITR stats
+        # @param context [Datadog::CI::TestTracing::Context] The test tracing context for ITR stats
         # @return [Datadog::CI::TestImpactAnalysis::Coverage::Event, nil] The coverage event or nil
         def on_test_finished(test, context)
           return unless enabled?

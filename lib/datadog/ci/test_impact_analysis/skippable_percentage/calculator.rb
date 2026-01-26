@@ -39,11 +39,11 @@ module Datadog
               return 0.0
             end
 
-            log("Total tests count: #{test_visibility.total_tests_count}")
-            log("Skipped tests count: #{test_visibility.tests_skipped_by_tia_count}")
+            log("Total tests count: #{test_tracing.total_tests_count}")
+            log("Skipped tests count: #{test_tracing.tests_skipped_by_tia_count}")
             validate_test_impact_analysis_state!
 
-            (test_visibility.tests_skipped_by_tia_count.to_f / test_visibility.total_tests_count.to_f).floor(2)
+            (test_tracing.tests_skipped_by_tia_count.to_f / test_tracing.total_tests_count.to_f).floor(2)
           end
 
           private

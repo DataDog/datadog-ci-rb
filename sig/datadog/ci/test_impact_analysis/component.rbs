@@ -59,7 +59,7 @@ module Datadog
 
         def on_test_started: (Datadog::CI::Test test) -> void
 
-        def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestVisibility::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+        def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestTracing::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
 
         def clear_context_coverage: (String context_id) -> void
 

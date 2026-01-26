@@ -17,7 +17,7 @@ module Datadog
       # Finishes the current test session.
       # @return [void]
       def finish
-        test_visibility.deactivate_test_session
+        test_tracing.deactivate_test_session
 
         super
       end
@@ -25,7 +25,7 @@ module Datadog
       # Return the test session's name which is equal to test command used
       # @return [String] the command for this test session.
       def name
-        test_visibility.logical_test_session_name || "test_session"
+        test_tracing.logical_test_session_name || "test_session"
       end
 
       # Return the test session's command used to run the tests

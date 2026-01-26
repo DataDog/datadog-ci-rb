@@ -28,8 +28,8 @@ module Datadog
             return true if restore_state_from_datadog_test_runner
           end
 
-          test_visibility_component = Datadog.send(:components).test_visibility
-          return false unless test_visibility_component.client_process?
+          test_tracing_component = Datadog.send(:components).test_tracing
+          return false unless test_tracing_component.client_process?
 
           state = Utils::FileStorage.retrieve(storage_key)
           unless state

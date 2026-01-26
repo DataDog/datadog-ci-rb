@@ -34,7 +34,7 @@ module Datadog
             def traverse_example_group_hierarchy: () -> void
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
             def datadog_configuration: () -> untyped
-            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+            def test_tracing_component: () -> Datadog::CI::TestTracing::Component
             def test_retries_component: () -> Datadog::CI::TestRetries::Component
             def ci_queue?: () -> bool
             def datadog_test_suite_description: () -> String

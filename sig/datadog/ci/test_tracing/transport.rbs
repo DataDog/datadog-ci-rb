@@ -1,0 +1,33 @@
+module Datadog
+  module CI
+    module TestTracing
+      class Transport < Datadog::CI::Transport::EventPlatformTransport
+        attr_reader serializers_factory: singleton(Datadog::CI::TestTracing::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestTracing::Serializers::Factories::TestSuiteLevel)
+        attr_reader dd_env: String?
+
+        @dd_env: String?
+        @serializers_factory: singleton(Datadog::CI::TestTracing::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestTracing::Serializers::Factories::TestSuiteLevel)
+
+        @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
+        @test_tracing: Datadog::CI::TestTracing::Component?
+
+        def initialize: (
+          api: Datadog::CI::Transport::Api::Base,
+          dd_env: ::String?,
+          ?serializers_factory: singleton(Datadog::CI::TestTracing::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestTracing::Serializers::Factories::TestSuiteLevel),
+          ?max_payload_size: Integer
+        ) -> void
+
+        def send_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> untyped
+
+        private
+
+        def send_payload: (String encoded_payload) -> Datadog::CI::Transport::Adapters::Net::Response
+        def encode_events: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[String]
+        def encode_span: (Datadog::Tracing::TraceSegment trace, Datadog::Tracing::Span span) -> String?
+        def test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
+        def test_tracing: () -> Datadog::CI::TestTracing::Component?
+      end
+    end
+  end
+end

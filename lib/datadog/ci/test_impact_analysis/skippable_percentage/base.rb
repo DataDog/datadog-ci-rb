@@ -45,9 +45,9 @@ module Datadog
             Datadog.send(:components).test_impact_analysis
           end
 
-          def test_visibility
-            Datadog.send(:components).test_visibility
-          end
+def test_tracing
+          Datadog.send(:components).test_tracing
+        end
         end
       end
     end

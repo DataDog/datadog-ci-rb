@@ -24,14 +24,14 @@ require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
 require_relative "../test_discovery/component"
 require_relative "../test_discovery/null_component"
-require_relative "../test_visibility/component"
-require_relative "../test_visibility/flush"
-require_relative "../test_visibility/known_tests"
-require_relative "../test_visibility/null_component"
-require_relative "../test_visibility/serializers/factories/test_level"
-require_relative "../test_visibility/serializers/factories/test_suite_level"
-require_relative "../test_visibility/null_transport"
-require_relative "../test_visibility/transport"
+require_relative "../test_tracing/component"
+require_relative "../test_tracing/flush"
+require_relative "../test_tracing/known_tests"
+require_relative "../test_tracing/null_component"
+require_relative "../test_tracing/serializers/factories/test_level"
+require_relative "../test_tracing/serializers/factories/test_suite_level"
+require_relative "../test_tracing/null_transport"
+require_relative "../test_tracing/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
@@ -44,12 +44,12 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_impact_analysis, :git_tree_upload_worker, :ci_remote, :test_retries,
+        attr_reader :test_tracing, :test_impact_analysis, :git_tree_upload_worker, :ci_remote, :test_retries,
           :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery, :code_coverage
 
         def initialize(settings)
           @test_impact_analysis = TestImpactAnalysis::NullComponent.new
-          @test_visibility = TestVisibility::NullComponent.new
+          @test_tracing = TestTracing::NullComponent.new
           @git_tree_upload_worker = DummyWorker.new
           @ci_remote = Remote::NullComponent.new
           @test_retries = TestRetries::NullComponent.new
@@ -69,7 +69,7 @@ module Datadog
         def shutdown!(replacement = nil)
           super
 
-          @test_visibility&.shutdown!
+          @test_tracing&.shutdown!
           @test_impact_analysis&.shutdown!
           @agentless_logs_submission&.shutdown!
           @test_discovery&.shutdown!
@@ -122,7 +122,7 @@ module Datadog
           # Activate underlying tracing test mode with async worker
           settings.tracing.test_mode.enabled = true
           settings.tracing.test_mode.async = true
-          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestVisibility::Flush::Partial.new
+          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestTracing::Flush::Partial.new
 
           trace_writer_options = settings.ci.writer_options
           trace_writer_options[:shutdown_timeout] = 60
@@ -153,7 +153,7 @@ module Datadog
 
           # @type ivar @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component
           @test_impact_analysis = build_test_impact_analysis(settings, test_visibility_api)
-          @test_visibility = TestVisibility::Component.new(
+          @test_tracing = TestTracing::Component.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             logical_test_session_name: settings.ci.test_session_name,
             known_tests_client: build_known_tests_client(settings, test_visibility_api),
@@ -243,11 +243,11 @@ module Datadog
 
         def build_tracing_transport(settings, api)
           # NullTransport ignores traces
-          return TestVisibility::NullTransport.new if settings.ci.discard_traces
+          return TestTracing::NullTransport.new if settings.ci.discard_traces
           # nil means that default legacy APM transport will be used (only for very old Datadog Agent versions)
           return nil if api.nil?
 
-          TestVisibility::Transport.new(
+          TestTracing::Transport.new(
             api: api,
             serializers_factory: serializers_factory(settings),
             dd_env: settings.env
@@ -283,7 +283,7 @@ module Datadog
         end
 
         def build_known_tests_client(settings, api)
-          TestVisibility::KnownTests.new(
+          TestTracing::KnownTests.new(
             api: api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings)
@@ -330,9 +330,9 @@ module Datadog
 
         def serializers_factory(settings)
           if settings.ci.force_test_level_visibility
-            TestVisibility::Serializers::Factories::TestLevel
+            TestTracing::Serializers::Factories::TestLevel
           else
-            TestVisibility::Serializers::Factories::TestSuiteLevel
+            TestTracing::Serializers::Factories::TestSuiteLevel
           end
         end
 

@@ -3,7 +3,7 @@
 require_relative "../ext/telemetry"
 require_relative "../ext/test"
 require_relative "../utils/telemetry"
-require_relative "../test_visibility/telemetry"
+require_relative "../test_tracing/telemetry"
 
 module Datadog
   module CI

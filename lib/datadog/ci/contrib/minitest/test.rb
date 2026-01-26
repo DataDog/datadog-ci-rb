@@ -44,7 +44,7 @@ module Datadog
               tags[CI::Ext::Test::TAG_SOURCE_START] = first_line_number.to_s if first_line_number
               tags[CI::Ext::Test::TAG_SOURCE_END] = last_line_number.to_s if last_line_number
 
-              test_span = _dd_test_visibility_component.trace_test(
+              test_span = _dd_test_tracing_component.trace_test(
                 name,
                 test_suite_name,
                 tags: tags,
@@ -59,7 +59,7 @@ module Datadog
             end
 
             def after_teardown
-              test_span = _dd_test_visibility_component.active_test
+              test_span = _dd_test_tracing_component.active_test
               return super unless test_span
 
               finish_with_result(test_span, result_code)
@@ -95,8 +95,8 @@ module Datadog
               Datadog.configuration.ci[:minitest]
             end
 
-            def _dd_test_visibility_component
-              Datadog.send(:components).test_visibility
+            def _dd_test_tracing_component
+              Datadog.send(:components).test_tracing
             end
           end
 

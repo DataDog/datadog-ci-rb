@@ -18,7 +18,7 @@ module Datadog
               return super if @runner != ::ParallelTests::RSpec::Runner
 
               begin
-                test_session = test_visibility_component.start_test_session(
+                test_session = test_tracing_component.start_test_session(
                   tags: {
                     CI::Ext::Test::TAG_FRAMEWORK => CI::Contrib::RSpec::Ext::FRAMEWORK,
                     CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_extract_rspec_version
@@ -27,10 +27,10 @@ module Datadog
                   estimated_total_tests_count: 10_000, # temporary value, updated by child processes
                   distributed: true
                 )
-                test_module = test_visibility_component.start_test_module("rspec")
+                test_module = test_tracing_component.start_test_module("rspec")
 
                 options[:env] ||= {}
-                options[:env][CI::Ext::Settings::ENV_TEST_VISIBILITY_DRB_SERVER_URI] = test_visibility_component.context_service_uri
+                options[:env][CI::Ext::Settings::ENV_TEST_VISIBILITY_DRB_SERVER_URI] = test_tracing_component.context_service_uri
 
                 super
               ensure
@@ -42,8 +42,8 @@ module Datadog
             def any_test_failed?(test_results)
               res = super
 
-              test_session = test_visibility_component.active_test_session
-              test_module = test_visibility_component.active_test_module
+              test_session = test_tracing_component.active_test_session
+              test_module = test_tracing_component.active_test_module
               if res
                 test_module&.failed!
                 test_session&.failed!
@@ -73,8 +73,8 @@ module Datadog
               Datadog.configuration.ci[:paralleltests]
             end
 
-            def test_visibility_component
-              Datadog.send(:components).test_visibility
+            def test_tracing_component
+              Datadog.send(:components).test_tracing
             end
           end
         end

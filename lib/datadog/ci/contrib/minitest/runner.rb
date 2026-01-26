@@ -21,7 +21,7 @@ module Datadog
 
               tests_count = ::Minitest::Runnable.runnables.sum { |runnable| runnable.runnable_methods.size }
 
-              test_visibility_component.start_test_session(
+              test_tracing_component.start_test_session(
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
@@ -32,7 +32,7 @@ module Datadog
                 # we need to always start/stop test suites in the parent process in this case
                 local_test_suites_mode: false
               )
-              test_visibility_component.start_test_module(Ext::FRAMEWORK)
+              test_tracing_component.start_test_module(Ext::FRAMEWORK)
             end
 
             def old_run_one_method(klass, method_name)
@@ -54,7 +54,7 @@ module Datadog
               # get the current test suite and mark this method as done, so we can check if all tests were executed
               # for this test suite
               test_suite_name = Helpers.test_suite_name(klass, method_name)
-              test_suite = test_visibility_component.active_test_suite(test_suite_name)
+              test_suite = test_tracing_component.active_test_suite(test_suite_name)
               test_suite&.expected_test_done!(method_name)
 
               result
@@ -80,8 +80,8 @@ module Datadog
               Datadog.configuration.ci[:minitest]
             end
 
-            def test_visibility_component
-              Datadog.send(:components).test_visibility
+            def test_tracing_component
+              Datadog.send(:components).test_tracing
             end
 
             def test_retries_component
