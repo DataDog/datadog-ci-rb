@@ -115,7 +115,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
   end
 
   context "when test suite level visibility is enabled" do
-    context "without TestOptimisation" do
+    context "without TestImpactAnalysis" do
       include_context "CI mode activated"
 
       describe "#trace" do
@@ -950,7 +950,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
       end
     end
 
-    context "with TestOptimisation" do
+    context "with TestImpactAnalysis" do
       context "without require_git in settings response" do
         include_context "CI mode activated" do
           let(:itr_enabled) { true }
@@ -964,7 +964,7 @@ RSpec.describe Datadog::CI::TestVisibility::Component do
 
           subject { test_visibility.start_test_session(service: service, tags: tags) }
 
-          it "returns a new CI test_session span with ITR/TestOptimisation tags" do
+          it "returns a new CI test_session span with ITR/TestImpactAnalysis tags" do
             expect(subject).to be_kind_of(Datadog::CI::TestSession)
             expect(subject.service).to eq(service)
 

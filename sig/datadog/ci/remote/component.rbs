@@ -29,7 +29,7 @@ module Datadog
 
         def test_visibility: () -> Datadog::CI::TestVisibility::Component
 
-        def test_optimisation: () -> Datadog::CI::TestOptimisation::Component
+        def test_impact_analysis: () -> Datadog::CI::TestImpactAnalysis::Component
 
         def test_retries: () -> Datadog::CI::TestRetries::Component
 

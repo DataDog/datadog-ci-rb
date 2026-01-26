@@ -3,7 +3,7 @@ module Datadog
     module Configuration
       module Components : Datadog::Core::Configuration::Components
         @test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
-        @test_optimisation: Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent
+        @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         @git_tree_upload_worker: Datadog::CI::Worker
         @ci_remote: Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent
         @custom_configuration: Hash[String, String]
@@ -14,7 +14,7 @@ module Datadog
         @code_coverage: Datadog::CI::CodeCoverage::Component | Datadog::CI::CodeCoverage::NullComponent
 
         attr_reader test_visibility: Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent
-        attr_reader test_optimisation: Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent
+        attr_reader test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         attr_reader git_tree_upload_worker: Datadog::CI::Worker
         attr_reader ci_remote: Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent
         attr_reader test_retries: Datadog::CI::TestRetries::Component
@@ -28,7 +28,7 @@ module Datadog
 
         def activate_ci!: (untyped settings) -> untyped
 
-        def build_test_optimisation: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestOptimisation::Component
+        def build_test_impact_analysis: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestImpactAnalysis::Component
 
         def build_test_visibility_api: (untyped settings) -> Datadog::CI::Transport::Api::Base?
 

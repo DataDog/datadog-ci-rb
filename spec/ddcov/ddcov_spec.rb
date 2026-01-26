@@ -9,7 +9,7 @@ require_relative "app/model/dynamic_model"
 require_relative "calculator/calculator"
 require_relative "calculator/code_with_❤️"
 
-RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
+RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
   let(:ignored_path) { nil }
   let(:threading_mode) { :multi }
   let(:use_allocation_tracing) { true }

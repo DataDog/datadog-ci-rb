@@ -17,9 +17,9 @@ require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
 require_relative "../test_management/null_component"
 require_relative "../test_management/tests_properties"
-require_relative "../test_optimisation/null_component"
-require_relative "../test_optimisation/component"
-require_relative "../test_optimisation/coverage/transport"
+require_relative "../test_impact_analysis/null_component"
+require_relative "../test_impact_analysis/component"
+require_relative "../test_impact_analysis/coverage/transport"
 require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
 require_relative "../test_discovery/component"
@@ -44,11 +44,11 @@ module Datadog
     module Configuration
       # Adds CI behavior to Datadog trace components
       module Components
-        attr_reader :test_visibility, :test_optimisation, :git_tree_upload_worker, :ci_remote, :test_retries,
+        attr_reader :test_visibility, :test_impact_analysis, :git_tree_upload_worker, :ci_remote, :test_retries,
           :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery, :code_coverage
 
         def initialize(settings)
-          @test_optimisation = TestOptimisation::NullComponent.new
+          @test_impact_analysis = TestImpactAnalysis::NullComponent.new
           @test_visibility = TestVisibility::NullComponent.new
           @git_tree_upload_worker = DummyWorker.new
           @ci_remote = Remote::NullComponent.new
@@ -70,7 +70,7 @@ module Datadog
           super
 
           @test_visibility&.shutdown!
-          @test_optimisation&.shutdown!
+          @test_impact_analysis&.shutdown!
           @agentless_logs_submission&.shutdown!
           @test_discovery&.shutdown!
           @code_coverage&.shutdown!
@@ -151,8 +151,8 @@ module Datadog
             tests_properties_client: TestManagement::TestsProperties.new(api: test_visibility_api)
           )
 
-          # @type ivar @test_optimisation: Datadog::CI::TestOptimisation::Component
-          @test_optimisation = build_test_optimisation(settings, test_visibility_api)
+          # @type ivar @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component
+          @test_impact_analysis = build_test_impact_analysis(settings, test_visibility_api)
           @test_visibility = TestVisibility::Component.new(
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             logical_test_session_name: settings.ci.test_session_name,
@@ -167,7 +167,7 @@ module Datadog
           @code_coverage = build_code_coverage(settings, test_visibility_api)
         end
 
-        def build_test_optimisation(settings, test_visibility_api)
+        def build_test_impact_analysis(settings, test_visibility_api)
           if settings.ci.itr_code_coverage_use_single_threaded_mode &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
             Datadog.logger.warn(
@@ -191,7 +191,7 @@ module Datadog
             settings.ci.itr_test_impact_analysis_use_allocation_tracing = false
           end
 
-          TestOptimisation::Component.new(
+          TestImpactAnalysis::Component.new(
             api: test_visibility_api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings),
@@ -259,7 +259,7 @@ module Datadog
           return nil if api.nil? || settings.ci.discard_traces
 
           AsyncWriter.new(
-            transport: TestOptimisation::Coverage::Transport.new(api: api)
+            transport: TestImpactAnalysis::Coverage::Transport.new(api: api)
           )
         end
 

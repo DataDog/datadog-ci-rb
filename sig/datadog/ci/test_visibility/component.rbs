@@ -124,7 +124,7 @@ module Datadog
 
         def new_test?: (Datadog::CI::Test test_span) -> bool
 
-        def test_optimisation: () -> (Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent)
+        def test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
 
         def test_retries: () -> Datadog::CI::TestRetries::Component
 

@@ -1,0 +1,49 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      class NullComponent
+        attr_reader enabled: bool
+        attr_reader test_skipping_enabled: bool
+        attr_reader code_coverage_enabled: bool
+        attr_reader skippable_tests_fetch_error: String?
+        attr_reader skippable_tests: Set[String]
+        attr_reader correlation_id: String?
+
+        def initialize: () -> void
+
+        def configure: (?Datadog::CI::Remote::LibrarySettings remote_configuration, ?Datadog::CI::TestSession test_session) -> void
+
+        def enabled?: () -> bool
+
+        def skipping_tests?: () -> bool
+
+        def code_coverage?: () -> bool
+
+        def start_coverage: () -> void
+
+        def stop_coverage: () -> Hash[String, untyped]?
+
+        def on_test_context_started: (String context_id) -> void
+
+        def on_test_started: (Datadog::CI::Test test) -> void
+
+        def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestVisibility::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+
+        def clear_context_coverage: (String context_id) -> void
+
+        def context_coverage_enabled?: () -> bool
+
+        def mark_if_skippable: (Datadog::CI::Test test) -> void
+
+        def skippable?: (String datadog_test_id) -> bool
+
+        def write_test_session_tags: (Datadog::CI::TestSession test_session, Integer skipped_tests_count) -> void
+
+        def skippable_tests_count: () -> Integer
+
+        def shutdown!: () -> void
+      end
+    end
+  end
+end
+

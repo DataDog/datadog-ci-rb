@@ -1,0 +1,30 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module SkippablePercentage
+        class Base
+          attr_reader failed: bool
+
+          @verbose: bool
+          @spec_path: String
+
+          def initialize: (?verbose: bool, ?spec_path: ::String) -> void
+
+          def call: () -> Numeric
+
+          private
+
+          def validate_test_impact_analysis_state!: () -> void
+
+          def log: (String message) -> void
+
+          def error!: (String message) -> void
+
+          def test_impact_analysis: () -> Datadog::CI::TestImpactAnalysis::Component
+
+          def test_visibility: () -> Datadog::CI::TestVisibility::Component
+        end
+      end
+    end
+  end
+end

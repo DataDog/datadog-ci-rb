@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class DDCov
+          type threading_mode = :multi | :single
+
+          def initialize: (root: String, ignored_path: String?, threading_mode: threading_mode, use_allocation_tracing: bool) -> void
+
+          def start: () -> void
+
+          def stop: () -> Hash[String, untyped]
+        end
+      end
+    end
+  end
+end

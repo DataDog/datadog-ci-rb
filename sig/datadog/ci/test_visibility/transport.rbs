@@ -8,7 +8,7 @@ module Datadog
         @dd_env: String?
         @serializers_factory: singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestLevel) | singleton(Datadog::CI::TestVisibility::Serializers::Factories::TestSuiteLevel)
 
-        @test_optimisation: Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent
+        @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         @test_visibility: Datadog::CI::TestVisibility::Component?
 
         def initialize: (
@@ -25,7 +25,7 @@ module Datadog
         def send_payload: (String encoded_payload) -> Datadog::CI::Transport::Adapters::Net::Response
         def encode_events: (Array[Datadog::Tracing::TraceSegment] traces) -> ::Array[String]
         def encode_span: (Datadog::Tracing::TraceSegment trace, Datadog::Tracing::Span span) -> String?
-        def test_optimisation: () -> (Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent)
+        def test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
         def test_visibility: () -> Datadog::CI::TestVisibility::Component?
       end
     end

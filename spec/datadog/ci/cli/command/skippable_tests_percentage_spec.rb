@@ -20,7 +20,7 @@ RSpec.describe Datadog::CI::CLI::Command::SkippableTestsPercentage do
     let(:action) { double("action", call: result, failed: failed) }
 
     before do
-      allow(::Datadog::CI::TestOptimisation::SkippablePercentage::Calculator).to receive(:new).with(
+      allow(::Datadog::CI::TestImpactAnalysis::SkippablePercentage::Calculator).to receive(:new).with(
         rspec_cli_options: rspec_options,
         verbose: verbose,
         spec_path: spec_path

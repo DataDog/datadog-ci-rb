@@ -59,7 +59,7 @@ module Datadog
           serializer = serializers_factory.serializer(
             trace,
             span,
-            options: {itr_correlation_id: test_optimisation&.correlation_id}
+            options: {itr_correlation_id: test_impact_analysis&.correlation_id}
           )
 
           if serializer.valid?
@@ -138,8 +138,8 @@ module Datadog
           packer.write("events")
         end
 
-        def test_optimisation
-          @test_optimisation ||= Datadog::CI.send(:test_optimisation)
+        def test_impact_analysis
+          @test_impact_analysis ||= Datadog::CI.send(:test_impact_analysis)
         end
 
         def test_visibility

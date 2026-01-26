@@ -3,7 +3,7 @@
 require "json"
 
 require_relative "span"
-require_relative "test_optimisation/telemetry"
+require_relative "test_impact_analysis/telemetry"
 require_relative "utils/test_run"
 
 module Datadog
@@ -146,13 +146,13 @@ module Datadog
       #
       # @return [void]
       def itr_unskippable!
-        TestOptimisation::Telemetry.itr_unskippable
+        TestImpactAnalysis::Telemetry.itr_unskippable
         set_tag(Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
 
         if skipped_by_test_impact_analysis?
           clear_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
 
-          TestOptimisation::Telemetry.itr_forced_run
+          TestImpactAnalysis::Telemetry.itr_forced_run
           set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
         end
       end

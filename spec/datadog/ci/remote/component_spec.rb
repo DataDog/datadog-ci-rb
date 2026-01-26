@@ -7,7 +7,7 @@ RSpec.describe Datadog::CI::Remote::Component do
 
   let(:library_settings_client) { instance_double(Datadog::CI::Remote::LibrarySettingsClient) }
   let(:git_tree_upload_worker) { instance_double(Datadog::CI::Worker) }
-  let(:test_optimisation) { instance_double(Datadog::CI::TestOptimisation::Component) }
+  let(:test_impact_analysis) { instance_double(Datadog::CI::TestImpactAnalysis::Component) }
   let(:test_retries) { instance_double(Datadog::CI::TestRetries::Component) }
   let(:test_visibility) { instance_double(Datadog::CI::TestVisibility::Component) }
   let(:test_management) { instance_double(Datadog::CI::TestManagement::Component) }
@@ -16,7 +16,7 @@ RSpec.describe Datadog::CI::Remote::Component do
 
   let(:configurable_components) do
     [
-      test_optimisation,
+      test_impact_analysis,
       test_retries,
       test_visibility,
       test_management,
@@ -26,7 +26,7 @@ RSpec.describe Datadog::CI::Remote::Component do
 
   before do
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_tree_upload_worker)
-    allow(Datadog.send(:components)).to receive(:test_optimisation).and_return(test_optimisation)
+    allow(Datadog.send(:components)).to receive(:test_impact_analysis).and_return(test_impact_analysis)
     allow(Datadog.send(:components)).to receive(:test_retries).and_return(test_retries)
     allow(Datadog.send(:components)).to receive(:test_visibility).and_return(test_visibility)
     allow(Datadog.send(:components)).to receive(:test_management).and_return(test_management)

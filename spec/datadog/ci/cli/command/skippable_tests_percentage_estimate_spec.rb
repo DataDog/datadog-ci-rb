@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::CLI::Command::SkippableTestsPercentageEstimate do
     let(:action) { double("action", call: result, failed: failed) }
 
     before do
-      allow(::Datadog::CI::TestOptimisation::SkippablePercentage::Estimator).to receive(:new).with(
+      allow(::Datadog::CI::TestImpactAnalysis::SkippablePercentage::Estimator).to receive(:new).with(
         verbose: verbose,
         spec_path: spec_path
       ).and_return(action)

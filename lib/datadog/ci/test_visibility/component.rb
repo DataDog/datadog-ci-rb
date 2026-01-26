@@ -209,7 +209,7 @@ module Datadog
         end
 
         def itr_enabled?
-          test_optimisation.enabled?
+          test_impact_analysis.enabled?
         end
 
         def shutdown!
@@ -301,14 +301,14 @@ module Datadog
 
           test_management.tag_test_from_properties(test)
 
-          test_optimisation.mark_if_skippable(test)
-          test_optimisation.on_test_started(test)
+          test_impact_analysis.mark_if_skippable(test)
+          test_impact_analysis.on_test_started(test)
 
           test_retries.record_test_started(test)
         end
 
         def on_test_session_finished(test_session)
-          test_optimisation.write_test_session_tags(test_session, maybe_remote_context.tests_skipped_by_tia_count)
+          test_impact_analysis.write_test_session_tags(test_session, maybe_remote_context.tests_skipped_by_tia_count)
 
           TotalCoverage.extract_lines_pct(test_session)
 
@@ -328,7 +328,7 @@ module Datadog
         end
 
         def on_test_finished(test)
-          test_optimisation.on_test_finished(test, maybe_remote_context)
+          test_impact_analysis.on_test_finished(test, maybe_remote_context)
 
           validate_source_location(test)
 
@@ -475,8 +475,8 @@ module Datadog
           test_span.set_tag(Ext::Test::TAG_IS_NEW, "true")
         end
 
-        def test_optimisation
-          Datadog.send(:components).test_optimisation
+        def test_impact_analysis
+          Datadog.send(:components).test_impact_analysis
         end
 
         def test_retries

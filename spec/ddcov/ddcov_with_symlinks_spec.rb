@@ -4,7 +4,7 @@ require "fileutils"
 
 require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
-RSpec.describe Datadog::CI::TestOptimisation::Coverage::DDCov do
+RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
   before do
     # create a symlink to the calculator_with_symlinks/operations folder in vendor/gems
     FileUtils.ln_s(

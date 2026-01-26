@@ -1,0 +1,19 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class Transport < Datadog::CI::Transport::EventPlatformTransport
+          private
+
+          def send_payload: (String payload) -> ::Datadog::CI::Transport::Adapters::Net::Response
+
+          def encode_events: (Array[Datadog::CI::TestImpactAnalysis::Coverage::Event] events) -> ::Array[String]
+
+          def pack_events: (Array[String] encoded_events) -> String
+
+          def event_too_large?: (Datadog::CI::TestImpactAnalysis::Coverage::Event event, String encoded_event) -> bool
+        end
+      end
+    end
+  end
+end

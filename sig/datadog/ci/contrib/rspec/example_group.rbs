@@ -24,7 +24,7 @@ module Datadog
 
             def test_visibility_component: () -> Datadog::CI::TestVisibility::Component?
 
-            def test_optimisation_component: () -> (Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent)
+            def test_impact_analysis_component: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
 
             def test_management_component: () -> Datadog::CI::TestManagement::Component?
           end

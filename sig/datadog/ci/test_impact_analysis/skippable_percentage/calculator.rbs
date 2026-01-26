@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module SkippablePercentage
+        class Calculator < Base
+          @rspec_cli_options: Array[String]
+
+          def initialize: (?rspec_cli_options: Array[String], ?verbose: bool, ?spec_path: ::String) -> void
+
+          def call: () -> Numeric
+
+          private
+
+          def require_rspec!: () -> void
+
+          def configure_datadog: () -> void
+
+          def dry_run: () -> Integer
+        end
+      end
+    end
+  end
+end

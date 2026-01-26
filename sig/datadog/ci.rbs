@@ -33,7 +33,7 @@ module Datadog
 
     def self.test_visibility: () -> (Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent)
 
-    def self.test_optimisation: () -> (Datadog::CI::TestOptimisation::Component | Datadog::CI::TestOptimisation::NullComponent)
+    def self.test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
 
     def self.test_retries: () -> Datadog::CI::TestRetries::Component?
 

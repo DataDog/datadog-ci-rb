@@ -71,7 +71,7 @@ module Datadog
 
                 # Skip by Test Impact Analysis: test is skippable and not marked as unskippable
                 tia_skipped = !example.datadog_unskippable? &&
-                  test_optimisation_component&.skippable?(datadog_test_id)
+                  test_impact_analysis_component&.skippable?(datadog_test_id)
 
                 # Skip by Test Management: test is disabled
                 test_management_disabled = test_management_component&.disabled?(datadog_fqn_test_id)
@@ -89,12 +89,12 @@ module Datadog
             # Starts context coverage collection for this example group.
             # This captures code executed in before(:context)/before(:all) hooks.
             def start_context_coverage(context_id)
-              test_optimisation_component&.on_test_context_started(context_id)
+              test_impact_analysis_component&.on_test_context_started(context_id)
             end
 
             # Clears context coverage for this example group after it finishes.
             def clear_context_coverage(context_id)
-              test_optimisation_component&.clear_context_coverage(context_id)
+              test_impact_analysis_component&.clear_context_coverage(context_id)
             end
 
             def datadog_configuration
@@ -105,8 +105,8 @@ module Datadog
               Datadog.send(:components).test_visibility
             end
 
-            def test_optimisation_component
-              Datadog.send(:components).test_optimisation
+            def test_impact_analysis_component
+              Datadog.send(:components).test_impact_analysis
             end
 
             def test_management_component

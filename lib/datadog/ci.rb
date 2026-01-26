@@ -410,8 +410,8 @@ module Datadog
         components.test_visibility
       end
 
-      def test_optimisation
-        components.test_optimisation
+      def test_impact_analysis
+        components.test_impact_analysis
       end
 
       def test_management
