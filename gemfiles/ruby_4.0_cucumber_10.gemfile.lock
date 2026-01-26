@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: fc10410daf1e5bef23dd5cfa436bf954bad5ae28
+  revision: e700369fef6302d420a299c0cfe1e119c211c62c
   branch: master
   specs:
-    datadog (2.27.0)
+    datadog (2.28.0)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.1)
       libdatadog (~> 25.0.0.1.0)
@@ -53,13 +53,13 @@ GEM
       cucumber-gherkin (> 36, < 40)
       cucumber-messages (> 31, < 33)
       cucumber-tag-expressions (> 6, < 9)
-    cucumber-cucumber-expressions (18.0.1)
+    cucumber-cucumber-expressions (19.0.0)
       bigdecimal
-    cucumber-gherkin (37.0.1)
-      cucumber-messages (>= 31, < 32)
+    cucumber-gherkin (38.0.0)
+      cucumber-messages (>= 31, < 33)
     cucumber-html-formatter (22.3.0)
       cucumber-messages (> 23, < 33)
-    cucumber-messages (31.2.0)
+    cucumber-messages (32.0.1)
     cucumber-tag-expressions (8.1.0)
     datadog-ruby_core_source (3.5.1)
     date (3.5.1)
@@ -177,12 +177,12 @@ CHECKSUMS
   cucumber (10.2.0) sha256=fdedbd31ecf40858b60f04853f2aa15c44f5c30bbac29c6a227fa1e7005a8158
   cucumber-ci-environment (11.0.0) sha256=0df79a9e1d0b015b3d9def680f989200d96fef206f4d19ccf86a338c4f71d1e2
   cucumber-core (16.1.1) sha256=d3aaa80a1ee2865f63f1a21ef496129f675af9099993b9af9608c4ef8ae26b89
-  cucumber-cucumber-expressions (18.0.1) sha256=8398a0bf636af33ff3b61e459a309295eb02745b9e21bd7af0eaaa2a1e6be3e5
-  cucumber-gherkin (37.0.1) sha256=06437ba0dca96cdb7f97e85802a694cf4bee9d3984c00947237448871d9b56d9
+  cucumber-cucumber-expressions (19.0.0) sha256=33208ff204732ac9bed42b46993a0a243054f71ece08579d57e53df6a1c9d93a
+  cucumber-gherkin (38.0.0) sha256=3e5846badf646eaec482b07067520e4494f370a0cfa5474d63522ca2ace800c4
   cucumber-html-formatter (22.3.0) sha256=f9768ed05588dbd73a5f3824c2cc648bd86b00206e6972d743af8051281d0729
-  cucumber-messages (31.2.0) sha256=8f835164cab1c3e3363a1295634ce799eedf338496ab4624e2065e8a42ec5fd4
+  cucumber-messages (32.0.1) sha256=8889d29fa5486e6523bd537e95fbf86b99eb11258528d2d55af4b806594ffcff
   cucumber-tag-expressions (8.1.0) sha256=9bd8c4b6654f8e5bf2a9c99329b6f32136a75e50cd39d4cfb3927d0fa9f52e21
-  datadog (2.27.0)
+  datadog (2.28.0)
   datadog-ci (1.27.0)
   datadog-ruby_core_source (3.5.1) sha256=6620521d98c22c2e1cbe3c4bff2698a0cff6d3280a14b95f026806b2c964a7f5
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0

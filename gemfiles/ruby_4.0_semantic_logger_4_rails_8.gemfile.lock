@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: fc10410daf1e5bef23dd5cfa436bf954bad5ae28
+  revision: e700369fef6302d420a299c0cfe1e119c211c62c
   branch: master
   specs:
-    datadog (2.27.0)
+    datadog (2.28.0)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.1)
       libdatadog (~> 25.0.0.1.0)
@@ -327,7 +327,7 @@ CHECKSUMS
   connection_pool (3.0.2) sha256=33fff5ba71a12d2aa26cb72b1db8bba2a1a01823559fb01d29eb74c286e62e0a
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
   crass (1.0.6) sha256=dc516022a56e7b3b156099abc81b6d2b08ea1ed12676ac7a5657617f012bd45d
-  datadog (2.27.0)
+  datadog (2.28.0)
   datadog-ci (1.27.0)
   datadog-ruby_core_source (3.5.1) sha256=6620521d98c22c2e1cbe3c4bff2698a0cff6d3280a14b95f026806b2c964a7f5
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
