@@ -43,7 +43,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
       let(:test_tracing_component) { double("test_tracing_component", client_process?: true) }
 
       it "logs a debug message and aborts the git upload" do
-        expect(Datadog.logger).to receive(:debug).with("Test visibility component is running in client process, aborting git upload")
+        expect(Datadog.logger).to receive(:debug).with("Test tracing component is running in client process, aborting git upload")
         expect(Datadog::CI::Git::LocalRepository).not_to receive(:git_commits)
 
         subject
