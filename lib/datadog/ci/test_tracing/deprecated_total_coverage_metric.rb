@@ -5,7 +5,7 @@ require_relative "../ext/test"
 module Datadog
   module CI
     module TestTracing
-      module TotalCoverage
+      module DeprecatedTotalCoverageMetric
         def self.extract_lines_pct(test_session)
           unless defined?(::SimpleCov)
             Datadog.logger.debug("SimpleCov is not loaded, skipping code coverage extraction")

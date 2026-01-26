@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module TestTracing
-      module TotalCoverage
+      module DeprecatedTotalCoverageMetric
         def self.extract_lines_pct: (Datadog::CI::TestSession test_session) -> void
       end
     end

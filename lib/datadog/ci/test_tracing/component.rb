@@ -8,7 +8,7 @@ require "datadog/core/utils/forking"
 require_relative "context"
 require_relative "known_tests"
 require_relative "telemetry"
-require_relative "total_coverage"
+require_relative "deprecated_total_coverage_metric"
 
 require_relative "../codeowners/parser"
 require_relative "../contrib/instrumentation"
@@ -310,7 +310,7 @@ module Datadog
         def on_test_session_finished(test_session)
           test_impact_analysis.write_test_session_tags(test_session, maybe_remote_context.tests_skipped_by_tia_count)
 
-          TotalCoverage.extract_lines_pct(test_session)
+          DeprecatedTotalCoverageMetric.extract_lines_pct(test_session)
 
           Telemetry.event_finished(test_session)
 
