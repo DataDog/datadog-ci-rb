@@ -6,8 +6,8 @@ RSpec.describe Datadog::CI::Logs::Component do
   subject(:component) { described_class.new(enabled: enabled, writer: writer) }
 
   let(:test_session) { instance_double(Datadog::CI::TestSession, service: "test-service") }
-  let(:test_visibility) { instance_double(Datadog::CI::TestVisibility::Component, active_test_session: test_session) }
-  let(:components) { double(:components, test_visibility: test_visibility) }
+  let(:test_tracing) { instance_double(Datadog::CI::TestTracing::Component, active_test_session: test_session) }
+  let(:components) { double(:components, test_tracing: test_tracing) }
 
   let(:enabled) { true }
   let(:writer) { instance_double(Datadog::CI::AsyncWriter, write: true, stop: true) }

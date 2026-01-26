@@ -1,5 +1,5 @@
 require_relative "base"
-require_relative "../../test_optimisation/skippable_percentage/estimator"
+require_relative "../../test_impact_analysis/skippable_percentage/estimator"
 
 module Datadog
   module CI

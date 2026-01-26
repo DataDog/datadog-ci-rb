@@ -155,7 +155,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     before do
-      Datadog.send(:components).test_visibility.start_test_session
+      Datadog.send(:components).test_tracing.start_test_session
     end
 
     it "creates span for example" do

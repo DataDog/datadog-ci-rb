@@ -53,7 +53,7 @@ module Datadog
 
           def datadog_configuration: () -> untyped
 
-          def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+          def test_tracing_component: () -> Datadog::CI::TestTracing::Component
 
           def test_suite_source_file_tags: (untyped test_case) -> Hash[String, String]
         end

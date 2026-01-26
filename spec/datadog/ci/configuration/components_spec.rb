@@ -141,8 +141,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
             context "is false" do
               it "creates test visibility component with test_suite_level_visibility_enabled=true" do
-                expect(components.test_visibility).to be_kind_of(Datadog::CI::TestVisibility::Component)
-                expect(components.test_visibility.test_suite_level_visibility_enabled).to eq(true)
+                expect(components.test_tracing).to be_kind_of(Datadog::CI::TestTracing::Component)
+                expect(components.test_tracing.test_suite_level_visibility_enabled).to eq(true)
               end
             end
 
@@ -150,8 +150,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
               let(:force_test_level_visibility) { true }
 
               it "creates test visibility component with test_suite_level_visibility_enabled=false" do
-                expect(components.test_visibility).to be_kind_of(Datadog::CI::TestVisibility::Component)
-                expect(components.test_visibility.test_suite_level_visibility_enabled).to eq(false)
+                expect(components.test_tracing).to be_kind_of(Datadog::CI::TestTracing::Component)
+                expect(components.test_tracing.test_suite_level_visibility_enabled).to eq(false)
               end
             end
           end
@@ -203,7 +203,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     .with(true)
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
+                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestTracing::Transport)
                     expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::EvpProxy)
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
@@ -219,7 +219,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     .with(true)
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
+                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestTracing::Transport)
                     expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::EvpProxy)
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
@@ -236,7 +236,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
                   expect(settings.tracing.test_mode)
                     .to have_received(:trace_flush=)
-                    .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestVisibility::Flush::Partial))
+                    .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestTracing::Flush::Partial))
 
                   expect(settings.ci.force_test_level_visibility).to eq(true)
                   expect(settings.ci.itr_enabled).to eq(false)
@@ -245,16 +245,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     expect(options[:transport]).to be_nil
                   end
 
-                  expect(components.test_visibility.itr_enabled?).to eq(false)
+                  expect(components.test_tracing.itr_enabled?).to eq(false)
                 end
               end
 
               context "and when discard_traces setting is enabled" do
                 let(:discard_traces) { true }
 
-                it "sets tracing transport to TestVisibility::NullTransport" do
+                it "sets tracing transport to TestTracing::NullTransport" do
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::NullTransport)
+                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestTracing::NullTransport)
                   end
                 end
               end
@@ -280,7 +280,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     .with(true)
 
                   expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestVisibility::Transport)
+                    expect(options[:transport]).to be_kind_of(Datadog::CI::TestTracing::Transport)
                     expect(options[:transport].api).to be_kind_of(Datadog::CI::Transport::Api::Agentless)
                     expect(options[:shutdown_timeout]).to eq(60)
                   end
@@ -310,7 +310,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   let(:itr_enabled) { false }
 
                   it "creates test visibility component with ITR disabled" do
-                    expect(components.test_visibility.itr_enabled?).to eq(false)
+                    expect(components.test_tracing.itr_enabled?).to eq(false)
                   end
                 end
 
@@ -318,7 +318,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   let(:itr_enabled) { true }
 
                   it "creates test visibility component with ITR enabled" do
-                    expect(components.test_visibility.itr_enabled?).to eq(true)
+                    expect(components.test_tracing.itr_enabled?).to eq(true)
                     expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(true)
                   end
 
@@ -355,7 +355,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   expect(Datadog.logger).to have_received(:error)
 
                   expect(settings.ci.enabled).to eq(false)
-                  expect(components.test_visibility.itr_enabled?).to eq(false)
+                  expect(components.test_tracing.itr_enabled?).to eq(false)
                 end
               end
             end

@@ -137,10 +137,10 @@ When working with this codebase, pay special attention to:
 - `lib/datadog/ci/ext` - Constants for tags and attributes
 - `lib/datadog/ci/ext/environment` - Extractors for environment information from CI providers and git
 - `lib/datadog/ci/transport` - Manages communication with Datadog backend services
-- `lib/datadog/ci/test_visibility` - Core component tracing test execution details
 - `lib/datadog/ci/remote` - Retrieves remote settings from Datadog backend
 - `lib/datadog/ci/git` - Collects Git repository details and uploads commit information to Datadog for test impact analysis
-- `lib/datadog/ci/test_optimisation` - Determines skippable tests from backend information (actual skipping handled by framework integrations)
+- `lib/datadog/ci/test_impact_analysis` - Determines skippable tests from backend information (actual skipping handled by framework integrations)
+- `lib/datadog/ci/test_tracing` - Core component tracing test execution details
 - `lib/datadog/ci/test_retries` - Marks tests for automatic retries or early flake detection
 - `lib/datadog/ci/test_management` - Manages test statuses (quarantined, disabled) fetched from backend
 - `lib/datadog/ci/logs` - Forwards Ruby logging output to Datadog Logs

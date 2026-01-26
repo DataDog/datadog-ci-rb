@@ -22,7 +22,7 @@ module Datadog
               return super unless datadog_configuration[:enabled]
               return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
 
-              test_suite_span = test_visibility_component.start_test_suite(datadog_test_suite_name) if ci_queue?
+              test_suite_span = test_tracing_component.start_test_suite(datadog_test_suite_name) if ci_queue?
 
               # don't report test to RSpec::Core::Reporter until retries are done
               @skip_reporting = true
@@ -43,7 +43,7 @@ module Datadog
               test_failure = nil
 
               test_retries_component.with_retries do
-                test_visibility_component.trace_test(
+                test_tracing_component.trace_test(
                   datadog_test_name,
                   datadog_test_suite_name,
                   tags: tags,
@@ -239,8 +239,8 @@ module Datadog
               @datadog_test_suite_description ||= datadog_top_level_example_group[:description]
             end
 
-            def test_visibility_component
-              Datadog.send(:components).test_visibility
+            def test_tracing_component
+              Datadog.send(:components).test_tracing
             end
 
             def test_retries_component

@@ -20,7 +20,7 @@ module Datadog
               return super unless datadog_configuration[:enabled]
 
               # @type var test_session: Datadog::CI::TestSession?
-              test_session = test_visibility_component.start_test_session(
+              test_session = test_tracing_component.start_test_session(
                 tags: {
                   CI::Ext::Test::TAG_FRAMEWORK => CI::Contrib::RSpec::Ext::FRAMEWORK,
                   CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s
@@ -29,7 +29,7 @@ module Datadog
               )
 
               # @type var test_module: Datadog::CI::TestModule?
-              test_module = test_visibility_component.start_test_module(CI::Contrib::RSpec::Ext::FRAMEWORK)
+              test_module = test_tracing_component.start_test_module(CI::Contrib::RSpec::Ext::FRAMEWORK)
 
               result = super
               return result unless test_module && test_session
@@ -57,8 +57,8 @@ module Datadog
               Datadog.configuration.ci[:rspec]
             end
 
-            def test_visibility_component
-              Datadog.send(:components).test_visibility
+            def test_tracing_component
+              Datadog.send(:components).test_tracing
             end
           end
         end

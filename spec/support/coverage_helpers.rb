@@ -12,13 +12,13 @@ module CoverageHelpers
   # Retrieves all traces in the current tracer instance.
   # This method does not cache its results.
   def fetch_coverage_events
-    test_optimisation_component.instance_variable_get(:@coverage_events) || []
+    test_impact_analysis_component.instance_variable_get(:@coverage_events) || []
   end
 
   # Remove all traces from the current tracer instance and
   # busts cache of +#spans+ and +#span+.
   def clear_coverage_events!
-    test_optimisation_component.instance_variable_set(:@coverage_events, [])
+    test_impact_analysis_component.instance_variable_set(:@coverage_events, [])
 
     @coverage_events = nil
   end
@@ -26,7 +26,7 @@ module CoverageHelpers
   def setup_test_coverage_writer!
     # DEV `*_any_instance_of` has concurrency issues when running with parallelism (e.g. JRuby).
     # DEV Single object `allow` and `expect` work as intended with parallelism.
-    allow(Datadog::CI::TestOptimisation::Component).to receive(:new).and_wrap_original do |method, **args, &block|
+    allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_wrap_original do |method, **args, &block|
       instance = method.call(**args, &block)
 
       write_lock = Mutex.new
@@ -43,8 +43,8 @@ module CoverageHelpers
     end
   end
 
-  def test_optimisation_component
-    Datadog::CI.send(:test_optimisation)
+  def test_impact_analysis_component
+    Datadog::CI.send(:test_impact_analysis)
   end
 
   def expect_coverage_events_belong_to_session(test_session_span)

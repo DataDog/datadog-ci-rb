@@ -10,7 +10,7 @@ module Datadog
             def any_test_failed?: (untyped test_results) -> bool
             def datadog_extract_rspec_version: () -> String
             def datadog_configuration: () -> untyped
-            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+            def test_tracing_component: () -> Datadog::CI::TestTracing::Component
           end
         end
       end

@@ -14,7 +14,7 @@ module Datadog
 
             def datadog_configuration: () -> untyped
 
-            def _dd_test_visibility_component: () -> (Datadog::CI::TestVisibility::Component | Datadog::CI::TestVisibility::NullComponent)
+            def _dd_test_tracing_component: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 
             def _dd_test_retries_component: () -> (Datadog::CI::TestRetries::Component | Datadog::CI::TestRetries::NullComponent)
           end

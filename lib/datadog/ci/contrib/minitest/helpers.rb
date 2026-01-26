@@ -23,8 +23,8 @@ module Datadog
               {}
             end
 
-            test_visibility_component = Datadog.send(:components).test_visibility
-            test_suite = test_visibility_component.start_test_suite(
+            test_tracing_component = Datadog.send(:components).test_tracing
+            test_suite = test_tracing_component.start_test_suite(
               test_suite_name,
               tags: test_suite_tags
             )

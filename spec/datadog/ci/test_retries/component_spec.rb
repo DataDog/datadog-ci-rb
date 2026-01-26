@@ -233,7 +233,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         runs_count += 1
 
         # run callbacks manually
-        Datadog.send(:components).test_visibility.send(:on_test_finished, test_span)
+        Datadog.send(:components).test_tracing.send(:on_test_finished, test_span)
       end
 
       runs_count

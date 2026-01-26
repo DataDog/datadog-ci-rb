@@ -3,9 +3,9 @@
 RSpec.describe Datadog::CI::TestSuite do
   let(:test_suite_name) { "my.suite" }
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true, name: test_suite_name) }
-  let(:test_visibility) { spy("test_visibility") }
+  let(:test_tracing) { spy("test_tracing") }
 
-  before { allow_any_instance_of(described_class).to receive(:test_visibility).and_return(test_visibility) }
+  before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
   subject(:ci_test_suite) { described_class.new(tracer_span) }
 
   describe "#finish" do
@@ -23,7 +23,7 @@ RSpec.describe Datadog::CI::TestSuite do
       it "deactivates the test suite" do
         finish
 
-        expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
+        expect(test_tracing).to have_received(:deactivate_test_suite).with(test_suite_name)
       end
     end
 
@@ -45,7 +45,7 @@ RSpec.describe Datadog::CI::TestSuite do
 
           finish
 
-          expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
+          expect(test_tracing).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
 
@@ -63,7 +63,7 @@ RSpec.describe Datadog::CI::TestSuite do
 
           finish
 
-          expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
+          expect(test_tracing).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
 
@@ -81,7 +81,7 @@ RSpec.describe Datadog::CI::TestSuite do
 
           finish
 
-          expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
+          expect(test_tracing).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
 
@@ -99,7 +99,7 @@ RSpec.describe Datadog::CI::TestSuite do
 
           finish
 
-          expect(test_visibility).to have_received(:deactivate_test_suite).with(test_suite_name)
+          expect(test_tracing).to have_received(:deactivate_test_suite).with(test_suite_name)
         end
       end
     end

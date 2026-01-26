@@ -1,0 +1,91 @@
+module Datadog
+  module CI
+    module TestTracing
+      class Context
+        @mutex: Mutex
+
+        @fiber_local_context: Datadog::CI::TestTracing::Store::FiberLocal
+        @process_context: Datadog::CI::TestTracing::Store::Process
+        @environment_tags: Hash[String, String]
+
+        @total_tests_count: Integer
+        @tests_skipped_by_tia_count: Integer
+        @test_tracing_component: Datadog::CI::TestTracing::Component
+
+        attr_reader total_tests_count: Integer
+        attr_reader tests_skipped_by_tia_count: Integer
+
+        def initialize: (test_tracing_component: Datadog::CI::TestTracing::Component) -> void
+
+        def trace_test: (String span_name, Datadog::CI::TestSuite? test_suite, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+
+        def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+
+        def start_test_session: (?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSession
+
+        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestModule
+
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSuite
+
+        def active_test_session: () -> Datadog::CI::TestSession?
+
+        def active_test_module: () -> Datadog::CI::TestModule?
+
+        def active_test_suite: (String test_suite_name) -> Datadog::CI::TestSuite?
+
+        def single_active_test_suite: () -> Datadog::CI::TestSuite?
+
+        def active_test: () -> Datadog::CI::Test?
+
+        def active_span: () -> Datadog::CI::Span?
+
+        def deactivate_test: () -> void
+
+        def deactivate_test_session: () -> void
+
+        def deactivate_test_module: () -> void
+
+        def deactivate_test_suite: (String test_suite_name) -> void
+
+        def incr_total_tests_count: () -> void
+
+        def incr_tests_skipped_by_tia_count: () -> void
+
+        def stop_all_test_suites: () -> void
+
+        private
+
+        def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
+
+        def build_test_session: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSession
+
+        def build_test_module: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestModule
+
+        def build_test_suite: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSuite
+
+        def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
+
+        def set_trace_origin: (Datadog::Tracing::TraceOperation trace) -> void
+
+        def set_initial_tags: (Datadog::CI::Span ci_span, Hash[untyped, untyped] tags) -> void
+
+        def set_inherited_globals: (Hash[untyped, untyped] tags) -> void
+
+        def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::Tracing::SpanOperation? test_session) -> void
+
+        def set_suite_context: (Hash[untyped, untyped] tags, ?test_suite: Datadog::Tracing::SpanOperation? | Datadog::CI::TestSuite?) -> void
+
+        def set_module_context: (Hash[untyped, untyped] tags, ?(Datadog::CI::TestModule | Datadog::Tracing::SpanOperation)? test_module) -> void
+
+        def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
+
+        def build_tracing_span_options: (String? service_name, String type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
+
+        def test_session_context: () -> (Datadog::CI::TestSession | Datadog::CI::ReadonlyTestSession)?
+
+        def test_module_context: () -> (Datadog::CI::TestModule | Datadog::CI::ReadonlyTestModule)?
+      end
+    end
+  end
+end
+

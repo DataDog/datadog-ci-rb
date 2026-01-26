@@ -263,9 +263,9 @@ module Datadog
 
       private
 
-      # provides access to the test visibility component for CI models to deactivate themselves
-      def test_visibility
-        Datadog.send(:components).test_visibility
+      # provides access to the test tracing component for CI models to deactivate themselves
+      def test_tracing
+        Datadog.send(:components).test_tracing
       end
     end
   end

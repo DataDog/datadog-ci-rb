@@ -25,9 +25,9 @@ module Datadog
 
           # configure different components in parallel because they might block on HTTP requests
           configuration_workers = [
-            Worker.new { test_optimisation.configure(@library_configuration, test_session) },
+            Worker.new { test_impact_analysis.configure(@library_configuration, test_session) },
             Worker.new { test_retries.configure(@library_configuration, test_session) },
-            Worker.new { test_visibility.configure(@library_configuration, test_session) },
+            Worker.new { test_tracing.configure(@library_configuration, test_session) },
             Worker.new { test_management.configure(@library_configuration, test_session) },
             Worker.new { impacted_tests_detection.configure(@library_configuration, test_session) },
             Worker.new { code_coverage.configure(@library_configuration) }
@@ -105,12 +105,12 @@ module Datadog
           Datadog.send(:components).test_management
         end
 
-        def test_visibility
-          Datadog.send(:components).test_visibility
+        def test_tracing
+          Datadog.send(:components).test_tracing
         end
 
-        def test_optimisation
-          Datadog.send(:components).test_optimisation
+        def test_impact_analysis
+          Datadog.send(:components).test_impact_analysis
         end
 
         def test_retries

@@ -1,0 +1,51 @@
+module Datadog
+  module CI
+    module TestTracing
+      class NullComponent
+        def initialize: (?untyped args) -> void
+
+        def configure: (untyped _, untyped _) -> void
+
+        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (nil span) -> untyped } -> untyped
+
+        def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+
+        def start_test_session: (
+          ?service: String?, ?tags: Hash[untyped, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool, ?local_test_suites_mode: bool
+        ) -> nil
+
+        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> nil
+
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> nil
+
+        def active_test_session: () -> nil
+
+        def active_test_module: () -> nil
+
+        def active_test_suite: (String? test_suite_name) -> nil
+
+        def active_test: () -> nil
+
+        def active_span: () -> nil
+
+        def set_test_finished_callback: (Proc callback) -> void
+
+        def remove_test_finished_callback: () -> void
+
+        def test_suite_level_visibility_enabled: () -> bool
+
+        def logical_test_session_name: () -> nil
+
+        def shutdown!: () -> nil
+
+        def itr_enabled?: () -> bool
+
+        def client_process?: () -> bool
+
+        private
+
+        def skip_tracing: (?untyped block) -> nil
+      end
+    end
+  end
+end

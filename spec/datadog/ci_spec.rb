@@ -1,10 +1,10 @@
 RSpec.describe Datadog::CI do
   context "with test visibility stubbed" do
     include_context "Telemetry spy"
-    let(:test_visibility) { instance_double(Datadog::CI::TestVisibility::Component) }
+    let(:test_tracing) { instance_double(Datadog::CI::TestTracing::Component) }
 
     before do
-      allow(Datadog::CI).to receive(:test_visibility).and_return(test_visibility)
+      allow(Datadog::CI).to receive(:test_tracing).and_return(test_tracing)
     end
 
     describe "::trace_test" do
@@ -23,7 +23,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test) { instance_double(Datadog::CI::Test) }
 
       before do
-        allow(test_visibility).to receive(:trace_test).with(test_name, test_suite_name, **options, &block).and_return(ci_test)
+        allow(test_tracing).to receive(:trace_test).with(test_name, test_suite_name, **options, &block).and_return(ci_test)
       end
 
       it { is_expected.to be(ci_test) }
@@ -46,7 +46,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test) { instance_double(Datadog::CI::Test) }
 
       before do
-        allow(test_visibility).to receive(:trace_test).with(test_name, test_suite_name, **options).and_return(ci_test)
+        allow(test_tracing).to receive(:trace_test).with(test_name, test_suite_name, **options).and_return(ci_test)
       end
 
       it { is_expected.to be(ci_test) }
@@ -65,7 +65,7 @@ RSpec.describe Datadog::CI do
       let(:ci_span) { instance_double(Datadog::CI::Span) }
 
       before do
-        allow(test_visibility).to receive(:trace).with(span_name, type: type, **options, &block).and_return(ci_span)
+        allow(test_tracing).to receive(:trace).with(span_name, type: type, **options, &block).and_return(ci_span)
       end
 
       it { is_expected.to be(ci_span) }
@@ -88,7 +88,7 @@ RSpec.describe Datadog::CI do
         let(:ci_span) { instance_double(Datadog::CI::Span, type: type) }
 
         before do
-          allow(test_visibility).to receive(:active_span).and_return(ci_span)
+          allow(test_tracing).to receive(:active_span).and_return(ci_span)
         end
 
         it { is_expected.to be(ci_span) }
@@ -98,7 +98,7 @@ RSpec.describe Datadog::CI do
         let(:ci_span) { instance_double(Datadog::CI::Span, type: "test") }
 
         before do
-          allow(test_visibility).to receive(:active_span).and_return(ci_span)
+          allow(test_tracing).to receive(:active_span).and_return(ci_span)
         end
 
         it { is_expected.to be_nil }
@@ -106,7 +106,7 @@ RSpec.describe Datadog::CI do
 
       context "when no active span" do
         before do
-          allow(test_visibility).to receive(:active_span).and_return(nil)
+          allow(test_tracing).to receive(:active_span).and_return(nil)
         end
 
         it { is_expected.to be_nil }
@@ -121,7 +121,7 @@ RSpec.describe Datadog::CI do
         subject(:start_test_session) { described_class.start_test_session(service: service) }
 
         before do
-          allow(test_visibility).to receive(:start_test_session).with(
+          allow(test_tracing).to receive(:start_test_session).with(
             service: service, tags: {}, estimated_total_tests_count: 0
           ).and_return(ci_test_session)
         end
@@ -137,7 +137,7 @@ RSpec.describe Datadog::CI do
         context "when service is configured on library level" do
           before do
             allow(Datadog.configuration).to receive(:service_without_fallback).and_return("configured-service")
-            allow(test_visibility).to receive(:start_test_session).with(
+            allow(test_tracing).to receive(:start_test_session).with(
               service: "configured-service", tags: {}, estimated_total_tests_count: 0
             ).and_return(ci_test_session)
           end
@@ -148,7 +148,7 @@ RSpec.describe Datadog::CI do
         context "when service is not configured on library level" do
           before do
             allow(Datadog.configuration).to receive(:service_without_fallback).and_return(nil)
-            allow(test_visibility).to receive(:start_test_session).with(
+            allow(test_tracing).to receive(:start_test_session).with(
               service: "datadog-ci-rb", tags: {}, estimated_total_tests_count: 0
             ).and_return(ci_test_session)
           end
@@ -162,7 +162,7 @@ RSpec.describe Datadog::CI do
         subject(:start_test_session) { described_class.start_test_session(total_tests_count: total_tests_count) }
 
         before do
-          allow(test_visibility).to receive(:start_test_session).with(
+          allow(test_tracing).to receive(:start_test_session).with(
             service: "datadog-ci-rb", tags: {}, estimated_total_tests_count: total_tests_count
           ).and_return(ci_test_session)
         end
@@ -179,7 +179,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_session) { instance_double(Datadog::CI::TestSession) }
 
       before do
-        allow(test_visibility).to receive(:active_test_session).and_return(ci_test_session)
+        allow(test_tracing).to receive(:active_test_session).and_return(ci_test_session)
       end
 
       it { is_expected.to be(ci_test_session) }
@@ -191,7 +191,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_module) { instance_double(Datadog::CI::TestModule) }
 
       before do
-        allow(test_visibility).to(
+        allow(test_tracing).to(
           receive(:start_test_module).with("my-module", service: nil, tags: {}).and_return(ci_test_module)
         )
       end
@@ -207,7 +207,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_module) { instance_double(Datadog::CI::TestModule) }
 
       before do
-        allow(test_visibility).to receive(:active_test_module).and_return(ci_test_module)
+        allow(test_tracing).to receive(:active_test_module).and_return(ci_test_module)
       end
 
       it { is_expected.to be(ci_test_module) }
@@ -219,7 +219,7 @@ RSpec.describe Datadog::CI do
       let(:ci_test_suite) { instance_double(Datadog::CI::TestSuite) }
 
       before do
-        allow(test_visibility).to(
+        allow(test_tracing).to(
           receive(:start_test_suite).with("my-suite", service: nil, tags: {}).and_return(ci_test_suite)
         )
       end
@@ -237,7 +237,7 @@ RSpec.describe Datadog::CI do
         subject(:active_test_suite) { described_class.active_test_suite(test_suite_name) }
 
         before do
-          allow(test_visibility).to receive(:active_test_suite).with(test_suite_name).and_return(ci_test_suite)
+          allow(test_tracing).to receive(:active_test_suite).with(test_suite_name).and_return(ci_test_suite)
         end
 
         it { is_expected.to be(ci_test_suite) }
@@ -247,14 +247,14 @@ RSpec.describe Datadog::CI do
         subject(:active_test_suite) { described_class.active_test_suite }
 
         before do
-          allow(test_visibility).to receive(:active_test_suite).with(nil).and_return(ci_test_suite)
+          allow(test_tracing).to receive(:active_test_suite).with(nil).and_return(ci_test_suite)
         end
 
         it { is_expected.to be(ci_test_suite) }
 
-        it "calls test_visibility with nil" do
+        it "calls test_tracing with nil" do
           active_test_suite
-          expect(test_visibility).to have_received(:active_test_suite).with(nil)
+          expect(test_tracing).to have_received(:active_test_suite).with(nil)
         end
       end
     end

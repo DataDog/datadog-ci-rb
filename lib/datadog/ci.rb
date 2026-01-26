@@ -49,7 +49,7 @@ module Datadog
           1,
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::SESSION}
         )
-        test_visibility.start_test_session(service: service, tags: tags, estimated_total_tests_count: total_tests_count)
+        test_tracing.start_test_session(service: service, tags: tags, estimated_total_tests_count: total_tests_count)
       end
 
       # The active, unfinished test session.
@@ -71,7 +71,7 @@ module Datadog
       # @return [Datadog::CI::TestSession] the active test session
       # @return [nil] if no test session is active
       def active_test_session
-        test_visibility.active_test_session
+        test_tracing.active_test_session
       end
 
       # Starts a {Datadog::CI::TestModule ci_test_module} that represents a single test module (for most Ruby test frameworks
@@ -109,7 +109,7 @@ module Datadog
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::MODULE}
         )
 
-        test_visibility.start_test_module(test_module_name, service: service, tags: tags)
+        test_tracing.start_test_module(test_module_name, service: service, tags: tags)
       end
 
       # The active, unfinished test module.
@@ -132,7 +132,7 @@ module Datadog
       # @return [Datadog::CI::TestModule] the active test module
       # @return [nil] if no test module is active
       def active_test_module
-        test_visibility.active_test_module
+        test_tracing.active_test_module
       end
 
       # Starts a {Datadog::CI::TestSuite ci_test_suite} that represents a single test suite.
@@ -167,7 +167,7 @@ module Datadog
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::SUITE}
         )
 
-        test_visibility.start_test_suite(test_suite_name, service: service, tags: tags)
+        test_tracing.start_test_suite(test_suite_name, service: service, tags: tags)
       end
 
       # The active, unfinished test suite.
@@ -202,7 +202,7 @@ module Datadog
       # @return [Datadog::CI::TestSuite] the active test suite
       # @return [nil] if no test suite with given name is active
       def active_test_suite(test_suite_name = nil)
-        test_visibility.active_test_suite(test_suite_name)
+        test_tracing.active_test_suite(test_suite_name)
       end
 
       # Return a {Datadog::CI::Test ci_test} that will trace a test called `test_name`.
@@ -262,7 +262,7 @@ module Datadog
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::TEST}
         )
 
-        test_visibility.trace_test(test_name, test_suite_name, service: service, tags: tags, &block)
+        test_tracing.trace_test(test_name, test_suite_name, service: service, tags: tags, &block)
       end
 
       # Same as {.trace_test} but it does not accept a block.
@@ -293,7 +293,7 @@ module Datadog
           1,
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::TEST}
         )
-        test_visibility.trace_test(test_name, test_suite_name, service: service, tags: tags)
+        test_tracing.trace_test(test_name, test_suite_name, service: service, tags: tags)
       end
 
       # Trace any custom span inside a test. For example, you could trace:
@@ -345,7 +345,7 @@ module Datadog
           )
         end
 
-        test_visibility.trace(span_name, type: type, tags: tags, &block)
+        test_tracing.trace(span_name, type: type, tags: tags, &block)
       end
 
       # The active, unfinished custom (i.e. not test/suite/module/session) span.
@@ -371,7 +371,7 @@ module Datadog
       # @return [Datadog::CI::Span] the active span
       # @return [nil] if no span is active, or if the active span is not a custom span
       def active_span
-        span = test_visibility.active_span
+        span = test_tracing.active_span
         span if span && !Ext::AppTypes::CI_SPAN_TYPES.include?(span.type)
       end
 
@@ -397,7 +397,7 @@ module Datadog
       # @return [Datadog::CI::Test] the active test
       # @return [nil] if no test is active
       def active_test
-        test_visibility.active_test
+        test_tracing.active_test
       end
 
       private
@@ -406,12 +406,12 @@ module Datadog
         Datadog.send(:components)
       end
 
-      def test_visibility
-        components.test_visibility
+      def test_tracing
+        components.test_tracing
       end
 
-      def test_optimisation
-        components.test_optimisation
+      def test_impact_analysis
+        components.test_impact_analysis
       end
 
       def test_management

@@ -381,8 +381,8 @@ static VALUE dd_cov_stop(VALUE self) {
 void Init_datadog_cov(void) {
   VALUE mDatadog = rb_define_module("Datadog");
   VALUE mCI = rb_define_module_under(mDatadog, "CI");
-  VALUE mTestOptimisation = rb_define_module_under(mCI, "TestOptimisation");
-  VALUE mCoverage = rb_define_module_under(mTestOptimisation, "Coverage");
+  VALUE mTestImpactAnalysis = rb_define_module_under(mCI, "TestImpactAnalysis");
+  VALUE mCoverage = rb_define_module_under(mTestImpactAnalysis, "Coverage");
   VALUE cDatadogCov = rb_define_class_under(mCoverage, "DDCov", rb_cObject);
 
   rb_define_alloc_func(cDatadogCov, dd_cov_allocate);

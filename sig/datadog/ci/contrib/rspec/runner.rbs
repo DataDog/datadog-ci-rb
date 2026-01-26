@@ -14,7 +14,7 @@ module Datadog
 
             def datadog_configuration: () -> untyped
 
-            def test_visibility_component: () -> Datadog::CI::TestVisibility::Component
+            def test_tracing_component: () -> Datadog::CI::TestTracing::Component
 
             def test_discovery_component: () -> (Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent | nil)
 
