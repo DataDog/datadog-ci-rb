@@ -31,13 +31,19 @@ module Datadog
               tags = {
                 CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
                 CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
-                CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
-                CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s,
+                CI::Ext::Test::TAG_SOURCE_FILE => datadog_source_file,
+                CI::Ext::Test::TAG_SOURCE_START => datadog_source_start.to_s,
                 CI::Ext::Test::TAG_PARAMETERS => datadog_test_parameters
               }
 
-              end_line = SourceCode::MethodInspect.last_line(@example_block)
-              tags[CI::Ext::Test::TAG_SOURCE_END] = end_line.to_s if end_line
+              # Only set source_end if the example's source location wasn't resolved from a parent
+              # example_group. When we fall back to parent's location (e.g., for rswag tests),
+              # the @example_block is defined in a different file (the gem), so its end line
+              # would be inconsistent with source_file and source_start.
+              unless datadog_source_location_from_parent?
+                end_line = SourceCode::MethodInspect.last_line(@example_block)
+                tags[CI::Ext::Test::TAG_SOURCE_END] = end_line.to_s if end_line
+              end
 
               # we keep track of the last test failure if we encounter any
               test_failure = nil
@@ -184,6 +190,84 @@ module Datadog
 
             def datadog_test_suite_source_file_path
               Git::LocalRepository.relative_to_root(metadata[:rerun_file_path])
+            end
+
+            # Returns the relative source file path for this example.
+            #
+            # Some test frameworks (like rswag) dynamically generate examples inside gem code,
+            # which causes metadata[:file_path] to point to the gem's internal file instead of
+            # the actual spec file. In such cases, we traverse the example_group hierarchy
+            # to find the correct source file.
+            def datadog_source_file
+              resolve_source_location unless defined?(@datadog_source_file)
+              @datadog_source_file
+            end
+
+            # Returns the source line number for this example.
+            # This corresponds to the same location as datadog_source_file.
+            def datadog_source_start
+              resolve_source_location unless defined?(@datadog_source_start)
+              @datadog_source_start
+            end
+
+            # Returns true if the source location was resolved from a parent example_group
+            # rather than the example's own metadata.
+            def datadog_source_location_from_parent?
+              resolve_source_location unless defined?(@datadog_source_location_from_parent)
+              @datadog_source_location_from_parent
+            end
+
+            # Resolves both source file and line number together to ensure consistency.
+            # When the example's file_path points outside the project (e.g., to a gem),
+            # we use the parent example_group's location instead.
+            def resolve_source_location
+              # First try the example's own file_path
+              file_path = metadata[:file_path]
+              relative_path = Git::LocalRepository.relative_to_root(file_path)
+
+              # Check if the path is valid (inside the project root)
+              if valid_source_file_path?(relative_path, file_path)
+                @datadog_source_file = relative_path
+                @datadog_source_start = metadata[:line_number]
+                @datadog_source_location_from_parent = false
+                return
+              end
+
+              # Traverse example_group hierarchy to find a valid source file
+              example_group = metadata[:example_group]
+              while example_group
+                group_file_path = example_group[:file_path]
+
+                break if group_file_path.nil?
+
+                relative_group_path = Git::LocalRepository.relative_to_root(group_file_path)
+                if valid_source_file_path?(relative_group_path, group_file_path)
+                  @datadog_source_file = relative_group_path
+                  @datadog_source_start = example_group[:line_number]
+                  @datadog_source_location_from_parent = true
+                  return
+                end
+
+                example_group = example_group[:parent_example_group]
+              end
+
+              # Fallback to the original (possibly invalid) values
+              @datadog_source_file = relative_path
+              @datadog_source_start = metadata[:line_number]
+              @datadog_source_location_from_parent = false
+            end
+
+            def valid_source_file_path?(relative_path, original_path)
+              return false if relative_path.nil? || relative_path.empty?
+
+              if original_path && File.absolute_path?(original_path)
+                root = Git::LocalRepository.root
+
+                # The path should start with the project root
+                return original_path.start_with?(root)
+              end
+
+              true
             end
 
             # Returns list of context IDs for this example, from outermost to innermost.
