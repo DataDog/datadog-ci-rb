@@ -224,6 +224,19 @@ def self.with_semantic_logger_gem(rails_versions: 8, semantic_logger_versions: 4
   end
 end
 
+def self.with_rswag_gem(rswag_versions: 2, rails_versions: 7)
+  Array(rswag_versions).each do |rswag_v|
+    Array(rails_versions).each do |rails_v|
+      appraise "rswag-#{rswag_v}-rails-#{rails_v}" do
+        gem "rspec", "~> 3"
+        gem "rspec-rails", "~> 7"
+        gem "rswag-specs", "~> #{rswag_v}"
+        gem "rails", "~> #{rails_v}"
+      end
+    end
+  end
+end
+
 major, minor, = RUBY_VERSION.segments
 
 with_minitest_gem(versions: 5..6)
@@ -241,6 +254,7 @@ with_timecop_gem
 with_cuprite_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_lograge_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
 with_semantic_logger_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
+with_rswag_gem if !RUBY_ENGINE.include?("jruby")
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 

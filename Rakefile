@@ -90,6 +90,9 @@ TEST_METADATA = {
   },
   "semantic_logger" => {
     "semantic_logger-4-rails-8" => "❌ 2.7 / ❌ 3.0 / ❌ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0 / ❌ jruby"
+  },
+  "rswag_rspec" => {
+    "rswag-2-rails-7" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0 / ❌ jruby"
   }
 }
 
@@ -175,6 +178,7 @@ namespace :spec do
     parallel_tests
     lograge
     semantic_logger
+    rswag_rspec
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|
