@@ -2478,4 +2478,58 @@ RSpec.describe "RSpec instrumentation" do
       expect(File.exist?(custom_output_path)).to be true
     end
   end
+
+  context "source location resolution with rswag detection" do
+    let(:example_class) do
+      Class.new do
+        include Datadog::CI::Contrib::RSpec::Example
+
+        attr_reader :metadata
+
+        def initialize(metadata)
+          @metadata = metadata
+        end
+      end
+    end
+
+    let(:root) { Datadog::CI::Git::LocalRepository.root }
+    let(:rswag_path) { File.join(root, "tmp/rswag-specs-2.0/lib/rswag/specs/example_group_helpers.rb") }
+    let(:spec_path) { File.join(root, "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb") }
+    let(:metadata) do
+      {
+        file_path: rswag_path,
+        line_number: 111,
+        example_group: {
+          file_path: spec_path,
+          line_number: 222,
+          parent_example_group: nil
+        }
+      }
+    end
+    let(:example_instance) { example_class.new(metadata) }
+
+    before do
+      allow(Datadog::CI::Utils::Bundle).to receive(:rswag_present?).and_return(rswag_present)
+    end
+
+    context "when rswag-specs is present" do
+      let(:rswag_present) { true }
+
+      it "uses the top level example group's path" do
+        expect(example_instance.datadog_source_file).to eq("spec/datadog/ci/contrib/rspec/instrumentation_spec.rb")
+        expect(example_instance.datadog_source_start).to eq(222)
+        expect(example_instance.datadog_source_location_from_parent?).to be(true)
+      end
+    end
+
+    context "when rswag-specs is not present" do
+      let(:rswag_present) { false }
+
+      it "uses the example file path as-is" do
+        expect(example_instance.datadog_source_file).to eq("tmp/rswag-specs-2.0/lib/rswag/specs/example_group_helpers.rb")
+        expect(example_instance.datadog_source_start).to eq(111)
+        expect(example_instance.datadog_source_location_from_parent?).to be(false)
+      end
+    end
+  end
 end

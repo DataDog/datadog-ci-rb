@@ -271,65 +271,39 @@ module Datadog
             # Source location resolution
             # ============================================
 
-            # Resolves both source file and line number together to ensure consistency.
-            # When the example's file_path points outside the project (e.g., to a gem),
-            # we use the parent example_group's location instead.
+            # rswag-specs gem creates specs with broken source location
+            # We need to work around this by using test suite location for test location as a fallback
             def resolve_source_location
               example_file_path = metadata[:file_path]
               example_relative_path = Git::LocalRepository.relative_to_root(example_file_path)
 
               # First try the example's own file_path
-              if valid_source_file_path?(example_relative_path, example_file_path)
+              if !Utils::Bundle.rswag_present? || valid_source_file_path?(example_file_path)
                 set_source_location(example_relative_path, metadata[:line_number], from_parent: false)
                 return
               end
 
-              # Traverse example_group hierarchy to find a valid source file
-              example_group = metadata[:example_group]
-              while example_group
-                group_file_path = example_group[:file_path]
+              # Fallback is top level example group's location - which is the same as a test suite location
+              top_level = datadog_top_level_example_group
+              set_source_location(
+                Git::LocalRepository.relative_to_root(top_level[:file_path]),
+                top_level[:line_number],
+                from_parent: true
+              )
+            end
 
-                if group_file_path
-                  group_relative_path = Git::LocalRepository.relative_to_root(group_file_path)
+            # we filter this location out
+            def valid_source_file_path?(original_path)
+              return false if original_path.nil? || original_path.empty?
+              return false if original_path.include?("/rswag-specs-")
 
-                  if valid_source_file_path?(group_relative_path, group_file_path)
-                    set_source_location(group_relative_path, example_group[:line_number], from_parent: true)
-                    return
-                  end
-                end
-
-                example_group = example_group[:parent_example_group]
-              end
-
-              # Fallback to the original (possibly invalid) values
-              set_source_location(example_relative_path, metadata[:line_number], from_parent: false)
+              true
             end
 
             def set_source_location(relative_path, line_number, from_parent:)
               @datadog_source_file = relative_path
               @datadog_source_start = line_number
               @datadog_source_location_from_parent = from_parent
-            end
-
-            def valid_source_file_path?(relative_path, original_path)
-              return false if relative_path.nil? || relative_path.empty?
-              return false unless original_path
-
-              root = Git::LocalRepository.root
-
-              # Convert relative paths to absolute for PathFilter
-              absolute_path = if File.absolute_path?(original_path)
-                original_path
-              else
-                File.join(root, original_path)
-              end
-
-              SourceCode::PathFilter.included?(absolute_path, root, bundle_location)
-            end
-
-            def bundle_location
-              @bundle_location = Utils::Bundle.location unless defined?(@bundle_location)
-              @bundle_location
             end
 
             # ============================================

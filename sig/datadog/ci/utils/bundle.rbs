@@ -2,7 +2,10 @@ module Datadog
   module CI
     module Utils
       module Bundle
+        self.@rswag_present: bool
+
         def self.location: () -> String?
+        def self.rswag_present?: () -> bool
       end
     end
   end
