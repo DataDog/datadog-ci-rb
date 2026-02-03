@@ -295,7 +295,7 @@ module Datadog
             # we filter this location out
             def valid_source_file_path?(original_path)
               return false if original_path.nil? || original_path.empty?
-              return false if original_path.include?("/rswag-specs-")
+              return false if original_path.include?("/rswag-specs-") && original_path.include?("lib/rswag/specs/example_group_helpers.rb")
 
               true
             end
