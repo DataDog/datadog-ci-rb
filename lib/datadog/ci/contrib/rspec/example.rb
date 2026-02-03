@@ -315,16 +315,16 @@ module Datadog
               return false if relative_path.nil? || relative_path.empty?
               return false unless original_path
 
-              # PathFilter only works with absolute paths
-              # For relative paths (like ./spec/...), treat them as valid since
-              # they're relative to the project root
-              return true unless File.absolute_path?(original_path)
+              root = Git::LocalRepository.root
 
-              SourceCode::PathFilter.included?(
-                original_path,
-                Git::LocalRepository.root,
-                bundle_location
-              )
+              # Convert relative paths to absolute for PathFilter
+              absolute_path = if File.absolute_path?(original_path)
+                original_path
+              else
+                File.join(root, original_path)
+              end
+
+              SourceCode::PathFilter.included?(absolute_path, root, bundle_location)
             end
 
             def bundle_location
