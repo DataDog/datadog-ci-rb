@@ -37,16 +37,30 @@ module Datadog
 
             private
 
+            # Run method helpers
+            def build_test_tags: () -> Hash[String, String]
+            def prepare_test_span: (Datadog::CI::Test? test_span) -> void
+            def handle_test_result: (Datadog::CI::Test? test_span, Exception? test_failure) -> Exception?
+            def update_formatter_metadata: (Datadog::CI::Test? test_span) -> void
+            def update_retry_metadata: (Datadog::CI::Test? test_span) -> void
+            def restore_failure_state: (Datadog::CI::Test? test_span, Exception? test_failure) -> void
+
+            # Source location resolution
+            def resolve_source_location: () -> void
+            def set_source_location: (String? relative_path, Integer? line_number, from_parent: bool) -> void
+            def valid_source_file_path?: (String? relative_path, String? original_path) -> bool
+
+            # Hierarchy traversal
             def datadog_top_level_example_group: () -> Hash[Symbol, untyped]
             def traverse_example_group_hierarchy: () -> void
+            def datadog_test_suite_description: () -> String
+
+            # Component accessors
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
             def datadog_configuration: () -> untyped
             def test_tracing_component: () -> Datadog::CI::TestTracing::Component
             def test_retries_component: () -> Datadog::CI::TestRetries::Component
             def ci_queue?: () -> bool
-            def datadog_test_suite_description: () -> String
-            def resolve_source_location: () -> void
-            def valid_source_file_path?: (String? relative_path, String? original_path) -> bool
           end
         end
       end
