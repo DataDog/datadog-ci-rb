@@ -20,6 +20,7 @@ module Datadog
             @datadog_source_file: String?
             @datadog_source_start: Integer?
             @datadog_source_location_from_parent: bool
+            @bundle_location: String?
 
             def run: (untyped example_group_instance, untyped reporter) -> untyped
 
@@ -49,6 +50,7 @@ module Datadog
             def resolve_source_location: () -> void
             def set_source_location: (String? relative_path, Integer? line_number, from_parent: bool) -> void
             def valid_source_file_path?: (String? relative_path, String? original_path) -> bool
+            def bundle_location: () -> String?
 
             # Hierarchy traversal
             def datadog_top_level_example_group: () -> Hash[Symbol, untyped]

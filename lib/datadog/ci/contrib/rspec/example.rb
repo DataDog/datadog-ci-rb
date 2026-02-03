@@ -3,6 +3,8 @@
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
 require_relative "../../source_code/method_inspect"
+require_relative "../../source_code/path_filter"
+require_relative "../../utils/bundle"
 require_relative "../../utils/test_run"
 require_relative "../instrumentation"
 require_relative "ext"
@@ -311,15 +313,23 @@ module Datadog
 
             def valid_source_file_path?(relative_path, original_path)
               return false if relative_path.nil? || relative_path.empty?
+              return false unless original_path
 
-              if original_path && File.absolute_path?(original_path)
-                root = Git::LocalRepository.root
+              # PathFilter only works with absolute paths
+              # For relative paths (like ./spec/...), treat them as valid since
+              # they're relative to the project root
+              return true unless File.absolute_path?(original_path)
 
-                # The path should start with the project root
-                return original_path.start_with?(root)
-              end
+              SourceCode::PathFilter.included?(
+                original_path,
+                Git::LocalRepository.root,
+                bundle_location
+              )
+            end
 
-              true
+            def bundle_location
+              @bundle_location = Utils::Bundle.location unless defined?(@bundle_location)
+              @bundle_location
             end
 
             # ============================================
