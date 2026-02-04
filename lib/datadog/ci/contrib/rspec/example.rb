@@ -3,6 +3,8 @@
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
 require_relative "../../source_code/method_inspect"
+require_relative "../../source_code/path_filter"
+require_relative "../../utils/bundle"
 require_relative "../../utils/test_run"
 require_relative "../instrumentation"
 require_relative "ext"
@@ -18,6 +20,10 @@ module Datadog
           end
 
           module InstanceMethods
+            # ============================================
+            # Main entry points
+            # ============================================
+
             def run(*args)
               return super unless datadog_configuration[:enabled]
               return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
@@ -27,18 +33,6 @@ module Datadog
               # don't report test to RSpec::Core::Reporter until retries are done
               @skip_reporting = true
 
-              # @type var tags : Hash[String, String]
-              tags = {
-                CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
-                CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
-                CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
-                CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s,
-                CI::Ext::Test::TAG_PARAMETERS => datadog_test_parameters
-              }
-
-              end_line = SourceCode::MethodInspect.last_line(@example_block)
-              tags[CI::Ext::Test::TAG_SOURCE_END] = end_line.to_s if end_line
-
               # we keep track of the last test failure if we encounter any
               test_failure = nil
 
@@ -46,14 +40,14 @@ module Datadog
                 test_tracing_component.trace_test(
                   datadog_test_name,
                   datadog_test_suite_name,
-                  tags: tags,
+                  tags: build_test_tags,
                   service: datadog_configuration[:service_name]
                 ) do |test_span|
                   # Set context IDs on the test span for TIA context coverage merging
                   test_span&.context_ids = datadog_context_ids
 
+                  # Process TIA status of the test and eventually tell RSpec to skip the test
                   test_span&.itr_unskippable! if datadog_unskippable?
-
                   metadata[:skip] = test_span&.datadog_skip_reason if test_span&.should_skip?
 
                   # before each run remove any previous exception
@@ -66,53 +60,19 @@ module Datadog
                   # see in Datadog.
                   return result if ::RSpec.world.wants_to_quit
 
-                  case execution_result.status
-                  when :passed
-                    test_span&.passed!
-                  when :failed
-                    test_span&.failed!(exception: execution_result.exception)
+                  test_failure = handle_test_result(test_span, test_failure)
+                  # Formatter metadata here is a set of properties that will be used by Datadog's custom rspec formatter
+                  update_formatter_metadata(test_span)
 
-                    # if any of the retries passed or test is quarantined, we don't fail the test run
-                    @exception = nil if test_span&.should_ignore_failures?
-                    test_failure = @exception
-                  else
-                    # :pending or nil
-                    test_span&.skipped!(
-                      reason: execution_result.pending_message,
-                      exception: execution_result.pending_exception
-                    )
-                  end
-
-                  if datadog_configuration[:datadog_formatter_enabled]
-                    if test_span&.is_retry?
-                      metadata[Ext::METADATA_DD_RETRIES] ||= 0
-                      metadata[Ext::METADATA_DD_RETRY_RESULTS] ||= Hash.new(0)
-
-                      metadata[Ext::METADATA_DD_RETRIES] += 1
-                      metadata[Ext::METADATA_DD_RETRY_REASON] = test_span&.retry_reason
-                      metadata[Ext::METADATA_DD_RETRY_RESULTS][test_span&.status] += 1
-                    end
-
-                    metadata[Ext::METADATA_DD_QUARANTINED] = true if test_span&.quarantined?
-                    metadata[Ext::METADATA_DD_DISABLED] = true if test_span&.disabled?
-
-                    if test_span&.skipped_by_test_impact_analysis?
-                      metadata[Ext::METADATA_DD_SKIPPED_BY_ITR] = true
-                    end
-                  end
-
-                  # at this point if we have encountered any test failure in any of the previous retries
-                  # we restore the @exception internal state if we should not skip failures for this run
-                  if test_failure && !test_span&.should_ignore_failures?
-                    @exception = test_failure
-                  end
+                  # In attempt-to-fix flow we need to treat test as failed if any of the retries failed
+                  restore_failure_state(test_span, test_failure)
                 end
               end
 
-              # this is a special case for ci-queue, we need to finish the test suite span created for a single test
+              # this is a special case for ci-queue test runner, we need to finish the test suite span created for a single test
               test_suite_span&.finish
 
-              # after retries are done, we can finally report the test to RSpec
+              # after retries are done, we must report the test to RSpec
               @skip_reporting = false
               finish(reporter)
             end
@@ -127,6 +87,10 @@ module Datadog
 
               super(::RSpec::Core::NullReporter)
             end
+
+            # ============================================
+            # Test identification
+            # ============================================
 
             def datadog_test_id
               @datadog_test_id ||= Utils::TestRun.datadog_test_id(
@@ -182,9 +146,42 @@ module Datadog
               !!metadata[CI::Ext::Test::ITR_UNSKIPPABLE_OPTION]
             end
 
+            # ============================================
+            # Source location
+            # ============================================
+
             def datadog_test_suite_source_file_path
               Git::LocalRepository.relative_to_root(metadata[:rerun_file_path])
             end
+
+            # Returns the relative source file path for this example.
+            #
+            # Some test frameworks (like rswag) dynamically generate examples inside gem code,
+            # which causes metadata[:file_path] to point to the gem's internal file instead of
+            # the actual spec file. In such cases, we traverse the example_group hierarchy
+            # to find the correct source file.
+            def datadog_source_file
+              resolve_source_location unless defined?(@datadog_source_file)
+              @datadog_source_file
+            end
+
+            # Returns the source line number for this example.
+            # This corresponds to the same location as datadog_source_file.
+            def datadog_source_start
+              resolve_source_location unless defined?(@datadog_source_start)
+              @datadog_source_start
+            end
+
+            # Returns true if the source location was resolved from a parent example_group
+            # rather than the example's own metadata.
+            def datadog_source_location_from_parent?
+              resolve_source_location unless defined?(@datadog_source_location_from_parent)
+              @datadog_source_location_from_parent
+            end
+
+            # ============================================
+            # Context hierarchy
+            # ============================================
 
             # Returns list of context IDs for this example, from outermost to innermost.
             # Used for merging context-level coverage into test coverage.
@@ -194,6 +191,123 @@ module Datadog
             end
 
             private
+
+            # ============================================
+            # Run method helpers
+            # ============================================
+
+            def build_test_tags
+              # @type var tags : Hash[String, String]
+              tags = {
+                CI::Ext::Test::TAG_FRAMEWORK => Ext::FRAMEWORK,
+                CI::Ext::Test::TAG_FRAMEWORK_VERSION => datadog_integration.version.to_s,
+                CI::Ext::Test::TAG_SOURCE_FILE => datadog_source_file,
+                CI::Ext::Test::TAG_SOURCE_START => datadog_source_start.to_s,
+                CI::Ext::Test::TAG_PARAMETERS => datadog_test_parameters
+              }
+
+              # Only set source_end if the example's source location wasn't resolved from a parent
+              # example_group. When we fall back to parent's location (e.g., for rswag tests),
+              # the @example_block is defined in a different file (the gem), so its end line
+              # would be inconsistent with source_file and source_start.
+              unless datadog_source_location_from_parent?
+                end_line = SourceCode::MethodInspect.last_line(@example_block)
+                tags[CI::Ext::Test::TAG_SOURCE_END] = end_line.to_s if end_line
+              end
+
+              tags
+            end
+
+            def handle_test_result(test_span, test_failure)
+              case execution_result.status
+              when :passed
+                test_span&.passed!
+              when :failed
+                test_span&.failed!(exception: execution_result.exception)
+
+                # if any of the retries passed or test is quarantined, we don't fail the test run
+                @exception = nil if test_span&.should_ignore_failures?
+                test_failure = @exception
+              else
+                # :pending or nil
+                test_span&.skipped!(
+                  reason: execution_result.pending_message,
+                  exception: execution_result.pending_exception
+                )
+              end
+
+              test_failure
+            end
+
+            def update_formatter_metadata(test_span)
+              return unless datadog_configuration[:datadog_formatter_enabled]
+
+              update_retry_metadata(test_span) if test_span&.is_retry?
+
+              metadata[Ext::METADATA_DD_QUARANTINED] = true if test_span&.quarantined?
+              metadata[Ext::METADATA_DD_DISABLED] = true if test_span&.disabled?
+              metadata[Ext::METADATA_DD_SKIPPED_BY_ITR] = true if test_span&.skipped_by_test_impact_analysis?
+            end
+
+            def update_retry_metadata(test_span)
+              metadata[Ext::METADATA_DD_RETRIES] ||= 0
+              metadata[Ext::METADATA_DD_RETRY_RESULTS] ||= Hash.new(0)
+
+              metadata[Ext::METADATA_DD_RETRIES] += 1
+              metadata[Ext::METADATA_DD_RETRY_REASON] = test_span&.retry_reason
+              metadata[Ext::METADATA_DD_RETRY_RESULTS][test_span&.status] += 1
+            end
+
+            def restore_failure_state(test_span, test_failure)
+              # at this point if we have encountered any test failure in any of the previous retries
+              # we restore the @exception internal state if we should not skip failures for this run
+              if test_failure && !test_span&.should_ignore_failures?
+                @exception = test_failure
+              end
+            end
+
+            # ============================================
+            # Source location resolution
+            # ============================================
+
+            # rswag-specs gem creates specs with broken source location
+            # We need to work around this by using test suite location for test location as a fallback
+            def resolve_source_location
+              example_file_path = metadata[:file_path]
+              example_relative_path = Git::LocalRepository.relative_to_root(example_file_path)
+
+              # First try the example's own file_path
+              if !Utils::Bundle.rswag_present? || valid_source_file_path?(example_file_path)
+                set_source_location(example_relative_path, metadata[:line_number], from_parent: false)
+                return
+              end
+
+              # Fallback is top level example group's location - which is the same as a test suite location
+              top_level = datadog_top_level_example_group
+              set_source_location(
+                Git::LocalRepository.relative_to_root(top_level[:file_path]),
+                top_level[:line_number],
+                from_parent: true
+              )
+            end
+
+            # we filter this location out
+            def valid_source_file_path?(original_path)
+              return false if original_path.nil? || original_path.empty?
+              return false if original_path.include?("/rswag-specs-") && original_path.include?("lib/rswag/specs/example_group_helpers.rb")
+
+              true
+            end
+
+            def set_source_location(relative_path, line_number, from_parent:)
+              @datadog_source_file = relative_path
+              @datadog_source_start = line_number
+              @datadog_source_location_from_parent = from_parent
+            end
+
+            # ============================================
+            # Example group hierarchy traversal
+            # ============================================
 
             def datadog_top_level_example_group
               traverse_example_group_hierarchy unless defined?(@datadog_top_level_example_group)
@@ -227,16 +341,20 @@ module Datadog
               end
             end
 
+            def datadog_test_suite_description
+              @datadog_test_suite_description ||= datadog_top_level_example_group[:description]
+            end
+
+            # ============================================
+            # Component accessors
+            # ============================================
+
             def datadog_integration
               CI::Contrib::Instrumentation.fetch_integration(:rspec)
             end
 
             def datadog_configuration
               Datadog.configuration.ci[:rspec]
-            end
-
-            def datadog_test_suite_description
-              @datadog_test_suite_description ||= datadog_top_level_example_group[:description]
             end
 
             def test_tracing_component

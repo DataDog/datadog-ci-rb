@@ -20,6 +20,20 @@ module Datadog
           end
           nil
         end
+
+        def self.rswag_present?
+          return @rswag_present if defined?(@rswag_present)
+
+          @rswag_present =
+            begin
+              Gem.loaded_specs.key?("rswag-specs")
+            rescue => e
+              Datadog.logger.debug do
+                "Bundle: Unable to detect rswag-specs: #{e.class} #{e.message}"
+              end
+              false
+            end
+        end
       end
     end
   end
