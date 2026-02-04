@@ -43,7 +43,12 @@ module Datadog
                   tags: build_test_tags,
                   service: datadog_configuration[:service_name]
                 ) do |test_span|
-                  prepare_test_span(test_span)
+                  # Set context IDs on the test span for TIA context coverage merging
+                  test_span&.context_ids = datadog_context_ids
+
+                  # Process TIA status of the test and eventually tell RSpec to skip the test
+                  test_span&.itr_unskippable! if datadog_unskippable?
+                  metadata[:skip] = test_span&.datadog_skip_reason if test_span&.should_skip?
 
                   # before each run remove any previous exception
                   @exception = nil
@@ -56,15 +61,18 @@ module Datadog
                   return result if ::RSpec.world.wants_to_quit
 
                   test_failure = handle_test_result(test_span, test_failure)
+                  # Formatter metadata here is a set of properties that will be used by Datadog's custom rspec formatter
                   update_formatter_metadata(test_span)
+
+                  # In attempt-to-fix flow we need to treat test as failed if any of the retries failed
                   restore_failure_state(test_span, test_failure)
                 end
               end
 
-              # this is a special case for ci-queue, we need to finish the test suite span created for a single test
+              # this is a special case for ci-queue test runner, we need to finish the test suite span created for a single test
               test_suite_span&.finish
 
-              # after retries are done, we can finally report the test to RSpec
+              # after retries are done, we must report the test to RSpec
               @skip_reporting = false
               finish(reporter)
             end
@@ -210,15 +218,6 @@ module Datadog
               tags
             end
 
-            def prepare_test_span(test_span)
-              # Set context IDs on the test span for TIA context coverage merging
-              test_span&.context_ids = datadog_context_ids
-
-              test_span&.itr_unskippable! if datadog_unskippable?
-
-              metadata[:skip] = test_span&.datadog_skip_reason if test_span&.should_skip?
-            end
-
             def handle_test_result(test_span, test_failure)
               case execution_result.status
               when :passed
@@ -307,7 +306,7 @@ module Datadog
             end
 
             # ============================================
-            # Hierarchy traversal
+            # Example group hierarchy traversal
             # ============================================
 
             def datadog_top_level_example_group

@@ -39,7 +39,6 @@ module Datadog
 
             # Run method helpers
             def build_test_tags: () -> Hash[String, String]
-            def prepare_test_span: (Datadog::CI::Test? test_span) -> void
             def handle_test_result: (Datadog::CI::Test? test_span, Exception? test_failure) -> Exception?
             def update_formatter_metadata: (Datadog::CI::Test? test_span) -> void
             def update_retry_metadata: (Datadog::CI::Test? test_span) -> void
