@@ -182,6 +182,16 @@ module Datadog
           TEST_MANAGEMENT_DISABLED = "Flaky test is disabled by Datadog"
           TEST_DISCOVERY_MODE = "Skipped by Datadog's Test Discovery Mode"
         end
+
+        # Tag for test duration category
+        TAG_DURATION_CATEGORY = "test.duration_category"
+
+        # test duration categories based on execution time
+        module DurationCategory
+          FAST = "fast"
+          MEDIUM = "medium"
+          SLOW = "slow"
+        end
       end
     end
   end

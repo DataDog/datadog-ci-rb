@@ -34,9 +34,17 @@ module Datadog
           set_tag(Ext::Test::TAG_RETRY_REASON, Ext::Test::RetryReason::RETRY_EXTERNAL)
         end
 
+        set_duration_category_tag
+
         test_tracing.deactivate_test
 
         super
+      end
+
+      # Returns the duration category of this test based on execution time.
+      # @return [String] the duration category ("fast", "medium", or "slow")
+      def duration_category
+        get_tag(Ext::Test::TAG_DURATION_CATEGORY)
       end
 
       # Running test suite that this test is part of (if any).
@@ -266,6 +274,24 @@ module Datadog
       end
 
       private
+
+      def set_duration_category_tag
+        duration = peek_duration
+        ci_settings = Datadog.configuration.ci
+
+        slow_threshold = ci_settings.duration_category_slow_threshold
+        medium_threshold = ci_settings.duration_category_medium_threshold
+
+        category = if duration >= slow_threshold
+          Ext::Test::DurationCategory::SLOW
+        elsif duration >= medium_threshold
+          Ext::Test::DurationCategory::MEDIUM
+        else
+          Ext::Test::DurationCategory::FAST
+        end
+
+        set_tag(Ext::Test::TAG_DURATION_CATEGORY, category)
+      end
 
       def compute_final_status(status)
         # Skip status is always preserved

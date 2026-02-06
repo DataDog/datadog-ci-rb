@@ -37,8 +37,11 @@ module Datadog
       def skipped_by_test_impact_analysis?: () -> bool
       def peek_duration: () -> Float
       def modified?: () -> bool
+      def duration_category: () -> String?
 
       private
+
+      def set_duration_category_tag: () -> void
 
       def compute_final_status: (String status) -> String
 

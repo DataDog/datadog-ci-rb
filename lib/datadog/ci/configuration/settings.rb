@@ -192,6 +192,22 @@ module Datadog
                 o.default true
               end
 
+              # Duration category thresholds (in seconds)
+              # Tests taking longer than this threshold are categorized as "slow"
+              option :duration_category_slow_threshold do |o|
+                o.type :float
+                o.env CI::Ext::Settings::ENV_DURATION_CATEGORY_SLOW_THRESHOLD
+                o.default 1.0
+              end
+
+              # Tests taking longer than this threshold (but less than slow_threshold) are categorized as "medium"
+              # Tests completing faster than this threshold are categorized as "fast"
+              option :duration_category_medium_threshold do |o|
+                o.type :float
+                o.env CI::Ext::Settings::ENV_DURATION_CATEGORY_MEDIUM_THRESHOLD
+                o.default 0.1
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 

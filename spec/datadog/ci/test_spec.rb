@@ -19,9 +19,20 @@ RSpec.describe Datadog::CI::Test do
   end
 
   describe "#finish" do
+    let(:ci_settings) do
+      double(
+        "ci_settings",
+        duration_category_slow_threshold: 1.0,
+        duration_category_medium_threshold: 0.1
+      )
+    end
+
     before do
       allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_RETRY).and_return(is_retry)
       allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_RETRY_REASON).and_return(retry_reason)
+      allow(Datadog.configuration).to receive(:ci).and_return(ci_settings)
+      allow(ci_test).to receive(:peek_duration).and_return(0.05)
+      allow(tracer_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY, anything)
     end
 
     let(:is_retry) { nil }
@@ -994,6 +1005,157 @@ RSpec.describe Datadog::CI::Test do
 
         expected_duration = later_time - real_test.tracer_span.start_time
         expect(real_test.peek_duration).to be_within(1e-9).of(expected_duration)
+      end
+    end
+  end
+
+  describe "#duration_category" do
+    subject(:duration_category) { ci_test.duration_category }
+
+    context "when duration category tag is set" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY).and_return("slow")
+      end
+
+      it { is_expected.to eq("slow") }
+    end
+
+    context "when duration category tag is not set" do
+      before do
+        allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY).and_return(nil)
+      end
+
+      it { is_expected.to be_nil }
+    end
+  end
+
+  describe "#finish sets duration category" do
+    let(:ci_settings) do
+      double(
+        "ci_settings",
+        duration_category_slow_threshold: 1.0,
+        duration_category_medium_threshold: 0.1
+      )
+    end
+
+    before do
+      allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_IS_RETRY).and_return(nil)
+      allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_RETRY_REASON).and_return(nil)
+      allow(Datadog.configuration).to receive(:ci).and_return(ci_settings)
+      allow(ci_test).to receive(:peek_duration).and_return(duration)
+    end
+
+    context "when test duration is below medium threshold (fast test)" do
+      let(:duration) { 0.05 }
+
+      it "sets duration category to fast" do
+        expect(tracer_span).to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY,
+          Datadog::CI::Ext::Test::DurationCategory::FAST
+        )
+
+        ci_test.finish
+      end
+    end
+
+    context "when test duration is between medium and slow thresholds (medium test)" do
+      let(:duration) { 0.5 }
+
+      it "sets duration category to medium" do
+        expect(tracer_span).to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY,
+          Datadog::CI::Ext::Test::DurationCategory::MEDIUM
+        )
+
+        ci_test.finish
+      end
+    end
+
+    context "when test duration is above slow threshold (slow test)" do
+      let(:duration) { 2.0 }
+
+      it "sets duration category to slow" do
+        expect(tracer_span).to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY,
+          Datadog::CI::Ext::Test::DurationCategory::SLOW
+        )
+
+        ci_test.finish
+      end
+    end
+
+    context "when test duration is exactly at medium threshold" do
+      let(:duration) { 0.1 }
+
+      it "sets duration category to medium" do
+        expect(tracer_span).to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY,
+          Datadog::CI::Ext::Test::DurationCategory::MEDIUM
+        )
+
+        ci_test.finish
+      end
+    end
+
+    context "when test duration is exactly at slow threshold" do
+      let(:duration) { 1.0 }
+
+      it "sets duration category to slow" do
+        expect(tracer_span).to receive(:set_tag).with(
+          Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY,
+          Datadog::CI::Ext::Test::DurationCategory::SLOW
+        )
+
+        ci_test.finish
+      end
+    end
+
+    context "with custom thresholds" do
+      let(:ci_settings) do
+        double(
+          "ci_settings",
+          duration_category_slow_threshold: 5.0,
+          duration_category_medium_threshold: 0.5
+        )
+      end
+
+      context "when test is fast with custom thresholds" do
+        let(:duration) { 0.3 }
+
+        it "sets duration category to fast" do
+          expect(tracer_span).to receive(:set_tag).with(
+            Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY,
+            Datadog::CI::Ext::Test::DurationCategory::FAST
+          )
+
+          ci_test.finish
+        end
+      end
+
+      context "when test is medium with custom thresholds" do
+        let(:duration) { 2.0 }
+
+        it "sets duration category to medium" do
+          expect(tracer_span).to receive(:set_tag).with(
+            Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY,
+            Datadog::CI::Ext::Test::DurationCategory::MEDIUM
+          )
+
+          ci_test.finish
+        end
+      end
+
+      context "when test is slow with custom thresholds" do
+        let(:duration) { 6.0 }
+
+        it "sets duration category to slow" do
+          expect(tracer_span).to receive(:set_tag).with(
+            Datadog::CI::Ext::Test::TAG_DURATION_CATEGORY,
+            Datadog::CI::Ext::Test::DurationCategory::SLOW
+          )
+
+          ci_test.finish
+        end
       end
     end
   end
