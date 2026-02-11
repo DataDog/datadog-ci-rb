@@ -1599,13 +1599,200 @@ RSpec.describe "Minitest instrumentation" do
       end
     end
 
-    it "runs failing test and retries it but does not fail the build" do
-      # 1 original execution and 12 retries (attempt_to_fix_retries_count) and one passed test
-      expect(test_spans).to have(attempt_to_fix_retries_count + 2).items
+    it "stops retrying after first failure because the fix did not work" do
+      # 1 original execution (failed, no retries) and one passed test = 2 spans
+      expect(test_spans).to have(2).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-      expect(failed_spans).to have(attempt_to_fix_retries_count + 1).items
+      expect(failed_spans).to have(1).items
       expect(passed_spans).to have(1).item
+
+      # no retries were made
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(0)
+
+      # count how many tests were marked as attempt_to_fix
+      attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
+      expect(attempt_to_fix_count).to eq(1)
+
+      # count how many tests were marked as quarantined
+      quarantined_count = test_spans.count { |span| span.get_tag("test.test_management.is_quarantined") == "true" }
+      expect(quarantined_count).to eq(1)
+
+      # tagged with has_failed_all_retries
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(1)
+
+      fix_passed_successfully_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
+      expect(fix_passed_successfully_tests_count).to eq(0)
+
+      fix_failed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "false" }
+      expect(fix_failed_tests_count).to eq(1)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_pass_status
+
+      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
+  context "with test management enabled and a flaky attempt_to_fix test that fails after several retries" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "FlakyAttemptToFixTestSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_flaky_fixed." => {
+            "quarantined" => false,
+            "disabled" => false,
+            "attempt_to_fix" => true
+          }
+        }
+      end
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class FlakyAttemptToFixTestSuite < Minitest::Test
+        @@flaky_fixed_passes = 0
+        @@max_flaky_fixed_passes = 3
+
+        def test_passed
+          assert true
+        end
+
+        def test_flaky_fixed
+          if @@flaky_fixed_passes < @@max_flaky_fixed_passes
+            @@flaky_fixed_passes += 1
+            assert 1 + 1 == 2
+          else
+            assert 1 + 1 == 3
+          end
+        end
+      end
+    end
+
+    it "retries several times then stops after first failure" do
+      # 1 original passing execution + 2 passing retries + 1 failing retry (stops here) + 1 passing test = 5 spans
+      expect(test_spans).to have(5).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+
+      # the passing test runs once
+      expect(test_spans_by_test_name["test_passed"]).to have(1).item
+
+      # flaky_fixed test: 1 original + 2 passing retries + 1 failing retry = 4 executions
+      flaky_fixed_spans = test_spans_by_test_name["test_flaky_fixed"]
+      expect(flaky_fixed_spans).to have(4).items
+
+      failed_flaky_spans = flaky_fixed_spans.count { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_flaky_spans).to eq(1)
+
+      passed_flaky_spans = flaky_fixed_spans.count { |span| span.get_tag("test.status") == "pass" }
+      expect(passed_flaky_spans).to eq(3)
+
+      # count how many tests were marked as retries (2 passing + 1 failing = 3 retries)
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(3)
+
+      # check retry reasons
+      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
+      expect(retry_reasons).to eq(["attempt_to_fix"] * 3)
+
+      # count how many tests were marked as attempt_to_fix
+      attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
+      expect(attempt_to_fix_count).to eq(4)
+
+      # early exit: did not reach max retries (attempt_to_fix_retries_count = 12), stopped at 3
+      expect(retries_count).to be < attempt_to_fix_retries_count
+
+      # tagged with has_failed_all_retries because all retries are considered failed when fix didn't work
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(0)
+
+      # attempt_to_fix_passed is false because a failure was detected
+      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
+      expect(fix_passed_tests_count).to eq(0)
+
+      fix_failed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "false" }
+      expect(fix_failed_tests_count).to eq(1)
+
+      # check final statuses
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(1)
+
+      expect(test_suite_spans).to have(1).item
+      # session should fail because attempt_to_fix test had failures
+      expect(test_suite_spans.first).to have_fail_status
+
+      expect(test_session_span).to have_fail_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
+  context "with test management enabled and a passing attempt_to_fix test that succeeds all retries" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+
+      let(:test_management_enabled) { true }
+      let(:test_properties) do
+        {
+          "PassingAttemptToFixTestSuite at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_fixed." => {
+            "quarantined" => false,
+            "disabled" => false,
+            "attempt_to_fix" => true
+          }
+        }
+      end
+    end
+
+    before do
+      Minitest.run([])
+    end
+
+    before(:context) do
+      Minitest::Runnable.reset
+
+      class PassingAttemptToFixTestSuite < Minitest::Test
+        def test_passed
+          assert true
+        end
+
+        def test_fixed
+          assert 1 + 1 == 2
+        end
+      end
+    end
+
+    it "retries until the end and marks the fix as passed" do
+      # 1 original execution + attempt_to_fix_retries_count retries + 1 passing test
+      expect(test_spans).to have(attempt_to_fix_retries_count + 2).items
+
+      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
+
+      # the passing test runs once
+      expect(test_spans_by_test_name["test_passed"]).to have(1).item
+
+      # fixed test: 1 original + attempt_to_fix_retries_count retries
+      fixed_spans = test_spans_by_test_name["test_fixed"]
+      expect(fixed_spans).to have(attempt_to_fix_retries_count + 1).items
+
+      # all executions passed
+      failed_spans = fixed_spans.count { |span| span.get_tag("test.status") == "fail" }
+      expect(failed_spans).to eq(0)
+
+      passed_spans = fixed_spans.count { |span| span.get_tag("test.status") == "pass" }
+      expect(passed_spans).to eq(attempt_to_fix_retries_count + 1)
 
       # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
@@ -1619,19 +1806,23 @@ RSpec.describe "Minitest instrumentation" do
       attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
       expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
 
-      # count how many tests were marked as quarantined
-      quarantined_count = test_spans.count { |span| span.get_tag("test.test_management.is_quarantined") == "true" }
-      expect(quarantined_count).to eq(attempt_to_fix_retries_count + 1)
-
-      # last retry is tagged with has_failed_all_retries
+      # no failures at all
       failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
-      expect(failed_all_retries_count).to eq(1)
+      expect(failed_all_retries_count).to eq(0)
 
-      fix_passed_successfully_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
-      expect(fix_passed_successfully_tests_count).to eq(0)
+      # attempt_to_fix_passed is true because all retries passed
+      fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
+      expect(fix_passed_tests_count).to eq(1)
 
       fix_failed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "false" }
-      expect(fix_failed_tests_count).to eq(1)
+      expect(fix_failed_tests_count).to eq(0)
+
+      # check final statuses
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(0)
+
+      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
+      expect(final_status_pass_tests).to eq(2)
 
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_pass_status
@@ -1654,7 +1845,7 @@ RSpec.describe "Minitest instrumentation" do
       end
       let(:changed_files) do
         Set.new([
-          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1669:1669"
+          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1860:1860"
         ])
       end
     end

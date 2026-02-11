@@ -7,7 +7,9 @@ module Datadog
 
           @max_attempts: Integer
 
-          def initialize: (max_attempts: Integer) -> void
+          @failed_once: bool
+
+          def initialize: (Datadog::CI::Test test_span, max_attempts: Integer) -> void
 
           def should_retry?: () -> bool
 

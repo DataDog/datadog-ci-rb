@@ -7,6 +7,10 @@ module Datadog
     module TestRetries
       module Driver
         class NoRetry < Base
+          def tracks_retry_results?
+            false
+          end
+
           def record_retry(test_span)
           end
         end
