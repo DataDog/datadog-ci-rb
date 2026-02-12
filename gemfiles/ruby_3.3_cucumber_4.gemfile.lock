@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2ef0fc4e9fbed4c5e71a247e3c4d4f49c69d8ef2
+  revision: e762e329d428e0220ba0abe428c940d4e7713cd0
   branch: master
   specs:
     datadog (2.29.0)
@@ -93,8 +93,9 @@ GEM
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
     io-console (0.8.2)
-    irb (1.16.0)
+    irb (1.17.0)
       pp (>= 0.6.0)
+      prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     libdatadog (25.0.0.1.0)
@@ -132,7 +133,7 @@ GEM
     rake (13.3.1)
     rake-compiler (1.3.1)
       rake
-    rdoc (7.1.0)
+    rdoc (7.2.0)
       erb
       psych (>= 4.0.0)
       tsort
