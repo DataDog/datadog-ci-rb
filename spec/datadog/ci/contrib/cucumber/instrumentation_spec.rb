@@ -793,29 +793,29 @@ RSpec.describe "Cucumber instrumentation" do
       }
     end
 
-    it "retries the test several times and fails the build as test is not disabled nor quarantined" do
-      # 1 original execution and 12 retries (attempt_to_fix_retries_count)
-      expect(test_spans).to have(attempt_to_fix_retries_count + 1).items
+    it "stops retrying after first failure because the fix did not work" do
+      # 1 original execution (failed, no retries)
+      expect(test_spans).to have(1).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-      expect(failed_spans).to have(attempt_to_fix_retries_count + 1).items
+      expect(failed_spans).to have(1).items
       expect(passed_spans).to have(0).item
 
-      # count how many tests were marked as retries
+      # no retries were made
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(attempt_to_fix_retries_count)
-
-      # check retry reasons
-      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["attempt_to_fix"] * attempt_to_fix_retries_count)
+      expect(retries_count).to eq(0)
 
       # count how many tests were marked as attempt_to_fix
       attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
-      expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
+      expect(attempt_to_fix_count).to eq(1)
 
-      # last retry is tagged with has_failed_all_retries
+      # tagged with has_failed_all_retries
       failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
       expect(failed_all_retries_count).to eq(1)
+
+      # attempt_to_fix_passed tag set to false (fix didn't work)
+      fix_failed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "false" }
+      expect(fix_failed_tests_count).to eq(1)
 
       # check final statuses (attempt_to_fix kept failing)
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }

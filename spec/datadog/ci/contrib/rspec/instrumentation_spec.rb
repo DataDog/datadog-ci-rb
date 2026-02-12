@@ -1669,31 +1669,31 @@ RSpec.describe "RSpec instrumentation" do
       let(:flaky_test_retries_enabled) { true }
     end
 
-    it "retries both tests 10 times" do
+    it "retries both new tests, stopping the flaky one early once flakiness is detected" do
       rspec_session_run(with_flaky_test: true)
 
-      # 1 initial run of flaky test + 10 retries + 1 passing new test + 10 new test retries = 22 spans
-      expect(test_spans).to have(22).items
+      # 1 initial run of flaky test + 4 retries (stop on first pass) + 1 passing new test + 10 new test retries = 16 spans
+      expect(test_spans).to have(16).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
       expect(failed_spans).to have(4).items
-      expect(passed_spans).to have(18).items
+      expect(passed_spans).to have(12).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-      expect(test_spans_by_test_name["nested flaky"]).to have(11).items
+      expect(test_spans_by_test_name["nested flaky"]).to have(5).items
       expect(test_spans_by_test_name["nested foo"]).to have(11).item
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(20)
+      expect(retries_count).to eq(14)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 20)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 14)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(22)
+      expect(new_tests_count).to eq(16)
 
       # check final statuses
       # 0 failed
@@ -2120,41 +2120,45 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
 
-    it "fails the build because some retries failed" do
+    it "stops retrying after first failure because the fix did not work" do
       rspec_session_run(with_flaky_test: true)
 
-      # 1 passing test + 1 original flaky test execution + 12 retries (attempt_to_fix_retries_count defined in ci_mode.rb) = 14 spans
-      expect(test_spans).to have(attempt_to_fix_retries_count + 2).items
+      # 1 passing test + 1 original flaky test execution (failed, no retries) = 2 spans
+      expect(test_spans).to have(2).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
 
       # the passing test runs once
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
 
-      # flaky test: 1 original + 12 retries
+      # flaky test: only 1 execution (failed on first run, no retries)
       flaky_test_spans = test_spans_by_test_name["nested flaky"]
-      expect(flaky_test_spans).to have(attempt_to_fix_retries_count + 1).items
+      expect(flaky_test_spans).to have(1).items
 
-      # some retries failed, some passed
+      # the single execution failed
       failed_flaky_spans = flaky_test_spans.count { |span| span.get_tag("test.status") == "fail" }
-      passed_flaky_spans = flaky_test_spans.count { |span| span.get_tag("test.status") == "pass" }
-      expect(failed_flaky_spans).to be > 0
-      expect(passed_flaky_spans).to be > 0
+      expect(failed_flaky_spans).to eq(1)
 
       # count how many tests were marked as attempt_to_fix
       attempt_to_fix_count = test_spans.count { |span| span.get_tag("test.test_management.is_attempt_to_fix") == "true" }
-      expect(attempt_to_fix_count).to eq(attempt_to_fix_retries_count + 1)
+      expect(attempt_to_fix_count).to eq(1)
 
-      # check retry reasons
-      retry_reasons = flaky_test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["attempt_to_fix"] * attempt_to_fix_retries_count)
+      # no retries were made
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(0)
 
-      # attempt_to_fix test should NOT have attempt_to_fix_passed tag because some retries failed
+      # attempt_to_fix test should have attempt_to_fix_passed tag set to false (fix didn't work)
       fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "true" }
       expect(fix_passed_tests_count).to eq(0)
 
+      fix_failed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "false" }
+      expect(fix_failed_tests_count).to eq(1)
+
+      # tagged with has_failed_all_retries
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(1)
+
       # check final statuses
-      # flaky test failed because some retries failed (attempt_to_fix doesn't ignore failures)
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
       expect(final_status_fail_tests).to eq(1)
 

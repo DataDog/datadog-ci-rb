@@ -7,8 +7,14 @@ module Datadog
 
           @attempts: Integer
           @max_attempts: Integer
+          @passed_once: bool
+          @failed_once: bool
 
           def initialize: (Datadog::CI::Test test_span, max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries) -> void
+
+          private
+
+          def flakiness_detected?: () -> bool
         end
       end
     end
