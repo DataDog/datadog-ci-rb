@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+## [1.28.0] - 2026-02-16
+
+### Added
+
+* Early exit test retries when further retries no longer provide value ([#473][])
+
+### Fixed
+
+* Fix source location tags for specs created by rswag-specs ([#468][])
+
 ## [1.27.0] - 2026-01-22
 
 
@@ -598,7 +608,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.27.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.28.0...main
+[1.28.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.27.0...v1.28.0
 [1.27.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.26.0...v1.27.0
 [1.26.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.25.0...v1.26.0
 [1.25.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.24.0...v1.25.0
@@ -850,3 +861,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#460]: https://github.com/DataDog/datadog-ci-rb/issues/460
 [#463]: https://github.com/DataDog/datadog-ci-rb/issues/463
 [#464]: https://github.com/DataDog/datadog-ci-rb/issues/464
+[#468]: https://github.com/DataDog/datadog-ci-rb/issues/468
+[#473]: https://github.com/DataDog/datadog-ci-rb/issues/473
