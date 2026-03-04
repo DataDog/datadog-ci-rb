@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 953e19d8902351840e1ed4ba00f769f1c39a1e19
+  revision: d381d3634a2496f2b5839fb431246a54a1398284
   branch: master
   specs:
-    datadog (2.29.0)
+    datadog (2.30.0)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.2)
-      libdatadog (~> 25.0.0.1.0)
+      libdatadog (~> 28.0.2.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -96,7 +96,7 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
-    addressable (2.8.8)
+    addressable (2.8.9)
       public_suffix (>= 2.0.2, < 8.0)
     appraisal (2.5.0)
       bundler
@@ -121,7 +121,7 @@ GEM
     diff-lcs (1.6.2)
     docile (1.4.1)
     drb (2.2.3)
-    erb (6.0.1)
+    erb (6.0.2)
     erubi (1.13.1)
     ffi (1.17.3-aarch64-linux-gnu)
     ffi (1.17.3-aarch64-linux-musl)
@@ -143,18 +143,19 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (2.18.1)
-    libdatadog (25.0.0.1.0)
-    libdatadog (25.0.0.1.0-aarch64-linux)
-    libdatadog (25.0.0.1.0-x86_64-linux)
-    libddwaf (1.30.0.0.0)
+    libdatadog (28.0.2.1.0)
+    libdatadog (28.0.2.1.0-aarch64-linux)
+    libdatadog (28.0.2.1.0-arm64-darwin)
+    libdatadog (28.0.2.1.0-x86_64-linux)
+    libddwaf (1.30.0.0.2)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.0-aarch64-linux)
+    libddwaf (1.30.0.0.2-aarch64-linux)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.0-arm64-darwin)
+    libddwaf (1.30.0.0.2-arm64-darwin)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.0-x86_64-darwin)
+    libddwaf (1.30.0.0.2-x86_64-darwin)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.0-x86_64-linux)
+    libddwaf (1.30.0.0.2-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     loofah (2.25.0)
@@ -168,7 +169,8 @@ GEM
       net-smtp
     marcel (1.1.0)
     mini_mime (1.1.5)
-    minitest (6.0.1)
+    minitest (6.0.2)
+      drb (~> 2.0)
       prism (~> 1.5)
     msgpack (1.8.0)
     net-imap (0.6.3)
@@ -181,21 +183,21 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.5)
-    nokogiri (1.19.0-aarch64-linux-gnu)
+    nokogiri (1.19.1-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.0-aarch64-linux-musl)
+    nokogiri (1.19.1-aarch64-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.19.0-arm-linux-gnu)
+    nokogiri (1.19.1-arm-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.0-arm-linux-musl)
+    nokogiri (1.19.1-arm-linux-musl)
       racc (~> 1.4)
-    nokogiri (1.19.0-arm64-darwin)
+    nokogiri (1.19.1-arm64-darwin)
       racc (~> 1.4)
-    nokogiri (1.19.0-x86_64-darwin)
+    nokogiri (1.19.1-x86_64-darwin)
       racc (~> 1.4)
-    nokogiri (1.19.0-x86_64-linux-gnu)
+    nokogiri (1.19.1-x86_64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.0-x86_64-linux-musl)
+    nokogiri (1.19.1-x86_64-linux-musl)
       racc (~> 1.4)
     os (1.1.4)
     ostruct (0.6.3)
@@ -206,9 +208,9 @@ GEM
     psych (5.3.1)
       date
       stringio
-    public_suffix (7.0.2)
+    public_suffix (7.0.5)
     racc (1.8.1)
-    rack (3.2.4)
+    rack (3.2.5)
     rack-session (2.1.1)
       base64 (>= 0.1.0)
       rack (>= 3.0.0)
@@ -234,8 +236,8 @@ GEM
       activesupport (>= 5.0.0)
       minitest
       nokogiri (>= 1.6)
-    rails-html-sanitizer (1.6.2)
-      loofah (~> 2.21)
+    rails-html-sanitizer (1.7.0)
+      loofah (~> 2.25)
       nokogiri (>= 1.15.7, != 1.16.7, != 1.16.6, != 1.16.5, != 1.16.4, != 1.16.3, != 1.16.2, != 1.16.1, != 1.16.0.rc1, != 1.16.0)
     railties (8.1.2)
       actionpack (= 8.1.2)
@@ -267,7 +269,7 @@ GEM
     rspec-expectations (3.13.5)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
-    rspec-mocks (3.13.7)
+    rspec-mocks (3.13.8)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.7)
@@ -297,7 +299,7 @@ GEM
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
     yard (0.9.38)
-    zeitwerk (2.7.4)
+    zeitwerk (2.7.5)
 
 PLATFORMS
   aarch64-linux-gnu
