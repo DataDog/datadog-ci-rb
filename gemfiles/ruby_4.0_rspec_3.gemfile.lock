@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 953e19d8902351840e1ed4ba00f769f1c39a1e19
+  revision: d381d3634a2496f2b5839fb431246a54a1398284
   branch: master
   specs:
-    datadog (2.29.0)
+    datadog (2.30.0)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.2)
-      libdatadog (~> 25.0.0.1.0)
+      libdatadog (~> 28.0.2.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -22,7 +22,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.8)
+    addressable (2.8.9)
       public_suffix (>= 2.0.2, < 8.0)
     appraisal (2.5.0)
       bundler
@@ -42,7 +42,7 @@ GEM
     diff-lcs (1.6.2)
     docile (1.4.1)
     drb (2.2.3)
-    erb (6.0.1)
+    erb (6.0.2)
     ffi (1.17.3)
     ffi (1.17.3-aarch64-linux-gnu)
     hashdiff (1.2.1)
@@ -52,11 +52,11 @@ GEM
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    libdatadog (25.0.0.1.0)
-    libdatadog (25.0.0.1.0-aarch64-linux)
-    libddwaf (1.30.0.0.0)
+    libdatadog (28.0.2.1.0)
+    libdatadog (28.0.2.1.0-aarch64-linux)
+    libddwaf (1.30.0.0.2)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.0-aarch64-linux)
+    libddwaf (1.30.0.0.2-aarch64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     msgpack (1.8.0)
@@ -69,7 +69,7 @@ GEM
     psych (5.3.1)
       date
       stringio
-    public_suffix (7.0.2)
+    public_suffix (7.0.5)
     rake (13.3.1)
     rake-compiler (1.3.1)
       rake
@@ -91,7 +91,7 @@ GEM
     rspec-expectations (3.13.5)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
-    rspec-mocks (3.13.7)
+    rspec-mocks (3.13.8)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.7)
@@ -134,13 +134,13 @@ DEPENDENCIES
   yard
 
 CHECKSUMS
-  addressable (2.8.8) sha256=7c13b8f9536cf6364c03b9d417c19986019e28f7c00ac8132da4eb0fe393b057
+  addressable (2.8.9) sha256=cc154fcbe689711808a43601dee7b980238ce54368d23e127421753e46895485
   appraisal (2.5.0) sha256=36989221be127913b0dba8d114da2001e6b2dceea7bd4951200eaba764eed3ce
   bigdecimal (4.0.1) sha256=8b07d3d065a9f921c80ceaea7c9d4ae596697295b584c296fe599dd0ad01c4a7
   cgi (0.5.1) sha256=e93fcafc69b8a934fe1e6146121fa35430efa8b4a4047c4893764067036f18e9
   climate_control (1.2.0) sha256=36b21896193fa8c8536fa1cd843a07cf8ddbd03aaba43665e26c53ec1bd70aa5
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
-  datadog (2.29.0)
+  datadog (2.30.0)
   datadog-ci (1.28.0)
   datadog-ruby_core_source (3.5.2) sha256=c379c012eca11d6c58b112d716a986d051fb566a436d58f46cde7cfec43cb299
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
@@ -148,16 +148,16 @@ CHECKSUMS
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   docile (1.4.1) sha256=96159be799bfa73cdb721b840e9802126e4e03dfc26863db73647204c727f21e
   drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
-  erb (6.0.1) sha256=28ecdd99c5472aebd5674d6061e3c6b0a45c049578b071e5a52c2a7f13c197e5
+  erb (6.0.2) sha256=9fe6264d44f79422c87490a1558479bd0e7dad4dd0e317656e67ea3077b5242b
   ffi (1.17.3) sha256=0e9f39f7bb3934f77ad6feab49662be77e87eedcdeb2a3f5c0234c2938563d4c
   ffi (1.17.3-aarch64-linux-gnu) sha256=28ad573df26560f0aedd8a90c3371279a0b2bd0b4e834b16a2baa10bd7a97068
   hashdiff (1.2.1) sha256=9c079dbc513dfc8833ab59c0c2d8f230fa28499cc5efb4b8dd276cf931457cd1
   io-console (0.8.2) sha256=d6e3ae7a7cc7574f4b8893b4fca2162e57a825b223a177b7afa236c5ef9814cc
   irb (1.17.0) sha256=168c4ddb93d8a361a045c41d92b2952c7a118fa73f23fe14e55609eb7a863aae
-  libdatadog (25.0.0.1.0) sha256=73e687f68d928c75f01f56cf6e9ee9cd3d6438f1da9add89d02b3845cf8e8f43
-  libdatadog (25.0.0.1.0-aarch64-linux) sha256=c3b1d3380cb1fa98d5edaad844a0384b6578dcb004ae518ae12406e3897e1486
-  libddwaf (1.30.0.0.0) sha256=d5c350555ec5bdfb99534b37ad578163c83642ca03cecb3bae30fd29dc47d4fc
-  libddwaf (1.30.0.0.0-aarch64-linux) sha256=b901cf0be4cc8a0c0fc34845f8f283b791a2fa0fc6a80d88992f111242813daa
+  libdatadog (28.0.2.1.0) sha256=3bf96c750bc35e191d5393e6c5ecc435d7478b70a660bb4ce8ad33a4083cf408
+  libdatadog (28.0.2.1.0-aarch64-linux) sha256=573d97864b1a01af7fc93c93666a1211aedc2913a46d5379c4cd4139c4d4a649
+  libddwaf (1.30.0.0.2) sha256=f6dd8d70f1925acce795ad0e974b12cb532c958056ac14e497f13d8c1af143d2
+  libddwaf (1.30.0.0.2-aarch64-linux) sha256=f4d8498cce66cb30d81f46bb046b11c3a2202e21ca73c9edb80c3a37939a3dc2
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   msgpack (1.8.0) sha256=e64ce0212000d016809f5048b48eb3a65ffb169db22238fb4b72472fecb2d732
   os (1.1.4) sha256=57816d6a334e7bd6aed048f4b0308226c5fb027433b67d90a9ab435f35108d3f
@@ -166,7 +166,7 @@ CHECKSUMS
   prettyprint (0.2.0) sha256=2bc9e15581a94742064a3cc8b0fb9d45aae3d03a1baa6ef80922627a0766f193
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
   psych (5.3.1) sha256=eb7a57cef10c9d70173ff74e739d843ac3b2c019a003de48447b2963d81b1974
-  public_suffix (7.0.2) sha256=9114090c8e4e7135c1fd0e7acfea33afaab38101884320c65aaa0ffb8e26a857
+  public_suffix (7.0.5) sha256=1a8bb08f1bbea19228d3bed6e5ed908d1cb4f7c2726d18bd9cadf60bc676f623
   rake (13.3.1) sha256=8c9e89d09f66a26a01264e7e3480ec0607f0c497a861ef16063604b1b08eb19c
   rake-compiler (1.3.1) sha256=6b351612b6e2d73ddd5563ee799bb58685176e05363db6758504bd11573d670a
   rdoc (7.2.0) sha256=8650f76cd4009c3b54955eb5d7e3a075c60a57276766ebf36f9085e8c9f23192
@@ -176,7 +176,7 @@ CHECKSUMS
   rspec-collection_matchers (1.2.1) sha256=ff7626d2bbf16ac237fbb46439694c78b7d9c6dc49c4b216df437968133b56a2
   rspec-core (3.13.6) sha256=a8823c6411667b60a8bca135364351dda34cd55e44ff94c4be4633b37d828b2d
   rspec-expectations (3.13.5) sha256=33a4d3a1d95060aea4c94e9f237030a8f9eae5615e9bd85718fe3a09e4b58836
-  rspec-mocks (3.13.7) sha256=0979034e64b1d7a838aaaddf12bf065ea4dc40ef3d4c39f01f93ae2c66c62b1c
+  rspec-mocks (3.13.8) sha256=086ad3d3d17533f4237643de0b5c42f04b66348c28bf6b9c2d3f4a3b01af1d47
   rspec-support (3.13.7) sha256=0640e5570872aafefd79867901deeeeb40b0c9875a36b983d85f54fb7381c47c
   rspec_junit_formatter (0.6.0) sha256=40dde674e6ae4e6cc0ff560da25497677e34fefd2338cc467a8972f602b62b15
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
