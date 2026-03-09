@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: d381d3634a2496f2b5839fb431246a54a1398284
+  revision: de5b703fce8198d8f2c54efce29aea6b8c4af523
   branch: master
   specs:
     datadog (2.30.0)
@@ -109,7 +109,7 @@ GEM
       thor (>= 0.14.0)
     base64 (0.3.0)
     benchmark (0.5.0)
-    bigdecimal (3.3.1)
+    bigdecimal (4.0.1)
     builder (3.3.0)
     cgi (0.5.1)
     climate_control (1.2.0)
@@ -142,9 +142,9 @@ GEM
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    json-schema (5.2.2)
+    json-schema (6.2.0)
       addressable (~> 2.8)
-      bigdecimal (~> 3.1)
+      bigdecimal (>= 3.1, < 5)
     libdatadog (28.0.2.1.0-aarch64-linux)
     libdatadog (28.0.2.1.0-x86_64-linux)
     libddwaf (1.30.0.0.2-aarch64-linux)
