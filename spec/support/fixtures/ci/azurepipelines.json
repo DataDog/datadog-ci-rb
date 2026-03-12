@@ -563,8 +563,8 @@
     },
     {
       "_dd.ci.env_vars": "{\"SYSTEM_TEAMPROJECTID\":\"azure-pipelines-project-id\",\"BUILD_BUILDID\":\"azure-pipelines-build-id\",\"SYSTEM_JOBID\":\"azure-pipelines-job-id\"}",
-      "ci.job.name": "azure-pipelines-job-name",
       "ci.job.id": "azure-pipelines-job-id",
+      "ci.job.name": "azure-pipelines-job-name",
       "ci.job.url": "https://azure-pipelines-server-uri.com/azure-pipelines-project-id/_build/results?buildId=azure-pipelines-build-id&view=logs&j=azure-pipelines-job-id&t=azure-pipelines-task-id",
       "ci.pipeline.id": "azure-pipelines-build-id",
       "ci.pipeline.name": "azure-pipelines-name",
@@ -968,7 +968,7 @@
       "BUILD_REQUESTEDFORID": "azure-pipelines-commit-author",
       "BUILD_SOURCEVERSIONMESSAGE": "azure-pipelines-commit-message",
       "SYSTEM_JOBID": "azure-pipelines-job-id",
-      "SYSTEM_PULLREQUEST_PULLREQUESTNUMBER": 42,
+      "SYSTEM_PULLREQUEST_PULLREQUESTNUMBER": "42",
       "SYSTEM_PULLREQUEST_TARGETBRANCH": "refs/heads/target-branch",
       "SYSTEM_TASKINSTANCEID": "azure-pipelines-task-id",
       "SYSTEM_TEAMFOUNDATIONSERVERURI": "https://azure-pipelines-server-uri.com/",
