@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: de5b703fce8198d8f2c54efce29aea6b8c4af523
+  revision: 25f2155214927f5df16abcd85fd55e03ef45ab9a
   branch: master
   specs:
     datadog (2.30.0)
@@ -30,7 +30,7 @@ GEM
       thor (>= 0.14.0)
     bigdecimal (4.0.1)
     cgi (0.5.1)
-    ci-queue (0.82.0)
+    ci-queue (0.83.0)
       logger
     climate_control (1.2.0)
     concurrent-ruby (1.3.6)
@@ -143,7 +143,7 @@ CHECKSUMS
   appraisal (2.5.0) sha256=36989221be127913b0dba8d114da2001e6b2dceea7bd4951200eaba764eed3ce
   bigdecimal (4.0.1) sha256=8b07d3d065a9f921c80ceaea7c9d4ae596697295b584c296fe599dd0ad01c4a7
   cgi (0.5.1) sha256=e93fcafc69b8a934fe1e6146121fa35430efa8b4a4047c4893764067036f18e9
-  ci-queue (0.82.0) sha256=c92454e9cd4828e97a928356327d3918726c27e9809bb49a4da4f980357e32d8
+  ci-queue (0.83.0) sha256=d2a19d09603d53ca60fd8343199296f3c53e00de799427630efd93b4dd55a6af
   climate_control (1.2.0) sha256=36b21896193fa8c8536fa1cd843a07cf8ddbd03aaba43665e26c53ec1bd70aa5
   concurrent-ruby (1.3.6) sha256=6b56837e1e7e5292f9864f34b69c5a2cbc75c0cf5338f1ce9903d10fa762d5ab
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
