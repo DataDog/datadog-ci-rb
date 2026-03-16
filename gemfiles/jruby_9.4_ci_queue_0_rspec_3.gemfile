@@ -17,6 +17,7 @@ gem "datadog", git: "https://github.com/DataDog/dd-trace-rb.git", branch: "maste
 gem "os"
 gem "concurrent-ruby"
 gem "ci-queue", "~> 0"
+gem "base64"
 
 group :check do
 
