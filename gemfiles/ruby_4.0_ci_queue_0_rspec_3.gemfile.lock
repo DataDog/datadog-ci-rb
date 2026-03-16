@@ -28,6 +28,7 @@ GEM
       bundler
       rake
       thor (>= 0.14.0)
+    base64 (0.3.0)
     bigdecimal (4.0.1)
     cgi (0.5.1)
     ci-queue (0.83.0)
@@ -121,6 +122,7 @@ PLATFORMS
 
 DEPENDENCIES
   appraisal
+  base64
   ci-queue (~> 0)
   climate_control
   concurrent-ruby
@@ -141,6 +143,7 @@ DEPENDENCIES
 CHECKSUMS
   addressable (2.8.9) sha256=cc154fcbe689711808a43601dee7b980238ce54368d23e127421753e46895485
   appraisal (2.5.0) sha256=36989221be127913b0dba8d114da2001e6b2dceea7bd4951200eaba764eed3ce
+  base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   bigdecimal (4.0.1) sha256=8b07d3d065a9f921c80ceaea7c9d4ae596697295b584c296fe599dd0ad01c4a7
   cgi (0.5.1) sha256=e93fcafc69b8a934fe1e6146121fa35430efa8b4a4047c4893764067036f18e9
   ci-queue (0.83.0) sha256=d2a19d09603d53ca60fd8343199296f3c53e00de799427630efd93b4dd55a6af

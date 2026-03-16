@@ -90,6 +90,7 @@ def self.with_ci_queue_minitest_gem(minitest_versions: 5, ci_queue_versions: 0)
         gem "ci-queue", "~> #{ci_queue_v}"
         gem "minitest-reporters", "~> 1"
         gem "concurrent-ruby"
+        gem "base64"
       end
     end
   end
@@ -102,6 +103,7 @@ def self.with_ci_queue_rspec_gem(rspec_versions: 3, ci_queue_versions: 0)
         gem "concurrent-ruby"
         gem "rspec", "~> #{rspec_v}"
         gem "ci-queue", "~> #{ci_queue_v}"
+        gem "base64"
       end
     end
   end
