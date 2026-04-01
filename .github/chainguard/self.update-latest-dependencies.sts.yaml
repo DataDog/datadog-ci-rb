@@ -1,0 +1,12 @@
+issuer: https://token.actions.githubusercontent.com
+
+subject_pattern: "repo:DataDog/datadog-ci-rb:ref:refs/heads/main"
+
+claim_pattern:
+  event_name: schedule|workflow_dispatch
+  repository: DataDog/datadog-ci-rb
+  job_workflow_ref: DataDog/datadog-ci-rb/\.github/workflows/update-latest-dependencies\.yml@refs/heads/main
+
+permissions:
+  contents: write
+  pull_requests: write
