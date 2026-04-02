@@ -81,35 +81,20 @@ jobs:
       version: '9.4'
       alias: jruby-94
 
-  dd-sts-credentials:
-    name: dd/sts-credentials
-    if: ${{ !cancelled() }}
-    runs-on: ubuntu-24.04
-    permissions:
-      id-token: write
-    outputs:
-      api_key: ${{ steps.dd-sts.outputs.api_key }}
-    steps:
-      - name: Get Datadog credentials via dd-sts
-        id: dd-sts
-        uses: DataDog/dd-sts-action@2e8187910199bd93129520183c093e19aa585c75
-        with:
-          policy: public-datadog-datadog-ci-rb
-
   datadog-test-optimization:
     name: dd/test-optimization
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
     container:
       image: datadog/ci
       env:
-        DD_API_KEY: '${{ needs.dd-sts-credentials.outputs.api_key }}'
         DD_ENV: ci
         DATADOG_SITE: datadoghq.com
         DD_SERVICE: datadog-ci-rb
         DD_GIT_REPOSITORY_URL: '${{ github.repositoryUrl }}'
     needs:
-      - dd-sts-credentials
       # ADD NEW RUBIES HERE
       - ruby-40
       - ruby-34
@@ -153,10 +138,20 @@ jobs:
         run: echo "DD_GIT_COMMIT_SHA=$DD_GIT_COMMIT_SHA" >> "$GITHUB_ENV"
       - run: echo "$DD_GIT_COMMIT_SHA"
 
+      - name: Get Datadog credentials via dd-sts
+        id: dd-sts
+        uses: DataDog/dd-sts-action@2e8187910199bd93129520183c093e19aa585c75
+        with:
+          policy: public-datadog-datadog-ci-rb
+
       - name: Upload junit reports to Datadog
+        env:
+          DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
         run: datadog-ci junit upload --verbose tmp/rspec/
 
       - name: Upload simplecov reports to Datadog
+        env:
+          DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
         run: datadog-ci coverage upload --verbose tmp/coverage/
 
   complete:
