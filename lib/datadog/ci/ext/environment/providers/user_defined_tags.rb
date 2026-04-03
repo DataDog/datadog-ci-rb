@@ -12,11 +12,21 @@ module Datadog
           # User documentation: https://docs.datadoghq.com/continuous_integration/troubleshooting/#data-appears-in-test-runs-but-not-tests
           class UserDefinedTags < Base
             def git_repository_url
-              env[Git::ENV_REPOSITORY_URL]
+              git_config = datadog_git_configuration
+              if git_config&.respond_to?(:repository_url)
+                git_config.repository_url
+              else
+                env[Git::ENV_REPOSITORY_URL]
+              end
             end
 
             def git_commit_sha
-              env[Git::ENV_COMMIT_SHA]
+              git_config = datadog_git_configuration
+              if git_config&.respond_to?(:commit_sha)
+                git_config.commit_sha
+              else
+                env[Git::ENV_COMMIT_SHA]
+              end
             end
 
             def git_branch
@@ -65,6 +75,13 @@ module Datadog
 
             def git_commit_head_sha
               env[Git::ENV_COMMIT_HEAD_SHA]
+            end
+
+            private
+
+            def datadog_git_configuration
+              config = Datadog.configuration
+              config.git if config.respond_to?(:git)
             end
           end
         end

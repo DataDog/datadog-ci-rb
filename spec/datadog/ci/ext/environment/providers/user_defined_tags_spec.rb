@@ -21,7 +21,15 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::UserDefinedTags do
         }
       end
       # Modify HOME so that '~' expansion matches CI home directory.
-      let(:environment_variables) { super().merge("HOME" => env["HOME"]) }
+      # DD_GIT_REPOSITORY_URL and DD_GIT_COMMIT_SHA must also be set in actual ENV because
+      # the provider reads them via Datadog.configuration.git when the config DSL is available.
+      let(:environment_variables) do
+        super().merge(
+          "HOME" => env["HOME"],
+          Datadog::CI::Ext::Git::ENV_REPOSITORY_URL => env[Datadog::CI::Ext::Git::ENV_REPOSITORY_URL],
+          Datadog::CI::Ext::Git::ENV_COMMIT_SHA => env[Datadog::CI::Ext::Git::ENV_COMMIT_SHA]
+        )
+      end
 
       let(:expected_tags) do
         {
@@ -43,6 +51,52 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::UserDefinedTags do
 
       it "matches CI tags" do
         is_expected.to eq(expected_tags)
+      end
+    end
+
+    context "git settings via Datadog configuration DSL" do
+      context "when git settings are available and set programmatically",
+        if: Datadog.configuration.respond_to?(:git) do
+        before do
+          Datadog.configure do |c|
+            c.git.repository_url = "https://programmatic.example.com/repo.git"
+            c.git.commit_sha = "abc123programmatic"
+          end
+        end
+
+        let(:env) { {} }
+
+        it "uses the programmatically configured repository_url" do
+          expect(extracted_tags).to include("git.repository_url" => "https://programmatic.example.com/repo.git")
+        end
+
+        it "uses the programmatically configured commit_sha" do
+          expect(extracted_tags).to include("git.commit.sha" => "abc123programmatic")
+        end
+      end
+
+      context "when Datadog configuration does not support git settings (older dd-trace-rb)" do
+        let(:config_without_git) { double("datadog_config") }
+
+        before do
+          allow(config_without_git).to receive(:respond_to?).with(:git).and_return(false)
+          allow(::Datadog).to receive(:configuration).and_return(config_without_git)
+        end
+
+        let(:env) do
+          {
+            Datadog::CI::Ext::Git::ENV_REPOSITORY_URL => "https://env-fallback.example.com/repo.git",
+            Datadog::CI::Ext::Git::ENV_COMMIT_SHA => "sha-from-env-fallback"
+          }
+        end
+
+        it "falls back to DD_GIT_REPOSITORY_URL environment variable" do
+          expect(extracted_tags).to include("git.repository_url" => "https://env-fallback.example.com/repo.git")
+        end
+
+        it "falls back to DD_GIT_COMMIT_SHA environment variable" do
+          expect(extracted_tags).to include("git.commit.sha" => "sha-from-env-fallback")
+        end
       end
     end
   end
