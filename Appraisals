@@ -244,8 +244,8 @@ major, minor, = RUBY_VERSION.segments
 with_minitest_gem(versions: 5..6)
 with_rspec_gem
 with_cucumber_gem(versions: 3..10)
-with_ci_queue_minitest_gem
-with_ci_queue_rspec_gem
+with_ci_queue_minitest_gem if Gem::Version.new("3.1") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
+with_ci_queue_rspec_gem if Gem::Version.new("3.1") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
 with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2") <= RUBY_VERSION
 with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_rails_gem(versions: 5..7)
