@@ -1,0 +1,13 @@
+issuer: https://token.actions.githubusercontent.com
+
+subject: repo:DataDog/datadog-ci-rb:environment:release
+
+claim_pattern:
+  event_name: push
+  environment: release
+  ref: refs/tags/*
+  repository: DataDog/datadog-ci-rb
+  job_workflow_ref: DataDog/datadog-ci-rb/\.github/workflows/publish\.yml@refs/tags/*
+
+permissions:
+  contents: write

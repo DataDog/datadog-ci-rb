@@ -6,20 +6,27 @@ on:
       - 'v*'
 
 jobs:
-  push:
+  release:
     runs-on: ubuntu-24.04
-
-    permissions:
-      contents: write
-      id-token: write
-
     environment: release
-
+    permissions:
+      # This controls whether the job can request an OIDC token from
+      # GitHub's identity provider (token.actions.githubusercontent.com).
+      id-token: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: DataDog/dd-octo-sts-action@acaa02eee7e3bb0839e4272dacb37b8f3b58ba80 # v1.0.3
+        id: octo-sts
+        with:
+          scope: DataDog/datadog-ci-rb
+          policy: self.publish
       - name: Set up Ruby
         uses: ruby/setup-ruby@3ff19f5e2baf30647122352b96108b1fbe250c64 # v1.299.0
         with:
-          bundler-cache: true
           ruby-version: '3.4'
+      - run: bundle install
       - uses: rubygems/release-gem@6317d8d1f7e28c24d28f6eff169ea854948bd9f7 # v1.2.0
+        with:
+          token: ${{ steps.octo-sts.outputs.token }}
