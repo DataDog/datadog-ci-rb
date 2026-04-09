@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 25f2155214927f5df16abcd85fd55e03ef45ab9a
+  revision: e191a14f8c39972e23f1b666c28e6e6cacecc989
   branch: master
   specs:
-    datadog (2.30.0)
+    datadog (2.31.0)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.2)
-      libdatadog (~> 28.0.2.1.0)
+      libdatadog (~> 29.0.0.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -22,13 +22,13 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.9)
+    addressable (2.9.0)
       public_suffix (>= 2.0.2, < 8.0)
     appraisal (2.5.0)
       bundler
       rake
       thor (>= 0.14.0)
-    bigdecimal (4.0.1)
+    bigdecimal (4.1.1)
     cgi (0.5.1)
     climate_control (1.2.0)
     crack (1.0.1)
@@ -43,8 +43,8 @@ GEM
     docile (1.4.1)
     drb (2.2.3)
     erb (6.0.2)
-    ffi (1.17.3-aarch64-linux-gnu)
-    ffi (1.17.3-x86_64-linux-gnu)
+    ffi (1.17.4-aarch64-linux-gnu)
+    ffi (1.17.4-x86_64-linux-gnu)
     hashdiff (1.2.1)
     io-console (0.8.2)
     irb (1.17.0)
@@ -52,8 +52,8 @@ GEM
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    libdatadog (28.0.2.1.0-aarch64-linux)
-    libdatadog (28.0.2.1.0-x86_64-linux)
+    libdatadog (29.0.0.1.0-aarch64-linux)
+    libdatadog (29.0.0.1.0-x86_64-linux)
     libddwaf (1.30.0.0.2-aarch64-linux)
       ffi (~> 1.0)
     libddwaf (1.30.0.0.2-x86_64-linux)
@@ -62,7 +62,7 @@ GEM
     msgpack (1.8.0)
     os (1.1.4)
     ostruct (0.6.3)
-    parallel (1.27.0)
+    parallel (2.0.0)
     parallel_tests (5.6.0)
       parallel
     pp (0.6.3)
@@ -109,11 +109,11 @@ GEM
     stringio (3.2.0)
     thor (1.5.0)
     tsort (0.2.0)
-    webmock (3.26.1)
+    webmock (3.26.2)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
-    yard (0.9.38)
+    yard (0.9.39)
 
 PLATFORMS
   aarch64-linux

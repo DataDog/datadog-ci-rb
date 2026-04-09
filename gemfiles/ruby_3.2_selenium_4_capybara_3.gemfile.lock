@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 25f2155214927f5df16abcd85fd55e03ef45ab9a
+  revision: e191a14f8c39972e23f1b666c28e6e6cacecc989
   branch: master
   specs:
-    datadog (2.30.0)
+    datadog (2.31.0)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.2)
-      libdatadog (~> 28.0.2.1.0)
+      libdatadog (~> 29.0.0.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -22,14 +22,14 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.9)
+    addressable (2.9.0)
       public_suffix (>= 2.0.2, < 8.0)
     appraisal (2.5.0)
       bundler
       rake
       thor (>= 0.14.0)
     base64 (0.3.0)
-    bigdecimal (4.0.1)
+    bigdecimal (4.1.1)
     builder (3.3.0)
     capybara (3.40.0)
       addressable
@@ -79,8 +79,8 @@ GEM
     docile (1.4.1)
     drb (2.2.3)
     erb (6.0.2)
-    ffi (1.17.3-aarch64-linux-gnu)
-    ffi (1.17.3-x86_64-linux-gnu)
+    ffi (1.17.4-aarch64-linux-gnu)
+    ffi (1.17.4-x86_64-linux-gnu)
     hashdiff (1.2.1)
     io-console (0.8.2)
     irb (1.17.0)
@@ -88,8 +88,8 @@ GEM
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    libdatadog (28.0.2.1.0-aarch64-linux)
-    libdatadog (28.0.2.1.0-x86_64-linux)
+    libdatadog (29.0.0.1.0-aarch64-linux)
+    libdatadog (29.0.0.1.0-x86_64-linux)
     libddwaf (1.30.0.0.2-aarch64-linux)
       ffi (~> 1.0)
     libddwaf (1.30.0.0.2-x86_64-linux)
@@ -100,9 +100,9 @@ GEM
     mini_mime (1.1.5)
     msgpack (1.8.0)
     multi_test (1.1.0)
-    nokogiri (1.19.1-aarch64-linux-gnu)
+    nokogiri (1.19.2-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.1-x86_64-linux-gnu)
+    nokogiri (1.19.2-x86_64-linux-gnu)
       racc (~> 1.4)
     os (1.1.4)
     ostruct (0.6.3)
@@ -115,7 +115,7 @@ GEM
       stringio
     public_suffix (7.0.5)
     racc (1.8.1)
-    rack (3.2.5)
+    rack (3.2.6)
     rack-test (2.2.0)
       rack (>= 1.3)
     rake (13.3.1)
@@ -125,7 +125,7 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
-    regexp_parser (2.11.3)
+    regexp_parser (2.12.0)
     reline (0.6.3)
       io-console (~> 0.5)
     rexml (3.4.4)
@@ -160,19 +160,19 @@ GEM
     simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
     stringio (3.2.0)
-    sys-uname (1.5.0)
+    sys-uname (1.5.1)
       ffi (~> 1.1)
       memoist3 (~> 1.0.0)
     thor (1.5.0)
     tsort (0.2.0)
-    webmock (3.26.1)
+    webmock (3.26.2)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
     websocket (1.2.11)
     xpath (3.2.0)
       nokogiri (~> 1.8)
-    yard (0.9.38)
+    yard (0.9.39)
 
 PLATFORMS
   aarch64-linux

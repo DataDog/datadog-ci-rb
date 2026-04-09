@@ -1,6 +1,8 @@
 require "minitest/queue/runner"
 require "fileutils"
 require "securerandom"
+require "json"
+require "cgi"
 
 RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
   include_context "CI mode activated" do
@@ -9,10 +11,15 @@ RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
   end
 
   let(:run_id) { SecureRandom.random_number(2**64 - 1) }
+  let(:fake_test_file_path) { File.expand_path("spec/datadog/ci/contrib/ci_queue_minitest/fake_test.rb") }
 
   before do
     Minitest::Runnable.reset
     FileUtils.mkdir("log")
+
+    queue_entries = %w[test_pass test_pass_other test_fail].map do |method|
+      CGI.escape(JSON.dump({test_id: "SomeTest##{method}", file_path: fake_test_file_path}))
+    end
 
     Minitest::Queue::Runner.invoke(
       [
@@ -22,7 +29,7 @@ RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
         "--worker",
         "1",
         "--queue",
-        "list:SomeTest%23test_pass:SomeTest%23test_pass_other:SomeTest%23test_fail",
+        "list:#{queue_entries.join(":")}",
         "run",
         "spec/datadog/ci/contrib/ci_queue_minitest/fake_test.rb"
       ]
