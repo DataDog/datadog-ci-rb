@@ -315,6 +315,24 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           expect(component.skipping_tests?).to be true
         end
       end
+
+      context "when skippable_tests.json file contains nil skippableTests" do
+        let(:skippable_tests_data) do
+          {
+            "correlationId" => "nil123",
+            "skippableTests" => nil
+          }
+        end
+
+        it "treats skippable tests as empty" do
+          expect { configure }.not_to raise_error
+
+          expect(component.correlation_id).to eq("nil123")
+          expect(component.skippable_tests).to be_empty
+          expect(component.enabled?).to be true
+          expect(component.skipping_tests?).to be true
+        end
+      end
     end
 
     context "when ITR is disabled locally" do
