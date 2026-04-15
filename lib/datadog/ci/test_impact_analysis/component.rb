@@ -381,7 +381,7 @@ module Datadog
         #   "data": [{"type": "test", "attributes": {"suite": "suite_name", "name": "test_name", "parameters": "{...}"}}]
         # }
         def transform_test_runner_data(skippable_tests_data)
-          skippable_tests = skippable_tests_data.fetch("skippableTests", {})
+          skippable_tests = skippable_tests_data.fetch("skippableTests", {}) || {}
 
           # Pre-calculate array size for better memory allocation
           total_test_configs = skippable_tests.sum do |_, tests_hash|
