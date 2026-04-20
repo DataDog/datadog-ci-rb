@@ -193,7 +193,7 @@ RSpec.describe "RSpec instrumentation" do
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
       expect(first_test_span).to have_test_tag(:source_start, "164")
-      expect(first_test_span).to have_test_tag(:source_end, "166") unless PlatformHelpers.jruby?
+      expect(first_test_span).to have_test_tag(:source_end, "166")
 
       expect(first_test_span).to have_test_tag(
         :codeowners,
@@ -688,9 +688,7 @@ RSpec.describe "RSpec instrumentation" do
           )
 
           expect(shared_test_span).to have_test_tag(:source_start, "3")
-          unless PlatformHelpers.jruby?
-            expect(shared_test_span).to have_test_tag(:source_end, "5")
-          end
+          expect(shared_test_span).to have_test_tag(:source_end, "5")
         end
 
         expect(test_spans).to all have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
@@ -758,8 +756,6 @@ RSpec.describe "RSpec instrumentation" do
   end
 
   context "with code coverage collected" do
-    before { skip if PlatformHelpers.jruby? }
-
     before do
       allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
     end
@@ -806,8 +802,6 @@ RSpec.describe "RSpec instrumentation" do
   end
 
   context "with context coverage from before(:context) hooks" do
-    before { skip if PlatformHelpers.jruby? }
-
     before do
       allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
     end
@@ -878,8 +872,6 @@ RSpec.describe "RSpec instrumentation" do
   end
 
   context "with nested sibling contexts and outer before(:context) hooks" do
-    before { skip if PlatformHelpers.jruby? }
-
     before do
       allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
     end
@@ -963,8 +955,6 @@ RSpec.describe "RSpec instrumentation" do
   end
 
   context "with nested contexts without tests and a test outside of contexts" do
-    before { skip if PlatformHelpers.jruby? }
-
     before do
       allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
     end
@@ -2305,9 +2295,6 @@ RSpec.describe "RSpec instrumentation" do
   end
 
   context "session with early flake detection and impacted tests detection enabled, but the test is not modified" do
-    # there is no end lines support for JRuby, so impacted tests detection works only on file level
-    before { skip if PlatformHelpers.jruby? }
-
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }
 

@@ -91,7 +91,7 @@ RSpec.describe "Minitest instrumentation" do
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
       expect(span).to have_test_tag(:source_start, "63")
-      expect(span).to have_test_tag(:source_end, "64") unless PlatformHelpers.jruby?
+      expect(span).to have_test_tag(:source_end, "64")
 
       expect(span).to have_test_tag(
         :codeowners,
@@ -529,8 +529,6 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "creates code coverage events" do
-          skip if PlatformHelpers.jruby?
-
           expect(coverage_events).to have(2).items
 
           expect_coverage_events_belong_to_session(test_session_span)
@@ -744,8 +742,6 @@ RSpec.describe "Minitest instrumentation" do
         end
 
         it "creates code coverage events" do
-          skip if PlatformHelpers.jruby?
-
           expect(coverage_events).to have(4).items
 
           expect_coverage_events_belong_to_session(test_session_span)
@@ -962,8 +958,6 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     it "does not cover the background thread" do
-      skip if PlatformHelpers.jruby?
-
       expect(test_spans).to have(1).item
       expect(coverage_events).to have(1).item
 
@@ -1845,7 +1839,7 @@ RSpec.describe "Minitest instrumentation" do
       end
       let(:changed_files) do
         Set.new([
-          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1860:1860"
+          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1854:1856"
         ])
       end
     end

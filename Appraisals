@@ -59,9 +59,6 @@ def self.with_cucumber_gem(versions:)
       if (4..6).cover?(v)
         gem "activesupport", "< 7.1"
       end
-      if v == 9 && RUBY_ENGINE.include?("jruby")
-        gem "bigdecimal", "< 3.1.8"
-      end
 
       # ruby 3.4 extracts more parts of stdlib into gems
       if Gem::Version.new("3.4") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby") && (4..6).cover?(v)
@@ -74,7 +71,7 @@ end
 
 def self.with_minitest_gem(versions: 5)
   Array(versions).each do |v|
-    next if v > 5 && (RUBY_ENGINE.include?("jruby") || Gem::Version.new("3.2") > RUBY_VERSION)
+    next if v > 5 && Gem::Version.new("3.2") > RUBY_VERSION
 
     appraise "minitest-#{v}" do
       gem "minitest", "~> #{v}"
@@ -117,9 +114,6 @@ def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context
           gem "minitest", "~> #{minitest_v}"
           gem "shoulda-context", "~> #{shoulda_context_v}"
           gem "shoulda-matchers", "~> #{shoulda_matchers_v}"
-          if RUBY_ENGINE.include?("jruby")
-            gem "bigdecimal", "< 3.1.8"
-          end
         end
       end
     end
@@ -130,9 +124,6 @@ def self.with_rails_gem(versions: 7)
   Array(versions).each do |rails_v|
     appraise "rails-#{rails_v}" do
       gem "rails", "~> #{rails_v}"
-      if RUBY_ENGINE.include?("jruby")
-        gem "bigdecimal", "< 3.1.8"
-      end
 
       # ruby 3.4 extracts more parts of stdlib into gems
       if Gem::Version.new("3.4") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby") && (4..6).cover?(rails_v)
@@ -244,19 +235,19 @@ major, minor, = RUBY_VERSION.segments
 with_minitest_gem(versions: 5..6)
 with_rspec_gem
 with_cucumber_gem(versions: 3..10)
-with_ci_queue_minitest_gem if Gem::Version.new("3.1") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
-with_ci_queue_rspec_gem if Gem::Version.new("3.1") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
+with_ci_queue_minitest_gem if Gem::Version.new("3.1") <= RUBY_VERSION
+with_ci_queue_rspec_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2") <= RUBY_VERSION
 with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_rails_gem(versions: 5..7)
-with_rails_gem(versions: 8) if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
+with_rails_gem(versions: 8) if Gem::Version.new("3.2") <= RUBY_VERSION
 with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..8)
 with_selenium_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_timecop_gem
 with_cuprite_gem if Gem::Version.new("3.1") <= RUBY_VERSION
-with_lograge_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
-with_semantic_logger_gem if Gem::Version.new("3.2") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby")
-with_rswag_gem if !RUBY_ENGINE.include?("jruby")
+with_lograge_gem if Gem::Version.new("3.2") <= RUBY_VERSION
+with_semantic_logger_gem if Gem::Version.new("3.2") <= RUBY_VERSION
+with_rswag_gem
 
 ruby_runtime = "#{RUBY_ENGINE}-#{major}.#{minor}"
 

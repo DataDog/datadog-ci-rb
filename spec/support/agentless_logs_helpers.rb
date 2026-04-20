@@ -20,7 +20,7 @@ module AgentlessLogsHelpers
   end
 
   def setup_agentless_logs_writer!
-    # DEV `*_any_instance_of` has concurrency issues when running with parallelism (e.g. JRuby).
+    # DEV `*_any_instance_of` has concurrency issues when tests run in parallel.
     # DEV Single object `allow` and `expect` work as intended with parallelism.
     allow(Datadog::CI::Logs::Component).to receive(:new).and_wrap_original do |method, **args, &block|
       instance = method.call(**args, &block)

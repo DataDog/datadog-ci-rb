@@ -85,18 +85,6 @@ services:
       - .:/app
       - bundle-4.0:/usr/local/bundle
   # ADD NEW RUBIES HERE
-  datadog-ci-jruby-9.4:
-    image: ghcr.io/datadog/images-rb/engines/jruby:9.4
-    working_dir: /app
-    command: /bin/bash
-    env_file: ./.env
-    environment:
-      BUNDLE_GEMFILE: /app/Gemfile-jruby-9.4
-    stdin_open: true
-    tty: true
-    volumes:
-      - .:/app
-      - bundle-jruby-9.4:/usr/local/bundle
 volumes:
   bundle-2.7:
   bundle-3.0:
@@ -104,5 +92,4 @@ volumes:
   bundle-3.2:
   bundle-3.3:
   bundle-3.4:
-  bundle-4.0:
-  bundle-jruby-9.4: # ADD NEW RUBIES HERE
+  bundle-4.0: # ADD NEW RUBIES HERE

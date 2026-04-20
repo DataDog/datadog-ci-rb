@@ -204,7 +204,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 - Do not use focused tests feature (fit, fdescribe)
 - New contrib folders should have a corresponding Rake task in `Rakefile`
 - New test tasks should be added to the test matrix in `TEST_METADATA`
-- CI runs tests against multiple Ruby versions (2.7, 3.0, 3.1, 3.2, 3.3, 3.4, jruby-9)
+- CI runs tests against multiple Ruby versions (2.7, 3.0, 3.1, 3.2, 3.3, 3.4)
 - Always add tests for your changes
 
 ## Memories

@@ -73,14 +73,6 @@ jobs:
       version: '2.7'
       alias: ruby-27
 
-  jruby-94:
-    name: 'JRuby 9.4'
-    uses: ./.github/workflows/_unit_test.yml
-    with:
-      engine: jruby
-      version: '9.4'
-      alias: jruby-94
-
   datadog-test-optimization:
     name: dd/test-optimization
     if: ${{ !cancelled() }}
@@ -103,7 +95,6 @@ jobs:
       - ruby-31
       - ruby-30
       - ruby-27
-      - jruby-94
     steps:
       - run: mkdir -p tmp/rspec && mkdir -p tmp/coverage && datadog-ci version
       - name: Download all junit reports
@@ -166,6 +157,5 @@ jobs:
       - ruby-31
       - ruby-30
       - ruby-27
-      - jruby-94
     steps:
       - run: echo "DONE!"

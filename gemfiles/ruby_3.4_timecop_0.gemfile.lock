@@ -45,6 +45,7 @@ GEM
     erb (6.0.3)
     ffi (1.17.4)
     ffi (1.17.4-aarch64-linux-gnu)
+    ffi (1.17.4-arm64-darwin)
     hashdiff (1.2.1)
     io-console (0.8.2)
     irb (1.17.0)
@@ -54,9 +55,12 @@ GEM
       reline (>= 0.4.2)
     libdatadog (30.0.0.1.0)
     libdatadog (30.0.0.1.0-aarch64-linux)
+    libdatadog (30.0.0.1.0-arm64-darwin)
     libddwaf (1.30.0.0.2)
       ffi (~> 1.0)
     libddwaf (1.30.0.0.2-aarch64-linux)
+      ffi (~> 1.0)
+    libddwaf (1.30.0.0.2-arm64-darwin)
       ffi (~> 1.0)
     logger (1.7.0)
     minitest (5.27.0)
@@ -116,6 +120,7 @@ GEM
 
 PLATFORMS
   aarch64-linux
+  arm64-darwin
   ruby
 
 DEPENDENCIES
@@ -138,4 +143,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.7.2
+   2.5.17
