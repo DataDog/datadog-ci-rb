@@ -136,6 +136,53 @@ RSpec.describe Datadog::CI::Configuration::Components do
             end
           end
 
+          context "when static dependencies tracking is enabled by default" do
+            let(:agentless_enabled) { true }
+            let(:api_key) { "api_key" }
+
+            it "passes the default value to test impact analysis" do
+              allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_call_original
+
+              fresh_components = if described_class >= Datadog::Core::Configuration::Components
+                Datadog::Core::Configuration::Components.new(settings)
+              else
+                components_class = Datadog::Core::Configuration::Components.dup
+                components_class.prepend(described_class)
+                components_class.new(settings)
+              end
+
+              expect(Datadog::CI::TestImpactAnalysis::Component).to have_received(:new).with(
+                hash_including(static_dependencies_tracking_enabled: true)
+              )
+
+              fresh_components.shutdown!
+            end
+
+            context "when the setting is explicitly disabled" do
+              before do
+                settings.ci.tia_static_dependencies_tracking_enabled = false
+              end
+
+              it "passes the configured value to test impact analysis" do
+                allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_call_original
+
+                fresh_components = if described_class >= Datadog::Core::Configuration::Components
+                  Datadog::Core::Configuration::Components.new(settings)
+                else
+                  components_class = Datadog::Core::Configuration::Components.dup
+                  components_class.prepend(described_class)
+                  components_class.new(settings)
+                end
+
+                expect(Datadog::CI::TestImpactAnalysis::Component).to have_received(:new).with(
+                  hash_including(static_dependencies_tracking_enabled: false)
+                )
+
+                fresh_components.shutdown!
+              end
+            end
+          end
+
           context "when #force_test_level_visibility" do
             let(:evp_proxy_v2_supported) { true }
 

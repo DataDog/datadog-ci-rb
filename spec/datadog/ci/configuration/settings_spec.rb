@@ -1057,7 +1057,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       describe "#tia_static_dependencies_tracking_enabled" do
         subject(:tia_static_dependencies_tracking_enabled) { settings.ci.tia_static_dependencies_tracking_enabled }
 
-        it { is_expected.to be false }
+        it { is_expected.to be true }
 
         context "when #{Datadog::CI::Ext::Settings::ENV_TIA_STATIC_DEPENDENCIES_TRACKING_ENABLED}" do
           around do |example|
@@ -1069,7 +1069,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
           context "is not defined" do
             let(:enable) { nil }
 
-            it { is_expected.to be false }
+            it { is_expected.to be true }
           end
 
           context "is set to true" do
@@ -1088,10 +1088,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
       describe "#tia_static_dependencies_tracking_enabled=" do
         it "updates the #tia_static_dependencies_tracking_enabled setting" do
-          expect { settings.ci.tia_static_dependencies_tracking_enabled = true }
+          expect { settings.ci.tia_static_dependencies_tracking_enabled = false }
             .to change { settings.ci.tia_static_dependencies_tracking_enabled }
-            .from(false)
-            .to(true)
+            .from(true)
+            .to(false)
         end
       end
 
