@@ -58,7 +58,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       it "configures the component" do
         expect(component.enabled?).to be true
         expect(component.skipping_tests?).to be false
-        expect(component.code_coverage?).to be(!PlatformHelpers.jruby?) # code coverage is not supported in JRuby
+        expect(component.code_coverage?).to be(true)
       end
 
       it "sets test session tags" do
@@ -381,10 +381,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     context "when code coverage is enabled" do
       let(:tests_skipping_enabled) { false }
 
-      before do
-        skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
-      end
-
       it "starts and stops coverage, returning raw coverage hash" do
         expect(component).to receive(:coverage_collector).twice.and_call_original
 
@@ -395,22 +391,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         # stop_coverage now returns raw coverage hash, not an event
         expect(coverage).to be_a(Hash)
         expect(coverage.size).to be > 0
-      end
-    end
-
-    context "when JRuby and code coverage is enabled" do
-      let(:tests_skipping_enabled) { false }
-
-      before do
-        skip("Skipped for CRuby") unless PlatformHelpers.jruby?
-      end
-
-      it "disables code coverage" do
-        expect(component).not_to receive(:coverage_collector)
-        expect(component.code_coverage?).to be(false)
-
-        component.start_coverage
-        expect(component.stop_coverage).to be_nil
       end
     end
   end
@@ -424,8 +404,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     subject { component.on_test_finished(test_span, context) }
 
     before do
-      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
-
       configure
 
       allow(test_span).to receive(:id).and_return(1)
@@ -474,6 +452,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
     context "when test is skipped and coverage is not collected" do
       before do
+        allow(component).to receive(:coverage_collector).and_return(nil)
         test_span.skipped!
       end
 
@@ -486,6 +465,10 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
 
     context "when coverage was not collected" do
+      before do
+        allow(component).to receive(:coverage_collector).and_return(nil)
+      end
+
       it "does not write coverage event" do
         expect(1 + 1).to eq(2)
 
@@ -502,7 +485,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       let(:tests_skipping_enabled) { false }
 
       before do
-        skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
         configure
       end
 
@@ -525,7 +507,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       let(:tests_skipping_enabled) { false }
 
       before do
-        skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
         single_threaded_component.configure(remote_configuration, test_session)
       end
 
@@ -551,7 +532,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:tests_skipping_enabled) { false }
 
     before do
-      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
       configure
     end
 
@@ -604,7 +584,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
 
     before do
-      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
       configure
 
       allow(test_span).to receive(:id).and_return(1)
@@ -719,7 +698,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:tests_skipping_enabled) { false }
 
     before do
-      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
       configure
     end
 
@@ -768,7 +746,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
 
     before do
-      skip("Code coverage is not supported in JRuby") if PlatformHelpers.jruby?
       configure
 
       allow(test_span).to receive(:id).and_return(1)

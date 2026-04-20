@@ -244,8 +244,6 @@ RSpec.describe "Cucumber instrumentation" do
     end
 
     context "collecting coverage with features dir as root" do
-      before { skip if PlatformHelpers.jruby? }
-
       it "creates coverage events for each non-skipped test ignoring bundle_path" do
         expect(coverage_events).to have(1).item
 

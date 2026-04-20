@@ -357,8 +357,6 @@ RSpec.describe "RSpec instrumentation with rswag" do
   end
 
   context "with code coverage collected" do
-    before { skip if PlatformHelpers.jruby? }
-
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }
       let(:integration_options) { {service_name: "rswag-test"} }

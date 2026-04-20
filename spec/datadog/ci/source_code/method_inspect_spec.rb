@@ -23,8 +23,6 @@ RSpec.describe Datadog::CI::SourceCode::MethodInspect do
     subject { described_class.last_line(target) }
 
     context "when LAST_LINE_AVAILABLE" do
-      before { skip if PlatformHelpers.jruby? }
-
       before do
         stub_const("Datadog::CI::SourceCode::MethodInspect::LAST_LINE_AVAILABLE", true)
       end

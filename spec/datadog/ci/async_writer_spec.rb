@@ -13,13 +13,7 @@ RSpec.describe Datadog::CI::AsyncWriter do
 
   after { writer.stop(true, 0) }
 
-  let(:buffer_klass) do
-    if PlatformHelpers.jruby?
-      Datadog::Core::Buffer::ThreadSafe
-    else
-      Datadog::Core::Buffer::CRuby
-    end
-  end
+  let(:buffer_klass) { Datadog::Core::Buffer::CRuby }
 
   it { expect(writer).to be_a_kind_of(Datadog::Core::Workers::Queue) }
   it { expect(writer).to be_a_kind_of(Datadog::Core::Workers::Polling) }
@@ -170,8 +164,6 @@ RSpec.describe Datadog::CI::AsyncWriter do
   end
 
   describe "#stop" do
-    before { skip if PlatformHelpers.jruby? }
-
     subject(:stop) { writer.stop }
 
     shared_context "shuts down the worker" do
