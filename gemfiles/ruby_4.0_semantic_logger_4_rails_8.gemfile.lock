@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: e191a14f8c39972e23f1b666c28e6e6cacecc989
+  revision: 6756760dd28bd29f3cdbb31655c95ee6e8662366
   branch: master
   specs:
     datadog (2.31.0)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.2)
-      libdatadog (~> 29.0.0.1.0)
+      libdatadog (~> 30.0.0.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -103,7 +103,7 @@ GEM
       rake
       thor (>= 0.14.0)
     base64 (0.3.0)
-    bigdecimal (4.1.1)
+    bigdecimal (4.1.2)
     builder (3.3.0)
     cgi (0.5.1)
     climate_control (1.2.0)
@@ -121,7 +121,7 @@ GEM
     diff-lcs (1.6.2)
     docile (1.4.1)
     drb (2.2.3)
-    erb (6.0.2)
+    erb (6.0.3)
     erubi (1.13.1)
     ffi (1.17.4)
     ffi (1.17.4-aarch64-linux-gnu)
@@ -136,9 +136,9 @@ GEM
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    json (2.19.3)
-    libdatadog (29.0.0.1.0)
-    libdatadog (29.0.0.1.0-aarch64-linux)
+    json (2.19.4)
+    libdatadog (30.0.0.1.0)
+    libdatadog (30.0.0.1.0-aarch64-linux)
     libddwaf (1.30.0.0.2)
       ffi (~> 1.0)
     libddwaf (1.30.0.0.2-aarch64-linux)
@@ -213,7 +213,7 @@ GEM
     rails-html-sanitizer (1.7.0)
       loofah (~> 2.25)
       nokogiri (>= 1.15.7, != 1.16.7, != 1.16.6, != 1.16.5, != 1.16.4, != 1.16.3, != 1.16.2, != 1.16.1, != 1.16.0.rc1, != 1.16.0)
-    rails_semantic_logger (4.19.0)
+    rails_semantic_logger (4.20.0)
       rack
       railties (>= 5.1)
       semantic_logger (~> 4.16)
@@ -226,7 +226,7 @@ GEM
       thor (~> 1.0, >= 1.2.2)
       tsort (>= 0.2)
       zeitwerk (~> 2.6)
-    rake (13.3.1)
+    rake (13.4.2)
     rake-compiler (1.3.1)
       rake
     rdoc (7.2.0)
@@ -254,7 +254,7 @@ GEM
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
     securerandom (0.4.1)
-    semantic_logger (4.17.0)
+    semantic_logger (4.18.0)
       concurrent-ruby (~> 1.0)
     simplecov (0.22.0)
       docile (~> 1.1)
@@ -278,7 +278,7 @@ GEM
       base64
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.5)
-    yard (0.9.39)
+    yard (0.9.43)
     zeitwerk (2.7.5)
 
 PLATFORMS
@@ -321,7 +321,7 @@ CHECKSUMS
   addressable (2.9.0) sha256=7fdf6ac3660f7f4e867a0838be3f6cf722ace541dd97767fa42bc6cfa980c7af
   appraisal (2.5.0) sha256=36989221be127913b0dba8d114da2001e6b2dceea7bd4951200eaba764eed3ce
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
-  bigdecimal (4.1.1) sha256=1c09efab961da45203c8316b0cdaec0ff391dfadb952dd459584b63ebf8054ca
+  bigdecimal (4.1.2) sha256=53d217666027eab4280346fba98e7d5b66baaae1b9c3c1c0ffe89d48188a3fbd
   builder (3.3.0) sha256=497918d2f9dca528fdca4b88d84e4ef4387256d984b8154e9d5d3fe5a9c8835f
   cgi (0.5.1) sha256=e93fcafc69b8a934fe1e6146121fa35430efa8b4a4047c4893764067036f18e9
   climate_control (1.2.0) sha256=36b21896193fa8c8536fa1cd843a07cf8ddbd03aaba43665e26c53ec1bd70aa5
@@ -337,7 +337,7 @@ CHECKSUMS
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   docile (1.4.1) sha256=96159be799bfa73cdb721b840e9802126e4e03dfc26863db73647204c727f21e
   drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
-  erb (6.0.2) sha256=9fe6264d44f79422c87490a1558479bd0e7dad4dd0e317656e67ea3077b5242b
+  erb (6.0.3) sha256=e43685a8a0a0ea6a924871b2162e8953ef73147ce46b75b36d1f6774fd286e91
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9
   ffi (1.17.4) sha256=bcd1642e06f0d16fc9e09ac6d49c3a7298b9789bcb58127302f934e437d60acf
   ffi (1.17.4-aarch64-linux-gnu) sha256=b208f06f91ffd8f5e1193da3cae3d2ccfc27fc36fba577baf698d26d91c080df
@@ -346,9 +346,9 @@ CHECKSUMS
   i18n (1.14.8) sha256=285778639134865c5e0f6269e0b818256017e8cde89993fdfcbfb64d088824a5
   io-console (0.8.2) sha256=d6e3ae7a7cc7574f4b8893b4fca2162e57a825b223a177b7afa236c5ef9814cc
   irb (1.17.0) sha256=168c4ddb93d8a361a045c41d92b2952c7a118fa73f23fe14e55609eb7a863aae
-  json (2.19.3) sha256=289b0bb53052a1fa8c34ab33cc750b659ba14a5c45f3fcf4b18762dc67c78646
-  libdatadog (29.0.0.1.0) sha256=389ff9027297dd36e1a2ec758a41de729a142bc279086f750c64a99057e0cdcc
-  libdatadog (29.0.0.1.0-aarch64-linux) sha256=e3416554a2db2dfb8ab8d7e7c5afcbf8e584a4716775225e79c4693e72b926ca
+  json (2.19.4) sha256=670a7d333fb3b18ca5b29cb255eb7bef099e40d88c02c80bd42a3f30fe5239ac
+  libdatadog (30.0.0.1.0) sha256=ab5dc07eca96815ab1f7271da943960ef9f7adab1aa1af1c69364afb22c8c176
+  libdatadog (30.0.0.1.0-aarch64-linux) sha256=d446f79fb4471d94e5ba12ec7d94b66becf83e2f53e433fc33ab384bc29b0623
   libddwaf (1.30.0.0.2) sha256=f6dd8d70f1925acce795ad0e974b12cb532c958056ac14e497f13d8c1af143d2
   libddwaf (1.30.0.0.2-aarch64-linux) sha256=f4d8498cce66cb30d81f46bb046b11c3a2202e21ca73c9edb80c3a37939a3dc2
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
@@ -381,9 +381,9 @@ CHECKSUMS
   rails (8.1.3) sha256=6d017ba5348c98fc909753a8169b21d44de14d2a0b92d140d1a966834c3c9cd3
   rails-dom-testing (2.3.0) sha256=8acc7953a7b911ca44588bf08737bc16719f431a1cc3091a292bca7317925c1d
   rails-html-sanitizer (1.7.0) sha256=28b145cceaf9cc214a9874feaa183c3acba036c9592b19886e0e45efc62b1e89
-  rails_semantic_logger (4.19.0) sha256=e75e562c68a32abb6a8615940afd7d40c082cff786b8d7b50ff1f7462eff3c16
+  rails_semantic_logger (4.20.0) sha256=140831362a263607b193a4f6641ccc3da6f7315649a5678318e0150f1d59d9df
   railties (8.1.3) sha256=913eb0e0cb520aac687ffd74916bd726d48fa21f47833c6292576ef6a286de22
-  rake (13.3.1) sha256=8c9e89d09f66a26a01264e7e3480ec0607f0c497a861ef16063604b1b08eb19c
+  rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
   rake-compiler (1.3.1) sha256=6b351612b6e2d73ddd5563ee799bb58685176e05363db6758504bd11573d670a
   rdoc (7.2.0) sha256=8650f76cd4009c3b54955eb5d7e3a075c60a57276766ebf36f9085e8c9f23192
   reline (0.6.3) sha256=1198b04973565b36ec0f11542ab3f5cfeeec34823f4e54cebde90968092b1835
@@ -396,7 +396,7 @@ CHECKSUMS
   rspec-support (3.13.7) sha256=0640e5570872aafefd79867901deeeeb40b0c9875a36b983d85f54fb7381c47c
   rspec_junit_formatter (0.6.0) sha256=40dde674e6ae4e6cc0ff560da25497677e34fefd2338cc467a8972f602b62b15
   securerandom (0.4.1) sha256=cc5193d414a4341b6e225f0cb4446aceca8e50d5e1888743fac16987638ea0b1
-  semantic_logger (4.17.0) sha256=c54b60d8596abe2e22bd4f20648d4f6c46e4287fba357779c7932335c8d130e9
+  semantic_logger (4.18.0) sha256=b00e4480b63d844628ce383e80d564626fe2fdb525ecf378dbc4df7828dead8b
   simplecov (0.22.0) sha256=fe2622c7834ff23b98066bb0a854284b2729a569ac659f82621fc22ef36213a5
   simplecov-html (0.13.2) sha256=bd0b8e54e7c2d7685927e8d6286466359b6f16b18cb0df47b508e8d73c777246
   simplecov_json_formatter (0.1.4) sha256=529418fbe8de1713ac2b2d612aa3daa56d316975d307244399fa4838c601b428
@@ -410,7 +410,7 @@ CHECKSUMS
   webmock (3.26.2) sha256=774556f2ea6371846cca68c01769b2eac0d134492d21f6d0ab5dd643965a4c90
   websocket-driver (0.8.0) sha256=ed0dba4b943c22f17f9a734817e808bc84cdce6a7e22045f5315aa57676d4962
   websocket-extensions (0.1.5) sha256=1c6ba63092cda343eb53fc657110c71c754c56484aad42578495227d717a8241
-  yard (0.9.39) sha256=0bbbcd87ffd132824c3f89bbd39deef1ffb3877259090849bd49e48daeaf7b56
+  yard (0.9.43) sha256=cf8733a8f0485df2a162927e9b5f182215a61f6d22de096b8f402c726a1c5821
   zeitwerk (2.7.5) sha256=d8da92128c09ea6ec62c949011b00ed4a20242b255293dd66bf41545398f73dd
 
 BUNDLED WITH
