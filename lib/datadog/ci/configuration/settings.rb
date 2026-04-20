@@ -183,7 +183,7 @@ module Datadog
               option :tia_static_dependencies_tracking_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_TIA_STATIC_DEPENDENCIES_TRACKING_ENABLED
-                o.default false
+                o.default true
               end
 
               option :code_coverage_report_upload_enabled do |o|
