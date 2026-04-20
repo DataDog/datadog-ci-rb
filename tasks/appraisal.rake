@@ -107,8 +107,6 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
   desc "Add all platforms to Appraisal gemfiles. Takes a version list as argument, defaults to all"
   task :platform do |_task, args|
     ruby_versions(args.to_a).each do |ruby_version|
-      next if ruby_version.start_with?("jruby-")
-
       cmd = []
       cmd << ["gem", "install", "bundler", "-v", bundler_version(ruby_version)] if bundler_version(ruby_version)
       cmd << [*bundle(ruby_version), "config", "without", "check"]
@@ -141,8 +139,7 @@ RUBY_VERSIONS = [
   "3.2",
   "3.3",
   "3.4",
-  "4.0", # ADD NEW RUBIES HERE
-  "jruby-9.4"
+  "4.0" # ADD NEW RUBIES HERE
 ].freeze
 
 FORCE_BUNDLER_VERSION = {
@@ -152,5 +149,5 @@ FORCE_BUNDLER_VERSION = {
   "3.2" => "2.3.26",
   "3.3" => "2.4.19",
   "3.4" => "2.5.17",
-  "4.0" => "4.0.0", # ADD NEW RUBIES HERE
+  "4.0" => "4.0.0" # ADD NEW RUBIES HERE
 }.freeze

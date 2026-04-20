@@ -17,9 +17,6 @@ namespace :coverage do
     require "simplecov"
 
     versions = Dir["#{ENV.fetch("COVERAGE_DIR", "coverage")}/versions/*"]
-      # do not include jruby coverage for now
-      # see https://github.com/simplecov-ruby/simplecov/pull/972
-      .filter { |version| !version.include?("jruby") }
       .map { |f| File.basename(f) }
 
     versions.map do |version|

@@ -3,9 +3,6 @@
 require_relative "../../../../lib/datadog/ci/git/packfiles"
 
 RSpec.describe ::Datadog::CI::Git::Packfiles do
-  # skip for jruby for now - old git version DD docker image
-  before { skip if PlatformHelpers.jruby? }
-
   let(:commits) { Datadog::CI::Git::LocalRepository.git_commits }
   let(:included_commits) { commits[0..1] || [] }
   let(:excluded_commits) { commits[2..] || [] }

@@ -1,5 +1,5 @@
-require 'json'
-require_relative 'appraisal_conversion'
+require "json"
+require_relative "appraisal_conversion"
 
 namespace :github do
   task :generate_matrix do
@@ -9,14 +9,14 @@ namespace :github do
     array = []
     matrix.each do |key, spec_metadata|
       spec_metadata.each do |group, rubies|
-        matched = if RUBY_PLATFORM == 'java'
-          rubies.include?("✅ #{ruby_version}") && rubies.include?('✅ jruby')
-        else
-          rubies.include?("✅ #{ruby_version}")
-        end
+        matched = rubies.include?("✅ #{ruby_version}")
 
         if matched
-          gemfile = AppraisalConversion.to_bundle_gemfile(group) rescue "Gemfile"
+          gemfile = begin
+            AppraisalConversion.to_bundle_gemfile(group)
+          rescue
+            "Gemfile"
+          end
 
           array << {
             group: group,

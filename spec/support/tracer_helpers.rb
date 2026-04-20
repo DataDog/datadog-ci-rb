@@ -227,7 +227,7 @@ module TracerHelpers
   RSpec.configure do |config|
     # Capture spans from the global tracer
     config.before do
-      # DEV `*_any_instance_of` has concurrency issues when running with parallelism (e.g. JRuby).
+      # DEV `*_any_instance_of` has concurrency issues when tests run in parallel.
       # DEV Single object `allow` and `expect` work as intended with parallelism.
       allow(Datadog::Tracing::Tracer).to receive(:new).and_wrap_original do |method, **args, &block|
         instance = method.call(**args, &block)

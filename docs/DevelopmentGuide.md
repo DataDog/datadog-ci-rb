@@ -70,10 +70,10 @@ All tests should run in CI. When adding new `_spec.rb` files, you may need to ad
 TEST_METADATA = {
   "foo" => {
     # Without any appraisal group dependencies
-    "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+    "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3",
 
     # or with appraisal group definition `bar`
-    "bar" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ jruby",
+    "bar" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3",
   }
 }
 ```

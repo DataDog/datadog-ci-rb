@@ -11,10 +11,6 @@ module PlatformHelpers
     RUBY_ENGINE == "ruby"
   end
 
-  def jruby?
-    RUBY_ENGINE == "jruby"
-  end
-
   def truffleruby?
     RUBY_ENGINE == "truffleruby"
   end
