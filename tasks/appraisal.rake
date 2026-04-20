@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+APPRAISAL_PLATFORMS = %w[x86_64-linux aarch64-linux x86_64-darwin arm64-darwin].freeze
+
 namespace :appraisal do # rubocop:disable Metrics/BlockLength
   def ruby_versions(versions)
     return RUBY_VERSIONS if versions.empty?
@@ -113,14 +115,12 @@ namespace :appraisal do # rubocop:disable Metrics/BlockLength
       p lockfile_prefix(ruby_version)
       Dir["gemfiles/#{lockfile_prefix(ruby_version)}_*.gemfile.lock"].each do |lockfile|
         gemfile = lockfile.gsub(/\.lock$/, "")
-        cmd << ["env", "BUNDLE_GEMFILE=#{gemfile}",
-          *bundle(ruby_version), "lock",
-          "--lockfile", lockfile,
-          "--add-platform", "x86_64-linux"]
-        cmd << ["env", "BUNDLE_GEMFILE=#{gemfile}",
-          *bundle(ruby_version), "lock",
-          "--lockfile", lockfile,
-          "--add-platform", "aarch64-linux"]
+        APPRAISAL_PLATFORMS.each do |platform|
+          cmd << ["env", "BUNDLE_GEMFILE=#{gemfile}",
+            *bundle(ruby_version), "lock",
+            "--lockfile", lockfile,
+            "--add-platform", platform]
+        end
       end
 
       cmd = cmd.map { |c| c << "&&" }.flatten.tap(&:pop)
