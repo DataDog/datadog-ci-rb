@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 9a64076d628ff7be8f38487d5268c119b3312599
+  revision: aed0a7637e3428dbfeb3e50c37af808f13142a5c
   branch: master
   specs:
     datadog (2.32.0)
@@ -100,9 +100,9 @@ GEM
     mini_mime (1.1.5)
     msgpack (1.8.0)
     multi_test (1.1.0)
-    nokogiri (1.19.2-aarch64-linux-gnu)
+    nokogiri (1.19.3-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.2-x86_64-linux-gnu)
+    nokogiri (1.19.3-x86_64-linux-gnu)
       racc (~> 1.4)
     os (1.1.4)
     ostruct (0.6.3)
