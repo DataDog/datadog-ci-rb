@@ -830,6 +830,51 @@ RSpec.describe "Cucumber instrumentation" do
     end
   end
 
+  context "executing failing test scenario that is both quarantined and attempt_to_fix" do
+    let(:feature_file_to_run) { "failing.feature" }
+    let(:expected_test_run_code) { 2 }
+
+    let(:enable_test_management) { true }
+    let(:test_properties_hash) do
+      {
+        "Datadog integration - test failing features at spec/datadog/ci/contrib/cucumber/features/failing.feature.cucumber failing scenario." => {
+          "quarantined" => true,
+          "disabled" => false,
+          "attempt_to_fix" => true
+        }
+      }
+    end
+
+    it "runs the test instead of skipping it and fails the session because the fix did not work" do
+      # 1 original execution (failed, no retries because the fix did not work)
+      expect(test_spans).to have(1).items
+
+      attempt_to_fix_test_span = test_spans.first
+      expect(attempt_to_fix_test_span).to have_fail_status
+      expect(attempt_to_fix_test_span).to have_test_tag(:is_attempt_to_fix)
+      expect(attempt_to_fix_test_span).to have_test_tag(:is_quarantined)
+
+      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
+      expect(retries_count).to eq(0)
+
+      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
+      expect(failed_all_retries_count).to eq(1)
+
+      fix_failed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") == "false" }
+      expect(fix_failed_tests_count).to eq(1)
+
+      # attempt_to_fix takes precedence over quarantine
+      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
+      expect(final_status_fail_tests).to eq(1)
+
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first).to have_fail_status
+
+      expect(test_session_span).to have_fail_status
+      expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+  end
+
   context "executing a feature with Datadog's early flake detection and impacted tests detection enabled" do
     let(:feature_file_to_run) { "passing.feature" }
     let(:enable_retries_new) { true }
