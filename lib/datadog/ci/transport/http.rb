@@ -40,12 +40,25 @@ module Datadog
           SocketError        # DNS/network issues
         ].freeze
 
+        # HTTP status codes that indicate the request was rejected due to
+        # authentication/authorization problems (most commonly an invalid or
+        # missing Datadog API key).
+        AUTHENTICATION_ERROR_CODES = [401, 403].freeze
+
+        # Marker we look for inside the response payload to confirm that the
+        # rejection is caused by the Datadog API key rather than by some other
+        # permission issue. Examples of payloads we want to match:
+        #   {"errors":[{"status":"403","title":"Forbidden","detail":"API key is missing"}]}
+        #   {"errors":[{"status":"403","title":"Forbidden","detail":"API key is invalid"}]}
+        API_KEY_ERROR_PAYLOAD_MARKER = "API key"
+
         def initialize(host:, port:, timeout: DEFAULT_TIMEOUT, ssl: true, compress: false)
           @host = host
           @port = port
           @timeout = timeout
           @ssl = ssl.nil? || ssl
           @compress = compress.nil? ? false : compress
+          @api_key_error_logged = false
         end
 
         def request(
@@ -88,10 +101,38 @@ module Datadog
           response.request_size = payload.bytesize
           response.duration_ms = duration_ms
 
+          log_api_key_error(response, headers)
+
           response
         end
 
         private
+
+        def log_api_key_error(response, headers)
+          return if @api_key_error_logged
+          return unless AUTHENTICATION_ERROR_CODES.include?(response.code)
+          return unless response.payload.to_s.include?(API_KEY_ERROR_PAYLOAD_MARKER)
+
+          @api_key_error_logged = true
+
+          api_key = headers[Ext::Transport::HEADER_DD_API_KEY]
+          if api_key.nil? || api_key.strip.empty?
+            Datadog.logger.error do
+              "DATADOG CONFIGURATION - TEST OPTIMIZATION - ATTENTION - " \
+              "Datadog API rejected the request because DD_API_KEY is not set. " \
+              "Please set DD_API_KEY environment variable to a valid Datadog API key. " \
+              "Server response: #{response.payload}"
+            end
+          else
+            Datadog.logger.error do
+              "DATADOG CONFIGURATION - TEST OPTIMIZATION - ATTENTION - " \
+              "Datadog API rejected the request because the configured DD_API_KEY is invalid. " \
+              "Please verify that DD_API_KEY environment variable is set to a valid Datadog API key " \
+              "for the configured DD_SITE. " \
+              "Server response: #{response.payload}"
+            end
+          end
+        end
 
         def perform_http_call(path:, payload:, headers:, verb:, retries: MAX_RETRIES, backoff: INITIAL_BACKOFF, retry_start_time: Core::Utils::Time.get_time)
           response = nil
