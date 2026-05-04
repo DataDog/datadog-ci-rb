@@ -1624,9 +1624,11 @@ RSpec.describe "Minitest instrumentation" do
       expect(fix_failed_tests_count).to eq(1)
 
       expect(test_suite_spans).to have(1).item
-      expect(test_suite_spans.first).to have_pass_status
+      # suite should fail because attempt_to_fix takes precedence over quarantine
+      expect(test_suite_spans.first).to have_fail_status
 
-      expect(test_session_span).to have_pass_status
+      # session should fail because attempt_to_fix takes precedence over quarantine
+      expect(test_session_span).to have_fail_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
     end
   end

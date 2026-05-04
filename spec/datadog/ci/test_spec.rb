@@ -529,6 +529,9 @@ RSpec.describe Datadog::CI::Test do
     context "when quarantined" do
       before do
         allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(false)
+        )
+        allow(ci_test).to(
           receive(:quarantined?).and_return(true)
         )
       end
@@ -538,6 +541,9 @@ RSpec.describe Datadog::CI::Test do
 
     context "when disabled" do
       before do
+        allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(false)
+        )
         allow(ci_test).to(
           receive(:quarantined?).and_return(false)
         )
@@ -590,15 +596,21 @@ RSpec.describe Datadog::CI::Test do
     context "when attempt_to_fix but also quarantined" do
       before do
         allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(true)
+        )
+        allow(ci_test).to(
           receive(:quarantined?).and_return(true)
         )
       end
 
-      it { is_expected.to be true }
+      it { is_expected.to be false }
     end
 
     context "when attempt_to_fix but also disabled" do
       before do
+        allow(ci_test).to(
+          receive(:attempt_to_fix?).and_return(true)
+        )
         allow(ci_test).to(
           receive(:quarantined?).and_return(false)
         )
@@ -607,7 +619,7 @@ RSpec.describe Datadog::CI::Test do
         )
       end
 
-      it { is_expected.to be true }
+      it { is_expected.to be false }
     end
 
     context "when neither is true" do
@@ -729,12 +741,13 @@ RSpec.describe Datadog::CI::Test do
         context "but test is also quarantined" do
           before do
             allow(ci_test).to receive(:quarantined?).and_return(true)
+            allow(ci_test).to receive(:all_executions_passed?).and_return(false)
           end
 
-          it "persists final status as pass (quarantined takes precedence)" do
+          it "persists final status as fail (attempt_to_fix takes precedence)" do
             expect(tracer_span).to receive(:set_tag).with(
               Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
-              Datadog::CI::Ext::Test::Status::PASS
+              Datadog::CI::Ext::Test::Status::FAIL
             )
 
             record_final_status
@@ -744,12 +757,13 @@ RSpec.describe Datadog::CI::Test do
         context "but test is also disabled" do
           before do
             allow(ci_test).to receive(:disabled?).and_return(true)
+            allow(ci_test).to receive(:all_executions_passed?).and_return(false)
           end
 
-          it "persists final status as pass (disabled takes precedence)" do
+          it "persists final status as fail (attempt_to_fix takes precedence)" do
             expect(tracer_span).to receive(:set_tag).with(
               Datadog::CI::Ext::Test::TAG_FINAL_STATUS,
-              Datadog::CI::Ext::Test::Status::PASS
+              Datadog::CI::Ext::Test::Status::FAIL
             )
 
             record_final_status
