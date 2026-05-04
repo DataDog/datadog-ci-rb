@@ -5,9 +5,9 @@ subject: repo:DataDog/datadog-ci-rb:environment:release
 claim_pattern:
   event_name: push
   environment: release
-  ref: refs/tags/*
+  ref: refs/tags/v[0-9]+\.[0-9]+\.[0-9]+
   repository: DataDog/datadog-ci-rb
-  job_workflow_ref: DataDog/datadog-ci-rb/\.github/workflows/publish\.yml@refs/tags/*
+  job_workflow_ref: DataDog/datadog-ci-rb/\.github/workflows/publish\.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+
 
 permissions:
   contents: write
