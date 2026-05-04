@@ -1,5 +1,26 @@
 ## [Unreleased]
 
+## [1.29.0] - 2026-05-04
+
+### Added
+
+* Add _dd.ci.library_configuration_error.* tags on backend errors ([#501][])
+* Add cucumber 11 ([#499][])
+
+### Changed
+
+* Make attempt_to_fix take precedence over quarantine and disabled ([#498][])
+* Log error when Datadog API rejects request due to API key ([#500][])
+* Enable static dependency tracking by default ([#493][])
+
+### Fixed
+
+* Handle nil DDTest skippable tests data ([#491][])
+
+### Removed
+
+* Remove JRuby from the CI matrix ([#494][])
+
 ## [1.28.0] - 2026-02-16
 
 ### Added
@@ -608,7 +629,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.28.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.29.0...main
+[1.29.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.28.0...v1.29.0
 [1.28.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.27.0...v1.28.0
 [1.27.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.26.0...v1.27.0
 [1.26.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.25.0...v1.26.0
@@ -863,3 +885,10 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#464]: https://github.com/DataDog/datadog-ci-rb/issues/464
 [#468]: https://github.com/DataDog/datadog-ci-rb/issues/468
 [#473]: https://github.com/DataDog/datadog-ci-rb/issues/473
+[#491]: https://github.com/DataDog/datadog-ci-rb/issues/491
+[#493]: https://github.com/DataDog/datadog-ci-rb/issues/493
+[#494]: https://github.com/DataDog/datadog-ci-rb/issues/494
+[#498]: https://github.com/DataDog/datadog-ci-rb/issues/498
+[#499]: https://github.com/DataDog/datadog-ci-rb/issues/499
+[#500]: https://github.com/DataDog/datadog-ci-rb/issues/500
+[#501]: https://github.com/DataDog/datadog-ci-rb/issues/501
