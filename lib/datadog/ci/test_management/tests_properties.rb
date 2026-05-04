@@ -3,6 +3,7 @@
 require "json"
 
 require_relative "../ext/telemetry"
+require_relative "../ext/test"
 require_relative "../ext/transport"
 require_relative "../transport/telemetry"
 require_relative "../utils/parsing"
@@ -112,6 +113,10 @@ module Datadog
               error_type: http_response.telemetry_error_type,
               status_code: http_response.code
             )
+
+            # mark the test session so that all events emitted in this session are tagged
+            # with the hidden _dd.ci.library_configuration_error.test_management_tests tag
+            test_session.set_tag(Ext::Test::LibraryConfigurationError::TAG_TEST_MANAGEMENT_TESTS, "true")
           end
 
           Response.from_http_response(http_response).tests

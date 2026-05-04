@@ -93,6 +93,17 @@ module Datadog
         TAG_HAS_FAILED_ALL_RETRIES = "test.has_failed_all_retries" # true if test was retried and none of the retries passed
         TAG_ATTEMPT_TO_FIX_PASSED = "test.test_management.attempt_to_fix_passed" # true if test was marked as "attempted to fix" and all of the retries passed
 
+        # Hidden tags used to indicate that a communication error occurred with the backend
+        # during one of the library configuration requests. They are propagated to every CI event
+        # (test session, test module, test suite, test) so that the backend can detect when
+        # data may be incomplete because the library could not load configuration.
+        module LibraryConfigurationError
+          TAG_SETTINGS = "_dd.ci.library_configuration_error.settings"
+          TAG_SKIPPABLE_TESTS = "_dd.ci.library_configuration_error.skippable_tests"
+          TAG_KNOWN_TESTS = "_dd.ci.library_configuration_error.known_tests"
+          TAG_TEST_MANAGEMENT_TESTS = "_dd.ci.library_configuration_error.test_management_tests"
+        end
+
         # a set of tag indicating which capabilities (features) are supported by the library
         module LibraryCapabilities
           TAG_TEST_IMPACT_ANALYSIS = "_dd.library_capabilities.test_impact_analysis"
@@ -140,7 +151,14 @@ module Datadog
         METRIC_CPU_COUNT = "_dd.host.vcpu_count"
 
         # tags that are common for the whole session and can be inherited from the test session
-        INHERITABLE_TAGS = [TAG_FRAMEWORK, TAG_FRAMEWORK_VERSION].freeze
+        INHERITABLE_TAGS = [
+          TAG_FRAMEWORK,
+          TAG_FRAMEWORK_VERSION,
+          LibraryConfigurationError::TAG_SETTINGS,
+          LibraryConfigurationError::TAG_SKIPPABLE_TESTS,
+          LibraryConfigurationError::TAG_KNOWN_TESTS,
+          LibraryConfigurationError::TAG_TEST_MANAGEMENT_TESTS
+        ].freeze
 
         # could be either "test" or "suite" depending on whether we skip individual tests or whole suites
         ITR_TEST_SKIPPING_MODE = "test" # we always skip tests (not suites) in Ruby

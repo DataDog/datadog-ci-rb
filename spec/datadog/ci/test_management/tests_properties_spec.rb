@@ -171,6 +171,13 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
             })
           end
 
+          it "does not tag the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_TEST_MANAGEMENT_TESTS))
+              .to be_nil
+          end
+
           it_behaves_like "emits telemetry metric", :inc, "test_management_tests.request", 1
           it_behaves_like "emits telemetry metric", :distribution, "test_management_tests.request_ms"
           it_behaves_like "emits telemetry metric", :distribution, "test_management_tests.response_bytes"
@@ -193,6 +200,13 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
 
           it "parses the response" do
             expect(response).to be_empty
+          end
+
+          it "tags the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_TEST_MANAGEMENT_TESTS))
+              .to eq("true")
           end
 
           it_behaves_like "emits telemetry metric", :inc, "test_management_tests.request_errors", 1

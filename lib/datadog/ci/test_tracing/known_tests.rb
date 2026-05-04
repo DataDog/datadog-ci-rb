@@ -103,6 +103,10 @@ module Datadog
             response = fetch_page(api, test_session, page_state: page_state)
 
             unless response.ok?
+              # mark the test session so that all events emitted in this session are tagged
+              # with the hidden _dd.ci.library_configuration_error.known_tests tag
+              test_session.set_tag(Ext::Test::LibraryConfigurationError::TAG_KNOWN_TESTS, "true")
+
               Datadog.logger.debug(
                 "Failed to fetch known tests page ##{page_number}, bailing out of known tests fetch. " \
                 "Early flake detection will not work."

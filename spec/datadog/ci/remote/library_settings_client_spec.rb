@@ -139,6 +139,13 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
 
       context "parsing response" do
         context "when response is OK" do
+          it "does not tag the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_SETTINGS))
+              .to be_nil
+          end
+
           it "parses the response" do
             expect(response.ok?).to be true
             expect(response.payload).to eq(attributes)
@@ -221,6 +228,13 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
             expect(response.ok?).to be false
             expect(response.payload).to eq("itr_enabled" => false)
             expect(response.require_git?).to be false
+          end
+
+          it "tags the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_SETTINGS))
+              .to eq("true")
           end
 
           it_behaves_like "emits telemetry metric", :inc, "git_requests.settings_errors", 1

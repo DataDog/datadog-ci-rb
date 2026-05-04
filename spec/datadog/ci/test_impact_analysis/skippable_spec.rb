@@ -109,6 +109,13 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             expect(response.error_message).to be_nil
           end
 
+          it "does not tag the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_SKIPPABLE_TESTS))
+              .to be_nil
+          end
+
           it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.request", 1
           it_behaves_like "emits telemetry metric", :distribution, "itr_skippable_tests.request_ms"
           it_behaves_like "emits telemetry metric", :distribution, "itr_skippable_tests.response_bytes"
@@ -134,6 +141,13 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             expect(response.correlation_id).to be_nil
             expect(response.tests).to be_empty
             expect(response.error_message).to eq("Status code: 422, response: not authorized")
+          end
+
+          it "tags the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_SKIPPABLE_TESTS))
+              .to eq("true")
           end
 
           it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.request_errors", 1
