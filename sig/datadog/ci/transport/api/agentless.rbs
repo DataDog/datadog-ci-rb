@@ -11,6 +11,10 @@ module Datadog
           @citestcov_http: Datadog::CI::Transport::HTTP
           @logs_intake_http: Datadog::CI::Transport::HTTP
           @cicovreprt_http: Datadog::CI::Transport::HTTP
+          @api_key_error_logged: bool
+
+          AUTHENTICATION_ERROR_CODES: Array[Integer?]
+          API_KEY_ERROR_PAYLOAD_MARKER: String
 
           def initialize: (api_key: String, citestcycle_url: String, api_url: String, citestcov_url: String, logs_intake_url: String, cicovreprt_url: String) -> void
 
@@ -29,6 +33,8 @@ module Datadog
           private
 
           def perform_request: (Datadog::CI::Transport::HTTP client, path: String, payload: String, headers: Hash[String, String], verb: ::String, ?accept_compressed_response: bool) -> Datadog::CI::Transport::Adapters::Net::Response
+
+          def log_api_key_error: (Datadog::CI::Transport::Adapters::Net::Response response) -> void
 
           def build_http_client: (String url, compress: bool) -> Datadog::CI::Transport::HTTP
 

@@ -3,7 +3,6 @@ module Datadog
     module Transport
       class HTTP
         @adapter: Datadog::CI::Transport::Adapters::Net
-        @api_key_error_logged: bool
 
         attr_reader host: String
         attr_reader port: Integer
@@ -19,16 +18,12 @@ module Datadog
 
         NON_RETRIABLE_ERRORS: Array[singleton(StandardError)]
         RETRIABLE_ERRORS: Array[singleton(StandardError)]
-        AUTHENTICATION_ERROR_CODES: Array[Integer?]
-        API_KEY_ERROR_PAYLOAD_MARKER: String
 
         def initialize: (host: String, port: Integer, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
 
         def request: (?verb: String, payload: String, headers: Hash[String, String], path: String, ?retries: Integer, ?backoff: Integer, ?accept_compressed_response: bool) -> Datadog::CI::Transport::Adapters::Net::Response
 
         private
-
-        def log_api_key_error: (Datadog::CI::Transport::Adapters::Net::Response response, Hash[String, String] headers) -> void
 
         def adapter: () -> Datadog::CI::Transport::Adapters::Net
 
