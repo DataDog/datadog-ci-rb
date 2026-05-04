@@ -122,6 +122,13 @@ module Datadog
 
         TAG_ATTEMPT_TO_FIX_PASSED: "test.test_management.attempt_to_fix_passed"
 
+        module LibraryConfigurationError
+          TAG_SETTINGS: "_dd.ci.library_configuration_error.settings"
+          TAG_SKIPPABLE_TESTS: "_dd.ci.library_configuration_error.skippable_tests"
+          TAG_KNOWN_TESTS: "_dd.ci.library_configuration_error.known_tests"
+          TAG_TEST_MANAGEMENT_TESTS: "_dd.ci.library_configuration_error.test_management_tests"
+        end
+
         module LibraryCapabilities
           TAG_TEST_IMPACT_ANALYSIS: "_dd.library_capabilities.test_impact_analysis"
           TAG_EARLY_FLAKE_DETECTION: "_dd.library_capabilities.early_flake_detection"

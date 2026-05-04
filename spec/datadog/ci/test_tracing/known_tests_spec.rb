@@ -102,6 +102,13 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
             expect(response).to eq(Set.new(["AdminControllerTest.test_new.", "AdminControllerTest.test_index.", "AdminControllerTest.test_create."]))
           end
 
+          it "does not tag the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_KNOWN_TESTS))
+              .to be_nil
+          end
+
           it_behaves_like "emits telemetry metric", :inc, "known_tests.request", 1
           it_behaves_like "emits telemetry metric", :distribution, "known_tests.request_ms"
           it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_bytes"
@@ -124,6 +131,13 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
 
           it "parses the response" do
             expect(response).to be_empty
+          end
+
+          it "tags the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_KNOWN_TESTS))
+              .to eq("true")
           end
 
           it_behaves_like "emits telemetry metric", :inc, "known_tests.request_errors", 1
@@ -335,6 +349,13 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
 
           it "returns empty set of known tests" do
             expect(response).to be_empty
+          end
+
+          it "tags the test session with the library configuration error tag" do
+            response
+
+            expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_KNOWN_TESTS))
+              .to eq("true")
           end
         end
       end

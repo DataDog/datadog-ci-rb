@@ -63,7 +63,12 @@ module Datadog
         # uses synchronized method #get_tag to get each tag value
         res = {}
         Ext::Test::INHERITABLE_TAGS.each do |tag|
-          res[tag] = get_tag(tag)
+          value = get_tag(tag)
+          # skip tags that are not set on the session (e.g. library configuration error tags
+          # are only set when the corresponding backend request fails)
+          next if value.nil?
+
+          res[tag] = value
         end
         @inheritable_tags = res.freeze
       end

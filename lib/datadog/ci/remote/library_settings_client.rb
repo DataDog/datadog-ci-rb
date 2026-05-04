@@ -49,6 +49,10 @@ module Datadog
               error_type: http_response.telemetry_error_type,
               status_code: http_response.code
             )
+
+            # mark the test session so that all events emitted in this session are tagged
+            # with the hidden _dd.ci.library_configuration_error.settings tag
+            test_session.set_tag(Ext::Test::LibraryConfigurationError::TAG_SETTINGS, "true")
           end
 
           library_settings = LibrarySettings.from_http_response(http_response)

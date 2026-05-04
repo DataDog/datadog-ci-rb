@@ -18,18 +18,34 @@ RSpec.describe Datadog::CI::TestSession do
   describe "#inheritable_tags" do
     subject(:inheritable_tags) { ci_test_session.inheritable_tags }
 
-    before do
-      Datadog::CI::Ext::Test::INHERITABLE_TAGS.each do |tag|
-        tracer_span.set_tag(tag, "value for #{tag}")
+    context "when all inheritable tags are set" do
+      before do
+        Datadog::CI::Ext::Test::INHERITABLE_TAGS.each do |tag|
+          tracer_span.set_tag(tag, "value for #{tag}")
+        end
+      end
+
+      it "returns a hash of inheritable tags" do
+        is_expected.to eq(
+          Datadog::CI::Ext::Test::INHERITABLE_TAGS.each_with_object({}) do |tag, memo|
+            memo[tag] = "value for #{tag}"
+          end
+        )
       end
     end
 
-    it "returns a hash of inheritable tags" do
-      is_expected.to eq(
-        Datadog::CI::Ext::Test::INHERITABLE_TAGS.each_with_object({}) do |tag, memo|
-          memo[tag] = "value for #{tag}"
-        end
-      )
+    context "when only some of the inheritable tags are set" do
+      before do
+        tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK, "rspec")
+        tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION, "3.13.0")
+      end
+
+      it "skips inheritable tags that are not set on the test session" do
+        is_expected.to eq(
+          Datadog::CI::Ext::Test::TAG_FRAMEWORK => "rspec",
+          Datadog::CI::Ext::Test::TAG_FRAMEWORK_VERSION => "3.13.0"
+        )
+      end
     end
   end
 
