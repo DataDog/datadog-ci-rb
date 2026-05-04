@@ -235,8 +235,8 @@ module Datadog
 
       # @internal
       def should_ignore_failures?
-        return true if quarantined? || disabled?
         return false if attempt_to_fix?
+        return true if quarantined? || disabled?
 
         any_retry_passed?
       end
@@ -271,8 +271,9 @@ module Datadog
         # Skip status is always preserved
         return status if status == Ext::Test::Status::SKIP
 
-        # For attempt_to_fix tests (not quarantined/disabled), any failure means the fix didn't work
-        if attempt_to_fix? && !quarantined? && !disabled?
+        # attempt_to_fix takes precedence over quarantine/disabled flags:
+        # any failure across attempts means the fix didn't work.
+        if attempt_to_fix?
           return all_executions_passed? ? Ext::Test::Status::PASS : Ext::Test::Status::FAIL
         end
 
