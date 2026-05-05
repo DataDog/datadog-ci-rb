@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 9a64076d628ff7be8f38487d5268c119b3312599
+  revision: 524bafda70447cab9356c74d54c2c3dbcb9f21c5
   branch: master
   specs:
     datadog (2.32.0)
@@ -100,9 +100,9 @@ GEM
     mini_mime (1.1.5)
     msgpack (1.8.0)
     multi_test (1.1.0)
-    nokogiri (1.19.2-aarch64-linux-gnu)
+    nokogiri (1.19.3-aarch64-linux-gnu)
       racc (~> 1.4)
-    nokogiri (1.19.2-x86_64-linux-gnu)
+    nokogiri (1.19.3-x86_64-linux-gnu)
       racc (~> 1.4)
     os (1.1.4)
     ostruct (0.6.3)
@@ -146,7 +146,7 @@ GEM
     rspec-support (3.13.7)
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
-    rubyzip (3.2.2)
+    rubyzip (3.3.0)
     selenium-webdriver (4.43.0)
       base64 (~> 0.2)
       logger (~> 1.4)
