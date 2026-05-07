@@ -154,6 +154,7 @@ module Datadog
         INHERITABLE_TAGS = [
           TAG_FRAMEWORK,
           TAG_FRAMEWORK_VERSION,
+          TAG_ITR_TEST_SKIPPING_ENABLED,
           LibraryConfigurationError::TAG_SETTINGS,
           LibraryConfigurationError::TAG_SKIPPABLE_TESTS,
           LibraryConfigurationError::TAG_KNOWN_TESTS,

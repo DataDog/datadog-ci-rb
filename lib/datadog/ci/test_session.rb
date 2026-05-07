@@ -57,20 +57,12 @@ module Datadog
       # Return the test session tags that could be inherited by sub-spans
       # @return [Hash] the tags to be inherited by sub-spans.
       def inheritable_tags
-        return @inheritable_tags if defined?(@inheritable_tags)
-
-        # this method is not synchronized because it does not iterate over the tags collection, but rather
-        # uses synchronized method #get_tag to get each tag value
-        res = {}
-        Ext::Test::INHERITABLE_TAGS.each do |tag|
+        Ext::Test::INHERITABLE_TAGS.each_with_object({}) do |tag, res|
           value = get_tag(tag)
           # skip tags that are not set on the session (e.g. library configuration error tags
           # are only set when the corresponding backend request fails)
-          next if value.nil?
-
-          res[tag] = value
+          res[tag] = value unless value.nil?
         end
-        @inheritable_tags = res.freeze
       end
     end
   end
