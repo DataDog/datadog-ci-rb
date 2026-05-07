@@ -1113,6 +1113,15 @@ RSpec.describe "RSpec instrumentation" do
         expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
         expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
       end
+
+      it "propagates test skipping enabled tag to child events" do
+        rspec_session_run(with_failed_test: true)
+
+        expect([test_module_span, first_test_suite_span]).to all(
+          have_test_tag(:itr_test_skipping_enabled, "true")
+        )
+        expect(test_spans).to all have_test_tag(:itr_test_skipping_enabled, "true")
+      end
     end
 
     context "skipped all tests" do
