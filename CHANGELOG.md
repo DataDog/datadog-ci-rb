@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [1.30.0] - 2026-05-12
+
+### Changed
+* Propagate ITR test skipping enabled tag to all event levels for test parallelization ([#506][])
+
 ## [1.29.0] - 2026-05-04
 
 ### Added
@@ -629,7 +634,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.29.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.30.0...main
+[1.30.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.29.0...v1.30.0
 [1.29.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.28.0...v1.29.0
 [1.28.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.27.0...v1.28.0
 [1.27.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.26.0...v1.27.0
@@ -892,3 +898,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#499]: https://github.com/DataDog/datadog-ci-rb/issues/499
 [#500]: https://github.com/DataDog/datadog-ci-rb/issues/500
 [#501]: https://github.com/DataDog/datadog-ci-rb/issues/501
+[#506]: https://github.com/DataDog/datadog-ci-rb/issues/506
