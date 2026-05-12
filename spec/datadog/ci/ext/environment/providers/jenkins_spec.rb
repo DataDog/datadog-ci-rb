@@ -9,6 +9,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Jenkins do
           "BUILD_TAG" => "jenkins-pipeline-id",
           "BUILD_URL" => "https://jenkins.com/pipeline",
           "DD_CUSTOM_TRACE_ID" => "jenkins-custom-trace-id",
+          "DD_CUSTOM_PARENT_ID" => "jenkins-custom-parent-id",
           "GIT_BRANCH" => "origin/master",
           "GIT_COMMIT" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
           "GIT_URL_1" => "https://jenkins.com/repo/sample.git",
@@ -23,7 +24,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Jenkins do
 
       let(:expected_tags) do
         {
-          "_dd.ci.env_vars" => "{\"DD_CUSTOM_TRACE_ID\":\"jenkins-custom-trace-id\"}",
+          "_dd.ci.env_vars" => "{\"DD_CUSTOM_TRACE_ID\":\"jenkins-custom-trace-id\",\"DD_CUSTOM_PARENT_ID\":\"jenkins-custom-parent-id\"}",
           "ci.pipeline.id" => "jenkins-pipeline-id",
           "ci.pipeline.name" => "jobName",
           "ci.pipeline.number" => "jenkins-pipeline-number",

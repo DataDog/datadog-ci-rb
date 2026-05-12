@@ -75,7 +75,8 @@ module Datadog
 
             def ci_env_vars
               {
-                "DD_CUSTOM_TRACE_ID" => env["DD_CUSTOM_TRACE_ID"]
+                "DD_CUSTOM_TRACE_ID" => env["DD_CUSTOM_TRACE_ID"],
+                "DD_CUSTOM_PARENT_ID" => env["DD_CUSTOM_PARENT_ID"]
               }.to_json
             end
           end
