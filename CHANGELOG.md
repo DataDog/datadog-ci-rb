@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+* Use `Gem::Version` for the Ruby 3.2.0-3.2.2 allocation tracing check so it does not misfire on Ruby 3.2.10+ ([#510][])
+
 ## [1.30.0] - 2026-05-12
 
 ### Changed
@@ -899,3 +903,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#500]: https://github.com/DataDog/datadog-ci-rb/issues/500
 [#501]: https://github.com/DataDog/datadog-ci-rb/issues/501
 [#506]: https://github.com/DataDog/datadog-ci-rb/issues/506
+[#510]: https://github.com/DataDog/datadog-ci-rb/issues/510
