@@ -180,7 +180,8 @@ module Datadog
             settings.ci.itr_test_impact_analysis_use_allocation_tracing = false
           end
 
-          if RUBY_VERSION.start_with?("3.2.") && RUBY_VERSION < "3.2.3" &&
+          if RUBY_VERSION.start_with?("3.2.") &&
+              Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2.3") &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
             Datadog.logger.warn(
               "Test Impact Analysis: Allocation tracing is not supported in Ruby versions 3.2.0, 3.2.1 and 3.2.2 and will be forcibly " \
