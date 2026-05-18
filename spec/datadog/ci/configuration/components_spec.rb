@@ -91,6 +91,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(Datadog::CI::Ext::Environment)
             .to receive(:tags).and_return({})
 
+          stub_const("RUBY_VERSION", ruby_version)
+
           logger = spy(:logger)
           allow(Datadog).to receive(:logger).and_return(logger)
 
@@ -122,6 +124,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:itr_test_impact_analysis_use_allocation_tracing) { true }
         let(:discard_traces) { false }
         let(:test_discovery_enabled) { false }
+        let(:ruby_version) { RUBY_VERSION }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -380,7 +383,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   end
 
                   context "when running on a Ruby version affected by the allocation tracing VM bug" do
-                    before { stub_const("RUBY_VERSION", "3.2.2") }
+                    let(:ruby_version) { "3.2.2" }
 
                     it "logs a warning and disables allocation tracing for ITR" do
                       expect(Datadog.logger).to have_received(:warn).with(/Allocation tracing is not supported/)
@@ -393,7 +396,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     # Regression test: a previous lexicographic compare
                     # (`RUBY_VERSION < "3.2.3"`) incorrectly fired here because
                     # "3.2.11" < "3.2.3" is true as a string compare.
-                    before { stub_const("RUBY_VERSION", "3.2.11") }
+                    let(:ruby_version) { "3.2.11" }
 
                     it "does not log a warning and leaves allocation tracing enabled" do
                       expect(Datadog.logger).not_to have_received(:warn).with(/Allocation tracing is not supported/)
