@@ -56,15 +56,15 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring library configuration from DDTest cache" }
+          Datadog.logger.debug { "Restoring library configuration from Test Optimization cache" }
 
-          settings = load_json(Ext::DDTest::SETTINGS_FILE_NAME)
+          settings = load_cached_settings
           if settings.nil?
             Datadog.logger.debug { "Restoring library configuration failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored library configuration from DDTest: #{settings}" }
+          Datadog.logger.debug { "Restored library configuration from Test Optimization: #{settings}" }
           @library_configuration = LibrarySettings.from_json(settings)
           true
         end
@@ -75,7 +75,7 @@ module Datadog
           # In test discovery mode, skip backend fetching and use default settings (everything is disabled)
           return @library_configuration = LibrarySettings.from_http_response(nil) if @test_discovery_enabled
 
-          # skip backend request if library configuration was loaded by a different process and stored on disk
+          # skip backend request if library configuration was loaded from external cache or stored on disk
           library_configuration_loaded = load_component_state
           return @library_configuration if library_configuration_loaded
 

@@ -17,6 +17,8 @@ require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
 require_relative "../test_management/null_component"
 require_relative "../test_management/tests_properties"
+require_relative "../test_optimization_cache/component"
+require_relative "../test_optimization_cache/null_component"
 require_relative "../test_impact_analysis/null_component"
 require_relative "../test_impact_analysis/component"
 require_relative "../test_impact_analysis/coverage/transport"
@@ -45,7 +47,8 @@ module Datadog
       # Adds CI behavior to Datadog trace components
       module Components
         attr_reader :test_tracing, :test_impact_analysis, :git_tree_upload_worker, :ci_remote, :test_retries,
-          :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery, :code_coverage
+          :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery, :code_coverage,
+          :test_optimization_cache
 
         def initialize(settings)
           @test_impact_analysis = TestImpactAnalysis::NullComponent.new
@@ -57,6 +60,7 @@ module Datadog
           @impacted_tests_detection = ImpactedTestsDetection::NullComponent.new
           @test_discovery = TestDiscovery::NullComponent.new
           @code_coverage = CodeCoverage::NullComponent.new
+          @test_optimization_cache = TestOptimizationCache::NullComponent.new
 
           # Activate CI mode if enabled
           if settings.ci.enabled
@@ -69,6 +73,7 @@ module Datadog
         def shutdown!(replacement = nil)
           super
 
+          @test_optimization_cache&.shutdown!
           @test_tracing&.shutdown!
           @test_impact_analysis&.shutdown!
           @agentless_logs_submission&.shutdown!
@@ -112,6 +117,13 @@ module Datadog
             output_path: settings.ci.test_discovery_output_path
           )
           @test_discovery.disable_features_for_test_discovery!(settings)
+
+          @test_optimization_cache = TestOptimizationCache::Component.new(
+            manifest_file: settings.ci.test_optimization_cache_manifest_file,
+            runfiles_dir: settings.ci.test_optimization_cache_runfiles_dir,
+            runfiles_manifest_file: settings.ci.test_optimization_cache_runfiles_manifest_file,
+            test_srcdir: settings.ci.test_optimization_cache_test_srcdir
+          )
 
           # Configure Datadog::Tracing module
 

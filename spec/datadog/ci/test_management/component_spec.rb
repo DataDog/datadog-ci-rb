@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../../../lib/datadog/ci/test_management/component"
+require_relative "../../../../lib/datadog/ci/test_optimization_cache/component"
 
 RSpec.describe Datadog::CI::TestManagement::Component do
   include_context "Telemetry spy"
@@ -50,6 +51,15 @@ RSpec.describe Datadog::CI::TestManagement::Component do
 
       # it tags test_session with test management enabled tag
       before do
+        allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
+          Datadog::CI::TestOptimizationCache::Component.new(
+            manifest_file: nil,
+            runfiles_dir: nil,
+            runfiles_manifest_file: nil,
+            test_srcdir: nil
+          )
+        end
+
         expect(test_session).to receive(:set_tag).with(
           Datadog::CI::Ext::Test::TAG_TEST_MANAGEMENT_ENABLED, "true"
         ).and_return(nil)
@@ -147,19 +157,95 @@ RSpec.describe Datadog::CI::TestManagement::Component do
         end
       end
 
-      context "when test_management_tests.json file from DDTest exists" do
-        let(:test_management_tests_file_path) { "#{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH}/test_management_tests.json" }
+      context "when manifest v1 test_management.json file from Test Optimization cache exists" do
+        let(:manifest_file_path) do
+          File.join(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER, Datadog::CI::Ext::TestOptimizationCache::MANIFEST_FILE_NAME)
+        end
+        let(:test_management_file_path) do
+          File.join(
+            Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_HTTP_CACHE_PATH,
+            Datadog::CI::Ext::TestOptimizationCache::TEST_MANAGEMENT_FILE_NAME
+          )
+        end
+        let(:settings_file_path) do
+          File.join(
+            Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_HTTP_CACHE_PATH,
+            Datadog::CI::Ext::TestOptimizationCache::SETTINGS_FILE_NAME
+          )
+        end
 
         before do
-          # Create #{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
-          FileUtils.mkdir_p(Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
+          FileUtils.mkdir_p(File.dirname(manifest_file_path))
+          FileUtils.mkdir_p(File.dirname(test_management_file_path))
+          File.write(manifest_file_path, "1")
+          File.write(
+            settings_file_path,
+            JSON.pretty_generate(
+              "data" => {
+                "attributes" => {}
+              }
+            )
+          )
+          File.write(
+            test_management_file_path,
+            JSON.pretty_generate(
+              "data" => {
+                "attributes" => {
+                  "modules" => {
+                    "rspec" => {
+                      "suites" => {
+                        "ManifestSuite" => {
+                          "tests" => {
+                            "test_manifest" => {
+                              "properties" => {
+                                "disabled" => false,
+                                "quarantined" => true,
+                                "attempt_to_fix" => true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            )
+          )
+        end
+
+        after do
+          FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
+        end
+
+        it "loads raw backend test management tests from the file" do
+          expect(tests_properties_client).not_to receive(:fetch)
+
+          configure
+
+          expect(test_management.tests_properties).to eq(
+            "ManifestSuite.test_manifest." => {
+              "disabled" => false,
+              "quarantined" => true,
+              "attempt_to_fix" => true
+            }
+          )
+        end
+      end
+
+      context "when test_management_tests.json file from Test Optimization cache exists" do
+        let(:test_management_tests_file_path) { "#{Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH}/test_management_tests.json" }
+
+        before do
+          # Create #{Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
+          FileUtils.mkdir_p(Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH)
 
           # Write test management data to the file
           File.write(test_management_tests_file_path, JSON.pretty_generate(test_management_data))
         end
 
         after do
-          FileUtils.rm_rf(Datadog::CI::Ext::DDTest::PLAN_FOLDER)
+          FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
         end
 
         context "and contains valid data" do

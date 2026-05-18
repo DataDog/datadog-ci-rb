@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../../../lib/datadog/ci/remote/component"
+require_relative "../../../../lib/datadog/ci/test_optimization_cache/component"
 
 RSpec.describe Datadog::CI::Remote::Component do
   subject(:component) { described_class.new(library_settings_client: library_settings_client) }
@@ -32,6 +33,14 @@ RSpec.describe Datadog::CI::Remote::Component do
     allow(Datadog.send(:components)).to receive(:test_management).and_return(test_management)
     allow(Datadog.send(:components)).to receive(:impacted_tests_detection).and_return(impacted_tests_detection)
     allow(Datadog.send(:components)).to receive(:code_coverage).and_return(code_coverage)
+    allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
+      Datadog::CI::TestOptimizationCache::Component.new(
+        manifest_file: nil,
+        runfiles_dir: nil,
+        runfiles_manifest_file: nil,
+        test_srcdir: nil
+      )
+    end
   end
 
   describe "#configure" do
@@ -159,9 +168,9 @@ RSpec.describe Datadog::CI::Remote::Component do
       end
     end
 
-    context "when settings.json file exists in DDTest cache" do
+    context "when settings.json file exists in Test Optimization cache" do
       let(:require_git) { false }
-      let(:settings_file_path) { "#{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH}/settings.json" }
+      let(:settings_file_path) { "#{Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH}/settings.json" }
       let(:settings_json) do
         {
           "code_coverage" => true,
@@ -189,13 +198,13 @@ RSpec.describe Datadog::CI::Remote::Component do
       end
 
       before do
-        FileUtils.mkdir_p(Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
+        FileUtils.mkdir_p(Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH)
 
         File.write(settings_file_path, JSON.pretty_generate(settings_json))
       end
 
       after do
-        FileUtils.rm_rf(Datadog::CI::Ext::DDTest::PLAN_FOLDER)
+        FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
       end
 
       context "when settings.json file exists in context" do
@@ -250,6 +259,131 @@ RSpec.describe Datadog::CI::Remote::Component do
 
           component.configure(test_session)
         end
+      end
+    end
+
+    context "when manifest v1 settings file exists in Test Optimization cache" do
+      let(:require_git) { false }
+      let(:manifest_file_path) do
+        File.join(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER, Datadog::CI::Ext::TestOptimizationCache::MANIFEST_FILE_NAME)
+      end
+      let(:settings_file_path) do
+        File.join(
+          Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_HTTP_CACHE_PATH,
+          Datadog::CI::Ext::TestOptimizationCache::SETTINGS_FILE_NAME
+        )
+      end
+      let(:settings_attributes) do
+        {
+          "code_coverage" => true,
+          "itr_enabled" => true,
+          "require_git" => false,
+          "tests_skipping" => false,
+          "known_tests_enabled" => true,
+          "test_management" => {
+            "enabled" => true,
+            "attempt_to_fix_retries" => 20
+          }
+        }
+      end
+
+      before do
+        FileUtils.mkdir_p(File.dirname(manifest_file_path))
+        FileUtils.mkdir_p(File.dirname(settings_file_path))
+        File.write(manifest_file_path, "1")
+        File.write(
+          settings_file_path,
+          JSON.pretty_generate(
+            "data" => {
+              "attributes" => settings_attributes
+            }
+          )
+        )
+      end
+
+      after do
+        FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
+      end
+
+      it "loads raw backend settings from cache and does not make an HTTP request" do
+        configured_library_config = nil
+        configurable_components.each do |configurable_component|
+          expect(configurable_component).to receive(:configure) do |library_config, session|
+            configured_library_config ||= library_config
+            expect(session).to eq(test_session)
+          end
+        end
+        expect(code_coverage).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings))
+        expect(library_settings_client).not_to receive(:fetch)
+
+        component.configure(test_session)
+
+        expect(configured_library_config.itr_enabled?).to be true
+        expect(configured_library_config.code_coverage_enabled?).to be true
+        expect(configured_library_config.known_tests_enabled?).to be true
+        expect(configured_library_config.test_management_enabled?).to be true
+      end
+    end
+
+    context "when manifest v1 exists but settings file is absent" do
+      let(:require_git) { false }
+      let(:manifest_file_path) do
+        File.join(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER, Datadog::CI::Ext::TestOptimizationCache::MANIFEST_FILE_NAME)
+      end
+
+      before do
+        FileUtils.mkdir_p(File.dirname(manifest_file_path))
+        File.write(manifest_file_path, "1")
+      end
+
+      after do
+        FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
+      end
+
+      it "requests library configuration again" do
+        allow(test_tracing).to receive(:client_process?).and_return(false)
+        configurable_components.each do |configurable_component|
+          expect(configurable_component).to receive(:configure).with(library_configuration, test_session)
+        end
+        expect(code_coverage).to receive(:configure).with(library_configuration)
+        expect(library_settings_client).to receive(:fetch).with(test_session).and_return(library_configuration)
+
+        component.configure(test_session)
+      end
+    end
+
+    context "when manifest v1 settings file contains invalid JSON" do
+      let(:require_git) { false }
+      let(:manifest_file_path) do
+        File.join(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER, Datadog::CI::Ext::TestOptimizationCache::MANIFEST_FILE_NAME)
+      end
+      let(:settings_file_path) do
+        File.join(
+          Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_HTTP_CACHE_PATH,
+          Datadog::CI::Ext::TestOptimizationCache::SETTINGS_FILE_NAME
+        )
+      end
+
+      before do
+        FileUtils.mkdir_p(File.dirname(manifest_file_path))
+        FileUtils.mkdir_p(File.dirname(settings_file_path))
+        File.write(manifest_file_path, "1")
+        File.write(settings_file_path, "{")
+      end
+
+      after do
+        FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
+      end
+
+      it "requests library configuration again" do
+        allow(test_tracing).to receive(:client_process?).and_return(false)
+        configurable_components.each do |configurable_component|
+          expect(configurable_component).to receive(:configure).with(library_configuration, test_session)
+        end
+        expect(code_coverage).to receive(:configure).with(library_configuration)
+        expect(library_settings_client).to receive(:fetch).with(test_session).and_return(library_configuration)
+
+        component.configure(test_session)
       end
     end
 

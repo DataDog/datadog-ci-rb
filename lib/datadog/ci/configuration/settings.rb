@@ -2,6 +2,7 @@
 
 require_relative "../contrib/instrumentation"
 require_relative "../ext/settings"
+require_relative "../ext/test_optimization_cache"
 require_relative "../utils/bundle"
 require_relative "../utils/parsing"
 
@@ -178,6 +179,26 @@ module Datadog
               option :test_discovery_output_path do |o|
                 o.type :string, nilable: true
                 o.env CI::Ext::Settings::ENV_TEST_DISCOVERY_OUTPUT_PATH
+              end
+
+              option :test_optimization_cache_manifest_file do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::TestOptimizationCache::ENV_MANIFEST_FILE
+              end
+
+              option :test_optimization_cache_runfiles_dir do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::TestOptimizationCache::ENV_RUNFILES_DIR
+              end
+
+              option :test_optimization_cache_runfiles_manifest_file do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::TestOptimizationCache::ENV_RUNFILES_MANIFEST_FILE
+              end
+
+              option :test_optimization_cache_test_srcdir do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::TestOptimizationCache::ENV_TEST_SRCDIR
               end
 
               option :tia_static_dependencies_tracking_enabled do |o|

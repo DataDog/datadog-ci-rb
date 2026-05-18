@@ -12,6 +12,7 @@ module Datadog
         @impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component | Datadog::CI::ImpactedTestsDetection::NullComponent
         @test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
         @code_coverage: Datadog::CI::CodeCoverage::Component | Datadog::CI::CodeCoverage::NullComponent
+        @test_optimization_cache: Datadog::CI::TestOptimizationCache::Component | Datadog::CI::TestOptimizationCache::NullComponent
 
         attr_reader test_tracing: Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent
         attr_reader test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
@@ -23,6 +24,7 @@ module Datadog
         attr_reader impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component | Datadog::CI::ImpactedTestsDetection::NullComponent
         attr_reader test_discovery: Datadog::CI::TestDiscovery::Component | Datadog::CI::TestDiscovery::NullComponent
         attr_reader code_coverage: Datadog::CI::CodeCoverage::Component | Datadog::CI::CodeCoverage::NullComponent
+        attr_reader test_optimization_cache: Datadog::CI::TestOptimizationCache::Component | Datadog::CI::TestOptimizationCache::NullComponent
 
         def initialize: (untyped settings) -> void
 
