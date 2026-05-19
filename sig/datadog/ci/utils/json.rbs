@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Utils
+      module Json
+        def self.read_file: (String file_path) -> Hash[untyped, untyped]?
+      end
+    end
+  end
+end

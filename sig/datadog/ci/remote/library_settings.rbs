@@ -23,6 +23,8 @@ module Datadog
 
         def self.from_json: (Hash[String, untyped] json) -> LibrarySettings
 
+        def self.normalize_json: (Hash[String, untyped]? json) -> Hash[String, untyped]?
+
         def ok?: () -> bool
 
         def payload: () -> Hash[String, untyped]

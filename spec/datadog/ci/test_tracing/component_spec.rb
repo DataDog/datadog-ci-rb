@@ -1,9 +1,21 @@
 # frozen_string_literal: true
 
 require_relative "../../../../lib/datadog/ci/test_tracing/component"
+require_relative "../../../../lib/datadog/ci/test_optimization_cache/component"
 
 RSpec.describe Datadog::CI::TestTracing::Component do
   include_context "Telemetry spy"
+
+  before do
+    allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
+      Datadog::CI::TestOptimizationCache::Component.new(
+        manifest_file: nil,
+        runfiles_dir: nil,
+        runfiles_manifest_file: nil,
+        test_srcdir: nil
+      )
+    end
+  end
 
   shared_examples_for "trace with ciapp-test origin" do
     let(:trace_under_test) { subject }
@@ -1120,19 +1132,80 @@ RSpec.describe Datadog::CI::TestTracing::Component do
         end
       end
 
-      context "when known_tests.json file from DDTest exists" do
-        let(:known_tests_file_path) { "#{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH}/known_tests.json" }
+      context "when manifest v1 known_tests.json file from Test Optimization cache exists" do
+        let(:manifest_file_path) do
+          File.join(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER, Datadog::CI::Ext::TestOptimizationCache::MANIFEST_FILE_NAME)
+        end
+        let(:known_tests_file_path) do
+          File.join(
+            Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_HTTP_CACHE_PATH,
+            Datadog::CI::Ext::TestOptimizationCache::KNOWN_TESTS_FILE_NAME
+          )
+        end
+        let(:settings_file_path) do
+          File.join(
+            Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_HTTP_CACHE_PATH,
+            Datadog::CI::Ext::TestOptimizationCache::SETTINGS_FILE_NAME
+          )
+        end
 
         before do
-          # Create #{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
-          FileUtils.mkdir_p(Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
+          FileUtils.mkdir_p(File.dirname(manifest_file_path))
+          FileUtils.mkdir_p(File.dirname(known_tests_file_path))
+          File.write(manifest_file_path, "1")
+          File.write(
+            settings_file_path,
+            JSON.pretty_generate(
+              "data" => {
+                "attributes" => {}
+              }
+            )
+          )
+          File.write(
+            known_tests_file_path,
+            JSON.pretty_generate(
+              "data" => {
+                "attributes" => {
+                  "tests" => {
+                    "rspec" => {
+                      "manifest suite" => [
+                        "manifest test"
+                      ]
+                    }
+                  }
+                }
+              }
+            )
+          )
+        end
+
+        after do
+          FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
+        end
+
+        it "loads raw backend known tests from the file" do
+          expect(known_tests_client).not_to receive(:fetch)
+
+          subject
+
+          expect(test_tracing.known_tests).to eq(Set.new(["manifest suite.manifest test."]))
+          expect(test_tracing.known_tests_enabled).to be true
+        end
+      end
+
+      context "when known_tests.json file from Test Optimization cache exists" do
+        let(:known_tests_file_path) { "#{Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH}/known_tests.json" }
+
+        before do
+          # Create #{Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
+          FileUtils.mkdir_p(Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH)
 
           # Write settings to the file
           File.write(known_tests_file_path, known_tests_data)
         end
 
         after do
-          FileUtils.rm_rf(Datadog::CI::Ext::DDTest::PLAN_FOLDER)
+          FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
         end
 
         context "and contains valid data" do

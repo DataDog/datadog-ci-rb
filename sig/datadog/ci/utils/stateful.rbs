@@ -14,7 +14,15 @@ module Datadog
 
         def restore_state_from_datadog_test_runner: () -> bool
 
-        def load_json: (String file_name) -> Hash[untyped, untyped]?
+        def load_cached_settings: () -> Hash[untyped, untyped]?
+
+        def load_cached_known_tests: () -> Hash[untyped, untyped]?
+
+        def load_cached_test_management: () -> Hash[untyped, untyped]?
+
+        def load_cached_skippable_tests: () -> Hash[untyped, untyped]?
+
+        def test_optimization_cache: () -> (Datadog::CI::TestOptimizationCache::Component | Datadog::CI::TestOptimizationCache::NullComponent)
       end
     end
   end

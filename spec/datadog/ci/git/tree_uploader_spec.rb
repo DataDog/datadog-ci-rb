@@ -23,10 +23,12 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
 
     let(:search_commits) { double("search_commits", call: backend_commits) }
     let(:test_tracing_component) { double("test_tracing_component", client_process?: false) }
+    let(:test_optimization_cache) { double("test_optimization_cache", cache_available?: false) }
 
     before do
       allow(Datadog::CI::Git::SearchCommits).to receive(:new).with(api: api).and_return(search_commits)
       allow(tree_uploader).to receive(:test_tracing_component).and_return(test_tracing_component)
+      allow(tree_uploader).to receive(:test_optimization_cache).and_return(test_optimization_cache)
     end
 
     context "when the API is not configured" do
@@ -50,13 +52,11 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
       end
     end
 
-    context "when the DDTest cache is found" do
-      before do
-        allow(Datadog::CI::Utils::TestRun).to receive(:test_optimization_data_cached?).and_return(true)
-      end
+    context "when the Test Optimization cache is found" do
+      let(:test_optimization_cache) { double("test_optimization_cache", cache_available?: true) }
 
       it "logs a debug message and aborts the git upload" do
-        expect(Datadog.logger).to receive(:debug).with("DDTest cache found, git upload already done by DDTest tool, skipping git upload")
+        expect(Datadog.logger).to receive(:debug).with("Test Optimization cache found, git upload already done, skipping git upload")
         expect(Datadog::CI::Git::LocalRepository).not_to receive(:git_commits)
 
         subject

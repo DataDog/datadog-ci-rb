@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
-require "json"
 require_relative "file_storage"
-require_relative "test_run"
-require_relative "../ext/dd_test"
 
 module Datadog
   module CI
@@ -22,9 +19,8 @@ module Datadog
 
         # Load component state
         def load_component_state
-          # Check for DDTest cache first
-          if TestRun.test_optimization_data_cached?
-            Datadog.logger.debug { "DDTest cache found" }
+          if test_optimization_cache.cache_available?
+            Datadog.logger.debug { "Test Optimization cache found" }
             return true if restore_state_from_datadog_test_runner
           end
 
@@ -60,22 +56,24 @@ module Datadog
           false
         end
 
-        def load_json(file_name)
-          file_path = File.join(Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH, file_name)
+        def load_cached_settings
+          test_optimization_cache.load_settings
+        end
 
-          unless File.exist?(file_path)
-            Datadog.logger.debug { "JSON file not found: #{file_path}" }
-            return nil
-          end
+        def load_cached_known_tests
+          test_optimization_cache.load_known_tests
+        end
 
-          content = File.read(file_path)
-          JSON.parse(content)
-        rescue JSON::ParserError => e
-          Datadog.logger.debug { "Failed to parse JSON file #{file_path}: #{e.message}" }
-          nil
-        rescue => e
-          Datadog.logger.debug { "Failed to load JSON file #{file_path}: #{e.message}" }
-          nil
+        def load_cached_test_management
+          test_optimization_cache.load_test_management
+        end
+
+        def load_cached_skippable_tests
+          test_optimization_cache.load_skippable_tests
+        end
+
+        def test_optimization_cache
+          Datadog.send(:components).test_optimization_cache
         end
       end
     end

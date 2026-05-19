@@ -1054,6 +1054,50 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      {
+        test_optimization_cache_manifest_file: [
+          Datadog::CI::Ext::TestOptimizationCache::ENV_MANIFEST_FILE,
+          "workspace/.testoptimization/manifest.txt"
+        ],
+        test_optimization_cache_runfiles_dir: [
+          Datadog::CI::Ext::TestOptimizationCache::ENV_RUNFILES_DIR,
+          "/tmp/runfiles"
+        ],
+        test_optimization_cache_runfiles_manifest_file: [
+          Datadog::CI::Ext::TestOptimizationCache::ENV_RUNFILES_MANIFEST_FILE,
+          "/tmp/runfiles/MANIFEST"
+        ],
+        test_optimization_cache_test_srcdir: [
+          Datadog::CI::Ext::TestOptimizationCache::ENV_TEST_SRCDIR,
+          "/tmp/test_srcdir"
+        ]
+      }.each do |setting_name, (env_name, setting_value)|
+        describe "##{setting_name}" do
+          subject(:setting) { settings.ci.public_send(setting_name) }
+
+          it { is_expected.to be nil }
+
+          context "when #{env_name}" do
+            around do |example|
+              ClimateControl.modify(env_name => setting_value) do
+                example.run
+              end
+            end
+
+            it { is_expected.to eq setting_value }
+          end
+        end
+
+        describe "##{setting_name}=" do
+          it "updates the ##{setting_name} setting" do
+            expect { settings.ci.public_send("#{setting_name}=", setting_value) }
+              .to change { settings.ci.public_send(setting_name) }
+              .from(nil)
+              .to(setting_value)
+          end
+        end
+      end
+
       describe "#tia_static_dependencies_tracking_enabled" do
         subject(:tia_static_dependencies_tracking_enabled) { settings.ci.tia_static_dependencies_tracking_enabled }
 

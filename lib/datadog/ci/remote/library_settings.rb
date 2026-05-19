@@ -19,7 +19,13 @@ module Datadog
         end
 
         def self.from_json(json)
-          new(nil, json)
+          new(nil, normalize_json(json))
+        end
+
+        def self.normalize_json(json)
+          return nil if json.nil?
+
+          json.dig(*Ext::Transport::DD_API_SETTINGS_RESPONSE_DIG_KEYS) || json
         end
 
         def ok?

@@ -86,8 +86,6 @@ module Datadog
 
         private
 
-        def transform_test_runner_data: (Hash[String, untyped] skippable_tests_data) -> Hash[String, untyped]
-
         def coverage_collector: () -> Datadog::CI::TestImpactAnalysis::Coverage::DDCov?
 
         def load_datadog_cov!: () -> void

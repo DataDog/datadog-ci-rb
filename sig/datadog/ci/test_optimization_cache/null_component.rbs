@@ -1,0 +1,21 @@
+module Datadog
+  module CI
+    module TestOptimizationCache
+      class NullComponent
+        def initialize: () -> void
+
+        def cache_available?: () -> false
+
+        def load_settings: () -> nil
+
+        def load_known_tests: () -> nil
+
+        def load_test_management: () -> nil
+
+        def load_skippable_tests: () -> nil
+
+        def shutdown!: () -> nil
+      end
+    end
+  end
+end

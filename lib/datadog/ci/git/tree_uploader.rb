@@ -10,7 +10,6 @@ require_relative "packfiles"
 
 require_relative "../ext/telemetry"
 require_relative "../utils/telemetry"
-require_relative "../utils/test_run"
 
 module Datadog
   module CI
@@ -34,8 +33,8 @@ module Datadog
             return
           end
 
-          if Utils::TestRun.test_optimization_data_cached?
-            Datadog.logger.debug("DDTest cache found, git upload already done by DDTest tool, skipping git upload")
+          if test_optimization_cache.cache_available?
+            Datadog.logger.debug("Test Optimization cache found, git upload already done, skipping git upload")
             return
           end
 
@@ -112,6 +111,10 @@ module Datadog
 
         def test_tracing_component
           Datadog.send(:components).test_tracing
+        end
+
+        def test_optimization_cache
+          Datadog.send(:components).test_optimization_cache
         end
       end
     end

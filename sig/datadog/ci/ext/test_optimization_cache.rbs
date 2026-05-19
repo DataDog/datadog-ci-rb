@@ -1,0 +1,24 @@
+module Datadog
+  module CI
+    module Ext
+      module TestOptimizationCache
+        ENV_MANIFEST_FILE: String
+        ENV_RUNFILES_DIR: String
+        ENV_RUNFILES_MANIFEST_FILE: String
+        ENV_TEST_SRCDIR: String
+        PLAN_FOLDER: String
+        MANIFEST_FILE_NAME: String
+        SUPPORTED_MANIFEST_VERSION: String
+        CACHE_FOLDER_NAME: String
+        HTTP_CACHE_FOLDER_NAME: String
+        TESTOPTIMIZATION_CACHE_PATH: String
+        TESTOPTIMIZATION_HTTP_CACHE_PATH: String
+        SETTINGS_FILE_NAME: String
+        KNOWN_TESTS_FILE_NAME: String
+        TEST_MANAGEMENT_FILE_NAME: String
+        LEGACY_TEST_MANAGEMENT_TESTS_FILE_NAME: String
+        SKIPPABLE_TESTS_FILE_NAME: String
+      end
+    end
+  end
+end

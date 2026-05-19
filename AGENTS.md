@@ -16,7 +16,8 @@ bundle exec appraisal install
 
 ### Running Tests
 
-If new files in the repository are created, run `git add -A` before running tests (otherwise `release_gem_spec.rb` will fail)
+If new files in the repository are created, run `git add -A` before running tests (otherwise `release_gem_spec.rb` will fail).
+Make sure that dependencies are installed (bundle exec appraisal install) before running tests!
 
 ```bash
 # Run all tests (as CI does)
@@ -77,83 +78,12 @@ bundle exec rake compile_ext
 
 ## Architecture Overview
 
-The library uses a component-based architecture with several key systems:
-
-1. **Test Instrumentation System**:
-
-   - Hooks into different test frameworks (RSpec, Minitest, Cucumber, etc.)
-   - Tracks test execution, results, and metadata
-   - Exposes spans and metrics for each test
-
-2. **Test Impact Analysis**:
-
-   - Uses git operations to identify changed files between commits
-   - Tracks code coverage via a native C extension
-   - Correlates tests with code they execute
-   - Enables skipping tests not impacted by code changes
-
-3. **Transport Layer**:
-
-   - Sends test data to Datadog backend
-   - Uses compression and batching for efficiency
-   - Supports different CI environments
-
-4. **Configuration System**:
-   - Provides flexible settings for all features
-   - Supports remote configuration via Datadog backend
-   - Detects CI providers automatically
-
-When working with this codebase, pay special attention to:
-
-- Integration with testing frameworks, which often use dynamic patching
-- The C extension in `ext/datadog_ci_native` for performance-critical code coverage and for accessing end lines info from compiled iseqs
-- Multi-threading safety for background workers and data collection
-- Compatibility across different Ruby versions and testing frameworks
-
-### Project Structure
-
-- `lib/datadog/ci` - implementation of the library
-- `lib/datadog/ci.rb` - Main entry point and public API
-- `lib/datadog/ci/auto_instrument.rb` - Automated instrumentation entry point
-- `lib/datadog/ci/datadog-ci.gemspec` - Gem specification
-- `spec/` - Library test suite
-- `ext/` - Native extension for test impact analysis
-- `docs/` - Developer documentation
-
-### Core data model
-
-- `lib/datadog/ci/span.rb` - base class for core models
-- `lib/datadog/ci/concurrent_span.rb` - Thread-safe base model class
-- `lib/datadog/ci/test.rb` - Represents a single test execution
-- `lib/datadog/ci/test_suite.rb` - represents a test suite
-- `lib/datadog/ci/test_module.rb` - Logical component of a test session (currently aligns fully with a test session)
-- `lib/datadog/ci/test_session.rb` - Represents an entire testing session
-- `lib/datadog/ci/contrib` - Framework-specific integrations
-
-### Library components
-
-- `lib/datadog/ci/configuration/components.rb` - Centralized library entry point for initializing configuration and components
-- `lib/datadog/ci/configuration` - Configuration management
-- `lib/datadog/ci/ext` - Constants for tags and attributes
-- `lib/datadog/ci/ext/environment` - Extractors for environment information from CI providers and git
-- `lib/datadog/ci/transport` - Manages communication with Datadog backend services
-- `lib/datadog/ci/remote` - Retrieves remote settings from Datadog backend
-- `lib/datadog/ci/git` - Collects Git repository details and uploads commit information to Datadog for test impact analysis
-- `lib/datadog/ci/test_impact_analysis` - Determines skippable tests from backend information (actual skipping handled by framework integrations)
-- `lib/datadog/ci/test_tracing` - Core component tracing test execution details
-- `lib/datadog/ci/test_retries` - Marks tests for automatic retries or early flake detection
-- `lib/datadog/ci/test_management` - Manages test statuses (quarantined, disabled) fetched from backend
-- `lib/datadog/ci/logs` - Forwards Ruby logging output to Datadog Logs
+The library uses a component-based architecture. 
+The folder structure in `lib/datadog/ci` roughly corresponds to available components.
 
 ## Framework Integrations
 
-The library supports various test frameworks, test runners, and other libraries through contrib modules, such as:
-
-- RSpec
-- Minitest
-- Cucumber
-- ActiveSupport
-- Selenium, etc
+The library supports various test frameworks, test runners, and other libraries through contrib modules.
 
 Each integration is in `lib/datadog/ci/contrib/<framework_name>/`
 

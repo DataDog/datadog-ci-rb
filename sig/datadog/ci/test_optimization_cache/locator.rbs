@@ -1,0 +1,26 @@
+module Datadog
+  module CI
+    module TestOptimizationCache
+      class Locator
+        RUNFILES_MANIFEST_SEPARATOR: String
+
+        @manifest_file: String?
+        @runfiles_dir: String?
+        @runfiles_manifest_file: String?
+        @test_srcdir: String?
+        @manifest_versions: Hash[String, String?]
+        @manifest_path: String?
+
+        def initialize: (manifest_file: String?, runfiles_dir: String?, runfiles_manifest_file: String?, test_srcdir: String?) -> void
+
+        def manifest_path: () -> String?
+
+        def manifest_version: (String manifest_path) -> String?
+
+        def resolve_bazel_runfile_path: (String path) -> String
+
+        def resolve_bazel_runfile_path_from_manifest: (String path) -> String?
+      end
+    end
+  end
+end

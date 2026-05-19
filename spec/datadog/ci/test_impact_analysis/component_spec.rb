@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../../../lib/datadog/ci/test_impact_analysis/component"
+require_relative "../../../../lib/datadog/ci/test_optimization_cache/component"
 
 RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
   include_context "Telemetry spy"
@@ -33,6 +34,14 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
   before do
     allow(writer).to receive(:write)
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
+    allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
+      Datadog::CI::TestOptimizationCache::Component.new(
+        manifest_file: nil,
+        runfiles_dir: nil,
+        runfiles_manifest_file: nil,
+        test_srcdir: nil
+      )
+    end
   end
 
   describe "#configure" do
@@ -225,13 +234,77 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       end
     end
 
-    context "when skippable_tests.json file from DDTest exists" do
+    context "when manifest v1 skippable_tests.json file from Test Optimization cache exists" do
       let(:tests_skipping_enabled) { true }
-      let(:skippable_tests_file_path) { "#{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH}/skippable_tests.json" }
+      let(:manifest_file_path) do
+        File.join(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER, Datadog::CI::Ext::TestOptimizationCache::MANIFEST_FILE_NAME)
+      end
+      let(:skippable_tests_file_path) do
+        File.join(
+          Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_HTTP_CACHE_PATH,
+          Datadog::CI::Ext::TestOptimizationCache::SKIPPABLE_TESTS_FILE_NAME
+        )
+      end
+      let(:settings_file_path) do
+        File.join(
+          Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_HTTP_CACHE_PATH,
+          Datadog::CI::Ext::TestOptimizationCache::SETTINGS_FILE_NAME
+        )
+      end
 
       before do
-        # Create #{Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
-        FileUtils.mkdir_p(Datadog::CI::Ext::DDTest::TESTOPTIMIZATION_CACHE_PATH)
+        FileUtils.mkdir_p(File.dirname(manifest_file_path))
+        FileUtils.mkdir_p(File.dirname(skippable_tests_file_path))
+        File.write(manifest_file_path, "1")
+        File.write(
+          settings_file_path,
+          JSON.pretty_generate(
+            "data" => {
+              "attributes" => {}
+            }
+          )
+        )
+        File.write(
+          skippable_tests_file_path,
+          JSON.pretty_generate(
+            "meta" => {
+              "correlation_id" => "manifest-correlation-id"
+            },
+            "data" => [
+              {
+                "type" => Datadog::CI::Ext::Test::ITR_TEST_SKIPPING_MODE,
+                "attributes" => {
+                  "suite" => "ManifestSuite",
+                  "name" => "test_manifest",
+                  "parameters" => "{\"arguments\":{}}"
+                }
+              }
+            ]
+          )
+        )
+      end
+
+      after do
+        FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
+      end
+
+      it "loads raw backend skippable tests from the file" do
+        expect(Datadog::CI::TestImpactAnalysis::Skippable).not_to receive(:new)
+
+        configure
+
+        expect(component.correlation_id).to eq("manifest-correlation-id")
+        expect(component.skippable_tests).to eq(Set.new(["ManifestSuite.test_manifest.{\"arguments\":{}}"]))
+      end
+    end
+
+    context "when skippable_tests.json file from Test Optimization cache exists" do
+      let(:tests_skipping_enabled) { true }
+      let(:skippable_tests_file_path) { "#{Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH}/skippable_tests.json" }
+
+      before do
+        # Create #{Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH} folder if it doesn't exist
+        FileUtils.mkdir_p(Datadog::CI::Ext::TestOptimizationCache::TESTOPTIMIZATION_CACHE_PATH)
 
         # Write skippable tests data to the file
         File.write(skippable_tests_file_path, JSON.pretty_generate(skippable_tests_data))
@@ -243,7 +316,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       end
 
       after do
-        FileUtils.rm_rf(Datadog::CI::Ext::DDTest::PLAN_FOLDER)
+        FileUtils.rm_rf(Datadog::CI::Ext::TestOptimizationCache::PLAN_FOLDER)
       end
 
       context "and contains valid data" do

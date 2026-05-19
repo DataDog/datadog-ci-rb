@@ -1,0 +1,31 @@
+module Datadog
+  module CI
+    module TestOptimizationCache
+      module Readers
+        class V1 < Base
+          @test_optimization_path: String
+
+          def initialize: (String test_optimization_path) -> void
+
+          def available?: () -> bool
+
+          def load_settings: () -> Hash[untyped, untyped]?
+
+          def load_known_tests: () -> Hash[untyped, untyped]?
+
+          def load_test_management: () -> Hash[untyped, untyped]?
+
+          def load_skippable_tests: () -> Hash[untyped, untyped]?
+
+          private
+
+          def load_http_json: (String file_name) -> Hash[untyped, untyped]?
+
+          def settings_file_path: () -> String
+
+          def http_cache_path: () -> String
+        end
+      end
+    end
+  end
+end

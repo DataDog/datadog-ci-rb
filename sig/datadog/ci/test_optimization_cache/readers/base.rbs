@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module TestOptimizationCache
+      module Readers
+        class Base
+          def available?: () -> bool
+
+          def load_settings: () -> Hash[untyped, untyped]?
+
+          def load_known_tests: () -> Hash[untyped, untyped]?
+
+          def load_test_management: () -> Hash[untyped, untyped]?
+
+          def load_skippable_tests: () -> Hash[untyped, untyped]?
+
+          private
+
+          def read_json_file: (String file_path) -> Hash[untyped, untyped]?
+        end
+      end
+    end
+  end
+end
