@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.31.0] - 2026-05-20
+
+### Added
+
+* Add Test Optimization cache readers for Bazel support and DDTest (test parallelization) ([#511][])
+* Add Jenkins custom parent id env var ([#509][])
+
 ## [1.30.0] - 2026-05-12
 
 ### Changed
@@ -634,7 +641,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.30.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.31.0...main
+[1.31.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.30.0...v1.31.0
 [1.30.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.29.0...v1.30.0
 [1.29.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.28.0...v1.29.0
 [1.28.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.27.0...v1.28.0
@@ -899,3 +907,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#500]: https://github.com/DataDog/datadog-ci-rb/issues/500
 [#501]: https://github.com/DataDog/datadog-ci-rb/issues/501
 [#506]: https://github.com/DataDog/datadog-ci-rb/issues/506
+[#509]: https://github.com/DataDog/datadog-ci-rb/issues/509
+[#511]: https://github.com/DataDog/datadog-ci-rb/issues/511
