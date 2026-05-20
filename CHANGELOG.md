@@ -643,7 +643,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 [Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.31.0...main
 [1.31.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.30.0...v1.31.0
-[1.31.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.30.0...v1.31.0
 [1.30.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.29.0...v1.30.0
 [1.29.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.28.0...v1.29.0
 [1.28.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.27.0...v1.28.0
