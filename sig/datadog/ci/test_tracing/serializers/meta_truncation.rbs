@@ -1,0 +1,14 @@
+module Datadog
+  module CI
+    module TestTracing
+      module Serializers
+        module MetaTruncation
+          MAX_META_STRING_LENGTH: 5000
+
+          def self.truncate_value: (untyped value) -> untyped
+          def self.truncate_string_values: (Hash[untyped, untyped] tags) -> Hash[untyped, untyped]
+        end
+      end
+    end
+  end
+end

@@ -5,6 +5,7 @@ require "datadog/core/telemetry/logging"
 require "datadog/core/utils/only_once"
 
 require_relative "serializers/factories/test_level"
+require_relative "serializers/meta_truncation"
 
 require_relative "../ext/app_types"
 require_relative "../ext/telemetry"
@@ -105,17 +106,17 @@ module Datadog
 
           if dd_env
             packer.write("env")
-            packer.write(dd_env)
+            packer.write(Serializers::MetaTruncation.truncate_value(dd_env))
           end
 
           packer.write("runtime-id")
-          packer.write(Datadog::Core::Environment::Identity.id)
+          packer.write(Serializers::MetaTruncation.truncate_value(Datadog::Core::Environment::Identity.id))
 
           packer.write("language")
-          packer.write(Datadog::Core::Environment::Identity.lang)
+          packer.write(Serializers::MetaTruncation.truncate_value(Datadog::Core::Environment::Identity.lang))
 
           packer.write("library_version")
-          packer.write(Datadog::CI::VERSION::STRING)
+          packer.write(Serializers::MetaTruncation.truncate_value(Datadog::CI::VERSION::STRING))
 
           library_capabilities_tags = Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS
 
@@ -124,14 +125,16 @@ module Datadog
             packer.write_map_header(2 + library_capabilities_tags.count)
 
             packer.write(Ext::Test::TAG_TEST_SESSION_NAME)
-            packer.write(test_tracing&.logical_test_session_name)
+            packer.write(Serializers::MetaTruncation.truncate_value(test_tracing&.logical_test_session_name))
 
             packer.write(Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE)
-            packer.write(Utils::Configuration.service_name_provided_by_user?.to_s)
+            packer.write(
+              Serializers::MetaTruncation.truncate_value(Utils::Configuration.service_name_provided_by_user?.to_s)
+            )
 
             library_capabilities_tags.each do |tag, value|
               packer.write(tag)
-              packer.write(value)
+              packer.write(Serializers::MetaTruncation.truncate_value(value))
             end
           end
 

@@ -41,6 +41,13 @@ RSpec.describe Datadog::CI::TestTracing::Serializers::Span do
         )
         expect(metrics).to eq({"_dd.top_level" => 1.0, "custom_metric" => 42})
       end
+
+      it "truncates string meta tag values to the backend limit" do
+        first_custom_span.set_tag("long_custom_tag", "a" * 5001)
+
+        expect(meta["long_custom_tag"]).to eq("a" * 5000)
+        expect(metrics).to include("custom_metric" => 42)
+      end
     end
   end
 
