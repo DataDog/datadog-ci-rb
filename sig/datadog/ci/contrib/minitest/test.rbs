@@ -18,11 +18,17 @@ module Datadog
             include ::Minitest::Test::LifecycleHooks
             extend ClassMethods
 
-            def before_setup: () -> (nil | untyped)
+            def run: () -> ::Minitest::Result
 
             def after_teardown: () -> untyped
 
             private
+
+            def run_minitest_test: () -> ::Minitest::Result
+
+            def start_datadog_test: () -> Datadog::CI::Test?
+
+            def skip_datadog_test: (Datadog::CI::Test test_span) -> ::Minitest::Result
 
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 

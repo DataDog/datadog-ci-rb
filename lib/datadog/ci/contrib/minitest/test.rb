@@ -19,10 +19,52 @@ module Datadog
           end
 
           module InstanceMethods
-            def before_setup
-              super
-              return unless datadog_configuration[:enabled]
+            def run
+              return super unless datadog_configuration[:enabled]
 
+              test_span = start_datadog_test
+              return skip_datadog_test(test_span) if test_span&.should_skip?
+
+              return run_minitest_test if Helpers.ci_queue?
+
+              super
+            end
+
+            def after_teardown
+              test_span = _dd_test_tracing_component.active_test
+              return super unless test_span
+
+              finish_with_result(test_span, result_code)
+
+              # remove failures if failure can be ignored because of retries
+              self.failures = [] if test_span.should_ignore_failures?
+
+              super
+            end
+
+            private
+
+            def run_minitest_test
+              time_it do
+                capture_exceptions do
+                  ::Minitest::Test::SETUP_METHODS.each do |hook|
+                    send hook
+                  end
+
+                  send name
+                end
+
+                ::Minitest::Test::TEARDOWN_METHODS.each do |hook|
+                  capture_exceptions do
+                    send hook
+                  end
+                end
+              end
+
+              ::Minitest::Result.from(self)
+            end
+
+            def start_datadog_test
               if Helpers.parallel?(self.class)
                 Helpers.start_test_suite(self.class)
               end
@@ -55,22 +97,21 @@ module Datadog
               # steep:ignore:start
               test_span&.itr_unskippable! if self.class.dd_suite_unskippable? || self.class.dd_test_unskippable?(name)
               # steep:ignore:end
-              skip(test_span&.datadog_skip_reason) if test_span&.should_skip?
+
+              test_span
             end
 
-            def after_teardown
-              test_span = _dd_test_tracing_component.active_test
-              return super unless test_span
+            def skip_datadog_test(test_span)
+              time_it do
+                capture_exceptions do
+                  skip(test_span.datadog_skip_reason)
+                end
+              end
 
               finish_with_result(test_span, result_code)
 
-              # remove failures if failure can be ignored because of retries
-              self.failures = [] if test_span.should_ignore_failures?
-
-              super
+              ::Minitest::Result.from(self)
             end
-
-            private
 
             def finish_with_result(span, result_code)
               return unless span
