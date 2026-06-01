@@ -13,16 +13,52 @@ module Datadog
       module Minitest
         # Lifecycle hooks to instrument Minitest::Test
         module Test
+          class << self
+            attr_accessor :_dd_original_minitest_run
+          end
+
           def self.included(base)
-            base.prepend(InstanceMethods)
-            base.singleton_class.prepend(ClassMethods)
+            unless base < InstanceMethods
+              # Keep the run implementation that existed before Datadog is prepended.
+              # ci-queue installs minitest-reporters later, and minitest-reporters aliases
+              # the then-current `run` method as `run_without_hooks`. If that current method
+              # is Datadog's wrapper, calling `super` under ci-queue re-enters Datadog after
+              # the test span has already started. This preserved method lets ci-queue execute
+              # Minitest's original setup/test/teardown body once, without starting a second span.
+              self._dd_original_minitest_run = base.instance_method(:run)
+              base.prepend(InstanceMethods)
+            end
+
+            base.singleton_class.prepend(ClassMethods) unless base.singleton_class < ClassMethods
           end
 
           module InstanceMethods
-            def before_setup
-              super
-              return unless datadog_configuration[:enabled]
+            def run
+              return super unless datadog_configuration[:enabled]
 
+              test_span = start_datadog_test
+              return skip_datadog_test(test_span) if test_span&.should_skip?
+
+              return Test._dd_original_minitest_run.bind_call(self) if Helpers.ci_queue?
+
+              super
+            end
+
+            def after_teardown
+              test_span = _dd_test_tracing_component.active_test
+              return super unless test_span
+
+              finish_with_result(test_span, result_code)
+
+              # remove failures if failure can be ignored because of retries
+              self.failures = [] if test_span.should_ignore_failures?
+
+              super
+            end
+
+            private
+
+            def start_datadog_test
               if Helpers.parallel?(self.class)
                 Helpers.start_test_suite(self.class)
               end
@@ -55,22 +91,21 @@ module Datadog
               # steep:ignore:start
               test_span&.itr_unskippable! if self.class.dd_suite_unskippable? || self.class.dd_test_unskippable?(name)
               # steep:ignore:end
-              skip(test_span&.datadog_skip_reason) if test_span&.should_skip?
+
+              test_span
             end
 
-            def after_teardown
-              test_span = _dd_test_tracing_component.active_test
-              return super unless test_span
+            def skip_datadog_test(test_span)
+              time_it do
+                capture_exceptions do
+                  skip(test_span.datadog_skip_reason)
+                end
+              end
 
               finish_with_result(test_span, result_code)
 
-              # remove failures if failure can be ignored because of retries
-              self.failures = [] if test_span.should_ignore_failures?
-
-              super
+              ::Minitest::Result.from(self)
             end
-
-            private
 
             def finish_with_result(span, result_code)
               return unless span
