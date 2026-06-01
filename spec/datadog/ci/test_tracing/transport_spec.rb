@@ -124,6 +124,29 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
       end
     end
 
+    context "with metadata values longer than the backend limit" do
+      let(:dd_env) { "e" * 5001 }
+      let(:logical_test_session_name) { "s" * 5001 }
+
+      before do
+        produce_test_trace
+      end
+
+      it "truncates payload metadata string values" do
+        subject.send_events([trace])
+
+        expect(api).to have_received(:citestcycle_request) do |args|
+          payload = MessagePack.unpack(args[:payload])
+
+          expect(payload["metadata"]["*"]["env"]).to eq("e" * 5000)
+
+          Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
+            expect(payload["metadata"][type]["test_session.name"]).to eq("s" * 5000)
+          end
+        end
+      end
+    end
+
     context "with itr correlation id" do
       let(:serializers_factory) { Datadog::CI::TestTracing::Serializers::Factories::TestSuiteLevel }
 

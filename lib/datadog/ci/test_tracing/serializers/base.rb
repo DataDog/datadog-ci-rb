@@ -3,6 +3,7 @@
 require "set"
 
 require_relative "../../ext/test"
+require_relative "meta_truncation"
 
 module Datadog
   module CI
@@ -29,7 +30,9 @@ module Datadog
             @span = span
             @options = options
 
-            @meta = @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
+            @meta = MetaTruncation.truncate_string_values(
+              @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
+            )
 
             @errors = {}
             @validated = false

@@ -51,6 +51,14 @@ RSpec.describe Datadog::CI::TestTracing::Serializers::TestV2 do
 
         expect(metrics).to eq({"_dd.top_level" => 1, "memory_allocations" => 16, "_dd.host.vcpu_count" => Etc.nprocessors})
       end
+
+      it "truncates string meta tag values to the backend limit" do
+        first_test_span.set_tag("long_test_tag", "b" * 5001)
+
+        expect(meta["long_test_tag"]).to eq("b" * 5000)
+        expect(content["test_session_id"]).to eq(test_session_span.id)
+        expect(metrics).to include("memory_allocations" => 16)
+      end
     end
 
     context "trace several tests executions with test visibility" do
