@@ -13,9 +13,23 @@ module Datadog
       module Minitest
         # Lifecycle hooks to instrument Minitest::Test
         module Test
+          class << self
+            attr_accessor :_dd_original_minitest_run
+          end
+
           def self.included(base)
-            base.prepend(InstanceMethods)
-            base.singleton_class.prepend(ClassMethods)
+            unless base < InstanceMethods
+              # Keep the run implementation that existed before Datadog is prepended.
+              # ci-queue installs minitest-reporters later, and minitest-reporters aliases
+              # the then-current `run` method as `run_without_hooks`. If that current method
+              # is Datadog's wrapper, calling `super` under ci-queue re-enters Datadog after
+              # the test span has already started. This preserved method lets ci-queue execute
+              # Minitest's original setup/test/teardown body once, without starting a second span.
+              self._dd_original_minitest_run = base.instance_method(:run)
+              base.prepend(InstanceMethods)
+            end
+
+            base.singleton_class.prepend(ClassMethods) unless base.singleton_class < ClassMethods
           end
 
           module InstanceMethods
@@ -25,7 +39,7 @@ module Datadog
               test_span = start_datadog_test
               return skip_datadog_test(test_span) if test_span&.should_skip?
 
-              return run_minitest_test if Helpers.ci_queue?
+              return Test._dd_original_minitest_run.bind_call(self) if Helpers.ci_queue?
 
               super
             end
@@ -43,26 +57,6 @@ module Datadog
             end
 
             private
-
-            def run_minitest_test
-              time_it do
-                capture_exceptions do
-                  ::Minitest::Test::SETUP_METHODS.each do |hook|
-                    send hook
-                  end
-
-                  send name
-                end
-
-                ::Minitest::Test::TEARDOWN_METHODS.each do |hook|
-                  capture_exceptions do
-                    send hook
-                  end
-                end
-              end
-
-              ::Minitest::Result.from(self)
-            end
 
             def start_datadog_test
               if Helpers.parallel?(self.class)

@@ -3,6 +3,12 @@ module Datadog
     module Contrib
       module Minitest
         module Test
+          @_dd_original_minitest_run: untyped
+
+          def self._dd_original_minitest_run: () -> untyped
+
+          def self._dd_original_minitest_run=: (untyped) -> untyped
+
           module ClassMethods
             @datadog_itr_unskippable_suite: bool
             @datadog_itr_unskippable_tests: Array[String]?
@@ -23,8 +29,6 @@ module Datadog
             def after_teardown: () -> untyped
 
             private
-
-            def run_minitest_test: () -> ::Minitest::Result
 
             def start_datadog_test: () -> Datadog::CI::Test?
 
