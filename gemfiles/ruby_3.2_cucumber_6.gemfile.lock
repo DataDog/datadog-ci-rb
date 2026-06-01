@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 3d0ced6286b503a495f390bdb3698e0bdaa2bfd0
+  revision: 675975f13b07e7ab686e435c39c59c07e6d07e51
   branch: master
   specs:
-    datadog (2.34.0.dev)
+    datadog (2.35.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.2)
       libdatadog (~> 33.0.0.1.0)
@@ -118,7 +118,7 @@ GEM
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
-    msgpack (1.8.0)
+    msgpack (1.8.1)
     multi_test (0.1.2)
     mutex_m (0.3.0)
     os (1.1.4)
