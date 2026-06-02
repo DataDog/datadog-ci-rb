@@ -2,6 +2,7 @@ require "logger"
 require "action_controller/railtie"
 require "action_view/railtie"
 require "rails/test_unit/railtie"
+require "tempfile"
 
 RSpec.describe "ActiveSupport::TestCase instrumentation" do
   include_context "CI mode activated" do
@@ -110,5 +111,95 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
 
       expect(agentless_logs).to have(5).items
     end
+  end
+
+  context "with ActiveSupport parallel executor" do
+    let(:marker_file) { Tempfile.new("datadog-active-support-parallel") }
+    let(:marker_path) { marker_file.path }
+
+    before do
+      skip "ActiveSupport parallel executor regression runs on Rails 7+" if Rails.gem_version < Gem::Version.new("7.0")
+      skip "ActiveSupport::TestCase.parallelize is not available" unless ActiveSupport::TestCase.respond_to?(:parallelize)
+
+      Minitest::Runnable.reset
+      Minitest.parallel_executor = nil
+      Minitest.seed = 1
+    end
+
+    after do
+      Minitest.parallel_executor = nil
+      Minitest::Runnable.reset
+      marker_file.close!
+    end
+
+    context "with threads" do
+      before do
+        run_active_support_parallel_tests(:threads)
+      end
+
+      it "sets active test in worker threads" do
+        expect(worker_markers).to contain_exactly("test_one:true", "test_two:true")
+      end
+
+      it "instruments tests through Minitest" do
+        expect(test_spans).to have(2).items
+        expect(test_spans).to have_tag_values_no_order(:name, ["test_one", "test_two"])
+        expect(test_spans).to all have_pass_status
+        expect(test_spans).to all have_test_tag(:test_suite_id)
+        expect(test_spans).to all have_test_tag(:test_module_id)
+        expect(test_spans).to all have_test_tag(:test_session_id)
+      end
+    end
+
+    context "with processes" do
+      before do
+        skip "Process parallelization requires fork support" unless Process.respond_to?(:fork)
+
+        run_active_support_parallel_tests(:processes)
+      end
+
+      it "sets active test in worker processes" do
+        expect(worker_markers).to contain_exactly("test_one:true", "test_two:true")
+      end
+    end
+  end
+
+  def run_active_support_parallel_tests(executor)
+    path = marker_path
+    executor_tag = executor.to_s
+    parallelize_options = {workers: 2, with: executor}
+    if ActiveSupport::TestCase.method(:parallelize).parameters.any? { |_, name| name == :threshold }
+      parallelize_options[:threshold] = 0
+    end
+
+    klass = Class.new(ActiveSupport::TestCase) do
+      parallelize(**parallelize_options)
+
+      define_method(:record_active_test!) do
+        active_test = Datadog::CI.active_test
+        File.open(path, "a") do |file|
+          file.puts("#{name}:#{!active_test.nil?}")
+        end
+
+        assert active_test, "expected Datadog::CI.active_test to be set"
+        active_test.set_tag("active_support_parallel_executor", executor_tag)
+      end
+
+      define_method(:test_one) do
+        record_active_test!
+      end
+
+      define_method(:test_two) do
+        record_active_test!
+      end
+    end
+
+    stub_const("ActiveSupportParallel#{executor.to_s.capitalize}Test", klass)
+
+    expect(Minitest.run([])).to be(true)
+  end
+
+  def worker_markers
+    File.readlines(marker_path, chomp: true)
   end
 end

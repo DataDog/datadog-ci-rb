@@ -1,5 +1,7 @@
 require "minitest/queue/runner"
 require "fileutils"
+require "open3"
+require "rbconfig"
 require "securerandom"
 require "json"
 require "cgi"
@@ -68,5 +70,63 @@ RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
     # every test span is connected to test module and test session
     expect(test_spans).to all have_test_tag(:test_module_id)
     expect(test_spans).to all have_test_tag(:test_session_id)
+  end
+
+  it "works when Datadog is configured before ci-queue loads" do
+    fake_test_load_path = File.expand_path("spec/datadog/ci/contrib/ci_queue_minitest")
+
+    script = <<~RUBY
+      require "cgi"
+      require "fileutils"
+      require "json"
+      require "securerandom"
+      require "tmpdir"
+
+      require "datadog/ci/auto_instrument"
+      require "minitest/queue/runner"
+
+      Datadog.configure do |c|
+        c.ci.enabled = true
+        c.ci.instrument :minitest, service_name: "ltest"
+      end
+
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          FileUtils.mkdir_p("log")
+
+          fake_test_file_path = #{fake_test_file_path.inspect}
+          queue_entries = %w[test_pass test_pass_other].map do |method|
+            CGI.escape(JSON.dump({test_id: "SomeTest#" + method, file_path: fake_test_file_path}))
+          end
+
+          Minitest::Queue::Runner.invoke(
+            [
+              "-I#{fake_test_load_path}",
+              "--build",
+              SecureRandom.random_number(2**64 - 1).to_s,
+              "--worker",
+              "1",
+              "--queue",
+              "list:\#{queue_entries.join(":")}",
+              "run",
+              fake_test_file_path
+            ]
+          )
+
+          exit(Minitest.run([]) ? 0 : 1)
+        end
+      end
+    RUBY
+
+    stdout, stderr, status = Open3.capture3(
+      {"DD_GIT_REPOSITORY_URL" => "https://github.com/DataDog/datadog-ci-rb", "DD_GIT_COMMIT_SHA" => "0" * 40},
+      RbConfig.ruby,
+      "-rbundler/setup",
+      "-I#{File.expand_path("../../../../../lib", __dir__)}",
+      "-e",
+      script
+    )
+
+    expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
   end
 end

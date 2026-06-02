@@ -80,6 +80,20 @@ def self.with_minitest_gem(versions: 5)
   end
 end
 
+def self.with_minitest_maxitest_gem(version_pairs: {5 => 6, 6 => 7})
+  return if Gem::Version.new("3.2") > RUBY_VERSION
+
+  version_pairs.each do |minitest_v, maxitest_versions|
+    Array(maxitest_versions).each do |maxitest_v|
+      appraise "minitest-#{minitest_v}-maxitest-#{maxitest_v}" do
+        gem "minitest", "~> #{minitest_v}"
+        gem "maxitest", "~> #{maxitest_v}"
+        gem "mutex_m" if Gem::Version.new("3.4") <= RUBY_VERSION
+      end
+    end
+  end
+end
+
 def self.with_ci_queue_minitest_gem(minitest_versions: 5, ci_queue_versions: 0)
   Array(minitest_versions).each do |minitest_v|
     Array(ci_queue_versions).each do |ci_queue_v|
@@ -234,6 +248,7 @@ end
 major, minor, = RUBY_VERSION.segments
 
 with_minitest_gem(versions: 5..6)
+with_minitest_maxitest_gem
 with_rspec_gem
 with_cucumber_gem(versions: 3..11)
 with_ci_queue_minitest_gem if Gem::Version.new("3.1") <= RUBY_VERSION

@@ -61,8 +61,11 @@ module Datadog
           end
 
           def self.parallel?(klass)
-            klass.ancestors.include?(::Minitest::Parallel::Test) ||
-              (defined?(::Minitest::Queue) && ::Minitest.singleton_class.ancestors.include?(::Minitest::Queue))
+            klass.ancestors.include?(::Minitest::Parallel::Test) || ci_queue?
+          end
+
+          def self.ci_queue?
+            !!(defined?(::Minitest::Queue) && ::Minitest.singleton_class.ancestors.include?(::Minitest::Queue))
           end
 
           def self.extract_source_location_from_class(klass)

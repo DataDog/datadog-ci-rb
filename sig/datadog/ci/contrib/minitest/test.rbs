@@ -3,9 +3,17 @@ module Datadog
     module Contrib
       module Minitest
         module Test
+          @_dd_pre_datadog_minitest_run: untyped
+
+          def self._dd_pre_datadog_minitest_run: () -> untyped
+
+          def self._dd_pre_datadog_minitest_run=: (untyped) -> untyped
+
           module ClassMethods
             @datadog_itr_unskippable_suite: bool
             @datadog_itr_unskippable_tests: Array[String]?
+
+            def method_added: (Symbol method_name) -> untyped
 
             def datadog_itr_unskippable: (*untyped) -> void
 
@@ -18,11 +26,19 @@ module Datadog
             include ::Minitest::Test::LifecycleHooks
             extend ClassMethods
 
-            def before_setup: () -> (nil | untyped)
+            def run: () -> ::Minitest::Result
 
             def after_teardown: () -> untyped
 
             private
+
+            def datadog_run_reentered?: () -> bool
+
+            def run_without_datadog_reentry: () -> ::Minitest::Result
+
+            def start_datadog_test: () -> Datadog::CI::Test?
+
+            def skip_datadog_test: (Datadog::CI::Test test_span) -> ::Minitest::Result
 
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 

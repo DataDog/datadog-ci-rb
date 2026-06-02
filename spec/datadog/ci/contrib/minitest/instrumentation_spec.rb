@@ -593,6 +593,72 @@ RSpec.describe "Minitest instrumentation" do
         end
       end
 
+      context "completely skipped test suite with lifecycle hooks" do
+        before(:context) do
+          Minitest::Runnable.reset
+
+          class HookedSkippedTest < Minitest::Test
+            @hook_calls = []
+
+            class << self
+              attr_reader :hook_calls
+            end
+
+            def before_setup
+              self.class.hook_calls << [name, :before_setup]
+              super
+            end
+
+            def setup
+              self.class.hook_calls << [name, :setup]
+            end
+
+            def after_setup
+              self.class.hook_calls << [name, :after_setup]
+              super
+            end
+
+            def before_teardown
+              self.class.hook_calls << [name, :before_teardown]
+              super
+            end
+
+            def teardown
+              self.class.hook_calls << [name, :teardown]
+            end
+
+            def after_teardown
+              self.class.hook_calls << [name, :after_teardown]
+              super
+            end
+
+            def test_1
+              self.class.hook_calls << [name, :test]
+            end
+
+            def test_2
+              self.class.hook_calls << [name, :test]
+            end
+          end
+        end
+
+        let(:itr_skippable_tests) do
+          Set.new(
+            [
+              "HookedSkippedTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_1.",
+              "HookedSkippedTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_2."
+            ]
+          )
+        end
+
+        it "does not run lifecycle hooks for tests skipped by test impact analysis" do
+          expect(test_spans).to have(2).items
+          expect(test_spans).to all have_skip_status
+
+          expect(HookedSkippedTest.hook_calls).to be_empty
+        end
+      end
+
       context "single test failed" do
         before(:context) do
           Minitest::Runnable.reset
@@ -1841,7 +1907,7 @@ RSpec.describe "Minitest instrumentation" do
       end
       let(:changed_files) do
         Set.new([
-          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1854:1856"
+          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1922:1924"
         ])
       end
     end
