@@ -26,10 +26,6 @@ module Datadog
             include ::Minitest::Test::LifecycleHooks
             extend ClassMethods
 
-            @_dd_minitest_run_in_progress: bool?
-            @_dd_minitest_test_span: Datadog::CI::Test?
-            @_dd_minitest_span_finished: bool?
-
             def run: () -> ::Minitest::Result
 
             def after_teardown: () -> untyped

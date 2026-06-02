@@ -37,26 +37,16 @@ module Datadog
 
               return run_without_datadog_reentry if datadog_run_reentered?
 
-              @_dd_minitest_run_in_progress = true
-              begin
-                @_dd_minitest_span_finished = false
-                test_span = start_datadog_test
-                @_dd_minitest_test_span = test_span
-                return skip_datadog_test(test_span) if test_span&.should_skip?
+              test_span = start_datadog_test
+              return skip_datadog_test(test_span) if test_span&.should_skip?
 
-                super
-              ensure
-                @_dd_minitest_test_span = nil
-                @_dd_minitest_run_in_progress = false
-              end
+              super
             end
 
             def after_teardown
               test_span = _dd_test_tracing_component.active_test
               return super unless test_span
-              return super if @_dd_minitest_span_finished
 
-              @_dd_minitest_span_finished = true
               finish_with_result(test_span, result_code)
 
               # remove failures if failure can be ignored because of retries
@@ -68,9 +58,7 @@ module Datadog
             private
 
             def datadog_run_reentered?
-              !!(@_dd_minitest_run_in_progress &&
-                @_dd_minitest_test_span &&
-                _dd_test_tracing_component.active_test.equal?(@_dd_minitest_test_span))
+              !!_dd_test_tracing_component.active_test
             end
 
             def run_without_datadog_reentry

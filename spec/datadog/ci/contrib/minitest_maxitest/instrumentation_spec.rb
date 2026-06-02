@@ -11,11 +11,29 @@ RSpec.describe "Minitest instrumentation with maxitest around hooks" do
 
     require "minitest/spec"
     require "maxitest/vendor/around"
-    require_relative "fake_test"
+
+    test_class = Class.new(Minitest::Test) do
+      def around
+        yield
+      end
+
+      def test_pass
+        assert true
+      end
+
+      def test_pass_other
+        assert true
+      end
+    end
+    stub_const("MaxitestDatadogTest", test_class)
+  end
+
+  after do
+    Minitest::Runnable.reset
   end
 
   it "instruments this minitest session" do
-    expect(Minitest.run([])).to be(true)
+    expect(Minitest.run(["--seed", "1"])).to be(true)
 
     expect(test_session_span).not_to be_nil
     expect(test_module_span).not_to be_nil
