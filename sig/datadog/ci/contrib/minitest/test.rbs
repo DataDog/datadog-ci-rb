@@ -3,15 +3,21 @@ module Datadog
     module Contrib
       module Minitest
         module Test
-          @_dd_original_minitest_run: untyped
+          @_dd_pre_datadog_minitest_run: untyped
 
-          def self._dd_original_minitest_run: () -> untyped
+          def self._dd_pre_datadog_minitest_run: () -> untyped
 
-          def self._dd_original_minitest_run=: (untyped) -> untyped
+          def self._dd_pre_datadog_minitest_run=: (untyped) -> untyped
+
+          def self._dd_capture_concrete_pre_datadog_minitest_run: (untyped owner) -> void
+
+          def self._dd_concrete_pre_datadog_minitest_run?: (untyped method) -> bool
 
           module ClassMethods
             @datadog_itr_unskippable_suite: bool
             @datadog_itr_unskippable_tests: Array[String]?
+
+            def method_added: (Symbol method_name) -> untyped
 
             def datadog_itr_unskippable: (*untyped) -> void
 
@@ -24,11 +30,19 @@ module Datadog
             include ::Minitest::Test::LifecycleHooks
             extend ClassMethods
 
+            @_dd_minitest_run_in_progress: bool?
+            @_dd_minitest_test_span: Datadog::CI::Test?
+            @_dd_minitest_span_finished: bool?
+
             def run: () -> ::Minitest::Result
 
             def after_teardown: () -> untyped
 
             private
+
+            def datadog_run_reentered?: () -> bool
+
+            def run_without_datadog_reentry: () -> ::Minitest::Result
 
             def start_datadog_test: () -> Datadog::CI::Test?
 

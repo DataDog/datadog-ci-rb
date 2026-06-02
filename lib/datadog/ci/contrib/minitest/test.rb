@@ -14,18 +14,38 @@ module Datadog
         # Lifecycle hooks to instrument Minitest::Test
         module Test
           class << self
-            attr_accessor :_dd_original_minitest_run
+            attr_accessor :_dd_pre_datadog_minitest_run
+
+            def _dd_capture_concrete_pre_datadog_minitest_run(owner)
+              saved_run = _dd_pre_datadog_minitest_run
+              return if _dd_concrete_pre_datadog_minitest_run?(saved_run)
+              return if !defined?(::Minitest::Test) || !owner.equal?(::Minitest::Test)
+
+              datadog_run = owner.instance_method(:run)
+              return if datadog_run.owner != InstanceMethods
+
+              candidate_run = datadog_run.super_method
+              if _dd_concrete_pre_datadog_minitest_run?(candidate_run)
+                self._dd_pre_datadog_minitest_run = candidate_run
+              end
+            end
+
+            def _dd_concrete_pre_datadog_minitest_run?(method)
+              method &&
+                method.owner != InstanceMethods &&
+                (!defined?(::Minitest::Runnable) || method.owner != ::Minitest::Runnable)
+            end
           end
 
           def self.included(base)
             unless base < InstanceMethods
-              # Keep the run implementation that existed before Datadog is prepended.
-              # ci-queue installs minitest-reporters later, and minitest-reporters aliases
-              # the then-current `run` method as `run_without_hooks`. If that current method
-              # is Datadog's wrapper, calling `super` under ci-queue re-enters Datadog after
-              # the test span has already started. This preserved method lets ci-queue execute
-              # Minitest's original setup/test/teardown body once, without starting a second span.
-              self._dd_original_minitest_run = base.instance_method(:run)
+              # Preserve the run implementation that existed before Datadog was prepended.
+              # Auto-instrumentation can observe Minitest::Test while minitest.rb is still
+              # evaluating its class body, before Minitest::Test#run overrides the abstract
+              # Minitest::Runnable#run. ClassMethods#method_added captures that concrete run
+              # method once, and ignores later plugin wrappers. On reentry we bind this saved
+              # method directly instead of starting another span.
+              self._dd_pre_datadog_minitest_run = base.instance_method(:run)
               base.prepend(InstanceMethods)
             end
 
@@ -36,18 +56,28 @@ module Datadog
             def run
               return super unless datadog_configuration[:enabled]
 
-              test_span = start_datadog_test
-              return skip_datadog_test(test_span) if test_span&.should_skip?
+              return run_without_datadog_reentry if datadog_run_reentered?
 
-              return Test._dd_original_minitest_run.bind_call(self) if Helpers.ci_queue?
+              @_dd_minitest_run_in_progress = true
+              begin
+                @_dd_minitest_span_finished = false
+                test_span = start_datadog_test
+                @_dd_minitest_test_span = test_span
+                return skip_datadog_test(test_span) if test_span&.should_skip?
 
-              super
+                super
+              ensure
+                @_dd_minitest_test_span = nil
+                @_dd_minitest_run_in_progress = false
+              end
             end
 
             def after_teardown
               test_span = _dd_test_tracing_component.active_test
               return super unless test_span
+              return super if @_dd_minitest_span_finished
 
+              @_dd_minitest_span_finished = true
               finish_with_result(test_span, result_code)
 
               # remove failures if failure can be ignored because of retries
@@ -57,6 +87,26 @@ module Datadog
             end
 
             private
+
+            def datadog_run_reentered?
+              !!(@_dd_minitest_run_in_progress &&
+                @_dd_minitest_test_span &&
+                _dd_test_tracing_component.active_test.equal?(@_dd_minitest_test_span))
+            end
+
+            def run_without_datadog_reentry
+              Datadog.logger.debug do
+                "Datadog Minitest instrumentation re-entered for #{self.class}##{name}; running pre-Datadog Minitest run without starting another test span"
+              end
+
+              pre_datadog_minitest_run = Test._dd_pre_datadog_minitest_run
+              if Test._dd_concrete_pre_datadog_minitest_run?(pre_datadog_minitest_run)
+                return pre_datadog_minitest_run.bind_call(self)
+              end
+
+              raise "Datadog Minitest instrumentation re-entered for #{self.class}##{name}, " \
+                "but the concrete pre-Datadog Minitest::Test#run method was not captured"
+            end
 
             def start_datadog_test
               if Helpers.parallel?(self.class)
@@ -136,6 +186,12 @@ module Datadog
           end
 
           module ClassMethods
+            def method_added(method_name)
+              Test._dd_capture_concrete_pre_datadog_minitest_run(self) if method_name == :run
+            ensure
+              super
+            end
+
             def datadog_itr_unskippable(*args)
               if args.nil? || args.empty?
                 @datadog_itr_unskippable_suite = true
