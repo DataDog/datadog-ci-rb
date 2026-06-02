@@ -6,6 +6,7 @@ require_relative "../../source_code/method_inspect"
 require_relative "../instrumentation"
 require_relative "ext"
 require_relative "helpers"
+require_relative "run_method_capture"
 
 module Datadog
   module CI
@@ -15,36 +16,14 @@ module Datadog
         module Test
           class << self
             attr_accessor :_dd_pre_datadog_minitest_run
-
-            def _dd_capture_concrete_pre_datadog_minitest_run(owner)
-              saved_run = _dd_pre_datadog_minitest_run
-              return if _dd_concrete_pre_datadog_minitest_run?(saved_run)
-              return if !defined?(::Minitest::Test) || !owner.equal?(::Minitest::Test)
-
-              datadog_run = owner.instance_method(:run)
-              return if datadog_run.owner != InstanceMethods
-
-              candidate_run = datadog_run.super_method
-              if _dd_concrete_pre_datadog_minitest_run?(candidate_run)
-                self._dd_pre_datadog_minitest_run = candidate_run
-              end
-            end
-
-            def _dd_concrete_pre_datadog_minitest_run?(method)
-              method &&
-                method.owner != InstanceMethods &&
-                (!defined?(::Minitest::Runnable) || method.owner != ::Minitest::Runnable)
-            end
           end
 
           def self.included(base)
             unless base < InstanceMethods
               # Preserve the run implementation that existed before Datadog was prepended.
-              # Auto-instrumentation can observe Minitest::Test while minitest.rb is still
-              # evaluating its class body, before Minitest::Test#run overrides the abstract
-              # Minitest::Runnable#run. ClassMethods#method_added captures that concrete run
-              # method once, and ignores later plugin wrappers. On reentry we bind this saved
-              # method directly instead of starting another span.
+              # RunMethodCapture repairs this if auto-instrumentation observes Minitest::Test
+              # before Minitest defines its concrete #run. See that helper for the ci-queue
+              # and minitest-reporters load-order details.
               self._dd_pre_datadog_minitest_run = base.instance_method(:run)
               base.prepend(InstanceMethods)
             end
@@ -100,7 +79,7 @@ module Datadog
               end
 
               pre_datadog_minitest_run = Test._dd_pre_datadog_minitest_run
-              if Test._dd_concrete_pre_datadog_minitest_run?(pre_datadog_minitest_run)
+              if RunMethodCapture.concrete_pre_datadog_run?(pre_datadog_minitest_run, InstanceMethods)
                 return pre_datadog_minitest_run.bind_call(self)
               end
 
@@ -187,7 +166,7 @@ module Datadog
 
           module ClassMethods
             def method_added(method_name)
-              Test._dd_capture_concrete_pre_datadog_minitest_run(self) if method_name == :run
+              RunMethodCapture.capture_concrete_pre_datadog_run!(Test, self, InstanceMethods) if method_name == :run
             ensure
               super
             end

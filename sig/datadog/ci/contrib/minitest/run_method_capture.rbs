@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Contrib
+      module Minitest
+        module RunMethodCapture
+          def self.capture_concrete_pre_datadog_run!: (untyped storage, untyped owner, untyped datadog_run_owner) -> void
+
+          def self.concrete_pre_datadog_run?: (untyped method, untyped datadog_run_owner) -> bool
+        end
+      end
+    end
+  end
+end
