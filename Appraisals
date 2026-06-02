@@ -80,10 +80,10 @@ def self.with_minitest_gem(versions: 5)
   end
 end
 
-def self.with_minitest_maxitest_gem(version_pairs: {5 => 3..6, 6 => 7})
-  version_pairs.each do |minitest_v, maxitest_versions|
-    next if minitest_v > 5 && Gem::Version.new("3.2") > RUBY_VERSION
+def self.with_minitest_maxitest_gem(version_pairs: {5 => 6, 6 => 7})
+  return if Gem::Version.new("3.2") > RUBY_VERSION
 
+  version_pairs.each do |minitest_v, maxitest_versions|
     Array(maxitest_versions).each do |maxitest_v|
       appraise "minitest-#{minitest_v}-maxitest-#{maxitest_v}" do
         gem "minitest", "~> #{minitest_v}"

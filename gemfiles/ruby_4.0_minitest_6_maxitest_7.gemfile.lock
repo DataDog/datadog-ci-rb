@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 6c76a41b61b0f6465bd1e9a305de0f0c80e005c8
+  revision: 9a74cf882fa36d95cd6c845400e4b8474d858738
   branch: master
   specs:
     datadog (2.35.0.dev)
@@ -76,9 +76,11 @@ GEM
     libddwaf (1.30.0.0.2-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
-    maxitest (4.5.0)
-      minitest (>= 5.0.0, < 5.19.0)
-    minitest (5.18.1)
+    maxitest (7.1.1)
+      minitest (>= 6.0.0, < 6.1.0)
+    minitest (6.0.6)
+      drb (~> 2.0)
+      prism (~> 1.5)
     msgpack (1.8.1)
     mutex_m (0.3.0)
     os (1.1.4)
@@ -134,7 +136,6 @@ GEM
     yard (0.9.44)
 
 PLATFORMS
-  aarch64-linux
   aarch64-linux-gnu
   aarch64-linux-musl
   arm-linux-gnu
@@ -154,8 +155,8 @@ DEPENDENCIES
   datadog!
   datadog-ci!
   debug
-  maxitest (~> 4)
-  minitest (~> 5)
+  maxitest (~> 7)
+  minitest (~> 6)
   mutex_m
   os
   ostruct
@@ -208,8 +209,8 @@ CHECKSUMS
   libddwaf (1.30.0.0.2-x86_64-darwin) sha256=3fb97292a9e6eb4b50d48ed0805c48278a261744ce6944e0ded73144a0395060
   libddwaf (1.30.0.0.2-x86_64-linux) sha256=d6f628bfb91a7f89a4ef702c3fce3991ec0678c50031128b70799fde8362111d
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
-  maxitest (4.5.0) sha256=b9c61837893a9dc6a6206d70f756ce2756084523c4e348538d8d6a89bb5e0e1b
-  minitest (5.18.1) sha256=ab5ee381871aaddc3a6aa2a6abcab5c4590fec9affc20947d63f312a0fe4e9cd
+  maxitest (7.1.1) sha256=f504c01714f83d8e4483be8cb1a6b02faa7e08a135202c0516c1e55fd11cd78d
+  minitest (6.0.6) sha256=153ea36d1d987a62942382b61075745042a2b3123b1cd48f4c3675af9cc7d6f1
   msgpack (1.8.1) sha256=3fef787cd3965fd119c08a22724a56a93ca25008c3421fc15039f603a8b7c86c
   mutex_m (0.3.0) sha256=cfcb04ac16b69c4813777022fdceda24e9f798e48092a2b817eb4c0a782b0751
   os (1.1.4) sha256=57816d6a334e7bd6aed048f4b0308226c5fb027433b67d90a9ab435f35108d3f
@@ -241,4 +242,4 @@ CHECKSUMS
   yard (0.9.44) sha256=eb087e9b631ccd887b049f303d489963945452d5e2a7eb49a5a74a7cf6887f28
 
 BUNDLED WITH
-  4.0.3
+  4.0.0
