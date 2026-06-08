@@ -54,7 +54,7 @@ static VALUE iseq_collector_collect(VALUE self) {
 
 /* ---- Module initialization ---------------------------------------------- */
 
-void Init_iseq_collector(void) {
+void Init_dd_ci_iseq_collector(void) {
   VALUE mDatadog = rb_define_module("Datadog");
   VALUE mCI = rb_define_module_under(mDatadog, "CI");
   VALUE mSourceCode = rb_define_module_under(mCI, "SourceCode");
