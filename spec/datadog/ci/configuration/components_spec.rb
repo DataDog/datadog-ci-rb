@@ -103,6 +103,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(Datadog.logger)
             .to receive(:error)
 
+          stub_const("RUBY_VERSION", ruby_version)
+
           components
 
           allow(Datadog).to receive(:components).and_return(components)
@@ -118,6 +120,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:evp_proxy_v4_supported) { false }
         let(:itr_enabled) { false }
         let(:tracing_enabled) { true }
+        let(:ruby_version) { RUBY_VERSION }
         let(:itr_code_coverage_use_single_threaded_mode) { false }
         let(:itr_test_impact_analysis_use_allocation_tracing) { true }
         let(:discard_traces) { false }
@@ -376,6 +379,29 @@ RSpec.describe Datadog::CI::Configuration::Components do
                       expect(Datadog.logger).to have_received(:warn)
 
                       expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(false)
+                    end
+                  end
+
+                  context "when running on a Ruby version affected by the allocation tracing VM bug" do
+                    let(:ruby_version) { "3.2.2" }
+
+                    it "logs a warning and disables allocation tracing for ITR" do
+                      expect(Datadog.logger).to have_received(:warn).with(/Allocation tracing is not supported/)
+
+                      expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(false)
+                    end
+                  end
+
+                  context "when running on a Ruby 3.2 patch version that is not affected by the VM bug" do
+                    # Regression test: a previous lexicographic compare
+                    # (`RUBY_VERSION < "3.2.3"`) incorrectly fired here because
+                    # "3.2.11" < "3.2.3" is true as a string compare.
+                    let(:ruby_version) { "3.2.11" }
+
+                    it "does not log a warning and leaves allocation tracing enabled" do
+                      expect(Datadog.logger).not_to have_received(:warn).with(/Allocation tracing is not supported/)
+
+                      expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(true)
                     end
                   end
                 end
