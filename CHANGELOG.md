@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [1.32.0] - 2026-06-08
+
+### Changed
+
+* Truncate CI Visibility meta tag values ([#515][])
+
+### Fixed
+
+* Fix Minitest TIA skipped hooks ([#516][])
+* Fix: use Gem::Version for Ruby allocation tracing check ([#522][])
+* Fix symbol collision with a debug gem ([#521][])
+
 ## [1.31.0] - 2026-05-20
 
 ### Added
@@ -641,7 +653,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.31.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.32.0...main
+[1.32.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.31.0...v1.32.0
 [1.31.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.30.0...v1.31.0
 [1.30.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.29.0...v1.30.0
 [1.29.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.28.0...v1.29.0
@@ -909,3 +922,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#506]: https://github.com/DataDog/datadog-ci-rb/issues/506
 [#509]: https://github.com/DataDog/datadog-ci-rb/issues/509
 [#511]: https://github.com/DataDog/datadog-ci-rb/issues/511
+[#515]: https://github.com/DataDog/datadog-ci-rb/issues/515
+[#516]: https://github.com/DataDog/datadog-ci-rb/issues/516
+[#521]: https://github.com/DataDog/datadog-ci-rb/issues/521
+[#522]: https://github.com/DataDog/datadog-ci-rb/issues/522
