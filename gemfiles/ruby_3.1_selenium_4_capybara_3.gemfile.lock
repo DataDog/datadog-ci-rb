@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 675975f13b07e7ab686e435c39c59c07e6d07e51
+  revision: db52a858a13a10f9a16c7a718b48bf200c2c9e23
   branch: master
   specs:
-    datadog (2.35.0.dev)
+    datadog (2.36.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.2)
       libdatadog (~> 33.0.0.1.0)
@@ -111,7 +111,7 @@ GEM
       prettyprint
     prettyprint (0.2.0)
     prism (1.9.0)
-    psych (5.3.1)
+    psych (5.4.0)
       date
       stringio
     public_suffix (6.0.2)
