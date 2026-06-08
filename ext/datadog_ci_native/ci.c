@@ -8,5 +8,5 @@ void Init_datadog_ci_native(void) {
 
   // SourceCode
   Init_datadog_method_inspect();
-  Init_iseq_collector();
+  Init_dd_ci_iseq_collector();
 }
