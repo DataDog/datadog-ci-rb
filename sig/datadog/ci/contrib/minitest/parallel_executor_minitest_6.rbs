@@ -12,7 +12,7 @@ module Datadog
 
             private
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Minitest::Configuration::Settings
           end
         end
       end

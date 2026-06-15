@@ -14,7 +14,7 @@ module Datadog
 
             def __dd_peek_result: () -> ::SimpleCov::Result?
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Simplecov::Configuration::Settings
           end
         end
       end

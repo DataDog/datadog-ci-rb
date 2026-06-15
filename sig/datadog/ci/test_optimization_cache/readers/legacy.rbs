@@ -3,21 +3,21 @@ module Datadog
     module TestOptimizationCache
       module Readers
         class Legacy < Base
-          def load_settings: () -> Hash[untyped, untyped]?
+          def load_settings: () -> Hash[String, untyped]?
 
-          def load_known_tests: () -> Hash[untyped, untyped]?
+          def load_known_tests: () -> Hash[String, untyped]?
 
-          def load_test_management: () -> Hash[untyped, untyped]?
+          def load_test_management: () -> Hash[String, untyped]?
 
-          def load_skippable_tests: () -> Hash[untyped, untyped]?
+          def load_skippable_tests: () -> Hash[String, untyped]?
 
           private
 
-          def load_legacy_json: (String file_name) -> Hash[untyped, untyped]?
+          def load_legacy_json: (String file_name) -> Hash[String, untyped]?
 
-          def backend_response: (Hash[untyped, untyped] payload) -> Hash[String, untyped]
+          def backend_response: (Hash[String, untyped] payload) -> Hash[String, untyped]
 
-          def skippable_tests_response: (Hash[untyped, untyped] payload) -> Hash[String, untyped]
+          def skippable_tests_response: (Hash[String, untyped] payload) -> Hash[String, untyped]
         end
       end
     end

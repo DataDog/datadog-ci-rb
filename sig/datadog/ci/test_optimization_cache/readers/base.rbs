@@ -5,17 +5,17 @@ module Datadog
         class Base
           def available?: () -> bool
 
-          def load_settings: () -> Hash[untyped, untyped]?
+          def load_settings: () -> Hash[String, untyped]?
 
-          def load_known_tests: () -> Hash[untyped, untyped]?
+          def load_known_tests: () -> Hash[String, untyped]?
 
-          def load_test_management: () -> Hash[untyped, untyped]?
+          def load_test_management: () -> Hash[String, untyped]?
 
-          def load_skippable_tests: () -> Hash[untyped, untyped]?
+          def load_skippable_tests: () -> Hash[String, untyped]?
 
           private
 
-          def read_json_file: (String file_path) -> Hash[untyped, untyped]?
+          def read_json_file: (String file_path) -> Hash[String, untyped]?
         end
       end
     end

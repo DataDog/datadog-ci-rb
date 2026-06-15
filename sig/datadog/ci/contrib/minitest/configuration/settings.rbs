@@ -4,6 +4,15 @@ module Datadog
       module Minitest
         module Configuration
           class Settings < Datadog::CI::Contrib::Settings
+            def initialize: () ?{ (Settings) -> void } -> void
+
+            def enabled: () -> bool
+            def enabled=: (bool) -> bool
+
+            def service_name: () -> String
+            def service_name=: (String) -> String
+
+            def []: (:enabled) -> bool | (:service_name) -> String
           end
         end
       end

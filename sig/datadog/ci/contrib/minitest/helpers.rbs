@@ -3,17 +3,27 @@ module Datadog
     module Contrib
       module Minitest
         module Helpers
-          def self.start_test_suite: (untyped klass) -> Datadog::CI::TestSuite?
+          interface _RunnableClass
+            def runnable_methods: () -> Array[String]
 
-          def self.test_suite_name: (untyped klass, String? method_name) -> ::String
+            def name: () -> String?
 
-          def self.parallel?: (untyped klass) -> bool
+            def instance_method: (String method_name) -> UnboundMethod
+
+            def ancestors: () -> Array[Module]
+          end
+
+          def self.start_test_suite: (_RunnableClass klass) -> Datadog::CI::TestSuite?
+
+          def self.test_suite_name: (_RunnableClass klass, String method_name) -> ::String
+
+          def self.parallel?: (_RunnableClass klass) -> bool
 
           def self.ci_queue?: () -> bool
 
-          def self.extract_source_location_from_class: (untyped klass) -> Array[untyped]
+          def self.extract_source_location_from_class: (untyped klass) -> ([String, Integer] | Array[untyped])
 
-          def self.extract_runnable_source_location: (untyped klass, String? method_name) -> Array[untyped]?
+          def self.extract_runnable_source_location: (_RunnableClass klass, String method_name) -> ([String, Integer] | Array[untyped])?
         end
       end
     end

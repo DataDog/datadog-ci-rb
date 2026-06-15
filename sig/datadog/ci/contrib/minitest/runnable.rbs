@@ -6,16 +6,15 @@ module Datadog
           def self.included: (untyped base) -> untyped
 
           module ClassMethods : ::Minitest::Runnable
+            include Datadog::CI::Contrib::Minitest::Helpers::_RunnableClass
 
             def run: (*untyped) -> untyped
 
             private
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Minitest::Configuration::Settings
 
             def test_order: () -> (nil | :parallel | :random | :sorted | :alpha)
-
-            def runnable_methods: () -> Array[String]
           end
         end
       end

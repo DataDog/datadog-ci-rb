@@ -8,7 +8,7 @@ module Datadog
           private
 
           def datadog_logs_component: () -> Datadog::CI::Logs::Component
-          def datadog_configuration: () -> Hash[Symbol, untyped]
+          def datadog_configuration: () -> Datadog::CI::Contrib::ActiveSupport::Configuration::Settings
         end
       end
     end

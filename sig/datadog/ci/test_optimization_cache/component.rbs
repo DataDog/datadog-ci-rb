@@ -2,7 +2,7 @@ module Datadog
   module CI
     module TestOptimizationCache
       class Component
-        READER_BY_MANIFEST_VERSION: Hash[String, untyped]
+        READER_BY_MANIFEST_VERSION: Hash[String, singleton(Readers::V1)]
 
         @locator: Locator
         @reader: Readers::Base
@@ -11,13 +11,13 @@ module Datadog
 
         def cache_available?: () -> bool
 
-        def load_settings: () -> Hash[untyped, untyped]?
+        def load_settings: () -> Hash[String, untyped]?
 
-        def load_known_tests: () -> Hash[untyped, untyped]?
+        def load_known_tests: () -> Hash[String, untyped]?
 
-        def load_test_management: () -> Hash[untyped, untyped]?
+        def load_test_management: () -> Hash[String, untyped]?
 
-        def load_skippable_tests: () -> Hash[untyped, untyped]?
+        def load_skippable_tests: () -> Hash[String, untyped]?
 
         def shutdown!: () -> nil
 

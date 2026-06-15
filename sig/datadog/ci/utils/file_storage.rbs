@@ -4,9 +4,9 @@ module Datadog
       module FileStorage
         TEMP_DIR: String
 
-        def self.store: (String key, Hash[untyped, untyped] value) -> bool
+        def self.store: (String key, Hash[Symbol, untyped] value) -> bool
 
-        def self.retrieve: (String key) -> Hash[untyped, untyped]?
+        def self.retrieve: (String key) -> Hash[Symbol, untyped]?
 
         def self.cleanup: () -> bool
 

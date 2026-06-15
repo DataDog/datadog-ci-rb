@@ -8,6 +8,8 @@ module Datadog
 
             def enabled: () -> bool
             def enabled=: (bool) -> bool
+
+            def []: (:enabled) -> bool
           end
         end
       end

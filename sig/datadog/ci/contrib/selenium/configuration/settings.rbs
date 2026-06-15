@@ -4,6 +4,15 @@ module Datadog
       module Selenium
         module Configuration
           class Settings < Datadog::CI::Contrib::Settings
+            def initialize: () ?{ (Settings) -> void } -> void
+
+            def enabled: () -> bool
+            def enabled=: (bool) -> bool
+
+            def rum_flush_wait_millis: () -> Integer
+            def rum_flush_wait_millis=: (Integer) -> Integer
+
+            def []: (:enabled) -> bool | (:rum_flush_wait_millis) -> Integer
           end
         end
       end

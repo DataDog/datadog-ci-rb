@@ -10,7 +10,7 @@ module Datadog
 
             def before_format: (untyped data, untyped payload) -> untyped
             def datadog_logs_component: () -> Datadog::CI::Logs::Component
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Lograge::Configuration::Settings
           end
         end
       end

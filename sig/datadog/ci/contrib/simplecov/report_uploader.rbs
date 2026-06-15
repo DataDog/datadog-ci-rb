@@ -16,7 +16,7 @@ module Datadog
 
             def read_coverage_result: () -> String?
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Simplecov::Configuration::Settings
           end
         end
       end

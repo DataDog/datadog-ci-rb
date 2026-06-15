@@ -2,6 +2,8 @@ module Datadog
   module CI
     module Contrib
       class Settings
+        type option_value = bool | Integer | String | nil
+
         include Core::Configuration::Base
         extend Datadog::Core::Configuration::Options::ClassMethods
         include Datadog::Core::Configuration::Options::InstanceMethods
@@ -10,9 +12,9 @@ module Datadog
 
         def configure: (?::Hash[Symbol, untyped] options) ?{ (Datadog::CI::Contrib::Settings) -> Datadog::CI::Contrib::Settings } -> Datadog::CI::Contrib::Settings?
 
-        def []: (Symbol name) -> Datadog::CI::Contrib::Settings
+        def []: (Symbol name) -> option_value
 
-        def []=: (untyped name, untyped value) -> untyped
+        def []=: (Symbol name, option_value value) -> option_value
 
         # default configuration options
         #
