@@ -6,13 +6,15 @@ module Datadog
           def self.included: (untyped base) -> untyped
 
           module ClassMethods
+            include Datadog::CI::Contrib::Minitest::Helpers::_RunnableClass
+
             def run_suite: (*untyped args) -> untyped
 
             def run: (untyped klass, untyped method_name, untyped reporter) -> untyped
 
             private
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Minitest::Configuration::Settings
 
             def _dd_test_tracing_component: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 

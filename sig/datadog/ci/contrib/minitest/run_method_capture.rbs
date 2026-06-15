@@ -3,9 +3,15 @@ module Datadog
     module Contrib
       module Minitest
         module RunMethodCapture
-          def self.capture_concrete_pre_datadog_run!: (untyped storage, untyped owner, untyped datadog_run_owner) -> void
+          interface _Storage
+            def _dd_pre_datadog_minitest_run: () -> UnboundMethod?
 
-          def self.concrete_pre_datadog_run?: (untyped method, untyped datadog_run_owner) -> bool
+            def _dd_pre_datadog_minitest_run=: (UnboundMethod? method) -> UnboundMethod?
+          end
+
+          def self.capture_concrete_pre_datadog_run!: (_Storage storage, untyped owner, Module datadog_run_owner) -> void
+
+          def self.concrete_pre_datadog_run?: (UnboundMethod? method, Module datadog_run_owner) -> bool?
         end
       end
     end

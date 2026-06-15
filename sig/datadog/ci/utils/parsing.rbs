@@ -2,7 +2,7 @@ module Datadog
   module CI
     module Utils
       module Parsing
-        def self.convert_to_bool: (untyped value) -> bool
+        def self.convert_to_bool: (Object value) -> bool
       end
     end
   end

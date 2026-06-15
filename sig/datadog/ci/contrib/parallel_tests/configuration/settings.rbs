@@ -8,6 +8,11 @@ module Datadog
 
             def enabled: () -> bool
             def enabled=: (bool) -> bool
+
+            def service_name: () -> String
+            def service_name=: (String) -> String
+
+            def []: (:enabled) -> bool | (:service_name) -> String
           end
         end
       end

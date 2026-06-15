@@ -4,8 +4,21 @@ module Datadog
       module RSpec
         module Configuration
           class Settings < Datadog::CI::Contrib::Settings
+            def initialize: () ?{ (Settings) -> void } -> void
+
+            def enabled: () -> bool
+            def enabled=: (bool) -> bool
+
+            def service_name: () -> String
+            def service_name=: (String) -> String
+
+            def datadog_formatter_enabled: () -> bool
+            def datadog_formatter_enabled=: (bool) -> bool
+
             def dry_run_enabled: () -> bool
             def dry_run_enabled=: (bool) -> bool
+
+            def []: (:enabled | :datadog_formatter_enabled | :dry_run_enabled) -> bool | (:service_name) -> String
           end
         end
       end

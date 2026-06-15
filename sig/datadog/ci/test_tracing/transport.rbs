@@ -18,7 +18,7 @@ module Datadog
           ?max_payload_size: Integer
         ) -> void
 
-        def send_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> untyped
+        def send_traces: (Array[Datadog::Tracing::TraceSegment] traces) -> Array[Datadog::CI::Transport::Adapters::Net::Response]
 
         private
 

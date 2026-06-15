@@ -3,8 +3,20 @@ module Datadog
     module Transport
       module Api
         module Builder
-          def self.build_agentless_api: (untyped settings) -> Datadog::CI::Transport::Api::Agentless?
-          def self.build_evp_proxy_api: (untyped agent_settings) -> Datadog::CI::Transport::Api::EvpProxy?
+          interface _CISettings
+            def agentless_url: () -> String?
+          end
+
+          interface _SettingsExtras
+            def api_key: () -> String
+
+            def site: () -> String?
+
+            def ci: () -> _CISettings
+          end
+
+          def self.build_agentless_api: ((::Datadog::Core::Configuration::Settings & _SettingsExtras) settings) -> Datadog::CI::Transport::Api::Agentless?
+          def self.build_evp_proxy_api: ((::Datadog::Core::Configuration::Settings & _SettingsExtras) settings) -> Datadog::CI::Transport::Api::EvpProxy?
         end
       end
     end

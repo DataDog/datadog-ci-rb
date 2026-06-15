@@ -10,7 +10,7 @@ module Datadog
 
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Selenium::Configuration::Settings
           end
         end
       end

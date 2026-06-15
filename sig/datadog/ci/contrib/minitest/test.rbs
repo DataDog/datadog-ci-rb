@@ -10,6 +10,8 @@ module Datadog
           def self._dd_pre_datadog_minitest_run=: (untyped) -> untyped
 
           module ClassMethods
+            include Datadog::CI::Contrib::Minitest::Helpers::_RunnableClass
+
             @datadog_itr_unskippable_suite: bool
             @datadog_itr_unskippable_tests: Array[String]?
 
@@ -42,7 +44,7 @@ module Datadog
 
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Minitest::Configuration::Settings
 
             def _dd_test_tracing_component: () -> Datadog::CI::TestTracing::Component
 

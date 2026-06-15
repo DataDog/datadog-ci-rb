@@ -20,7 +20,7 @@ module Datadog
 
             def clear_context_coverage: (String context_id) -> void
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::RSpec::Configuration::Settings
 
             def test_tracing_component: () -> Datadog::CI::TestTracing::Component?
 

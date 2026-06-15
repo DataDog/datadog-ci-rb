@@ -51,7 +51,6 @@ module Datadog
           def build_constant_path(symbol_array)
             symbol_array
               .select { |part| part.is_a?(Symbol) }
-              .map(&:to_s)
               .join("::")
           end
 

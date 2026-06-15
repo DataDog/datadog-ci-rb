@@ -3,19 +3,29 @@ module Datadog
     module Contrib
       module Cucumber
         class Filter < ::Cucumber::Core::Filter
-          @test_case_seen: untyped
+          interface _TestCase
+            def ==: (_TestCase other) -> bool
 
-          @test_retries_component: untyped
+            def describe_to: (Object receiver) -> untyped
+          end
 
-          def test_case: (untyped test_case) -> untyped
+          interface _TestCaseFinishedEvent
+            def test_case: () -> _TestCase
+          end
+
+          @test_case_seen: Hash[_TestCase, bool]
+
+          @test_retries_component: Datadog::CI::TestRetries::Component
+
+          def test_case: (_TestCase test_case) -> untyped
 
           private
 
-          def retry_required?: (untyped test_case, untyped event) -> (false | untyped)
+          def retry_required?: (_TestCase test_case, _TestCaseFinishedEvent event) -> bool
 
-          def test_case_seen: () -> untyped
+          def test_case_seen: () -> Hash[_TestCase, bool]
 
-          def test_retries_component: () -> untyped
+          def test_retries_component: () -> Datadog::CI::TestRetries::Component
         end
       end
     end

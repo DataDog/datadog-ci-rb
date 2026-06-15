@@ -18,7 +18,7 @@ module Datadog
 
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 
-            def datadog_configuration: () -> untyped
+            def datadog_configuration: () -> Datadog::CI::Contrib::Minitest::Configuration::Settings
 
             def test_tracing_component: () -> Datadog::CI::TestTracing::Component
 
