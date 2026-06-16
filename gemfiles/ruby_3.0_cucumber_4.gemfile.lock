@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: db52a858a13a10f9a16c7a718b48bf200c2c9e23
+  revision: f9044e8cea5c91eb67b0d6285ea2028eeed6250f
   branch: master
   specs:
     datadog (2.36.0.dev)
@@ -112,7 +112,7 @@ GEM
     memoist3 (1.0.0)
     middleware (0.1.0)
     minitest (5.26.1)
-    msgpack (1.8.1)
+    msgpack (1.8.3)
     multi_test (0.1.2)
     mutex_m (0.3.0)
     os (1.1.4)
