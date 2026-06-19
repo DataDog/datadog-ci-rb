@@ -37,6 +37,7 @@ require_relative "../test_tracing/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
+require_relative "../utils/runtime_tags_overrides"
 require_relative "../utils/test_run"
 require_relative "../async_writer"
 require_relative "../worker"
@@ -169,6 +170,7 @@ module Datadog
             test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             logical_test_session_name: settings.ci.test_session_name,
             known_tests_client: build_known_tests_client(settings, test_visibility_api),
+            runtime_tags_overrides: Utils::RuntimeTagsOverrides.parse(settings.ci.runtime_tags_overrides),
             context_service_uri: settings.ci.test_visibility_drb_server_uri
           )
 

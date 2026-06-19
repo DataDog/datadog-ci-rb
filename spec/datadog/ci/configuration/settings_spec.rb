@@ -1070,6 +1070,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         test_optimization_cache_test_srcdir: [
           Datadog::CI::Ext::TestOptimizationCache::ENV_TEST_SRCDIR,
           "/tmp/test_srcdir"
+        ],
+        runtime_tags_overrides: [
+          Datadog::CI::Ext::Settings::ENV_RUNTIME_TAGS,
+          '{"os.version":"ubuntu-22.04"}'
         ]
       }.each do |setting_name, (env_name, setting_value)|
         describe "##{setting_name}" do

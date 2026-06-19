@@ -213,6 +213,11 @@ module Datadog
                 o.default true
               end
 
+              option :runtime_tags_overrides do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Settings::ENV_RUNTIME_TAGS
+              end
+
               define_method(:instrument) do |integration_name, options = {}, &block|
                 return unless enabled
 
