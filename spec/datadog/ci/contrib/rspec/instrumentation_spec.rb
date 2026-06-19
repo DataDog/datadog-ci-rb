@@ -642,6 +642,23 @@ RSpec.describe "RSpec instrumentation" do
       expect(first_test_span).to have_test_tag(:test_suite_id, first_test_suite_span.id.to_s)
     end
 
+    context "with runtime tag overrides configured" do
+      around do |example|
+        ClimateControl.modify(
+          Datadog::CI::Ext::Settings::ENV_RUNTIME_TAGS => '{"os.version":"ubuntu-22.04","runtime.version":"3.2.0"}'
+        ) do
+          example.run
+        end
+      end
+
+      it "sends test spans with overridden runtime tags" do
+        rspec_session_run
+
+        expect(test_spans).to all have_test_tag(:os_version, "ubuntu-22.04")
+        expect(test_spans).to all have_test_tag(:runtime_version, "3.2.0")
+      end
+    end
+
     context "with failures" do
       it "creates test session span with failed state" do
         rspec_session_run(with_failed_test: true)

@@ -37,11 +37,12 @@ module Datadog
           test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse,
           logical_test_session_name: nil,
+          runtime_tags: {},
           context_service_uri: nil
         )
           @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
 
-          @context = Context.new(test_tracing_component: self)
+          @context = Context.new(test_tracing_component: self, runtime_tags: runtime_tags)
 
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name

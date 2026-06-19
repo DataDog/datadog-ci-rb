@@ -29,6 +29,7 @@ module Datadog
         ENV_AUTO_INSTRUMENTATION_PROVIDER: String
         ENV_TIA_STATIC_DEPENDENCIES_TRACKING_ENABLED: String
         ENV_CODE_COVERAGE_REPORT_UPLOAD_ENABLED: String
+        ENV_RUNTIME_TAGS: String
 
         DD_SITE_ALLOWLIST: Array[String]
       end

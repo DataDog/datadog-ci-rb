@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Utils
+      module RuntimeTags
+        TAGS: Array[String]
+
+        def self.parse: (String? value) -> Hash[String, String]
+      end
+    end
+  end
+end

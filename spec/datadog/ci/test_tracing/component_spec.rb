@@ -728,6 +728,40 @@ RSpec.describe Datadog::CI::TestTracing::Component do
         end
       end
 
+      describe "runtime tag overrides" do
+        around do |example|
+          ClimateControl.modify(
+            Datadog::CI::Ext::Settings::ENV_RUNTIME_TAGS => '{"os.version":"ubuntu-22.04","runtime.version":"3.2.0"}'
+          ) do
+            example.run
+          end
+        end
+
+        it "sets overridden runtime tags on all CI spans" do
+          test_session = test_tracing.start_test_session(service: "my-service")
+          test_module = test_tracing.start_test_module("my-module")
+          test_suite = test_tracing.start_test_suite("my-suite")
+          test = test_tracing.trace_test("my-test", "my-suite")
+          custom_span = test_tracing.trace("my-step", type: "step")
+
+          [test_session, test_module, test_suite, test, custom_span].each do |span|
+            expect(span).to have_test_tag(:os_version, "ubuntu-22.04")
+            expect(span).to have_test_tag(:runtime_version, "3.2.0")
+          end
+        end
+
+        it "lets explicit span tags override configured runtime tags" do
+          custom_span = test_tracing.trace(
+            "my-step",
+            type: "step",
+            tags: {Datadog::CI::Ext::Test::TAG_OS_VERSION => "manual-version"}
+          )
+
+          expect(custom_span).to have_test_tag(:os_version, "manual-version")
+          expect(custom_span).to have_test_tag(:runtime_version, "3.2.0")
+        end
+      end
+
       describe "#active_test_session" do
         subject { test_tracing.active_test_session }
         context "when there is no active test session" do
