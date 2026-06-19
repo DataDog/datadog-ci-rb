@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.33.0] - 2026-06-19
+
+### Added
+
+* Allow overriding runtime tags ([#527][])
+
 ## [1.32.0] - 2026-06-08
 
 ### Changed
@@ -653,7 +659,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.32.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.33.0...main
+[1.33.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.32.0...v1.33.0
 [1.32.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.31.0...v1.32.0
 [1.31.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.30.0...v1.31.0
 [1.30.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.29.0...v1.30.0
@@ -926,3 +933,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#516]: https://github.com/DataDog/datadog-ci-rb/issues/516
 [#521]: https://github.com/DataDog/datadog-ci-rb/issues/521
 [#522]: https://github.com/DataDog/datadog-ci-rb/issues/522
+[#527]: https://github.com/DataDog/datadog-ci-rb/issues/527
