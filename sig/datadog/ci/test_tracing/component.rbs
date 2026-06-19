@@ -35,7 +35,7 @@ module Datadog
 
         attr_reader local_test_suites_mode: bool
 
-        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags: Hash[String, String], ?context_service_uri: String?) -> void
+        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 

@@ -2,11 +2,11 @@
 
 require "json"
 
-require_relative "../../../../lib/datadog/ci/utils/runtime_tags"
+require_relative "../../../../lib/datadog/ci/utils/runtime_tags_overrides"
 
-RSpec.describe Datadog::CI::Utils::RuntimeTags do
+RSpec.describe Datadog::CI::Utils::RuntimeTagsOverrides do
   describe ".parse" do
-    subject(:runtime_tags) { described_class.parse(value) }
+    subject(:runtime_tags_overrides) { described_class.parse(value) }
 
     context "when value is nil" do
       let(:value) { nil }
@@ -34,7 +34,7 @@ RSpec.describe Datadog::CI::Utils::RuntimeTags do
       end
 
       it "returns supported runtime tags" do
-        expect(runtime_tags).to eq(
+        expect(runtime_tags_overrides).to eq(
           "os.platform" => "linux",
           "os.architecture" => "arm64",
           "os.version" => "ubuntu-22.04",
@@ -48,7 +48,7 @@ RSpec.describe Datadog::CI::Utils::RuntimeTags do
       let(:value) { {"runtime.version" => 3.2}.to_json }
 
       it "stringifies values" do
-        expect(runtime_tags).to eq("runtime.version" => "3.2")
+        expect(runtime_tags_overrides).to eq("runtime.version" => "3.2")
       end
     end
 
@@ -56,9 +56,9 @@ RSpec.describe Datadog::CI::Utils::RuntimeTags do
       let(:value) { "{invalid json}" }
 
       it "logs a warning and returns empty tags" do
-        expect(Datadog.logger).to receive(:warn).with(/Invalid runtime tags configuration/)
+        expect(Datadog.logger).to receive(:warn).with(/Invalid runtime tag overrides configuration/)
 
-        expect(runtime_tags).to eq({})
+        expect(runtime_tags_overrides).to eq({})
       end
     end
 
@@ -66,9 +66,9 @@ RSpec.describe Datadog::CI::Utils::RuntimeTags do
       let(:value) { ["os.version"].to_json }
 
       it "logs a warning and returns empty tags" do
-        expect(Datadog.logger).to receive(:warn).with("Invalid runtime tags configuration: expected JSON object")
+        expect(Datadog.logger).to receive(:warn).with("Invalid runtime tag overrides configuration: expected JSON object")
 
-        expect(runtime_tags).to eq({})
+        expect(runtime_tags_overrides).to eq({})
       end
     end
   end

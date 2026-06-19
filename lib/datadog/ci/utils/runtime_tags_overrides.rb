@@ -7,7 +7,7 @@ require_relative "../ext/test"
 module Datadog
   module CI
     module Utils
-      module RuntimeTags
+      module RuntimeTagsOverrides
         TAGS = [
           Ext::Test::TAG_OS_PLATFORM,
           Ext::Test::TAG_OS_ARCHITECTURE,
@@ -21,7 +21,7 @@ module Datadog
 
           parsed = JSON.parse(value.to_s)
           unless parsed.is_a?(Hash)
-            Datadog.logger.warn("Invalid runtime tags configuration: expected JSON object")
+            Datadog.logger.warn("Invalid runtime tag overrides configuration: expected JSON object")
             return {}
           end
 
@@ -35,7 +35,7 @@ module Datadog
             tags[key] = normalized_value
           end
         rescue JSON::ParserError => e
-          Datadog.logger.warn("Invalid runtime tags configuration: #{e.message}")
+          Datadog.logger.warn("Invalid runtime tag overrides configuration: #{e.message}")
           {}
         end
       end

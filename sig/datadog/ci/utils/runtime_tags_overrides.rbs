@@ -1,7 +1,7 @@
 module Datadog
   module CI
     module Utils
-      module RuntimeTags
+      module RuntimeTagsOverrides
         TAGS: Array[String]
 
         def self.parse: (String? value) -> Hash[String, String]

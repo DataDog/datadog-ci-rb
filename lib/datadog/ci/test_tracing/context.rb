@@ -30,9 +30,9 @@ module Datadog
       class Context
         attr_reader :total_tests_count, :tests_skipped_by_tia_count
 
-        def initialize(test_tracing_component:, runtime_tags: {})
+        def initialize(test_tracing_component:, runtime_tags_overrides: {})
           @test_tracing_component = test_tracing_component
-          @runtime_tags = runtime_tags
+          @runtime_tags_overrides = runtime_tags_overrides
 
           @fiber_local_context = Store::FiberLocal.new
           @process_context = Store::Process.new
@@ -240,7 +240,7 @@ module Datadog
           ci_span.set_default_tags
           ci_span.set_environment_runtime_tags
 
-          ci_span.set_tags(@runtime_tags) unless @runtime_tags.empty?
+          ci_span.set_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
           ci_span.set_tags(tags)
           ci_span.set_tags(@environment_tags)
 
