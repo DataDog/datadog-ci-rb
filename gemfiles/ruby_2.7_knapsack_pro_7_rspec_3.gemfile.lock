@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: f9044e8cea5c91eb67b0d6285ea2028eeed6250f
+  revision: 20f8b9bd600e2f3ce621f6ff03cf649111018ea3
   branch: master
   specs:
     datadog (2.36.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.2)
-      libdatadog (~> 33.0.0.1.0)
+      libdatadog (~> 35.0.0.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -54,8 +54,8 @@ GEM
       reline (>= 0.4.2)
     knapsack_pro (7.14.1)
       rake
-    libdatadog (33.0.0.1.0-aarch64-linux)
-    libdatadog (33.0.0.1.0-x86_64-linux)
+    libdatadog (35.0.0.1.0-aarch64-linux)
+    libdatadog (35.0.0.1.0-x86_64-linux)
     libddwaf (1.30.0.0.2-aarch64-linux)
       ffi (~> 1.0)
     libddwaf (1.30.0.0.2-x86_64-linux)
@@ -64,7 +64,7 @@ GEM
     msgpack (1.8.3)
     os (1.1.4)
     ostruct (0.6.3)
-    pp (0.6.3)
+    pp (0.6.4)
       prettyprint
     prettyprint (0.2.0)
     prism (1.9.0)
