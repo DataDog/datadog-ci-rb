@@ -37,6 +37,11 @@ module Datadog
             end
 
             def begin_scenario(test_case)
+              active_suite = Datadog::CI.active_test_suite
+              if active_suite&.should_skip?
+                raise ::Cucumber::Core::Test::Result::Skipped, active_suite.datadog_skip_reason
+              end
+
               datadog_test = Datadog::CI.active_test
 
               # special case for cucumber-ruby: we skip quarantined tests, thus for cucumber quarantined is the same as disabled.

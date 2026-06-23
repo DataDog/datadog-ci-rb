@@ -162,7 +162,14 @@ module Datadog
         ].freeze
 
         # could be either "test" or "suite" depending on whether we skip individual tests or whole suites
-        ITR_TEST_SKIPPING_MODE = "test" # we always skip tests (not suites) in Ruby
+        module TIATestSkippingMode
+          TEST = "test"
+          SUITE = "suite"
+
+          ALL = [TEST, SUITE].freeze
+        end
+
+        DEFAULT_TIA_TEST_SKIPPING_MODE = TIATestSkippingMode::TEST
         ITR_UNSKIPPABLE_OPTION = :datadog_itr_unskippable
 
         EARLY_FLAKE_FAULTY = "faulty"

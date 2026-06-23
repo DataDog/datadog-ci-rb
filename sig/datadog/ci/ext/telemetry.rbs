@@ -70,6 +70,8 @@ module Datadog
 
         METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_TESTS: "itr_skippable_tests.response_tests"
 
+        METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_SUITES: "itr_skippable_tests.response_suites"
+
         METRIC_KNOWN_TESTS_REQUEST: "known_tests.request"
 
         METRIC_KNOWN_TESTS_REQUEST_MS: "known_tests.request_ms"

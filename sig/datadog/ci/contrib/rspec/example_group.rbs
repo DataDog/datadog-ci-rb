@@ -14,6 +14,8 @@ module Datadog
 
             def all_examples_skipped_by_datadog?: () -> bool
 
+            def skip_test_suite: (Datadog::CI::TestSuite test_suite) -> untyped
+
             def datadog_context_id: () -> String
 
             def start_context_coverage: (String context_id) -> void

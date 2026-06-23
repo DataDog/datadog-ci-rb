@@ -55,13 +55,16 @@ RSpec.shared_context "CI mode activated" do
   let(:slow_test_retries) { Datadog::CI::Remote::SlowTestRetries.new(slow_test_retries_payload) }
 
   let(:itr_correlation_id) { "itr_correlation_id" }
+  let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::TEST }
   let(:itr_skippable_tests) { [] }
+  let(:itr_skippable_suites) { [] }
   let(:skippable_tests_response) do
     instance_double(
       Datadog::CI::TestImpactAnalysis::Skippable::Response,
       ok?: true,
       correlation_id: itr_correlation_id,
-      tests: itr_skippable_tests
+      tests: itr_skippable_tests,
+      suites: itr_skippable_suites
     )
   end
 
@@ -134,7 +137,7 @@ RSpec.shared_context "CI mode activated" do
         coverage_report_upload_enabled?: coverage_report_upload_enabled
       )
     )
-    allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:fetch_skippable_tests).and_return(skippable_tests_response)
+    allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:fetch_skippables).and_return(skippable_tests_response)
     allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::Transport).to receive(:send_events).and_return([])
 
     allow_any_instance_of(Datadog::CI::TestTracing::KnownTests).to receive(:fetch).and_return(known_tests)
@@ -169,6 +172,7 @@ RSpec.shared_context "CI mode activated" do
 
       # test optimisation
       c.ci.itr_enabled = itr_enabled
+      c.ci.tia_test_skipping_mode = tia_test_skipping_mode
       c.ci.git_metadata_upload_enabled = git_metadata_upload_enabled
       c.ci.itr_code_coverage_excluded_bundle_path = bundle_path
       c.ci.itr_code_coverage_use_single_threaded_mode = use_single_threaded_coverage

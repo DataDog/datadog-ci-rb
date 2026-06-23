@@ -1141,6 +1141,42 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
 
+    context "skipped a whole test suite" do
+      let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+      let(:itr_skippable_suites) do
+        Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"])
+      end
+
+      it "skips the suite at the existing suite boundary" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(test_spans).to be_empty
+        expect(test_suite_spans).to have(1).item
+        expect(first_test_suite_span).to have_skip_status
+        expect(first_test_suite_span).to have_test_tag(:itr_skipped_by_itr, "true")
+
+        expect(before_all_spy).not_to have_received(:call)
+        expect(before_context_spy).not_to have_received(:call)
+
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "suite")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
+      end
+
+      it "runs the suite when an example is unskippable" do
+        rspec_session_run(with_failed_test: true, unskippable: {test: true})
+
+        expect(test_spans).to have(2).items
+        expect(test_spans).to have_tag_values_no_order(:status, ["pass", "fail"])
+        expect(first_test_suite_span).not_to have_test_tag(:itr_skipped_by_itr)
+        expect(first_test_suite_span).to have_test_tag(:itr_forced_run, "true")
+        expect(first_test_suite_span).to have_test_tag(:itr_unskippable, "true")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+      end
+    end
+
     context "skipped all tests" do
       let(:itr_skippable_tests) do
         Set.new([

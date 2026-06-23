@@ -2,8 +2,10 @@
 
 require_relative "../contrib/instrumentation"
 require_relative "../ext/settings"
+require_relative "../ext/test"
 require_relative "../ext/test_optimization_cache"
 require_relative "../utils/bundle"
+require_relative "../utils/configuration"
 require_relative "../utils/parsing"
 
 module Datadog
@@ -77,6 +79,15 @@ module Datadog
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_ITR_ENABLED
                 o.default true
+              end
+
+              option :tia_test_skipping_mode do |o|
+                o.type :string
+                o.env CI::Ext::Settings::ENV_TIA_TEST_SKIPPING_MODE
+                o.default CI::Ext::Test::TIATestSkippingMode::TEST
+                o.setter do |mode|
+                  Utils::Configuration.normalize_tia_test_skipping_mode(mode)
+                end
               end
 
               option :git_metadata_upload_enabled do |o|

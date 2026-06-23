@@ -7,8 +7,16 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
 
   let(:dd_env) { "ci" }
   let(:config_tags) { {} }
+  let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::TEST }
 
-  subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
+  subject(:client) do
+    described_class.new(
+      api: api,
+      dd_env: dd_env,
+      config_tags: config_tags,
+      test_skipping_mode: test_skipping_mode
+    )
+  end
 
   describe "#fetch" do
     subject(:response) { client.fetch(test_session) }
@@ -108,6 +116,19 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
           expect(configurations["os.version"]).to eq("version")
           expect(configurations["runtime.name"]).to eq("runtime_name")
           expect(configurations["runtime.version"]).to eq("runtime_version")
+        end
+      end
+
+      context "when test suite skipping mode is configured" do
+        let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+
+        it "requests settings for suite level skipping" do
+          subject
+
+          expect(api).to have_received(:api_request) do |args|
+            attributes = JSON.parse(args[:payload])["data"]["attributes"]
+            expect(attributes["test_level"]).to eq("suite")
+          end
         end
       end
 

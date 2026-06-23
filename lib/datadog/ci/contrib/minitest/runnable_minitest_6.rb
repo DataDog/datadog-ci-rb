@@ -10,11 +10,16 @@ module Datadog
           end
 
           module ClassMethods
+            include Helpers::RunnableClassMethods
+
             def run_suite(*args)
               return super unless datadog_configuration[:enabled]
               return super if Helpers.parallel?(self)
 
               test_suite = Helpers.start_test_suite(self)
+              if test_suite&.should_skip?
+                return Helpers.skip_test_suite(test_suite)
+              end
 
               results = super
               return results unless test_suite

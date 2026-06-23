@@ -210,6 +210,7 @@ module Datadog
             api: test_visibility_api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings),
+            test_skipping_mode: settings.ci.tia_test_skipping_mode,
             coverage_writer: build_coverage_writer(settings, test_visibility_api),
             enabled: settings.ci.enabled && settings.ci.itr_enabled,
             bundle_location: settings.ci.itr_code_coverage_excluded_bundle_path,
@@ -293,6 +294,7 @@ module Datadog
           Remote::LibrarySettingsClient.new(
             api: api,
             dd_env: settings.env,
+            test_skipping_mode: settings.ci.tia_test_skipping_mode,
             config_tags: custom_configuration(settings)
           )
         end

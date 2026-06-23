@@ -37,6 +37,11 @@ module Datadog
 
               return run_without_datadog_reentry if datadog_run_reentered?
 
+              test_suite = start_datadog_test_suite_if_parallel
+              if test_suite&.should_skip?
+                return skip_datadog_suite(test_suite)
+              end
+
               test_span = start_datadog_test
               return skip_datadog_test(test_span) if test_span&.should_skip?
 
@@ -76,10 +81,6 @@ module Datadog
             end
 
             def start_datadog_test
-              if Helpers.parallel?(self.class)
-                Helpers.start_test_suite(self.class)
-              end
-
               test_suite_name = Helpers.test_suite_name(self.class, name)
 
               # @type var tags : Hash[String, String]
@@ -103,13 +104,15 @@ module Datadog
                 tags: tags,
                 service: datadog_configuration[:service_name]
               )
-              # Steep type checker doesn't know that we patched Minitest::Test class definition
-              #
-              # steep:ignore:start
               test_span&.itr_unskippable! if self.class.dd_suite_unskippable? || self.class.dd_test_unskippable?(name)
-              # steep:ignore:end
 
               test_span
+            end
+
+            def start_datadog_test_suite_if_parallel
+              return unless Helpers.parallel?(self.class)
+
+              Helpers.start_test_suite(self.class)
             end
 
             def skip_datadog_test(test_span)
@@ -120,6 +123,16 @@ module Datadog
               end
 
               finish_with_result(test_span, result_code)
+
+              ::Minitest::Result.from(self)
+            end
+
+            def skip_datadog_suite(test_suite)
+              time_it do
+                capture_exceptions do
+                  skip(test_suite.datadog_skip_reason)
+                end
+              end
 
               ::Minitest::Result.from(self)
             end
@@ -157,25 +170,6 @@ module Datadog
               RunMethodCapture.capture_concrete_pre_datadog_run!(Test, self, InstanceMethods) if method_name == :run
             ensure
               super
-            end
-
-            def datadog_itr_unskippable(*args)
-              if args.nil? || args.empty?
-                @datadog_itr_unskippable_suite = true
-              else
-                @datadog_itr_unskippable_tests = args
-              end
-            end
-
-            def dd_suite_unskippable?
-              @datadog_itr_unskippable_suite
-            end
-
-            def dd_test_unskippable?(test_name)
-              tests = @datadog_itr_unskippable_tests
-              return false unless tests
-
-              tests.include?(test_name)
             end
           end
         end

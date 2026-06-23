@@ -5,8 +5,9 @@ module Datadog
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
         @config_tags: Hash[String, String]
+        @test_skipping_mode: String
 
-        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String]?) -> void
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String) -> void
 
         def fetch: (Datadog::CI::TestSession test_session) -> LibrarySettings
 

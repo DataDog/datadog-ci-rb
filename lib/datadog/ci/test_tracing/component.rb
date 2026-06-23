@@ -272,6 +272,7 @@ module Datadog
 
         def on_test_suite_started(test_suite)
           set_codeowners(test_suite)
+          test_impact_analysis.on_test_suite_started(test_suite)
         end
 
         def on_test_started(test)
@@ -318,6 +319,7 @@ module Datadog
         end
 
         def on_test_suite_finished(test_suite)
+          test_impact_analysis.on_test_suite_finished(test_suite, maybe_remote_context)
           Telemetry.event_finished(test_suite)
         end
 

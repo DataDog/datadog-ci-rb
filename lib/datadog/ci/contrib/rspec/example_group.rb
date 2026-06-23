@@ -24,7 +24,7 @@ module Datadog
               # even if it is a nested context
               metadata[:skip] = true if all_examples_skipped_by_datadog?
 
-              # Start context coverage for this example group (for TIA suite-level coverage).
+              # Start context coverage for this example group (for TIA context coverage).
               # This captures code executed in before(:context)/before(:all) hooks.
               # The context_id uses scoped_id which is a stable identifier for RSpec example groups.
               context_id = datadog_context_id
@@ -39,6 +39,9 @@ module Datadog
                   CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(metadata[:file_path]),
                   CI::Ext::Test::TAG_SOURCE_START => metadata[:line_number].to_s
                 }
+                if descendant_filtered_examples.any?(&:datadog_unskippable?)
+                  suite_tags = suite_tags.merge(CI::Ext::Test::TAG_ITR_UNSKIPPABLE => "true")
+                end
 
                 test_suite =
                   test_tracing_component&.start_test_suite(
@@ -46,6 +49,8 @@ module Datadog
                     tags: suite_tags,
                     service: datadog_configuration[:service_name]
                   )
+
+                return skip_test_suite(test_suite) if test_suite&.should_skip?
 
                 success = super
 
@@ -60,6 +65,11 @@ module Datadog
             end
 
             private
+
+            def skip_test_suite(test_suite)
+              test_suite&.finish
+              true
+            end
 
             def all_examples_skipped_by_datadog?
               descendant_filtered_examples.all? do |example|

@@ -2,9 +2,9 @@ module Datadog
   module CI
     module TestImpactAnalysis
       module Telemetry
-        def self.code_coverage_started: (Datadog::CI::Test test) -> void
+        def self.code_coverage_started: ((Datadog::CI::Test | Datadog::CI::TestSuite) test) -> void
 
-        def self.code_coverage_finished: (Datadog::CI::Test test) -> void
+        def self.code_coverage_finished: ((Datadog::CI::Test | Datadog::CI::TestSuite) test) -> void
 
         def self.code_coverage_is_empty: () -> void
 
@@ -16,7 +16,7 @@ module Datadog
 
         def self.itr_unskippable: () -> void
 
-        def self.tags_for_test: (Datadog::CI::Test test) -> ::Hash[String, String]
+        def self.tags_for_test: ((Datadog::CI::Test | Datadog::CI::TestSuite) test) -> ::Hash[String, String]
 
         def self.tags_for_itr_metrics: () -> ::Hash[String, String]
       end

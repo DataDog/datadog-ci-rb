@@ -72,9 +72,14 @@ module Datadog
             end
 
             unless same_test_suite_as_current?(test_suite_name)
+              suite_tags = test_suite_source_file_tags(event.test_case)
+              if event.test_case.match_tags?("@#{CI::Ext::Test::ITR_UNSKIPPABLE_OPTION}")
+                suite_tags[CI::Ext::Test::TAG_ITR_UNSKIPPABLE] = "true"
+              end
+
               start_test_suite(
                 test_suite_name,
-                tags: test_suite_source_file_tags(event.test_case)
+                tags: suite_tags
               )
             end
 

@@ -23,11 +23,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
 
     context "when test_id is nil" do
       let(:test_id) { nil }
-      before do
-        expect(Datadog.logger).to receive(:warn).with(/citestcov event is invalid: \[test_id\] is nil. Event: .*/)
-      end
 
-      it { is_expected.not_to be_valid }
+      it { is_expected.to be_valid }
     end
 
     context "when test_suite_id is nil" do
@@ -137,6 +134,22 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
             "files" => [
               {"filename" => "#{current_folder}/project/file.rb"},
               {"filename" => "#{current_folder}/project/file2.rb"}
+            ]
+          }
+        )
+      end
+    end
+
+    context "when test_id is nil" do
+      let(:test_id) { nil }
+
+      it "returns a suite-level msgpack representation of the event" do
+        expect(msgpack_json).to eq(
+          {
+            "test_session_id" => 3,
+            "test_suite_id" => 2,
+            "files" => [
+              {"filename" => "file.rb"}
             ]
           }
         )

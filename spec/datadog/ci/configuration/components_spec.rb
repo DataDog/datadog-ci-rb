@@ -44,6 +44,10 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.ci.force_test_level_visibility = force_test_level_visibility
           settings.ci.agentless_url = agentless_url
           settings.ci.itr_enabled = itr_enabled
+          settings.ci.tia_test_skipping_mode = tia_test_skipping_mode
+          unless tia_static_dependencies_tracking_enabled.nil?
+            settings.ci.tia_static_dependencies_tracking_enabled = tia_static_dependencies_tracking_enabled
+          end
           settings.ci.itr_code_coverage_use_single_threaded_mode = itr_code_coverage_use_single_threaded_mode
           settings.ci.itr_test_impact_analysis_use_allocation_tracing = itr_test_impact_analysis_use_allocation_tracing
           settings.ci.discard_traces = discard_traces
@@ -91,6 +95,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(Datadog::CI::Ext::Environment)
             .to receive(:tags).and_return({})
 
+          allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_call_original
+          allow(Datadog::CI::Remote::LibrarySettingsClient).to receive(:new).and_call_original
+
           logger = spy(:logger)
           allow(Datadog).to receive(:logger).and_return(logger)
 
@@ -119,6 +126,8 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:evp_proxy_v2_supported) { false }
         let(:evp_proxy_v4_supported) { false }
         let(:itr_enabled) { false }
+        let(:tia_test_skipping_mode) { "test" }
+        let(:tia_static_dependencies_tracking_enabled) { nil }
         let(:tracing_enabled) { true }
         let(:ruby_version) { RUBY_VERSION }
         let(:itr_code_coverage_use_single_threaded_mode) { false }
@@ -144,45 +153,34 @@ RSpec.describe Datadog::CI::Configuration::Components do
             let(:api_key) { "api_key" }
 
             it "passes the default value to test impact analysis" do
-              allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_call_original
-
-              fresh_components = if described_class >= Datadog::Core::Configuration::Components
-                Datadog::Core::Configuration::Components.new(settings)
-              else
-                components_class = Datadog::Core::Configuration::Components.dup
-                components_class.prepend(described_class)
-                components_class.new(settings)
-              end
-
               expect(Datadog::CI::TestImpactAnalysis::Component).to have_received(:new).with(
                 hash_including(static_dependencies_tracking_enabled: true)
               )
-
-              fresh_components.shutdown!
             end
 
             context "when the setting is explicitly disabled" do
-              before do
-                settings.ci.tia_static_dependencies_tracking_enabled = false
-              end
+              let(:tia_static_dependencies_tracking_enabled) { false }
 
               it "passes the configured value to test impact analysis" do
-                allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_call_original
-
-                fresh_components = if described_class >= Datadog::Core::Configuration::Components
-                  Datadog::Core::Configuration::Components.new(settings)
-                else
-                  components_class = Datadog::Core::Configuration::Components.dup
-                  components_class.prepend(described_class)
-                  components_class.new(settings)
-                end
-
                 expect(Datadog::CI::TestImpactAnalysis::Component).to have_received(:new).with(
                   hash_including(static_dependencies_tracking_enabled: false)
                 )
-
-                fresh_components.shutdown!
               end
+            end
+          end
+
+          context "when test suite skipping mode is configured" do
+            let(:agentless_enabled) { true }
+            let(:api_key) { "api_key" }
+            let(:tia_test_skipping_mode) { "suite" }
+
+            it "passes the configured mode to Test Impact Analysis and remote settings" do
+              expect(Datadog::CI::TestImpactAnalysis::Component).to have_received(:new).with(
+                hash_including(test_skipping_mode: "suite")
+              )
+              expect(Datadog::CI::Remote::LibrarySettingsClient).to have_received(:new).with(
+                hash_including(test_skipping_mode: "suite")
+              )
             end
           end
 

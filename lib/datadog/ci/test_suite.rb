@@ -111,6 +111,26 @@ module Datadog
         end
       end
 
+      # @internal
+      def datadog_skip_reason
+        get_tag(Ext::Test::TAG_SKIP_REASON)
+      end
+
+      # @internal
+      def should_skip?
+        skipped_by_test_impact_analysis?
+      end
+
+      # @internal
+      def skipped_by_test_impact_analysis?
+        get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
+      end
+
+      # @internal
+      def itr_unskippable?
+        get_tag(Ext::Test::TAG_ITR_UNSKIPPABLE) == "true"
+      end
+
       private
 
       def set_status_from_stats!

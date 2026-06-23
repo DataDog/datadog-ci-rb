@@ -30,8 +30,8 @@ module Datadog
 
         FILE_STORAGE_KEY = "test_impact_analysis_component_state"
 
-        attr_reader :correlation_id, :skippable_tests, :skippable_tests_fetch_error,
-          :enabled, :test_skipping_enabled, :code_coverage_enabled
+        attr_reader :correlation_id, :skippable_tests, :skippable_suites, :skippable_tests_fetch_error,
+          :enabled, :test_skipping_enabled, :code_coverage_enabled, :test_skipping_mode
 
         def initialize(
           dd_env:,
@@ -39,6 +39,7 @@ module Datadog
           api: nil,
           coverage_writer: nil,
           enabled: false,
+          test_skipping_mode: Ext::Test::TIATestSkippingMode::TEST,
           bundle_location: nil,
           use_single_threaded_coverage: false,
           use_allocation_tracing: true,
@@ -48,6 +49,7 @@ module Datadog
           @api = api
           @dd_env = dd_env
           @config_tags = config_tags || {}
+          @test_skipping_mode = test_skipping_mode
 
           @bundle_location = if bundle_location && !File.absolute_path?(bundle_location)
             File.join(Git::LocalRepository.root, bundle_location)
@@ -65,6 +67,7 @@ module Datadog
 
           @correlation_id = nil
           @skippable_tests = Set.new
+          @skippable_suites = Set.new
 
           @mutex = Mutex.new
 
@@ -92,8 +95,7 @@ module Datadog
 
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
           test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
-          # we skip tests, not suites
-          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, Ext::Test::ITR_TEST_SKIPPING_MODE)
+          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, @test_skipping_mode)
 
           if @code_coverage_enabled
             load_datadog_cov!
@@ -102,10 +104,10 @@ module Datadog
           end
 
           # Load external cache or component state first, and if successful, skip fetching skippable tests
-          if skipping_tests?
+          if skipping_tests? || skipping_suites?
             return if load_component_state
 
-            fetch_skippable_tests(test_session)
+            fetch_skippables(test_session)
             store_component_state if test_session.distributed
           end
 
@@ -117,7 +119,19 @@ module Datadog
         end
 
         def skipping_tests?
-          @test_skipping_enabled
+          @test_skipping_enabled && test_skipping_mode?
+        end
+
+        def skipping_suites?
+          @test_skipping_enabled && suite_skipping_mode?
+        end
+
+        def test_skipping_mode?
+          @test_skipping_mode == Ext::Test::TIATestSkippingMode::TEST
+        end
+
+        def suite_skipping_mode?
+          @test_skipping_mode == Ext::Test::TIATestSkippingMode::SUITE
         end
 
         def code_coverage?
@@ -174,6 +188,7 @@ module Datadog
         # @return [void]
         def on_test_started(test)
           return if !enabled? || !code_coverage?
+          return if suite_skipping_mode?
 
           # Stop any in-progress context coverage and store it
           stop_context_coverage_and_store
@@ -200,6 +215,7 @@ module Datadog
         # @return [Datadog::CI::TestImpactAnalysis::Coverage::Event, nil] The coverage event or nil
         def on_test_finished(test, context)
           return unless enabled?
+          return if suite_skipping_mode?
 
           # Handle ITR statistics
           if test.skipped_by_test_impact_analysis?
@@ -222,33 +238,13 @@ module Datadog
           context_ids = test.context_ids || []
           merge_context_coverages_into_test(coverage, context_ids)
 
-          if coverage.empty?
-            Telemetry.code_coverage_is_empty
-            return
-          end
-
-          # cucumber's gherkin files are not covered by the code coverage collector - we add them here explicitly
-          test_source_file = test.source_file
-          ensure_test_source_covered(test_source_file, coverage) unless test_source_file.nil?
-
-          # if we have static dependencies tracking enabled then we can make the coverage
-          # more precise by fetching which files we depend on based on constants usage
-          enrich_coverage_with_static_dependencies(coverage)
-
-          Telemetry.code_coverage_files(coverage.size)
-
-          coverage_event = Coverage::Event.new(
+          write_coverage_event(
             test_id: test.id.to_s,
             test_suite_id: test.test_suite_id.to_s,
             test_session_id: test.test_session_id.to_s,
+            source_file: test.source_file,
             coverage: coverage
           )
-
-          Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }
-
-          write(coverage_event)
-
-          coverage_event
         end
 
         # Clears stored context coverage for a specific context.
@@ -271,13 +267,19 @@ module Datadog
         #
         # @return [Boolean]
         def context_coverage_enabled?
-          enabled? && code_coverage? && !@use_single_threaded_coverage
+          enabled? && code_coverage? && !suite_skipping_mode? && !@use_single_threaded_coverage
         end
 
         def skippable?(datadog_test_id)
           return false if !enabled? || !skipping_tests?
 
           @mutex.synchronize { @skippable_tests.include?(datadog_test_id) }
+        end
+
+        def skippable_suite?(test_suite_name)
+          return false if !enabled? || !skipping_suites?
+
+          @mutex.synchronize { @skippable_suites.include?(test_suite_name) }
         end
 
         def mark_if_skippable(test)
@@ -292,6 +294,66 @@ module Datadog
           end
         end
 
+        def mark_if_suite_skippable(test_suite)
+          return if !enabled? || !skipping_suites?
+
+          unskippable = test_suite.itr_unskippable?
+          Telemetry.itr_unskippable if unskippable
+
+          unless skippable_suite?(test_suite.name)
+            Datadog.logger.debug { "Test suite is not skippable: #{test_suite.name}" }
+            return
+          end
+
+          if unskippable
+            Telemetry.itr_forced_run
+            test_suite.set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
+
+            Datadog.logger.debug { "Forced run of skippable test suite: #{test_suite.name}" }
+            return
+          end
+
+          test_suite.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
+          test_suite.skipped!(reason: Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS)
+
+          Datadog.logger.debug { "Marked test suite as skippable: #{test_suite.name}" }
+        end
+
+        def on_test_suite_started(test_suite)
+          return unless enabled? && suite_skipping_mode?
+
+          mark_if_suite_skippable(test_suite)
+          return if test_suite.should_skip?
+          return unless code_coverage?
+
+          Telemetry.code_coverage_started(test_suite)
+          coverage_collector&.start
+        end
+
+        def on_test_suite_finished(test_suite, context)
+          return unless enabled? && suite_skipping_mode?
+
+          if test_suite.skipped_by_test_impact_analysis?
+            Telemetry.itr_skipped
+            context.incr_tests_skipped_by_tia_count
+            return
+          end
+
+          return unless code_coverage?
+
+          Telemetry.code_coverage_finished(test_suite)
+
+          coverage = coverage_collector&.stop
+
+          write_coverage_event(
+            test_id: nil,
+            test_suite_id: test_suite.id.to_s,
+            test_session_id: test_suite.get_tag(Ext::Test::TAG_TEST_SESSION_ID).to_s,
+            source_file: test_suite.source_file,
+            coverage: coverage
+          )
+        end
+
         def write_test_session_tags(test_session, skipped_tests_count)
           return if !enabled?
 
@@ -302,8 +364,8 @@ module Datadog
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, skipped_tests_count)
         end
 
-        def skippable_tests_count
-          skippable_tests.count
+        def skippables_count
+          current_skippables.count
         end
 
         def shutdown!
@@ -314,15 +376,17 @@ module Datadog
         def serialize_state
           {
             correlation_id: @correlation_id,
-            skippable_tests: @skippable_tests
+            skippable_tests: @skippable_tests,
+            skippable_suites: @skippable_suites
           }
         end
 
         def restore_state(state)
-          @mutex.synchronize do
-            @correlation_id = state[:correlation_id]
-            @skippable_tests = state[:skippable_tests]
-          end
+          set_skippables(
+            correlation_id: state[:correlation_id],
+            tests: state[:skippable_tests] || Set.new,
+            suites: state[:skippable_suites] || Set.new
+          )
         end
 
         def storage_key
@@ -330,24 +394,20 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring skippable tests from Test Optimization cache" }
+          Datadog.logger.debug { "Restoring skippables from Test Optimization cache" }
 
-          skippable_tests_data = load_cached_skippable_tests
-          if skippable_tests_data.nil?
-            Datadog.logger.debug { "Restoring skippable tests failed, will request again" }
+          skippables_data = load_cached_skippable_tests
+          if skippables_data.nil?
+            Datadog.logger.debug { "Restoring skippables failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored skippable tests from Test Optimization: #{skippable_tests_data}" }
+          Datadog.logger.debug { "Restored skippables from Test Optimization: #{skippables_data}" }
 
-          skippable_response = Skippable::Response.from_json(skippable_tests_data)
+          skippable_response = Skippable::Response.from_json(skippables_data)
+          apply_skippable_response(skippable_response)
 
-          @mutex.synchronize do
-            @correlation_id = skippable_response.correlation_id
-            @skippable_tests = skippable_response.tests
-          end
-
-          Datadog.logger.debug { "Found [#{@skippable_tests.size}] skippable tests from context" }
+          Datadog.logger.debug { "Found [#{skippables_count}] skippable #{@test_skipping_mode}s from context" }
           Datadog.logger.debug { "ITR correlation ID from context: #{@correlation_id}" }
 
           true
@@ -406,27 +466,84 @@ module Datadog
           coverage[absolute_test_source_file_path] = true
         end
 
-        def fetch_skippable_tests(test_session)
-          return unless skipping_tests?
+        def write_coverage_event(test_id:, test_suite_id:, test_session_id:, source_file:, coverage:)
+          coverage ||= {}
+          if coverage.empty?
+            Telemetry.code_coverage_is_empty
+            return
+          end
+
+          ensure_test_source_covered(source_file, coverage) unless source_file.nil?
+
+          enrich_coverage_with_static_dependencies(coverage)
+
+          Telemetry.code_coverage_files(coverage.size)
+
+          coverage_event = Coverage::Event.new(
+            test_id: test_id,
+            test_suite_id: test_suite_id,
+            test_session_id: test_session_id,
+            coverage: coverage
+          )
+
+          Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }
+
+          write(coverage_event)
+
+          coverage_event
+        end
+
+        def fetch_skippables(test_session)
+          return unless skipping_tests? || skipping_suites?
 
           # we can only request skippable tests if git metadata is already uploaded
           git_tree_upload_worker.wait_until_done
 
           skippable_response =
-            Skippable.new(api: @api, dd_env: @dd_env, config_tags: @config_tags)
-              .fetch_skippable_tests(test_session)
+            Skippable.new(
+              api: @api,
+              dd_env: @dd_env,
+              config_tags: @config_tags,
+              test_skipping_mode: @test_skipping_mode
+            )
+              .fetch_skippables(test_session)
           @skippable_tests_fetch_error = skippable_response.error_message unless skippable_response.ok?
 
-          @mutex.synchronize do
-            @correlation_id = skippable_response.correlation_id
-            @skippable_tests = skippable_response.tests
-          end
+          apply_skippable_response(skippable_response)
 
-          Datadog.logger.debug { "Fetched skippable tests: \n #{@skippable_tests}" }
-          Datadog.logger.debug { "Found #{@skippable_tests.count} skippable tests." }
+          Datadog.logger.debug { "Fetched skippable #{@test_skipping_mode}s: \n #{current_skippables}" }
+          Datadog.logger.debug { "Found #{skippables_count} skippable #{@test_skipping_mode}s." }
           Datadog.logger.debug { "ITR correlation ID: #{@correlation_id}" }
 
-          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_TESTS, @skippable_tests.count)
+          Utils::Telemetry.inc(skippable_response_metric, skippables_count)
+        end
+
+        def apply_skippable_response(skippable_response)
+          set_skippables(
+            correlation_id: skippable_response.correlation_id,
+            tests: skippable_response.tests,
+            suites: skippable_response.suites
+          )
+        end
+
+        def set_skippables(correlation_id:, tests:, suites:)
+          @mutex.synchronize do
+            @correlation_id = correlation_id
+            @skippable_tests = tests
+            @skippable_suites = suites
+          end
+        end
+
+        def current_skippables
+          suite_skipping_mode? ? @skippable_suites : @skippable_tests
+        end
+
+        def skippable_response_metric
+          if skipping_suites?
+            Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_SUITES
+          else
+            Ext::Telemetry::METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_TESTS
+          end
         end
 
         def code_coverage_mode

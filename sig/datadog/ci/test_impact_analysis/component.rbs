@@ -12,6 +12,7 @@ module Datadog
         @code_coverage_enabled: bool
         @correlation_id: String?
         @skippable_tests: Set[String]
+        @skippable_suites: Set[String]
         @coverage_writer: Datadog::CI::AsyncWriter?
 
         @api: Datadog::CI::Transport::Api::Base?
@@ -22,6 +23,7 @@ module Datadog
         @use_single_threaded_coverage: bool
         @use_allocation_tracing: bool
         @static_dependencies_tracking_enabled: bool
+        @test_skipping_mode: String
 
         @mutex: Thread::Mutex
 
@@ -34,19 +36,27 @@ module Datadog
         @current_context_id_mutex: Thread::Mutex
 
         attr_reader skippable_tests: Set[String]
+        attr_reader skippable_suites: Set[String]
         attr_reader correlation_id: String?
         attr_reader enabled: bool
         attr_reader code_coverage_enabled: bool
         attr_reader test_skipping_enabled: bool
+        attr_reader test_skipping_mode: String
         attr_reader skippable_tests_fetch_error: String?
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 
         def enabled?: () -> bool
 
         def skipping_tests?: () -> bool
+
+        def skipping_suites?: () -> bool
+
+        def test_skipping_mode?: () -> bool
+
+        def suite_skipping_mode?: () -> bool
 
         def code_coverage?: () -> bool
 
@@ -61,6 +71,10 @@ module Datadog
 
         def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestTracing::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
 
+        def on_test_suite_started: (Datadog::CI::TestSuite test_suite) -> void
+
+        def on_test_suite_finished: (Datadog::CI::TestSuite test_suite, Datadog::CI::TestTracing::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+
         def clear_context_coverage: (String context_id) -> void
 
         def context_coverage_enabled?: () -> bool
@@ -69,11 +83,15 @@ module Datadog
 
         def mark_if_skippable: (Datadog::CI::Test test) -> void
 
+        def skippable_suite?: (String test_suite_name) -> bool
+
+        def mark_if_suite_skippable: (Datadog::CI::TestSuite test_suite) -> void
+
         def write_test_session_tags: (Datadog::CI::TestSession test_session, Integer skipped_tests_count) -> void
 
         def shutdown!: () -> void
 
-        def skippable_tests_count: () -> Integer
+        def skippables_count: () -> Integer
 
         # Implementation of Stateful interface
         def serialize_state: () -> Hash[Symbol, untyped]
@@ -98,9 +116,17 @@ module Datadog
 
         def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void
 
-        def fetch_skippable_tests: (Datadog::CI::TestSession test_session) -> void
+        def write_coverage_event: (test_id: String?, test_suite_id: String, test_session_id: String, source_file: String?, coverage: Hash[String, untyped]?) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
 
-        def increment_skipped_tests_counter: () -> void
+        def fetch_skippables: (Datadog::CI::TestSession test_session) -> void
+
+        def apply_skippable_response: (Datadog::CI::TestImpactAnalysis::Skippable::Response skippable_response) -> void
+
+        def set_skippables: (correlation_id: String?, tests: Set[String], suites: Set[String]) -> void
+
+        def current_skippables: () -> Set[String]
+
+        def skippable_response_metric: () -> String
 
         def code_coverage_mode: () -> Datadog::CI::TestImpactAnalysis::Coverage::DDCov::threading_mode
 
