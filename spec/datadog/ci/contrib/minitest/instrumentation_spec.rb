@@ -1925,8 +1925,13 @@ RSpec.describe "Minitest instrumentation" do
         Set.new(["TestSuiteWithModifiedTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_passed."])
       end
       let(:changed_files) do
+        test_method = TestSuiteWithModifiedTest.new(:test_passed).method(:test_passed)
+        source_file, first_line_number = test_method.source_location
+        source_file = Datadog::CI::Git::LocalRepository.relative_to_root(source_file)
+        last_line_number = Datadog::CI::SourceCode::MethodInspect.last_line(test_method) || first_line_number
+
         Set.new([
-          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1922:1924"
+          "#{source_file}:#{first_line_number}:#{last_line_number}"
         ])
       end
     end
