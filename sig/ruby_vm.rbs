@@ -1,3 +1,0 @@
-class RubyVM::InstructionSequence
-  def self.of: (Proc | Method target) -> RubyVM::InstructionSequence?
-end
