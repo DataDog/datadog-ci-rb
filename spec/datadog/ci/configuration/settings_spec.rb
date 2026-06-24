@@ -365,6 +365,70 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#tia_test_skipping_mode" do
+        subject(:tia_test_skipping_mode) { settings.ci.tia_test_skipping_mode }
+
+        it { is_expected.to eq("test") }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_TIA_TEST_SKIPPING_MODE}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_TIA_TEST_SKIPPING_MODE => mode) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:mode) { nil }
+
+            it { is_expected.to eq("test") }
+          end
+
+          context "is set to test" do
+            let(:mode) { "test" }
+
+            it { is_expected.to eq("test") }
+          end
+
+          context "is set to suite" do
+            let(:mode) { "suite" }
+
+            it { is_expected.to eq("suite") }
+          end
+
+          context "is set to an invalid value" do
+            let(:mode) { "invalid" }
+
+            it "falls back to test mode and logs once" do
+              logger = Datadog.logger
+              allow(logger).to receive(:warn)
+
+              expect(settings.ci.tia_test_skipping_mode).to eq("test")
+
+              expect(logger).to have_received(:warn).once.with(/Invalid Test Impact Analysis skipping mode/)
+            end
+          end
+        end
+      end
+
+      describe "#tia_test_skipping_mode=" do
+        it "updates the #tia_test_skipping_mode setting" do
+          expect { settings.ci.tia_test_skipping_mode = "suite" }
+            .to change { settings.ci.tia_test_skipping_mode }
+            .from("test")
+            .to("suite")
+        end
+
+        it "falls back to test mode and logs once when value is invalid" do
+          logger = Datadog.logger
+          allow(logger).to receive(:warn)
+
+          settings.ci.tia_test_skipping_mode = "invalid"
+
+          expect(settings.ci.tia_test_skipping_mode).to eq("test")
+          expect(logger).to have_received(:warn).once.with(/Invalid Test Impact Analysis skipping mode/)
+        end
+      end
+
       describe "#git_metadata_upload_enabled" do
         subject(:git_metadata_upload_enabled) { settings.ci.git_metadata_upload_enabled }
 

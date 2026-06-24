@@ -3,6 +3,19 @@ module Datadog
     module Contrib
       module Minitest
         module Helpers
+          module RunnableClassMethods
+            @datadog_itr_unskippable_suite: bool
+            @datadog_itr_unskippable_tests: Array[String]?
+
+            def datadog_itr_unskippable: (*untyped) -> void
+
+            def dd_suite_unskippable?: () -> bool
+
+            def dd_test_unskippable?: (String test_name) -> bool
+
+            def dd_any_unskippable?: () -> bool
+          end
+
           interface _RunnableClass
             def runnable_methods: () -> Array[String]
 
@@ -11,9 +24,13 @@ module Datadog
             def instance_method: (String method_name) -> UnboundMethod
 
             def ancestors: () -> Array[Module]
+
+            def dd_any_unskippable?: () -> bool
           end
 
           def self.start_test_suite: (_RunnableClass klass) -> Datadog::CI::TestSuite?
+
+          def self.skip_test_suite: (Datadog::CI::TestSuite test_suite) -> Array[untyped]
 
           def self.test_suite_name: (_RunnableClass klass, String method_name) -> ::String
 

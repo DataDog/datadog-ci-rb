@@ -74,7 +74,7 @@ RSpec.describe Datadog::CI::TestOptimizationCache::Readers::Legacy do
       "meta" => {"correlation_id" => "legacy-correlation-id"},
       "data" => [
         {
-          "type" => Datadog::CI::Ext::Test::ITR_TEST_SKIPPING_MODE,
+          "type" => Datadog::CI::Ext::Test::DEFAULT_TIA_TEST_SKIPPING_MODE,
           "attributes" => {
             "suite" => "suite",
             "name" => "test",

@@ -56,6 +56,16 @@ module Datadog
           def test_tracing_component: () -> Datadog::CI::TestTracing::Component
 
           def test_suite_source_file_tags: (untyped test_case) -> Hash[String, String]
+
+          def test_suite_unskippable?: (untyped test_case) -> bool
+
+          def node_has_unskippable_tag?: (untyped node) -> bool
+
+          def node_tags_include_unskippable?: (untyped node) -> bool
+
+          def test_case_unskippable?: (untyped test_case) -> bool
+
+          def datadog_itr_unskippable_tag: () -> String
         end
       end
     end

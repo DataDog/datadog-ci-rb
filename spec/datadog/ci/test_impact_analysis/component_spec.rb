@@ -6,9 +6,18 @@ require_relative "../../../../lib/datadog/ci/test_optimization_cache/component"
 RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
   include_context "Telemetry spy"
 
-  subject(:component) { described_class.new(api: api, dd_env: "dd_env", coverage_writer: writer, enabled: local_itr_enabled) }
+  subject(:component) do
+    described_class.new(
+      api: api,
+      dd_env: "dd_env",
+      coverage_writer: writer,
+      enabled: local_itr_enabled,
+      test_skipping_mode: test_skipping_mode
+    )
+  end
 
   let(:local_itr_enabled) { true }
+  let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::TEST }
 
   let(:api) { double("api") }
   let(:writer) { spy("writer") }
@@ -74,7 +83,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         expect(test_session.skipping_tests?).to be false
         expect(test_session.code_coverage?).to be true
         expect(test_session.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE)).to eq(
-          Datadog::CI::Ext::Test::ITR_TEST_SKIPPING_MODE
+          Datadog::CI::Ext::Test::DEFAULT_TIA_TEST_SKIPPING_MODE
         )
       end
     end
@@ -83,10 +92,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       let(:skippable) do
         instance_double(
           Datadog::CI::TestImpactAnalysis::Skippable,
-          fetch_skippable_tests: instance_double(
+          fetch_skippables: instance_double(
             Datadog::CI::TestImpactAnalysis::Skippable::Response,
             correlation_id: "42",
             tests: Set.new(["suite.test.", "suite.test2."]),
+            suites: Set.new,
             ok?: true
           )
         )
@@ -111,6 +121,45 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.response_tests", 2
     end
 
+    context "when suite skipping mode is configured" do
+      let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+      let(:skippable_response) do
+        instance_double(
+          Datadog::CI::TestImpactAnalysis::Skippable::Response,
+          correlation_id: "suite-correlation-id",
+          tests: Set.new,
+          suites: Set.new(["SuiteA", "SuiteB"]),
+          ok?: true
+        )
+      end
+      let(:skippable) do
+        instance_double(
+          Datadog::CI::TestImpactAnalysis::Skippable,
+          fetch_skippables: skippable_response
+        )
+      end
+
+      before do
+        expect(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:new).with(
+          hash_including(test_skipping_mode: Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE)
+        ).and_return(skippable)
+
+        configure
+      end
+
+      it "configures skippable suites" do
+        expect(component.enabled?).to be true
+        expect(component.skipping_tests?).to be false
+        expect(component.skipping_suites?).to be true
+        expect(component.correlation_id).to eq("suite-correlation-id")
+        expect(component.skippable_suites).to eq(Set.new(["SuiteA", "SuiteB"]))
+        expect(component.skippable_tests).to be_empty
+        expect(test_session.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE)).to eq("suite")
+      end
+
+      it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.response_suites", 2
+    end
+
     context "when test session is distributed" do
       let(:tests_skipping_enabled) { true }
       let(:skippable_response) do
@@ -118,13 +167,14 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           Datadog::CI::TestImpactAnalysis::Skippable::Response,
           correlation_id: "42",
           tests: Set.new(["suite.test.", "suite.test2."]),
+          suites: Set.new,
           ok?: true
         )
       end
       let(:skippable) do
         instance_double(
           Datadog::CI::TestImpactAnalysis::Skippable,
-          fetch_skippable_tests: skippable_response
+          fetch_skippables: skippable_response
         )
       end
 
@@ -138,7 +188,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           described_class::FILE_STORAGE_KEY,
           {
             correlation_id: "42",
-            skippable_tests: Set.new(["suite.test.", "suite.test2."])
+            skippable_tests: Set.new(["suite.test.", "suite.test2."]),
+            skippable_suites: Set.new
           }
         ).and_return(true)
 
@@ -153,13 +204,14 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           Datadog::CI::TestImpactAnalysis::Skippable::Response,
           correlation_id: "42",
           tests: Set.new(["suite.test.", "suite.test2."]),
+          suites: Set.new,
           ok?: true
         )
       end
       let(:skippable) do
         instance_double(
           Datadog::CI::TestImpactAnalysis::Skippable,
-          fetch_skippable_tests: skippable_response
+          fetch_skippables: skippable_response
         )
       end
 
@@ -207,10 +259,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         let(:skippable) do
           instance_double(
             Datadog::CI::TestImpactAnalysis::Skippable,
-            fetch_skippable_tests: instance_double(
+            fetch_skippables: instance_double(
               Datadog::CI::TestImpactAnalysis::Skippable::Response,
               correlation_id: "42",
               tests: Set.new(["suite.test.", "suite.test2."]),
+              suites: Set.new,
               ok?: true
             )
           )
@@ -272,7 +325,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
             },
             "data" => [
               {
-                "type" => Datadog::CI::Ext::Test::ITR_TEST_SKIPPING_MODE,
+                "type" => Datadog::CI::Ext::Test::DEFAULT_TIA_TEST_SKIPPING_MODE,
                 "attributes" => {
                   "suite" => "ManifestSuite",
                   "name" => "test_manifest",
@@ -600,6 +653,111 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
   end
 
+  describe "suite skipping mode lifecycle" do
+    let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+    let(:tests_skipping_enabled) { false }
+    let(:collector) { instance_double(Datadog::CI::TestImpactAnalysis::Coverage::DDCov, start: nil, stop: coverage) }
+    let(:coverage) { {"/path/to/suite_file.rb" => true} }
+    let(:suite_tracer_span) do
+      Datadog::Tracing::SpanOperation.new("suite").tap do |span|
+        span.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "3")
+      end
+    end
+    let(:test_suite) { Datadog::CI::TestSuite.new(suite_tracer_span) }
+    let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
+
+    before do
+      allow(component).to receive(:load_datadog_cov!)
+      configure
+      allow(component).to receive(:coverage_collector).and_return(collector)
+    end
+
+    it "starts and stops coverage around the suite lifecycle" do
+      component.on_test_suite_started(test_suite)
+      event = component.on_test_suite_finished(test_suite, context)
+
+      expect(collector).to have_received(:start)
+      expect(collector).to have_received(:stop)
+      expect(event.test_id).to be_nil
+      expect(event.test_suite_id).to eq(test_suite.id.to_s)
+      expect(event.test_session_id).to eq("3")
+      expect(writer).to have_received(:write).with(event)
+    end
+
+    it "does not collect coverage around test lifecycle" do
+      test_span = Datadog::CI::Test.new(Datadog::Tracing::SpanOperation.new("test"))
+
+      component.on_test_started(test_span)
+      component.on_test_finished(test_span, context)
+
+      expect(collector).not_to have_received(:start)
+      expect(collector).not_to have_received(:stop)
+      expect(writer).not_to have_received(:write)
+    end
+
+    it "disables RSpec context coverage hooks" do
+      expect(component.context_coverage_enabled?).to be false
+
+      component.on_test_context_started("1")
+      component.clear_context_coverage("1")
+
+      expect(collector).not_to have_received(:start)
+    end
+  end
+
+  describe "skippable suites" do
+    let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+    let(:tests_skipping_enabled) { true }
+    let(:collector) { instance_double(Datadog::CI::TestImpactAnalysis::Coverage::DDCov, start: nil, stop: {}) }
+    let(:suite_tracer_span) do
+      Datadog::Tracing::SpanOperation.new("SuiteA").tap do |span|
+        span.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "3")
+      end
+    end
+    let(:test_suite) { Datadog::CI::TestSuite.new(suite_tracer_span) }
+    let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
+    let(:skippable_response) do
+      instance_double(
+        Datadog::CI::TestImpactAnalysis::Skippable::Response,
+        correlation_id: "suite-correlation-id",
+        tests: Set.new,
+        suites: Set.new(["SuiteA"]),
+        ok?: true
+      )
+    end
+    let(:skippable) do
+      instance_double(Datadog::CI::TestImpactAnalysis::Skippable, fetch_skippables: skippable_response)
+    end
+
+    before do
+      allow(component).to receive(:load_datadog_cov!)
+      allow(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:new).and_return(skippable)
+      configure
+      allow(component).to receive(:coverage_collector).and_return(collector)
+    end
+
+    it "marks and counts skipped suites without starting coverage" do
+      component.on_test_suite_started(test_suite)
+      component.on_test_suite_finished(test_suite, context)
+
+      expect(test_suite.get_tag(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR)).to eq("true")
+      expect(test_suite.status).to eq(Datadog::CI::Ext::Test::Status::SKIP)
+      expect(collector).not_to have_received(:start)
+      expect(context).to have_received(:incr_tests_skipped_by_tia_count)
+      expect(writer).not_to have_received(:write)
+    end
+
+    it "forces a skippable suite to run when the suite is marked unskippable" do
+      test_suite.set_tag(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
+
+      component.on_test_suite_started(test_suite)
+
+      expect(test_suite.skipped_by_test_impact_analysis?).to be false
+      expect(test_suite.get_tag(Datadog::CI::Ext::Test::TAG_ITR_FORCED_RUN)).to eq("true")
+      expect(collector).to have_received(:start)
+    end
+  end
+
   describe "#on_test_context_started" do
     let(:context_id) { "1:1" }
     let(:tests_skipping_enabled) { false }
@@ -878,10 +1036,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       let(:skippable) do
         instance_double(
           Datadog::CI::TestImpactAnalysis::Skippable,
-          fetch_skippable_tests: instance_double(
+          fetch_skippables: instance_double(
             Datadog::CI::TestImpactAnalysis::Skippable::Response,
             correlation_id: "42",
             tests: Set.new(["suite.test.", "suite2.test.", "suite.test3."]),
+            suites: Set.new,
             ok?: true
           )
         )

@@ -21,7 +21,7 @@ module Datadog
           def valid?
             valid = true
 
-            %i[test_id test_suite_id test_session_id coverage].each do |key|
+            %i[test_suite_id test_session_id coverage].each do |key|
               next unless send(key).nil?
 
               Datadog.logger.warn("citestcov event is invalid: [#{key}] is nil. Event: #{self}")
@@ -34,7 +34,7 @@ module Datadog
           def to_msgpack(packer = nil)
             packer ||= MessagePack::Packer.new
 
-            packer.write_map_header(4)
+            packer.write_map_header(test_id.nil? ? 3 : 4)
 
             packer.write("test_session_id")
             packer.write(test_session_id.to_i)
@@ -42,8 +42,10 @@ module Datadog
             packer.write("test_suite_id")
             packer.write(test_suite_id.to_i)
 
-            packer.write("span_id")
-            packer.write(test_id.to_i)
+            unless test_id.nil?
+              packer.write("span_id")
+              packer.write(test_id.to_i)
+            end
 
             files = coverage.keys
             packer.write("files")

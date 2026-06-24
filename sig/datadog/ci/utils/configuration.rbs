@@ -5,6 +5,8 @@ module Datadog
         def self.fetch_service_name: (String default) -> String
 
         def self.service_name_provided_by_user?: () -> bool
+
+        def self.normalize_tia_test_skipping_mode: (String mode) -> String
       end
     end
   end

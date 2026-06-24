@@ -8,6 +8,34 @@ RSpec.describe Datadog::CI::TestSuite do
   before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
   subject(:ci_test_suite) { described_class.new(tracer_span) }
 
+  describe "#should_skip?" do
+    it "returns true when the suite was skipped by Test Impact Analysis" do
+      allow(tracer_span).to receive(:get_tag)
+        .with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
+        .and_return("true")
+
+      expect(ci_test_suite.should_skip?).to be true
+    end
+
+    it "returns false otherwise" do
+      allow(tracer_span).to receive(:get_tag)
+        .with(Datadog::CI::Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
+        .and_return(nil)
+
+      expect(ci_test_suite.should_skip?).to be false
+    end
+  end
+
+  describe "#datadog_skip_reason" do
+    it "returns the suite skip reason tag" do
+      allow(tracer_span).to receive(:get_tag)
+        .with(Datadog::CI::Ext::Test::TAG_SKIP_REASON)
+        .and_return(Datadog::CI::Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS)
+
+      expect(ci_test_suite.datadog_skip_reason).to eq(Datadog::CI::Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS)
+    end
+  end
+
   describe "#finish" do
     subject(:finish) { ci_test_suite.finish }
 

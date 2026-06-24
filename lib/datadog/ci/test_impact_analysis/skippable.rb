@@ -36,10 +36,24 @@ module Datadog
 
             payload.fetch("data", [])
               .each do |test_data|
-                next unless test_data["type"] == Ext::Test::ITR_TEST_SKIPPING_MODE
+                next unless test_data["type"] == Ext::Test::TIATestSkippingMode::TEST
 
                 attrs = test_data["attributes"] || {}
                 res << Utils::TestRun.datadog_test_id(attrs["name"], attrs["suite"], attrs["parameters"])
+              end
+
+            res
+          end
+
+          def suites
+            res = Set.new
+
+            payload.fetch("data", [])
+              .each do |test_data|
+                next unless test_data["type"] == Ext::Test::TIATestSkippingMode::SUITE
+
+                suite = (test_data["attributes"] || {})["suite"]
+                res << suite unless suite.nil?
               end
 
             res
@@ -74,18 +88,19 @@ module Datadog
           end
         end
 
-        def initialize(dd_env:, api: nil, config_tags: {})
+        def initialize(dd_env:, api: nil, config_tags: {}, test_skipping_mode: Ext::Test::TIATestSkippingMode::TEST)
           @api = api
           @dd_env = dd_env
           @config_tags = config_tags
+          @test_skipping_mode = test_skipping_mode
         end
 
-        def fetch_skippable_tests(test_session)
+        def fetch_skippables(test_session)
           api = @api
           return Response.from_http_response(nil) unless api
 
           request_payload = payload(test_session)
-          Datadog.logger.debug("Fetching skippable tests with request: #{request_payload}")
+          Datadog.logger.debug("Fetching skippable #{@test_skipping_mode}s with request: #{request_payload}")
 
           http_response = api.api_request(
             path: Ext::Transport::DD_API_SKIPPABLE_TESTS_PATH,
@@ -127,7 +142,7 @@ module Datadog
             "data" => {
               "type" => Ext::Transport::DD_API_SKIPPABLE_TESTS_TYPE,
               "attributes" => {
-                "test_level" => Ext::Test::ITR_TEST_SKIPPING_MODE,
+                "test_level" => @test_skipping_mode,
                 "service" => test_session.service,
                 "env" => @dd_env,
                 "repository_url" => test_session.git_repository_url,

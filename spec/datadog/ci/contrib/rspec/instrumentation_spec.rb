@@ -888,6 +888,66 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
+  context "with suite mode coverage from before(:context) hooks" do
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+      let(:tests_skipping_enabled) { true }
+      let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+      let(:static_dependencies_tracking_enabled) { false }
+    end
+
+    it "collects suite coverage including before(:all) and before(:context) hooks" do
+      with_new_rspec_environment do
+        require_relative "fixtures/user"
+        require_relative "fixtures/order"
+
+        RSpec.describe "SuiteModeContextCoverageTest" do
+          before(:all) do
+            user = ContextCoverageHelper::User.new("John", "Doe")
+            user.full_name
+          end
+
+          context "nested context" do
+            before(:context) do
+              order = ContextCoverageHelper::Order.new
+              order.add_item(10)
+              order.total
+            end
+
+            it "runs a simple test" do
+              expect(1 + 1).to eq(2)
+            end
+          end
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        stdout = StringIO.new
+        stderr = StringIO.new
+        ::RSpec::Core::Runner.new(options).run(stderr, stdout)
+      end
+
+      expect(test_spans).to have(1).item
+      expect(coverage_events).to have(1).item
+
+      coverage_event = coverage_events.first
+      expect(coverage_event.test_id).to be_nil
+      expect(coverage_event.test_session_id).to eq(test_session_span.id.to_s)
+      expect(coverage_event.test_suite_id).to eq(first_test_suite_span.id.to_s)
+      expect(coverage_event.coverage.keys).to include(
+        File.join(__dir__, "fixtures/user.rb"),
+        File.join(__dir__, "fixtures/order.rb")
+      )
+    end
+  end
+
   context "with nested sibling contexts and outer before(:context) hooks" do
     before do
       allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
@@ -1138,6 +1198,42 @@ RSpec.describe "RSpec instrumentation" do
           have_test_tag(:itr_test_skipping_enabled, "true")
         )
         expect(test_spans).to all have_test_tag(:itr_test_skipping_enabled, "true")
+      end
+    end
+
+    context "skipped a whole test suite" do
+      let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+      let(:itr_skippable_suites) do
+        Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"])
+      end
+
+      it "skips the suite at the existing suite boundary" do
+        rspec_session_run(with_failed_test: true)
+
+        expect(test_spans).to be_empty
+        expect(test_suite_spans).to have(1).item
+        expect(first_test_suite_span).to have_skip_status
+        expect(first_test_suite_span).to have_test_tag(:itr_skipped_by_itr, "true")
+
+        expect(before_all_spy).not_to have_received(:call)
+        expect(before_context_spy).not_to have_received(:call)
+
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "suite")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
+      end
+
+      it "runs the suite when an example is unskippable" do
+        rspec_session_run(with_failed_test: true, unskippable: {test: true})
+
+        expect(test_spans).to have(2).items
+        expect(test_spans).to have_tag_values_no_order(:status, ["pass", "fail"])
+        expect(first_test_suite_span).not_to have_test_tag(:itr_skipped_by_itr)
+        expect(first_test_suite_span).to have_test_tag(:itr_forced_run, "true")
+        expect(first_test_suite_span).to have_test_tag(:itr_unskippable, "true")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
       end
     end
 

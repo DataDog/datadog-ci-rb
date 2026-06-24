@@ -7,7 +7,9 @@ module Datadog
         attr_reader code_coverage_enabled: bool
         attr_reader skippable_tests_fetch_error: String?
         attr_reader skippable_tests: Set[String]
+        attr_reader skippable_suites: Set[String]
         attr_reader correlation_id: String?
+        attr_reader test_skipping_mode: String
 
         def initialize: () -> void
 
@@ -16,6 +18,8 @@ module Datadog
         def enabled?: () -> bool
 
         def skipping_tests?: () -> bool
+
+        def skipping_suites?: () -> bool
 
         def code_coverage?: () -> bool
 
@@ -29,6 +33,10 @@ module Datadog
 
         def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestTracing::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
 
+        def on_test_suite_started: (Datadog::CI::TestSuite test_suite) -> void
+
+        def on_test_suite_finished: (Datadog::CI::TestSuite test_suite, Datadog::CI::TestTracing::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+
         def clear_context_coverage: (String context_id) -> void
 
         def context_coverage_enabled?: () -> bool
@@ -37,13 +45,16 @@ module Datadog
 
         def skippable?: (String datadog_test_id) -> bool
 
+        def skippable_suite?: (String test_suite_name) -> bool
+
+        def mark_if_suite_skippable: (Datadog::CI::TestSuite test_suite) -> void
+
         def write_test_session_tags: (Datadog::CI::TestSession test_session, Integer skipped_tests_count) -> void
 
-        def skippable_tests_count: () -> Integer
+        def skippables_count: () -> Integer
 
         def shutdown!: () -> void
       end
     end
   end
 end
-

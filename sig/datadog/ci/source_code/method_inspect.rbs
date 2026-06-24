@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+class RubyVM::InstructionSequence
+  def self.of: (Proc | Method target) -> RubyVM::InstructionSequence?
+end
+
 module Datadog
   module CI
     module SourceCode
@@ -13,4 +17,3 @@ module Datadog
     end
   end
 end
-

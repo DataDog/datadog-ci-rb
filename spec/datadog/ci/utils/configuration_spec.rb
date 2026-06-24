@@ -58,4 +58,30 @@ RSpec.describe ::Datadog::CI::Utils::Configuration do
       it { is_expected.to be false }
     end
   end
+
+  describe ".normalize_tia_test_skipping_mode" do
+    subject(:normalize_tia_test_skipping_mode) { described_class.normalize_tia_test_skipping_mode(mode) }
+
+    context "when mode is test" do
+      let(:mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::TEST }
+
+      it { is_expected.to eq("test") }
+    end
+
+    context "when mode is suite" do
+      let(:mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+
+      it { is_expected.to eq("suite") }
+    end
+
+    context "when mode is invalid" do
+      let(:mode) { "invalid" }
+
+      it "logs a warning and returns test mode" do
+        expect(Datadog.logger).to receive(:warn).with(/Invalid Test Impact Analysis skipping mode/)
+
+        expect(normalize_tia_test_skipping_mode).to eq("test")
+      end
+    end
+  end
 end

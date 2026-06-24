@@ -544,6 +544,24 @@ RSpec.describe "Minitest instrumentation" do
           expect(cov_event.coverage.keys).to include(absolute_path("helpers/simple_model.rb"))
         end
 
+        context "in suite mode" do
+          let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+          let(:static_dependencies_tracking_enabled) { false }
+
+          it "creates a suite coverage event" do
+            expect(coverage_events).to have(1).item
+
+            coverage_event = coverage_events.first
+            expect(coverage_event.test_id).to be_nil
+            expect(coverage_event.test_session_id).to eq(test_session_span.id.to_s)
+            expect(coverage_event.test_suite_id).to eq(first_test_suite_span.id.to_s)
+            expect(coverage_event.coverage.keys).to include(
+              absolute_path("helpers/addition_helper.rb"),
+              absolute_path("helpers/simple_model.rb")
+            )
+          end
+        end
+
         context "when test optimisation skips tests" do
           context "single skipped test" do
             let(:itr_skippable_tests) do
@@ -588,6 +606,25 @@ RSpec.describe "Minitest instrumentation" do
               expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
               expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
               expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 2)
+            end
+          end
+
+          context "suite skipped in suite mode" do
+            let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+            let(:itr_skippable_suites) do
+              Set.new(["SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"])
+            end
+
+            it "skips the runnable suite as a whole" do
+              expect(test_spans).to be_empty
+              expect(test_suite_spans).to have(1).item
+              expect(first_test_suite_span).to have_skip_status
+              expect(first_test_suite_span).to have_test_tag(:itr_skipped_by_itr, "true")
+
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "suite")
+              expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+              expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
             end
           end
         end
@@ -1906,8 +1943,13 @@ RSpec.describe "Minitest instrumentation" do
         Set.new(["TestSuiteWithModifiedTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_passed."])
       end
       let(:changed_files) do
+        test_method = TestSuiteWithModifiedTest.new(:test_passed).method(:test_passed)
+        source_file, first_line_number = test_method.source_location
+        source_file = Datadog::CI::Git::LocalRepository.relative_to_root(source_file)
+        last_line_number = Datadog::CI::SourceCode::MethodInspect.last_line(test_method) || first_line_number
+
         Set.new([
-          "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb:1922:1924"
+          "#{source_file}:#{first_line_number}:#{last_line_number}"
         ])
       end
     end

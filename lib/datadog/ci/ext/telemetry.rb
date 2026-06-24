@@ -44,6 +44,7 @@ module Datadog
         METRIC_ITR_SKIPPABLE_TESTS_REQUEST_ERRORS = "itr_skippable_tests.request_errors"
         METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_BYTES = "itr_skippable_tests.response_bytes"
         METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_TESTS = "itr_skippable_tests.response_tests"
+        METRIC_ITR_SKIPPABLE_TESTS_RESPONSE_SUITES = "itr_skippable_tests.response_suites"
 
         METRIC_ITR_SKIPPED = "itr_skipped"
         METRIC_ITR_UNSKIPPABLE = "itr_unskippable"

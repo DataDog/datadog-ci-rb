@@ -48,13 +48,13 @@ module Datadog
 
             # starting and finishing a test session is required to get the skippable tests response
             Datadog::CI.start_test_session(total_tests_count: estimated_tests_count)&.finish
-            skippable_tests_count = test_impact_analysis.skippable_tests_count
+            skippables_count = test_impact_analysis.skippables_count
 
             log("Estimated tests count: #{estimated_tests_count}")
-            log("Skippable tests count: #{skippable_tests_count}")
+            log("Skippables count: #{skippables_count}")
             validate_test_impact_analysis_state!
 
-            [(skippable_tests_count.to_f / estimated_tests_count).floor(2), 0.99].min || 0.0
+            [(skippables_count.to_f / estimated_tests_count).floor(2), 0.99].min || 0.0
           end
         end
       end

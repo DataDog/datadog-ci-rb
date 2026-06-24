@@ -23,6 +23,14 @@ module Datadog
 
       def expected_test_done!: (String test_name) -> void
 
+      def datadog_skip_reason: () -> String?
+
+      def should_skip?: () -> bool
+
+      def skipped_by_test_impact_analysis?: () -> bool
+
+      def itr_unskippable?: () -> bool
+
       private
 
       def set_status_from_stats!: () -> void

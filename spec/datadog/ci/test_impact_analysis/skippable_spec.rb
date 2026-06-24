@@ -8,11 +8,19 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
   let(:api) { spy("api") }
   let(:dd_env) { "ci" }
   let(:config_tags) { {} }
+  let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::TEST }
 
-  subject(:client) { described_class.new(api: api, dd_env: dd_env, config_tags: config_tags) }
+  subject(:client) do
+    described_class.new(
+      api: api,
+      dd_env: dd_env,
+      config_tags: config_tags,
+      test_skipping_mode: test_skipping_mode
+    )
+  end
 
-  describe "#fetch_skippable_tests" do
-    subject { client.fetch_skippable_tests(test_session) }
+  describe "#fetch_skippables" do
+    subject { client.fetch_skippables(test_session) }
 
     let(:service) { "service" }
     let(:tracer_span) do
@@ -59,8 +67,21 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
       end
     end
 
+    context "when test suite skipping mode is configured" do
+      let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+
+      it "requests skippable suites" do
+        subject
+
+        expect(api).to have_received(:api_request) do |args|
+          attributes = JSON.parse(args[:payload])["data"]["attributes"]
+          expect(attributes["test_level"]).to eq("suite")
+        end
+      end
+    end
+
     context "parsing response" do
-      subject(:response) { client.fetch_skippable_tests(test_session) }
+      subject(:response) { client.fetch_skippables(test_session) }
 
       context "when api is present" do
         before do
@@ -79,7 +100,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
                 "data" => [
                   {
                     "id" => "123",
-                    "type" => Datadog::CI::Ext::Test::ITR_TEST_SKIPPING_MODE,
+                    "type" => Datadog::CI::Ext::Test::DEFAULT_TIA_TEST_SKIPPING_MODE,
                     "attributes" => {
                       "suite" => "test_suite_name",
                       "name" => "test_name",
@@ -106,6 +127,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             expect(response.ok?).to be true
             expect(response.correlation_id).to eq("correlation_id_123")
             expect(response.tests).to eq(Set.new(["test_suite_name.test_name.string"]))
+            expect(response.suites).to be_empty
             expect(response.error_message).to be_nil
           end
 
@@ -140,6 +162,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             expect(response.ok?).to be false
             expect(response.correlation_id).to be_nil
             expect(response.tests).to be_empty
+            expect(response.suites).to be_empty
             expect(response.error_message).to eq("Status code: 422, response: not authorized")
           end
 
@@ -174,6 +197,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             expect(response.ok?).to be true
             expect(response.correlation_id).to be_nil
             expect(response.tests).to be_empty
+            expect(response.suites).to be_empty
           end
         end
 
@@ -207,6 +231,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             expect(response.ok?).to be true
             expect(response.correlation_id).to be_nil
             expect(response.tests).to be_empty
+            expect(response.suites).to be_empty
           end
         end
       end
@@ -218,6 +243,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
           expect(response.ok?).to be false
           expect(response.correlation_id).to be_nil
           expect(response.tests).to be_empty
+          expect(response.suites).to be_empty
         end
       end
     end
@@ -256,6 +282,10 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             {
               "type" => "test",
               "attributes" => {"suite" => "TestSuite", "name" => "test2", "parameters" => nil}
+            },
+            {
+              "type" => "suite",
+              "attributes" => {"suite" => "SkippedSuite"}
             }
           ]
         }
@@ -266,6 +296,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
       it "uses provided json instead of parsing http response" do
         expect(response.correlation_id).to eq("test_correlation_123")
         expect(response.tests).to eq(Set.new(["TestSuite.test1.params1", "TestSuite.test2."]))
+        expect(response.suites).to eq(Set.new(["SkippedSuite"]))
       end
 
       it "does not call JSON.parse on http response payload" do

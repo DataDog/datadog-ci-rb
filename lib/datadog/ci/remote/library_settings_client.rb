@@ -17,10 +17,11 @@ module Datadog
     module Remote
       # Calls settings endpoint to fetch library settings for given service and env
       class LibrarySettingsClient
-        def initialize(dd_env:, api: nil, config_tags: {})
+        def initialize(dd_env:, api: nil, config_tags: {}, test_skipping_mode: Ext::Test::TIATestSkippingMode::TEST)
           @api = api
           @dd_env = dd_env
           @config_tags = config_tags || {}
+          @test_skipping_mode = test_skipping_mode
         end
 
         def fetch(test_session)
@@ -87,7 +88,7 @@ module Datadog
                 "repository_url" => test_session.git_repository_url,
                 "branch" => test_session.git_branch || test_session.git_tag,
                 "sha" => test_session.git_commit_sha,
-                "test_level" => Ext::Test::ITR_TEST_SKIPPING_MODE,
+                "test_level" => @test_skipping_mode,
                 "configurations" => {
                   Ext::Test::TAG_OS_PLATFORM => test_session.os_platform,
                   Ext::Test::TAG_OS_ARCHITECTURE => test_session.os_architecture,

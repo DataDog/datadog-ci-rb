@@ -52,6 +52,7 @@ RSpec.describe "Cucumber instrumentation" do
   let(:cucumber_4_or_above) { Gem::Version.new("4.0.0") <= integration.version }
 
   let(:run_id) { SecureRandom.random_number(2**64 - 1) }
+  let(:cucumber_execution_events) { [] }
   let(:steps_file_definition_path) { "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps.rb" }
   let(:steps_file_for_run_path) do
     "spec/datadog/ci/contrib/cucumber/features/step_definitions/steps_#{run_id}.rb"
@@ -86,6 +87,16 @@ RSpec.describe "Cucumber instrumentation" do
   let(:expected_test_run_code) { 0 }
 
   before do
+    events = cucumber_execution_events
+    stub_const(
+      "DatadogCucumberExecutionRecorder",
+      Module.new do
+        define_singleton_method(:record) do |event|
+          events << event
+        end
+      end
+    )
+
     # Ruby loads any file at most once per process, but we need to load
     # the cucumber step definitions multiple times for every Cucumber::Runtime we create
     # So we add a random number to the file path to force Ruby to load it again
@@ -151,6 +162,7 @@ RSpec.describe "Cucumber instrumentation" do
 
       # before hook was executed
       expect(scenario_span.get_tag("cucumber_before_hook_executed")).not_to be_nil
+      expect(cucumber_execution_events).to include(:before_hook, :datadog_step)
 
       step_span = spans.find { |s| s.resource == "datadog" }
       expect(step_span.name).to eq("datadog")
@@ -289,6 +301,58 @@ RSpec.describe "Cucumber instrumentation" do
         expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
       end
     end
+
+    context "skipping a feature suite with a later unskippable scenario in suite mode" do
+      let(:feature_file_to_run) { "unskippable_later_scenario.feature" }
+      let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+      let(:itr_skippable_suites) do
+        Set.new([
+          "Cucumber feature with later unskippable scenario at " \
+            "spec/datadog/ci/contrib/cucumber/features/unskippable_later_scenario.feature"
+        ])
+      end
+
+      it "runs the feature suite" do
+        expect(test_spans).to have(2).items
+        expect(test_spans).to all have_pass_status
+        expect(cucumber_execution_events).not_to be_empty
+
+        expect(test_suite_spans).to have(1).item
+        expect(first_test_suite_span).to have_pass_status
+        expect(first_test_suite_span).to have_test_tag(:itr_unskippable, "true")
+        expect(first_test_suite_span).to have_test_tag(:itr_forced_run, "true")
+        expect(first_test_suite_span).not_to have_test_tag(:itr_skipped_by_itr)
+
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "suite")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "false")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 0)
+      end
+    end
+
+    context "skipping a feature suite in suite mode" do
+      let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+      let(:itr_skippable_suites) do
+        Set.new(["Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature"])
+      end
+
+      it "skips the feature suite as a whole" do
+        expect(test_spans).to have(4).items
+        expect(test_spans).to all have_skip_status
+        expect(custom_spans).to be_empty
+
+        expect(test_suite_spans).to have(1).item
+        expect(first_test_suite_span).to have_skip_status
+        expect(first_test_suite_span).to have_test_tag(:itr_skipped_by_itr, "true")
+
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "suite")
+        expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 1)
+
+        expect(cucumber_execution_events).to be_empty
+      end
+    end
   end
 
   context "executing a failing test suite" do
@@ -376,7 +440,7 @@ RSpec.describe "Cucumber instrumentation" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans).to have(7).items
+      expect(test_suite_spans).to have(8).items
       expect(passing_test_suite).to have_pass_status
       expect(failing_test_suite).to have_fail_status
     end

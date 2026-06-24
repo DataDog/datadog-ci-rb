@@ -49,7 +49,7 @@ module Datadog
               tests_hash.each_value.flat_map do |test_configs|
                 test_configs.map do |test_config|
                   {
-                    "type" => Ext::Test::ITR_TEST_SKIPPING_MODE,
+                    "type" => Ext::Test::DEFAULT_TIA_TEST_SKIPPING_MODE,
                     "attributes" => {
                       "suite" => test_config["suite"],
                       "name" => test_config["name"],

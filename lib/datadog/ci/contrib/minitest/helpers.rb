@@ -7,6 +7,31 @@ module Datadog
     module Contrib
       module Minitest
         module Helpers
+          module RunnableClassMethods
+            def datadog_itr_unskippable(*args)
+              if args.nil? || args.empty?
+                @datadog_itr_unskippable_suite = true
+              else
+                @datadog_itr_unskippable_tests = args
+              end
+            end
+
+            def dd_suite_unskippable?
+              @datadog_itr_unskippable_suite
+            end
+
+            def dd_test_unskippable?(test_name)
+              tests = @datadog_itr_unskippable_tests
+              return false unless tests
+
+              tests.include?(test_name)
+            end
+
+            def dd_any_unskippable?
+              dd_suite_unskippable? || !!@datadog_itr_unskippable_tests
+            end
+          end
+
           def self.start_test_suite(klass)
             method = klass.runnable_methods.first
             return nil if method.nil?
@@ -21,6 +46,9 @@ module Datadog
               }
             else
               {}
+            end
+            if klass.dd_any_unskippable?
+              test_suite_tags[CI::Ext::Test::TAG_ITR_UNSKIPPABLE] = "true"
             end
 
             test_tracing_component = Datadog.send(:components).test_tracing
@@ -58,6 +86,11 @@ module Datadog
               return klass.instance_method(method_name).source_location
             end
             source_location
+          end
+
+          def self.skip_test_suite(test_suite)
+            test_suite&.finish
+            []
           end
 
           def self.parallel?(klass)

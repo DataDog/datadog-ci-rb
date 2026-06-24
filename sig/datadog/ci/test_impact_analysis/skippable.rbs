@@ -5,6 +5,7 @@ module Datadog
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
         @config_tags: Hash[String, String]
+        @test_skipping_mode: String
 
         class Response
           @http_response: Datadog::CI::Transport::Adapters::Net::Response?
@@ -20,6 +21,8 @@ module Datadog
 
           def tests: () -> Set[String]
 
+          def suites: () -> Set[String]
+
           def error_message: () -> String?
 
           private
@@ -29,9 +32,9 @@ module Datadog
           def payload: () -> Hash[String, untyped]
         end
 
-        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String]) -> void
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, dd_env: String?, ?config_tags: Hash[String, String], ?test_skipping_mode: String) -> void
 
-        def fetch_skippable_tests: (Datadog::CI::TestSession test_session) -> Response
+        def fetch_skippables: (Datadog::CI::TestSession test_session) -> Response
 
         private
 

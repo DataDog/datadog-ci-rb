@@ -72,9 +72,14 @@ module Datadog
             end
 
             unless same_test_suite_as_current?(test_suite_name)
+              suite_tags = test_suite_source_file_tags(event.test_case)
+              if test_suite_unskippable?(event.test_case)
+                suite_tags[CI::Ext::Test::TAG_ITR_UNSKIPPABLE] = "true"
+              end
+
               start_test_suite(
                 test_suite_name,
-                tags: test_suite_source_file_tags(event.test_case)
+                tags: suite_tags
               )
             end
 
@@ -227,6 +232,51 @@ module Datadog
               CI::Ext::Test::TAG_SOURCE_FILE => Git::LocalRepository.relative_to_root(source_file),
               CI::Ext::Test::TAG_SOURCE_START => line_number.to_s
             }
+          end
+
+          def test_suite_unskippable?(test_case)
+            feature = if test_case.respond_to?(:feature)
+              test_case.feature
+            else
+              @ast_lookup&.gherkin_document(test_case.location.file)&.feature
+            end
+
+            node_has_unskippable_tag?(feature) || test_case_unskippable?(test_case)
+          rescue
+            test_case_unskippable?(test_case)
+          end
+
+          def node_has_unskippable_tag?(node)
+            return false if node.nil?
+            return true if node_tags_include_unskippable?(node)
+
+            if node.respond_to?(:scenario) && node.scenario
+              return true if node_has_unskippable_tag?(node.scenario)
+            end
+
+            if node.respond_to?(:rule) && node.rule
+              return true if node_has_unskippable_tag?(node.rule)
+            end
+
+            return false unless node.respond_to?(:children)
+
+            node.children.any? { |child| node_has_unskippable_tag?(child) }
+          end
+
+          def node_tags_include_unskippable?(node)
+            return false unless node.respond_to?(:tags)
+
+            node.tags.any? { |tag| tag.respond_to?(:name) && tag.name == datadog_itr_unskippable_tag }
+          end
+
+          def test_case_unskippable?(test_case)
+            test_case.match_tags?(datadog_itr_unskippable_tag)
+          rescue
+            false
+          end
+
+          def datadog_itr_unskippable_tag
+            "@#{CI::Ext::Test::ITR_UNSKIPPABLE_OPTION}"
           end
         end
       end

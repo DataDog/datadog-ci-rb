@@ -76,7 +76,15 @@ module Datadog
 
         SPAN_KIND_TEST: "test"
 
-        ITR_TEST_SKIPPING_MODE: "test"
+        DEFAULT_TIA_TEST_SKIPPING_MODE: "test"
+
+        module TIATestSkippingMode
+          TEST: "test"
+
+          SUITE: "suite"
+
+          ALL: Array[String]
+        end
 
         ITR_UNSKIPPABLE_OPTION: :datadog_itr_unskippable
 

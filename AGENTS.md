@@ -107,6 +107,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 - We use Ruby 2.7 syntax
 - Use exceptions for exceptional cases, not for control flow.
 - Implement proper error logging and user-friendly messages.
+- Do not use `instance_variable_set` or `instance_variable_get`; add explicit APIs instead.
 
 ## Code Quality
 
@@ -129,7 +130,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 
 - All changes should be covered by corresponding tests
 - Place tests in the `spec/datadog/ci` folder
-- Do not use `instance_variable_set` and `instance_variable_get` in tests, use mocking when needed
+- Do not use `instance_variable_set` or `instance_variable_get` in tests; use mocking or explicit APIs when needed
 - Do not make changes to `release_gem_spec.rb` if not asked
 - Do not use focused tests feature (fit, fdescribe)
 - New contrib folders should have a corresponding Rake task in `Rakefile`
