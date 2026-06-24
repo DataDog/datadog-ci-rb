@@ -403,7 +403,6 @@ RSpec.describe Datadog::CI::Configuration::Settings do
               allow(logger).to receive(:warn)
 
               expect(settings.ci.tia_test_skipping_mode).to eq("test")
-              expect(settings.ci.tia_test_skipping_mode).to eq("test")
 
               expect(logger).to have_received(:warn).once.with(/Invalid Test Impact Analysis skipping mode/)
             end
