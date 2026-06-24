@@ -544,6 +544,23 @@ RSpec.describe "Minitest instrumentation" do
           expect(cov_event.coverage.keys).to include(absolute_path("helpers/simple_model.rb"))
         end
 
+        context "in suite mode" do
+          let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+
+          it "creates a suite coverage event" do
+            expect(coverage_events).to have(1).item
+
+            coverage_event = coverage_events.first
+            expect(coverage_event.test_id).to be_nil
+            expect(coverage_event.test_session_id).to eq(test_session_span.id.to_s)
+            expect(coverage_event.test_suite_id).to eq(first_test_suite_span.id.to_s)
+            expect(coverage_event.coverage.keys).to include(
+              absolute_path("helpers/addition_helper.rb"),
+              absolute_path("helpers/simple_model.rb")
+            )
+          end
+        end
+
         context "when test optimisation skips tests" do
           context "single skipped test" do
             let(:itr_skippable_tests) do
