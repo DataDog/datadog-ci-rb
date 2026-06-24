@@ -546,6 +546,7 @@ RSpec.describe "Minitest instrumentation" do
 
         context "in suite mode" do
           let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+          let(:static_dependencies_tracking_enabled) { false }
 
           it "creates a suite coverage event" do
             expect(coverage_events).to have(1).item
