@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+## [1.34.0] - 2026-06-25
+
+### Added
+
+* Add configurable TIA skipping mode ([#530][])
+
 ## [1.33.0] - 2026-06-19
 
 ### Added
@@ -659,7 +665,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.33.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.34.0...main
+[1.34.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.33.0...v1.34.0
 [1.33.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.32.0...v1.33.0
 [1.32.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.31.0...v1.32.0
 [1.31.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.30.0...v1.31.0
@@ -934,3 +941,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#521]: https://github.com/DataDog/datadog-ci-rb/issues/521
 [#522]: https://github.com/DataDog/datadog-ci-rb/issues/522
 [#527]: https://github.com/DataDog/datadog-ci-rb/issues/527
+[#530]: https://github.com/DataDog/datadog-ci-rb/issues/530
