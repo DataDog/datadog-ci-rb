@@ -110,11 +110,7 @@ module Datadog
             def datadog_test_name
               return @datadog_test_name if defined?(@datadog_test_name)
 
-              test_name = full_description.strip
-              if metadata[:description].empty?
-                # for unnamed it blocks this appends something like "example at ./spec/some_spec.rb:10"
-                test_name << " #{description}"
-              end
+              test_name = datadog_unnamed_example? ? datadog_unnamed_example_name : full_description.strip
 
               # remove example group description from test name to avoid duplication
               test_name = test_name.sub(datadog_test_suite_description, "").strip
@@ -264,6 +260,29 @@ module Datadog
               if test_failure && !test_span&.should_ignore_failures?
                 @exception = test_failure
               end
+            end
+
+            # ============================================
+            # Test name helpers
+            # ============================================
+
+            def datadog_unnamed_example?
+              Array(metadata[:description_args]).empty?
+            end
+
+            def datadog_unnamed_example_name
+              "#{metadata[:example_group][:full_description]} example #{datadog_stable_example_id}"
+            end
+
+            def datadog_stable_example_id
+              scoped_id = metadata[:scoped_id]
+              if scoped_id
+                rerun_file_path = metadata[:rerun_file_path] || metadata[:file_path]
+                return "#{rerun_file_path}[#{scoped_id}]" if rerun_file_path
+                return scoped_id
+              end
+
+              "at #{metadata[:location]}"
             end
 
             # ============================================

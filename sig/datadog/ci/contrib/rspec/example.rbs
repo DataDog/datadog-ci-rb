@@ -44,6 +44,11 @@ module Datadog
             def update_retry_metadata: (Datadog::CI::Test? test_span) -> void
             def restore_failure_state: (Datadog::CI::Test? test_span, Exception? test_failure) -> void
 
+            # Test name helpers
+            def datadog_unnamed_example?: () -> bool
+            def datadog_unnamed_example_name: () -> String
+            def datadog_stable_example_id: () -> String
+
             # Source location resolution
             def resolve_source_location: () -> void
             def set_source_location: (String? relative_path, Integer? line_number, from_parent: bool) -> void
