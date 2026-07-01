@@ -131,7 +131,7 @@ jobs:
 
       - name: Get Datadog credentials via dd-sts
         id: dd-sts
-        uses: DataDog/dd-sts-action@1f350ca511be980515cf08b0bd64182b9c6e5d32
+        uses: DataDog/dd-sts-action@7d2d231c02fd54a3da912e582ff87cb995d1fd30
         with:
           policy: public-datadog-datadog-ci-rb
 
