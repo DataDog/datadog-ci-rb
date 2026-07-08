@@ -144,6 +144,29 @@ RSpec.describe "Minitest instrumentation" do
       )
     end
 
+    it "traces spec described with a constant from the spec declaration file" do
+      require_relative "helpers/simple_model"
+
+      klass = minitest_describe SimpleModel do
+        it "uses the spec file as source" do
+          assert true
+        end
+      end
+
+      method_name = klass.runnable_methods.first
+      klass.new(method_name).run
+
+      expect(span).to have_test_tag(:name, method_name)
+      expect(span).to have_test_tag(
+        :suite,
+        "SimpleModel at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+      )
+      expect(span).to have_test_tag(
+        :source_file,
+        "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+      )
+    end
+
     it "creates spans for several specs" do
       num_specs = 20
 
@@ -496,7 +519,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "423")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "446")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ruby-guild\", \"@DataDog/ci-app-libraries\"]"
@@ -2013,7 +2036,7 @@ RSpec.describe "Minitest instrumentation" do
       allow(klass).to receive(:instance_method).with(:test_method).and_return(method_double)
 
       # Mock extract_source_location_from_class to return nil (to trigger fallback)
-      allow(Datadog::CI::Contrib::Minitest::Helpers).to receive(:extract_source_location_from_class).with(klass).and_return([])
+      allow(Datadog::CI::Contrib::Minitest::Helpers).to receive(:extract_source_location_from_class).with(klass).and_return(nil)
 
       suite_name = Datadog::CI::Contrib::Minitest::Helpers.test_suite_name(klass, :test_method)
       expect(suite_name).to eq("RelativePathTest at relative/path/to/test.rb")

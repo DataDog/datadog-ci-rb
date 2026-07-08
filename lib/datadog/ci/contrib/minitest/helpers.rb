@@ -81,11 +81,14 @@ module Datadog
           end
 
           def self.extract_runnable_source_location(klass, method_name)
-            source_location = extract_source_location_from_class(klass)
-            if source_location.nil? || source_location.empty?
-              return klass.instance_method(method_name).source_location
+            method_source_location = extract_source_location_from_method(klass, method_name)
+            klass_source_location = extract_source_location_from_class(klass)
+
+            if defined?(::Minitest::Spec) && klass&.ancestors&.include?(::Minitest::Spec)
+              method_source_location || klass_source_location
+            else
+              klass_source_location || method_source_location
             end
-            source_location
           end
 
           def self.skip_test_suite(test_suite)
@@ -102,9 +105,21 @@ module Datadog
           end
 
           def self.extract_source_location_from_class(klass)
-            return [] if klass.nil? || klass.name.nil?
+            return nil if klass.nil? || klass.name.nil?
 
-            SourceCode::ConstantResolver.safely_get_const_source_location(klass.name) || []
+            empty_source_location_to_nil(SourceCode::ConstantResolver.safely_get_const_source_location(klass.name))
+          end
+
+          def self.extract_source_location_from_method(klass, method_name)
+            return nil if klass.nil?
+            return nil if method_name.nil? || method_name.empty?
+
+            empty_source_location_to_nil(klass.instance_method(method_name).source_location)
+          end
+
+          def self.empty_source_location_to_nil(source_location)
+            return nil if source_location.nil? || source_location.empty?
+            source_location
           end
         end
       end

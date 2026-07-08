@@ -26,6 +26,8 @@ module Datadog
             def ancestors: () -> Array[Module]
 
             def dd_any_unskippable?: () -> bool
+
+            def nil?: () -> bool
           end
 
           def self.start_test_suite: (_RunnableClass klass) -> Datadog::CI::TestSuite?
@@ -38,9 +40,13 @@ module Datadog
 
           def self.ci_queue?: () -> bool
 
-          def self.extract_source_location_from_class: (untyped klass) -> ([String, Integer] | Array[untyped])
+          def self.extract_source_location_from_class: (untyped? klass) -> ([String, Integer] | Array[untyped])?
 
-          def self.extract_runnable_source_location: (_RunnableClass klass, String method_name) -> ([String, Integer] | Array[untyped])?
+          def self.extract_source_location_from_method: (untyped? klass, String? method_name) -> ([String, Integer] | Array[untyped])?
+
+          def self.empty_source_location_to_nil: (([String, Integer] | Array[untyped])? source_location) -> ([String, Integer] | Array[untyped])?
+
+          def self.extract_runnable_source_location: (untyped? klass, String method_name) -> ([String, Integer] | Array[untyped])?
         end
       end
     end
