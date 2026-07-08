@@ -2679,8 +2679,23 @@ RSpec.describe "RSpec instrumentation" do
           :parameters,
           "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:1\"}}"
         )
+      end
 
-        expect(first_test_span.name).not_to include("example at")
+      it "uses a stable RSpec id for an explicit blank example description" do
+        spec = with_new_rspec_environment do
+          RSpec.describe "BlankDescriptionExamples" do
+            it "" do
+              expect(true).to be(true)
+            end
+          end.tap(&:run)
+        end
+
+        expected_name = "example #{spec_file}[1:1]"
+
+        expect(spec.examples.first.metadata[:description_args]).to eq([""])
+        expect(first_test_span.name).to eq(expected_name)
+        expect(first_test_span.resource).to eq(expected_name)
+        expect(first_test_span).to have_test_tag(:name, expected_name)
       end
 
       it "does not include matcher-generated object inspections in the emitted name" do
@@ -2705,9 +2720,6 @@ RSpec.describe "RSpec instrumentation" do
 
         expect(first_test_span.name).to eq(expected_name)
         expect(first_test_span).to have_test_tag(:name, expected_name)
-        expect(first_test_span.name).not_to include("is expected")
-        expect(first_test_span.name).not_to include("eq")
-        expect(first_test_span.name).not_to include("#<Object:")
       end
 
       it "keeps using the stable RSpec id even if RSpec has already generated a matcher description" do
@@ -2771,7 +2783,6 @@ RSpec.describe "RSpec instrumentation" do
           "nested example #{spec_file}[1:1:2]"
         )
         expect(test_spans.map(&:name)).to all(match(/\Anested example .*:\d+\]\z/))
-        expect(test_spans.map(&:name)).to all(satisfy { |name| !name.include?("is expected") })
       end
 
       it "does not collide for generated examples defined on the same source line" do

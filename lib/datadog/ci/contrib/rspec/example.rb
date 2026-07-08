@@ -267,7 +267,9 @@ module Datadog
             # ============================================
 
             def datadog_unnamed_example?
-              Array(metadata[:description_args]).empty?
+              # @type var description_args: Array[untyped]
+              description_args = Array(metadata[:description_args])
+              description_args.empty? || description_args.all? { |description_arg| description_arg.to_s.strip.empty? }
             end
 
             def datadog_unnamed_example_name
