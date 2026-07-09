@@ -2653,6 +2653,12 @@ RSpec.describe "RSpec instrumentation" do
     let(:spec_file) { "./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb" }
     let(:suite_source_file) { "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb" }
 
+    def skip_unless_anonymous_example_names_supported!
+      return if Datadog::CI::Contrib::RSpec::AnonymousExampleName.supported?
+
+      skip "anonymous example names require Ruby #{Datadog::CI::Contrib::RSpec::AnonymousExampleName::MINIMUM_RUBY_VERSION}+"
+    end
+
     context "when running individual tests" do
       include_context "CI mode activated" do
         let(:integration_name) { :rspec }
@@ -2685,6 +2691,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "uses a stable matcher name for an explicit blank example description" do
+        skip_unless_anonymous_example_names_supported!
+
         spec = with_new_rspec_environment do
           RSpec.describe "BlankDescriptionExamples" do
             it "" do
@@ -2702,6 +2710,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "does not include matcher-generated object inspections in the emitted name" do
+        skip_unless_anonymous_example_names_supported!
+
         stub_const(
           "AnonymousStableNameTest",
           Class.new do
@@ -2726,6 +2736,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "keeps using the stable matcher name even if RSpec has already generated a matcher description" do
+        skip_unless_anonymous_example_names_supported!
+
         stub_const(
           "AnonymousLateNameTest",
           Class.new do
@@ -2752,6 +2764,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "keeps anonymous examples with different source bodies distinct" do
+        skip_unless_anonymous_example_names_supported!
+
         with_new_rspec_environment do
           RSpec.describe "DuplicateAnonymousExamples" do
             context "nested" do
@@ -2772,6 +2786,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "keeps should-syntax anonymous examples stable and distinct" do
+        skip_unless_anonymous_example_names_supported!
+
         with_new_rspec_environment do
           RSpec.describe "ShouldSyntaxAnonymousExamples" do
             context "nested" do
@@ -2792,6 +2808,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "uses the same name for generated examples with identical source in the same scope" do
+        skip_unless_anonymous_example_names_supported!
+
         with_new_rspec_environment do
           RSpec.describe "GeneratedAnonymousExamples" do
             context "nested" do
@@ -2807,6 +2825,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "keeps existing anonymous example names stable when a new anonymous sibling is inserted before them" do
+        skip_unless_anonymous_example_names_supported!
+
         current_names = lambda do |insert_example_before|
           clear_traces!
 
@@ -2846,6 +2866,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "keeps existing anonymous example names stable when a new context is inserted before them" do
+        skip_unless_anonymous_example_names_supported!
+
         current_names = lambda do |insert_context_before|
           clear_traces!
 
@@ -2897,6 +2919,8 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       it "records stable names for anonymous examples without running matchers" do
+        skip_unless_anonymous_example_names_supported!
+
         with_new_rspec_environment do
           RSpec.describe "AnonymousDiscoveryExamples" do
             context "nested" do
@@ -2948,7 +2972,11 @@ RSpec.describe "RSpec instrumentation" do
         let(:tests_skipping_enabled) { true }
 
         let(:anonymous_skippable_name) do
-          "nested is expected to eq Object"
+          if Datadog::CI::Contrib::RSpec::AnonymousExampleName.supported?
+            "nested is expected to eq Object"
+          else
+            "nested anonymous example"
+          end
         end
 
         let(:itr_skippable_tests) do

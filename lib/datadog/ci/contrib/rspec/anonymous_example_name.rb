@@ -11,6 +11,7 @@ module Datadog
           EXPECTATION_VALUE = :__datadog_rspec_expectation__
           EXAMPLE_NAME_VALUE = :__datadog_rspec_example_name__
           EMPTY_ARGUMENTS = [].freeze
+          MINIMUM_RUBY_VERSION = Gem::Version.new("3.2")
 
           EXPECTATION_METHODS = {
             to: "is expected to",
@@ -65,8 +66,16 @@ module Datadog
           MAX_RENDERED_VALUE_LENGTH = 80
           MAX_RENDERED_NAME_LENGTH = 180
 
+          def self.supported?
+            return false unless defined?(RubyVM::InstructionSequence)
+            return false unless RUBY_ENGINE == "ruby"
+
+            Gem::Version.new(RUBY_VERSION) >= MINIMUM_RUBY_VERSION
+          end
+
           def self.call(target)
             return nil if target.nil?
+            return nil unless supported?
 
             iseq = iseq_for(target)
             return nil unless iseq
@@ -187,6 +196,8 @@ module Datadog
               render_new_hash_expression(body, index)
             when :opt_getconstant_path
               [render_constant_path(instruction[1]), index - 1]
+            when :pop
+              render_optimized_new_expression(body, index)
             when :send, :opt_send_without_block, :opt_plus, :opt_minus, :opt_mult, :opt_div,
               :opt_mod, :opt_eq, :opt_neq, :opt_lt, :opt_le, :opt_gt, :opt_ge
               render_send_expression(body, index, instruction)
@@ -213,6 +224,53 @@ module Datadog
             ["{#{pairs.join(", ")}}", expression[1]]
           end
           private_class_method :render_new_hash_expression
+
+          def self.render_optimized_new_expression(body, index)
+            swap_index = previous_instruction_index(body, index - 1)
+            return nil unless swap_index
+            return nil unless body[swap_index][0] == :swap
+
+            optimized_new_index = previous_optimized_new_index(body, swap_index - 1)
+            return nil unless optimized_new_index
+
+            receiver_index = optimized_new_receiver_index(body, optimized_new_index)
+            return nil unless receiver_index
+
+            receiver_expression = render_expression_ending_at(body, receiver_index)
+            return nil unless receiver_expression
+
+            [render_send(receiver_expression[0], :new, EMPTY_ARGUMENTS, nil), receiver_expression[1]]
+          end
+          private_class_method :render_optimized_new_expression
+
+          def self.previous_optimized_new_index(body, index)
+            while index >= 0
+              entry = body[index]
+
+              if entry.is_a?(Array) && entry[0] == :opt_new
+                call_data = entry[1]
+                return index if call_data.is_a?(Hash) && call_data[:mid] == :new && call_data[:orig_argc].to_i.zero?
+              end
+
+              index -= 1
+            end
+
+            nil
+          end
+          private_class_method :previous_optimized_new_index
+
+          def self.optimized_new_receiver_index(body, index)
+            swap_index = previous_instruction_index(body, index - 1)
+            return nil unless swap_index
+            return nil unless body[swap_index][0] == :swap
+
+            nil_index = previous_instruction_index(body, swap_index - 1)
+            return nil unless nil_index
+            return nil unless body[nil_index][0] == :putnil
+
+            previous_instruction_index(body, nil_index - 1)
+          end
+          private_class_method :optimized_new_receiver_index
 
           def self.render_send_expression(body, index, instruction)
             call_data = instruction[1]

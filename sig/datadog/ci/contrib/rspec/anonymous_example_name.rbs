@@ -9,6 +9,7 @@ module Datadog
           EXPECTATION_VALUE: Symbol
           EXAMPLE_NAME_VALUE: Symbol
           EMPTY_ARGUMENTS: Array[untyped]
+          MINIMUM_RUBY_VERSION: Gem::Version
 
           EXPECTATION_METHODS: Hash[Symbol, String]
           SHOULD_METHODS: Hash[Symbol, String]
@@ -19,6 +20,7 @@ module Datadog
           MAX_RENDERED_VALUE_LENGTH: 80
           MAX_RENDERED_NAME_LENGTH: 180
 
+          def self.supported?: () -> bool
           def self.call: (untyped target) -> String?
 
           private
@@ -32,6 +34,9 @@ module Datadog
           def self.render_expression_ending_at: (Array[untyped] body, Integer? index) -> [untyped, Integer]?
           def self.render_new_array_expression: (Array[untyped] body, Integer index) -> [String, Integer]?
           def self.render_new_hash_expression: (Array[untyped] body, Integer index) -> [String, Integer]?
+          def self.render_optimized_new_expression: (Array[untyped] body, Integer index) -> [untyped, Integer]?
+          def self.previous_optimized_new_index: (Array[untyped] body, Integer index) -> Integer?
+          def self.optimized_new_receiver_index: (Array[untyped] body, Integer index) -> Integer?
           def self.render_send_expression: (Array[untyped] body, Integer index, Array[untyped] instruction) -> [untyped, Integer]?
           def self.render_expression_list_ending_at: (Array[untyped] body, Integer index, Integer count) -> [Array[untyped], Integer]?
           def self.previous_instruction_index: (Array[untyped] body, Integer index) -> Integer?
