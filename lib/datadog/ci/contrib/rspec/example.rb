@@ -7,6 +7,7 @@ require_relative "../../source_code/path_filter"
 require_relative "../../utils/bundle"
 require_relative "../../utils/test_run"
 require_relative "../instrumentation"
+require_relative "anonymous_example_name"
 require_relative "ext"
 
 module Datadog
@@ -110,11 +111,7 @@ module Datadog
             def datadog_test_name
               return @datadog_test_name if defined?(@datadog_test_name)
 
-              test_name = full_description.strip
-              if metadata[:description].empty?
-                # for unnamed it blocks this appends something like "example at ./spec/some_spec.rb:10"
-                test_name << " #{description}"
-              end
+              test_name = datadog_unnamed_example? ? datadog_unnamed_example_name : full_description.strip
 
               # remove example group description from test name to avoid duplication
               test_name = test_name.sub(datadog_test_suite_description, "").strip
@@ -264,6 +261,27 @@ module Datadog
               if test_failure && !test_span&.should_ignore_failures?
                 @exception = test_failure
               end
+            end
+
+            # ============================================
+            # Test name helpers
+            # ============================================
+
+            def datadog_unnamed_example?
+              # @type var description_args: Array[untyped]
+              description_args = Array(metadata[:description_args])
+              description_args.empty? || description_args.all? { |description_arg| description_arg.to_s.strip.empty? }
+            end
+
+            def datadog_unnamed_example_name
+              example_name = AnonymousExampleName.call(datadog_anonymous_example_block)
+              example_name ||= "anonymous example"
+
+              "#{metadata[:example_group][:full_description]} #{example_name}"
+            end
+
+            def datadog_anonymous_example_block
+              metadata[:block] || @example_block
             end
 
             # ============================================

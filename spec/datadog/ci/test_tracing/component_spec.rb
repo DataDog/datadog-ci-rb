@@ -233,6 +233,19 @@ RSpec.describe Datadog::CI::TestTracing::Component do
               expect(subject).not_to have_test_tag(:test_suite_id)
             end
 
+            context "when test identity contains generated Ruby values" do
+              let(:test_name) { "is expected to eq #<User:0x000000010 @id=1>" }
+              let(:test_suite_name) { "suite for 2026-07-09" }
+
+              it "normalizes test name and suite before creating the span" do
+                expect(subject.name).to eq("is expected to eq OBJECT:User")
+                expect(subject.tracer_span.name).to eq("is expected to eq OBJECT:User")
+                expect(subject.tracer_span.resource).to eq("is expected to eq OBJECT:User")
+                expect(subject).to have_test_tag(:name, "is expected to eq OBJECT:User")
+                expect(subject).to have_test_tag(:suite, "suite for DATE")
+              end
+            end
+
             it_behaves_like "span with environment tags"
             it_behaves_like "span with default tags"
             it_behaves_like "span with runtime tags"
@@ -331,6 +344,24 @@ RSpec.describe Datadog::CI::TestTracing::Component do
                 it "connects the test span to the test suite" do
                   expect(subject).to have_test_tag(:test_suite_id, test_suite.id.to_s)
                   expect(subject).to have_test_tag(:suite, test_suite_name)
+                end
+              end
+
+              context "when the active test suite name contains generated Ruby values" do
+                let(:test_suite_name) { "suite for #<Object:0x000000010>" }
+                let(:test_suite) do
+                  test_tracing.start_test_suite(test_suite_name)
+                end
+
+                before do
+                  test_suite
+                end
+
+                it "normalizes suite names consistently for lookup and test tags" do
+                  expect(test_suite.name).to eq("suite for OBJECT:Object")
+                  expect(test_tracing.active_test_suite(test_suite_name)).to eq(test_suite)
+                  expect(subject).to have_test_tag(:test_suite_id, test_suite.id.to_s)
+                  expect(subject).to have_test_tag(:suite, "suite for OBJECT:Object")
                 end
               end
 

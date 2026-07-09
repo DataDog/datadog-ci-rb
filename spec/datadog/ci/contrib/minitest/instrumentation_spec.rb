@@ -2043,6 +2043,62 @@ RSpec.describe "Minitest instrumentation" do
     end
   end
 
+  context "with generated Ruby values in test identities" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+    end
+
+    before do
+      Minitest.seed = 1
+    end
+
+    it "normalizes unstable Minitest::Test method and suite names" do
+      raw_test_name = "test_generated #{Object.new} on 2026-07-09 with [1, 2]"
+      raw_suite_name = "GeneratedSuite #{Object.new}"
+
+      klass = Class.new(Minitest::Test) do
+        define_singleton_method(:name) { raw_suite_name }
+        define_method(raw_test_name) {}
+      end
+
+      klass.new(raw_test_name).run
+
+      expected_test_name = "test_generated OBJECT:Object on DATE with ARRAY"
+      expected_suite_name = "GeneratedSuite OBJECT:Object at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+
+      expect(span.name).to eq(expected_test_name)
+      expect(span.resource).to eq(expected_test_name)
+      expect(span).to have_test_tag(:name, expected_test_name)
+      expect(span).to have_test_tag(:suite, expected_suite_name)
+    end
+
+    it "normalizes unstable Minitest::Spec generated method names" do
+      raw_description = "sees #{Object.new}"
+
+      klass = Class.new(Minitest::Spec) do
+        def self.name
+          "GeneratedSpec"
+        end
+
+        it raw_description do
+        end
+      end
+
+      method_name = klass.runnable_methods.first
+      klass.new(method_name).run
+
+      expected_test_name = "test_0001_sees OBJECT:Object"
+
+      expect(span.name).to eq(expected_test_name)
+      expect(span.resource).to eq(expected_test_name)
+      expect(span).to have_test_tag(:name, expected_test_name)
+      expect(span).to have_test_tag(
+        :suite,
+        "GeneratedSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+      )
+    end
+  end
+
   context "test discovery is enabled" do
     include_context "CI mode activated" do
       let(:integration_name) { :minitest }
@@ -2074,6 +2130,16 @@ RSpec.describe "Minitest instrumentation" do
           skip "Skip!"
         end
       end
+
+      class TestSuiteWithUnstableNameForDiscovery < Minitest::Test
+        def self.name
+          "DiscoverySuite #<Object:0x123>"
+        end
+
+        define_method(:"test_generated_#<User:0x456>") do
+          assert true
+        end
+      end
     end
 
     it "creates JSON file with tests" do
@@ -2091,6 +2157,13 @@ RSpec.describe "Minitest instrumentation" do
           {
             "name" => "test_failed",
             "suite" => "TestSuiteForDiscovery at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
+            "module" => "minitest",
+            "parameters" => nil,
+            "suiteSourceFile" => "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
+          },
+          {
+            "name" => "test_generated_OBJECT:User",
+            "suite" => "DiscoverySuite OBJECT:Object at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
             "module" => "minitest",
             "parameters" => nil,
             "suiteSourceFile" => "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"

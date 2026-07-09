@@ -1,0 +1,34 @@
+module Datadog
+  module CI
+    module Utils
+      module TestName
+        MONTH: String
+        WEEKDAY: String
+        CONSTANT_NAME: String
+
+        DATE_INSPECT_PATTERN: Regexp
+        TIME_INSPECT_PATTERN: Regexp
+        CLASS_INSPECT_PATTERN: Regexp
+        NAMED_OBJECT_INSPECT_PATTERN: Regexp
+        OBJECT_INSPECT_PATTERN: Regexp
+        TIME_PATTERN: Regexp
+        DATE_PATTERN: Regexp
+        RANGE_PATTERN: Regexp
+        ARRAY_PATTERN: Regexp
+        HASH_PATTERN: Regexp
+
+        def self.normalize: (String name) -> String
+                         | (nil name) -> nil
+                         | (Symbol name) -> Symbol
+
+        private
+
+        def self.array_literal?: (String value) -> bool
+
+        def self.hash_literal?: (String value) -> bool
+
+        def self.warn_normalization_error: (untyped error) -> nil
+      end
+    end
+  end
+end

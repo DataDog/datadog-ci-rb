@@ -280,6 +280,39 @@ RSpec.describe Datadog::CI::TestDiscovery::Component do
         expect(component.instance_variable_get(:@buffer)).to include(expected_test_info)
       end
 
+      context "when test identity contains generated Ruby values" do
+        let(:output_path) { "/tmp/test_discovery.json" }
+        let(:file_double) { double("file", puts: nil) }
+
+        before do
+          allow(File).to receive(:open).with("/tmp/test_discovery.json", "a").and_yield(file_double)
+        end
+
+        it "records normalized test name and suite" do
+          component.record_test(
+            name: "is expected to eq #<User:0x000000010 @id=1>",
+            suite: "suite for 2026-07-09",
+            module_name: "ExampleModule",
+            parameters: nil,
+            source_file: "/path/to/suite.rb"
+          )
+
+          component.finish
+
+          expect(file_double).to have_received(:puts).with([
+            JSON.generate(
+              {
+                "name" => "is expected to eq OBJECT:User",
+                "suite" => "suite for DATE",
+                "module" => "ExampleModule",
+                "parameters" => nil,
+                "suiteSourceFile" => "/path/to/suite.rb"
+              }
+            )
+          ])
+        end
+      end
+
       context "when buffer reaches max size" do
         let(:output_path) { "/tmp/test_discovery.json" }
         let(:file_double) { double("file", puts: nil) }
