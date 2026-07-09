@@ -25,7 +25,6 @@ module Datadog
 
           def self.iseq_for: (untyped target) -> RubyVM::InstructionSequence?
           def self.render_iseq: (RubyVM::InstructionSequence iseq) -> String?
-          def self.render_fast_matcher_name: (Array[untyped] body) -> String?
           def self.last_name_finish_index: (Array[untyped] body) -> Integer?
           def self.expectation_receiver_at?: (Array[untyped] body, Integer index) -> bool
           def self.render_expression_before: (Array[untyped] body, Integer index) -> [untyped, Integer]?
@@ -33,20 +32,14 @@ module Datadog
           def self.render_new_array_expression: (Array[untyped] body, Integer index) -> [String, Integer]?
           def self.render_new_hash_expression: (Array[untyped] body, Integer index) -> [String, Integer]?
           def self.render_optimized_new_expression: (Array[untyped] body, Integer index) -> [untyped, Integer]?
-          def self.previous_optimized_new_index: (Array[untyped] body, Integer index) -> Integer?
           def self.optimized_new_receiver_index: (Array[untyped] body, Integer index) -> Integer?
           def self.render_send_expression: (Array[untyped] body, Integer index, Array[untyped] instruction) -> [untyped, Integer]?
           def self.render_expression_list_ending_at: (Array[untyped] body, Integer index, Integer count) -> [Array[untyped], Integer]?
           def self.previous_instruction_index: (Array[untyped] body, Integer index) -> Integer?
           def self.render_special_expression: (Integer index, Array[untyped] instruction) -> [String, Integer]?
           def self.render_send: (untyped receiver, Symbol method_name, Array[untyped] arguments, untyped block_iseq) -> untyped
-          def self.render_self_method_name: (Symbol method_name) -> String
           def self.render_method_call: (untyped receiver, Symbol method_name, Array[untyped] arguments, untyped block_iseq) -> String
-          def self.render_method_name: (Symbol method_name, untyped receiver, Array[untyped] arguments, untyped block_iseq) -> String
           def self.pretty_matcher_method?: (Symbol method_name, String method_text) -> bool
-          def self.matcher_chain_method?: (Symbol method_name) -> bool
-          def self.render_arguments: (Array[untyped] arguments) -> String
-          def self.render_receiver: (untyped receiver) -> String
           def self.render_literal: (untyped value) -> String
           def self.render_array_literal: (untyped value) -> String
           def self.render_hash_literal: (untyped value) -> String

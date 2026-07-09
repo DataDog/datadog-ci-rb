@@ -100,34 +100,22 @@ module Datadog
             # Render only that known shape by walking backwards from the final matcher call:
             # it avoids simulating unrelated subject code, so dynamic values do not
             # leak into the name and dangerous user code is not evaluated.
-            render_fast_matcher_name(body)
-          end
-          private_class_method :render_iseq
-
-          def self.render_fast_matcher_name(body)
             finish_index = last_name_finish_index(body)
             return nil unless finish_index
 
-            finish_instruction = body[finish_index]
-            call_data = finish_instruction[1]
-            return nil unless call_data.is_a?(Hash)
-
-            method_name = call_data[:mid]
+            call_data = body[finish_index][1]
             return nil unless call_data[:orig_argc].to_i == 1
-
-            name_prefix = EXPECTATION_METHODS[method_name]
-            unless name_prefix
-              name_prefix = SHOULD_METHODS[method_name]
-              return nil unless name_prefix
-            end
 
             matcher_expression = render_expression_before(body, finish_index)
             return nil unless matcher_expression
+
+            method_name = call_data[:mid]
             return nil if EXPECTATION_METHODS.key?(method_name) && !expectation_receiver_at?(body, matcher_expression[1])
 
+            name_prefix = EXPECTATION_METHODS[method_name] || SHOULD_METHODS[method_name]
             "#{name_prefix} #{matcher_expression[0]}"
           end
-          private_class_method :render_fast_matcher_name
+          private_class_method :render_iseq
 
           def self.last_name_finish_index(body)
             index = body.length - 1
@@ -232,10 +220,7 @@ module Datadog
             return nil unless swap_index
             return nil unless body[swap_index][0] == :swap
 
-            optimized_new_index = previous_optimized_new_index(body, swap_index - 1)
-            return nil unless optimized_new_index
-
-            receiver_index = optimized_new_receiver_index(body, optimized_new_index)
+            receiver_index = optimized_new_receiver_index(body, swap_index - 1)
             return nil unless receiver_index
 
             receiver_expression = render_expression_ending_at(body, receiver_index)
@@ -245,32 +230,29 @@ module Datadog
           end
           private_class_method :render_optimized_new_expression
 
-          def self.previous_optimized_new_index(body, index)
+          def self.optimized_new_receiver_index(body, index)
             while index >= 0
               entry = body[index]
 
               if entry.is_a?(Array) && entry[0] == :opt_new
                 call_data = entry[1]
-                return index if call_data.is_a?(Hash) && call_data[:mid] == :new && call_data[:orig_argc].to_i.zero?
+                if call_data.is_a?(Hash) && call_data[:mid] == :new && call_data[:orig_argc].to_i.zero?
+                  swap_index = previous_instruction_index(body, index - 1)
+                  return nil unless swap_index
+                  return nil unless body[swap_index][0] == :swap
+
+                  nil_index = previous_instruction_index(body, swap_index - 1)
+                  return nil unless nil_index
+                  return nil unless body[nil_index][0] == :putnil
+
+                  return previous_instruction_index(body, nil_index - 1)
+                end
               end
 
               index -= 1
             end
 
             nil
-          end
-          private_class_method :previous_optimized_new_index
-
-          def self.optimized_new_receiver_index(body, index)
-            swap_index = previous_instruction_index(body, index - 1)
-            return nil unless swap_index
-            return nil unless body[swap_index][0] == :swap
-
-            nil_index = previous_instruction_index(body, swap_index - 1)
-            return nil unless nil_index
-            return nil unless body[nil_index][0] == :putnil
-
-            previous_instruction_index(body, nil_index - 1)
           end
           private_class_method :optimized_new_receiver_index
 
@@ -354,12 +336,9 @@ module Datadog
           private_class_method :render_special_expression
 
           def self.render_send(receiver, method_name, arguments, block_iseq)
-            if SHOULD_METHODS.key?(method_name) && arguments.length == 1
-              return "#{SHOULD_METHODS[method_name]} #{arguments.first}"
-            end
-
             if receiver == SELF_VALUE && arguments.empty? && !block_iseq
-              return render_self_method_name(method_name)
+              method_text = method_name.to_s
+              return pretty_matcher_method?(method_name, method_text) ? method_text.tr("_", " ") : method_text
             end
 
             return receiver if method_name == :new && arguments.empty? && constant_name?(receiver)
@@ -368,62 +347,40 @@ module Datadog
           end
           private_class_method :render_send
 
-          def self.render_self_method_name(method_name)
-            method_text = method_name.to_s
-            pretty_matcher_method?(method_name, method_text) ? method_text.tr("_", " ") : method_text
-          end
-          private_class_method :render_self_method_name
-
           def self.render_method_call(receiver, method_name, arguments, block_iseq)
-            method_text = render_method_name(method_name, receiver, arguments, block_iseq)
-            argument_text = render_arguments(arguments)
+            method_text = method_name.to_s
+            matcher_chain = MATCHER_CHAIN_METHODS.key?(method_name)
+
+            if (receiver == SELF_VALUE || matcher_chain || block_iseq) &&
+                (pretty_matcher_method?(method_name, method_text) || !arguments.empty? || block_iseq)
+              method_text = method_text.tr("_", " ")
+            end
+
+            argument_text = arguments.compact.join(", ")
+            receiver_text = (receiver == SELF_VALUE) ? "self" : receiver.to_s
 
             if OPERATOR_METHODS.key?(method_name)
-              return "#{render_receiver(receiver)} #{method_name} #{argument_text}".strip
+              return "#{receiver_text} #{method_name} #{argument_text}".strip
             end
 
             if receiver == SELF_VALUE
               return argument_text.empty? ? method_text : "#{method_text} #{argument_text}"
             end
 
-            if matcher_chain_method?(method_name)
+            if matcher_chain
               return argument_text.empty? ? "#{receiver} #{method_text}" : "#{receiver} #{method_text} #{argument_text}"
             end
 
             argument_suffix = argument_text.empty? ? "" : "(#{argument_text})"
-            "#{render_receiver(receiver)}.#{method_name}#{argument_suffix}"
+            "#{receiver_text}.#{method_name}#{argument_suffix}"
           end
           private_class_method :render_method_call
-
-          def self.render_method_name(method_name, receiver, arguments, block_iseq)
-            method_text = method_name.to_s
-            return method_text unless receiver == SELF_VALUE || matcher_chain_method?(method_name) || block_iseq
-            return method_text unless pretty_matcher_method?(method_name, method_text) || !arguments.empty? || block_iseq
-
-            method_text.tr("_", " ")
-          end
-          private_class_method :render_method_name
 
           def self.pretty_matcher_method?(method_name, method_text)
             PRETTY_MATCHER_METHODS.key?(method_name) ||
               PRETTY_MATCHER_PREFIXES.any? { |prefix| method_text.start_with?(prefix) }
           end
           private_class_method :pretty_matcher_method?
-
-          def self.matcher_chain_method?(method_name)
-            MATCHER_CHAIN_METHODS.key?(method_name)
-          end
-          private_class_method :matcher_chain_method?
-
-          def self.render_arguments(arguments)
-            arguments.compact.join(", ")
-          end
-          private_class_method :render_arguments
-
-          def self.render_receiver(receiver)
-            (receiver == SELF_VALUE) ? "self" : receiver.to_s
-          end
-          private_class_method :render_receiver
 
           def self.render_literal(value)
             rendered_value =

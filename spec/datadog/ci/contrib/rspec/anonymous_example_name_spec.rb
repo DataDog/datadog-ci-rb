@@ -70,6 +70,48 @@ RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
         expect(name).to eq("is expected to eq {:a => 1, :b => 2}")
       end
 
+      it "renders less common literal matcher arguments" do
+        examples = {
+          proc { expect(1).to eq(nil) } => "is expected to eq nil",
+          proc { expect(1).to eq(true) } => "is expected to eq true",
+          proc { expect(1).to eq(false) } => "is expected to eq false",
+          proc { expect(1).to eq(:ok) } => "is expected to eq :ok",
+          proc { expect([:ok]).to eq([:ok]) } => "is expected to eq [:ok]",
+          proc { expect("foo").to match(/foo/) } => "is expected to match /foo/"
+        }
+
+        examples.each do |target, expected_name|
+          expect(described_class.call(target)).to eq(expected_name)
+        end
+      end
+
+      it "renders dynamic hash matcher arguments without object inspection" do
+        key = :left
+        value = 2
+
+        name = described_class.call(proc { expect(1).to eq({key => value}) })
+
+        expect(name).to eq("is expected to eq {local => local}")
+      end
+
+      it "renders method calls inside matcher arguments" do
+        key = :left
+
+        name = described_class.call(proc { expect(1).to eq(key.to_s) })
+
+        expect(name).to eq("is expected to eq local.to_s")
+      end
+
+      it "trims long literal matcher arguments" do
+        name = described_class.call(
+          proc {
+            expect(1).to eq("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+          }
+        )
+
+        expect(name).to eq("is expected to eq \"#{"x" * 76}...")
+      end
+
       it "renders comparison matchers" do
         name = described_class.call(proc { expect(1).to be > 0 })
 
@@ -170,6 +212,17 @@ RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
       allow(RubyVM::InstructionSequence).to receive(:of).with(target).and_raise(StandardError, "boom")
 
       expect(Datadog.logger).to receive(:warn).and_yield
+      expect(described_class.call(target)).to be_nil
+    end
+
+    it "warns through Kernel when Datadog logger is unavailable" do
+      target = proc { expect(1).to eq(1) }
+
+      allow(described_class).to receive(:supported?).and_return(true)
+      allow(RubyVM::InstructionSequence).to receive(:of).with(target).and_raise(StandardError, "boom")
+      allow(Datadog).to receive(:logger).and_return(nil)
+
+      expect(Kernel).to receive(:warn).with("Unable to compute RSpec anonymous example name: StandardError: boom")
       expect(described_class.call(target)).to be_nil
     end
   end
