@@ -1,0 +1,69 @@
+module Datadog
+  module CI
+    module Contrib
+      module RSpec
+        module AnonymousExampleName
+          ISEQ_SIMPLE_DATA_FORMAT: "YARVInstructionSequence/SimpleDataFormat"
+
+          SELF_VALUE: Symbol
+          EXPECTATION_VALUE: Symbol
+          EXAMPLE_NAME_VALUE: Symbol
+          EMPTY_ARGUMENTS: Array[untyped]
+
+          EXPECTATION_METHODS: Hash[Symbol, String]
+          SHOULD_METHODS: Hash[Symbol, String]
+          OPERATOR_METHODS: Hash[Symbol, bool]
+          MATCHER_CHAIN_METHODS: Hash[Symbol, bool]
+          PRETTY_MATCHER_PREFIXES: Array[String]
+          PRETTY_MATCHER_METHODS: Hash[Symbol, bool]
+          MAX_RENDERED_VALUE_LENGTH: 80
+          MAX_RENDERED_NAME_LENGTH: 180
+
+          def self.call: (untyped target) -> String?
+
+          private
+
+          def self.iseq_for: (untyped target) -> RubyVM::InstructionSequence?
+          def self.render_iseq: (RubyVM::InstructionSequence iseq) -> String?
+          def self.render_fast_matcher_name: (Array[untyped] body) -> String?
+          def self.last_name_finish_index: (Array[untyped] body) -> Integer?
+          def self.expectation_receiver_at?: (Array[untyped] body, Integer index) -> bool
+          def self.render_expression_before: (Array[untyped] body, Integer index) -> [untyped, Integer]?
+          def self.render_expression_ending_at: (Array[untyped] body, Integer? index) -> [untyped, Integer]?
+          def self.render_new_array_expression: (Array[untyped] body, Integer index) -> [String, Integer]?
+          def self.render_new_hash_expression: (Array[untyped] body, Integer index) -> [String, Integer]?
+          def self.render_send_expression: (Array[untyped] body, Integer index, Array[untyped] instruction) -> [untyped, Integer]?
+          def self.render_expression_list_ending_at: (Array[untyped] body, Integer index, Integer count) -> [Array[untyped], Integer]?
+          def self.previous_instruction_index: (Array[untyped] body, Integer index) -> Integer?
+          def self.render_special_expression: (Integer index, Array[untyped] instruction) -> [String, Integer]?
+          def self.render_stack_matcher_name: (Array[untyped] body) -> String?
+          def self.scan_anonymous_matcher_body: (Array[untyped] body) -> (Integer | true | false)
+          def self.instruction_method_name: (untyped instruction) -> Symbol?
+          def self.process_instruction: (Array[untyped] stack, Array[untyped] instruction) -> bool
+          def self.process_special_instruction: (Array[untyped] stack, Array[untyped] instruction) -> bool
+          def self.process_send: (Array[untyped] stack, Array[untyped] instruction) -> bool
+          def self.render_send: (untyped receiver, Symbol method_name, Array[untyped] arguments, untyped block_iseq) -> untyped
+          def self.render_self_method_name: (Symbol method_name) -> String
+          def self.render_method_call: (untyped receiver, Symbol method_name, Array[untyped] arguments, untyped block_iseq) -> String
+          def self.render_method_name: (Symbol method_name, untyped receiver, Array[untyped] arguments, untyped block_iseq) -> String
+          def self.pretty_matcher_method?: (Symbol method_name, String method_text) -> bool
+          def self.matcher_chain_method?: (Symbol method_name) -> bool
+          def self.render_arguments: (Array[untyped] arguments) -> String
+          def self.render_receiver: (untyped receiver) -> String
+          def self.pop_values: (Array[untyped] stack, Integer count) -> Array[untyped]
+          def self.render_new_hash: (Array[untyped] stack, Integer count) -> String
+          def self.render_literal: (untyped value) -> String
+          def self.render_array_literal: (untyped value) -> String
+          def self.render_hash_literal: (untyped value) -> String
+          def self.render_constant_path: (untyped value) -> String
+          def self.example_name: (String value) -> Array[untyped]
+          def self.name_value?: (untyped value) -> bool
+          def self.constant_name?: (untyped value) -> bool
+          def self.iseq_array?: (untyped value) -> bool
+          def self.trim: (String value, Integer max_length) -> String
+          def self.warn_anonymous_example_name_error: (StandardError error) -> nil
+        end
+      end
+    end
+  end
+end

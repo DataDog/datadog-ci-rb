@@ -47,7 +47,7 @@ module Datadog
             # Test name helpers
             def datadog_unnamed_example?: () -> bool
             def datadog_unnamed_example_name: () -> String
-            def datadog_anonymous_example_id: () -> String
+            def datadog_anonymous_example_block: () -> untyped
 
             # Source location resolution
             def resolve_source_location: () -> void

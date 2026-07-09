@@ -1,5 +1,4 @@
 #include "datadog_cov.h"
-#include "datadog_iseq_hash.h"
 #include "datadog_method_inspect.h"
 #include "iseq_collector.h"
 
@@ -9,6 +8,5 @@ void Init_datadog_ci_native(void) {
 
   // SourceCode
   Init_datadog_method_inspect();
-  Init_datadog_iseq_hash();
   Init_dd_ci_iseq_collector();
 }

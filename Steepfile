@@ -11,7 +11,6 @@ target :lib do
   library "json"
   library "logger"
   library "date"
-  library "digest"
   library "minitest"
   library "net-http"
   library "zlib"

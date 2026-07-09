@@ -2,12 +2,12 @@
 
 require_relative "../../ext/test"
 require_relative "../../git/local_repository"
-require_relative "../../source_code/iseq_hash"
 require_relative "../../source_code/method_inspect"
 require_relative "../../source_code/path_filter"
 require_relative "../../utils/bundle"
 require_relative "../../utils/test_run"
 require_relative "../instrumentation"
+require_relative "anonymous_example_name"
 require_relative "ext"
 
 module Datadog
@@ -274,14 +274,14 @@ module Datadog
             end
 
             def datadog_unnamed_example_name
-              "#{metadata[:example_group][:full_description]} anonymous example #{datadog_anonymous_example_id}"
+              example_name = AnonymousExampleName.call(datadog_anonymous_example_block)
+              example_name ||= "anonymous example"
+
+              "#{metadata[:example_group][:full_description]} #{example_name}"
             end
 
-            def datadog_anonymous_example_id
-              example_hash = SourceCode.iseq_hash(metadata[:block] || @example_block)
-              return "unknown" if example_hash.empty?
-
-              example_hash
+            def datadog_anonymous_example_block
+              metadata[:block] || @example_block
             end
 
             # ============================================
