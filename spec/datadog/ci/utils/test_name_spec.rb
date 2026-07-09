@@ -70,6 +70,8 @@ RSpec.describe Datadog::CI::Utils::TestName do
         .to eq("record=Article")
       expect(described_class.normalize("record=Admin::Article (call 'Admin::Article.connection' to establish a connection)"))
         .to eq("record=Admin::Article")
+      expect(described_class.normalize("record=Article(id: integer)"))
+        .to eq("record=Article")
       expect(described_class.normalize("record=Article(id: integer, any_comments_hidden: boolean, ... tag_list: )"))
         .to eq("record=Article")
       expect(described_class.normalize("record=Admin::Article(id: integer, title: string, published: boolean)"))
