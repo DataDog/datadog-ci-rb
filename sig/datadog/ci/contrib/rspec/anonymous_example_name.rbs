@@ -25,9 +25,8 @@ module Datadog
 
           def self.iseq_for: (untyped target) -> RubyVM::InstructionSequence?
           def self.render_iseq: (RubyVM::InstructionSequence iseq) -> String?
-          def self.last_name_finish_index: (Array[untyped] body) -> Integer?
+          def self.final_expectation_call_index: (Array[untyped] body) -> Integer?
           def self.expectation_receiver_at?: (Array[untyped] body, Integer index) -> bool
-          def self.render_expression_before: (Array[untyped] body, Integer index) -> [untyped, Integer]?
           def self.render_expression_ending_at: (Array[untyped] body, Integer? index) -> [untyped, Integer]?
           def self.render_new_array_expression: (Array[untyped] body, Integer index) -> [String, Integer]?
           def self.render_new_hash_expression: (Array[untyped] body, Integer index) -> [String, Integer]?

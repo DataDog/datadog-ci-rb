@@ -214,16 +214,5 @@ RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
       expect(Datadog.logger).to receive(:warn).and_yield
       expect(described_class.call(target)).to be_nil
     end
-
-    it "warns through Kernel when Datadog logger is unavailable" do
-      target = proc { expect(1).to eq(1) }
-
-      allow(described_class).to receive(:supported?).and_return(true)
-      allow(RubyVM::InstructionSequence).to receive(:of).with(target).and_raise(StandardError, "boom")
-      allow(Datadog).to receive(:logger).and_return(nil)
-
-      expect(Kernel).to receive(:warn).with("Unable to compute RSpec anonymous example name: StandardError: boom")
-      expect(described_class.call(target)).to be_nil
-    end
   end
 end

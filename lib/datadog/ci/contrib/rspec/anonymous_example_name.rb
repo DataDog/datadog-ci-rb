@@ -100,13 +100,13 @@ module Datadog
             # Render only that known shape by walking backwards from the final matcher call:
             # it avoids simulating unrelated subject code, so dynamic values do not
             # leak into the name and dangerous user code is not evaluated.
-            finish_index = last_name_finish_index(body)
-            return nil unless finish_index
+            expectation_call_index = final_expectation_call_index(body)
+            return nil unless expectation_call_index
 
-            call_data = body[finish_index][1]
+            call_data = body[expectation_call_index][1]
             return nil unless call_data[:orig_argc].to_i == 1
 
-            matcher_expression = render_expression_before(body, finish_index)
+            matcher_expression = render_expression_ending_at(body, expectation_call_index - 1)
             return nil unless matcher_expression
 
             method_name = call_data[:mid]
@@ -117,7 +117,7 @@ module Datadog
           end
           private_class_method :render_iseq
 
-          def self.last_name_finish_index(body)
+          def self.final_expectation_call_index(body)
             index = body.length - 1
 
             while index >= 0
@@ -136,7 +136,7 @@ module Datadog
 
             nil
           end
-          private_class_method :last_name_finish_index
+          private_class_method :final_expectation_call_index
 
           def self.expectation_receiver_at?(body, index)
             index = previous_instruction_index(body, index)
@@ -151,12 +151,13 @@ module Datadog
           end
           private_class_method :expectation_receiver_at?
 
-          def self.render_expression_before(body, index)
-            expression_index = previous_instruction_index(body, index - 1)
-            render_expression_ending_at(body, expression_index)
-          end
-          private_class_method :render_expression_before
-
+          # Render the expression that produced the stack value at `index`.
+          #
+          # YARV bytecode is stack-based: matcher arguments are pushed before the
+          # final `to`/`not_to` call consumes them. We walk backwards from the
+          # producer instruction, render only shapes we understand, and return the
+          # previous instruction index so callers can continue rendering earlier
+          # stack values without evaluating user code.
           def self.render_expression_ending_at(body, index)
             return nil unless index
 
@@ -194,6 +195,8 @@ module Datadog
           end
           private_class_method :render_expression_ending_at
 
+          # `newarray` consumes N already-pushed stack values. Render those values
+          # backwards, then restore source order so matcher names read like Ruby.
           def self.render_new_array_expression(body, index)
             expression = render_expression_list_ending_at(body, index - 1, body[index][1].to_i)
             return nil unless expression
@@ -202,6 +205,9 @@ module Datadog
           end
           private_class_method :render_new_array_expression
 
+          # `newhash` consumes alternating key/value stack entries. We render the
+          # pairs instead of inspecting a runtime Hash, keeping generated names
+          # deterministic even when the original values are local variables.
           def self.render_new_hash_expression(body, index)
             expression = render_expression_list_ending_at(body, index - 1, body[index][1].to_i)
             return nil unless expression
@@ -230,6 +236,9 @@ module Datadog
           end
           private_class_method :render_optimized_new_expression
 
+          # Ruby 4's optimized constructor bytecode places the receiver before
+          # `putnil`, `swap`, and `opt_new`. Find that receiver so the outer `pop`
+          # handler can render `Object.new` as the stable class name `Object`.
           def self.optimized_new_receiver_index(body, index)
             while index >= 0
               entry = body[index]
@@ -256,21 +265,18 @@ module Datadog
           end
           private_class_method :optimized_new_receiver_index
 
+          # Method calls consume arguments first and the receiver last. Render that
+          # stack shape backwards, then format the send as matcher-style text when
+          # it belongs to RSpec's expectation DSL.
           def self.render_send_expression(body, index, instruction)
             call_data = instruction[1]
             return nil unless call_data.is_a?(Hash)
 
-            argument_count = call_data[:orig_argc].to_i
-            if argument_count.zero?
-              arguments = EMPTY_ARGUMENTS
-              receiver_end_index = index - 1
-            else
-              arguments_expression = render_expression_list_ending_at(body, index - 1, argument_count)
-              return nil unless arguments_expression
+            arguments_expression = render_expression_list_ending_at(body, index - 1, call_data[:orig_argc].to_i)
+            return nil unless arguments_expression
 
-              arguments = arguments_expression[0]
-              receiver_end_index = arguments_expression[1]
-            end
+            arguments = arguments_expression[0]
+            receiver_end_index = arguments_expression[1]
 
             receiver_index = previous_instruction_index(body, receiver_end_index)
             return nil unless receiver_index
@@ -294,8 +300,11 @@ module Datadog
           end
           private_class_method :render_send_expression
 
+          # Render `count` adjacent stack expressions ending at `index`.
+          # Arguments appear on the stack left-to-right, but because we scan from
+          # the end, each rendered value is written back into its original slot.
           def self.render_expression_list_ending_at(body, index, count)
-            return [[], index] if count <= 0
+            return [EMPTY_ARGUMENTS, index] if count <= 0
 
             arguments = Array.new(count)
             argument_index = count - 1
@@ -313,6 +322,8 @@ module Datadog
           end
           private_class_method :render_expression_list_ending_at
 
+          # Instruction sequence bodies also contain labels and events. Only array
+          # entries are executable instructions for the subset we render here.
           def self.previous_instruction_index(body, index)
             while index >= 0
               return index if body[index].is_a?(Array)
@@ -324,6 +335,9 @@ module Datadog
           end
           private_class_method :previous_instruction_index
 
+          # Handle compact Ruby opcodes that are common in tiny matcher arguments.
+          # Locals are intentionally rendered as `local`; reading their runtime
+          # values would make names unstable and could execute user code.
           def self.render_special_expression(index, instruction)
             opcode = instruction[0].to_s
 
@@ -335,6 +349,9 @@ module Datadog
           end
           private_class_method :render_special_expression
 
+          # Convert a rendered send into the text users expect from an RSpec
+          # generated description. For constructor calls on constants, keep only
+          # the class name so `Object.new` does not introduce object identity.
           def self.render_send(receiver, method_name, arguments, block_iseq)
             if receiver == SELF_VALUE && arguments.empty? && !block_iseq
               method_text = method_name.to_s
@@ -347,6 +364,9 @@ module Datadog
           end
           private_class_method :render_send
 
+          # Format non-trivial sends. Matcher calls and matcher chains use RSpec's
+          # human-readable style (`include "x"`, `change by 1`); ordinary nested
+          # sends keep Ruby-ish receiver syntax (`local.to_s`) for clarity.
           def self.render_method_call(receiver, method_name, arguments, block_iseq)
             method_text = method_name.to_s
             matcher_chain = MATCHER_CHAIN_METHODS.key?(method_name)
@@ -356,7 +376,7 @@ module Datadog
               method_text = method_text.tr("_", " ")
             end
 
-            argument_text = arguments.compact.join(", ")
+            argument_text = arguments.join(", ")
             receiver_text = (receiver == SELF_VALUE) ? "self" : receiver.to_s
 
             if OPERATOR_METHODS.key?(method_name)
@@ -376,12 +396,17 @@ module Datadog
           end
           private_class_method :render_method_call
 
+          # RSpec turns many matcher method names into words in generated example
+          # descriptions. Mirror that only for known matcher methods/prefixes.
           def self.pretty_matcher_method?(method_name, method_text)
             PRETTY_MATCHER_METHODS.key?(method_name) ||
               PRETTY_MATCHER_PREFIXES.any? { |prefix| method_text.start_with?(prefix) }
           end
           private_class_method :pretty_matcher_method?
 
+          # Literal operands are embedded in bytecode and safe to read. For any
+          # object-like value, use the class name instead of `inspect` so memory
+          # addresses cannot leak into test identities.
           def self.render_literal(value)
             rendered_value =
               case value
@@ -411,6 +436,8 @@ module Datadog
           end
           private_class_method :render_literal
 
+          # Keep array literals readable while recursively applying the same stable
+          # rendering rules to their elements.
           def self.render_array_literal(value)
             return "[]" unless value.is_a?(Array)
 
@@ -418,6 +445,8 @@ module Datadog
           end
           private_class_method :render_array_literal
 
+          # Sort hash keys so equivalent literal hashes render consistently across
+          # Ruby versions and construction paths.
           def self.render_hash_literal(value)
             return "{}" unless value.is_a?(Hash)
 
@@ -429,6 +458,8 @@ module Datadog
           end
           private_class_method :render_hash_literal
 
+          # `opt_getconstant_path` stores constants as path parts. Join them into a
+          # Ruby-looking constant name without resolving the constant at runtime.
           def self.render_constant_path(value)
             return "constant" unless value.is_a?(Array)
 
@@ -436,16 +467,23 @@ module Datadog
           end
           private_class_method :render_constant_path
 
+          # Used when collapsing zero-argument constructor calls; only collapse
+          # real constant paths, not arbitrary receiver text.
           def self.constant_name?(value)
             value.is_a?(String) && value.match?(/\A[A-Z]\w*(?:::[A-Z]\w*)*\z/)
           end
           private_class_method :constant_name?
 
+          # Block matchers carry the block body as an embedded instruction
+          # sequence. Its presence changes matcher wording, but rendering the
+          # block body would risk pulling subject code into the name.
           def self.iseq_array?(value)
             value.is_a?(Array) && value[0] == ISEQ_SIMPLE_DATA_FORMAT
           end
           private_class_method :iseq_array?
 
+          # Bound rendered values and names so unusually large literals do not
+          # create oversized span names.
           def self.trim(value, max_length)
             return value if value.length <= max_length
 
@@ -454,16 +492,8 @@ module Datadog
           private_class_method :trim
 
           def self.warn_anonymous_example_name_error(error)
-            message = "Unable to compute RSpec anonymous example name: #{error.class}: #{error.message}"
+            Datadog.logger.warn { "Unable to compute RSpec anonymous example name: #{error.class}: #{error.message}" }
 
-            if defined?(Datadog) && Datadog.respond_to?(:logger) && Datadog.logger
-              Datadog.logger.warn { message }
-            else
-              Kernel.warn(message)
-            end
-
-            nil
-          rescue
             nil
           end
           private_class_method :warn_anonymous_example_name_error
