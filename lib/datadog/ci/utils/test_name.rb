@@ -13,6 +13,19 @@ module Datadog
         CLASS_INSPECT_PATTERN = /#<Class:(#{CONSTANT_NAME}|0x[0-9a-fA-F]+)(?:\s[^>\n]*)?>/.freeze
         NAMED_OBJECT_INSPECT_PATTERN = /#<(#{CONSTANT_NAME})(?::[^>\n]*)?>/.freeze
         OBJECT_INSPECT_PATTERN = /#<[^>\n]+>/.freeze
+        ACTIVE_RECORD_CLASS_INSPECT_PATTERN = /
+          \b(#{CONSTANT_NAME})
+          (?:
+            \s\(call\s'\1\.connection'\sto\ establish\ a\ connection\)
+            |
+            \(
+              (?:\.\.\.\s*)?[a-z_][a-z0-9_]*:\s[^,)\n]*
+              (?:
+                ,\s(?:\.\.\.\s*)?[a-z_][a-z0-9_]*:\s[^,)\n]*
+              )*
+            \)
+          )
+        /x.freeze
 
         TIME_PATTERN = /
           \b
@@ -54,6 +67,7 @@ module Datadog
           end
           normalized.gsub!(NAMED_OBJECT_INSPECT_PATTERN) { "OBJECT:#{Regexp.last_match(1)}" }
           normalized.gsub!(OBJECT_INSPECT_PATTERN, "OBJECT")
+          normalized.gsub!(ACTIVE_RECORD_CLASS_INSPECT_PATTERN) { Regexp.last_match(1).to_s }
           normalized.gsub!(ARRAY_PATTERN) { |value| array_literal?(value) ? "ARRAY" : value }
           normalized.gsub!(HASH_PATTERN) { |value| hash_literal?(value) ? "HASH" : value }
           normalized.gsub!(TIME_PATTERN, "TIME")

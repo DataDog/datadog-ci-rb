@@ -65,6 +65,19 @@ RSpec.describe Datadog::CI::Utils::TestName do
         .to eq("is expected to eq CLASS")
     end
 
+    it "normalizes ActiveRecord class inspections" do
+      expect(described_class.normalize("record=Article (call 'Article.connection' to establish a connection)"))
+        .to eq("record=Article")
+      expect(described_class.normalize("record=Admin::Article (call 'Admin::Article.connection' to establish a connection)"))
+        .to eq("record=Admin::Article")
+      expect(described_class.normalize("record=Article(id: integer)"))
+        .to eq("record=Article")
+      expect(described_class.normalize("record=Article(id: integer, any_comments_hidden: boolean, ... tag_list: )"))
+        .to eq("record=Article")
+      expect(described_class.normalize("record=Admin::Article(id: integer, title: string, published: boolean)"))
+        .to eq("record=Admin::Article")
+    end
+
     it "normalizes range values" do
       expect(described_class.normalize("is expected to eq 1..10"))
         .to eq("is expected to eq RANGE")
@@ -95,6 +108,8 @@ RSpec.describe Datadog::CI::Utils::TestName do
         .to eq("renders {template}")
       expect(described_class.normalize("User logs in"))
         .to eq("User logs in")
+      expect(described_class.normalize("record=:Article"))
+        .to eq("record=:Article")
     end
   end
 end

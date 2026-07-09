@@ -11,6 +11,7 @@ module Datadog
         CLASS_INSPECT_PATTERN: Regexp
         NAMED_OBJECT_INSPECT_PATTERN: Regexp
         OBJECT_INSPECT_PATTERN: Regexp
+        ACTIVE_RECORD_CLASS_INSPECT_PATTERN: Regexp
         TIME_PATTERN: Regexp
         DATE_PATTERN: Regexp
         RANGE_PATTERN: Regexp
