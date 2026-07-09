@@ -52,6 +52,7 @@ RSpec.describe "gem release process" do
             |\.github
             |\.vscode
             | bin
+            |benchmarks
             |gemfiles
             |integration
             |tasks
