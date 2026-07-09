@@ -4,6 +4,10 @@ require "spec_helper"
 require "datadog/ci/contrib/rspec/anonymous_example_name"
 
 RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
+  def iseq_with_body(body)
+    double(to_a: Array.new(14).tap { |data| data[13] = body })
+  end
+
   describe ".supported?" do
     it "is enabled on Ruby versions with supported instruction sequence shapes" do
       expected = RUBY_ENGINE == "ruby" && Gem::Version.new(RUBY_VERSION) >= described_class::MINIMUM_RUBY_VERSION
@@ -83,6 +87,17 @@ RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
 
         expect(name).to eq("is expected to change by 0")
       end
+
+      it "does not evaluate explosive subject code while naming examples" do
+        bomb = Object.new
+        bomb.define_singleton_method(:explode) { raise "boom" }
+
+        direct_subject_name = described_class.call(proc { expect(bomb.explode).to eq(1) })
+        block_subject_name = described_class.call(proc { expect { bomb.explode }.to raise_error(RuntimeError) })
+
+        expect(direct_subject_name).to eq("is expected to eq 1")
+        expect(block_subject_name).to eq("is expected to raise error RuntimeError")
+      end
     end
 
     it "returns nil for non-matcher anonymous examples" do
@@ -101,6 +116,51 @@ RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
       allow(described_class).to receive(:supported?).and_return(false)
 
       expect(described_class.call(proc { expect(1).to eq(1) })).to be_nil
+    end
+
+    it "returns nil for incomplete instruction sequence data" do
+      allow(described_class).to receive(:supported?).and_return(true)
+
+      targets = [
+        [proc {}, iseq_with_body(nil)],
+        [proc {}, iseq_with_body([:event, :label, [:unknown_opcode]])],
+        [proc {}, iseq_with_body([[:putself], [:opt_send_without_block, {mid: :to, orig_argc: 1}]])]
+      ]
+      targets.each do |target, iseq|
+        allow(RubyVM::InstructionSequence).to receive(:of).with(target).and_return(iseq)
+      end
+
+      expect(Datadog.logger).not_to receive(:warn)
+      targets.each do |target, _iseq|
+        expect(described_class.call(target)).to be_nil
+      end
+    end
+
+    it "warns and returns nil when malformed instruction sequence data raises while rendering" do
+      allow(described_class).to receive(:supported?).and_return(true)
+
+      bad_argument_count = Object.new
+      targets = [
+        [proc {}, double(to_a: nil)],
+        [proc {}, double(to_a: Object.new)],
+        [proc {}, iseq_with_body([[:opt_send_without_block, {mid: :to, orig_argc: bad_argument_count}]])],
+        [
+          proc {},
+          iseq_with_body([
+            [:putself],
+            [:newarray, bad_argument_count],
+            [:opt_send_without_block, {mid: :to, orig_argc: 1}]
+          ])
+        ]
+      ]
+      targets.each do |target, iseq|
+        allow(RubyVM::InstructionSequence).to receive(:of).with(target).and_return(iseq)
+      end
+
+      expect(Datadog.logger).to receive(:warn).exactly(targets.length).times.and_yield
+      targets.each do |target, _iseq|
+        expect(described_class.call(target)).to be_nil
+      end
     end
 
     it "warns and returns nil when Ruby cannot extract an instruction sequence" do
