@@ -354,8 +354,7 @@ module Datadog
           # the class name so `Object.new` does not introduce object identity.
           def self.render_send(receiver, method_name, arguments, block_iseq)
             if receiver == SELF_VALUE && arguments.empty? && !block_iseq
-              method_text = method_name.to_s
-              return pretty_matcher_method?(method_name, method_text) ? method_text.tr("_", " ") : method_text
+              return render_method_name(receiver, method_name, arguments, block_iseq)
             end
 
             return receiver if method_name == :new && arguments.empty? && constant_name?(receiver)
@@ -368,14 +367,8 @@ module Datadog
           # human-readable style (`include "x"`, `change by 1`); ordinary nested
           # sends keep Ruby-ish receiver syntax (`local.to_s`) for clarity.
           def self.render_method_call(receiver, method_name, arguments, block_iseq)
-            method_text = method_name.to_s
             matcher_chain = MATCHER_CHAIN_METHODS.key?(method_name)
-
-            if (receiver == SELF_VALUE || matcher_chain || block_iseq) &&
-                (pretty_matcher_method?(method_name, method_text) || !arguments.empty? || block_iseq)
-              method_text = method_text.tr("_", " ")
-            end
-
+            method_text = render_method_name(receiver, method_name, arguments, block_iseq)
             argument_text = arguments.join(", ")
             receiver_text = (receiver == SELF_VALUE) ? "self" : receiver.to_s
 
@@ -395,6 +388,24 @@ module Datadog
             "#{receiver_text}.#{method_name}#{argument_suffix}"
           end
           private_class_method :render_method_call
+
+          # RSpec generated descriptions turn matcher-like method names into prose
+          # only when the send is part of matcher DSL text. Keep ordinary nested
+          # Ruby calls (`local.to_s`) untouched.
+          def self.render_method_name(receiver, method_name, arguments, block_iseq)
+            method_text = method_name.to_s
+            return method_text unless humanize_method_name?(receiver, method_name, method_text, arguments, block_iseq)
+
+            method_text.tr("_", " ")
+          end
+          private_class_method :render_method_name
+
+          def self.humanize_method_name?(receiver, method_name, method_text, arguments, block_iseq)
+            return false unless receiver == SELF_VALUE || MATCHER_CHAIN_METHODS.key?(method_name) || block_iseq
+
+            pretty_matcher_method?(method_name, method_text) || !arguments.empty? || block_iseq
+          end
+          private_class_method :humanize_method_name?
 
           # RSpec turns many matcher method names into words in generated example
           # descriptions. Mirror that only for known matcher methods/prefixes.

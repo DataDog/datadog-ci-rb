@@ -38,6 +38,8 @@ module Datadog
           def self.render_special_expression: (Integer index, Array[untyped] instruction) -> [String, Integer]?
           def self.render_send: (untyped receiver, Symbol method_name, Array[untyped] arguments, untyped block_iseq) -> untyped
           def self.render_method_call: (untyped receiver, Symbol method_name, Array[untyped] arguments, untyped block_iseq) -> String
+          def self.render_method_name: (untyped receiver, Symbol method_name, Array[untyped] arguments, untyped block_iseq) -> String
+          def self.humanize_method_name?: (untyped receiver, Symbol method_name, String method_text, Array[untyped] arguments, untyped block_iseq) -> bool
           def self.pretty_matcher_method?: (Symbol method_name, String method_text) -> bool
           def self.render_literal: (untyped value) -> String
           def self.render_array_literal: (untyped value) -> String
