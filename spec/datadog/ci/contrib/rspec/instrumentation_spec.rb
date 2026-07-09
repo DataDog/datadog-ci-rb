@@ -2781,7 +2781,7 @@ RSpec.describe "RSpec instrumentation" do
 
         expect(names).to eq([
           "nested is expected to be empty",
-          "nested is expected to eq []"
+          "nested is expected to eq ARRAY"
         ])
       end
 
@@ -2803,7 +2803,7 @@ RSpec.describe "RSpec instrumentation" do
 
         expect(names).to eq([
           "nested is expected to be empty",
-          "nested is expected to eq []"
+          "nested is expected to eq ARRAY"
         ])
       end
 

@@ -4,6 +4,7 @@ require "fileutils"
 require "json"
 require_relative "../ext/test"
 require_relative "../ext/test_discovery"
+require_relative "../utils/test_name"
 
 module Datadog
   module CI
@@ -76,6 +77,9 @@ module Datadog
         end
 
         def record_test(name:, suite:, module_name:, parameters:, source_file:)
+          name = name.nil? ? nil : Utils::TestName.normalize(name)
+          suite = suite.nil? ? nil : Utils::TestName.normalize(suite)
+
           test_info = {
             "name" => name,
             "suite" => suite,

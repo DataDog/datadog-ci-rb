@@ -16,6 +16,7 @@ require_relative "../ext/test"
 require_relative "../git/local_repository"
 require_relative "../utils/file_storage"
 require_relative "../utils/stateful"
+require_relative "../utils/test_name"
 
 require_relative "../worker"
 
@@ -109,6 +110,7 @@ module Datadog
         def start_test_suite(test_suite_name, service: nil, tags: {})
           return skip_tracing unless test_suite_level_visibility_enabled
 
+          test_suite_name = Utils::TestName.normalize(test_suite_name)
           context = @local_test_suites_mode ? @context : maybe_remote_context
 
           test_suite = context.start_test_suite(test_suite_name, service: service, tags: tags)
@@ -117,6 +119,9 @@ module Datadog
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
+          test_name = Utils::TestName.normalize(test_name)
+          test_suite_name = Utils::TestName.normalize(test_suite_name)
+
           test_suite = active_test_suite(test_suite_name)
           tags[Ext::Test::TAG_SUITE] ||= test_suite_name
 
@@ -165,6 +170,8 @@ module Datadog
           # we return the single active test suite because most of the time there is only one test suite running
           return single_active_test_suite if test_suite_name.nil?
 
+          test_suite_name = Utils::TestName.normalize(test_suite_name)
+
           # when fetching test_suite to use as test's context, try local context instance first
           local_test_suite = @context.active_test_suite(test_suite_name)
           return local_test_suite if local_test_suite
@@ -194,6 +201,7 @@ module Datadog
         end
 
         def deactivate_test_suite(test_suite_name)
+          test_suite_name = Utils::TestName.normalize(test_suite_name)
           test_suite = active_test_suite(test_suite_name)
           on_test_suite_finished(test_suite) if test_suite
 
