@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class RubyVM::InstructionSequence
-  def self.of: (Proc | Method target) -> RubyVM::InstructionSequence?
+  def self.of: (Proc | Method | UnboundMethod target) -> RubyVM::InstructionSequence?
 end
 
 module Datadog

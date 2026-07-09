@@ -219,13 +219,16 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "creates span for unnamed examples" do
-      spec = with_new_rspec_environment do
+      with_new_rspec_environment do
         RSpec.describe "some unnamed test" do
           it {}
-        end.tap(&:run)
+        end.run
       end
 
-      expect(first_test_span).to have_test_tag(:name, "example #{spec.file_path}[1:1]")
+      expected_name = first_test_span.name
+
+      expect(expected_name).to match(/\Aanonymous example [0-9a-f]{16}\z/)
+      expect(first_test_span).to have_test_tag(:name, expected_name)
     end
 
     it "creates span for deeply nested examples" do
@@ -2650,6 +2653,16 @@ RSpec.describe "RSpec instrumentation" do
     let(:spec_file) { "./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb" }
     let(:suite_source_file) { "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb" }
 
+    def anonymous_example_name(prefix, &block)
+      name_prefix = prefix.empty? ? "" : "#{prefix} "
+      "#{name_prefix}anonymous example #{Datadog::CI::SourceCode.iseq_hash(block)}"
+    end
+
+    def anonymous_example_name_pattern(prefix = "")
+      name_prefix = prefix.empty? ? "" : "#{Regexp.escape(prefix)} "
+      /\A#{name_prefix}anonymous example [0-9a-f]{16}\z/
+    end
+
     context "when running individual tests" do
       include_context "CI mode activated" do
         let(:integration_name) { :rspec }
@@ -2660,7 +2673,7 @@ RSpec.describe "RSpec instrumentation" do
         Datadog.send(:components).test_tracing.start_test_session
       end
 
-      it "uses a stable RSpec id for a bare anonymous example" do
+      it "uses a stable ISeq hash for a bare anonymous example" do
         spec = with_new_rspec_environment do
           RSpec.describe "AnonymousExamples" do
             context "nested" do
@@ -2669,7 +2682,7 @@ RSpec.describe "RSpec instrumentation" do
           end.tap(&:run)
         end
 
-        expected_name = "nested example #{spec_file}[1:1:1]"
+        expected_name = anonymous_example_name("nested") {}
 
         expect(first_test_span.name).to eq(expected_name)
         expect(first_test_span.resource).to eq(expected_name)
@@ -2681,7 +2694,7 @@ RSpec.describe "RSpec instrumentation" do
         )
       end
 
-      it "uses a stable RSpec id for an explicit blank example description" do
+      it "uses a stable ISeq hash for an explicit blank example description" do
         spec = with_new_rspec_environment do
           RSpec.describe "BlankDescriptionExamples" do
             it "" do
@@ -2690,7 +2703,9 @@ RSpec.describe "RSpec instrumentation" do
           end.tap(&:run)
         end
 
-        expected_name = "example #{spec_file}[1:1]"
+        expected_name = anonymous_example_name("") do
+          expect(true).to be(true)
+        end
 
         expect(spec.examples.first.metadata[:description_args]).to eq([""])
         expect(first_test_span.name).to eq(expected_name)
@@ -2716,13 +2731,15 @@ RSpec.describe "RSpec instrumentation" do
           end.run
         end
 
-        expected_name = "example #{spec_file}[1:1]"
+        expected_name = anonymous_example_name("") do
+          expect(described_class.active).to eq(context)
+        end
 
         expect(first_test_span.name).to eq(expected_name)
         expect(first_test_span).to have_test_tag(:name, expected_name)
       end
 
-      it "keeps using the stable RSpec id even if RSpec has already generated a matcher description" do
+      it "keeps using the ISeq hash even if RSpec has already generated a matcher description" do
         stub_const(
           "AnonymousLateNameTest",
           Class.new do
@@ -2742,28 +2759,30 @@ RSpec.describe "RSpec instrumentation" do
 
         example = spec.examples.first
         example.remove_instance_variable(:@datadog_test_name)
+        expected_name = anonymous_example_name("") do
+          expect(described_class.active).to eq(context)
+        end
 
         expect(example.metadata[:description]).to include("is expected to eq #<Object:")
-        expect(example.datadog_test_name).to eq("example #{spec_file}[1:1]")
+        expect(example.datadog_test_name).to eq(expected_name)
       end
 
-      it "keeps anonymous examples with identical generated descriptions distinct" do
+      it "keeps anonymous examples with different source bodies distinct" do
         with_new_rspec_environment do
           RSpec.describe "DuplicateAnonymousExamples" do
             context "nested" do
               subject { [] }
 
               it { is_expected.to be_empty }
-              it { is_expected.to be_empty }
+              it { expect(subject).to eq([]) }
             end
           end.run
         end
 
-        expect(test_spans.map(&:name)).to contain_exactly(
-          "nested example #{spec_file}[1:1:1]",
-          "nested example #{spec_file}[1:1:2]"
-        )
-        expect(test_spans.map(&:name).uniq).to have(2).items
+        names = test_spans.map(&:name)
+
+        expect(names).to all(match(anonymous_example_name_pattern("nested")))
+        expect(names.uniq).to have(2).items
       end
 
       it "keeps should-syntax anonymous examples stable and distinct" do
@@ -2773,19 +2792,18 @@ RSpec.describe "RSpec instrumentation" do
               subject { [] }
 
               it { should be_empty }
-              it { should be_empty }
+              it { should eq([]) }
             end
           end.run
         end
 
-        expect(test_spans.map(&:name)).to contain_exactly(
-          "nested example #{spec_file}[1:1:1]",
-          "nested example #{spec_file}[1:1:2]"
-        )
-        expect(test_spans.map(&:name)).to all(match(/\Anested example .*:\d+\]\z/))
+        names = test_spans.map(&:name)
+
+        expect(names).to all(match(anonymous_example_name_pattern("nested")))
+        expect(names.uniq).to have(2).items
       end
 
-      it "does not collide for generated examples defined on the same source line" do
+      it "uses the same name for generated examples with identical source in the same scope" do
         with_new_rspec_environment do
           RSpec.describe "GeneratedAnonymousExamples" do
             context "nested" do
@@ -2794,10 +2812,76 @@ RSpec.describe "RSpec instrumentation" do
           end.run
         end
 
-        expect(test_spans.map(&:name)).to contain_exactly(
-          "nested example #{spec_file}[1:1:1]",
-          "nested example #{spec_file}[1:1:2]"
-        )
+        names = test_spans.map(&:name)
+
+        expect(names).to all(match(anonymous_example_name_pattern("nested")))
+        expect(names.uniq.size).to eq(1)
+      end
+
+      it "keeps existing anonymous example names stable when a new anonymous sibling is inserted before them" do
+        current_names = lambda do |insert_example_before|
+          clear_traces!
+
+          with_new_rspec_environment do
+            RSpec.describe "AnonymousSiblingInsertionExamples" do
+              context ".character_types" do
+                it { expect("0").to match(/\d/) } if insert_example_before
+
+                context "when digit" do
+                  it { expect("1").to match(/\d/) }
+                end
+
+                context "when letter" do
+                  it { expect("a").to match(/[a-z]/) }
+                end
+
+                context "when symbol" do
+                  it { expect("@").to match(/\W/) }
+                end
+              end
+            end.run
+          end
+
+          fetch_spans.filter { |span| span.type == "test" }.map(&:name)
+        end
+
+        original_names = current_names.call(false)
+        names_after_insert = current_names.call(true)
+
+        expect(names_after_insert).to include(*original_names)
+      end
+
+      it "keeps existing anonymous example names stable when a new context is inserted before them" do
+        current_names = lambda do |insert_context_before|
+          clear_traces!
+
+          with_new_rspec_environment do
+            RSpec.describe "AnonymousContextInsertionExamples" do
+              context "#get_auth_provider" do
+                if insert_context_before
+                  context "when warming the cache" do
+                    it { expect(:cached).to eq(:cached) }
+                  end
+                end
+
+                context "when an auth provider is found" do
+                  it { expect(:found).to eq(:found) }
+                end
+
+                context "when an auth provider is not found" do
+                  it { expect(nil).to be_nil }
+                end
+              end
+            end.run
+          end
+
+          fetch_spans.filter { |span| span.type == "test" }.map(&:name)
+        end
+
+        original_names = current_names.call(false)
+        names_after_insert = current_names.call(true)
+
+        expect(names_after_insert).to include(*original_names)
       end
     end
 
@@ -2838,20 +2922,20 @@ RSpec.describe "RSpec instrumentation" do
         expect(tests_json).to eq(
           [
             {
-              "name" => "nested example #{spec_file}[1:1:1]",
+              "name" => anonymous_example_name("nested") { expect(Object.new).to eq(Object.new) },
               "suite" => "AnonymousDiscoveryExamples at #{spec_file}",
               "module" => "rspec",
               "parameters" => "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:1\"}}",
               "suiteSourceFile" => suite_source_file
             },
             {
-              "name" => "nested example #{spec_file}[1:1:2]",
+              "name" => anonymous_example_name("nested") { expect(Time.now).to be_a(Time) },
               "suite" => "AnonymousDiscoveryExamples at #{spec_file}",
               "module" => "rspec",
               "parameters" => "{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:2\"}}",
               "suiteSourceFile" => suite_source_file
             }
-          ]
+          ].sort_by { |test| test["name"] }
         )
       end
     end
@@ -2864,9 +2948,13 @@ RSpec.describe "RSpec instrumentation" do
         let(:itr_enabled) { true }
         let(:tests_skipping_enabled) { true }
 
+        let(:anonymous_skippable_name) do
+          anonymous_example_name("nested") { expect(Object.new).to eq(Object.new) }
+        end
+
         let(:itr_skippable_tests) do
           Set.new([
-            "AnonymousSkippableExamples at #{spec_file}.nested example #{spec_file}[1:1:1].{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:1\"}}"
+            "AnonymousSkippableExamples at #{spec_file}.#{anonymous_skippable_name}.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:1:1\"}}"
           ])
         end
       end
@@ -2888,7 +2976,7 @@ RSpec.describe "RSpec instrumentation" do
           ::RSpec::Core::Runner.new(options).run(stderr, stdout)
         end
 
-        skipped_test = test_spans.find { |span| span.name == "nested example #{spec_file}[1:1:1]" }
+        skipped_test = test_spans.find { |span| span.name == anonymous_skippable_name }
         control_test = test_spans.find { |span| span.name == "nested named control" }
 
         expect(skipped_test).to have_skip_status
