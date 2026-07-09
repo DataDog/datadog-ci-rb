@@ -3012,4 +3012,34 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
   end
+
+  context "with ActiveRecord inspect-derived names" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+    end
+
+    before do
+      Datadog.send(:components).test_tracing.start_test_session
+    end
+
+    it "normalizes loaded schema inspections in runtime example names" do
+      active_record_model = Class.new
+      allow(active_record_model).to receive(:inspect).and_return(
+        "Article(id: integer, any_comments_hidden: boolean, ... tag_list: )"
+      )
+
+      with_new_rspec_environment do
+        RSpec.describe "ActiveRecordInspectExamples" do
+          it "record=#{active_record_model.inspect}" do
+            expect(true).to be(true)
+          end
+        end.run
+      end
+
+      expect(first_test_span.name).to eq("record=Article")
+      expect(first_test_span.resource).to eq("record=Article")
+      expect(first_test_span).to have_test_tag(:name, "record=Article")
+    end
+  end
 end
