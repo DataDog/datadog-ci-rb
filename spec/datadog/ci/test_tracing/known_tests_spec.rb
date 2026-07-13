@@ -14,6 +14,23 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
   describe "#fetch" do
     subject { client.fetch(test_session) }
 
+    # Default http_response stub for tests that call fetch but don't care about response content
+    let(:default_http_response) do
+      double(
+        "http_response",
+        ok?: true,
+        payload: {data: {attributes: {tests: {}}}}.to_json,
+        request_compressed: false,
+        duration_ms: 0.0,
+        gzipped_content?: false,
+        response_size: 0
+      )
+    end
+
+    before do
+      allow(api).to receive(:api_request).and_return(default_http_response)
+    end
+
     let(:service) { "service" }
     let(:tracer_span) do
       Datadog::Tracing::SpanOperation.new("session", service: service).tap do |span|
@@ -112,6 +129,9 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
           it_behaves_like "emits telemetry metric", :inc, "known_tests.request", 1
           it_behaves_like "emits telemetry metric", :distribution, "known_tests.request_ms"
           it_behaves_like "emits telemetry metric", :distribution, "known_tests.response_bytes"
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.pages_fetched"
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.total_fetch_ms"
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.total_request_ms"
         end
 
         context "when response is not OK" do
@@ -294,6 +314,18 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
             second_payload = JSON.parse(requests[1][:payload])
             expect(second_payload["data"]["attributes"]["page_info"]["page_state"]).to eq("next_page_cursor")
           end
+
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.pages_fetched"
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.total_fetch_ms"
+          it_behaves_like "emits telemetry metric", :distribution, "known_tests.total_request_ms"
+
+          it "emits pages_fetched metric with correct count" do
+            response
+
+            metric = telemetry_metric(:distribution, "known_tests.pages_fetched")
+            expect(metric).not_to be_nil
+            expect(metric.value).to eq(2.0)
+          end
         end
 
         context "when a subsequent page request fails" do
@@ -356,6 +388,14 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
 
             expect(test_session.get_tag(Datadog::CI::Ext::Test::LibraryConfigurationError::TAG_KNOWN_TESTS))
               .to eq("true")
+          end
+
+          it "does not emit aggregate pagination metrics on failure" do
+            response
+
+            expect(received_telemetry_metric?(:distribution, "known_tests.pages_fetched")).to be false
+            expect(received_telemetry_metric?(:distribution, "known_tests.total_fetch_ms")).to be false
+            expect(received_telemetry_metric?(:distribution, "known_tests.total_request_ms")).to be false
           end
         end
       end

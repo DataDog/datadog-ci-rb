@@ -2,6 +2,8 @@
 
 require "json"
 
+require "datadog/core/utils/time"
+
 require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/telemetry"
@@ -14,6 +16,8 @@ module Datadog
       # fetches and stores a list of known tests from the backend
       class KnownTests
         class Response
+          attr_reader :http_response
+
           def self.from_http_response(http_response)
             new(http_response, nil)
           end
@@ -94,8 +98,11 @@ module Datadog
           return Set.new unless api
 
           result = Set.new
+          total_request_ms = 0.0
           page_state = nil
           page_number = 1
+
+          fetch_start_time = Core::Utils::Time.get_time
 
           loop do
             Datadog.logger.debug { "Fetching known tests page ##{page_number}#{" with cursor" if page_state}" }
@@ -114,6 +121,9 @@ module Datadog
               return Set.new
             end
 
+            # @type var response: Datadog::CI::TestTracing::KnownTests::Response
+            total_request_ms += response.http_response.duration_ms
+
             page_tests = response.tests
             result.merge(page_tests)
             Datadog.logger.debug { "Received #{page_tests.size} known tests from page ##{page_number} (total so far: #{result.size})" }
@@ -127,7 +137,15 @@ module Datadog
             page_number += 1
           end
 
+          fetch_duration_ms = (Core::Utils::Time.get_time - fetch_start_time).to_f * 1000.0
+
           Datadog.logger.debug { "Finished fetching known tests: #{result.size} tests total from #{page_number} page(s)" }
+
+          # Emit pagination aggregate metrics
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_KNOWN_TESTS_PAGES_FETCHED, page_number.to_f)
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_KNOWN_TESTS_TOTAL_FETCH_MS, fetch_duration_ms)
+          Utils::Telemetry.distribution(Ext::Telemetry::METRIC_KNOWN_TESTS_TOTAL_REQUEST_MS, total_request_ms)
+
           result
         end
 
