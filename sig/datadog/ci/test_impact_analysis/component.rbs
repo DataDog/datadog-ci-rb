@@ -23,6 +23,7 @@ module Datadog
         @use_single_threaded_coverage: bool
         @use_allocation_tracing: bool
         @static_dependencies_tracking_enabled: bool
+        @code_coverage_collection_enabled: bool
         @test_skipping_mode: String
 
         @mutex: Thread::Mutex
@@ -44,7 +45,7 @@ module Datadog
         attr_reader test_skipping_mode: String
         attr_reader skippable_tests_fetch_error: String?
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool, ?code_coverage_collection_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 

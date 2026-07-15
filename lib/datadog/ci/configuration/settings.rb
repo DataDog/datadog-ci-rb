@@ -96,6 +96,12 @@ module Datadog
                 o.default true
               end
 
+              option :itr_code_coverage_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_ENABLED
+                o.default true
+              end
+
               option :itr_code_coverage_excluded_bundle_path do |o|
                 o.type :string, nilable: true
                 o.env CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_EXCLUDED_BUNDLE_PATH

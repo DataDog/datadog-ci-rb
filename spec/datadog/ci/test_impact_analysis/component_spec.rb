@@ -121,6 +121,59 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       it_behaves_like "emits telemetry metric", :inc, "itr_skippable_tests.response_tests", 2
     end
 
+    context "when code coverage collection is disabled locally" do
+      subject(:component) do
+        described_class.new(
+          api: api,
+          dd_env: "dd_env",
+          coverage_writer: writer,
+          enabled: local_itr_enabled,
+          test_skipping_mode: test_skipping_mode,
+          code_coverage_collection_enabled: false
+        )
+      end
+
+      let(:skippable) do
+        instance_double(
+          Datadog::CI::TestImpactAnalysis::Skippable,
+          fetch_skippables: instance_double(
+            Datadog::CI::TestImpactAnalysis::Skippable::Response,
+            correlation_id: "42",
+            tests: Set.new(["suite.test."]),
+            suites: Set.new,
+            ok?: true
+          )
+        )
+      end
+
+      before do
+        expect(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:new).and_return(skippable)
+
+        configure
+      end
+
+      it "keeps test skipping enabled without enabling code coverage" do
+        expect(component.enabled?).to be true
+        expect(component.skipping_tests?).to be true
+        expect(component.code_coverage?).to be false
+
+        expect(component.correlation_id).to eq("42")
+        expect(component.skippable_tests).to eq(Set.new(["suite.test."]))
+      end
+
+      it "sets test session tags reflecting the local override" do
+        expect(test_session.skipping_tests?).to be true
+        expect(test_session.code_coverage?).to be false
+      end
+
+      it "does not start coverage" do
+        expect(component).not_to receive(:coverage_collector)
+
+        component.start_coverage
+        expect(component.stop_coverage).to be_nil
+      end
+    end
+
     context "when suite skipping mode is configured" do
       let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
       let(:skippable_response) do

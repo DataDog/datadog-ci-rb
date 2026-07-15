@@ -43,7 +43,8 @@ module Datadog
           bundle_location: nil,
           use_single_threaded_coverage: false,
           use_allocation_tracing: true,
-          static_dependencies_tracking_enabled: false
+          static_dependencies_tracking_enabled: false,
+          code_coverage_collection_enabled: true
         )
           @enabled = enabled
           @api = api
@@ -59,6 +60,7 @@ module Datadog
           @use_single_threaded_coverage = use_single_threaded_coverage
           @use_allocation_tracing = use_allocation_tracing
           @static_dependencies_tracking_enabled = static_dependencies_tracking_enabled
+          @code_coverage_collection_enabled = code_coverage_collection_enabled
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false
@@ -91,7 +93,12 @@ module Datadog
 
           @enabled = remote_configuration.itr_enabled?
           @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
-          @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled?
+          # Per-test code coverage collection can be disabled locally even when the backend
+          # requests it: skipping tests does not require collecting coverage, and coverage
+          # instrumentation slows down every executed test. Disabling collection lets a
+          # dedicated (e.g. default-branch) lane keep the coverage dataset fresh while
+          # other sessions only apply the skips.
+          @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled? && @code_coverage_collection_enabled
 
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
           test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)

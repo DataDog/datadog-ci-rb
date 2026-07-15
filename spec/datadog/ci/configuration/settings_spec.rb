@@ -365,6 +365,47 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#itr_code_coverage_enabled" do
+        subject(:itr_code_coverage_enabled) { settings.ci.itr_code_coverage_enabled }
+
+        it { is_expected.to be true }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is not defined" do
+            let(:enable) { nil }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#itr_code_coverage_enabled=" do
+        it "updates the #itr_code_coverage_enabled setting" do
+          expect { settings.ci.itr_code_coverage_enabled = false }
+            .to change { settings.ci.itr_code_coverage_enabled }
+            .from(true)
+            .to(false)
+        end
+      end
+
       describe "#tia_test_skipping_mode" do
         subject(:tia_test_skipping_mode) { settings.ci.tia_test_skipping_mode }
 
