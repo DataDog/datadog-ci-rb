@@ -3,11 +3,13 @@ module Datadog
     module CodeCoverage
       class Component
         COVERAGE_REPORT_TYPE: "coverage_report"
+        MAX_REPORT_FLAGS: 32
 
         attr_reader enabled: bool
 
         @enabled: bool
         @transport: Datadog::CI::CodeCoverage::Transport
+        @flags: Array[String]?
 
         def initialize: (enabled: bool, transport: Datadog::CI::CodeCoverage::Transport) -> void
 
@@ -20,6 +22,8 @@ module Datadog
         private
 
         def build_event: (String format) -> Hash[String, untyped]
+
+        def parse_flags: (String? value) -> Array[String]?
       end
     end
   end

@@ -5,6 +5,7 @@ require_relative "../../../../lib/datadog/ci/code_coverage/component"
 RSpec.describe Datadog::CI::CodeCoverage::Component do
   subject(:component) { described_class.new(enabled: enabled, transport: transport) }
 
+  let(:coverage_flags) { nil }
   let(:enabled) { true }
   let(:transport) { instance_double(Datadog::CI::CodeCoverage::Transport, send_coverage_report: http_response) }
   let(:http_response) do
@@ -29,6 +30,12 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
 
   before do
     allow(Datadog::CI::Ext::Environment).to receive(:tags).with(ENV).and_return(environment_tags)
+  end
+
+  around do |example|
+    ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_CODE_COVERAGE_FLAGS => coverage_flags) do
+      example.run
+    end
   end
 
   describe "#initialize" do
@@ -132,6 +139,100 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
 
       it "returns the response from transport" do
         expect(component.upload(serialized_report: serialized_report, format: format)).to eq(http_response)
+      end
+
+      context "when coverage report flags are set" do
+        let(:coverage_flags) { "type:unit-tests,jvm-21" }
+
+        it "adds them to the event" do
+          expect(transport).to receive(:send_coverage_report) do |args|
+            expect(args[:event]["report.flags"]).to eq(["type:unit-tests", "jvm-21"])
+          end
+
+          component.upload(serialized_report: serialized_report, format: format)
+        end
+
+        context "with whitespace, empty entries, and duplicates" do
+          let(:coverage_flags) { " type:unit-tests, ,jvm-21,type:unit-tests, " }
+
+          it "trims whitespace and empty entries while preserving order and duplicates" do
+            expect(transport).to receive(:send_coverage_report) do |args|
+              expect(args[:event]["report.flags"]).to eq(["type:unit-tests", "jvm-21", "type:unit-tests"])
+            end
+
+            component.upload(serialized_report: serialized_report, format: format)
+          end
+        end
+
+        context "with exactly the maximum number of flags" do
+          let(:flags) { Array.new(described_class::MAX_REPORT_FLAGS) { |index| "flag-#{index}" } }
+          let(:coverage_flags) { flags.join(",") }
+
+          it "adds every flag to the event" do
+            expect(transport).to receive(:send_coverage_report) do |args|
+              expect(args[:event]["report.flags"]).to eq(flags)
+            end
+
+            component.upload(serialized_report: serialized_report, format: format)
+          end
+        end
+
+        context "with more than the maximum number of flags" do
+          let(:flags) { Array.new(described_class::MAX_REPORT_FLAGS + 1) { |index| "flag-#{index}" } }
+          let(:coverage_flags) { flags.join(",") }
+
+          before do
+            allow(Datadog.logger).to receive(:warn)
+          end
+
+          it "warns once, omits the flags, and uploads the report" do
+            responses = 2.times.map do
+              component.upload(serialized_report: serialized_report, format: format)
+            end
+
+            expect(responses).to eq([http_response, http_response])
+            expect(Datadog.logger).to have_received(:warn).once.with(
+              "DD_CODE_COVERAGE_FLAGS contains 33 flags, but only 32 are allowed; omitting report flags"
+            )
+            expect(transport).to have_received(:send_coverage_report).twice do |args|
+              expect(args[:event]).not_to have_key("report.flags")
+            end
+          end
+        end
+
+        it "snapshots flags when the component is created" do
+          original_component = component
+
+          ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_CODE_COVERAGE_FLAGS => "changed") do
+            2.times do
+              original_component.upload(serialized_report: serialized_report, format: format)
+            end
+          end
+
+          expect(transport).to have_received(:send_coverage_report).twice do |args|
+            expect(args[:event]["report.flags"]).to eq(["type:unit-tests", "jvm-21"])
+          end
+        end
+      end
+
+      context "when coverage report flags contain no values" do
+        {
+          "the environment variable is unset" => nil,
+          "the environment variable is empty" => "",
+          "the environment variable contains only whitespace and commas" => " ,  , "
+        }.each do |description, value|
+          context description do
+            let(:coverage_flags) { value }
+
+            it "omits report.flags from the event" do
+              expect(transport).to receive(:send_coverage_report) do |args|
+                expect(args[:event]).not_to have_key("report.flags")
+              end
+
+              component.upload(serialized_report: serialized_report, format: format)
+            end
+          end
+        end
       end
     end
 
