@@ -19,6 +19,7 @@ target :lib do
   library "fileutils"
   library "socket"
   library "optparse"
+  library "forwardable"
 
   repo_path "vendor/rbs"
   library "ddtrace"

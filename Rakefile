@@ -98,6 +98,9 @@ TEST_METADATA = {
   },
   "rswag_rspec" => {
     "rswag-2-rails-7" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0"
+  },
+  "simplecov" => {
+    "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0"
   }
 }
 
@@ -177,6 +180,7 @@ namespace :spec do
     lograge
     semantic_logger
     rswag_rspec
+    simplecov
   ].each do |contrib|
     desc "" # "Explicitly hiding from `rake -T`"
     RSpec::Core::RakeTask.new(contrib) do |t, args|

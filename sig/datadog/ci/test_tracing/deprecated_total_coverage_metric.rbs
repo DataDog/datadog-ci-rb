@@ -3,6 +3,8 @@ module Datadog
     module TestTracing
       module DeprecatedTotalCoverageMetric
         def self.extract_lines_pct: (Datadog::CI::TestSession test_session) -> void
+
+        def self.simplecov_running?: () -> bool
       end
     end
   end
