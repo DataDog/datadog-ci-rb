@@ -15,10 +15,10 @@ module Datadog
 
         attr_reader :enabled
 
-        def initialize(enabled:, transport:)
+        def initialize(enabled:, transport:, flags:)
           @enabled = enabled
           @transport = transport
-          @flags = parse_flags(ENV[Ext::Settings::ENV_CODE_COVERAGE_FLAGS])
+          @flags = parse_flags(flags)
         end
 
         def configure(library_configuration)

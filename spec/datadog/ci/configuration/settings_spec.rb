@@ -1135,6 +1135,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
           Datadog::CI::Ext::TestOptimizationCache::ENV_TEST_SRCDIR,
           "/tmp/test_srcdir"
         ],
+        code_coverage_flags: [
+          Datadog::CI::Ext::Settings::ENV_CODE_COVERAGE_FLAGS,
+          "type:unit-tests,jvm-21"
+        ],
         runtime_tags_overrides: [
           Datadog::CI::Ext::Settings::ENV_RUNTIME_TAGS,
           '{"os.version":"ubuntu-22.04"}'

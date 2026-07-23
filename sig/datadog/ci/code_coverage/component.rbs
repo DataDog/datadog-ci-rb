@@ -11,7 +11,7 @@ module Datadog
         @transport: Datadog::CI::CodeCoverage::Transport
         @flags: Array[String]?
 
-        def initialize: (enabled: bool, transport: Datadog::CI::CodeCoverage::Transport) -> void
+        def initialize: (enabled: bool, transport: Datadog::CI::CodeCoverage::Transport, flags: String?) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_configuration) -> void
 

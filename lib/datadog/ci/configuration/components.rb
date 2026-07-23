@@ -312,7 +312,8 @@ module Datadog
 
           CodeCoverage::Component.new(
             enabled: settings.ci.code_coverage_report_upload_enabled,
-            transport: CodeCoverage::Transport.new(api: api)
+            transport: CodeCoverage::Transport.new(api: api),
+            flags: settings.ci.code_coverage_flags
           )
         end
 

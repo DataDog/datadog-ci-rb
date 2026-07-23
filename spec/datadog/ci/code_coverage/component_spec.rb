@@ -3,7 +3,7 @@
 require_relative "../../../../lib/datadog/ci/code_coverage/component"
 
 RSpec.describe Datadog::CI::CodeCoverage::Component do
-  subject(:component) { described_class.new(enabled: enabled, transport: transport) }
+  subject(:component) { described_class.new(enabled: enabled, transport: transport, flags: coverage_flags) }
 
   let(:coverage_flags) { nil }
   let(:enabled) { true }
@@ -30,12 +30,6 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
 
   before do
     allow(Datadog::CI::Ext::Environment).to receive(:tags).with(ENV).and_return(environment_tags)
-  end
-
-  around do |example|
-    ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_CODE_COVERAGE_FLAGS => coverage_flags) do
-      example.run
-    end
   end
 
   describe "#initialize" do
@@ -142,7 +136,7 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
       end
 
       context "when coverage report flags are set" do
-        let(:coverage_flags) { "type:unit-tests,jvm-21" }
+        let(:coverage_flags) { +"type:unit-tests,jvm-21" }
 
         it "adds them to the event" do
           expect(transport).to receive(:send_coverage_report) do |args|
@@ -202,11 +196,10 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
 
         it "snapshots flags when the component is created" do
           original_component = component
+          coverage_flags.replace("changed")
 
-          ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_CODE_COVERAGE_FLAGS => "changed") do
-            2.times do
-              original_component.upload(serialized_report: serialized_report, format: format)
-            end
+          2.times do
+            original_component.upload(serialized_report: serialized_report, format: format)
           end
 
           expect(transport).to have_received(:send_coverage_report).twice do |args|
@@ -217,9 +210,9 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
 
       context "when coverage report flags contain no values" do
         {
-          "the environment variable is unset" => nil,
-          "the environment variable is empty" => "",
-          "the environment variable contains only whitespace and commas" => " ,  , "
+          "flags are nil" => nil,
+          "flags are empty" => "",
+          "flags contain only whitespace and commas" => " ,  , "
         }.each do |description, value|
           context description do
             let(:coverage_flags) { value }
