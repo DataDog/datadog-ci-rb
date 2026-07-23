@@ -47,6 +47,16 @@ def self.with_rspec_gem(versions: 3)
   end
 end
 
+def self.with_simplecov_gem(versions: 1)
+  Array(versions).each do |v|
+    next if v >= 1 && Gem::Version.new("3.2") > RUBY_VERSION
+
+    appraise "simplecov-#{v}" do
+      gem "simplecov", "~> #{v}"
+    end
+  end
+end
+
 def self.with_cucumber_gem(versions:)
   Array(versions).each do |v|
     next if v < 9 && Gem::Version.new("3.4") <= RUBY_VERSION
@@ -250,6 +260,7 @@ major, minor, = RUBY_VERSION.segments
 with_minitest_gem(versions: 5..6)
 with_minitest_maxitest_gem
 with_rspec_gem
+with_simplecov_gem
 with_cucumber_gem(versions: 3..11)
 with_ci_queue_minitest_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_ci_queue_rspec_gem if Gem::Version.new("3.1") <= RUBY_VERSION
