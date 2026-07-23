@@ -52,8 +52,9 @@ module Datadog
             "format" => format
           }.merge(Ext::Environment.tags(ENV))
 
-          event["report.flags"] = @flags if @flags
-          event
+          return event unless @flags
+
+          event.merge("report.flags" => @flags)
         end
 
         def parse_flags(value)
