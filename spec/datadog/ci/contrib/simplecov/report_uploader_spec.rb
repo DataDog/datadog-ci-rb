@@ -27,17 +27,21 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
       let(:components) { double(:components, code_coverage: code_coverage) }
       let(:simplecov_config) { {enabled: simplecov_enabled} }
       let(:simplecov_enabled) { true }
-      let(:simplecov_module) { double(:simplecov, coverage_path: coverage_path) }
 
       before do
+        SimpleCov.coverage_dir(coverage_path)
         File.write(coverage_file, coverage_data)
 
         allow(Datadog.configuration).to receive(:ci).and_return(double(:ci, :[] => simplecov_config))
         allow(Datadog).to receive(:send).with(:components).and_return(components)
-        stub_const("SimpleCov", simplecov_module)
       end
 
-      after do
+      around do |example|
+        original_coverage_dir = SimpleCov.coverage_dir
+
+        example.run
+      ensure
+        SimpleCov.coverage_dir(original_coverage_dir)
         FileUtils.rm_rf(coverage_path)
       end
 
