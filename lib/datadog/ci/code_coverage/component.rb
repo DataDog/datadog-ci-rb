@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../ext/environment"
+require_relative "../ext/settings"
 require_relative "transport"
 
 module Datadog
@@ -10,12 +11,14 @@ module Datadog
       # to Datadog's Code Coverage product.
       class Component
         COVERAGE_REPORT_TYPE = "coverage_report"
+        MAX_REPORT_FLAGS = 32
 
         attr_reader :enabled
 
-        def initialize(enabled:, transport:)
+        def initialize(enabled:, transport:, flags:)
           @enabled = enabled
           @transport = transport
+          @flags = parse_flags(flags)
         end
 
         def configure(library_configuration)
@@ -44,10 +47,31 @@ module Datadog
         private
 
         def build_event(format)
-          {
+          event = {
             "type" => COVERAGE_REPORT_TYPE,
             "format" => format
           }.merge(Ext::Environment.tags(ENV))
+
+          return event unless @flags
+
+          event.merge("report.flags" => @flags)
+        end
+
+        def parse_flags(value)
+          return if value.nil?
+
+          flags = value.split(",").map(&:strip).reject(&:empty?)
+          return if flags.empty?
+
+          if flags.length > MAX_REPORT_FLAGS
+            Datadog.logger.warn(
+              "#{Ext::Settings::ENV_CODE_COVERAGE_FLAGS} contains #{flags.length} flags, " \
+              "but only #{MAX_REPORT_FLAGS} are allowed; omitting report flags"
+            )
+            return
+          end
+
+          flags.freeze
         end
       end
     end

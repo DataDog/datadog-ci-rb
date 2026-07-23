@@ -42,6 +42,25 @@ RSpec.describe Datadog::CI::CodeCoverage::Transport do
         )
       end
 
+      context "when the event contains report flags" do
+        let(:event) do
+          {
+            "type" => "coverage_report",
+            "format" => "simplecov-internal",
+            "report.flags" => ["type:unit-tests", "jvm-21"]
+          }
+        end
+
+        it "serializes report.flags as a JSON array" do
+          send_coverage_report
+
+          expect(api).to have_received(:cicovreprt_request) do |args|
+            parsed_event = JSON.parse(args[:event_payload])
+            expect(parsed_event["report.flags"]).to eq(["type:unit-tests", "jvm-21"])
+          end
+        end
+      end
+
       it "compresses the coverage data" do
         send_coverage_report
 

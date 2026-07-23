@@ -52,6 +52,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.ci.itr_test_impact_analysis_use_allocation_tracing = itr_test_impact_analysis_use_allocation_tracing
           settings.ci.discard_traces = discard_traces
           settings.ci.test_discovery_enabled = test_discovery_enabled
+          settings.ci.code_coverage_flags = code_coverage_flags
           settings.site = dd_site
           settings.api_key = api_key
 
@@ -97,6 +98,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
           allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_call_original
           allow(Datadog::CI::Remote::LibrarySettingsClient).to receive(:new).and_call_original
+          allow(Datadog::CI::CodeCoverage::Component).to receive(:new).and_call_original
 
           logger = spy(:logger)
           allow(Datadog).to receive(:logger).and_return(logger)
@@ -134,6 +136,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:itr_test_impact_analysis_use_allocation_tracing) { true }
         let(:discard_traces) { false }
         let(:test_discovery_enabled) { false }
+        let(:code_coverage_flags) { nil }
 
         context "is enabled" do
           let(:enabled) { true }
@@ -166,6 +169,18 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   hash_including(static_dependencies_tracking_enabled: false)
                 )
               end
+            end
+          end
+
+          context "when code coverage flags are configured" do
+            let(:agentless_enabled) { true }
+            let(:api_key) { "api_key" }
+            let(:code_coverage_flags) { "type:unit-tests,jvm-21" }
+
+            it "passes them to the code coverage component" do
+              expect(Datadog::CI::CodeCoverage::Component).to have_received(:new).with(
+                hash_including(flags: code_coverage_flags)
+              )
             end
           end
 
