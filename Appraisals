@@ -47,7 +47,7 @@ def self.with_rspec_gem(versions: 3)
   end
 end
 
-def self.with_simplecov_gem(versions: 1)
+def self.with_simplecov_gem(versions: 0..1)
   Array(versions).each do |v|
     next if v >= 1 && Gem::Version.new("3.2") > RUBY_VERSION
 
