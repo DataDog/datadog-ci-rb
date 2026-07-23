@@ -1,11 +1,11 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 27692d58f8aed71388bc51d70f774d3677ed6458
+  revision: 3d5a34c7b4b7c52c25a00c3cb54d882a6f0f17ea
   branch: master
   specs:
-    datadog (2.37.0.dev)
+    datadog (2.40.0.dev)
       cgi
-      datadog-ruby_core_source (~> 3.5, >= 3.5.2)
+      datadog-ruby_core_source (~> 3.5, >= 3.5.3)
       libdatadog (~> 36.0.0.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
@@ -65,14 +65,13 @@ GEM
     cucumber-wire (6.2.1)
       cucumber-core (~> 10.1, >= 10.1.0)
       cucumber-cucumber-expressions (~> 14.0, >= 14.0.0)
-    datadog-ruby_core_source (3.5.2)
+    datadog-ruby_core_source (3.5.3)
     debug (1.11.1)
       irb (~> 1.10)
       reline (>= 0.3.8)
     diff-lcs (1.6.2)
-    docile (1.4.1)
     drb (2.2.3)
-    erb (6.0.4)
+    erb (6.0.6)
     ffi (1.17.4-aarch64-linux-gnu)
     ffi (1.17.4-arm64-darwin)
     ffi (1.17.4-x86_64-linux-gnu)
@@ -139,12 +138,7 @@ GEM
     rspec-support (3.13.7)
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
-    simplecov (0.22.0)
-      docile (~> 1.1)
-      simplecov-html (~> 0.11)
-      simplecov_json_formatter (~> 0.1)
-    simplecov-html (0.13.2)
-    simplecov_json_formatter (0.1.4)
+    simplecov (1.0.2)
     sys-uname (1.5.1)
       ffi (~> 1.1)
       memoist3 (~> 1.0.0)
@@ -154,7 +148,7 @@ GEM
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
-    yard (0.9.44)
+    yard (0.9.45)
 
 PLATFORMS
   aarch64-linux
@@ -180,4 +174,4 @@ DEPENDENCIES
   yard
 
 BUNDLED WITH
-   2.7.2
+  4.0.16
