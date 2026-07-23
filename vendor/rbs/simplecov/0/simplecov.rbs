@@ -9,12 +9,12 @@ module SimpleCov
 end
 
 class SimpleCov::Result
-  def initialize: (untyped result) -> void
+  def initialize: (untyped result, ?not_loaded_files: untyped) -> void
 
   def covered_percent: () -> Float
 end
 
-class SimpleCov::UselessResultsRemover
+module SimpleCov::UselessResultsRemover
   def self.call: (untyped result) -> untyped
 end
 

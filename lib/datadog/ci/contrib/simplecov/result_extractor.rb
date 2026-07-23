@@ -22,7 +22,15 @@ module Datadog
                 ::SimpleCov::ResultAdapter.call(::Coverage.peek_result)
               )
 
-              ::SimpleCov::Result.new(add_not_loaded_files(result))
+              # SimpleCov 1.0 changed add_not_loaded_files to return a
+              # [coverage, not_loaded_files] tuple instead of a coverage hash.
+              processed = add_not_loaded_files(result)
+              if processed.is_a?(::Array)
+                coverage, not_loaded_files = processed
+                ::SimpleCov::Result.new(coverage, not_loaded_files: not_loaded_files)
+              else
+                ::SimpleCov::Result.new(processed)
+              end
             end
 
             def datadog_configuration

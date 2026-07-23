@@ -12,7 +12,7 @@ module Datadog
             return
           end
 
-          unless ::SimpleCov.running
+          unless simplecov_running?
             Datadog.logger.debug("SimpleCov is not running, skipping code coverage extraction")
             return
           end
@@ -30,6 +30,16 @@ module Datadog
 
           test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_LINES_PCT, result.covered_percent)
         end
+
+        # SimpleCov 1.0 removed the `running` accessor and relies on Ruby's
+        # Coverage.running? instead.
+        def self.simplecov_running?
+          return ::SimpleCov.running if ::SimpleCov.respond_to?(:running)
+          return false unless defined?(::Coverage)
+
+          ::Coverage.running?
+        end
+        private_class_method :simplecov_running?
       end
     end
   end

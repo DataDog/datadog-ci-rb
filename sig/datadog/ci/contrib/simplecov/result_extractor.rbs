@@ -1,5 +1,21 @@
 module Coverage
   def self.peek_result: () -> untyped
+
+  def self.running?: () -> bool
+end
+
+module SimpleCov
+  def self.running: () -> bool
+
+  def self.__dd_peek_result: () -> ::SimpleCov::Result?
+
+  module UselessResultsRemover
+    def self.call: (untyped result) -> untyped
+  end
+
+  class ResultAdapter
+    def self.call: (untyped result) -> untyped
+  end
 end
 
 module Datadog
@@ -10,11 +26,11 @@ module Datadog
           def self.included: (untyped base) -> untyped
 
           module ClassMethods
-            include ::SimpleCov
-
             def __dd_peek_result: () -> ::SimpleCov::Result?
 
             def datadog_configuration: () -> Datadog::CI::Contrib::Simplecov::Configuration::Settings
+
+            def add_not_loaded_files: (untyped result) -> untyped
           end
         end
       end
