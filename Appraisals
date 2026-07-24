@@ -270,7 +270,7 @@ with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2"
 with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_rails_gem(versions: 5..7)
 with_rails_gem(versions: 8) if Gem::Version.new("3.2") <= RUBY_VERSION
-with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..9)
+with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..10)
 with_selenium_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_timecop_gem
 with_cuprite_gem if Gem::Version.new("3.1") <= RUBY_VERSION
