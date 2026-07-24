@@ -230,7 +230,7 @@ def self.with_lograge_gem(rails_versions: 8, lograge_versions: 0)
   end
 end
 
-def self.with_semantic_logger_gem(rails_versions: 8, semantic_logger_versions: 4)
+def self.with_semantic_logger_gem(rails_versions: 8, semantic_logger_versions: 4..5)
   Array(rails_versions).each do |rails_v|
     Array(semantic_logger_versions).each do |semantic_logger_v|
       appraise "semantic_logger-#{semantic_logger_v}-rails-#{rails_v}" do
