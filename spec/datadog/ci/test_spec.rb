@@ -957,7 +957,7 @@ RSpec.describe Datadog::CI::Test do
         next if test.tracer_span.finished?
         test.finish
       end
-      allow(Time).to receive(:now).and_call_original
+      allow(Datadog::Core::Utils::Time).to receive(:now).and_call_original
     end
 
     def start_peek_duration_test
@@ -968,7 +968,7 @@ RSpec.describe Datadog::CI::Test do
     end
 
     def stub_time_now(*values)
-      allow(Time).to receive(:now).and_return(*values)
+      allow(Datadog::Core::Utils::Time).to receive(:now).and_return(*values)
     end
 
     context "while the test is running" do
