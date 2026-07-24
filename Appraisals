@@ -131,10 +131,12 @@ def self.with_ci_queue_rspec_gem(rspec_versions: 3, ci_queue_versions: 0)
   end
 end
 
-def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context_versions: 2, shoulda_matchers_versions: 6)
+def self.with_minitest_shoulda_context_gem(minitest_versions: 5, shoulda_context_versions: 2, shoulda_matchers_versions: 6..7)
   Array(minitest_versions).each do |minitest_v|
     Array(shoulda_context_versions).each do |shoulda_context_v|
       Array(shoulda_matchers_versions).each do |shoulda_matchers_v|
+        next if shoulda_matchers_v >= 7 && Gem::Version.new("3.2") > RUBY_VERSION
+
         appraise "minitest-#{minitest_v}-shoulda-context-#{shoulda_context_v}-shoulda-matchers-#{shoulda_matchers_v}" do
           gem "minitest", "~> #{minitest_v}"
           gem "shoulda-context", "~> #{shoulda_context_v}"
