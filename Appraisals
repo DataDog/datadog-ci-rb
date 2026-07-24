@@ -162,6 +162,8 @@ end
 
 def self.with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7, rspec_versions: 3)
   Array(knapsack_pro_versions).each do |knapsack_pro_v|
+    next if knapsack_pro_v >= 9 && Gem::Version.new("3.0") > RUBY_VERSION
+
     Array(rspec_versions).each do |rspec_v|
       appraise "knapsack_pro-#{knapsack_pro_v}-rspec-#{rspec_v}" do
         gem "knapsack_pro", "~> #{knapsack_pro_v}"
@@ -268,7 +270,7 @@ with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2"
 with_minitest_shoulda_context_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_rails_gem(versions: 5..7)
 with_rails_gem(versions: 8) if Gem::Version.new("3.2") <= RUBY_VERSION
-with_knapsack_pro_rspec_gem(knapsack_pro_versions: 7..8)
+with_knapsack_pro_rspec_gem(knapsack_pro_versions: [7, 8, 10])
 with_selenium_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_timecop_gem
 with_cuprite_gem if Gem::Version.new("3.1") <= RUBY_VERSION
