@@ -242,14 +242,24 @@ def self.with_semantic_logger_gem(rails_versions: 8, semantic_logger_versions: 4
   end
 end
 
-def self.with_rswag_gem(rswag_versions: 2, rails_versions: 7)
+def self.with_rswag_gem(rswag_versions: 2, rspec_rails_versions: 7..8, rails_versions: 7)
   Array(rswag_versions).each do |rswag_v|
-    Array(rails_versions).each do |rails_v|
-      appraise "rswag-#{rswag_v}-rails-#{rails_v}" do
-        gem "rspec", "~> 3"
-        gem "rspec-rails", "~> 7"
-        gem "rswag-specs", "~> #{rswag_v}"
-        gem "rails", "~> #{rails_v}"
+    Array(rspec_rails_versions).each do |rspec_rails_v|
+      next if rspec_rails_v >= 8 && Gem::Version.new("3.1") > RUBY_VERSION
+
+      Array(rails_versions).each do |rails_v|
+        appraisal_name = if rspec_rails_v == 7
+          "rswag-#{rswag_v}-rails-#{rails_v}"
+        else
+          "rswag-#{rswag_v}-rspec-rails-#{rspec_rails_v}-rails-#{rails_v}"
+        end
+
+        appraise appraisal_name do
+          gem "rspec", "~> 3"
+          gem "rspec-rails", "~> #{rspec_rails_v}"
+          gem "rswag-specs", "~> #{rswag_v}"
+          gem "rails", "~> #{rails_v}"
+        end
       end
     end
   end
