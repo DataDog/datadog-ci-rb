@@ -13,6 +13,8 @@ module Datadog
 
         TAG_PIPELINE_NAME: String
 
+        TAG_PIPELINE_DISPLAY_NAME: String
+
         TAG_PIPELINE_NUMBER: String
 
         TAG_PIPELINE_URL: String
