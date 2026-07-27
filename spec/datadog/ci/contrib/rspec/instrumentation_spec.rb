@@ -821,6 +821,46 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
+  context "with externally collected file coverage" do
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+    end
+
+    it "adds non-Ruby files to the active test's coverage" do
+      pending "external file coverage ingestion is not implemented"
+
+      frontend_files = [
+        "app/frontend/components/user_profile.tsx",
+        "app/frontend/templates/user_profile.html"
+      ]
+
+      with_new_rspec_environment do
+        RSpec.describe "User profile feature" do
+          before do
+            Datadog::CI.active_test&.add_coverage(frontend_files)
+          end
+
+          it "renders the user profile" do
+            # Capybara drives the browser here.
+          end
+        end.run
+      end
+
+      test_coverage = find_coverage_for_test(first_test_span)
+      expected_frontend_files = frontend_files.map { |path| File.join(__dir__, path) }
+
+      expect(test_coverage.coverage.keys).to include(*expected_frontend_files)
+    end
+  end
+
   context "with context coverage from before(:context) hooks" do
     before do
       allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)

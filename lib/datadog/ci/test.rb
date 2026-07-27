@@ -157,6 +157,17 @@ module Datadog
         end
       end
 
+      # Adds externally collected file coverage to this test.
+      #
+      # Paths must be relative to the root of the Git repository. This API can be
+      # used to associate files from non-instrumented languages with the active
+      # test so Test Impact Analysis can account for them.
+      #
+      # @param [Enumerable<String>] file_paths paths covered by this test
+      # @return [void]
+      def add_coverage(file_paths)
+      end
+
       # Sets the status of the span to "pass".
       # @return [void]
       def passed!
