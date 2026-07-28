@@ -122,7 +122,8 @@ module Datadog
             end
 
             # @type var response: Datadog::CI::TestTracing::KnownTests::Response
-            total_request_ms += response.http_response.duration_ms
+            http_response = response.http_response
+            total_request_ms += http_response.duration_ms if http_response
 
             page_tests = response.tests
             result.merge(page_tests)
@@ -137,7 +138,7 @@ module Datadog
             page_number += 1
           end
 
-          fetch_duration_ms = (Core::Utils::Time.get_time - fetch_start_time).to_f * 1000.0
+          fetch_duration_ms = (Core::Utils::Time.get_time - fetch_start_time) * 1000.0
 
           Datadog.logger.debug { "Finished fetching known tests: #{result.size} tests total from #{page_number} page(s)" }
 
