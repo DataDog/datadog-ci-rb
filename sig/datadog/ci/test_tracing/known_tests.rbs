@@ -10,6 +10,8 @@ module Datadog
           @http_response: Datadog::CI::Transport::Adapters::Net::Response?
           @json: Hash[String, untyped]?
 
+          attr_reader http_response: Datadog::CI::Transport::Adapters::Net::Response?
+
           def self.from_http_response: (Datadog::CI::Transport::Adapters::Net::Response http_response) -> Response
 
           def self.from_json: (Hash[String, untyped] json) -> Response
