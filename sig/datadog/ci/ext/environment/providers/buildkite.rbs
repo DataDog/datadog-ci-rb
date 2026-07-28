@@ -14,6 +14,8 @@ module Datadog
 
             def pipeline_name: () -> String?
 
+            def pipeline_display_name: () -> String?
+
             def pipeline_number: () -> String?
 
             def pipeline_url: () -> String?

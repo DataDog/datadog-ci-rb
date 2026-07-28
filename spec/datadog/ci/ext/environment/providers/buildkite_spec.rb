@@ -16,6 +16,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Buildkite do
           "BUILDKITE_COMMIT" => "b9f0fb3fdbb94c9d24b2c75b49663122a529e123",
           "BUILDKITE_JOB_ID" => "buildkite-job-id",
           "BUILDKITE_MESSAGE" => "buildkite-git-commit-message",
+          "BUILDKITE_PIPELINE_NAME" => "My Pipeline",
           "BUILDKITE_PIPELINE_SLUG" => "buildkite-pipeline-name",
           "BUILDKITE_REPO" => "http://hostname.com/repo.git",
           "BUILDKITE_TAG" => "",
@@ -32,6 +33,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Buildkite do
           "ci.job.url" => "https://buildkite-build-url.com#buildkite-job-id",
           "ci.pipeline.id" => "buildkite-pipeline-id",
           "ci.pipeline.name" => "buildkite-pipeline-name",
+          "ci.pipeline.display_name" => "My Pipeline",
           "ci.pipeline.number" => "buildkite-pipeline-number",
           "ci.pipeline.url" => "https://buildkite-build-url.com",
           "ci.provider.name" => "buildkite",
@@ -48,6 +50,23 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::Buildkite do
 
       it "matches CI tags" do
         is_expected.to eq(expected_tags)
+      end
+    end
+
+    context "without BUILDKITE_PIPELINE_NAME" do
+      let(:env) do
+        {
+          "BUILDKITE" => "true",
+          "BUILDKITE_PIPELINE_SLUG" => "buildkite-pipeline-name"
+        }
+      end
+
+      it "omits ci.pipeline.display_name from the resulting tags" do
+        expect(extracted_tags).not_to have_key("ci.pipeline.display_name")
+      end
+
+      it "does not change ci.pipeline.name" do
+        expect(extracted_tags["ci.pipeline.name"]).to eq("buildkite-pipeline-name")
       end
     end
   end

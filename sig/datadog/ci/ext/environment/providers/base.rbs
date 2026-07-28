@@ -22,6 +22,8 @@ module Datadog
 
             def pipeline_name: () -> nil
 
+            def pipeline_display_name: () -> nil
+
             def pipeline_number: () -> nil
 
             def pipeline_url: () -> nil
