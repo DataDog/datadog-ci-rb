@@ -7,6 +7,10 @@ module Datadog
             def ==: (_TestCase other) -> bool
 
             def describe_to: (Object receiver) -> untyped
+
+            def eql?: (untyped other) -> boolish
+
+            def hash: () -> Integer
           end
 
           interface _TestCaseFinishedEvent
