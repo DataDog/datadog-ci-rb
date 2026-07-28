@@ -36,6 +36,10 @@ module Datadog
               env["BUILDKITE_PIPELINE_SLUG"]
             end
 
+            def pipeline_display_name
+              env["BUILDKITE_PIPELINE_NAME"]
+            end
+
             def pipeline_number
               env["BUILDKITE_BUILD_NUMBER"]
             end

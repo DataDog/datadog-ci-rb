@@ -33,6 +33,9 @@ module Datadog
             def pipeline_name
             end
 
+            def pipeline_display_name
+            end
+
             def pipeline_number
             end
 

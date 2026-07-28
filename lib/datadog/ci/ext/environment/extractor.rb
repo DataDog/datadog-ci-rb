@@ -28,6 +28,7 @@ module Datadog
               Environment::TAG_JOB_URL => @provider.job_url,
               Environment::TAG_PIPELINE_ID => @provider.pipeline_id,
               Environment::TAG_PIPELINE_NAME => @provider.pipeline_name,
+              Environment::TAG_PIPELINE_DISPLAY_NAME => @provider.pipeline_display_name,
               Environment::TAG_PIPELINE_NUMBER => @provider.pipeline_number,
               Environment::TAG_PIPELINE_URL => @provider.pipeline_url,
               Environment::TAG_PROVIDER_NAME => @provider.provider_name,

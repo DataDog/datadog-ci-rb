@@ -18,6 +18,7 @@ module Datadog
         TAG_JOB_URL = "ci.job.url"
         TAG_PIPELINE_ID = "ci.pipeline.id"
         TAG_PIPELINE_NAME = "ci.pipeline.name"
+        TAG_PIPELINE_DISPLAY_NAME = "ci.pipeline.display_name"
         TAG_PIPELINE_NUMBER = "ci.pipeline.number"
         TAG_PIPELINE_URL = "ci.pipeline.url"
         TAG_PROVIDER_NAME = "ci.provider.name"
