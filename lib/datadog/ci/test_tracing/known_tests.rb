@@ -102,7 +102,7 @@ module Datadog
           page_state = nil
           page_number = 1
 
-          fetch_start_time = Core::Utils::Time.get_time
+          fetch_start_time = Core::Utils::Time.get_time(:float_millisecond)
 
           loop do
             Datadog.logger.debug { "Fetching known tests page ##{page_number}#{" with cursor" if page_state}" }
@@ -138,7 +138,8 @@ module Datadog
             page_number += 1
           end
 
-          fetch_duration_ms = (Core::Utils::Time.get_time - fetch_start_time) * 1000.0
+          fetch_duration_ms = Core::Utils::Time.get_time(:float_millisecond) - fetch_start_time
+          # @type var fetch_duration_ms: Float
 
           Datadog.logger.debug { "Finished fetching known tests: #{result.size} tests total from #{page_number} page(s)" }
 

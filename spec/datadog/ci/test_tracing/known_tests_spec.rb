@@ -319,12 +319,18 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
           it_behaves_like "emits telemetry metric", :distribution, "known_tests.total_fetch_ms"
           it_behaves_like "emits telemetry metric", :distribution, "known_tests.total_request_ms"
 
-          it "emits pages_fetched metric with correct count" do
+          it "emits aggregate pagination metrics with correct values" do
+            allow(Datadog::Core::Utils::Time).to receive(:get_time).and_call_original
+            allow(Datadog::Core::Utils::Time)
+              .to receive(:get_time)
+              .with(:float_millisecond)
+              .and_return(100.0, 125.0)
+
             response
 
-            metric = telemetry_metric(:distribution, "known_tests.pages_fetched")
-            expect(metric).not_to be_nil
-            expect(metric.value).to eq(2.0)
+            expect(telemetry_metric(:distribution, "known_tests.pages_fetched").value).to eq(2.0)
+            expect(telemetry_metric(:distribution, "known_tests.total_fetch_ms").value).to eq(25.0)
+            expect(telemetry_metric(:distribution, "known_tests.total_request_ms").value).to eq(2.0)
           end
         end
 
