@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 62d73e322437f35ba492e3c827c8fce5722c1be4
+  revision: 5af1f3e4607f6d23a43a1606fb6d28aeffec4e07
   branch: master
   specs:
     datadog (2.40.0.dev)
@@ -79,7 +79,7 @@ GEM
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
-    msgpack (1.8.3)
+    msgpack (1.8.4)
     os (1.1.4)
     ostruct (0.6.3)
     pp (0.6.4)
