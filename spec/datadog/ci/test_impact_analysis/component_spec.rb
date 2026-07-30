@@ -617,6 +617,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         expect(subject.coverage).to include(custom_file => true)
         expect(writer).to have_received(:write).with(subject)
       end
+
+      it_behaves_like "emits telemetry metric",
+        :distribution,
+        Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES,
+        1.0
     end
   end
 

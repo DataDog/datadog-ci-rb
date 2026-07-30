@@ -190,17 +190,24 @@ module Datadog
       def add_impacted_files(file_paths)
         raise ArgumentError, "file_paths must be an Array" unless file_paths.is_a?(Array)
 
-        impacted_files = mutable_custom_impacted_files
         new_files = file_paths.uniq
+        if @custom_impacted_files.nil?
+          if new_files.size > MAX_IMPACTED_FILES
+            new_files = new_files.first(MAX_IMPACTED_FILES)
+            warn_impacted_files_limit
+          end
+
+          @custom_impacted_files = new_files
+          return
+        end
+
+        impacted_files = mutable_custom_impacted_files
         new_files -= impacted_files unless impacted_files.empty?
 
         remaining_capacity = MAX_IMPACTED_FILES - impacted_files.size
         if new_files.size > remaining_capacity
           new_files = new_files.first(remaining_capacity)
-          Datadog.logger.warn(
-            "Test Impact Analysis supports at most #{MAX_IMPACTED_FILES} impacted files per test; " \
-            "additional files will be ignored"
-          )
+          warn_impacted_files_limit
         end
 
         impacted_files.concat(new_files)
@@ -354,6 +361,13 @@ module Datadog
           @custom_impacted_files = impacted_files
         end
         impacted_files
+      end
+
+      def warn_impacted_files_limit
+        Datadog.logger.warn(
+          "Test Impact Analysis supports at most #{MAX_IMPACTED_FILES} impacted files per test; " \
+          "additional files will be ignored"
+        )
       end
 
       def compute_final_status(status)

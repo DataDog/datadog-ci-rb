@@ -50,6 +50,8 @@ module Datadog
 
       def mutable_custom_impacted_files: () -> Array[String]
 
+      def warn_impacted_files_limit: () -> void
+
       def compute_final_status: (String status) -> String
 
       def record_test_result: (String datadog_status) -> void

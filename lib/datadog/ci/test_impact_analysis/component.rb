@@ -238,16 +238,13 @@ module Datadog
           context_ids = test.context_ids || []
           merge_context_coverages_into_test(coverage, context_ids)
 
-          test.impacted_files.each do |file_path|
-            coverage[file_path] = true
-          end
-
           write_coverage_event(
             test_id: test.id.to_s,
             test_suite_id: test.test_suite_id.to_s,
             test_session_id: test.test_session_id.to_s,
             source_file: test.source_file,
-            coverage: coverage
+            coverage: coverage,
+            impacted_files: test.impacted_files
           )
         end
 
@@ -451,11 +448,16 @@ module Datadog
           Datadog::CI::SourceCode::StaticDependencies.populate!(Git::LocalRepository.root, @bundle_location)
         end
 
-        def enrich_coverage_with_static_dependencies(coverage)
+        def enrich_coverage_with_static_dependencies(coverage, impacted_files)
           return unless @static_dependencies_tracking_enabled
 
           static_dependencies_map = {}
           coverage.keys.each do |file|
+            static_dependencies_map.merge!(
+              Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
+            )
+          end
+          impacted_files.each do |file|
             static_dependencies_map.merge!(
               Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
             )
@@ -470,24 +472,32 @@ module Datadog
           coverage[absolute_test_source_file_path] = true
         end
 
-        def write_coverage_event(test_id:, test_suite_id:, test_session_id:, source_file:, coverage:)
+        def write_coverage_event(
+          test_id:,
+          test_suite_id:,
+          test_session_id:,
+          source_file:,
+          coverage:,
+          impacted_files: Coverage::Event::EMPTY_IMPACTED_FILES
+        )
           coverage ||= {}
-          if coverage.empty?
+          if coverage.empty? && impacted_files.empty?
             Telemetry.code_coverage_is_empty
             return
           end
 
           ensure_test_source_covered(source_file, coverage) unless source_file.nil?
 
-          enrich_coverage_with_static_dependencies(coverage)
+          enrich_coverage_with_static_dependencies(coverage, impacted_files)
 
-          Telemetry.code_coverage_files(coverage.size)
+          Telemetry.code_coverage_files(coverage.size + impacted_files.size)
 
           coverage_event = Coverage::Event.new(
             test_id: test_id,
             test_suite_id: test_suite_id,
             test_session_id: test_session_id,
-            coverage: coverage
+            coverage: coverage,
+            impacted_files: impacted_files
           )
 
           Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }

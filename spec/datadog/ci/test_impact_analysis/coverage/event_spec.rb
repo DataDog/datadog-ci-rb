@@ -55,6 +55,31 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
     end
   end
 
+  describe "#coverage" do
+    subject(:event) do
+      described_class.new(
+        test_id: test_id,
+        test_suite_id: test_suite_id,
+        test_session_id: test_session_id,
+        coverage: coverage,
+        impacted_files: impacted_files
+      )
+    end
+
+    let(:impacted_files) { ["file.js", "file.rb"] }
+
+    it "defers merging impacted files until coverage is read, including after serialization" do
+      expect(coverage).to eq("file.rb" => true)
+      event.to_msgpack
+      expect(coverage).to eq("file.rb" => true)
+
+      expect(event.coverage).to eq(
+        "file.rb" => true,
+        "file.js" => true
+      )
+    end
+  end
+
   describe "#to_msgpack" do
     include_context "msgpack serializer" do
       subject do
@@ -185,6 +210,32 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
             "files" => [
               {"filename" => "file.rb"},
               {"filename" => "file2.rb"}
+            ]
+          }
+        )
+      end
+    end
+
+    context "with impacted files" do
+      subject do
+        described_class.new(
+          test_id: test_id,
+          test_suite_id: test_suite_id,
+          test_session_id: test_session_id,
+          coverage: coverage,
+          impacted_files: ["file.js", "file.rb"]
+        )
+      end
+
+      it "includes impacted files without duplicating existing coverage" do
+        expect(msgpack_json).to eq(
+          {
+            "test_session_id" => 3,
+            "test_suite_id" => 2,
+            "span_id" => 1,
+            "files" => [
+              {"filename" => "file.rb"},
+              {"filename" => "file.js"}
             ]
           }
         )

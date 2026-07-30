@@ -3,6 +3,8 @@ module Datadog
     module TestImpactAnalysis
       module Coverage
         class Event
+          EMPTY_IMPACTED_FILES: Array[String]
+
           @test_id: String?
 
           @test_session_id: String
@@ -11,15 +13,17 @@ module Datadog
 
           @coverage: Hash[String, untyped]
 
+          @impacted_files: Array[String]
+
           attr_reader test_id: String?
 
           attr_reader test_session_id: String
 
           attr_reader test_suite_id: String
 
-          attr_reader coverage: Hash[String, untyped]
+          def coverage: () -> Hash[String, untyped]
 
-          def initialize: (test_id: String?, test_suite_id: String, test_session_id: String, coverage: Hash[String, untyped]) -> void
+          def initialize: (test_id: String?, test_suite_id: String, test_session_id: String, coverage: Hash[String, untyped], ?impacted_files: Array[String]) -> void
 
           def valid?: () -> bool
 

@@ -9,20 +9,41 @@ module Datadog
     module TestImpactAnalysis
       module Coverage
         class Event
-          attr_reader :test_id, :test_suite_id, :test_session_id, :coverage
+          EMPTY_IMPACTED_FILES = [].freeze
 
-          def initialize(test_id:, test_suite_id:, test_session_id:, coverage:)
+          attr_reader :test_id, :test_suite_id, :test_session_id
+
+          def initialize(
+            test_id:,
+            test_suite_id:,
+            test_session_id:,
+            coverage:,
+            impacted_files: EMPTY_IMPACTED_FILES
+          )
             @test_id = test_id
             @test_suite_id = test_suite_id
             @test_session_id = test_session_id
             @coverage = coverage
+            @impacted_files = impacted_files
+          end
+
+          def coverage
+            unless @impacted_files.empty?
+              @impacted_files.each do |file_path|
+                @coverage[file_path] = true
+              end
+              @impacted_files = EMPTY_IMPACTED_FILES
+            end
+
+            @coverage
           end
 
           def valid?
             valid = true
 
             %i[test_suite_id test_session_id coverage].each do |key|
-              next unless send(key).nil?
+              value = (key == :coverage) ? @coverage : send(key)
+              next unless value.nil?
 
               Datadog.logger.warn("citestcov event is invalid: [#{key}] is nil. Event: #{self}")
               valid = false
@@ -47,11 +68,22 @@ module Datadog
               packer.write(test_id.to_i)
             end
 
-            files = coverage.keys
-            packer.write("files")
-            packer.write_array_header(files.size)
+            impacted_files = if @impacted_files.empty?
+              EMPTY_IMPACTED_FILES
+            else
+              @impacted_files.reject { |filename| @coverage.key?(filename) }
+            end
 
-            files.each do |filename|
+            packer.write("files")
+            packer.write_array_header(@coverage.size + impacted_files.size)
+
+            @coverage.each_key do |filename|
+              packer.write_map_header(1)
+              packer.write("filename")
+              packer.write(Git::LocalRepository.relative_to_root(filename))
+            end
+
+            impacted_files.each do |filename|
               packer.write_map_header(1)
               packer.write("filename")
               packer.write(Git::LocalRepository.relative_to_root(filename))
@@ -59,7 +91,8 @@ module Datadog
           end
 
           def to_s
-            "Coverage::Event[test_id=#{test_id}, test_suite_id=#{test_suite_id}, test_session_id=#{test_session_id}, coverage=#{coverage}]"
+            coverage_value = @coverage.nil? ? nil : coverage
+            "Coverage::Event[test_id=#{test_id}, test_suite_id=#{test_suite_id}, test_session_id=#{test_session_id}, coverage=#{coverage_value}]"
           end
 
           # Return a human readable version of the event
@@ -70,7 +103,7 @@ module Datadog
               q.text "Test Suite ID: #{@test_suite_id}\n"
               q.text "Test Session ID: #{@test_session_id}\n"
               q.group(2, "Files: [", "]\n") do
-                q.seplist @coverage.keys.each do |key|
+                q.seplist coverage.keys.each do |key|
                   q.text key
                 end
               end
