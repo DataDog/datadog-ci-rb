@@ -28,9 +28,28 @@ module Datadog
         @final_statuses_per_test = {}
       end
 
+      # Adds files that Test Impact Analysis should consider capable of
+      # impacting every test in this suite.
+      #
+      # Impacted files must be added before any test in this suite finishes.
+      #
+      # @raise [RuntimeError] if a test in this suite has already finished
       # @see TestImpactAnalysis::Impactable#add_impacted_files
       def add_impacted_files(file_paths)
-        synchronize { super }
+        synchronize do
+          unless @execution_stats_per_test.empty? && @final_statuses_per_test.empty?
+            raise "Impacted files must be added to a test suite before any test in the suite finishes"
+          end
+
+          super
+        end
+      end
+
+      # Records impacted files collected for a finished test in this suite.
+      #
+      # @internal
+      def record_test_impacted_files(file_paths)
+        synchronize { add_impacted_files_unchecked(file_paths) }
       end
 
       # @see TestImpactAnalysis::Impactable#impacted_files

@@ -220,7 +220,7 @@ module Datadog
           test_suite = test.test_suite
           if suite_skipping_mode?
             test_impacted_files = test.impacted_files
-            test_suite&.add_impacted_files(test_impacted_files) unless test_impacted_files.empty?
+            test_suite&.record_test_impacted_files(test_impacted_files) unless test_impacted_files.empty?
             return
           end
 

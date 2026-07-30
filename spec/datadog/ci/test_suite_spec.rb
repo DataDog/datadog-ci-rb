@@ -48,6 +48,28 @@ RSpec.describe Datadog::CI::TestSuite do
         "additional files will be ignored"
       )
     end
+
+    it "rejects files added after a test has finished" do
+      ci_test_suite.add_impacted_files(["app/frontend/shared.js"])
+      ci_test_suite.record_test_result("test", Datadog::CI::Ext::Test::Status::PASS)
+
+      expect do
+        ci_test_suite.add_impacted_files(["app/frontend/late.js"])
+      end.to raise_error(
+        RuntimeError,
+        "Impacted files must be added to a test suite before any test in the suite finishes"
+      )
+
+      expect(ci_test_suite.impacted_files).to eq(["app/frontend/shared.js"])
+    end
+
+    it "records impacted files from finished tests for suite skipping" do
+      ci_test_suite.record_test_result("test", Datadog::CI::Ext::Test::Status::PASS)
+
+      ci_test_suite.record_test_impacted_files(["app/frontend/test.js"])
+
+      expect(ci_test_suite.impacted_files).to eq(["app/frontend/test.js"])
+    end
   end
 
   describe "#should_skip?" do

@@ -9,6 +9,8 @@ module Datadog
 
       def record_test_result: (String test_id, String datadog_test_status) -> void
 
+      def record_test_impacted_files: (Array[String] file_paths) -> void
+
       def record_test_final_status: (String test_id, String final_status) -> void
 
       def any_passed?: () -> bool

@@ -41,36 +41,15 @@ module Datadog
         # A test or test suite can have at most 10,000 unique impacted files.
         # Additional files are ignored and a warning is logged.
         #
+        # Test suite impacted files must be added before any test in the suite
+        # finishes.
+        #
         # @param [Array<String>] file_paths paths that can impact the test or suite
         # @return [void]
         def add_impacted_files(file_paths)
           raise ArgumentError, "file_paths must be an Array" unless file_paths.is_a?(Array)
 
-          if @custom_impacted_files.nil?
-            new_files = file_paths.uniq
-            if new_files.size > MAX_IMPACTED_FILES
-              new_files = new_files.first(MAX_IMPACTED_FILES)
-              warn_impacted_files_limit
-            end
-
-            @custom_impacted_files = new_files
-          else
-            impacted_files = mutable_custom_impacted_files
-            impacted_files_index = custom_impacted_files_index
-            file_paths.each do |file_path|
-              next if impacted_files_index.key?(file_path)
-
-              if impacted_files.size >= MAX_IMPACTED_FILES
-                warn_impacted_files_limit
-                break
-              end
-
-              impacted_files << file_path
-              impacted_files_index[file_path] = true
-            end
-          end
-
-          nil
+          add_impacted_files_unchecked(file_paths)
         end
 
         # Returns files explicitly marked as impacting this test or suite for
@@ -102,6 +81,34 @@ module Datadog
         end
 
         private
+
+        def add_impacted_files_unchecked(file_paths)
+          if @custom_impacted_files.nil?
+            new_files = file_paths.uniq
+            if new_files.size > MAX_IMPACTED_FILES
+              new_files = new_files.first(MAX_IMPACTED_FILES)
+              warn_impacted_files_limit
+            end
+
+            @custom_impacted_files = new_files
+          else
+            impacted_files = mutable_custom_impacted_files
+            impacted_files_index = custom_impacted_files_index
+            file_paths.each do |file_path|
+              next if impacted_files_index.key?(file_path)
+
+              if impacted_files.size >= MAX_IMPACTED_FILES
+                warn_impacted_files_limit
+                break
+              end
+
+              impacted_files << file_path
+              impacted_files_index[file_path] = true
+            end
+          end
+
+          nil
+        end
 
         def custom_impacted_files
           @custom_impacted_files ||= []

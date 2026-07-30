@@ -941,6 +941,32 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_coverage.inspect_coverage).not_to include(cleared_file)
     end
 
+    it "rejects suite impacted files added after a test finishes" do
+      late_addition_error = nil
+
+      with_new_rspec_environment do
+        RSpec.describe "User profile feature" do
+          after(:context) do
+            Datadog::CI.active_test_suite.add_impacted_files(
+              ["app/frontend/late_suite_file.js"]
+            )
+          rescue => e
+            late_addition_error = e
+          end
+
+          it("renders the user profile") {}
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+        ::RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+      end
+
+      expect(late_addition_error).to be_a(RuntimeError)
+      expect(late_addition_error.message).to eq(
+        "Impacted files must be added to a test suite before any test in the suite finishes"
+      )
+    end
+
     context "in suite skipping mode" do
       let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
 

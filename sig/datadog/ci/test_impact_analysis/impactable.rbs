@@ -15,6 +15,8 @@ module Datadog
 
         private
 
+        def add_impacted_files_unchecked: (Array[String] file_paths) -> void
+
         def custom_impacted_files: () -> Array[String]
 
         def mutable_custom_impacted_files: () -> Array[String]
