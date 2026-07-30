@@ -10,13 +10,14 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
       test_id: test_id,
       test_suite_id: test_suite_id,
       test_session_id: test_session_id,
-      coverage: coverage
+      files: files
     )
   end
   let(:test_id) { "1" }
   let(:test_suite_id) { "2" }
   let(:test_session_id) { "3" }
   let(:coverage) { {"file.rb" => true} }
+  let(:files) { Datadog::CI::TestImpactAnalysis::Coverage::Files.new(coverage) }
 
   describe "#valid?" do
     it { is_expected.to be_valid }
@@ -45,10 +46,10 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
       it { is_expected.not_to be_valid }
     end
 
-    context "when coverage is nil" do
-      let(:coverage) { nil }
+    context "when files are nil" do
+      let(:files) { nil }
       before do
-        expect(Datadog.logger).to receive(:warn).with(/citestcov event is invalid: \[coverage\] is nil. Event: .*/)
+        expect(Datadog.logger).to receive(:warn).with(/citestcov event is invalid: \[files\] is nil. Event: .*/)
       end
 
       it { is_expected.not_to be_valid }
@@ -61,12 +62,16 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         test_id: test_id,
         test_suite_id: test_suite_id,
         test_session_id: test_session_id,
-        coverage: coverage,
-        custom_impacted_files: custom_impacted_files
+        files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
+          coverage,
+          custom_impacted_files,
+          suite_impacted_files
+        )
       )
     end
 
     let(:custom_impacted_files) { ["file.js", "file.rb"] }
+    let(:suite_impacted_files) { ["suite.js", "file.js"] }
 
     it "defers merging impacted files until coverage is read, including after serialization" do
       expect(coverage).to eq("file.rb" => true)
@@ -75,7 +80,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
 
       expect(event.inspect_coverage).to eq(
         "file.rb" => true,
-        "file.js" => true
+        "file.js" => true,
+        "suite.js" => true
       )
     end
   end
@@ -87,7 +93,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
           test_id: test_id,
           test_suite_id: test_suite_id,
           test_session_id: test_session_id,
-          coverage: coverage
+          files: files
         )
       end
     end
@@ -222,8 +228,10 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
           test_id: test_id,
           test_suite_id: test_suite_id,
           test_session_id: test_session_id,
-          coverage: coverage,
-          custom_impacted_files: ["file.js", "file.rb"]
+          files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
+            coverage,
+            ["file.js", "file.rb"]
+          )
         )
       end
 
@@ -238,6 +246,73 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
               {"filename" => "file.js"}
             ]
           }
+        )
+      end
+    end
+
+    context "with test and suite impacted files" do
+      subject do
+        described_class.new(
+          test_id: test_id,
+          test_suite_id: test_suite_id,
+          test_session_id: test_session_id,
+          files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
+            coverage,
+            ["test.js", "shared.js"],
+            ["suite.js", "shared.js", "file.rb"]
+          )
+        )
+      end
+
+      it "deduplicates files across native, test, and suite coverage" do
+        expect(msgpack_json.fetch("files")).to contain_exactly(
+          {"filename" => "file.rb"},
+          {"filename" => "test.js"},
+          {"filename" => "shared.js"},
+          {"filename" => "suite.js"}
+        )
+      end
+    end
+
+    context "when native and impacted paths normalize to the same file" do
+      let(:repository_relative_file) { "app/models/user.rb" }
+      let(:absolute_file) do
+        File.join(Datadog::CI::Git::LocalRepository.root, repository_relative_file)
+      end
+
+      subject do
+        described_class.new(
+          test_id: test_id,
+          test_suite_id: test_suite_id,
+          test_session_id: test_session_id,
+          files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
+            {absolute_file => true},
+            [repository_relative_file],
+            [absolute_file]
+          )
+        )
+      end
+
+      it "normalizes and emits the repository-relative path once" do
+        expect(msgpack_json.fetch("files")).to eq(
+          [{"filename" => repository_relative_file}]
+        )
+      end
+
+      it "also deduplicates relative native coverage against an absolute impacted path" do
+        event = described_class.new(
+          test_id: test_id,
+          test_suite_id: test_suite_id,
+          test_session_id: test_session_id,
+          files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
+            {repository_relative_file => true},
+            [absolute_file]
+          )
+        )
+
+        payload = MessagePack.unpack(MessagePack.pack(event))
+        expect(payload.fetch("files")).to eq(
+          [{"filename" => repository_relative_file}]
         )
       end
     end

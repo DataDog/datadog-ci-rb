@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-# Measures the synchronous per-test TIA lifecycle through the coverage-writer
-# handoff. Coverage serialization and transport run asynchronously in production
-# and are intentionally excluded.
+# Measures the TIA lifecycle and MessagePack serialization CPU cost. Production
+# performs serialization on a writer thread, but it still consumes CPU in the
+# same Ruby process.
 
 require "benchmark"
 
@@ -10,6 +10,7 @@ $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 
 require "datadog"
 require "datadog/ci/test"
+require "datadog/ci/test_suite"
 require "datadog/ci/test_impact_analysis/component"
 require "datadog/tracing/span_operation"
 
@@ -28,7 +29,7 @@ class BenchmarkRemoteConfiguration
 end
 
 class BenchmarkCoverageWriter
-  attr_reader :events_count, :last_event
+  attr_reader :events_count, :last_payload
 
   def initialize
     @events_count = 0
@@ -36,7 +37,7 @@ class BenchmarkCoverageWriter
 
   def write(event)
     @events_count += 1
-    @last_event = event
+    @last_payload = MessagePack.pack(event)
   end
 end
 
@@ -54,15 +55,24 @@ class BenchmarkTestContext
   end
 end
 
+class BenchmarkTest < Datadog::CI::Test
+  attr_accessor :benchmark_test_suite
+
+  def test_suite
+    benchmark_test_suite
+  end
+end
+
 def execute_test_body
   true
 end
 
-def build_test_impact_analysis(coverage_writer)
+def build_test_impact_analysis(coverage_writer, test_skipping_mode)
   test_impact_analysis = Datadog::CI::TestImpactAnalysis::Component.new(
     dd_env: "benchmark",
     coverage_writer: coverage_writer,
-    enabled: true
+    enabled: true,
+    test_skipping_mode: test_skipping_mode
   )
   test_impact_analysis.configure(BenchmarkRemoteConfiguration.new, BenchmarkTestSession.new)
 
@@ -73,79 +83,226 @@ def build_test_impact_analysis(coverage_writer)
   test_impact_analysis
 end
 
-def trace_tests(iterations, impacted_files, test_impact_analysis, coverage_writer)
+def build_test_suite(suite_impacted_files)
+  tracer_span = Datadog::Tracing::SpanOperation.new("benchmark suite")
+  tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "1")
+  test_suite = Datadog::CI::TestSuite.new(tracer_span)
+  test_suite.add_impacted_files(suite_impacted_files) unless suite_impacted_files.empty?
+  test_suite
+end
+
+def build_test(test_suite, test_impacted_files)
+  tracer_span = Datadog::Tracing::SpanOperation.new("benchmark test")
+  test = BenchmarkTest.new(tracer_span)
+  test.benchmark_test_suite = test_suite
+  test.set_tag(Datadog::CI::Ext::Test::TAG_NAME, "benchmark test")
+  test.set_tag(Datadog::CI::Ext::Test::TAG_STATUS, Datadog::CI::Ext::Test::Status::PASS)
+  test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "1")
+  test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID, test_suite.id.to_s)
+  test.set_tag(
+    Datadog::CI::Ext::Test::TAG_SOURCE_FILE,
+    "benchmarks/test_impact_analysis_impacted_files.rb"
+  )
+  test.context_ids = []
+  test.add_impacted_files(test_impacted_files) unless test_impacted_files.empty?
+  test
+end
+
+def validate_impacted_files(payload, expected_impacted_files)
+  payload_files = MessagePack.unpack(payload).fetch("files")
+  payload_filenames = payload_files.map { |file| file.fetch("filename") }
+  invalid_files = expected_impacted_files.reject { |file| payload_filenames.count(file) == 1 }
+  return if invalid_files.empty?
+
+  raise "coverage event is missing or duplicates #{invalid_files.size} custom impacted files"
+end
+
+def trace_tests_in_test_mode(
+  iterations,
+  test_impacted_files,
+  suite_impacted_files,
+  test_impact_analysis,
+  coverage_writer
+)
   test_context = BenchmarkTestContext.new
   initial_events_count = coverage_writer.events_count
+  test_suite = build_test_suite(suite_impacted_files)
 
   iterations.times do
-    tracer_span = Datadog::Tracing::SpanOperation.new("benchmark test")
-    test = Datadog::CI::Test.new(tracer_span)
-    test.set_tag(Datadog::CI::Ext::Test::TAG_NAME, "benchmark test")
-    test.set_tag(Datadog::CI::Ext::Test::TAG_STATUS, Datadog::CI::Ext::Test::Status::PASS)
-    test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "1")
-    test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID, "2")
-    test.set_tag(
-      Datadog::CI::Ext::Test::TAG_SOURCE_FILE,
-      "benchmarks/test_impact_analysis_impacted_files.rb"
-    )
-    test.context_ids = []
+    test = build_test(test_suite, test_impacted_files)
 
     test_impact_analysis.on_test_started(test)
     execute_test_body
-    test.add_impacted_files(impacted_files) unless impacted_files.empty?
     test_impact_analysis.on_test_finished(test, test_context)
 
-    tracer_span.finish
+    test.tracer_span.finish
   end
 
   events_count = coverage_writer.events_count - initial_events_count
   raise "wrote #{events_count} coverage events, expected #{iterations}" unless events_count == iterations
 
-  missing_impacted_files = impacted_files.reject do |file_path|
-    coverage_writer.last_event.inspect_coverage.key?(file_path)
+  validate_impacted_files(
+    coverage_writer.last_payload,
+    test_impacted_files | suite_impacted_files
+  )
+end
+
+def trace_tests_in_suite_mode(
+  iterations,
+  suites_count,
+  test_impacted_files,
+  suite_impacted_files,
+  test_impact_analysis,
+  coverage_writer
+)
+  test_context = BenchmarkTestContext.new
+  initial_events_count = coverage_writer.events_count
+  tests_per_suite, suites_with_extra_test = iterations.divmod(suites_count)
+
+  suites_count.times do |suite_index|
+    test_suite = build_test_suite(suite_impacted_files)
+    test_impact_analysis.on_test_suite_started(test_suite)
+    current_suite_tests = tests_per_suite
+    current_suite_tests += 1 if suite_index < suites_with_extra_test
+
+    current_suite_tests.times do
+      test = build_test(test_suite, test_impacted_files)
+
+      test_impact_analysis.on_test_started(test)
+      execute_test_body
+      test_impact_analysis.on_test_finished(test, test_context)
+
+      test.tracer_span.finish
+    end
+
+    test_impact_analysis.on_test_suite_finished(test_suite, test_context)
   end
-  unless missing_impacted_files.empty?
-    raise "coverage event is missing #{missing_impacted_files.size} custom impacted files"
+
+  events_count = coverage_writer.events_count - initial_events_count
+  unless events_count == suites_count
+    raise "wrote #{events_count} coverage events, expected #{suites_count}"
   end
+
+  validate_impacted_files(
+    coverage_writer.last_payload,
+    test_impacted_files | suite_impacted_files
+  )
 end
 
 iterations = Integer(ENV.fetch("ITERATIONS", "100000"))
+suites_count = Integer(ENV.fetch("SUITES", "10000"))
 impacted_files_count = Integer(ENV.fetch("IMPACTED_FILES", "100"))
 
 raise "ITERATIONS must be positive" unless iterations.positive?
+raise "SUITES must be positive" unless suites_count.positive?
+raise "SUITES must not exceed ITERATIONS" if suites_count > iterations
 raise "IMPACTED_FILES must not be negative" if impacted_files_count.negative?
 if impacted_files_count > Datadog::CI::Test::MAX_IMPACTED_FILES
   raise "IMPACTED_FILES must not exceed #{Datadog::CI::Test::MAX_IMPACTED_FILES}"
 end
 
-impacted_files = Array.new(impacted_files_count) do |index|
+test_impacted_files = Array.new(impacted_files_count) do |index|
   "app/frontend/benchmark_component_#{index}.js"
 end.freeze
-coverage_only_writer = BenchmarkCoverageWriter.new
-coverage_only_tia = build_test_impact_analysis(coverage_only_writer)
-custom_files_writer = BenchmarkCoverageWriter.new
-custom_files_tia = build_test_impact_analysis(custom_files_writer)
+overlapping_files_count = impacted_files_count / 2
+suite_impacted_files = (
+  test_impacted_files.first(overlapping_files_count) +
+  Array.new(impacted_files_count - overlapping_files_count) do |index|
+    "app/frontend/benchmark_suite_#{index}.js"
+  end
+).freeze
+
+test_mode = Datadog::CI::Ext::Test::TIATestSkippingMode::TEST
+suite_mode = Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE
+
+test_mode_coverage_writer = BenchmarkCoverageWriter.new
+test_mode_coverage_tia = build_test_impact_analysis(test_mode_coverage_writer, test_mode)
+test_mode_custom_writer = BenchmarkCoverageWriter.new
+test_mode_custom_tia = build_test_impact_analysis(test_mode_custom_writer, test_mode)
+suite_mode_coverage_writer = BenchmarkCoverageWriter.new
+suite_mode_coverage_tia = build_test_impact_analysis(suite_mode_coverage_writer, suite_mode)
+suite_mode_custom_writer = BenchmarkCoverageWriter.new
+suite_mode_custom_tia = build_test_impact_analysis(suite_mode_custom_writer, suite_mode)
 
 warmup_iterations = [iterations, 1000].min
-trace_tests(warmup_iterations, [], coverage_only_tia, coverage_only_writer)
-trace_tests(warmup_iterations, impacted_files, custom_files_tia, custom_files_writer)
+warmup_suites_count = [(warmup_iterations * suites_count) / iterations, 1].max
+trace_tests_in_test_mode(warmup_iterations, [], [], test_mode_coverage_tia, test_mode_coverage_writer)
+trace_tests_in_test_mode(
+  warmup_iterations,
+  test_impacted_files,
+  suite_impacted_files,
+  test_mode_custom_tia,
+  test_mode_custom_writer
+)
+trace_tests_in_suite_mode(
+  warmup_iterations,
+  warmup_suites_count,
+  [],
+  [],
+  suite_mode_coverage_tia,
+  suite_mode_coverage_writer
+)
+trace_tests_in_suite_mode(
+  warmup_iterations,
+  warmup_suites_count,
+  test_impacted_files,
+  suite_impacted_files,
+  suite_mode_custom_tia,
+  suite_mode_custom_writer
+)
 
 puts "Ruby #{RUBY_VERSION} (#{RUBY_PLATFORM})"
 puts "Traced tests per scenario: #{iterations}"
+puts "Suites in suite-mode scenarios: #{suites_count}"
 puts "Normal TIA coverage: native collector"
-puts "Custom impacted files per test: #{impacted_files.size}"
+puts "MessagePack serialization: every coverage event"
+puts "Custom impacted files per test: #{test_impacted_files.size}"
+puts "Custom impacted files per suite: #{suite_impacted_files.size}"
+puts "Overlapping test/suite impacted files: #{overlapping_files_count}"
 puts
 
-Benchmark.bm(44) do |benchmark|
+Benchmark.bm(54) do |benchmark|
   GC.start
 
-  benchmark.report("TIA coverage only") do
-    trace_tests(iterations, [], coverage_only_tia, coverage_only_writer)
+  benchmark.report("Test mode: TIA coverage only") do
+    trace_tests_in_test_mode(iterations, [], [], test_mode_coverage_tia, test_mode_coverage_writer)
   end
 
   GC.start
 
-  benchmark.report("TIA coverage + custom impacted files") do
-    trace_tests(iterations, impacted_files, custom_files_tia, custom_files_writer)
+  benchmark.report("Test mode: TIA coverage + test/suite impacted files") do
+    trace_tests_in_test_mode(
+      iterations,
+      test_impacted_files,
+      suite_impacted_files,
+      test_mode_custom_tia,
+      test_mode_custom_writer
+    )
+  end
+
+  GC.start
+
+  benchmark.report("Suite mode: TIA coverage only") do
+    trace_tests_in_suite_mode(
+      iterations,
+      suites_count,
+      [],
+      [],
+      suite_mode_coverage_tia,
+      suite_mode_coverage_writer
+    )
+  end
+
+  GC.start
+
+  benchmark.report("Suite mode: TIA coverage + test/suite impacted files") do
+    trace_tests_in_suite_mode(
+      iterations,
+      suites_count,
+      test_impacted_files,
+      suite_impacted_files,
+      suite_mode_custom_tia,
+      suite_mode_custom_writer
+    )
   end
 end

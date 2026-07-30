@@ -8,6 +8,48 @@ RSpec.describe Datadog::CI::TestSuite do
   before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
   subject(:ci_test_suite) { described_class.new(tracer_span) }
 
+  describe "impacted files" do
+    it "adds unique paths incrementally and returns an immutable snapshot" do
+      ci_test_suite.add_impacted_files(["app/frontend/shared.js", "app/frontend/shared.js"])
+      snapshot = ci_test_suite.impacted_files
+      ci_test_suite.add_impacted_files(["app/frontend/shared.js", "app/frontend/setup.js"])
+
+      expect(snapshot).to eq(["app/frontend/shared.js"])
+      expect(snapshot).to be_frozen
+      expect(ci_test_suite.impacted_files).to eq(
+        ["app/frontend/shared.js", "app/frontend/setup.js"]
+      )
+    end
+
+    it "clears impacted files" do
+      ci_test_suite.add_impacted_files(["app/frontend/shared.js"])
+
+      ci_test_suite.clear_impacted_files
+
+      expect(ci_test_suite.impacted_files).to be_empty
+    end
+
+    it "rejects non-array collections" do
+      expect { ci_test_suite.add_impacted_files(Set.new(["app/frontend/shared.js"])) }
+        .to raise_error(ArgumentError, "file_paths must be an Array")
+    end
+
+    it "keeps the first 10,000 unique paths and warns" do
+      allow(Datadog.logger).to receive(:warn)
+      files = Array.new(described_class::MAX_IMPACTED_FILES + 1) do |index|
+        "app/frontend/file-#{index}.js"
+      end
+
+      ci_test_suite.add_impacted_files(files)
+
+      expect(ci_test_suite.impacted_files).to eq(files.first(described_class::MAX_IMPACTED_FILES))
+      expect(Datadog.logger).to have_received(:warn).once.with(
+        "Test Impact Analysis supports at most 10000 impacted files per test suite; " \
+        "additional files will be ignored"
+      )
+    end
+  end
+
   describe "#should_skip?" do
     it "returns true when the suite was skipped by Test Impact Analysis" do
       allow(tracer_span).to receive(:get_tag)

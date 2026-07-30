@@ -1,0 +1,33 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class Files
+          type collection = Array[String] | Hash[String, untyped]
+
+          EMPTY_FILES: Array[String]
+          EMPTY_COLLECTIONS: Array[Array[String]]
+
+          @collections: Array[collection]
+          @normalized_files: Array[String]?
+
+          def initialize: (*collection collections) -> void
+
+          def add_collection: (collection collection) -> void
+
+          def each: () { (String file) -> void } -> void
+
+          def size: () -> Integer
+
+          def inspect_coverage: () -> Hash[String, untyped]
+
+          private
+
+          def normalized_files: () -> Array[String]
+
+          def each_raw_file: () { (String file) -> void } -> void
+        end
+      end
+    end
+  end
+end

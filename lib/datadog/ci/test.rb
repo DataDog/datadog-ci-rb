@@ -3,6 +3,7 @@
 require "json"
 
 require_relative "span"
+require_relative "test_impact_analysis/impactable"
 require_relative "test_impact_analysis/telemetry"
 require_relative "utils/test_run"
 
@@ -12,7 +13,7 @@ module Datadog
     #
     # @public_api
     class Test < Span
-      MAX_IMPACTED_FILES = 10_000
+      include TestImpactAnalysis::Impactable
 
       # Context IDs for this test (used for TIA context coverage merging).
       # Contains list of context identifiers from outermost to innermost.
@@ -159,87 +160,6 @@ module Datadog
         end
       end
 
-      # Adds files that Test Impact Analysis should consider capable of impacting
-      # this test.
-      #
-      # When any of these files changes, Test Impact Analysis considers this test
-      # impacted and will not skip it. This is useful for files that affect the
-      # test but cannot be observed by Datadog's Ruby coverage instrumentation,
-      # such as JavaScript executed in a browser during a Capybara test.
-      #
-      # Paths may be absolute or relative to the current working directory. They
-      # are normalized to paths relative to the repository root when the test
-      # coverage event is serialized.
-      #
-      # @example Register JavaScript files loaded by the browser during an RSpec test
-      #   RSpec.configure do |config|
-      #     config.after do
-      #       loaded_javascript_files = javascript_files_loaded_by_browser
-      #       Datadog::CI.active_test&.add_impacted_files(loaded_javascript_files)
-      #     end
-      #   end
-      #
-      #   # If app/frontend/checkout.js is in loaded_javascript_files, changing
-      #   # that file will cause Test Impact Analysis to run this test.
-      #
-      # A test can have at most 10,000 unique impacted files. Additional files
-      # are ignored and a warning is logged.
-      #
-      # @param [Array<String>] file_paths paths that can impact this test
-      # @return [void]
-      def add_impacted_files(file_paths)
-        raise ArgumentError, "file_paths must be an Array" unless file_paths.is_a?(Array)
-
-        new_files = file_paths.uniq
-        if @custom_impacted_files.nil?
-          if new_files.size > MAX_IMPACTED_FILES
-            new_files = new_files.first(MAX_IMPACTED_FILES)
-            warn_impacted_files_limit
-          end
-
-          @custom_impacted_files = new_files
-          return
-        end
-
-        impacted_files = mutable_custom_impacted_files
-        new_files -= impacted_files unless impacted_files.empty?
-
-        remaining_capacity = MAX_IMPACTED_FILES - impacted_files.size
-        if new_files.size > remaining_capacity
-          new_files = new_files.first(remaining_capacity)
-          warn_impacted_files_limit
-        end
-
-        impacted_files.concat(new_files)
-        nil
-      end
-
-      # Returns files explicitly marked as impacting this test for Test Impact
-      # Analysis.
-      #
-      # The returned array is frozen. Use {#add_impacted_files} or
-      # {#clear_impacted_files} to update the files tracked by the test. A
-      # previously returned array is not changed by later updates.
-      #
-      # @return [Array<String>] paths that can impact this test for Test Impact Analysis
-      def impacted_files
-        custom_impacted_files.freeze
-      end
-
-      # Clears files explicitly marked as impacting this test for Test Impact
-      # Analysis.
-      #
-      # @return [void]
-      def clear_impacted_files
-        impacted_files = custom_impacted_files
-        if impacted_files.frozen?
-          @custom_impacted_files = []
-        else
-          impacted_files.clear
-        end
-        nil
-      end
-
       # Sets the status of the span to "pass".
       # @return [void]
       def passed!
@@ -349,26 +269,6 @@ module Datadog
       end
 
       private
-
-      def custom_impacted_files
-        @custom_impacted_files ||= []
-      end
-
-      def mutable_custom_impacted_files
-        impacted_files = custom_impacted_files
-        if impacted_files.frozen?
-          impacted_files = impacted_files.dup
-          @custom_impacted_files = impacted_files
-        end
-        impacted_files
-      end
-
-      def warn_impacted_files_limit
-        Datadog.logger.warn(
-          "Test Impact Analysis supports at most #{MAX_IMPACTED_FILES} impacted files per test; " \
-          "additional files will be ignored"
-        )
-      end
 
       def compute_final_status(status)
         # Skip status is always preserved

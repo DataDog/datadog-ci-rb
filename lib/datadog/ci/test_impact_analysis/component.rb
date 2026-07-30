@@ -16,6 +16,7 @@ require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
+require_relative "coverage/files"
 require_relative "skippable"
 require_relative "telemetry"
 
@@ -215,7 +216,13 @@ module Datadog
         # @return [Datadog::CI::TestImpactAnalysis::Coverage::Event, nil] The coverage event or nil
         def on_test_finished(test, context)
           return unless enabled?
-          return if suite_skipping_mode?
+
+          test_suite = test.test_suite
+          if suite_skipping_mode?
+            test_impacted_files = test.impacted_files
+            test_suite&.add_impacted_files(test_impacted_files) unless test_impacted_files.empty?
+            return
+          end
 
           # Handle ITR statistics
           if test.skipped_by_test_impact_analysis?
@@ -234,6 +241,8 @@ module Datadog
           return if test.skipped?
           coverage ||= {}
 
+          suite_impacted_files = test_suite&.impacted_files || Coverage::Files::EMPTY_FILES
+
           # Merge context coverage from all relevant contexts
           context_ids = test.context_ids || []
           merge_context_coverages_into_test(coverage, context_ids)
@@ -244,7 +253,7 @@ module Datadog
             test_session_id: test.test_session_id.to_s,
             source_file: test.source_file,
             coverage: coverage,
-            custom_impacted_files: test.impacted_files
+            file_collections: [test.impacted_files, suite_impacted_files]
           )
         end
 
@@ -351,7 +360,8 @@ module Datadog
             test_suite_id: test_suite.id.to_s,
             test_session_id: test_suite.get_tag(Ext::Test::TAG_TEST_SESSION_ID).to_s,
             source_file: test_suite.source_file,
-            coverage: coverage
+            coverage: coverage,
+            file_collections: [test_suite.impacted_files]
           )
         end
 
@@ -448,16 +458,11 @@ module Datadog
           Datadog::CI::SourceCode::StaticDependencies.populate!(Git::LocalRepository.root, @bundle_location)
         end
 
-        def enrich_coverage_with_static_dependencies(coverage, custom_impacted_files)
+        def enrich_coverage_with_static_dependencies(coverage)
           return unless @static_dependencies_tracking_enabled
 
           static_dependencies_map = {}
-          coverage.keys.each do |file|
-            static_dependencies_map.merge!(
-              Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
-            )
-          end
-          custom_impacted_files.each do |file|
+          coverage.each_key do |file|
             static_dependencies_map.merge!(
               Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
             )
@@ -478,26 +483,26 @@ module Datadog
           test_session_id:,
           source_file:,
           coverage:,
-          custom_impacted_files: Coverage::Event::EMPTY_CUSTOM_IMPACTED_FILES
+          file_collections: Coverage::Files::EMPTY_COLLECTIONS
         )
           coverage ||= {}
-          if coverage.empty? && custom_impacted_files.empty?
+          if coverage.empty? && file_collections.all?(&:empty?)
             Telemetry.code_coverage_is_empty
             return
           end
 
           ensure_test_source_covered(source_file, coverage) unless source_file.nil?
 
-          enrich_coverage_with_static_dependencies(coverage, custom_impacted_files)
+          enrich_coverage_with_static_dependencies(coverage)
 
-          Telemetry.code_coverage_files(coverage.size + custom_impacted_files.size)
+          files = Coverage::Files.new(coverage, *file_collections)
+          Telemetry.code_coverage_files(files.size)
 
           coverage_event = Coverage::Event.new(
             test_id: test_id,
             test_suite_id: test_suite_id,
             test_session_id: test_session_id,
-            coverage: coverage,
-            custom_impacted_files: custom_impacted_files
+            files: files
           )
 
           Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }

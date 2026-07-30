@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "concurrent_span"
+require_relative "test_impact_analysis/impactable"
 
 module Datadog
   module CI
@@ -13,6 +14,8 @@ module Datadog
     #
     # @public_api
     class TestSuite < ConcurrentSpan
+      include TestImpactAnalysis::Impactable
+
       def initialize(tracer_span)
         super
 
@@ -23,6 +26,21 @@ module Datadog
         # tracks final status for each test (the status that is reported after all retries):
         #   { "MySuite.mytest.a:1" => "pass" }
         @final_statuses_per_test = {}
+      end
+
+      # @see TestImpactAnalysis::Impactable#add_impacted_files
+      def add_impacted_files(file_paths)
+        synchronize { super }
+      end
+
+      # @see TestImpactAnalysis::Impactable#impacted_files
+      def impacted_files
+        synchronize { super }
+      end
+
+      # @see TestImpactAnalysis::Impactable#clear_impacted_files
+      def clear_impacted_files
+        synchronize { super }
       end
 
       # Finishes this test suite.
@@ -132,6 +150,10 @@ module Datadog
       end
 
       private
+
+      def impacted_files_limit_scope
+        "test suite"
+      end
 
       def set_status_from_stats!
         synchronize do

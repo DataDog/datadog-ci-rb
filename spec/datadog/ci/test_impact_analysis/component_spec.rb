@@ -622,6 +622,74 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         :distribution,
         Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES,
         1.0
+
+      context "with static dependency tracking enabled" do
+        let(:custom_file) { "app/frontend/user_profile.tsx" }
+        let(:native_file) do
+          File.join(Datadog::CI::Git::LocalRepository.root, "app/models/user.rb")
+        end
+        let(:static_dependency) do
+          File.join(Datadog::CI::Git::LocalRepository.root, "app/models/account.rb")
+        end
+        let(:collector) do
+          instance_double(
+            Datadog::CI::TestImpactAnalysis::Coverage::DDCov,
+            stop: {native_file => true}
+          )
+        end
+
+        it "finds static dependencies only for native coverage files" do
+          static_component = described_class.new(
+            api: api,
+            dd_env: "dd_env",
+            coverage_writer: writer,
+            enabled: true,
+            static_dependencies_tracking_enabled: true
+          )
+          allow(static_component).to receive(:load_datadog_cov!)
+          allow(static_component).to receive(:coverage_collector).and_return(collector)
+          allow(Datadog::CI::SourceCode::StaticDependencies).to receive(:populate!)
+          expect(Datadog::CI::SourceCode::StaticDependencies)
+            .to receive(:fetch_static_dependencies)
+            .once
+            .with(native_file)
+            .and_return(static_dependency => true)
+
+          static_component.configure(remote_configuration, test_session)
+          event = static_component.on_test_finished(test_span, context)
+
+          expect(event.inspect_coverage).to include(
+            custom_file => true,
+            native_file => true,
+            static_dependency => true
+          )
+        end
+      end
+    end
+
+    context "when the test and its suite have impacted files" do
+      let(:suite_tracer_span) { Datadog::Tracing::SpanOperation.new("suite") }
+      let(:test_suite) { Datadog::CI::TestSuite.new(suite_tracer_span) }
+      let(:test_file) { "app/frontend/test.js" }
+      let(:suite_file) { "app/frontend/suite.js" }
+      let(:shared_file) { "app/frontend/shared.js" }
+
+      before do
+        allow(component).to receive(:coverage_collector).and_return(nil)
+        allow(test_span).to receive(:test_suite).and_return(test_suite)
+        test_span.add_impacted_files([test_file, shared_file])
+        test_suite.add_impacted_files([suite_file, shared_file])
+      end
+
+      it "writes the deduplicated test and suite files in the test event" do
+        expect(subject.inspect_coverage.keys).to contain_exactly(test_file, suite_file, shared_file)
+        expect(writer).to have_received(:write).with(subject)
+      end
+
+      it_behaves_like "emits telemetry metric",
+        :distribution,
+        Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES,
+        3.0
     end
   end
 
@@ -712,6 +780,36 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       expect(collector).not_to have_received(:start)
       expect(collector).not_to have_received(:stop)
       expect(writer).not_to have_received(:write)
+    end
+
+    it "writes deduplicated suite and test impacted files in the suite event" do
+      suite_file = "app/frontend/suite.js"
+      shared_file = "app/frontend/shared.js"
+      first_test_file = "app/frontend/first_test.js"
+      second_test_file = "app/frontend/second_test.js"
+      test_suite.add_impacted_files([suite_file, shared_file])
+
+      first_test = Datadog::CI::Test.new(Datadog::Tracing::SpanOperation.new("first test"))
+      first_test.add_impacted_files([first_test_file, shared_file])
+      allow(first_test).to receive(:test_suite).and_return(test_suite)
+
+      second_test = Datadog::CI::Test.new(Datadog::Tracing::SpanOperation.new("second test"))
+      second_test.add_impacted_files([second_test_file, shared_file])
+      allow(second_test).to receive(:test_suite).and_return(test_suite)
+
+      component.on_test_suite_started(test_suite)
+      component.on_test_finished(first_test, context)
+      component.on_test_finished(second_test, context)
+      event = component.on_test_suite_finished(test_suite, context)
+
+      expect(event.inspect_coverage.keys).to contain_exactly(
+        "/path/to/suite_file.rb",
+        suite_file,
+        shared_file,
+        first_test_file,
+        second_test_file
+      )
+      expect(writer).to have_received(:write).with(event)
     end
 
     it "disables RSpec context coverage hooks" do

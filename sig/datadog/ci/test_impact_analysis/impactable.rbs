@@ -1,0 +1,30 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Impactable
+        MAX_IMPACTED_FILES: 10000
+
+        @custom_impacted_files: Array[String]?
+        @custom_impacted_files_index: Hash[String, bool]?
+
+        def add_impacted_files: (Array[String] file_paths) -> void
+
+        def impacted_files: () -> Array[String]
+
+        def clear_impacted_files: () -> void
+
+        private
+
+        def custom_impacted_files: () -> Array[String]
+
+        def mutable_custom_impacted_files: () -> Array[String]
+
+        def custom_impacted_files_index: () -> Hash[String, bool]
+
+        def impacted_files_limit_scope: () -> String
+
+        def warn_impacted_files_limit: () -> void
+      end
+    end
+  end
+end

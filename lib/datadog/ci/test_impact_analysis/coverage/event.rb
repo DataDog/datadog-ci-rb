@@ -2,47 +2,36 @@
 
 require "msgpack"
 
-require_relative "../../git/local_repository"
+require_relative "files"
 
 module Datadog
   module CI
     module TestImpactAnalysis
       module Coverage
         class Event
-          EMPTY_CUSTOM_IMPACTED_FILES = [].freeze
-
           attr_reader :test_id, :test_suite_id, :test_session_id
 
           def initialize(
             test_id:,
             test_suite_id:,
             test_session_id:,
-            coverage:,
-            custom_impacted_files: EMPTY_CUSTOM_IMPACTED_FILES
+            files:
           )
             @test_id = test_id
             @test_suite_id = test_suite_id
             @test_session_id = test_session_id
-            @coverage = coverage
-            @custom_impacted_files = custom_impacted_files
+            @files = files
           end
 
           def inspect_coverage
-            unless @custom_impacted_files.empty?
-              @custom_impacted_files.each do |file_path|
-                @coverage[file_path] = true
-              end
-              @custom_impacted_files = EMPTY_CUSTOM_IMPACTED_FILES
-            end
-
-            @coverage
+            @files.inspect_coverage
           end
 
           def valid?
             valid = true
 
-            %i[test_suite_id test_session_id coverage].each do |key|
-              value = (key == :coverage) ? @coverage : send(key)
+            %i[test_suite_id test_session_id files].each do |key|
+              value = (key == :files) ? @files : send(key)
               next unless value.nil?
 
               Datadog.logger.warn("citestcov event is invalid: [#{key}] is nil. Event: #{self}")
@@ -68,30 +57,17 @@ module Datadog
               packer.write(test_id.to_i)
             end
 
-            custom_impacted_files = if @custom_impacted_files.empty?
-              EMPTY_CUSTOM_IMPACTED_FILES
-            else
-              @custom_impacted_files.reject { |filename| @coverage.key?(filename) }
-            end
-
             packer.write("files")
-            packer.write_array_header(@coverage.size + custom_impacted_files.size)
-
-            @coverage.each_key do |filename|
+            packer.write_array_header(@files.size)
+            @files.each do |filename|
               packer.write_map_header(1)
               packer.write("filename")
-              packer.write(Git::LocalRepository.relative_to_root(filename))
-            end
-
-            custom_impacted_files.each do |filename|
-              packer.write_map_header(1)
-              packer.write("filename")
-              packer.write(Git::LocalRepository.relative_to_root(filename))
+              packer.write(filename)
             end
           end
 
           def to_s
-            coverage_value = @coverage.nil? ? nil : inspect_coverage
+            coverage_value = @files.nil? ? nil : inspect_coverage
             "Coverage::Event[test_id=#{test_id}, test_suite_id=#{test_suite_id}, test_session_id=#{test_session_id}, coverage=#{coverage_value}]"
           end
 
