@@ -102,7 +102,7 @@ def trace_tests(iterations, impacted_files, test_impact_analysis, coverage_write
   raise "wrote #{events_count} coverage events, expected #{iterations}" unless events_count == iterations
 
   missing_impacted_files = impacted_files.reject do |file_path|
-    coverage_writer.last_event.coverage.key?(file_path)
+    coverage_writer.last_event.inspect_coverage.key?(file_path)
   end
   unless missing_impacted_files.empty?
     raise "coverage event is missing #{missing_impacted_files.size} custom impacted files"

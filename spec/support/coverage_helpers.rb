@@ -64,6 +64,6 @@ module CoverageHelpers
   end
 
   def expect_non_empty_coverages
-    expect(coverage_events.map(&:coverage).map(&:size)).to all be > 0
+    expect(coverage_events.map(&:inspect_coverage).map(&:size)).to all be > 0
   end
 end

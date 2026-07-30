@@ -562,9 +562,9 @@ RSpec.describe "Minitest instrumentation" do
           # expect that background thread is covered
           test_span = test_spans.find { |span| span.get_tag("test.name") == "test_pass_other" }
           cov_event = find_coverage_for_test(test_span)
-          expect(cov_event.coverage.keys).to include(absolute_path("helpers/addition_helper.rb"))
-          expect(cov_event.coverage.keys).to include(absolute_path("helpers/constants.rb")) if Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
-          expect(cov_event.coverage.keys).to include(absolute_path("helpers/simple_model.rb"))
+          expect(cov_event.inspect_coverage.keys).to include(absolute_path("helpers/addition_helper.rb"))
+          expect(cov_event.inspect_coverage.keys).to include(absolute_path("helpers/constants.rb")) if Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
+          expect(cov_event.inspect_coverage.keys).to include(absolute_path("helpers/simple_model.rb"))
         end
 
         context "in suite mode" do
@@ -578,7 +578,7 @@ RSpec.describe "Minitest instrumentation" do
             expect(coverage_event.test_id).to be_nil
             expect(coverage_event.test_session_id).to eq(test_session_span.id.to_s)
             expect(coverage_event.test_suite_id).to eq(first_test_suite_span.id.to_s)
-            expect(coverage_event.coverage.keys).to include(
+            expect(coverage_event.inspect_coverage.keys).to include(
               absolute_path("helpers/addition_helper.rb"),
               absolute_path("helpers/simple_model.rb")
             )
@@ -1089,7 +1089,7 @@ RSpec.describe "Minitest instrumentation" do
 
       # expect that background thread is not covered
       cov_event = find_coverage_for_test(first_test_span)
-      expect(cov_event.coverage.keys).not_to include(
+      expect(cov_event.inspect_coverage.keys).not_to include(
         absolute_path("helpers/addition_helper.rb")
       )
     end

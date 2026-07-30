@@ -9,7 +9,7 @@ module Datadog
     module TestImpactAnalysis
       module Coverage
         class Event
-          EMPTY_IMPACTED_FILES = [].freeze
+          EMPTY_CUSTOM_IMPACTED_FILES = [].freeze
 
           attr_reader :test_id, :test_suite_id, :test_session_id
 
@@ -18,21 +18,21 @@ module Datadog
             test_suite_id:,
             test_session_id:,
             coverage:,
-            impacted_files: EMPTY_IMPACTED_FILES
+            custom_impacted_files: EMPTY_CUSTOM_IMPACTED_FILES
           )
             @test_id = test_id
             @test_suite_id = test_suite_id
             @test_session_id = test_session_id
             @coverage = coverage
-            @impacted_files = impacted_files
+            @custom_impacted_files = custom_impacted_files
           end
 
-          def coverage
-            unless @impacted_files.empty?
-              @impacted_files.each do |file_path|
+          def inspect_coverage
+            unless @custom_impacted_files.empty?
+              @custom_impacted_files.each do |file_path|
                 @coverage[file_path] = true
               end
-              @impacted_files = EMPTY_IMPACTED_FILES
+              @custom_impacted_files = EMPTY_CUSTOM_IMPACTED_FILES
             end
 
             @coverage
@@ -68,14 +68,14 @@ module Datadog
               packer.write(test_id.to_i)
             end
 
-            impacted_files = if @impacted_files.empty?
-              EMPTY_IMPACTED_FILES
+            custom_impacted_files = if @custom_impacted_files.empty?
+              EMPTY_CUSTOM_IMPACTED_FILES
             else
-              @impacted_files.reject { |filename| @coverage.key?(filename) }
+              @custom_impacted_files.reject { |filename| @coverage.key?(filename) }
             end
 
             packer.write("files")
-            packer.write_array_header(@coverage.size + impacted_files.size)
+            packer.write_array_header(@coverage.size + custom_impacted_files.size)
 
             @coverage.each_key do |filename|
               packer.write_map_header(1)
@@ -83,7 +83,7 @@ module Datadog
               packer.write(Git::LocalRepository.relative_to_root(filename))
             end
 
-            impacted_files.each do |filename|
+            custom_impacted_files.each do |filename|
               packer.write_map_header(1)
               packer.write("filename")
               packer.write(Git::LocalRepository.relative_to_root(filename))
@@ -91,7 +91,7 @@ module Datadog
           end
 
           def to_s
-            coverage_value = @coverage.nil? ? nil : coverage
+            coverage_value = @coverage.nil? ? nil : inspect_coverage
             "Coverage::Event[test_id=#{test_id}, test_suite_id=#{test_suite_id}, test_session_id=#{test_session_id}, coverage=#{coverage_value}]"
           end
 
@@ -103,7 +103,7 @@ module Datadog
               q.text "Test Suite ID: #{@test_suite_id}\n"
               q.text "Test Session ID: #{@test_session_id}\n"
               q.group(2, "Files: [", "]\n") do
-                q.seplist coverage.keys.each do |key|
+                q.seplist inspect_coverage.keys.each do |key|
                   q.text key
                 end
               end

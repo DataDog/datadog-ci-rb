@@ -809,12 +809,12 @@ RSpec.describe "RSpec instrumentation" do
       shared_context_test = test_spans.find { |span| span.name == "nested is 42" }
       shared_context_coverage = find_coverage_for_test(shared_context_test)
 
-      expect(shared_context_coverage.coverage.keys).to include(
+      expect(shared_context_coverage.inspect_coverage.keys).to include(
         File.join(__dir__, "some_shared_context.rb")
       )
 
       if Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
-        expect(shared_context_coverage.coverage.keys).to include(
+        expect(shared_context_coverage.inspect_coverage.keys).to include(
           File.join(__dir__, "some_constants.rb")
         )
       end
@@ -872,7 +872,7 @@ RSpec.describe "RSpec instrumentation" do
 
         expect(impacted_files_during_test).to eq([before_hook_file])
         expect(impacted_files_after_test).to eq([before_hook_file, after_hook_file])
-        expect(test_coverage.coverage.keys).to include(before_hook_file, after_hook_file)
+        expect(test_coverage.inspect_coverage.keys).to include(before_hook_file, after_hook_file)
 
         payload = MessagePack.unpack(MessagePack.pack(test_coverage))
       end
@@ -912,8 +912,8 @@ RSpec.describe "RSpec instrumentation" do
       test_coverage = find_coverage_for_test(first_test_span)
 
       expect(impacted_files_after_clear).to be_empty
-      expect(test_coverage.coverage).to include(retained_file => true)
-      expect(test_coverage.coverage).not_to include(cleared_file)
+      expect(test_coverage.inspect_coverage).to include(retained_file => true)
+      expect(test_coverage.inspect_coverage).not_to include(cleared_file)
     end
   end
 
@@ -980,7 +980,7 @@ RSpec.describe "RSpec instrumentation" do
       test_span = test_spans.first
       test_coverage = find_coverage_for_test(test_span)
 
-      expect(test_coverage.coverage.keys).to include(
+      expect(test_coverage.inspect_coverage.keys).to include(
         File.join(__dir__, "fixtures/user.rb"),
         File.join(__dir__, "fixtures/order.rb")
       )
@@ -1040,7 +1040,7 @@ RSpec.describe "RSpec instrumentation" do
       expect(coverage_event.test_id).to be_nil
       expect(coverage_event.test_session_id).to eq(test_session_span.id.to_s)
       expect(coverage_event.test_suite_id).to eq(first_test_suite_span.id.to_s)
-      expect(coverage_event.coverage.keys).to include(
+      expect(coverage_event.inspect_coverage.keys).to include(
         File.join(__dir__, "fixtures/user.rb"),
         File.join(__dir__, "fixtures/order.rb")
       )
@@ -1121,12 +1121,12 @@ RSpec.describe "RSpec instrumentation" do
       outer_context_file = File.join(__dir__, "fixtures/outer_context.rb")
 
       # Both tests should include outer context coverage
-      expect(first_coverage.coverage.keys).to include(outer_context_file)
-      expect(second_coverage.coverage.keys).to include(outer_context_file)
+      expect(first_coverage.inspect_coverage.keys).to include(outer_context_file)
+      expect(second_coverage.inspect_coverage.keys).to include(outer_context_file)
 
       # Both tests should also have their own nested context's fixture files
-      expect(first_coverage.coverage.keys).to include(File.join(__dir__, "fixtures/user.rb"))
-      expect(second_coverage.coverage.keys).to include(File.join(__dir__, "fixtures/order.rb"))
+      expect(first_coverage.inspect_coverage.keys).to include(File.join(__dir__, "fixtures/user.rb"))
+      expect(second_coverage.inspect_coverage.keys).to include(File.join(__dir__, "fixtures/order.rb"))
     end
   end
 
@@ -1197,12 +1197,12 @@ RSpec.describe "RSpec instrumentation" do
 
       # The test outside of nested contexts should NOT have coverage from those contexts
       # It should only have coverage from its own execution
-      expect(test_coverage.coverage.keys).not_to include(user_file),
+      expect(test_coverage.inspect_coverage.keys).not_to include(user_file),
         "Test should not include user.rb from nested context's before(:context)"
 
       # But it SHOULD include outer_context.rb because the test is still
       # inside the top-level describe block which has before(:context)
-      expect(test_coverage.coverage.keys).to include(outer_context_file),
+      expect(test_coverage.inspect_coverage.keys).to include(outer_context_file),
         "Test should include outer_context.rb from top-level before(:context)"
     end
   end

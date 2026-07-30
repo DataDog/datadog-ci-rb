@@ -553,7 +553,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           expect(event.test_suite_id).to eq("2")
           expect(event.test_session_id).to eq("3")
 
-          expect(event.coverage.size).to be > 0
+          expect(event.inspect_coverage.size).to be > 0
         end
       end
 
@@ -614,7 +614,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       end
 
       it "creates a coverage event and writes it" do
-        expect(subject.coverage).to include(custom_file => true)
+        expect(subject.inspect_coverage).to include(custom_file => true)
         expect(writer).to have_received(:write).with(subject)
       end
 
@@ -868,7 +868,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         event = component.on_test_finished(test_span, context)
 
         expect(event).not_to be_nil
-        expect(event.coverage.size).to be > 0
+        expect(event.inspect_coverage.size).to be > 0
         expect(writer).to have_received(:write)
       end
     end
@@ -884,7 +884,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         event = component.on_test_finished(test_span, context)
 
         expect(event).not_to be_nil
-        expect(event.coverage.size).to be > 0
+        expect(event.inspect_coverage.size).to be > 0
         expect(writer).to have_received(:write)
       end
     end
@@ -1023,8 +1023,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
       expect(event).not_to be_nil
       # Coverage should include files from both contexts
-      expect(event.coverage.keys).to include("/path/to/outer_context_file.rb")
-      expect(event.coverage.keys).to include("/path/to/inner_context_file.rb")
+      expect(event.inspect_coverage.keys).to include("/path/to/outer_context_file.rb")
+      expect(event.inspect_coverage.keys).to include("/path/to/inner_context_file.rb")
     end
 
     it "does not duplicate files already in test coverage" do
@@ -1044,7 +1044,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
       expect(event).not_to be_nil
       # File from context should be included
-      expect(event.coverage.keys).to include("/path/to/shared_file.rb")
+      expect(event.inspect_coverage.keys).to include("/path/to/shared_file.rb")
     end
   end
 

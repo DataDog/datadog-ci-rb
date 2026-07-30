@@ -55,25 +55,25 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
     end
   end
 
-  describe "#coverage" do
+  describe "#inspect_coverage" do
     subject(:event) do
       described_class.new(
         test_id: test_id,
         test_suite_id: test_suite_id,
         test_session_id: test_session_id,
         coverage: coverage,
-        impacted_files: impacted_files
+        custom_impacted_files: custom_impacted_files
       )
     end
 
-    let(:impacted_files) { ["file.js", "file.rb"] }
+    let(:custom_impacted_files) { ["file.js", "file.rb"] }
 
     it "defers merging impacted files until coverage is read, including after serialization" do
       expect(coverage).to eq("file.rb" => true)
       event.to_msgpack
       expect(coverage).to eq("file.rb" => true)
 
-      expect(event.coverage).to eq(
+      expect(event.inspect_coverage).to eq(
         "file.rb" => true,
         "file.js" => true
       )
@@ -223,7 +223,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
           test_suite_id: test_suite_id,
           test_session_id: test_session_id,
           coverage: coverage,
-          impacted_files: ["file.js", "file.rb"]
+          custom_impacted_files: ["file.js", "file.rb"]
         )
       end
 
