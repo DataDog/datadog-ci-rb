@@ -870,8 +870,8 @@ RSpec.describe "RSpec instrumentation" do
 
         test_coverage = find_coverage_for_test(first_test_span)
 
-        expect(impacted_files_during_test).to eq(Set.new([before_hook_file]))
-        expect(impacted_files_after_test).to eq(Set.new([before_hook_file, after_hook_file]))
+        expect(impacted_files_during_test).to eq([before_hook_file])
+        expect(impacted_files_after_test).to eq([before_hook_file, after_hook_file])
         expect(test_coverage.coverage.keys).to include(before_hook_file, after_hook_file)
 
         payload = MessagePack.unpack(MessagePack.pack(test_coverage))

@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "json"
-require "set"
 
 require_relative "span"
 require_relative "test_impact_analysis/telemetry"
@@ -186,35 +185,38 @@ module Datadog
       # A test can have at most 10,000 unique impacted files. Additional files
       # are ignored and a warning is logged.
       #
-      # @param [Enumerable<String>] file_paths paths that can impact this test
+      # @param [Array<String>] file_paths paths that can impact this test
       # @return [void]
       def add_impacted_files(file_paths)
-        file_paths.each do |file_path|
-          next if custom_impacted_files.include?(file_path)
+        raise ArgumentError, "file_paths must be an Array" unless file_paths.is_a?(Array)
 
-          if custom_impacted_files.size >= MAX_IMPACTED_FILES
-            Datadog.logger.warn(
-              "Test Impact Analysis supports at most #{MAX_IMPACTED_FILES} impacted files per test; " \
-              "additional files will be ignored"
-            )
-            break
-          end
+        impacted_files = mutable_custom_impacted_files
+        new_files = file_paths.uniq
+        new_files -= impacted_files unless impacted_files.empty?
 
-          custom_impacted_files.add(file_path)
+        remaining_capacity = MAX_IMPACTED_FILES - impacted_files.size
+        if new_files.size > remaining_capacity
+          new_files = new_files.first(remaining_capacity)
+          Datadog.logger.warn(
+            "Test Impact Analysis supports at most #{MAX_IMPACTED_FILES} impacted files per test; " \
+            "additional files will be ignored"
+          )
         end
 
+        impacted_files.concat(new_files)
         nil
       end
 
       # Returns files explicitly marked as impacting this test for Test Impact
       # Analysis.
       #
-      # Changing the returned set does not change the files stored by the test;
-      # use {#add_impacted_files} or {#clear_impacted_files} to update them.
+      # The returned array is frozen. Use {#add_impacted_files} or
+      # {#clear_impacted_files} to update the files tracked by the test. A
+      # previously returned array is not changed by later updates.
       #
-      # @return [Set<String>] paths that can impact this test for Test Impact Analysis
+      # @return [Array<String>] paths that can impact this test for Test Impact Analysis
       def impacted_files
-        custom_impacted_files.dup
+        custom_impacted_files.freeze
       end
 
       # Clears files explicitly marked as impacting this test for Test Impact
@@ -222,7 +224,12 @@ module Datadog
       #
       # @return [void]
       def clear_impacted_files
-        custom_impacted_files.clear
+        impacted_files = custom_impacted_files
+        if impacted_files.frozen?
+          @custom_impacted_files = []
+        else
+          impacted_files.clear
+        end
         nil
       end
 
@@ -337,7 +344,16 @@ module Datadog
       private
 
       def custom_impacted_files
-        @custom_impacted_files ||= Set.new
+        @custom_impacted_files ||= []
+      end
+
+      def mutable_custom_impacted_files
+        impacted_files = custom_impacted_files
+        if impacted_files.frozen?
+          impacted_files = impacted_files.dup
+          @custom_impacted_files = impacted_files
+        end
+        impacted_files
       end
 
       def compute_final_status(status)
