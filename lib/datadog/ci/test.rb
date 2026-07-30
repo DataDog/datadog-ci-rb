@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "set"
 
 require_relative "span"
 require_relative "test_impact_analysis/telemetry"
@@ -12,6 +13,8 @@ module Datadog
     #
     # @public_api
     class Test < Span
+      MAX_IMPACTED_FILES = 10_000
+
       # Context IDs for this test (used for TIA context coverage merging).
       # Contains list of context identifiers from outermost to innermost.
       # @return [Array<String>] list of context IDs
@@ -157,15 +160,70 @@ module Datadog
         end
       end
 
-      # Adds externally collected file coverage to this test.
+      # Adds files that Test Impact Analysis should consider capable of impacting
+      # this test.
       #
-      # Paths must be relative to the root of the Git repository. This API can be
-      # used to associate files from non-instrumented languages with the active
-      # test so Test Impact Analysis can account for them.
+      # When any of these files changes, Test Impact Analysis considers this test
+      # impacted and will not skip it. This is useful for files that affect the
+      # test but cannot be observed by Datadog's Ruby coverage instrumentation,
+      # such as JavaScript executed in a browser during a Capybara test.
       #
-      # @param [Enumerable<String>] file_paths paths covered by this test
+      # Paths may be absolute or relative to the current working directory. They
+      # are normalized to paths relative to the repository root when the test
+      # coverage event is serialized.
+      #
+      # @example Register JavaScript files loaded by the browser during an RSpec test
+      #   RSpec.configure do |config|
+      #     config.after do
+      #       loaded_javascript_files = javascript_files_loaded_by_browser
+      #       Datadog::CI.active_test&.add_impacted_files(loaded_javascript_files)
+      #     end
+      #   end
+      #
+      #   # If app/frontend/checkout.js is in loaded_javascript_files, changing
+      #   # that file will cause Test Impact Analysis to run this test.
+      #
+      # A test can have at most 10,000 unique impacted files. Additional files
+      # are ignored and a warning is logged.
+      #
+      # @param [Enumerable<String>] file_paths paths that can impact this test
       # @return [void]
-      def add_coverage(file_paths)
+      def add_impacted_files(file_paths)
+        file_paths.each do |file_path|
+          next if custom_impacted_files.include?(file_path)
+
+          if custom_impacted_files.size >= MAX_IMPACTED_FILES
+            Datadog.logger.warn(
+              "Test Impact Analysis supports at most #{MAX_IMPACTED_FILES} impacted files per test; " \
+              "additional files will be ignored"
+            )
+            break
+          end
+
+          custom_impacted_files.add(file_path)
+        end
+
+        nil
+      end
+
+      # Returns files explicitly marked as impacting this test for Test Impact
+      # Analysis.
+      #
+      # Changing the returned set does not change the files stored by the test;
+      # use {#add_impacted_files} or {#clear_impacted_files} to update them.
+      #
+      # @return [Set<String>] paths that can impact this test for Test Impact Analysis
+      def impacted_files
+        custom_impacted_files.dup
+      end
+
+      # Clears files explicitly marked as impacting this test for Test Impact
+      # Analysis.
+      #
+      # @return [void]
+      def clear_impacted_files
+        custom_impacted_files.clear
+        nil
       end
 
       # Sets the status of the span to "pass".
@@ -277,6 +335,10 @@ module Datadog
       end
 
       private
+
+      def custom_impacted_files
+        @custom_impacted_files ||= Set.new
+      end
 
       def compute_final_status(status)
         # Skip status is always preserved

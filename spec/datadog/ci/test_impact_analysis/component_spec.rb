@@ -604,6 +604,20 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_IS_EMPTY, 1
     end
+
+    context "when only impacted files were added" do
+      let(:custom_file) { "app/frontend/user_profile.tsx" }
+
+      before do
+        allow(component).to receive(:coverage_collector).and_return(nil)
+        test_span.add_impacted_files([custom_file])
+      end
+
+      it "creates a coverage event and writes it" do
+        expect(subject.coverage).to include(custom_file => true)
+        expect(writer).to have_received(:write).with(subject)
+      end
+    end
   end
 
   describe "#context_coverage_enabled?" do

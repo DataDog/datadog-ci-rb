@@ -238,6 +238,10 @@ module Datadog
           context_ids = test.context_ids || []
           merge_context_coverages_into_test(coverage, context_ids)
 
+          test.impacted_files.each do |file_path|
+            coverage[file_path] = true
+          end
+
           write_coverage_event(
             test_id: test.id.to_s,
             test_suite_id: test.test_suite_id.to_s,

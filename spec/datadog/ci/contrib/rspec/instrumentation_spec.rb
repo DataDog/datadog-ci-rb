@@ -821,11 +821,7 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
-  context "with externally collected file coverage" do
-    before do
-      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(__dir__)
-    end
-
+  context "with externally collected impacted files" do
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }
       let(:integration_options) { {service_name: "lspec"} }
@@ -834,30 +830,90 @@ RSpec.describe "RSpec instrumentation" do
       let(:code_coverage_enabled) { true }
     end
 
-    it "adds non-Ruby files to the active test's coverage" do
-      pending "external file coverage ingestion is not implemented"
+    it "adds cwd-relative non-Ruby files and serializes repository-relative paths" do
+      repository_root = Datadog::CI::Git::LocalRepository.root
+      working_directory = __dir__
+      expected_before_hook_file = "app/frontend/components/user_profile.tsx"
+      expected_after_hook_file = "app/frontend/templates/user_profile.html"
+      before_hook_file = Pathname.new(File.join(repository_root, expected_before_hook_file))
+        .relative_path_from(Pathname.new(working_directory))
+        .to_s
+      after_hook_file = Pathname.new(File.join(repository_root, expected_after_hook_file))
+        .relative_path_from(Pathname.new(working_directory))
+        .to_s
+      impacted_files_during_test = nil
+      impacted_files_after_test = nil
+      test_coverage = nil
+      payload = nil
 
-      frontend_files = [
-        "app/frontend/components/user_profile.tsx",
-        "app/frontend/templates/user_profile.html"
-      ]
+      Dir.chdir(working_directory) do
+        with_new_rspec_environment do
+          RSpec.describe "User profile feature" do
+            before do
+              Datadog::CI.active_test.add_impacted_files([before_hook_file])
+            end
+
+            after do
+              Datadog::CI.active_test.add_impacted_files([after_hook_file])
+              impacted_files_after_test = Datadog::CI.active_test.impacted_files
+            end
+
+            it "renders the user profile" do
+              impacted_files_during_test = Datadog::CI.active_test.impacted_files
+              # Capybara drives the browser here.
+            end
+          end
+
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+          ::RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+        end
+
+        test_coverage = find_coverage_for_test(first_test_span)
+
+        expect(impacted_files_during_test).to eq(Set.new([before_hook_file]))
+        expect(impacted_files_after_test).to eq(Set.new([before_hook_file, after_hook_file]))
+        expect(test_coverage.coverage.keys).to include(before_hook_file, after_hook_file)
+
+        payload = MessagePack.unpack(MessagePack.pack(test_coverage))
+      end
+
+      expect(payload.fetch("files")).to include(
+        {"filename" => expected_before_hook_file},
+        {"filename" => expected_after_hook_file}
+      )
+    end
+
+    it "clears previously added impacted files" do
+      cleared_file = "app/frontend/components/legacy_user_profile.js"
+      retained_file = "app/frontend/components/user_profile.tsx"
+      impacted_files_after_clear = nil
 
       with_new_rspec_environment do
         RSpec.describe "User profile feature" do
           before do
-            Datadog::CI.active_test&.add_coverage(frontend_files)
+            Datadog::CI.active_test.add_impacted_files([cleared_file])
+          end
+
+          after do
+            Datadog::CI.active_test.clear_impacted_files
+            impacted_files_after_clear = Datadog::CI.active_test.impacted_files
+            Datadog::CI.active_test.add_impacted_files([retained_file])
           end
 
           it "renders the user profile" do
             # Capybara drives the browser here.
           end
-        end.run
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+        ::RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
       end
 
       test_coverage = find_coverage_for_test(first_test_span)
-      expected_frontend_files = frontend_files.map { |path| File.join(__dir__, path) }
 
-      expect(test_coverage.coverage.keys).to include(*expected_frontend_files)
+      expect(impacted_files_after_clear).to be_empty
+      expect(test_coverage.coverage).to include(retained_file => true)
+      expect(test_coverage.coverage).not_to include(cleared_file)
     end
   end
 

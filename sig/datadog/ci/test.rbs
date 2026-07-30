@@ -1,9 +1,12 @@
 module Datadog
   module CI
     class Test < Span
+      MAX_IMPACTED_FILES: 10000
+
       @datadog_test_id: String
       @in_test_discovery_mode: bool
       @context_ids: Array[String]?
+      @custom_impacted_files: Set[String]?
 
       # Context IDs for this test (used for TIA context coverage merging)
       attr_accessor context_ids: Array[String]?
@@ -25,7 +28,9 @@ module Datadog
       def disabled?: () -> bool
       def attempt_to_fix?: () -> bool
       def itr_unskippable!: () -> void
-      def add_coverage: (Enumerable[String] file_paths) -> void
+      def add_impacted_files: (Enumerable[String] file_paths) -> void
+      def impacted_files: () -> Set[String]
+      def clear_impacted_files: () -> void
       def set_parameters: (Hash[untyped, untyped] arguments, ?Hash[untyped, untyped] metadata) -> void
       def parameters: () -> String?
       def any_retry_passed?: () -> bool
@@ -40,6 +45,8 @@ module Datadog
       def modified?: () -> bool
 
       private
+
+      def custom_impacted_files: () -> Set[String]
 
       def compute_final_status: (String status) -> String
 
