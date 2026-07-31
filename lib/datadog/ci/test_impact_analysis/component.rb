@@ -493,8 +493,12 @@ module Datadog
 
           enrich_coverage_with_static_dependencies(coverage)
 
+          # Avoid normalizing and deduplicating paths on the test thread. The
+          # writer does that when it serializes the event. Telemetry only needs
+          # an estimate and may count overlaps between the two collections.
+          Telemetry.code_coverage_files(coverage.size + custom_impacted_files.size)
+
           files = Coverage::Files.new(coverage, custom_impacted_files)
-          Telemetry.code_coverage_files(files.size)
 
           coverage_event = Coverage::Event.new(
             test_id: test_id,

@@ -20,8 +20,6 @@ module Datadog
           private
 
           def normalized_files: () -> Array[String]
-
-          def each_raw_file: () { (String file) -> void } -> void
         end
       end
     end

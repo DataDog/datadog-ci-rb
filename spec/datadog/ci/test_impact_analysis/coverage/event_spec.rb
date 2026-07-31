@@ -349,5 +349,27 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
        "Test Session ID: 3\n" \
        "Files: [file.rb]\n\n")
     end
+
+    context "with absolute paths inside and outside the repository" do
+      let(:repository_root) { "/workspace/project" }
+      let(:coverage) { {File.join(repository_root, "native.rb") => true} }
+      let(:files) do
+        Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
+          coverage,
+          [File.join(repository_root, "frontend/app.js"), "/workspace/outside.js"]
+        )
+      end
+
+      before do
+        allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(repository_root)
+      end
+
+      it "shows the normalized files that will be serialized" do
+        output = subject.pretty_inspect
+
+        expect(output).to include("native.rb", "frontend/app.js")
+        expect(output).not_to include(repository_root, "/workspace/outside.js")
+      end
+    end
   end
 end

@@ -79,8 +79,8 @@ module Datadog
               q.text "Test Suite ID: #{@test_suite_id}\n"
               q.text "Test Session ID: #{@test_session_id}\n"
               q.group(2, "Files: [", "]\n") do
-                q.seplist inspect_coverage.keys.each do |key|
-                  q.text key
+                q.seplist @files do |filename|
+                  q.text filename
                 end
               end
             end

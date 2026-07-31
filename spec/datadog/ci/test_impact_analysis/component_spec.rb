@@ -738,6 +738,38 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       end
     end
 
+    context "when native coverage and impacted files overlap after normalization" do
+      let(:repository_relative_file) { "app/models/user.rb" }
+      let(:absolute_file) do
+        File.join(Datadog::CI::Git::LocalRepository.root, repository_relative_file)
+      end
+
+      before do
+        allow(component).to receive(:coverage_collector).and_return(
+          instance_double(
+            Datadog::CI::TestImpactAnalysis::Coverage::DDCov,
+            stop: {absolute_file => true}
+          )
+        )
+        test_span.add_impacted_files([repository_relative_file])
+        allow(Datadog::CI::Git::LocalRepository).to receive(:relative_to_root).and_call_original
+      end
+
+      it "defers path normalization until serialization" do
+        event = subject
+
+        expect(Datadog::CI::Git::LocalRepository).not_to have_received(:relative_to_root)
+
+        payload = MessagePack.unpack(MessagePack.pack(event))
+        expect(payload.fetch("files")).to eq([{"filename" => repository_relative_file}])
+      end
+
+      it_behaves_like "emits telemetry metric",
+        :distribution,
+        Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES,
+        2.0
+    end
+
     context "when the test and its suite have impacted files" do
       let(:suite_tracer_span) { Datadog::Tracing::SpanOperation.new("suite") }
       let(:test_suite) { Datadog::CI::TestSuite.new(suite_tracer_span) }
