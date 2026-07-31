@@ -3,7 +3,6 @@
 require "json"
 
 require_relative "span"
-require_relative "test_impact_analysis/impactable"
 require_relative "test_impact_analysis/telemetry"
 require_relative "utils/test_run"
 
@@ -13,7 +12,12 @@ module Datadog
     #
     # @public_api
     class Test < Span
-      include TestImpactAnalysis::Impactable
+      def initialize(tracer_span)
+        super
+
+        @custom_impacted_files = []
+        @inherited_custom_impacted_files = []
+      end
 
       # Context IDs for this test (used for TIA context coverage merging).
       # Contains list of context identifiers from outermost to innermost.
@@ -158,6 +162,55 @@ module Datadog
           TestImpactAnalysis::Telemetry.itr_forced_run
           set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
         end
+      end
+
+      # Adds custom files that Test Impact Analysis should consider capable of
+      # impacting this test.
+      #
+      # This is useful for files that Datadog's native Ruby coverage cannot
+      # observe, such as JavaScript executed in a browser during a Capybara
+      # test. Paths may be absolute or relative to the current working
+      # directory. Coverage-event serialization normalizes them to paths
+      # relative to the repository root and removes duplicates. Calls are
+      # incremental: every call adds files for the remainder of the test.
+      #
+      # @example Register JavaScript files loaded during an RSpec test
+      #   RSpec.configure do |config|
+      #     config.after do
+      #       Datadog::CI.active_test&.add_impacted_files(
+      #         javascript_files_loaded_by_browser
+      #       )
+      #     end
+      #   end
+      #
+      # @param [Array<String>] file_paths custom paths that can impact this test
+      # @return [void]
+      def add_impacted_files(file_paths)
+        raise ArgumentError, "file_paths must be an Array" unless file_paths.is_a?(Array)
+
+        @custom_impacted_files.concat(file_paths)
+        nil
+      end
+
+      # Inherits suite-level custom impacted files without copying them.
+      #
+      # @internal
+      # @return [void]
+      def inherit_impacted_files(custom_impacted_files)
+        @inherited_custom_impacted_files = custom_impacted_files
+        nil
+      end
+
+      # Locks custom impacted files against further changes and returns them to
+      # Test Impact Analysis.
+      #
+      # @internal
+      # @return [Array<String>]
+      def lock_custom_impacted_files
+        return @custom_impacted_files if @custom_impacted_files.frozen?
+
+        @custom_impacted_files =
+          (@inherited_custom_impacted_files | @custom_impacted_files).freeze
       end
 
       # Sets the status of the span to "pass".

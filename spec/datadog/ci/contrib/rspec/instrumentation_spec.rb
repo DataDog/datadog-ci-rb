@@ -862,26 +862,25 @@ RSpec.describe "RSpec instrumentation" do
       shared_file = Pathname.new(File.join(repository_root, expected_shared_file))
         .relative_path_from(Pathname.new(working_directory))
         .to_s
-      impacted_files_during_test = nil
-      impacted_files_after_test = nil
       test_coverage = nil
       payload = nil
 
       Dir.chdir(working_directory) do
         with_new_rspec_environment do
           RSpec.describe "User profile feature" do
+            before(:context) do
+              Datadog::CI.active_test_suite.add_impacted_files([suite_file, shared_file])
+            end
+
             before do
               Datadog::CI.active_test.add_impacted_files([before_hook_file])
-              Datadog::CI.active_test_suite.add_impacted_files([suite_file, shared_file])
             end
 
             after do
               Datadog::CI.active_test.add_impacted_files([after_hook_file, shared_file])
-              impacted_files_after_test = Datadog::CI.active_test.impacted_files
             end
 
             it "renders the user profile" do
-              impacted_files_during_test = Datadog::CI.active_test.impacted_files
               # Capybara drives the browser here.
             end
           end
@@ -892,8 +891,6 @@ RSpec.describe "RSpec instrumentation" do
 
         test_coverage = find_coverage_for_test(first_test_span)
 
-        expect(impacted_files_during_test).to eq([before_hook_file])
-        expect(impacted_files_after_test).to eq([before_hook_file, after_hook_file, shared_file])
         expect(test_coverage.inspect_coverage.keys).to include(before_hook_file, after_hook_file, suite_file, shared_file)
 
         payload = MessagePack.unpack(MessagePack.pack(test_coverage))
@@ -908,44 +905,20 @@ RSpec.describe "RSpec instrumentation" do
       expect(payload.fetch("files").count { |file| file["filename"] == expected_shared_file }).to eq(1)
     end
 
-    it "clears previously added impacted files" do
-      cleared_file = "app/frontend/components/legacy_user_profile.js"
-      retained_file = "app/frontend/components/user_profile.tsx"
-      impacted_files_after_clear = nil
-
-      with_new_rspec_environment do
-        RSpec.describe "User profile feature" do
-          before do
-            Datadog::CI.active_test.add_impacted_files([cleared_file])
-          end
-
-          after do
-            Datadog::CI.active_test.clear_impacted_files
-            impacted_files_after_clear = Datadog::CI.active_test.impacted_files
-            Datadog::CI.active_test.add_impacted_files([retained_file])
-          end
-
-          it "renders the user profile" do
-            # Capybara drives the browser here.
-          end
-        end
-
-        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
-        ::RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
-      end
-
-      test_coverage = find_coverage_for_test(first_test_span)
-
-      expect(impacted_files_after_clear).to be_empty
-      expect(test_coverage.inspect_coverage).to include(retained_file => true)
-      expect(test_coverage.inspect_coverage).not_to include(cleared_file)
-    end
-
-    it "rejects suite impacted files added after a test finishes" do
+    it "rejects suite impacted files after the first test starts" do
+      active_addition_error = nil
       late_addition_error = nil
 
       with_new_rspec_environment do
         RSpec.describe "User profile feature" do
+          before do
+            Datadog::CI.active_test_suite.add_impacted_files(
+              ["app/frontend/active_suite_file.js"]
+            )
+          rescue => e
+            active_addition_error = e
+          end
+
           after(:context) do
             Datadog::CI.active_test_suite.add_impacted_files(
               ["app/frontend/late_suite_file.js"]
@@ -961,9 +934,13 @@ RSpec.describe "RSpec instrumentation" do
         ::RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
       end
 
+      expect(active_addition_error).to be_a(RuntimeError)
+      expect(active_addition_error.message).to eq(
+        "Custom impacted files must be added to a test suite before the first test in the suite starts"
+      )
       expect(late_addition_error).to be_a(RuntimeError)
       expect(late_addition_error.message).to eq(
-        "Impacted files must be added to a test suite before any test in the suite finishes"
+        "Custom impacted files must be added to a test suite before the first test in the suite starts"
       )
     end
 
@@ -975,11 +952,16 @@ RSpec.describe "RSpec instrumentation" do
         shared_file = "app/frontend/shared.js"
         first_test_file = "app/frontend/first_test.js"
         second_test_file = "app/frontend/second_test.js"
+        late_suite_file = "app/frontend/late_suite.js"
 
         with_new_rspec_environment do
           RSpec.describe "User profile feature" do
             before(:context) do
               Datadog::CI.active_test_suite.add_impacted_files([suite_file, shared_file])
+            end
+
+            after(:context) do
+              Datadog::CI.active_test_suite.add_impacted_files([late_suite_file])
             end
 
             after do
@@ -1003,11 +985,12 @@ RSpec.describe "RSpec instrumentation" do
           suite_file,
           shared_file,
           first_test_file,
-          second_test_file
+          second_test_file,
+          late_suite_file
         )
 
         payload_files = MessagePack.unpack(MessagePack.pack(suite_coverage)).fetch("files")
-        expected_files = [suite_file, shared_file, first_test_file, second_test_file]
+        expected_files = [suite_file, shared_file, first_test_file, second_test_file, late_suite_file]
         expected_files.each do |file|
           expect(payload_files.count { |payload_file| payload_file["filename"] == file }).to eq(1)
         end

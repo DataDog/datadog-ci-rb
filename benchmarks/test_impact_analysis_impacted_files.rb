@@ -55,12 +55,28 @@ class BenchmarkTestContext
   end
 end
 
+module BenchmarkTestImpactAnalysis
+  attr_accessor :benchmark_test_impact_analysis
+
+  private
+
+  def test_impact_analysis
+    benchmark_test_impact_analysis
+  end
+end
+
 class BenchmarkTest < Datadog::CI::Test
+  include BenchmarkTestImpactAnalysis
+
   attr_accessor :benchmark_test_suite
 
   def test_suite
     benchmark_test_suite
   end
+end
+
+class BenchmarkTestSuite < Datadog::CI::TestSuite
+  include BenchmarkTestImpactAnalysis
 end
 
 def execute_test_body
@@ -83,18 +99,20 @@ def build_test_impact_analysis(coverage_writer, test_skipping_mode)
   test_impact_analysis
 end
 
-def build_test_suite(suite_impacted_files)
+def build_test_suite(suite_impacted_files, test_impact_analysis)
   tracer_span = Datadog::Tracing::SpanOperation.new("benchmark suite")
   tracer_span.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "1")
-  test_suite = Datadog::CI::TestSuite.new(tracer_span)
+  test_suite = BenchmarkTestSuite.new(tracer_span)
+  test_suite.benchmark_test_impact_analysis = test_impact_analysis
   test_suite.add_impacted_files(suite_impacted_files) unless suite_impacted_files.empty?
   test_suite
 end
 
-def build_test(test_suite, test_impacted_files)
+def build_test(test_suite, test_impacted_files, test_impact_analysis)
   tracer_span = Datadog::Tracing::SpanOperation.new("benchmark test")
   test = BenchmarkTest.new(tracer_span)
   test.benchmark_test_suite = test_suite
+  test.benchmark_test_impact_analysis = test_impact_analysis
   test.set_tag(Datadog::CI::Ext::Test::TAG_NAME, "benchmark test")
   test.set_tag(Datadog::CI::Ext::Test::TAG_STATUS, Datadog::CI::Ext::Test::Status::PASS)
   test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "1")
@@ -119,17 +137,18 @@ end
 
 def trace_tests_in_test_mode(
   iterations,
-  test_impacted_files,
+  test_impacted_files_by_test,
   suite_impacted_files,
   test_impact_analysis,
   coverage_writer
 )
   test_context = BenchmarkTestContext.new
   initial_events_count = coverage_writer.events_count
-  test_suite = build_test_suite(suite_impacted_files)
+  test_suite = build_test_suite(suite_impacted_files, test_impact_analysis)
 
-  iterations.times do
-    test = build_test(test_suite, test_impacted_files)
+  iterations.times do |test_index|
+    test_impacted_files = test_impacted_files_by_test[test_index % test_impacted_files_by_test.size]
+    test = build_test(test_suite, test_impacted_files, test_impact_analysis)
 
     test_impact_analysis.on_test_started(test)
     execute_test_body
@@ -143,14 +162,14 @@ def trace_tests_in_test_mode(
 
   validate_impacted_files(
     coverage_writer.last_payload,
-    test_impacted_files | suite_impacted_files
+    test_impacted_files_by_test[(iterations - 1) % test_impacted_files_by_test.size] | suite_impacted_files
   )
 end
 
 def trace_tests_in_suite_mode(
   iterations,
   suites_count,
-  test_impacted_files,
+  test_impacted_files_by_test,
   suite_impacted_files,
   test_impact_analysis,
   coverage_writer
@@ -160,13 +179,14 @@ def trace_tests_in_suite_mode(
   tests_per_suite, suites_with_extra_test = iterations.divmod(suites_count)
 
   suites_count.times do |suite_index|
-    test_suite = build_test_suite(suite_impacted_files)
+    test_suite = build_test_suite(suite_impacted_files, test_impact_analysis)
     test_impact_analysis.on_test_suite_started(test_suite)
     current_suite_tests = tests_per_suite
     current_suite_tests += 1 if suite_index < suites_with_extra_test
 
-    current_suite_tests.times do
-      test = build_test(test_suite, test_impacted_files)
+    current_suite_tests.times do |test_index|
+      test_impacted_files = test_impacted_files_by_test[test_index % test_impacted_files_by_test.size]
+      test = build_test(test_suite, test_impacted_files, test_impact_analysis)
 
       test_impact_analysis.on_test_started(test)
       execute_test_body
@@ -185,7 +205,9 @@ def trace_tests_in_suite_mode(
 
   validate_impacted_files(
     coverage_writer.last_payload,
-    test_impacted_files | suite_impacted_files
+    Array.new(tests_per_suite) do |test_index|
+      test_impacted_files_by_test[test_index % test_impacted_files_by_test.size]
+    end.flatten.uniq | suite_impacted_files
   )
 end
 
@@ -197,16 +219,24 @@ raise "ITERATIONS must be positive" unless iterations.positive?
 raise "SUITES must be positive" unless suites_count.positive?
 raise "SUITES must not exceed ITERATIONS" if suites_count > iterations
 raise "IMPACTED_FILES must not be negative" if impacted_files_count.negative?
-if impacted_files_count > Datadog::CI::Test::MAX_IMPACTED_FILES
-  raise "IMPACTED_FILES must not exceed #{Datadog::CI::Test::MAX_IMPACTED_FILES}"
-end
 
-test_impacted_files = Array.new(impacted_files_count) do |index|
+shared_test_impacted_files_count = impacted_files_count / 2
+unique_test_impacted_files_count = impacted_files_count - shared_test_impacted_files_count
+shared_test_impacted_files = Array.new(shared_test_impacted_files_count) do |index|
   "app/frontend/benchmark_component_#{index}.js"
 end.freeze
-overlapping_files_count = impacted_files_count / 2
+maximum_tests_per_suite = (iterations.to_f / suites_count).ceil
+# Reuse variants across suites to keep benchmark setup memory bounded. Within
+# each suite, half of every test's paths are unique to that test.
+test_impacted_files_by_test = Array.new(maximum_tests_per_suite) do |test_index|
+  unique_files = Array.new(unique_test_impacted_files_count) do |file_index|
+    "app/frontend/benchmark_test_#{test_index}_component_#{file_index}.js"
+  end
+  (shared_test_impacted_files + unique_files).freeze
+end.freeze
+overlapping_files_count = shared_test_impacted_files_count
 suite_impacted_files = (
-  test_impacted_files.first(overlapping_files_count) +
+  shared_test_impacted_files.first(overlapping_files_count) +
   Array.new(impacted_files_count - overlapping_files_count) do |index|
     "app/frontend/benchmark_suite_#{index}.js"
   end
@@ -226,10 +256,10 @@ suite_mode_custom_tia = build_test_impact_analysis(suite_mode_custom_writer, sui
 
 warmup_iterations = [iterations, 1000].min
 warmup_suites_count = [(warmup_iterations * suites_count) / iterations, 1].max
-trace_tests_in_test_mode(warmup_iterations, [], [], test_mode_coverage_tia, test_mode_coverage_writer)
+trace_tests_in_test_mode(warmup_iterations, [[]], [], test_mode_coverage_tia, test_mode_coverage_writer)
 trace_tests_in_test_mode(
   warmup_iterations,
-  test_impacted_files,
+  test_impacted_files_by_test,
   suite_impacted_files,
   test_mode_custom_tia,
   test_mode_custom_writer
@@ -237,7 +267,7 @@ trace_tests_in_test_mode(
 trace_tests_in_suite_mode(
   warmup_iterations,
   warmup_suites_count,
-  [],
+  [[]],
   [],
   suite_mode_coverage_tia,
   suite_mode_coverage_writer
@@ -245,7 +275,7 @@ trace_tests_in_suite_mode(
 trace_tests_in_suite_mode(
   warmup_iterations,
   warmup_suites_count,
-  test_impacted_files,
+  test_impacted_files_by_test,
   suite_impacted_files,
   suite_mode_custom_tia,
   suite_mode_custom_writer
@@ -256,7 +286,8 @@ puts "Traced tests per scenario: #{iterations}"
 puts "Suites in suite-mode scenarios: #{suites_count}"
 puts "Normal TIA coverage: native collector"
 puts "MessagePack serialization: every coverage event"
-puts "Custom impacted files per test: #{test_impacted_files.size}"
+puts "Custom impacted files per test: #{impacted_files_count}"
+puts "Custom impacted files unique per test within a suite: #{unique_test_impacted_files_count}"
 puts "Custom impacted files per suite: #{suite_impacted_files.size}"
 puts "Overlapping test/suite impacted files: #{overlapping_files_count}"
 puts
@@ -265,7 +296,7 @@ Benchmark.bm(54) do |benchmark|
   GC.start
 
   benchmark.report("Test mode: TIA coverage only") do
-    trace_tests_in_test_mode(iterations, [], [], test_mode_coverage_tia, test_mode_coverage_writer)
+    trace_tests_in_test_mode(iterations, [[]], [], test_mode_coverage_tia, test_mode_coverage_writer)
   end
 
   GC.start
@@ -273,7 +304,7 @@ Benchmark.bm(54) do |benchmark|
   benchmark.report("Test mode: TIA coverage + test/suite impacted files") do
     trace_tests_in_test_mode(
       iterations,
-      test_impacted_files,
+      test_impacted_files_by_test,
       suite_impacted_files,
       test_mode_custom_tia,
       test_mode_custom_writer
@@ -286,7 +317,7 @@ Benchmark.bm(54) do |benchmark|
     trace_tests_in_suite_mode(
       iterations,
       suites_count,
-      [],
+      [[]],
       [],
       suite_mode_coverage_tia,
       suite_mode_coverage_writer
@@ -299,7 +330,7 @@ Benchmark.bm(54) do |benchmark|
     trace_tests_in_suite_mode(
       iterations,
       suites_count,
-      test_impacted_files,
+      test_impacted_files_by_test,
       suite_impacted_files,
       suite_mode_custom_tia,
       suite_mode_custom_writer

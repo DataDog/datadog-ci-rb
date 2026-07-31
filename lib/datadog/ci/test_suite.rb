@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "concurrent_span"
-require_relative "test_impact_analysis/impactable"
 
 module Datadog
   module CI
@@ -14,10 +13,10 @@ module Datadog
     #
     # @public_api
     class TestSuite < ConcurrentSpan
-      include TestImpactAnalysis::Impactable
-
       def initialize(tracer_span)
         super
+
+        @custom_impacted_files = []
 
         # counts how many times every test in this suite was executed with each status:
         #   { "MySuite.mytest.a:1" => { "pass" => 3, "fail" => 2 } }
@@ -31,35 +30,47 @@ module Datadog
       # Adds files that Test Impact Analysis should consider capable of
       # impacting every test in this suite.
       #
-      # Impacted files must be added before any test in this suite finishes.
+      # In test-level skipping mode, custom impacted files must be added before
+      # the first test in this suite starts. In suite-level skipping mode, they
+      # may be added until the suite finishes.
       #
-      # @raise [RuntimeError] if a test in this suite has already finished
-      # @see TestImpactAnalysis::Impactable#add_impacted_files
+      # This is useful for files shared by every test that Datadog's native
+      # Ruby coverage cannot observe, such as JavaScript test setup. Calls are
+      # incremental: every call adds files for the remainder of the suite.
+      #
+      # @example Register JavaScript setup shared by an RSpec suite
+      #   before(:context) do
+      #     Datadog::CI.active_test_suite&.add_impacted_files(
+      #       ["app/frontend/test_setup.js"]
+      #     )
+      #   end
+      #
+      # @raise [RuntimeError] if test-level skipping is active and a test in
+      #   this suite has already started
+      # @param [Array<String>] file_paths custom paths that can impact this suite
+      # @return [void]
       def add_impacted_files(file_paths)
-        synchronize do
-          unless @execution_stats_per_test.empty? && @final_statuses_per_test.empty?
-            raise "Impacted files must be added to a test suite before any test in the suite finishes"
-          end
+        raise ArgumentError, "file_paths must be an Array" unless file_paths.is_a?(Array)
 
-          super
+        synchronize do
+          ensure_custom_impacted_files_mutable!
+          @custom_impacted_files.concat(file_paths)
         end
+        nil
       end
 
-      # Records impacted files collected for a finished test in this suite.
+      # Locks suite-level custom impacted files against further changes and
+      # returns them to Test Impact Analysis.
       #
       # @internal
-      def record_test_impacted_files(file_paths)
-        synchronize { add_impacted_files_unchecked(file_paths) }
-      end
-
-      # @see TestImpactAnalysis::Impactable#impacted_files
-      def impacted_files
-        synchronize { super }
-      end
-
-      # @see TestImpactAnalysis::Impactable#clear_impacted_files
-      def clear_impacted_files
-        synchronize { super }
+      # @return [Array<String>]
+      def lock_custom_impacted_files
+        synchronize do
+          unless @custom_impacted_files.frozen?
+            @custom_impacted_files = @custom_impacted_files.uniq.freeze
+          end
+          @custom_impacted_files
+        end
       end
 
       # Finishes this test suite.
@@ -170,8 +181,12 @@ module Datadog
 
       private
 
-      def impacted_files_limit_scope
-        "test suite"
+      def ensure_custom_impacted_files_mutable!
+        return unless @custom_impacted_files.frozen?
+
+        raise(
+          "Custom impacted files must be added to a test suite before the first test in the suite starts"
+        )
       end
 
       def set_status_from_stats!

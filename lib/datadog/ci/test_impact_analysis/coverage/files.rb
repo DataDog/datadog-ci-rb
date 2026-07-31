@@ -6,26 +6,16 @@ module Datadog
   module CI
     module TestImpactAnalysis
       module Coverage
-        # Keeps TIA file collections together and normalizes them as one set.
-        #
-        # Collections are retained separately until their normalized contents
-        # are needed, avoiding an eager merge on the test execution path.
+        # Keeps native coverage and custom impacted files together and
+        # normalizes them as one set.
         #
         # @internal
         class Files
           EMPTY_FILES = [].freeze
-          EMPTY_COLLECTIONS = [].freeze
 
-          def initialize(*collections)
-            collections.reject!(&:empty?)
-            @collections = collections
-            @normalized_files = nil
-          end
-
-          def add_collection(collection)
-            return if collection.empty?
-
-            @collections << collection
+          def initialize(coverage, custom_impacted_files = EMPTY_FILES)
+            @coverage = coverage
+            @custom_impacted_files = custom_impacted_files
             @normalized_files = nil
           end
 
@@ -37,16 +27,15 @@ module Datadog
             normalized_files.size
           end
 
-          # Returns a readable view while preserving the paths supplied by each
-          # collector. Serialized files are normalized through {#each}.
+          # Returns a readable view while preserving the paths supplied by
+          # native coverage and the custom impacted-files API. Serialized files
+          # are normalized through {#each}.
           def inspect_coverage
-            @collections.each_with_object({}) do |collection, coverage|
-              if collection.is_a?(Hash)
-                coverage.merge!(collection)
-              else
-                collection.each { |file| coverage[file] = true }
-              end
+            coverage = @coverage.dup
+            @custom_impacted_files.each do |file|
+              coverage[file] = true
             end
+            coverage
           end
 
           private
@@ -62,13 +51,8 @@ module Datadog
           end
 
           def each_raw_file
-            @collections.each do |collection|
-              if collection.is_a?(Hash)
-                collection.each_key { |file| yield file }
-              else
-                collection.each { |file| yield file }
-              end
-            end
+            @coverage.each_key { |file| yield file }
+            @custom_impacted_files.each { |file| yield file }
           end
         end
       end

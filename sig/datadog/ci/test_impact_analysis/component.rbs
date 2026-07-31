@@ -116,7 +116,9 @@ module Datadog
 
         def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void
 
-        def write_coverage_event: (test_id: String?, test_suite_id: String, test_session_id: String, source_file: String?, coverage: Hash[String, untyped]?, ?file_collections: Array[Array[String]]) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+        def write_coverage_event: (test_id: String?, test_suite_id: String, test_session_id: String, source_file: String?, coverage: Hash[String, untyped]?, ?custom_impacted_files: Array[String]) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+
+        def inherit_suite_impacted_files: (Datadog::CI::Test test) -> void
 
         def fetch_skippables: (Datadog::CI::TestSession test_session) -> void
 

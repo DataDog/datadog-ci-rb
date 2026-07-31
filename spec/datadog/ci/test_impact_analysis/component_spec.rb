@@ -42,6 +42,12 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
   before do
     allow(writer).to receive(:write)
+    allow_any_instance_of(Datadog::CI::Test)
+      .to receive(:test_impact_analysis)
+      .and_return(component)
+    allow_any_instance_of(Datadog::CI::TestSuite)
+      .to receive(:test_impact_analysis)
+      .and_return(component)
     allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
     allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
       Datadog::CI::TestOptimizationCache::Component.new(
@@ -521,6 +527,71 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
   end
 
+  describe "custom impacted files lifecycle" do
+    let(:suite_span) { Datadog::Tracing::SpanOperation.new("suite") }
+    let(:test_suite) { Datadog::CI::TestSuite.new(suite_span) }
+    let(:test_span) { Datadog::CI::Test.new(Datadog::Tracing::SpanOperation.new("test")) }
+    let(:context) { instance_double(Datadog::CI::TestTracing::Context) }
+
+    before do
+      allow(test_span).to receive(:test_suite).and_return(test_suite)
+    end
+
+    context "in test-level skipping mode" do
+      it "copies suite custom impacted files to the test when it starts" do
+        test_suite.add_impacted_files(["app/frontend/suite.js", "app/frontend/shared.js"])
+
+        component.on_test_started(test_span)
+        test_span.add_impacted_files(["app/frontend/test.js", "app/frontend/shared.js"])
+
+        expect(test_span.lock_custom_impacted_files).to eq(
+          [
+            "app/frontend/suite.js",
+            "app/frontend/shared.js",
+            "app/frontend/test.js"
+          ]
+        )
+        expect(test_suite.lock_custom_impacted_files).to eq(
+          ["app/frontend/suite.js", "app/frontend/shared.js"]
+        )
+      end
+
+      it "rejects suite additions after the first test starts" do
+        component.on_test_started(test_span)
+
+        expect do
+          test_suite.add_impacted_files(["app/frontend/late.js"])
+        end.to raise_error(
+          RuntimeError,
+          "Custom impacted files must be added to a test suite before the first test in the suite starts"
+        )
+      end
+    end
+
+    context "in suite-level skipping mode" do
+      let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+
+      it "allows suite additions before, during, and after tests and aggregates test files at finish" do
+        test_suite.add_impacted_files(["app/frontend/before.js"])
+        component.on_test_started(test_span)
+        test_suite.add_impacted_files(["app/frontend/during.js"])
+        test_span.add_impacted_files(["app/frontend/test.js"])
+
+        component.on_test_finished(test_span, context)
+        test_suite.add_impacted_files(["app/frontend/after.js"])
+
+        expect(test_suite.lock_custom_impacted_files).to eq(
+          [
+            "app/frontend/before.js",
+            "app/frontend/during.js",
+            "app/frontend/test.js",
+            "app/frontend/after.js"
+          ]
+        )
+      end
+    end
+  end
+
   describe "#on_test_finished (full lifecycle with event writing and ITR stats)" do
     let(:test_tracer_span) { Datadog::Tracing::SpanOperation.new("test") }
     let(:test_span) { Datadog::CI::Test.new(test_tracer_span) }
@@ -677,8 +748,9 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       before do
         allow(component).to receive(:coverage_collector).and_return(nil)
         allow(test_span).to receive(:test_suite).and_return(test_suite)
-        test_span.add_impacted_files([test_file, shared_file])
         test_suite.add_impacted_files([suite_file, shared_file])
+        component.on_test_started(test_span)
+        test_span.add_impacted_files([test_file, shared_file])
       end
 
       it "writes the deduplicated test and suite files in the test event" do

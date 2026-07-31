@@ -188,6 +188,8 @@ module Datadog
         # @param test [Datadog::CI::Test] The test that is starting
         # @return [void]
         def on_test_started(test)
+          inherit_suite_impacted_files(test) if test_skipping_mode?
+
           return if !enabled? || !code_coverage?
           return if suite_skipping_mode?
 
@@ -217,10 +219,8 @@ module Datadog
         def on_test_finished(test, context)
           return unless enabled?
 
-          test_suite = test.test_suite
           if suite_skipping_mode?
-            test_impacted_files = test.impacted_files
-            test_suite&.record_test_impacted_files(test_impacted_files) unless test_impacted_files.empty?
+            test.test_suite&.add_impacted_files(test.lock_custom_impacted_files)
             return
           end
 
@@ -241,8 +241,6 @@ module Datadog
           return if test.skipped?
           coverage ||= {}
 
-          suite_impacted_files = test_suite&.impacted_files || Coverage::Files::EMPTY_FILES
-
           # Merge context coverage from all relevant contexts
           context_ids = test.context_ids || []
           merge_context_coverages_into_test(coverage, context_ids)
@@ -253,7 +251,7 @@ module Datadog
             test_session_id: test.test_session_id.to_s,
             source_file: test.source_file,
             coverage: coverage,
-            file_collections: [test.impacted_files, suite_impacted_files]
+            custom_impacted_files: test.lock_custom_impacted_files
           )
         end
 
@@ -361,7 +359,7 @@ module Datadog
             test_session_id: test_suite.get_tag(Ext::Test::TAG_TEST_SESSION_ID).to_s,
             source_file: test_suite.source_file,
             coverage: coverage,
-            file_collections: [test_suite.impacted_files]
+            custom_impacted_files: test_suite.lock_custom_impacted_files
           )
         end
 
@@ -483,10 +481,10 @@ module Datadog
           test_session_id:,
           source_file:,
           coverage:,
-          file_collections: Coverage::Files::EMPTY_COLLECTIONS
+          custom_impacted_files: Coverage::Files::EMPTY_FILES
         )
           coverage ||= {}
-          if coverage.empty? && file_collections.all?(&:empty?)
+          if coverage.empty? && custom_impacted_files.empty?
             Telemetry.code_coverage_is_empty
             return
           end
@@ -495,7 +493,7 @@ module Datadog
 
           enrich_coverage_with_static_dependencies(coverage)
 
-          files = Coverage::Files.new(coverage, *file_collections)
+          files = Coverage::Files.new(coverage, custom_impacted_files)
           Telemetry.code_coverage_files(files.size)
 
           coverage_event = Coverage::Event.new(
@@ -510,6 +508,13 @@ module Datadog
           write(coverage_event)
 
           coverage_event
+        end
+
+        def inherit_suite_impacted_files(test)
+          test_suite = test.test_suite
+          return if test_suite.nil?
+
+          test.inherit_impacted_files(test_suite.lock_custom_impacted_files)
         end
 
         def fetch_skippables(test_session)

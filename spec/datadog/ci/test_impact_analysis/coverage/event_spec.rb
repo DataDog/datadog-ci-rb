@@ -64,8 +64,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         test_session_id: test_session_id,
         files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
           coverage,
-          custom_impacted_files,
-          suite_impacted_files
+          custom_impacted_files | suite_impacted_files
         )
       )
     end
@@ -258,8 +257,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
           test_session_id: test_session_id,
           files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
             coverage,
-            ["test.js", "shared.js"],
-            ["suite.js", "shared.js", "file.rb"]
+            ["test.js", "shared.js", "suite.js", "shared.js", "file.rb"]
           )
         )
       end
@@ -287,8 +285,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
           test_session_id: test_session_id,
           files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
             {absolute_file => true},
-            [repository_relative_file],
-            [absolute_file]
+            [repository_relative_file, absolute_file]
           )
         )
       end

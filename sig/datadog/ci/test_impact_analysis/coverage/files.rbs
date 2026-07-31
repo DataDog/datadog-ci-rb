@@ -3,17 +3,13 @@ module Datadog
     module TestImpactAnalysis
       module Coverage
         class Files
-          type collection = Array[String] | Hash[String, untyped]
-
           EMPTY_FILES: Array[String]
-          EMPTY_COLLECTIONS: Array[Array[String]]
 
-          @collections: Array[collection]
+          @coverage: Hash[String, untyped]
+          @custom_impacted_files: Array[String]
           @normalized_files: Array[String]?
 
-          def initialize: (*collection collections) -> void
-
-          def add_collection: (collection collection) -> void
+          def initialize: (Hash[String, untyped] coverage, ?Array[String] custom_impacted_files) -> void
 
           def each: () { (String file) -> void } -> void
 

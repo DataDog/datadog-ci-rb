@@ -5,10 +5,16 @@ RSpec.describe Datadog::CI::Test do
 
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true) }
   let(:test_tracing) { spy("test_tracing") }
+  let(:test_impact_analysis) do
+    Datadog::CI::TestImpactAnalysis::Component.new(dd_env: "test", enabled: true)
+  end
 
   subject(:ci_test) { described_class.new(tracer_span) }
 
-  before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
+  before do
+    allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing)
+    allow_any_instance_of(described_class).to receive(:test_impact_analysis).and_return(test_impact_analysis)
+  end
 
   describe "#name" do
     subject(:name) { ci_test.name }
@@ -276,12 +282,12 @@ RSpec.describe Datadog::CI::Test do
     end
   end
 
-  describe "impacted files" do
-    it "adds and returns file paths incrementally" do
+  describe "custom impacted files" do
+    it "adds file paths incrementally" do
       ci_test.add_impacted_files(["../../app/frontend/user_profile.tsx"])
       ci_test.add_impacted_files(["./support/user_profile.html"])
 
-      expect(ci_test.impacted_files).to eq(
+      expect(ci_test.lock_custom_impacted_files).to eq(
         [
           "../../app/frontend/user_profile.tsx",
           "./support/user_profile.html"
@@ -298,98 +304,20 @@ RSpec.describe Datadog::CI::Test do
         .to raise_error(ArgumentError, "file_paths must be an Array")
     end
 
-    it "does not count duplicate paths within a bulk addition" do
+    it "deduplicates paths across incremental additions" do
       duplicate_file = "app/frontend/duplicate.js"
-      remaining_files = Array.new(described_class::MAX_IMPACTED_FILES - 1) do |index|
-        "app/frontend/file-#{index}.js"
-      end
+      another_file = "app/frontend/another.js"
 
-      ci_test.add_impacted_files(Array.new(described_class::MAX_IMPACTED_FILES, duplicate_file))
-      ci_test.add_impacted_files(remaining_files)
+      ci_test.add_impacted_files([duplicate_file, duplicate_file])
+      ci_test.add_impacted_files([duplicate_file, another_file])
 
-      expect(ci_test.impacted_files).to eq([duplicate_file] + remaining_files)
+      expect(ci_test.lock_custom_impacted_files).to eq([duplicate_file, another_file])
     end
 
-    it "returns an immutable snapshot of the impacted files" do
-      original_file = "../../app/frontend/user_profile.tsx"
-      later_file = "./support/user_profile.html"
-      ci_test.add_impacted_files([original_file])
-
-      snapshot = ci_test.impacted_files
-
-      expect(snapshot).to be_frozen
-      expect { snapshot << later_file }.to raise_error(FrozenError)
-
-      ci_test.add_impacted_files([later_file])
-
-      expect(snapshot).to eq([original_file])
-      expect(ci_test.impacted_files).to eq([original_file, later_file])
-    end
-
-    it "does not expose the internal coverage merge method" do
+    it "does not expose APIs to inspect or clear impacted files" do
+      expect(ci_test).not_to respond_to(:custom_impacted_files)
+      expect(ci_test).not_to respond_to(:clear_impacted_files)
       expect(ci_test).not_to respond_to(:merge_impacted_files_into)
-    end
-
-    it "clears impacted files" do
-      ci_test.add_impacted_files(["../../app/frontend/user_profile.tsx"])
-
-      ci_test.clear_impacted_files
-
-      expect(ci_test.impacted_files).to be_empty
-    end
-
-    context "when adding up to the maximum number of files" do
-      before do
-        allow(Datadog.logger).to receive(:warn)
-      end
-
-      it "adds every file without warning" do
-        files = Array.new(described_class::MAX_IMPACTED_FILES) { |index| "app/frontend/file-#{index}.js" }
-
-        ci_test.add_impacted_files(files)
-
-        expect(ci_test.impacted_files).to eq(files)
-        expect(Datadog.logger).not_to have_received(:warn)
-      end
-    end
-
-    context "when adding more than the maximum number of files" do
-      before do
-        allow(Datadog.logger).to receive(:warn)
-      end
-
-      it "keeps the first 10,000 unique files and warns once" do
-        files = Array.new(described_class::MAX_IMPACTED_FILES + 1) { |index| "app/frontend/file-#{index}.js" }
-
-        ci_test.add_impacted_files(files)
-
-        expect(ci_test.impacted_files).to eq(files.first(described_class::MAX_IMPACTED_FILES))
-        expect(Datadog.logger).to have_received(:warn).once.with(
-          "Test Impact Analysis supports at most 10000 impacted files per test; additional files will be ignored"
-        )
-      end
-
-      it "does not count duplicate paths against the limit across incremental additions" do
-        files = Array.new(described_class::MAX_IMPACTED_FILES - 1) { |index| "app/frontend/file-#{index}.js" }
-        final_file = "app/frontend/final.js"
-
-        ci_test.add_impacted_files(files)
-        ci_test.add_impacted_files([files.first, final_file, "app/frontend/ignored.js"])
-
-        expect(ci_test.impacted_files).to eq(files + [final_file])
-        expect(Datadog.logger).to have_received(:warn).once
-      end
-
-      it "allows files to be added again after clearing" do
-        files = Array.new(described_class::MAX_IMPACTED_FILES) { |index| "app/frontend/file-#{index}.js" }
-
-        ci_test.add_impacted_files(files)
-        ci_test.clear_impacted_files
-        ci_test.add_impacted_files(["app/frontend/replacement.js"])
-
-        expect(ci_test.impacted_files).to eq(["app/frontend/replacement.js"])
-        expect(Datadog.logger).not_to have_received(:warn)
-      end
     end
   end
 
