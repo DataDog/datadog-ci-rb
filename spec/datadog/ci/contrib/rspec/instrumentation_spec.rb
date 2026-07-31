@@ -843,41 +843,52 @@ RSpec.describe "RSpec instrumentation" do
       let(:code_coverage_enabled) { true }
     end
 
-    it "adds cwd-relative non-Ruby files and serializes repository-relative paths" do
+    it "normalizes documented path inputs when tests run from a subfolder" do
       repository_root = Datadog::CI::Git::LocalRepository.root
       working_directory = __dir__
-      expected_before_hook_file = "app/frontend/components/user_profile.tsx"
-      expected_after_hook_file = "app/frontend/templates/user_profile.html"
-      expected_suite_file = "app/frontend/suites/user_profile.js"
+      expected_absolute_file = "app/frontend/absolute/user_profile.tsx"
+      expected_repository_relative_file = "app/frontend/repository/user_profile.html"
+      expected_cwd_relative_file = "app/frontend/cwd/user_profile.js"
       expected_shared_file = "app/frontend/shared/user_profile.js"
-      before_hook_file = Pathname.new(File.join(repository_root, expected_before_hook_file))
+      expected_explicit_cwd_file = Pathname.new(File.join(working_directory, "fixtures/missing.js"))
+        .relative_path_from(Pathname.new(repository_root))
+        .to_s
+
+      absolute_file = File.join(repository_root, expected_absolute_file)
+      repository_relative_file = expected_repository_relative_file
+      cwd_relative_file = Pathname.new(File.join(repository_root, expected_cwd_relative_file))
         .relative_path_from(Pathname.new(working_directory))
         .to_s
-      after_hook_file = Pathname.new(File.join(repository_root, expected_after_hook_file))
+      cwd_relative_shared_file = Pathname.new(File.join(repository_root, expected_shared_file))
         .relative_path_from(Pathname.new(working_directory))
         .to_s
-      suite_file = Pathname.new(File.join(repository_root, expected_suite_file))
-        .relative_path_from(Pathname.new(working_directory))
-        .to_s
-      shared_file = Pathname.new(File.join(repository_root, expected_shared_file))
-        .relative_path_from(Pathname.new(working_directory))
-        .to_s
-      test_coverage = nil
+      explicit_cwd_file = "./fixtures/missing.js"
+      outside_file = File.join(File.dirname(repository_root), "outside.js")
       payload = nil
 
       Dir.chdir(working_directory) do
         with_new_rspec_environment do
           RSpec.describe "User profile feature" do
             before(:context) do
-              Datadog::CI.active_test_suite.add_impacted_files([suite_file, shared_file])
+              Datadog::CI.active_test_suite.add_impacted_files([expected_shared_file])
             end
 
             before do
-              Datadog::CI.active_test.add_impacted_files([before_hook_file])
+              Datadog::CI.active_test.add_impacted_files(
+                [absolute_file, repository_relative_file]
+              )
+              Datadog::CI.active_test.add_impacted_files(
+                [File.expand_path(explicit_cwd_file, Dir.pwd)]
+              )
             end
 
             after do
-              Datadog::CI.active_test.add_impacted_files([after_hook_file, shared_file])
+              Datadog::CI.active_test.add_impacted_files(
+                [cwd_relative_file, cwd_relative_shared_file].map do |path|
+                  File.expand_path(path, Dir.pwd)
+                end
+              )
+              Datadog::CI.active_test.add_impacted_files([outside_file])
             end
 
             it "renders the user profile" do
@@ -890,19 +901,18 @@ RSpec.describe "RSpec instrumentation" do
         end
 
         test_coverage = find_coverage_for_test(first_test_span)
-
-        expect(test_coverage.inspect_coverage.keys).to include(before_hook_file, after_hook_file, suite_file, shared_file)
-
         payload = MessagePack.unpack(MessagePack.pack(test_coverage))
       end
 
       expect(payload.fetch("files")).to include(
-        {"filename" => expected_before_hook_file},
-        {"filename" => expected_after_hook_file},
-        {"filename" => expected_suite_file},
+        {"filename" => expected_absolute_file},
+        {"filename" => expected_repository_relative_file},
+        {"filename" => expected_cwd_relative_file},
+        {"filename" => expected_explicit_cwd_file},
         {"filename" => expected_shared_file}
       )
       expect(payload.fetch("files").count { |file| file["filename"] == expected_shared_file }).to eq(1)
+      expect(payload.fetch("files")).not_to include({"filename" => "outside.js"}, {"filename" => ""})
     end
 
     it "rejects suite impacted files after the first test starts" do

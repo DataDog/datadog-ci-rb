@@ -42,17 +42,22 @@ module Datadog
 
           def normalized_files
             @normalized_files ||= begin
-              files = {}
-              each_raw_file do |file|
-                files[Git::LocalRepository.relative_to_root(file)] = true
+              files = []
+              @coverage.each_key do |file|
+                relative_file = Git::LocalRepository.relative_to_root(file)
+                files << relative_file unless relative_file.empty?
               end
-              files.keys
+              @custom_impacted_files.each do |file|
+                # The public API defines relative custom paths as repository-relative.
+                relative_file = if File.absolute_path?(file)
+                  Git::LocalRepository.relative_to_root(file)
+                else
+                  file
+                end
+                files << relative_file unless relative_file.empty?
+              end
+              files.uniq
             end
-          end
-
-          def each_raw_file
-            @coverage.each_key { |file| yield file }
-            @custom_impacted_files.each { |file| yield file }
           end
         end
       end

@@ -313,6 +313,33 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         )
       end
     end
+
+    context "when custom paths resolve outside the repository" do
+      let(:repository_root) { "/workspace/project" }
+
+      before do
+        allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(repository_root)
+      end
+
+      let(:coverage) { {File.join(repository_root, "native.rb") => true} }
+      let(:files) do
+        Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
+          coverage,
+          [
+            File.join(repository_root, "app/frontend/page.js"),
+            "/workspace/another-project/page.js",
+            repository_root
+          ]
+        )
+      end
+
+      it "omits paths that cannot identify a file in the repository" do
+        expect(msgpack_json.fetch("files")).to contain_exactly(
+          {"filename" => "native.rb"},
+          {"filename" => "app/frontend/page.js"}
+        )
+      end
+    end
   end
 
   describe "#pretty_inspect" do

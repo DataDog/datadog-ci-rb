@@ -284,13 +284,16 @@ RSpec.describe Datadog::CI::Test do
 
   describe "custom impacted files" do
     it "adds file paths incrementally" do
-      ci_test.add_impacted_files(["../../app/frontend/user_profile.tsx"])
-      ci_test.add_impacted_files(["./support/user_profile.html"])
+      repository_file = "app/frontend/user_profile.tsx"
+      working_directory_file = "./support/user_profile.html"
+
+      ci_test.add_impacted_files([repository_file])
+      ci_test.add_impacted_files([File.expand_path(working_directory_file, Dir.pwd)])
 
       expect(ci_test.lock_custom_impacted_files).to eq(
         [
-          "../../app/frontend/user_profile.tsx",
-          "./support/user_profile.html"
+          repository_file,
+          File.expand_path(working_directory_file, Dir.pwd)
         ]
       )
     end

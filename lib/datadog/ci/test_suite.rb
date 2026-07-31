@@ -38,6 +38,16 @@ module Datadog
       # Ruby coverage cannot observe, such as JavaScript test setup. Calls are
       # incremental: every call adds files for the remainder of the suite.
       #
+      # Paths must resolve inside the Git repository. Relative paths must be
+      # relative to the repository root. Absolute paths are also accepted.
+      #
+      # If paths are relative to the current working directory, convert them to
+      # absolute paths with +File.expand_path+ before calling this method.
+      # Submitted paths must be lexically normalized without redundant +.+ or
+      # +..+ components. Resolution does not access the filesystem. Paths
+      # outside the repository are ignored when the coverage event is
+      # serialized.
+      #
       # @example Register JavaScript setup shared by an RSpec suite
       #   before(:context) do
       #     Datadog::CI.active_test_suite&.add_impacted_files(
@@ -48,6 +58,7 @@ module Datadog
       # @raise [RuntimeError] if test-level skipping is active and a test in
       #   this suite has already started
       # @param [Array<String>] file_paths custom paths that can impact this suite
+      # @raise [ArgumentError] if file_paths is not an Array
       # @return [void]
       def add_impacted_files(file_paths)
         raise ArgumentError, "file_paths must be an Array" unless file_paths.is_a?(Array)
