@@ -12,6 +12,13 @@ module Datadog
     #
     # @public_api
     class Test < Span
+      def initialize(tracer_span)
+        super
+
+        @custom_impacted_files = []
+        @inherited_custom_impacted_files = []
+      end
+
       # Context IDs for this test (used for TIA context coverage merging).
       # Contains list of context identifiers from outermost to innermost.
       # @return [Array<String>] list of context IDs
@@ -155,6 +162,66 @@ module Datadog
           TestImpactAnalysis::Telemetry.itr_forced_run
           set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
         end
+      end
+
+      # Adds custom files that Test Impact Analysis should consider capable of
+      # impacting this test.
+      #
+      # This is useful for files that Datadog's native Ruby coverage cannot
+      # observe, such as JavaScript executed in a browser during a Capybara
+      # test. Paths must resolve inside the Git repository. Relative paths must
+      # be relative to the repository root. Absolute paths are also accepted.
+      #
+      # If paths are relative to the current working directory, convert them to
+      # absolute paths with +File.expand_path+ before calling this method.
+      # Submitted paths must be lexically normalized without redundant +.+ or
+      # +..+ components.
+      #
+      # Path resolution does not access the filesystem, so files do not need
+      # to exist when they are added. Paths outside the repository are ignored
+      # when the coverage event is serialized. Calls are incremental: every
+      # call adds files for the remainder of the test.
+      #
+      # @example Register JavaScript files loaded during an RSpec test
+      #   RSpec.configure do |config|
+      #     config.after do
+      #       Datadog::CI.active_test&.add_impacted_files(
+      #         javascript_files_loaded_by_browser.map do |path|
+      #           File.expand_path(path, Dir.pwd)
+      #         end
+      #       )
+      #     end
+      #   end
+      #
+      # @param [Array<String>] file_paths custom paths that can impact this test
+      # @raise [ArgumentError] if file_paths is not an Array
+      # @return [void]
+      def add_impacted_files(file_paths)
+        raise ArgumentError, "file_paths must be an Array" unless file_paths.is_a?(Array)
+
+        @custom_impacted_files.concat(file_paths)
+        nil
+      end
+
+      # Inherits suite-level custom impacted files without copying them.
+      #
+      # @internal
+      # @return [void]
+      def inherit_impacted_files(custom_impacted_files)
+        @inherited_custom_impacted_files = custom_impacted_files
+        nil
+      end
+
+      # Locks custom impacted files against further changes and returns them to
+      # Test Impact Analysis.
+      #
+      # @internal
+      # @return [Array<String>]
+      def lock_custom_impacted_files
+        return @custom_impacted_files if @custom_impacted_files.frozen?
+
+        @custom_impacted_files =
+          (@inherited_custom_impacted_files | @custom_impacted_files).freeze
       end
 
       # Sets the status of the span to "pass".

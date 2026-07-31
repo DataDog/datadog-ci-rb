@@ -4,8 +4,13 @@ module Datadog
       @execution_stats_per_test: Hash[String, Hash[String, Integer]]
       @final_statuses_per_test: Hash[String, String]
       @expected_tests_set: Set[String]
+      @custom_impacted_files: Array[String]
+
+      def add_impacted_files: (Array[String] file_paths) -> void
 
       def record_test_result: (String test_id, String datadog_test_status) -> void
+
+      def lock_custom_impacted_files: () -> Array[String]
 
       def record_test_final_status: (String test_id, String final_status) -> void
 
@@ -32,6 +37,8 @@ module Datadog
       def itr_unskippable?: () -> bool
 
       private
+
+      def ensure_custom_impacted_files_mutable!: () -> void
 
       def set_status_from_stats!: () -> void
     end

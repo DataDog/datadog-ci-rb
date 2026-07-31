@@ -4,9 +4,72 @@ RSpec.describe Datadog::CI::TestSuite do
   let(:test_suite_name) { "my.suite" }
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true, name: test_suite_name) }
   let(:test_tracing) { spy("test_tracing") }
+  let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::TEST }
+  let(:test_impact_analysis) do
+    Datadog::CI::TestImpactAnalysis::Component.new(
+      dd_env: "test",
+      enabled: true,
+      test_skipping_mode: test_skipping_mode
+    )
+  end
 
-  before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
+  before do
+    allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing)
+  end
   subject(:ci_test_suite) { described_class.new(tracer_span) }
+
+  describe "custom impacted files" do
+    it "adds unique paths incrementally" do
+      ci_test_suite.add_impacted_files(["app/frontend/shared.js", "app/frontend/shared.js"])
+      ci_test_suite.add_impacted_files(["app/frontend/shared.js", "app/frontend/setup.js"])
+
+      expect(ci_test_suite.lock_custom_impacted_files).to eq(
+        ["app/frontend/shared.js", "app/frontend/setup.js"]
+      )
+    end
+
+    it "does not expose APIs to inspect or clear impacted files" do
+      expect(ci_test_suite).not_to respond_to(:custom_impacted_files)
+      expect(ci_test_suite).not_to respond_to(:clear_impacted_files)
+    end
+
+    it "rejects non-array collections" do
+      expect { ci_test_suite.add_impacted_files(Set.new(["app/frontend/shared.js"])) }
+        .to raise_error(ArgumentError, "file_paths must be an Array")
+    end
+
+    it "rejects files added after the first test starts in test-level skipping mode" do
+      ci_test_suite.add_impacted_files(["app/frontend/shared.js"])
+      test = instance_double(
+        Datadog::CI::Test,
+        test_suite: ci_test_suite,
+        inherit_impacted_files: nil
+      )
+      test_impact_analysis.on_test_started(test)
+
+      expect do
+        ci_test_suite.add_impacted_files(["app/frontend/late.js"])
+      end.to raise_error(
+        RuntimeError,
+        "Custom impacted files must be added to a test suite before the first test in the suite starts"
+      )
+
+      expect(ci_test_suite.lock_custom_impacted_files).to eq(["app/frontend/shared.js"])
+    end
+
+    context "in suite-level skipping mode" do
+      let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+
+      it "allows files to be added after a test starts" do
+        test = instance_double(Datadog::CI::Test)
+        test_impact_analysis.on_test_started(test)
+
+        ci_test_suite.add_impacted_files(["app/frontend/late.js"])
+
+        expect(ci_test_suite.lock_custom_impacted_files).to eq(["app/frontend/late.js"])
+      end
+    end
+  end
 
   describe "#should_skip?" do
     it "returns true when the suite was skipped by Test Impact Analysis" do

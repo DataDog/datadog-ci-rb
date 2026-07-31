@@ -5,10 +5,16 @@ RSpec.describe Datadog::CI::Test do
 
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true) }
   let(:test_tracing) { spy("test_tracing") }
+  let(:test_impact_analysis) do
+    Datadog::CI::TestImpactAnalysis::Component.new(dd_env: "test", enabled: true)
+  end
 
   subject(:ci_test) { described_class.new(tracer_span) }
 
-  before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
+  before do
+    allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing)
+    allow_any_instance_of(described_class).to receive(:test_impact_analysis).and_return(test_impact_analysis)
+  end
 
   describe "#name" do
     subject(:name) { ci_test.name }
@@ -273,6 +279,48 @@ RSpec.describe Datadog::CI::Test do
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_UNSKIPPABLE, 1
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_ITR_FORCED_RUN, 1
+    end
+  end
+
+  describe "custom impacted files" do
+    it "adds file paths incrementally" do
+      repository_file = "app/frontend/user_profile.tsx"
+      working_directory_file = "./support/user_profile.html"
+
+      ci_test.add_impacted_files([repository_file])
+      ci_test.add_impacted_files([File.expand_path(working_directory_file, Dir.pwd)])
+
+      expect(ci_test.lock_custom_impacted_files).to eq(
+        [
+          repository_file,
+          File.expand_path(working_directory_file, Dir.pwd)
+        ]
+      )
+    end
+
+    it "rejects non-array collections" do
+      files = Enumerator.new do |enumerator|
+        enumerator << "../../app/frontend/user_profile.tsx"
+      end
+
+      expect { ci_test.add_impacted_files(files) }
+        .to raise_error(ArgumentError, "file_paths must be an Array")
+    end
+
+    it "deduplicates paths across incremental additions" do
+      duplicate_file = "app/frontend/duplicate.js"
+      another_file = "app/frontend/another.js"
+
+      ci_test.add_impacted_files([duplicate_file, duplicate_file])
+      ci_test.add_impacted_files([duplicate_file, another_file])
+
+      expect(ci_test.lock_custom_impacted_files).to eq([duplicate_file, another_file])
+    end
+
+    it "does not expose APIs to inspect or clear impacted files" do
+      expect(ci_test).not_to respond_to(:custom_impacted_files)
+      expect(ci_test).not_to respond_to(:clear_impacted_files)
+      expect(ci_test).not_to respond_to(:merge_impacted_files_into)
     end
   end
 

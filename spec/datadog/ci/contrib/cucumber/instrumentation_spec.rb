@@ -264,7 +264,7 @@ RSpec.describe "Cucumber instrumentation" do
         expect_coverage_events_belong_to_tests([test_spans.first])
         expect_non_empty_coverages
 
-        feature_coverage = coverage_events.first.coverage
+        feature_coverage = coverage_events.first.inspect_coverage
         # expect cucumber features to have gherkin files and step definitions as covered files
         expect(feature_coverage.size).to eq(2)
         expect(feature_coverage.keys).to include(

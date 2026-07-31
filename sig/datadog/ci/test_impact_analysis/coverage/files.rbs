@@ -1,0 +1,27 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class Files
+          EMPTY_FILES: Array[String]
+
+          @coverage: Hash[String, untyped]
+          @custom_impacted_files: Array[String]
+          @normalized_files: Array[String]?
+
+          def initialize: (Hash[String, untyped] coverage, ?Array[String] custom_impacted_files) -> void
+
+          def each: () { (String file) -> void } -> void
+
+          def size: () -> Integer
+
+          def inspect_coverage: () -> Hash[String, untyped]
+
+          private
+
+          def normalized_files: () -> Array[String]
+        end
+      end
+    end
+  end
+end

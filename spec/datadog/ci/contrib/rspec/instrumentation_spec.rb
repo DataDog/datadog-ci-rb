@@ -809,14 +809,201 @@ RSpec.describe "RSpec instrumentation" do
       shared_context_test = test_spans.find { |span| span.name == "nested is 42" }
       shared_context_coverage = find_coverage_for_test(shared_context_test)
 
-      expect(shared_context_coverage.coverage.keys).to include(
+      expect(shared_context_coverage.inspect_coverage.keys).to include(
         File.join(__dir__, "some_shared_context.rb")
       )
 
       if Datadog::CI::SourceCode::ISeqCollector::STATIC_DEPENDENCIES_EXTRACTION_AVAILABLE
-        expect(shared_context_coverage.coverage.keys).to include(
+        expect(shared_context_coverage.inspect_coverage.keys).to include(
           File.join(__dir__, "some_constants.rb")
         )
+      end
+    end
+  end
+
+  context "with externally collected impacted files" do
+    around do |example|
+      local_repository = Datadog::CI::Git::LocalRepository
+      if local_repository.instance_variable_defined?(:@prefix_to_root)
+        local_repository.remove_instance_variable(:@prefix_to_root)
+      end
+
+      example.run
+    ensure
+      if local_repository.instance_variable_defined?(:@prefix_to_root)
+        local_repository.remove_instance_variable(:@prefix_to_root)
+      end
+    end
+
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:integration_options) { {service_name: "lspec"} }
+
+      let(:itr_enabled) { true }
+      let(:code_coverage_enabled) { true }
+    end
+
+    it "normalizes documented path inputs when tests run from a subfolder" do
+      repository_root = Datadog::CI::Git::LocalRepository.root
+      working_directory = __dir__
+      expected_absolute_file = "app/frontend/absolute/user_profile.tsx"
+      expected_repository_relative_file = "app/frontend/repository/user_profile.html"
+      expected_cwd_relative_file = "app/frontend/cwd/user_profile.js"
+      expected_shared_file = "app/frontend/shared/user_profile.js"
+      expected_explicit_cwd_file = Pathname.new(File.join(working_directory, "fixtures/missing.js"))
+        .relative_path_from(Pathname.new(repository_root))
+        .to_s
+
+      absolute_file = File.join(repository_root, expected_absolute_file)
+      repository_relative_file = expected_repository_relative_file
+      cwd_relative_file = Pathname.new(File.join(repository_root, expected_cwd_relative_file))
+        .relative_path_from(Pathname.new(working_directory))
+        .to_s
+      cwd_relative_shared_file = Pathname.new(File.join(repository_root, expected_shared_file))
+        .relative_path_from(Pathname.new(working_directory))
+        .to_s
+      explicit_cwd_file = "./fixtures/missing.js"
+      outside_file = File.join(File.dirname(repository_root), "outside.js")
+      payload = nil
+
+      Dir.chdir(working_directory) do
+        with_new_rspec_environment do
+          RSpec.describe "User profile feature" do
+            before(:context) do
+              Datadog::CI.active_test_suite.add_impacted_files([expected_shared_file])
+            end
+
+            before do
+              Datadog::CI.active_test.add_impacted_files(
+                [absolute_file, repository_relative_file]
+              )
+              Datadog::CI.active_test.add_impacted_files(
+                [File.expand_path(explicit_cwd_file, Dir.pwd)]
+              )
+            end
+
+            after do
+              Datadog::CI.active_test.add_impacted_files(
+                [cwd_relative_file, cwd_relative_shared_file].map do |path|
+                  File.expand_path(path, Dir.pwd)
+                end
+              )
+              Datadog::CI.active_test.add_impacted_files([outside_file])
+            end
+
+            it "renders the user profile" do
+              # Capybara drives the browser here.
+            end
+          end
+
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+          ::RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+        end
+
+        test_coverage = find_coverage_for_test(first_test_span)
+        payload = MessagePack.unpack(MessagePack.pack(test_coverage))
+      end
+
+      expect(payload.fetch("files")).to include(
+        {"filename" => expected_absolute_file},
+        {"filename" => expected_repository_relative_file},
+        {"filename" => expected_cwd_relative_file},
+        {"filename" => expected_explicit_cwd_file},
+        {"filename" => expected_shared_file}
+      )
+      expect(payload.fetch("files").count { |file| file["filename"] == expected_shared_file }).to eq(1)
+      expect(payload.fetch("files")).not_to include({"filename" => "outside.js"}, {"filename" => ""})
+    end
+
+    it "rejects suite impacted files after the first test starts" do
+      active_addition_error = nil
+      late_addition_error = nil
+
+      with_new_rspec_environment do
+        RSpec.describe "User profile feature" do
+          before do
+            Datadog::CI.active_test_suite.add_impacted_files(
+              ["app/frontend/active_suite_file.js"]
+            )
+          rescue => e
+            active_addition_error = e
+          end
+
+          after(:context) do
+            Datadog::CI.active_test_suite.add_impacted_files(
+              ["app/frontend/late_suite_file.js"]
+            )
+          rescue => e
+            late_addition_error = e
+          end
+
+          it("renders the user profile") {}
+        end
+
+        options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+        ::RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+      end
+
+      expect(active_addition_error).to be_a(RuntimeError)
+      expect(active_addition_error.message).to eq(
+        "Custom impacted files must be added to a test suite before the first test in the suite starts"
+      )
+      expect(late_addition_error).to be_a(RuntimeError)
+      expect(late_addition_error.message).to eq(
+        "Custom impacted files must be added to a test suite before the first test in the suite starts"
+      )
+    end
+
+    context "in suite skipping mode" do
+      let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
+
+      it "writes suite and every test's impacted files in one deduplicated suite event" do
+        suite_file = "app/frontend/suite.js"
+        shared_file = "app/frontend/shared.js"
+        first_test_file = "app/frontend/first_test.js"
+        second_test_file = "app/frontend/second_test.js"
+        late_suite_file = "app/frontend/late_suite.js"
+
+        with_new_rspec_environment do
+          RSpec.describe "User profile feature" do
+            before(:context) do
+              Datadog::CI.active_test_suite.add_impacted_files([suite_file, shared_file])
+            end
+
+            after(:context) do
+              Datadog::CI.active_test_suite.add_impacted_files([late_suite_file])
+            end
+
+            after do
+              Datadog::CI.active_test.add_impacted_files(
+                [RSpec.current_example.metadata.fetch(:impacted_file), shared_file]
+              )
+            end
+
+            it("renders the first profile", impacted_file: first_test_file) {}
+            it("renders the second profile", impacted_file: second_test_file) {}
+          end
+
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none])
+          ::RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+        end
+
+        expect(coverage_events).to have(1).item
+        suite_coverage = coverage_events.first
+        expect(suite_coverage.test_id).to be_nil
+        expect(suite_coverage.inspect_coverage.keys).to include(
+          suite_file,
+          shared_file,
+          first_test_file,
+          second_test_file,
+          late_suite_file
+        )
+
+        payload_files = MessagePack.unpack(MessagePack.pack(suite_coverage)).fetch("files")
+        expected_files = [suite_file, shared_file, first_test_file, second_test_file, late_suite_file]
+        expected_files.each do |file|
+          expect(payload_files.count { |payload_file| payload_file["filename"] == file }).to eq(1)
+        end
       end
     end
   end
@@ -884,7 +1071,7 @@ RSpec.describe "RSpec instrumentation" do
       test_span = test_spans.first
       test_coverage = find_coverage_for_test(test_span)
 
-      expect(test_coverage.coverage.keys).to include(
+      expect(test_coverage.inspect_coverage.keys).to include(
         File.join(__dir__, "fixtures/user.rb"),
         File.join(__dir__, "fixtures/order.rb")
       )
@@ -944,7 +1131,7 @@ RSpec.describe "RSpec instrumentation" do
       expect(coverage_event.test_id).to be_nil
       expect(coverage_event.test_session_id).to eq(test_session_span.id.to_s)
       expect(coverage_event.test_suite_id).to eq(first_test_suite_span.id.to_s)
-      expect(coverage_event.coverage.keys).to include(
+      expect(coverage_event.inspect_coverage.keys).to include(
         File.join(__dir__, "fixtures/user.rb"),
         File.join(__dir__, "fixtures/order.rb")
       )
@@ -1025,12 +1212,12 @@ RSpec.describe "RSpec instrumentation" do
       outer_context_file = File.join(__dir__, "fixtures/outer_context.rb")
 
       # Both tests should include outer context coverage
-      expect(first_coverage.coverage.keys).to include(outer_context_file)
-      expect(second_coverage.coverage.keys).to include(outer_context_file)
+      expect(first_coverage.inspect_coverage.keys).to include(outer_context_file)
+      expect(second_coverage.inspect_coverage.keys).to include(outer_context_file)
 
       # Both tests should also have their own nested context's fixture files
-      expect(first_coverage.coverage.keys).to include(File.join(__dir__, "fixtures/user.rb"))
-      expect(second_coverage.coverage.keys).to include(File.join(__dir__, "fixtures/order.rb"))
+      expect(first_coverage.inspect_coverage.keys).to include(File.join(__dir__, "fixtures/user.rb"))
+      expect(second_coverage.inspect_coverage.keys).to include(File.join(__dir__, "fixtures/order.rb"))
     end
   end
 
@@ -1101,12 +1288,12 @@ RSpec.describe "RSpec instrumentation" do
 
       # The test outside of nested contexts should NOT have coverage from those contexts
       # It should only have coverage from its own execution
-      expect(test_coverage.coverage.keys).not_to include(user_file),
+      expect(test_coverage.inspect_coverage.keys).not_to include(user_file),
         "Test should not include user.rb from nested context's before(:context)"
 
       # But it SHOULD include outer_context.rb because the test is still
       # inside the top-level describe block which has before(:context)
-      expect(test_coverage.coverage.keys).to include(outer_context_file),
+      expect(test_coverage.inspect_coverage.keys).to include(outer_context_file),
         "Test should include outer_context.rb from top-level before(:context)"
     end
   end

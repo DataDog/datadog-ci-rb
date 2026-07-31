@@ -16,6 +16,7 @@ require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
+require_relative "coverage/files"
 require_relative "skippable"
 require_relative "telemetry"
 
@@ -187,6 +188,8 @@ module Datadog
         # @param test [Datadog::CI::Test] The test that is starting
         # @return [void]
         def on_test_started(test)
+          inherit_suite_impacted_files(test) if test_skipping_mode?
+
           return if !enabled? || !code_coverage?
           return if suite_skipping_mode?
 
@@ -215,7 +218,11 @@ module Datadog
         # @return [Datadog::CI::TestImpactAnalysis::Coverage::Event, nil] The coverage event or nil
         def on_test_finished(test, context)
           return unless enabled?
-          return if suite_skipping_mode?
+
+          if suite_skipping_mode?
+            test.test_suite&.add_impacted_files(test.lock_custom_impacted_files)
+            return
+          end
 
           # Handle ITR statistics
           if test.skipped_by_test_impact_analysis?
@@ -243,7 +250,8 @@ module Datadog
             test_suite_id: test.test_suite_id.to_s,
             test_session_id: test.test_session_id.to_s,
             source_file: test.source_file,
-            coverage: coverage
+            coverage: coverage,
+            custom_impacted_files: test.lock_custom_impacted_files
           )
         end
 
@@ -350,7 +358,8 @@ module Datadog
             test_suite_id: test_suite.id.to_s,
             test_session_id: test_suite.get_tag(Ext::Test::TAG_TEST_SESSION_ID).to_s,
             source_file: test_suite.source_file,
-            coverage: coverage
+            coverage: coverage,
+            custom_impacted_files: test_suite.lock_custom_impacted_files
           )
         end
 
@@ -451,7 +460,7 @@ module Datadog
           return unless @static_dependencies_tracking_enabled
 
           static_dependencies_map = {}
-          coverage.keys.each do |file|
+          coverage.each_key do |file|
             static_dependencies_map.merge!(
               Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
             )
@@ -466,9 +475,16 @@ module Datadog
           coverage[absolute_test_source_file_path] = true
         end
 
-        def write_coverage_event(test_id:, test_suite_id:, test_session_id:, source_file:, coverage:)
+        def write_coverage_event(
+          test_id:,
+          test_suite_id:,
+          test_session_id:,
+          source_file:,
+          coverage:,
+          custom_impacted_files: Coverage::Files::EMPTY_FILES
+        )
           coverage ||= {}
-          if coverage.empty?
+          if coverage.empty? && custom_impacted_files.empty?
             Telemetry.code_coverage_is_empty
             return
           end
@@ -477,13 +493,18 @@ module Datadog
 
           enrich_coverage_with_static_dependencies(coverage)
 
-          Telemetry.code_coverage_files(coverage.size)
+          # Avoid normalizing and deduplicating paths on the test thread. The
+          # writer does that when it serializes the event. Telemetry only needs
+          # an estimate and may count overlaps between the two collections.
+          Telemetry.code_coverage_files(coverage.size + custom_impacted_files.size)
+
+          files = Coverage::Files.new(coverage, custom_impacted_files)
 
           coverage_event = Coverage::Event.new(
             test_id: test_id,
             test_suite_id: test_suite_id,
             test_session_id: test_session_id,
-            coverage: coverage
+            files: files
           )
 
           Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }
@@ -491,6 +512,13 @@ module Datadog
           write(coverage_event)
 
           coverage_event
+        end
+
+        def inherit_suite_impacted_files(test)
+          test_suite = test.test_suite
+          return if test_suite.nil?
+
+          test.inherit_impacted_files(test_suite.lock_custom_impacted_files)
         end
 
         def fetch_skippables(test_session)

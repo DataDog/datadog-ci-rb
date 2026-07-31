@@ -16,13 +16,14 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Transport do
 
   let(:max_payload_size) { 5 * 1024 * 1024 }
   let(:api) { spy(:api) }
+  let(:files_class) { Datadog::CI::TestImpactAnalysis::Coverage::Files }
 
   let(:event) do
     Datadog::CI::TestImpactAnalysis::Coverage::Event.new(
       test_id: "1",
       test_suite_id: "2",
       test_session_id: "3",
-      coverage: {"file.rb" => true}
+      files: files_class.new({"file.rb" => true})
     )
   end
 
@@ -74,7 +75,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Transport do
             test_id: "4",
             test_suite_id: "5",
             test_session_id: "6",
-            coverage: {"file.rb" => true, "file2.rb" => true}
+            files: files_class.new({"file.rb" => true, "file2.rb" => true})
           )
         ]
       end
@@ -111,7 +112,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Transport do
               test_id: "4",
               test_suite_id: nil,
               test_session_id: "6",
-              coverage: {"file.rb" => true, "file2.rb" => true}
+              files: files_class.new({"file.rb" => true, "file2.rb" => true})
             )
           ]
         end
@@ -185,13 +186,13 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Transport do
             test_id: "4",
             test_suite_id: "5",
             test_session_id: nil,
-            coverage: {"file.rb" => true, "file2.rb" => true}
+            files: files_class.new({"file.rb" => true, "file2.rb" => true})
           ),
           Datadog::CI::TestImpactAnalysis::Coverage::Event.new(
             test_id: "8",
             test_suite_id: nil,
             test_session_id: "6",
-            coverage: {"file.rb" => true, "file2.rb" => true}
+            files: files_class.new({"file.rb" => true, "file2.rb" => true})
           )
         ]
       end
