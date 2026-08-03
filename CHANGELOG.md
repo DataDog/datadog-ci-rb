@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [1.36.0] - 2026-08-03
+
+### Added
+
+* Support custom impacted files in Test Impact Analysis ([#554][])
+* Add ci.pipeline.display_name tag for Buildkite ([#555][])
+* Add code coverage report flags ([#542][])
+
 ## [1.35.0] - 2026-07-23
 
 ## [1.34.0] - 2026-06-25
@@ -667,7 +675,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.35.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.0...main
+[1.36.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.35.0...v1.36.0
 [1.35.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.34.0...v1.35.0
 [1.34.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.33.0...v1.34.0
 [1.33.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.32.0...v1.33.0
@@ -945,3 +954,6 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#522]: https://github.com/DataDog/datadog-ci-rb/issues/522
 [#527]: https://github.com/DataDog/datadog-ci-rb/issues/527
 [#530]: https://github.com/DataDog/datadog-ci-rb/issues/530
+[#542]: https://github.com/DataDog/datadog-ci-rb/issues/542
+[#554]: https://github.com/DataDog/datadog-ci-rb/issues/554
+[#555]: https://github.com/DataDog/datadog-ci-rb/issues/555
