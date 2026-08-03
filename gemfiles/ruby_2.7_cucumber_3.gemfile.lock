@@ -1,11 +1,11 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 5af1f3e4607f6d23a43a1606fb6d28aeffec4e07
+  revision: 4f14253fa197753d151cf45461434a64953f7783
   branch: master
   specs:
     datadog (2.40.0.dev)
       cgi
-      datadog-ruby_core_source (~> 3.5, >= 3.5.3)
+      datadog-ruby_core_source (~> 3.5, >= 3.5.4)
       libdatadog (~> 36.0.0.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
@@ -52,7 +52,7 @@ GEM
     cucumber-expressions (6.0.1)
     cucumber-tag_expressions (1.1.1)
     cucumber-wire (0.0.1)
-    datadog-ruby_core_source (3.5.3)
+    datadog-ruby_core_source (3.5.4)
     date (3.5.1)
     debug (1.11.1)
       irb (~> 1.10)
@@ -80,7 +80,7 @@ GEM
     logger (1.7.0)
     msgpack (1.8.4)
     multi_json (1.15.0)
-    multi_test (1.1.0)
+    multi_test (2.0.0)
     os (1.1.4)
     ostruct (0.6.3)
     pp (0.6.4)
