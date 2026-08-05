@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 393f98931a615f8e76a04aa7c824aa1c723661ed
+  revision: 593d11f89ae83ec3a1f7f0b11fa59598f693b965
   branch: master
   specs:
-    datadog (2.40.0.dev)
+    datadog (2.41.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.4)
       libdatadog (~> 36.0.0.1.0)
@@ -120,7 +120,7 @@ GEM
       reline (>= 0.3.8)
     diff-lcs (1.6.2)
     drb (2.2.3)
-    erb (6.0.6)
+    erb (6.0.7)
     erubi (1.13.1)
     ffi (1.17.4)
     ffi (1.17.4-aarch64-linux-gnu)
@@ -324,14 +324,14 @@ CHECKSUMS
   connection_pool (3.0.2) sha256=33fff5ba71a12d2aa26cb72b1db8bba2a1a01823559fb01d29eb74c286e62e0a
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
   crass (1.0.7) sha256=94868719948664c89ddcaf0a37c65048413dfcb1c869470a5f7a7ceb5390b295
-  datadog (2.40.0.dev)
+  datadog (2.41.0.dev)
   datadog-ci (1.36.0)
   datadog-ruby_core_source (3.5.4) sha256=65b9b1495ec3452bb9775e379e997c22836df333e571dbfb9a13cd810a4ec043
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
-  erb (6.0.6) sha256=a9b24986700f5bf127c4f297c5403c3ca41b83b0a316c0cd09a096b56e644ae5
+  erb (6.0.7) sha256=c5ca6dc25b0ef974a44dc8f59fe847577122483b1968a38dec305c60bf91ee92
   erubi (1.13.1) sha256=a082103b0885dbc5ecf1172fede897f9ebdb745a4b97a5e8dc63953db1ee4ad9
   ffi (1.17.4) sha256=bcd1642e06f0d16fc9e09ac6d49c3a7298b9789bcb58127302f934e437d60acf
   ffi (1.17.4-aarch64-linux-gnu) sha256=b208f06f91ffd8f5e1193da3cae3d2ccfc27fc36fba577baf698d26d91c080df

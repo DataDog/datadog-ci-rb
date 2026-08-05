@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 393f98931a615f8e76a04aa7c824aa1c723661ed
+  revision: 593d11f89ae83ec3a1f7f0b11fa59598f693b965
   branch: master
   specs:
-    datadog (2.40.0.dev)
+    datadog (2.41.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.4)
       libdatadog (~> 36.0.0.1.0)
@@ -80,7 +80,7 @@ GEM
       reline (>= 0.3.8)
     diff-lcs (1.6.2)
     drb (2.2.3)
-    erb (6.0.6)
+    erb (6.0.7)
     ferrum (0.17.2)
       addressable (~> 2.5)
       base64 (~> 0.2)
