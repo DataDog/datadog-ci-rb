@@ -50,11 +50,12 @@ module Datadog
               end
             end
 
-            if (Core::Utils::Time.get_time - start) > timeout
-              timeout_reached = true
-            end
+            remaining_time = timeout.to_f - (Core::Utils::Time.get_time - start)
+            thread.join(remaining_time) if thread.alive? && remaining_time.positive?
 
             if thread.alive?
+              timeout_reached = true
+
               begin
                 Process.kill("TERM", pid)
               rescue

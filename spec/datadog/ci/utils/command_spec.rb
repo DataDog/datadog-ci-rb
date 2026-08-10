@@ -131,6 +131,21 @@ RSpec.describe Datadog::CI::Utils::Command do
       end
     end
 
+    context "when command closes its output before exiting" do
+      subject(:result) do
+        described_class.exec_command(
+          [RbConfig.ruby, "-e", "STDOUT.reopen(File::NULL); STDERR.reopen(File::NULL); sleep 0.1"],
+          timeout: 1
+        )
+      end
+
+      it "waits for the command to exit successfully" do
+        output, status = result
+        expect(output).to be_empty
+        expect(status).to be_success
+      end
+    end
+
     context "when attempting shell injection" do
       it "treats shell metacharacters as literal arguments, not shell commands" do
         # Try to inject a command that would create a file if shell injection worked
