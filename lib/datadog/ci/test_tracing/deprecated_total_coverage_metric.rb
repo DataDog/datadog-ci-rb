@@ -29,6 +29,8 @@ module Datadog
           end
 
           test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_LINES_PCT, result.covered_percent)
+        rescue => e
+          Datadog.logger.warn("Failed to extract SimpleCov code coverage: #{e.class}: #{e.message}")
         end
 
         # SimpleCov 1.0 removed the `running` accessor and relies on Ruby's

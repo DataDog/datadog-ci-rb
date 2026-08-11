@@ -9,6 +9,18 @@ module SimpleCov
 
   def self.__dd_peek_result: () -> ::SimpleCov::Result?
 
+  def self.inject_unloaded_files: (untyped coverage, Array[String] paths) -> [untyped, Set[String]]
+
+  def self.tracked_files: () -> String?
+
+  def self.cover_globs: () -> Array[String]
+
+  def self.root: () -> String
+
+  module UnloadedFileInjector
+    def self.discover: (Array[String] globs, root: String) -> Array[String]
+  end
+
   module UselessResultsRemover
     def self.call: (untyped result) -> untyped
   end
@@ -30,7 +42,17 @@ module Datadog
 
             def datadog_configuration: () -> Datadog::CI::Contrib::Simplecov::Configuration::Settings
 
-            def add_not_loaded_files: (untyped result) -> untyped
+            def __dd_build_result: (untyped coverage) -> ::SimpleCov::Result
+
+            def __dd_tracked_paths: () -> Array[String]
+
+            def inject_unloaded_files: (untyped coverage, Array[String] paths) -> [untyped, Set[String]]
+
+            def tracked_files: () -> String?
+
+            def cover_globs: () -> Array[String]
+
+            def root: () -> String
           end
         end
       end
