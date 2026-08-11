@@ -25,6 +25,54 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ResultExtractor do
       end
 
       context "when instrumentation is enabled" do
+        context "when SimpleCov exposes the new unloaded file injection API" do
+          let(:tracked_glob) { "lib/**/*.rb" }
+          let(:tracked_paths) { [File.expand_path("../../../../../lib/datadog/ci.rb", __dir__)] }
+          let(:simplecov_with_new_api) do
+            Class.new do
+              class << self
+                attr_accessor :injected_coverage, :injected_paths
+
+                def tracked_files
+                  "lib/**/*.rb"
+                end
+
+                def cover_globs
+                  []
+                end
+
+                def root
+                  ::SimpleCov.root
+                end
+
+                def inject_unloaded_files(coverage, paths)
+                  self.injected_coverage = coverage
+                  self.injected_paths = paths
+                  [coverage, Set.new(paths)]
+                end
+              end
+            end
+          end
+
+          before do
+            stub_const("SimpleCov::UnloadedFileInjector", double(:unloaded_file_injector))
+            allow(SimpleCov::UnloadedFileInjector).to receive(:discover).and_return(tracked_paths)
+            simplecov_with_new_api.include(described_class)
+          end
+
+          it "discovers tracked paths and injects unloaded files through the public API" do
+            result = simplecov_with_new_api.__dd_peek_result
+
+            expect(result).to be_a(SimpleCov::Result)
+            expect(SimpleCov::UnloadedFileInjector).to have_received(:discover).with(
+              [tracked_glob],
+              root: SimpleCov.root
+            )
+            expect(simplecov_with_new_api.injected_coverage).to be_a(Hash)
+            expect(simplecov_with_new_api.injected_paths).to eq(tracked_paths)
+          end
+        end
+
         it "builds a result using the loaded SimpleCov version" do
           result = SimpleCov.__dd_peek_result
 
