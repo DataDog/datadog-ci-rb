@@ -3,6 +3,46 @@
 require_relative "../../../../../lib/datadog/ci/contrib/simplecov/result_extractor"
 
 RSpec.describe Datadog::CI::Contrib::Simplecov::ResultExtractor do
+  describe "with SimpleCov 1.1 result processing APIs" do
+    let(:base_class) do
+      Class.new do
+        class << self
+          def tracked_file_paths
+            Set.new(["loaded.rb", "not_loaded.rb"])
+          end
+
+          def inject_unloaded_files(result, tracked_files)
+            [result.merge("not_loaded.rb" => {"lines" => [0]}), tracked_files]
+          end
+        end
+      end
+    end
+    let(:simplecov_config) { {enabled: true} }
+    let(:coverage) { {"loaded.rb" => {"lines" => [1]}} }
+    let(:not_loaded_files) { Set.new(["not_loaded.rb"]) }
+    let(:result_class) { class_double(SimpleCov::Result, new: simplecov_result) }
+    let(:simplecov_result) { instance_double(SimpleCov::Result) }
+
+    before do
+      base_class.include(described_class)
+      allow(Datadog.configuration).to receive(:ci).and_return(double(:ci, :[] => simplecov_config))
+      allow(Coverage).to receive(:peek_result).and_return(coverage)
+      allow(SimpleCov::UselessResultsRemover).to receive(:call).and_return(coverage)
+      allow(SimpleCov::ResultAdapter).to receive(:call).and_return(coverage)
+      stub_const("SimpleCov::Result", result_class)
+    end
+
+    it "builds a result with coverage for configured files that were not loaded" do
+      expect(base_class.__dd_peek_result).to be(simplecov_result)
+
+      expect(result_class).to have_received(:new).with(
+        coverage.merge("not_loaded.rb" => {"lines" => [0]}),
+        not_loaded_files: not_loaded_files,
+        tracked_files: not_loaded_files
+      )
+    end
+  end
+
   describe ".included" do
     before do
       SimpleCov.include(described_class)

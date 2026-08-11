@@ -31,6 +31,10 @@ module Datadog
             def datadog_configuration: () -> Datadog::CI::Contrib::Simplecov::Configuration::Settings
 
             def add_not_loaded_files: (untyped result) -> untyped
+
+            def tracked_file_paths: () -> untyped
+
+            def inject_unloaded_files: (untyped result, untyped candidate_paths) -> [untyped, untyped]
           end
         end
       end
