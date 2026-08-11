@@ -192,3 +192,49 @@ The coverage benchmark improved from 66.17% to 58.61% overhead, a 7.56 percentag
 ### Next step
 
 Continue from the 58.61% reference. Investigate the remaining VM event-hook overhead and the large Pf2 unknown/native sample share without weakening exact per-test coverage semantics.
+
+## Iteration 5: accepted
+
+- Timestamp: 2026-08-11T18:20:34+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-coverage
+- HEAD: 6f8688c44527ef9a919cff275e0c7a3488def126
+- Dirty: yes
+
+### Hypothesis
+
+Allocation tracing repeats class-name resolution and hash insertion for every object allocation even after that class has already been recorded for the current test; a native fast-path cache for previously recorded classes will remove this per-object bookkeeping without changing the per-test class set.
+
+### Change
+
+Add consecutive-class and 256-entry direct-mapped caches ahead of allocation class-name resolution and st_table insertion. The authoritative per-test class table remains unchanged; cache collisions fall back to it, and only named classes retained by that table enter the pointer cache.
+
+```text
+ext/datadog_ci_native/datadog_cov.c | 37 +++++++++++++++++++++++++++++++++++--
+ 1 file changed, 35 insertions(+), 2 deletions(-)
+```
+
+### Functional tests
+
+- DDCov native specs: **passed** — Ruby 3.3.5; 36 examples, 0 failures
+- ruby-rubocop-coverage Crook gate: **passed** — All 37 assertions passed for the complete upstream RuboCop suite
+- Ruby non-coverage guards: **passed** — The immediately preceding accepted base passed full ruby-rubocop and ruby-quotes-rails guards. This iteration changes only on_newobj_event, which is registered solely when TIA allocation tracing is enabled, so ordinary tracing cannot execute the new path.
+
+### Benchmarks
+
+- ruby-rubocop-coverage: **improved**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-183814.534638000-ruby-rubocop-coverage-p30210-f0522b4f9b41fcbf/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-195316.520076000-ruby-rubocop-coverage-p78776-3ba9efbeb9382adc/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-195316.520076000-ruby-rubocop-coverage-p78776-3ba9efbeb9382adc/comparison.md`
+
+### Profiles
+
+- pf2: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-195316.520076000-ruby-rubocop-coverage-p78776-3ba9efbeb9382adc/profiles/pf2` — The VM trace path fell from 8.36% to 6.47% inclusive and on_line_event fell from 1.86% to 1.36%. Pf2 does not name on_newobj_event directly, but the reduced native VM-hook share and wall time support the allocation fast-path hypothesis.
+
+### Findings
+
+The complete RuboCop coverage benchmark improved from 58.61% to 48.17% overhead, a 10.44 percentage-point reduction and a deterministic 6.58% multiplier improvement. Baseline and instrumented command durations were 113.91s and 168.77s; a host-level delay between phases occurred outside those measured durations. The functional gate remained green, and the requested under-50% goal is met.
+
+### Next step
+
+Stop the optimization loop at the requested threshold. Run final native coverage validation, commit the code and journal, and open the tracer pull request.

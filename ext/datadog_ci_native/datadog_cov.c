@@ -13,6 +13,7 @@
 
 #define PROFILE_FRAMES_BUFFER_SIZE 1
 #define SEEN_FILENAME_CACHE_SIZE 256
+#define SEEN_ALLOCATED_CLASS_CACHE_SIZE 256
 
 // threading modes
 enum threading_mode { single, multi };
@@ -77,6 +78,8 @@ struct dd_cov_data {
   VALUE object_allocation_tracepoint;
   st_table *klasses_table; // { (VALUE) -> int } hashmap with class names that
                            // were covered by allocation during the test run
+  VALUE last_allocated_klass;
+  VALUE seen_allocated_klasses[SEEN_ALLOCATED_CLASS_CACHE_SIZE];
   st_table *klass_files_cache; // { (VALUE) -> Array<String> } resolved files
 };
 
@@ -139,6 +142,9 @@ static VALUE dd_cov_allocate(VALUE klass) {
   dd_cov_data->threading_mode = multi;
 
   dd_cov_data->object_allocation_tracepoint = Qnil;
+  dd_cov_data->last_allocated_klass = Qnil;
+  memset(dd_cov_data->seen_allocated_klasses, 0,
+         sizeof(dd_cov_data->seen_allocated_klasses));
   // numtable type is needed to store VALUE as a key
   dd_cov_data->klasses_table = st_init_numtable();
   dd_cov_data->klass_files_cache = st_init_numtable();
@@ -285,6 +291,30 @@ static void on_newobj_event(VALUE tracepoint_data, void *data) {
   if (klass == Qnil || klass == 0) {
     return;
   }
+
+  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+
+  if (dd_cov_data->last_allocated_klass == klass) {
+    return;
+  }
+
+  uintptr_t klass_ptr = (uintptr_t)klass;
+  size_t cache_index =
+      ((klass_ptr >> 4) ^ (klass_ptr >> 12)) &
+      (SEEN_ALLOCATED_CLASS_CACHE_SIZE - 1);
+  if (dd_cov_data->seen_allocated_klasses[cache_index] == klass) {
+    dd_cov_data->last_allocated_klass = klass;
+    return;
+  }
+
+  // A direct-cache collision must not make us repeat name resolution or table
+  // insertion for a class that this test already observed.
+  if (st_is_member(dd_cov_data->klasses_table, (st_data_t)klass)) {
+    dd_cov_data->last_allocated_klass = klass;
+    dd_cov_data->seen_allocated_klasses[cache_index] = klass;
+    return;
+  }
+
   // Skip anonymous classes starting with "#<Class".
   // it allows us to skip the source location lookup that will always fail
   //
@@ -293,12 +323,12 @@ static void on_newobj_event(VALUE tracepoint_data, void *data) {
     return;
   }
 
-  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
-
   // We use VALUE directly as a key for the hashmap
   // Ruby itself does it too:
   // https://github.com/ruby/ruby/blob/94b87084a689a3bc732dcaee744508a708223d6c/ext/objspace/object_tracing.c#L113
   st_insert(dd_cov_data->klasses_table, (st_data_t)klass, 1);
+  dd_cov_data->last_allocated_klass = klass;
+  dd_cov_data->seen_allocated_klasses[cache_index] = klass;
 }
 
 // DDCov instance methods available in Ruby
@@ -409,6 +439,9 @@ static VALUE dd_cov_stop(VALUE self) {
   // process classes covered by allocation tracing
   st_foreach(dd_cov_data->klasses_table, each_instantiated_klass,
              (st_data_t)dd_cov_data);
+  dd_cov_data->last_allocated_klass = Qnil;
+  memset(dd_cov_data->seen_allocated_klasses, 0,
+         sizeof(dd_cov_data->seen_allocated_klasses));
   st_clear(dd_cov_data->klasses_table);
 
   VALUE res = dd_cov_data->impacted_files;
