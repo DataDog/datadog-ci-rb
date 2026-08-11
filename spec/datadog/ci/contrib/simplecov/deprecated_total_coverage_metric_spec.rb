@@ -88,7 +88,7 @@ RSpec.describe Datadog::CI::TestTracing::DeprecatedTotalCoverageMetric do
 
           expect(test_session).not_to have_received(:set_tag)
           expect(Datadog.logger).to have_received(:warn).with(
-            "Failed to extract SimpleCov code coverage: NoMethodError: upstream API changed"
+            a_string_starting_with("Failed to extract SimpleCov code coverage: NoMethodError: upstream API changed")
           )
         end
       end
