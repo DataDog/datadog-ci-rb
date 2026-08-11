@@ -155,8 +155,8 @@ module Datadog
           rubyopt = ENV["RUBYOPT"]
           return unless rubyopt
 
-          auto_instrument_require = "-rdatadog/ci/auto_instrument"
-          rubyopt = rubyopt.gsub(/(?<!\S)#{Regexp.escape(auto_instrument_require)}(?!\S)/, "")
+          auto_instrument_require = /(?<!\S)-r\s*datadog\/ci\/auto_instrument(?!\S)/
+          rubyopt = rubyopt.gsub(auto_instrument_require, "")
 
           rubyopt.match?(/\S/) ? ENV["RUBYOPT"] = rubyopt : ENV.delete("RUBYOPT")
         end
