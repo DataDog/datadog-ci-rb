@@ -137,3 +137,58 @@ RuboCop executes Ruby method and block entry events far more often than it alter
 ### Next step
 
 Keep line events and optimize the hot early-return path itself, especially avoiding TypedData extraction and general st_table lookup on every event.
+
+## Iteration 4: accepted
+
+- Timestamp: 2026-08-11T17:49:24+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-coverage
+- HEAD: 713b5ff5ae7e82c7662d2af6ba58eaf24d8ff2bc
+- Dirty: yes
+
+### Hypothesis
+
+The general st_table membership lookup and typed-data extraction on every Ruby line dominate the remaining on_line_event callback cost; a direct-mapped pointer cache with a consecutive-file fast path will preserve exact coverage while making the common return path constant and allocation-free.
+
+### Change
+
+Replace the per-test st_table of filename pointers with a 256-entry direct-mapped native pointer cache plus a last-filename fast path, and access the callback's already-validated typed data directly. Cache collisions only repeat path processing and cannot omit coverage.
+
+```text
+ext/datadog_ci_native/datadog_cov.c | 42 +++++++++++++++++++++++--------------
+ 1 file changed, 26 insertions(+), 16 deletions(-)
+```
+
+### Functional tests
+
+- DDCov native specs: **passed** — Ruby 3.3.5; 37 examples, 0 failures
+- ruby-rubocop-coverage Crook gate: **passed** — All 37 assertions passed for the complete upstream RuboCop suite
+- ruby-rubocop Crook guard: **passed** — All 36 assertions passed; four-pair benchmark comparison was inconclusive, not regressed
+- ruby-quotes-rails Crook guard: **passed** — All 36 assertions passed; ten-pair benchmark comparison was inconclusive, not regressed
+
+### Benchmarks
+
+- ruby-rubocop-coverage: **improved**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-180824.256267000-ruby-rubocop-coverage-p3881-8d7ee266ef7818d5/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-183814.534638000-ruby-rubocop-coverage-p30210-f0522b4f9b41fcbf/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-183814.534638000-ruby-rubocop-coverage-p30210-f0522b4f9b41fcbf/comparison.json`
+- ruby-rubocop: **inconclusive**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-153739.599524000-ruby-rubocop-p94073-b56b30d9515ed557/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-185308.307027000-ruby-rubocop-p45653-5fb815bc8f93f8b3/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-185308.307027000-ruby-rubocop-p45653-5fb815bc8f93f8b3/comparison.md`
+- ruby-quotes-rails: **inconclusive**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-160600.926505000-ruby-quotes-rails-p8853-55dc2637ed372b38/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-192502.265055000-ruby-quotes-rails-p66327-26a7be4807458535/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-192502.265055000-ruby-quotes-rails-p66327-26a7be4807458535/comparison.md`
+
+### Profiles
+
+- pf2: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-183814.534638000-ruby-rubocop-coverage-p30210-f0522b4f9b41fcbf/profiles/pf2` — on_line_event fell from 4.66% to 1.86% inclusive; vm_trace fell from 10.99% to 8.36%.
+
+### Findings
+
+The coverage benchmark improved from 66.17% to 58.61% overhead, a 7.56 percentage-point reduction. The direct callback hotspot shrank as predicted. Full-suite RuboCop remained green at 22.90% overhead (inconclusive versus 19.45%), and Quotes Rails remained green at 8.13% (inconclusive versus 10.04%). The isolated long Quotes gap occurred outside measured command duration; its retained measured samples were normal.
+
+### Next step
+
+Continue from the 58.61% reference. Investigate the remaining VM event-hook overhead and the large Pf2 unknown/native sample share without weakening exact per-test coverage semantics.

@@ -3,6 +3,7 @@
 #include <ruby/st.h>
 
 #include <stdbool.h>
+#include <string.h>
 
 #include "datadog_common.h"
 
@@ -11,6 +12,7 @@
 // running only the tests that are affected by the changes.
 
 #define PROFILE_FRAMES_BUFFER_SIZE 1
+#define SEEN_FILENAME_CACHE_SIZE 256
 
 // threading modes
 enum threading_mode { single, multi };
@@ -49,10 +51,11 @@ struct dd_cov_data {
   char *ignored_path;
   long ignored_path_len;
 
-  // Line tracepoint optimisation: cache every filename pointer observed during
-  // the current test. Coverage is a set, so revisiting a file cannot add any
-  // information and should not repeat frame and path processing.
-  st_table *seen_filename_ptrs;
+  // Line tracepoint optimisation: make consecutive events from the same file a
+  // single comparison, then use a direct-mapped cache for later revisits. A
+  // collision only repeats path processing; it can never suppress coverage.
+  uintptr_t last_filename_ptr;
+  uintptr_t seen_filename_ptrs[SEEN_FILENAME_CACHE_SIZE];
 
   // Line tracepoint can work in two modes: single threaded and multi threaded
   //
@@ -97,7 +100,6 @@ static void dd_cov_free(void *ptr) {
   struct dd_cov_data *dd_cov_data = ptr;
   xfree(dd_cov_data->root);
   xfree(dd_cov_data->ignored_path);
-  st_free_table(dd_cov_data->seen_filename_ptrs);
   st_free_table(dd_cov_data->klasses_table);
   st_free_table(dd_cov_data->klass_files_cache);
   xfree(dd_cov_data);
@@ -131,10 +133,12 @@ static VALUE dd_cov_allocate(VALUE klass) {
   dd_cov_data->root_len = 0;
   dd_cov_data->ignored_path = NULL;
   dd_cov_data->ignored_path_len = 0;
+  dd_cov_data->last_filename_ptr = 0;
+  memset(dd_cov_data->seen_filename_ptrs, 0,
+         sizeof(dd_cov_data->seen_filename_ptrs));
   dd_cov_data->threading_mode = multi;
 
   dd_cov_data->object_allocation_tracepoint = Qnil;
-  dd_cov_data->seen_filename_ptrs = st_init_numtable();
   // numtable type is needed to store VALUE as a key
   dd_cov_data->klasses_table = st_init_numtable();
   dd_cov_data->klass_files_cache = st_init_numtable();
@@ -162,24 +166,28 @@ static bool record_impacted_file(struct dd_cov_data *dd_cov_data,
 // rb_profile_frames.
 static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
                           VALUE klass) {
-  struct dd_cov_data *dd_cov_data;
-  TypedData_Get_Struct(data, struct dd_cov_data, &dd_cov_data_type,
-                       dd_cov_data);
+  // The hook is registered only with DDCov instances, so the full typed-data
+  // type check on every Ruby line is unnecessary.
+  struct dd_cov_data *dd_cov_data = RTYPEDDATA_DATA(data);
 
   const char *c_filename = rb_sourcefile();
   if (c_filename == NULL) {
     return;
   }
 
-  // Skip every file already observed during this test, not just consecutive
-  // line events from the same file.
   uintptr_t current_filename_ptr = (uintptr_t)c_filename;
-  if (st_is_member(dd_cov_data->seen_filename_ptrs,
-                   (st_data_t)current_filename_ptr)) {
+  if (dd_cov_data->last_filename_ptr == current_filename_ptr) {
     return;
   }
-  st_insert(dd_cov_data->seen_filename_ptrs, (st_data_t)current_filename_ptr,
-            1);
+  dd_cov_data->last_filename_ptr = current_filename_ptr;
+
+  size_t cache_index =
+      ((current_filename_ptr >> 4) ^ (current_filename_ptr >> 12)) &
+      (SEEN_FILENAME_CACHE_SIZE - 1);
+  if (dd_cov_data->seen_filename_ptrs[cache_index] == current_filename_ptr) {
+    return;
+  }
+  dd_cov_data->seen_filename_ptrs[cache_index] = current_filename_ptr;
 
   VALUE top_frame;
   int captured_frames =
@@ -406,7 +414,9 @@ static VALUE dd_cov_stop(VALUE self) {
   VALUE res = dd_cov_data->impacted_files;
 
   dd_cov_data->impacted_files = rb_hash_new();
-  st_clear(dd_cov_data->seen_filename_ptrs);
+  dd_cov_data->last_filename_ptr = 0;
+  memset(dd_cov_data->seen_filename_ptrs, 0,
+         sizeof(dd_cov_data->seen_filename_ptrs));
 
   return res;
 }
