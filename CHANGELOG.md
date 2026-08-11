@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.36.1] - 2026-08-11
+
+### Fixed
+
+* Fix SimpleCov compatibility ([#570][])
+* fix: Avoid killing commands after output closes ([#566][])
+
 ## [1.36.0] - 2026-08-03
 
 ### Added
@@ -675,7 +682,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.1...main
+[1.36.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.0...v1.36.1
 [1.36.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.35.0...v1.36.0
 [1.35.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.34.0...v1.35.0
 [1.34.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.33.0...v1.34.0
@@ -957,3 +965,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#542]: https://github.com/DataDog/datadog-ci-rb/issues/542
 [#554]: https://github.com/DataDog/datadog-ci-rb/issues/554
 [#555]: https://github.com/DataDog/datadog-ci-rb/issues/555
+[#566]: https://github.com/DataDog/datadog-ci-rb/issues/566
+[#570]: https://github.com/DataDog/datadog-ci-rb/issues/570
