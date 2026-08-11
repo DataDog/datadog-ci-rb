@@ -147,6 +147,20 @@ module Datadog
           end
         end
 
+        # The intended test process may be reached through an exec'ing launcher
+        # such as Bundler, so keep activation until its test session starts.
+        # Forked workers then inherit loaded instrumentation, while unrelated
+        # Ruby processes started by the suite do not initialize it again.
+        def self.remove_auto_instrumentation_from_rubyopt
+          rubyopt = ENV["RUBYOPT"]
+          return unless rubyopt
+
+          auto_instrument_require = "-rdatadog/ci/auto_instrument"
+          rubyopt = rubyopt.gsub(/(?<!\S)#{Regexp.escape(auto_instrument_require)}(?!\S)/, "")
+
+          rubyopt.match?(/\S/) ? ENV["RUBYOPT"] = rubyopt : ENV.delete("RUBYOPT")
+        end
+
         def self.auto_configure_datadog
           configure_once.run do
             Datadog.logger.debug("Applying Datadog configuration in CI mode...")

@@ -91,3 +91,102 @@ RuboCop overhead fell from 44.12% to 40.57%, a 3.55 percentage-point reduction a
 ### Next step
 
 Before another code change, reconcile the approximately 49 seconds of RuboCop wall-time overhead with the roughly 4 seconds represented by the two visible Datadog Pf2 hotspots; inspect CPU time, all profile processes and threads, GC/allocation cost, and blocking/GVL behavior to identify the missing approximately 45 seconds.
+
+## Iteration 2: rejected
+
+- Timestamp: 2026-08-11T13:03:54+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-overhead
+- HEAD: f3e6d58086b0aeaf0b5cfd2849d1aae6da263260
+- Dirty: yes
+
+### Hypothesis
+
+RuboCop launches dozens of fresh Ruby processes that unnecessarily inherit datadog-ci through RUBYOPT; removing that activation after the parent loads should preserve fork instrumentation and eliminate repeated startup cost.
+
+### Change
+
+Removed the exact datadog/ci/auto_instrument require token from RUBYOPT immediately after the entrypoint loaded, leaving all other Ruby options unchanged.
+
+```text
+lib/datadog/ci/auto_instrument.rb | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+```
+
+### Functional tests
+
+- Focused auto-instrumentation spec: **passed** — 3 examples, 0 failures; StandardRB and Steep passed
+- ruby-rubocop Crook gate: **passed** — All 36 assertions passed for 21,742 tests
+- ruby-quotes-rails Crook gate: **failed** — Mockdog observed no tracer activity within 15 seconds
+
+### Benchmarks
+
+- ruby-rubocop: **improved**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-122237.137730000-ruby-rubocop-p26019-b2d268cf1b6675fc/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-134130.889161000-ruby-rubocop-p62928-5994ae0d625e9719/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-134130.889161000-ruby-rubocop-p62928-5994ae0d625e9719/comparison.json`
+- ruby-quotes-rails: **regressed**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-125324.489488000-ruby-quotes-rails-p39204-dd1bb11862646f69/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-150031.188116000-ruby-quotes-rails-p78055-b3a2c4e6fb69eb3c/status.json`
+
+### Findings
+
+A 10-run startup diagnostic measured 333 ms median incremental cost per fresh Ruby process, and an instrumented-parent/clean-exec RuboCop control reduced wall time from about 160.6 seconds to 143.2 seconds. The primary benchmark then improved from 40.57% to 17.11% overhead with a deterministic improved verdict. However, immediate cleanup also removed activation before Bundler exec'd the intended Quotes Rails RSpec process, so the implementation broke a valid launcher boundary and must be rejected.
+
+### Next step
+
+Keep RUBYOPT activation through launchers and remove it only after a real test framework integration has loaded and patched; verify Quotes Rails functionality before repeating the primary benchmark.
+
+## Iteration 3: accepted
+
+- Timestamp: 2026-08-11T14:13:12+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-overhead
+- HEAD: f3e6d58086b0aeaf0b5cfd2849d1aae6da263260
+- Dirty: yes
+
+### Hypothesis
+
+After a real test session starts, fresh Ruby processes launched by the suite should not inherit datadog-ci activation; forked workers already inherit loaded instrumentation, and explicit parallel test workers can retain the original activation environment.
+
+### Change
+
+Keep RUBYOPT activation through launchers, remove only the exact datadog/ci/auto_instrument token when TestTracing::Component starts the test session, and explicitly preserve the original RUBYOPT for parallel_tests worker commands.
+
+```text
+docs/performance/ruby-datadog-ci-rubocop.md    | 45 ++++++++++++++++++++++++++
+ lib/datadog/ci/contrib/instrumentation.rb      | 14 ++++++++
+ lib/datadog/ci/contrib/parallel_tests/cli.rb   |  5 +++
+ lib/datadog/ci/test_tracing/component.rb       |  5 +++
+ sig/datadog/ci/contrib/instrumentation.rbs     |  2 ++
+ spec/datadog/ci/test_tracing/component_spec.rb |  6 ++++
+ 6 files changed, 77 insertions(+)
+```
+
+### Functional tests
+
+- Focused auto-instrumentation specs: **passed** — 4 examples, 0 failures
+- Test session boundary spec: **passed** — 1 example, 0 failures
+- StandardRB: **passed** — 7 changed Ruby files, no offenses
+- Steep: **passed** — No type errors
+- ruby-rubocop Crook gate: **passed** — All 36 assertions passed for 21,742 tests
+- ruby-quotes-rails Crook gate: **passed** — All 36 assertions passed for 51 tests
+
+### Benchmarks
+
+- ruby-rubocop: **improved**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-122237.137730000-ruby-rubocop-p26019-b2d268cf1b6675fc/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-153739.599524000-ruby-rubocop-p94073-b56b30d9515ed557/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-153739.599524000-ruby-rubocop-p94073-b56b30d9515ed557/comparison.json`
+- ruby-quotes-rails: **inconclusive**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-125324.489488000-ruby-quotes-rails-p39204-dd1bb11862646f69/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-160600.926505000-ruby-quotes-rails-p8853-55dc2637ed372b38/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-160600.926505000-ruby-quotes-rails-p8853-55dc2637ed372b38/comparison.json`
+
+### Findings
+
+The missing overhead was distributed rather than concentrated in the two visible Pf2 frames. A startup microbenchmark measured 333 ms median incremental cost per fresh Ruby process; a partial RuboCop run observed 58 distinct Ruby processes, and an instrumented-parent/clean-exec control saved about 17.5 seconds. Disabling the persistent integration TracePoint saved only about 1.5 seconds; the remaining roughly 27 seconds is per-test tracing, serialization, transport, and wait cost across 21,742 examples. The accepted implementation reduced RuboCop overhead from 40.57% to 19.45%, a 21.12 percentage-point reduction. The deterministic primary verdict is improved with a -15.00% multiplier estimate and a 95% interval from -18.94% to -9.59%. Quotes Rails remained functionally green; its timing comparison was inconclusive rather than regressed. No fresh profile was captured because the existing Pf2 artifact covers the parent process and cannot observe the eliminated fresh-process startup cost.
+
+### Next step
+
+The requested 25% RuboCop overhead goal is met. Commit the accepted code and journal, push the tracer branch, and open a pull request.

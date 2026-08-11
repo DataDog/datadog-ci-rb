@@ -472,6 +472,12 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           expect(subject).to have_test_tag("my.tag", "my_value")
         end
 
+        it "stops propagating auto instrumentation after the test session starts" do
+          expect(Datadog::CI::Contrib::Instrumentation).to receive(:remove_auto_instrumentation_from_rubyopt)
+
+          subject
+        end
+
         context "when a test session is already active" do
           let(:existing_test_session) { test_tracing.start_test_session(service: service, tags: tags) }
 

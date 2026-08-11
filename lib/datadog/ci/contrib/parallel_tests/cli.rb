@@ -18,6 +18,10 @@ module Datadog
               return super if @runner != ::ParallelTests::RSpec::Runner
 
               begin
+                # Preserve activation explicitly for the RSpec worker commands.
+                # Starting the distributed parent session removes inherited
+                # activation before unrelated child processes can receive it.
+                worker_rubyopt = ENV["RUBYOPT"]
                 test_session = test_tracing_component.start_test_session(
                   tags: {
                     CI::Ext::Test::TAG_FRAMEWORK => CI::Contrib::RSpec::Ext::FRAMEWORK,
@@ -31,6 +35,7 @@ module Datadog
 
                 options[:env] ||= {}
                 options[:env][CI::Ext::Settings::ENV_TEST_VISIBILITY_DRB_SERVER_URI] = test_tracing_component.context_service_uri
+                options[:env]["RUBYOPT"] ||= worker_rubyopt if worker_rubyopt
 
                 super
               ensure
