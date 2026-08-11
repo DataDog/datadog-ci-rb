@@ -40,9 +40,10 @@ struct dd_cov_data {
   char *ignored_path;
   long ignored_path_len;
 
-  // Line tracepoint optimisation: cache last seen filename pointer to avoid
-  // unnecessary string comparison if we stay in the same file.
-  uintptr_t last_filename_ptr;
+  // Line tracepoint optimisation: cache every filename pointer observed during
+  // the current test. Coverage is a set, so revisiting a file cannot add any
+  // information and should not repeat frame and path processing.
+  st_table *seen_filename_ptrs;
 
   // Line tracepoint can work in two modes: single threaded and multi threaded
   //
@@ -83,6 +84,7 @@ static void dd_cov_free(void *ptr) {
   struct dd_cov_data *dd_cov_data = ptr;
   xfree(dd_cov_data->root);
   xfree(dd_cov_data->ignored_path);
+  st_free_table(dd_cov_data->seen_filename_ptrs);
   st_free_table(dd_cov_data->klasses_table);
   xfree(dd_cov_data);
 }
@@ -115,10 +117,10 @@ static VALUE dd_cov_allocate(VALUE klass) {
   dd_cov_data->root_len = 0;
   dd_cov_data->ignored_path = NULL;
   dd_cov_data->ignored_path_len = 0;
-  dd_cov_data->last_filename_ptr = 0;
   dd_cov_data->threading_mode = multi;
 
   dd_cov_data->object_allocation_tracepoint = Qnil;
+  dd_cov_data->seen_filename_ptrs = st_init_numtable();
   // numtable type is needed to store VALUE as a key
   dd_cov_data->klasses_table = st_init_numtable();
 
@@ -150,13 +152,19 @@ static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
                        dd_cov_data);
 
   const char *c_filename = rb_sourcefile();
-
-  // skip if we cover the same file again
-  uintptr_t current_filename_ptr = (uintptr_t)c_filename;
-  if (dd_cov_data->last_filename_ptr == current_filename_ptr) {
+  if (c_filename == NULL) {
     return;
   }
-  dd_cov_data->last_filename_ptr = current_filename_ptr;
+
+  // Skip every file already observed during this test, not just consecutive
+  // line events from the same file.
+  uintptr_t current_filename_ptr = (uintptr_t)c_filename;
+  if (st_is_member(dd_cov_data->seen_filename_ptrs,
+                   (st_data_t)current_filename_ptr)) {
+    return;
+  }
+  st_insert(dd_cov_data->seen_filename_ptrs, (st_data_t)current_filename_ptr,
+            1);
 
   VALUE top_frame;
   int captured_frames =
@@ -373,7 +381,7 @@ static VALUE dd_cov_stop(VALUE self) {
   VALUE res = dd_cov_data->impacted_files;
 
   dd_cov_data->impacted_files = rb_hash_new();
-  dd_cov_data->last_filename_ptr = 0;
+  st_clear(dd_cov_data->seen_filename_ptrs);
 
   return res;
 }
