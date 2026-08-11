@@ -96,3 +96,44 @@ The candidate reduced overhead from 72.79% to 66.17%, a 6.62 percentage-point im
 ### Next step
 
 Reduce the per-line VM event-hook cost while preserving coverage for method, block, class-body, and dynamically loaded top-level code. Run non-coverage regression guards before final acceptance once overhead is below 50%.
+
+## Iteration 3: rejected
+
+- Timestamp: 2026-08-11T16:35:53+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-coverage
+- HEAD: a3ca9ef9d97bf69d7831e01f66758631e74b7718
+- Dirty: yes
+
+### Hypothesis
+
+Replacing multi-thread line events with Ruby method, block, class, and script-compilation events will preserve file coverage while avoiding the dominant per-line VM trace-hook cost.
+
+### Change
+
+Use a normal TracePoint for CALL, B_CALL, CLASS, and SCRIPT_COMPILED in multi-thread mode; retain line hooks in single-thread mode and add a top-level-only dynamic-load fixture.
+
+```text
+ext/datadog_ci_native/datadog_cov.c | 49 +++++++++++++++++++++++++++++++++++--
+ spec/ddcov/ddcov_spec.rb            | 12 +++++++++
+ 2 files changed, 59 insertions(+), 2 deletions(-)
+```
+
+### Functional tests
+
+- DDCov native specs: **passed** — Ruby 3.3.5; 38 examples, 0 failures, including dynamic top-level code
+- ruby-rubocop-coverage Crook gate: **failed** — Interrupted after 7 minutes because the functional workload exceeded twice the accepted implementation's duration; Crook cleanup succeeded
+
+### Benchmarks
+
+- ruby-rubocop-coverage: **regressed**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-180824.256267000-ruby-rubocop-coverage-p3881-8d7ee266ef7818d5/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-182812.724018000-ruby-rubocop-coverage-p21019-c8b4f14a475ea8a9/status.json`
+
+### Findings
+
+RuboCop executes Ruby method and block entry events far more often than it alternates among distinct source files after the per-test filename cache. The lower-frequency assumption was false for this workload, so the functional phase alone was enough to reject the candidate without contaminating the accepted reference.
+
+### Next step
+
+Keep line events and optimize the hot early-return path itself, especially avoiding TypedData extraction and general st_table lookup on every event.
