@@ -260,6 +260,11 @@ module Datadog
 
         # DOMAIN EVENTS
         def on_test_session_started(test_session)
+          # Forked workers inherit the active test session and instrumentation.
+          # Fresh Ruby processes started by the suite should not initialize
+          # Test Optimization merely because they inherit RUBYOPT.
+          Contrib::Instrumentation.remove_auto_instrumentation_from_rubyopt
+
           # signal git tree upload worker to start uploading git metadata
           git_tree_upload_worker.perform(test_session.git_repository_url)
 

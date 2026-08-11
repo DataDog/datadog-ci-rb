@@ -17,6 +17,14 @@ module Datadog
     class Span
       include DRb::DRbUndumped
 
+      ENVIRONMENT_RUNTIME_TAGS = {
+        Ext::Test::TAG_OS_ARCHITECTURE => ::RbConfig::CONFIG["host_cpu"],
+        Ext::Test::TAG_OS_PLATFORM => ::RbConfig::CONFIG["host_os"],
+        Ext::Test::TAG_OS_VERSION => Core::Environment::Platform.kernel_release,
+        Ext::Test::TAG_RUNTIME_NAME => Core::Environment::Ext::LANG_ENGINE,
+        Ext::Test::TAG_RUNTIME_VERSION => Core::Environment::Ext::ENGINE_VERSION
+      }.freeze
+
       attr_reader :tracer_span
 
       def initialize(tracer_span)
@@ -245,11 +253,7 @@ module Datadog
       end
 
       def set_environment_runtime_tags
-        tracer_span.set_tag(Ext::Test::TAG_OS_ARCHITECTURE, ::RbConfig::CONFIG["host_cpu"])
-        tracer_span.set_tag(Ext::Test::TAG_OS_PLATFORM, ::RbConfig::CONFIG["host_os"])
-        tracer_span.set_tag(Ext::Test::TAG_OS_VERSION, Core::Environment::Platform.kernel_release)
-        tracer_span.set_tag(Ext::Test::TAG_RUNTIME_NAME, Core::Environment::Ext::LANG_ENGINE)
-        tracer_span.set_tag(Ext::Test::TAG_RUNTIME_VERSION, Core::Environment::Ext::ENGINE_VERSION)
+        tracer_span.set_tags(ENVIRONMENT_RUNTIME_TAGS)
         tracer_span.set_tag(Ext::Test::TAG_COMMAND, Utils::TestRun.command)
       end
 

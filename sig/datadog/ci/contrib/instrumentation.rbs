@@ -27,6 +27,8 @@ module Datadog
 
         def self.fetch_auto_instrumented_integrations: () -> Array[Contrib::Integration]
 
+        def self.remove_auto_instrumentation_from_rubyopt: () -> void
+
         def self.auto_configure_datadog: () -> void
 
         def self.configure_once: () -> Datadog::Core::Utils::OnlyOnce

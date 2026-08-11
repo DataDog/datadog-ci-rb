@@ -253,11 +253,13 @@ RSpec.describe Datadog::CI::Span do
     end
 
     it "sets the environment runtime tags" do
-      expect(tracer_span).to receive(:set_tag).with("os.architecture", ::RbConfig::CONFIG["host_cpu"])
-      expect(tracer_span).to receive(:set_tag).with("os.platform", ::RbConfig::CONFIG["host_os"])
-      expect(tracer_span).to receive(:set_tag).with("os.version", Datadog::Core::Environment::Platform.kernel_release)
-      expect(tracer_span).to receive(:set_tag).with("runtime.name", Datadog::Core::Environment::Ext::LANG_ENGINE)
-      expect(tracer_span).to receive(:set_tag).with("runtime.version", Datadog::Core::Environment::Ext::ENGINE_VERSION)
+      expect(tracer_span).to receive(:set_tags).with({
+        "os.architecture" => ::RbConfig::CONFIG["host_cpu"],
+        "os.platform" => ::RbConfig::CONFIG["host_os"],
+        "os.version" => Datadog::CI::Span::ENVIRONMENT_RUNTIME_TAGS["os.version"],
+        "runtime.name" => Datadog::Core::Environment::Ext::LANG_ENGINE,
+        "runtime.version" => Datadog::Core::Environment::Ext::ENGINE_VERSION
+      })
       expect(tracer_span).to receive(:set_tag).with("test.command", test_command)
 
       span.set_environment_runtime_tags

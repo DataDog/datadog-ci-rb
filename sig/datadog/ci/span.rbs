@@ -1,6 +1,8 @@
 module Datadog
   module CI
     class Span
+      ENVIRONMENT_RUNTIME_TAGS: Hash[String, String]
+
       @tracer_span: Datadog::Tracing::SpanOperation
 
       attr_reader tracer_span: Datadog::Tracing::SpanOperation
