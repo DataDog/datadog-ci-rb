@@ -51,3 +51,48 @@ The green candidate reduced overhead from 77.87% to 72.79%, a 5.08 percentage-po
 ### Next step
 
 Cache allocation-tracing class-to-source resolution across tests so repeated classes and ancestor chains do not call const_source_location at every DDCov#stop. Run non-coverage regression guards before final acceptance once the under-50% target is reached.
+
+## Iteration 2: accepted
+
+- Timestamp: 2026-08-11T16:25:03+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-coverage
+- HEAD: ea1b5d6f207444298f3093069b5450d5df2a9d5e
+- Dirty: yes
+
+### Hypothesis
+
+Allocation tracing repeatedly resolves the same allocated classes and ancestor constant locations at the end of thousands of tests; caching each class's in-project ancestor files for the collector lifetime will eliminate this repeated DDCov#stop work without mixing per-test coverage.
+
+### Change
+
+Add a GC-safe native class-to-files cache while retaining the existing per-test allocated-class table; cached files are copied into only the current test's impacted-files set.
+
+```text
+ext/datadog_ci_native/datadog_cov.c | 57 ++++++++++++++++++++++++++-----------
+ 1 file changed, 41 insertions(+), 16 deletions(-)
+```
+
+### Functional tests
+
+- DDCov native specs: **passed** — Ruby 3.3.5; 37 examples, 0 failures
+- ruby-rubocop-coverage Crook gate: **passed** — All 37 assertions passed for the complete upstream RuboCop suite
+
+### Benchmarks
+
+- ruby-rubocop-coverage: **improved**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-174937.180428000-ruby-rubocop-coverage-p85160-737569f8b81f24a9/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-180824.256267000-ruby-rubocop-coverage-p3881-8d7ee266ef7818d5/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-180824.256267000-ruby-rubocop-coverage-p3881-8d7ee266ef7818d5/comparison.json`
+
+### Profiles
+
+- pf2: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-180824.256267000-ruby-rubocop-coverage-p3881-8d7ee266ef7818d5/profiles/pf2` — DDCov#stop, each_instantiated_klass, and dd_ci_resolve_const_to_file fell out of the focused top frames; vm_trace is now the dominant coverage path at 10.99%, with on_line_event at 4.66%.
+
+### Findings
+
+The candidate reduced overhead from 72.79% to 66.17%, a 6.62 percentage-point improvement. The deterministic multiplier verdict is improved (-3.83%), and the profile confirms the intended allocation-finalization work was removed rather than shifted.
+
+### Next step
+
+Reduce the per-line VM event-hook cost while preserving coverage for method, block, class-body, and dynamically loaded top-level code. Run non-coverage regression guards before final acceptance once overhead is below 50%.

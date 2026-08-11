@@ -25,6 +25,15 @@ static int mark_key_for_gc_i(st_data_t key, st_data_t _value, st_data_t _data) {
   return ST_CONTINUE;
 }
 
+static int mark_klass_files_for_gc_i(st_data_t key, st_data_t value,
+                                     st_data_t _data) {
+  // Both the class key and its cached filenames must remain at stable addresses
+  // because they are stored outside Ruby's object containers.
+  rb_gc_mark((VALUE)key);
+  rb_gc_mark((VALUE)value);
+  return ST_CONTINUE;
+}
+
 // Data structure
 struct dd_cov_data {
   // Ruby hash with filenames impacted by the test.
@@ -65,6 +74,7 @@ struct dd_cov_data {
   VALUE object_allocation_tracepoint;
   st_table *klasses_table; // { (VALUE) -> int } hashmap with class names that
                            // were covered by allocation during the test run
+  st_table *klass_files_cache; // { (VALUE) -> Array<String> } resolved files
 };
 
 static void dd_cov_mark(void *ptr) {
@@ -78,6 +88,9 @@ static void dd_cov_mark(void *ptr) {
   if (dd_cov_data->klasses_table != NULL) {
     st_foreach(dd_cov_data->klasses_table, mark_key_for_gc_i, 0);
   }
+  if (dd_cov_data->klass_files_cache != NULL) {
+    st_foreach(dd_cov_data->klass_files_cache, mark_klass_files_for_gc_i, 0);
+  }
 }
 
 static void dd_cov_free(void *ptr) {
@@ -86,6 +99,7 @@ static void dd_cov_free(void *ptr) {
   xfree(dd_cov_data->ignored_path);
   st_free_table(dd_cov_data->seen_filename_ptrs);
   st_free_table(dd_cov_data->klasses_table);
+  st_free_table(dd_cov_data->klass_files_cache);
   xfree(dd_cov_data);
 }
 
@@ -123,6 +137,7 @@ static VALUE dd_cov_allocate(VALUE klass) {
   dd_cov_data->seen_filename_ptrs = st_init_numtable();
   // numtable type is needed to store VALUE as a key
   dd_cov_data->klasses_table = st_init_numtable();
+  dd_cov_data->klass_files_cache = st_init_numtable();
 
   return dd_cov;
 }
@@ -193,27 +208,24 @@ static VALUE safely_get_mod_ancestors(VALUE klass) {
   return dd_ci_rescue_nil(rb_mod_ancestors, klass);
 }
 
-static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
-                                  VALUE klass) {
-  VALUE klass_name = safely_get_class_name(klass);
-  if (klass_name == Qnil) {
-    return false;
-  }
-
-  VALUE filename = dd_ci_resolve_const_to_file(klass_name);
-  if (filename == Qnil) {
-    return false;
-  }
-
-  return record_impacted_file(dd_cov_data, filename);
-}
-
 // This function is called for each class that was instantiated during the test
 // run.
 static int each_instantiated_klass(st_data_t key, st_data_t _value,
                                    st_data_t data) {
   VALUE klass = (VALUE)key;
   struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+
+  st_data_t cached_files;
+  if (st_lookup(dd_cov_data->klass_files_cache, key, &cached_files)) {
+    VALUE files = (VALUE)cached_files;
+    long files_len = RARRAY_LEN(files);
+    for (long i = 0; i < files_len; i++) {
+      rb_hash_aset(dd_cov_data->impacted_files, rb_ary_entry(files, i), Qtrue);
+    }
+    return ST_CONTINUE;
+  }
+
+  VALUE files = rb_ary_new();
 
   // rb_mod_ancestors returns an array containing the "klass" itself
   // and all the parent classes and/or included/prepended modules
@@ -229,8 +241,21 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
       continue;
     }
 
-    record_impacted_klass(dd_cov_data, mod);
+    VALUE klass_name = safely_get_class_name(mod);
+    if (klass_name == Qnil) {
+      continue;
+    }
+
+    VALUE filename = dd_ci_resolve_const_to_file(klass_name);
+    if (filename == Qnil || !record_impacted_file(dd_cov_data, filename)) {
+      continue;
+    }
+
+    rb_ary_push(files, filename);
   }
+
+  rb_obj_freeze(files);
+  st_insert(dd_cov_data->klass_files_cache, key, (st_data_t)files);
 
   return ST_CONTINUE;
 }
