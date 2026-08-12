@@ -13,7 +13,19 @@
 
 #define PROFILE_FRAMES_BUFFER_SIZE 1
 #define SEEN_FILENAME_CACHE_SIZE 1024
-#define SEEN_ALLOCATED_CLASS_CACHE_SIZE 256
+#define SEEN_ALLOCATED_CLASS_CACHE_SIZE 4096
+#define KLASS_FILES_CACHE_SIZE 100000
+
+#if SEEN_FILENAME_CACHE_SIZE == 0 ||                                       \
+    (SEEN_FILENAME_CACHE_SIZE & (SEEN_FILENAME_CACHE_SIZE - 1)) != 0
+#error "SEEN_FILENAME_CACHE_SIZE must be a power of two"
+#endif
+
+#if SEEN_ALLOCATED_CLASS_CACHE_SIZE == 0 ||                               \
+    (SEEN_ALLOCATED_CLASS_CACHE_SIZE &                                   \
+     (SEEN_ALLOCATED_CLASS_CACHE_SIZE - 1)) != 0
+#error "SEEN_ALLOCATED_CLASS_CACHE_SIZE must be a power of two"
+#endif
 
 // threading modes
 enum threading_mode { single, multi };
@@ -283,6 +295,12 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
   }
 
   rb_obj_freeze(files);
+  // Bound cross-test retention without adding eviction work to cache hits.
+  // Reaching the limit starts a fresh cache generation.
+  if (st_table_size(dd_cov_data->klass_files_cache) >=
+      KLASS_FILES_CACHE_SIZE) {
+    st_clear(dd_cov_data->klass_files_cache);
+  }
   st_insert(dd_cov_data->klass_files_cache, key, (st_data_t)files);
 
   return ST_CONTINUE;

@@ -279,3 +279,44 @@ The correctness regression reproduced twice before the fix, recording only 873 a
 ### Next step
 
 Address the next PR review comment independently. Retain this accepted correctness fix and use matching benchmark protocols for any later performance comparison.
+
+## Iteration 7: accepted
+
+- Timestamp: 2026-08-12T11:02:17+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-coverage
+- HEAD: 40e162e6235a99c784b42f01d904709ebcc599cf
+- Dirty: yes
+
+### Hypothesis
+
+Bounding the persistent class-to-files cache at 100,000 entries and expanding the per-test allocated-class fast cache to 4,096 entries will cap retention without measurably regressing RuboCop TIA coverage performance.
+
+### Change
+
+Start a fresh persistent class-files cache generation when it reaches 100,000 entries, increase the direct-mapped per-test allocated-class cache from 256 to 4,096 entries, and enforce the power-of-two direct-cache sizes at compile time.
+
+```text
+ext/datadog_ci_native/datadog_cov.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+```
+
+### Functional tests
+
+- DDCov native specs: **passed** — Ruby 3.3.5; 38 examples, 0 failures
+- ruby-rubocop-coverage Crook gate: **passed** — All 37 assertions passed for the complete upstream RuboCop suite
+
+### Benchmarks
+
+- ruby-rubocop-coverage: **inconclusive**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260812-105839.951667000-ruby-rubocop-coverage-p15766-a53e211a985957d6/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260812-123239.641076000-ruby-rubocop-coverage-p54943-e89cd3172a754b09/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260812-123239.641076000-ruby-rubocop-coverage-p54943-e89cd3172a754b09/comparison.json`
+
+### Findings
+
+The candidate measured 53.99% overhead versus 53.46% for the matching four-pair reference, a raw increase of 0.53 percentage points. The paired overhead-multiplier change was -0.05%, with a 95% interval from -2.05% to 2.25%; the comparator found no practical regression and returned inconclusive because the interval narrowly overlaps the 2% thresholds.
+
+### Next step
+
+Retain the bounded caches and address or resolve the remaining PR review threads; no additional unchanged benchmark run is warranted for this near-zero observed multiplier change.
