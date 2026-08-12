@@ -375,6 +375,45 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
       end
     end
 
+    context "when instruction sequence source storage is reused" do
+      let(:root) { absolute_path("dynamic/included") }
+      let(:use_allocation_tracing) { false }
+
+      it "does not confuse a new source file with a discarded excluded file" do
+        included_dir = absolute_path("dynamic/included")
+        excluded_dir = absolute_path("dynamic/excluded")
+        spacer_path = absolute_path("dynamic/spacer.rb")
+        spacer = RubyVM::InstructionSequence.compile("nil\n", spacer_path, spacer_path)
+        execute_transient_source = lambda do |directory, basename|
+          path = File.join(directory, basename)
+          RubyVM::InstructionSequence.compile("nil\n", path, path).eval
+        end
+        expected_files = []
+
+        subject.start
+
+        2_000.times do |index|
+          basename = format("%04d.rb", index)
+          execute_transient_source.call(excluded_dir, basename)
+          GC.start(full_mark: true, immediate_sweep: true)
+
+          included_path = File.join(included_dir, basename)
+          included_iseq = RubyVM::InstructionSequence.compile("nil\n", included_path, included_path)
+          expected_files << included_path
+
+          # Keep the consecutive-filename fast path from masking the direct
+          # cache behavior under test.
+          spacer.eval
+          included_iseq.eval
+        end
+
+        coverage = subject.stop
+
+        recorded_files = coverage.keys & expected_files
+        expect(recorded_files.size).to eq(expected_files.size)
+      end
+    end
+
     context "root in app folder" do
       let(:root) { absolute_path("app") }
 

@@ -238,3 +238,44 @@ The complete RuboCop coverage benchmark improved from 58.61% to 48.17% overhead,
 ### Next step
 
 Stop the optimization loop at the requested threshold. Run final native coverage validation, commit the code and journal, and open the tracer pull request.
+
+## Iteration 6: accepted
+
+- Timestamp: 2026-08-12T09:30:37+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-coverage
+- HEAD: 8c47aa22049ac6c901b466a8c54791004e8a87d9
+- Dirty: yes
+
+### Hypothesis
+
+A discarded instruction sequence can release its source-path storage, allowing Ruby to reuse the raw address for a different file and causing the line-event pointer cache to omit valid per-test coverage.
+
+### Change
+
+Replace raw filename-pointer cache entries with 1,024 GC-marked Ruby path values while retaining direct-mapped pointer comparisons and add a regression test that forces instruction-sequence source reuse.
+
+```text
+ext/datadog_ci_native/datadog_cov.c | 45 ++++++++++++++++++++++++-------------
+ spec/ddcov/ddcov_spec.rb            | 39 ++++++++++++++++++++++++++++++++
+ 2 files changed, 69 insertions(+), 15 deletions(-)
+```
+
+### Functional tests
+
+- DDCov native specs: **passed** — Ruby 3.3.5; 38 examples, 0 failures
+- ruby-rubocop-coverage Crook gate: **passed** — All 37 assertions passed for the complete upstream RuboCop suite
+
+### Benchmarks
+
+- ruby-rubocop-coverage: **regressed — accepted for correctness**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260811-195316.520076000-ruby-rubocop-coverage-p78776-3ba9efbeb9382adc/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260812-105839.951667000-ruby-rubocop-coverage-p15766-a53e211a985957d6/result.json`
+
+### Findings
+
+The correctness regression reproduced twice before the fix, recording only 873 and 937 of 2,000 included files. It passes after the cache owns the paths. The four-pair candidate benchmark succeeded at 53.46% overhead, versus 48.17% in the earlier one-pair run. Although the mismatched protocols prevent a deterministic comparison, the observed 5.29 percentage-point increase is conservatively recorded and accepted as a performance regression in exchange for complete coverage.
+
+### Next step
+
+Address the next PR review comment independently. Retain this accepted correctness fix and use matching benchmark protocols for any later performance comparison.

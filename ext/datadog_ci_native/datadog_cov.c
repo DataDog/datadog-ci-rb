@@ -12,7 +12,7 @@
 // running only the tests that are affected by the changes.
 
 #define PROFILE_FRAMES_BUFFER_SIZE 1
-#define SEEN_FILENAME_CACHE_SIZE 256
+#define SEEN_FILENAME_CACHE_SIZE 1024
 #define SEEN_ALLOCATED_CLASS_CACHE_SIZE 256
 
 // threading modes
@@ -53,10 +53,11 @@ struct dd_cov_data {
   long ignored_path_len;
 
   // Line tracepoint optimisation: make consecutive events from the same file a
-  // single comparison, then use a direct-mapped cache for later revisits. A
-  // collision only repeats path processing; it can never suppress coverage.
-  uintptr_t last_filename_ptr;
-  uintptr_t seen_filename_ptrs[SEEN_FILENAME_CACHE_SIZE];
+  // single comparison, then use a direct-mapped cache for later revisits. Keep
+  // the Ruby strings alive so their pointers cannot be reused for other paths.
+  // A collision only repeats path processing; it can never suppress coverage.
+  VALUE last_filename;
+  VALUE seen_filenames[SEEN_FILENAME_CACHE_SIZE];
 
   // Line tracepoint can work in two modes: single threaded and multi threaded
   //
@@ -88,6 +89,15 @@ static void dd_cov_mark(void *ptr) {
   rb_gc_mark_movable(dd_cov_data->impacted_files);
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
+
+  if (dd_cov_data->last_filename != Qnil) {
+    rb_gc_mark(dd_cov_data->last_filename);
+  }
+  for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
+    if (dd_cov_data->seen_filenames[i] != Qnil) {
+      rb_gc_mark(dd_cov_data->seen_filenames[i]);
+    }
+  }
 
   // if GC starts withing dd_cov_allocate() call, klasses_table might not be
   // initialized yet
@@ -136,9 +146,10 @@ static VALUE dd_cov_allocate(VALUE klass) {
   dd_cov_data->root_len = 0;
   dd_cov_data->ignored_path = NULL;
   dd_cov_data->ignored_path_len = 0;
-  dd_cov_data->last_filename_ptr = 0;
-  memset(dd_cov_data->seen_filename_ptrs, 0,
-         sizeof(dd_cov_data->seen_filename_ptrs));
+  dd_cov_data->last_filename = Qnil;
+  for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
+    dd_cov_data->seen_filenames[i] = Qnil;
+  }
   dd_cov_data->threading_mode = multi;
 
   dd_cov_data->object_allocation_tracepoint = Qnil;
@@ -182,18 +193,19 @@ static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
   }
 
   uintptr_t current_filename_ptr = (uintptr_t)c_filename;
-  if (dd_cov_data->last_filename_ptr == current_filename_ptr) {
+  if (dd_cov_data->last_filename != Qnil &&
+      RSTRING_PTR(dd_cov_data->last_filename) == c_filename) {
     return;
   }
-  dd_cov_data->last_filename_ptr = current_filename_ptr;
 
   size_t cache_index =
       ((current_filename_ptr >> 4) ^ (current_filename_ptr >> 12)) &
       (SEEN_FILENAME_CACHE_SIZE - 1);
-  if (dd_cov_data->seen_filename_ptrs[cache_index] == current_filename_ptr) {
+  VALUE cached_filename = dd_cov_data->seen_filenames[cache_index];
+  if (cached_filename != Qnil && RSTRING_PTR(cached_filename) == c_filename) {
+    dd_cov_data->last_filename = cached_filename;
     return;
   }
-  dd_cov_data->seen_filename_ptrs[cache_index] = current_filename_ptr;
 
   VALUE top_frame;
   int captured_frames =
@@ -209,6 +221,8 @@ static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
     return;
   }
 
+  dd_cov_data->last_filename = filename;
+  dd_cov_data->seen_filenames[cache_index] = filename;
   record_impacted_file(dd_cov_data, filename);
 }
 
@@ -447,9 +461,10 @@ static VALUE dd_cov_stop(VALUE self) {
   VALUE res = dd_cov_data->impacted_files;
 
   dd_cov_data->impacted_files = rb_hash_new();
-  dd_cov_data->last_filename_ptr = 0;
-  memset(dd_cov_data->seen_filename_ptrs, 0,
-         sizeof(dd_cov_data->seen_filename_ptrs));
+  dd_cov_data->last_filename = Qnil;
+  for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
+    dd_cov_data->seen_filenames[i] = Qnil;
+  }
 
   return res;
 }
