@@ -5,6 +5,10 @@ module Datadog
     module SourceCode
       module PathFilter
         def self.included?: (String path, String root_path, String? ignored_path) -> bool
+
+        private
+
+        def self.directory_prefix?: (String path, String prefix) -> bool
       end
     end
   end
