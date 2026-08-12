@@ -31,10 +31,7 @@ RSpec.describe Datadog::CI::SourceCode::PathFilter do
     context "when path has similar prefix but is not under root_path" do
       let(:path) { "/app/project_other/foo.rb" }
 
-      it "matches prefix (no trailing slash check)" do
-        # This matches how the C implementation works (strncmp prefix)
-        expect(included?).to be true
-      end
+      it { is_expected.to be false }
     end
 
     context "with ignored_path" do
@@ -56,6 +53,12 @@ RSpec.describe Datadog::CI::SourceCode::PathFilter do
         let(:path) { "/app/project/vendor" }
 
         it { is_expected.to be false }
+      end
+
+      context "when path has a similar prefix but is not under ignored_path" do
+        let(:path) { "/app/project/vendorized/foo.rb" }
+
+        it { is_expected.to be true }
       end
     end
 

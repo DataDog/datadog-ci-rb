@@ -320,3 +320,54 @@ The candidate measured 53.99% overhead versus 53.46% for the matching four-pair 
 ### Next step
 
 Retain the bounded caches and address or resolve the remaining PR review threads; no additional unchanged benchmark run is warranted for this near-zero observed multiplier change.
+
+## Iteration 8: accepted
+
+- Timestamp: 2026-08-12T11:57:40+00:00
+- Source: /private/tmp/datadog-ci-rubocop-optimization
+- Branch: anmarchenko/optimize-rubocop-coverage
+- HEAD: 066794fc60a2f98bf4b5ede549ad4a0ff75c6603
+- Dirty: yes
+
+### Hypothesis
+
+The optimized native coverage collector remains correct across direct-cache collisions, GC compaction, many threads, malformed inputs, and directory-prefix edge cases without a practical RuboCop TIA performance regression.
+
+### Change
+
+Add adversarial DDCov coverage for filename and allocated-class cache overflow, GC compaction, threaded dynamic sources, class redefinition, malformed native arguments, and textual path-prefix collisions; validate native inputs and require path-component boundaries in native and Ruby filters.
+
+```text
+ext/datadog_ci_native/datadog_common.c          |  23 ++-
+ ext/datadog_ci_native/datadog_common.h          |   7 +-
+ ext/datadog_ci_native/datadog_cov.c             |  20 ++-
+ lib/datadog/ci/source_code/path_filter.rb       |  16 +-
+ spec/datadog/ci/source_code/path_filter_spec.rb |  11 +-
+ spec/ddcov/ddcov_spec.rb                        | 214 +++++++++++++++++++++++-
+ 6 files changed, 268 insertions(+), 23 deletions(-)
+```
+
+### Functional tests
+
+- DDCov and path-filter specs: **passed** — Ruby 3.3.5; 64 examples, 0 failures; modified Ruby files also pass StandardRB
+- Ruby 2.7 native compilation: **passed** — Native extension compiled successfully with Ruby 2.7.8
+- ruby-rubocop-coverage Crook gate: **passed** — All 37 assertions passed for the complete upstream RuboCop suite
+
+### Benchmarks
+
+- ruby-rubocop-coverage: **inconclusive**
+  - Reference: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260812-123239.641076000-ruby-rubocop-coverage-p54943-e89cd3172a754b09/result.json`
+  - Candidate: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260812-132730.043102000-ruby-rubocop-coverage-p88309-68fad3f3da00bffb/result.json`
+  - Comparison: `/Users/andrey.marchenko/p/shepherd/benchmark-data/runs/20260812-132730.043102000-ruby-rubocop-coverage-p88309-68fad3f3da00bffb/comparison.json`
+
+### Findings
+
+The stress suite exposed two real supported-use defects: malformed native path arguments could crash Ruby, and textual prefix matching treated sibling directories as descendants. The four-pair candidate measured 55.16% raw overhead versus 53.99%, but the paired overhead-multiplier estimate improved by 0.80%; its 95% interval (-4.08% to +2.49%) overlaps the 2% practical thresholds, so no practical regression was detected.
+
+### Next step
+
+Retain the correctness hardening and adversarial regressions; no unchanged benchmark rerun is warranted for an inconclusive result whose point estimate improved and whose raw change is below the practical threshold.
+
+### Validation addendum
+
+The complete Ruby 3.3.5 `spec:main` suite passed outside the filesystem sandbox: 2,320 examples, 0 failures, and 1 expected Linux-only pending example. An initial sandboxed attempt failed because DRb Unix sockets and the configured Git signing agent were unavailable; rerunning the unchanged suite with those required capabilities confirmed the failures were environmental.

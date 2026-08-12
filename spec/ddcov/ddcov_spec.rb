@@ -34,6 +34,27 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
       end
     end
 
+    context "when initialization arguments are malformed" do
+      it "rejects non-hash options and non-string paths" do
+        expect { described_class.new(nil) }.to raise_error(TypeError)
+        expect do
+          described_class.new(root: Object.new, threading_mode: :multi)
+        end.to raise_error(TypeError)
+        expect do
+          described_class.new(root: "/tmp", ignored_path: Object.new, threading_mode: :multi)
+        end.to raise_error(TypeError)
+      end
+
+      it "rejects paths containing null bytes" do
+        expect do
+          described_class.new(root: "/tmp\0other", threading_mode: :multi)
+        end.to raise_error(ArgumentError)
+        expect do
+          described_class.new(root: "/tmp", ignored_path: "/tmp\0other", threading_mode: :multi)
+        end.to raise_error(ArgumentError)
+      end
+    end
+
     context "when root is the calculator project dir" do
       let(:root) { absolute_path("calculator") }
 
@@ -361,6 +382,28 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
             expect(coverage.size).to eq(1)
             expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
           end
+
+          it "collects distinct dynamic sources executed by many threads" do
+            root = absolute_path("dynamic/threaded")
+            collector = described_class.new(
+              root: root,
+              threading_mode: :multi,
+              use_allocation_tracing: false
+            )
+            sources = Array.new(256) do |index|
+              path = File.join(root, "#{index}.rb")
+              [path, RubyVM::InstructionSequence.compile("Thread.pass\n", path, path)]
+            end
+
+            collector.start
+            sources.each_slice(32).map do |slice|
+              Thread.new { slice.each { |_, iseq| iseq.eval } }
+            end.each(&:join)
+            coverage = collector.stop
+
+            expected_files = sources.map(&:first)
+            expect((coverage.keys & expected_files).size).to eq(expected_files.size)
+          end
         end
 
         context "when threading mode is invalid" do
@@ -375,7 +418,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
       end
     end
 
-    context "when instruction sequence source storage is reused" do
+    context "when dynamic source filenames stress the line-event cache" do
       let(:root) { absolute_path("dynamic/included") }
       let(:use_allocation_tracing) { false }
 
@@ -411,6 +454,82 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
 
         recorded_files = coverage.keys & expected_files
         expect(recorded_files.size).to eq(expected_files.size)
+      end
+
+      it "records more distinct sources than the direct cache can hold" do
+        subject.start
+        expected_files = Array.new(1_100) do |index|
+          path = File.join(root, "overflow-#{index}.rb")
+          source = RubyVM::InstructionSequence.compile("nil\n", path, path)
+
+          source.eval
+          path
+        end
+
+        coverage = subject.stop
+
+        expect((coverage.keys & expected_files).size).to eq(expected_files.size)
+      end
+
+      it "keeps cached filenames valid across heap compaction" do
+        skip "Ruby does not support heap compaction" unless GC.respond_to?(:compact)
+
+        first_path = File.join(root, "before-compaction.rb")
+        second_path = File.join(root, "after-compaction.rb")
+        spacer_path = absolute_path("dynamic/excluded/compaction-spacer.rb")
+        first_source = RubyVM::InstructionSequence.compile("nil\n", first_path, first_path)
+        second_source = RubyVM::InstructionSequence.compile("nil\n", second_path, second_path)
+        spacer = RubyVM::InstructionSequence.compile("nil\n", spacer_path, spacer_path)
+
+        subject.start
+        first_source.eval
+        spacer.eval
+        GC.compact
+        first_source.eval
+        second_source.eval
+        coverage = subject.stop
+
+        expect(coverage.keys).to include(first_path, second_path)
+      end
+    end
+
+    context "when paths only share a textual prefix" do
+      let(:root) { absolute_path("dynamic/app") }
+      let(:use_allocation_tracing) { false }
+
+      it "does not include files from a sibling directory" do
+        included_path = File.join(root, "model.rb")
+        sibling_path = absolute_path("dynamic/application/model.rb")
+        included_source = RubyVM::InstructionSequence.compile("nil\n", included_path, included_path)
+        sibling_source = RubyVM::InstructionSequence.compile("nil\n", sibling_path, sibling_path)
+
+        subject.start
+        sibling_source.eval
+        included_source.eval
+        coverage = subject.stop
+
+        expect(coverage.keys).to include(included_path)
+        expect(coverage.keys).not_to include(sibling_path)
+      end
+
+      context "when an ignored path is configured" do
+        let(:root) { absolute_path("dynamic") }
+        let(:ignored_path) { absolute_path("dynamic/vendor") }
+
+        it "does not ignore a sibling directory with the same prefix" do
+          ignored_file = File.join(ignored_path, "dependency.rb")
+          included_file = absolute_path("dynamic/vendorized/application.rb")
+          ignored_source = RubyVM::InstructionSequence.compile("nil\n", ignored_file, ignored_file)
+          included_source = RubyVM::InstructionSequence.compile("nil\n", included_file, included_file)
+
+          subject.start
+          ignored_source.eval
+          included_source.eval
+          coverage = subject.stop
+
+          expect(coverage.keys).to include(included_file)
+          expect(coverage.keys).not_to include(ignored_file)
+        end
       end
     end
 
@@ -593,6 +712,99 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
             expect(coverage.keys).to include(absolute_path("app/model/my_parent_model.rb"))
             expect(coverage.keys).to include(absolute_path("app/model/my_grandparent_model.rb"))
             expect(coverage.keys).to include(absolute_path("app/concerns/queryable.rb"))
+          end
+
+          it "reuses cached class files after heap compaction" do
+            skip "Ruby does not support heap compaction" unless GC.respond_to?(:compact)
+
+            namespace_name = :DDCovCompactionStress
+            namespace = Module.new
+            Object.const_set(namespace_name, namespace)
+            expected_files = Array.new(128) do |index|
+              path = absolute_path("app/generated/compaction-#{index}.rb")
+              RubyVM::InstructionSequence.compile(
+                "class #{namespace_name}::Model#{index}; end",
+                path,
+                path
+              ).eval
+              path
+            end
+            classes = namespace.constants(false).map { |name| namespace.const_get(name) }
+
+            subject.start
+            classes.each(&:new)
+            first_coverage = subject.stop
+            GC.compact
+            subject.start
+            classes.reverse_each(&:new)
+            second_coverage = subject.stop
+
+            expect((first_coverage.keys & expected_files).size).to eq(expected_files.size)
+            expect((second_coverage.keys & expected_files).size).to eq(expected_files.size)
+          ensure
+            Object.send(:remove_const, namespace_name) if Object.const_defined?(namespace_name, false)
+          end
+        end
+
+        context "allocated-class cache stress" do
+          it "records more distinct classes than the direct cache can hold" do
+            namespace_name = :DDCovAllocatedClassCacheStress
+            namespace = Module.new
+            Object.const_set(namespace_name, namespace)
+            expected_files = Array.new(4_200) do |index|
+              path = absolute_path("app/generated/allocated-#{index}.rb")
+              RubyVM::InstructionSequence.compile(
+                "class #{namespace_name}::Model#{index}; end",
+                path,
+                path
+              ).eval
+              path
+            end
+            classes = namespace.constants(false).map { |name| namespace.const_get(name) }
+
+            subject.start
+            classes.each(&:new)
+            coverage = subject.stop
+
+            expect((coverage.keys & expected_files).size).to eq(expected_files.size)
+          ensure
+            Object.send(:remove_const, namespace_name) if Object.const_defined?(namespace_name, false)
+          end
+
+          it "does not confuse a redefined constant with its previous class" do
+            namespace_name = :DDCovRedefinedClassStress
+            namespace = Module.new
+            Object.const_set(namespace_name, namespace)
+            first_path = absolute_path("app/generated/first-model.rb")
+            second_path = absolute_path("app/generated/second-model.rb")
+            RubyVM::InstructionSequence.compile(
+              "class #{namespace_name}::Model; end",
+              first_path,
+              first_path
+            ).eval
+            first_class = namespace.const_get(:Model)
+
+            subject.start
+            first_class.new
+            first_coverage = subject.stop
+
+            namespace.send(:remove_const, :Model)
+            RubyVM::InstructionSequence.compile(
+              "class #{namespace_name}::Model; end",
+              second_path,
+              second_path
+            ).eval
+            second_class = namespace.const_get(:Model)
+
+            subject.start
+            second_class.new
+            second_coverage = subject.stop
+
+            expect(first_coverage.keys).to include(first_path)
+            expect(second_coverage.keys).to include(second_path)
+            expect(second_coverage.keys).not_to include(first_path)
+          ensure
+            Object.send(:remove_const, namespace_name) if Object.const_defined?(namespace_name, false)
           end
         end
 

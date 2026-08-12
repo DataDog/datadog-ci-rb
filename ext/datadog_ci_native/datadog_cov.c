@@ -183,8 +183,9 @@ static VALUE dd_cov_allocate(VALUE klass) {
 // not in the ignored folder) and adds it to the impacted_files hash.
 static bool record_impacted_file(struct dd_cov_data *dd_cov_data,
                                  VALUE filename) {
-  if (!dd_ci_is_path_included(RSTRING_PTR(filename), dd_cov_data->root,
-                              dd_cov_data->root_len, dd_cov_data->ignored_path,
+  if (!dd_ci_is_path_included(RSTRING_PTR(filename), RSTRING_LEN(filename),
+                              dd_cov_data->root, dd_cov_data->root_len,
+                              dd_cov_data->ignored_path,
                               dd_cov_data->ignored_path_len)) {
     return false;
   }
@@ -371,12 +372,22 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
   VALUE opt;
 
   rb_scan_args(argc, argv, "10", &opt);
+  Check_Type(opt, T_HASH);
+
   VALUE rb_root = rb_hash_lookup(opt, ID2SYM(rb_intern("root")));
   if (!RTEST(rb_root)) {
     rb_raise(rb_eArgError, "root is required");
   }
+  Check_Type(rb_root, T_STRING);
+  const char *root = StringValueCStr(rb_root);
+
   VALUE rb_ignored_path =
       rb_hash_lookup(opt, ID2SYM(rb_intern("ignored_path")));
+  const char *ignored_path = NULL;
+  if (RTEST(rb_ignored_path)) {
+    Check_Type(rb_ignored_path, T_STRING);
+    ignored_path = StringValueCStr(rb_ignored_path);
+  }
 
   VALUE rb_threading_mode =
       rb_hash_lookup(opt, ID2SYM(rb_intern("threading_mode")));
@@ -402,13 +413,12 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
 
   dd_cov_data->threading_mode = threading_mode;
   dd_cov_data->root_len = RSTRING_LEN(rb_root);
-  dd_cov_data->root =
-      dd_ci_ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
+  dd_cov_data->root = dd_ci_ruby_strndup(root, dd_cov_data->root_len);
 
   if (RTEST(rb_ignored_path)) {
     dd_cov_data->ignored_path_len = RSTRING_LEN(rb_ignored_path);
     dd_cov_data->ignored_path = dd_ci_ruby_strndup(
-        RSTRING_PTR(rb_ignored_path), dd_cov_data->ignored_path_len);
+        ignored_path, dd_cov_data->ignored_path_len);
   }
 
   if (rb_allocation_tracing_enabled == Qtrue) {
