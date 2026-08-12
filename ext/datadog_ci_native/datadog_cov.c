@@ -94,6 +94,7 @@ struct dd_cov_data {
   VALUE last_allocated_klass;
   VALUE seen_allocated_klasses[SEEN_ALLOCATED_CLASS_CACHE_SIZE];
   st_table *klass_files_cache; // { (VALUE) -> Array<String> } resolved files
+  size_t klass_files_cache_size;
 };
 
 static void dd_cov_mark(void *ptr) {
@@ -171,6 +172,7 @@ static VALUE dd_cov_allocate(VALUE klass) {
   // numtable type is needed to store VALUE as a key
   dd_cov_data->klasses_table = st_init_numtable();
   dd_cov_data->klass_files_cache = st_init_numtable();
+  dd_cov_data->klass_files_cache_size = 0;
 
   return dd_cov;
 }
@@ -297,11 +299,12 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
   rb_obj_freeze(files);
   // Bound cross-test retention without adding eviction work to cache hits.
   // Reaching the limit starts a fresh cache generation.
-  if (st_table_size(dd_cov_data->klass_files_cache) >=
-      KLASS_FILES_CACHE_SIZE) {
+  if (dd_cov_data->klass_files_cache_size >= KLASS_FILES_CACHE_SIZE) {
     st_clear(dd_cov_data->klass_files_cache);
+    dd_cov_data->klass_files_cache_size = 0;
   }
   st_insert(dd_cov_data->klass_files_cache, key, (st_data_t)files);
+  dd_cov_data->klass_files_cache_size++;
 
   return ST_CONTINUE;
 }
