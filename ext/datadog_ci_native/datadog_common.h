@@ -11,14 +11,15 @@
  * Returns true if the path should be included, false otherwise.
  *
  * @param path          The file path to check
+ * @param path_len      Length of path
  * @param root_path     The root path prefix (required)
  * @param root_path_len Length of root_path
  * @param ignored_path  Path prefix to exclude (can be NULL)
  * @param ignored_path_len Length of ignored_path (0 if not set)
  */
-bool dd_ci_is_path_included(const char *path, const char *root_path,
-                            long root_path_len, const char *ignored_path,
-                            long ignored_path_len);
+bool dd_ci_is_path_included(const char *path, long path_len,
+                            const char *root_path, long root_path_len,
+                            const char *ignored_path, long ignored_path_len);
 
 /* ---- Utility functions -------------------------------------------------- */
 

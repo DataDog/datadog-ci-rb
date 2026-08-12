@@ -6,8 +6,8 @@ module Datadog
       # PathFilter determines whether a file path should be included in test impact analysis.
       #
       # A path is included if:
-      # - It starts with root_path (prefix match)
-      # - It does NOT start with ignored_path (when ignored_path is set)
+      # - It is equal to root_path or located below it
+      # - It is NOT equal to ignored_path or located below it
       #
       # This module mirrors the C implementation in datadog_common.c (dd_ci_is_path_included).
       module PathFilter
@@ -19,14 +19,22 @@ module Datadog
         # @return [Boolean] true if the path should be included
         def self.included?(path, root_path, ignored_path = nil)
           return false unless path.is_a?(String) && root_path.is_a?(String)
-          return false unless path.start_with?(root_path)
+          return false unless directory_prefix?(path, root_path)
 
           if ignored_path.is_a?(String) && !ignored_path.empty?
-            return false if path.start_with?(ignored_path)
+            return false if directory_prefix?(path, ignored_path)
           end
 
           true
         end
+
+        def self.directory_prefix?(path, prefix)
+          return false unless path.start_with?(prefix)
+
+          path.length == prefix.length || prefix.end_with?(File::SEPARATOR) ||
+            path[prefix.length] == File::SEPARATOR
+        end
+        private_class_method :directory_prefix?
       end
     end
   end

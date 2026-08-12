@@ -2,14 +2,25 @@
 #include <ruby.h>
 #include <string.h>
 
-bool dd_ci_is_path_included(const char *path, const char *root_path,
-                            long root_path_len, const char *ignored_path,
-                            long ignored_path_len) {
-  if (strncmp(root_path, path, root_path_len) != 0) {
+static bool has_directory_prefix(const char *path, long path_len,
+                                 const char *prefix, long prefix_len) {
+  if (prefix_len > path_len || memcmp(prefix, path, prefix_len) != 0) {
     return false;
   }
-  if (ignored_path_len > 0 &&
-      strncmp(ignored_path, path, ignored_path_len) == 0) {
+
+  return prefix_len == path_len || prefix[prefix_len - 1] == '/' ||
+         path[prefix_len] == '/';
+}
+
+bool dd_ci_is_path_included(const char *path, long path_len,
+                            const char *root_path, long root_path_len,
+                            const char *ignored_path, long ignored_path_len) {
+  if (!has_directory_prefix(path, path_len, root_path, root_path_len)) {
+    return false;
+  }
+  if (ignored_path_len > 0 && has_directory_prefix(
+                                  path, path_len, ignored_path,
+                                  ignored_path_len)) {
     return false;
   }
   return true;

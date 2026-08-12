@@ -3,6 +3,7 @@
 #include <ruby/st.h>
 
 #include <stdbool.h>
+#include <string.h>
 
 #include "datadog_common.h"
 
@@ -11,6 +12,20 @@
 // running only the tests that are affected by the changes.
 
 #define PROFILE_FRAMES_BUFFER_SIZE 1
+#define SEEN_FILENAME_CACHE_SIZE 1024
+#define SEEN_ALLOCATED_CLASS_CACHE_SIZE 4096
+#define KLASS_FILES_CACHE_SIZE 100000
+
+#if SEEN_FILENAME_CACHE_SIZE == 0 ||                                       \
+    (SEEN_FILENAME_CACHE_SIZE & (SEEN_FILENAME_CACHE_SIZE - 1)) != 0
+#error "SEEN_FILENAME_CACHE_SIZE must be a power of two"
+#endif
+
+#if SEEN_ALLOCATED_CLASS_CACHE_SIZE == 0 ||                               \
+    (SEEN_ALLOCATED_CLASS_CACHE_SIZE &                                   \
+     (SEEN_ALLOCATED_CLASS_CACHE_SIZE - 1)) != 0
+#error "SEEN_ALLOCATED_CLASS_CACHE_SIZE must be a power of two"
+#endif
 
 // threading modes
 enum threading_mode { single, multi };
@@ -22,6 +37,15 @@ static int mark_key_for_gc_i(st_data_t key, st_data_t _value, st_data_t _data) {
   VALUE klass = (VALUE)key;
   // mark klass link for GC as non-movable to avoid changing hashtable's keys
   rb_gc_mark(klass);
+  return ST_CONTINUE;
+}
+
+static int mark_klass_files_for_gc_i(st_data_t key, st_data_t value,
+                                     st_data_t _data) {
+  // Both the class key and its cached filenames must remain at stable addresses
+  // because they are stored outside Ruby's object containers.
+  rb_gc_mark((VALUE)key);
+  rb_gc_mark((VALUE)value);
   return ST_CONTINUE;
 }
 
@@ -40,9 +64,12 @@ struct dd_cov_data {
   char *ignored_path;
   long ignored_path_len;
 
-  // Line tracepoint optimisation: cache last seen filename pointer to avoid
-  // unnecessary string comparison if we stay in the same file.
-  uintptr_t last_filename_ptr;
+  // Line tracepoint optimisation: make consecutive events from the same file a
+  // single comparison, then use a direct-mapped cache for later revisits. Keep
+  // the Ruby strings alive so their pointers cannot be reused for other paths.
+  // A collision only repeats path processing; it can never suppress coverage.
+  VALUE last_filename;
+  VALUE seen_filenames[SEEN_FILENAME_CACHE_SIZE];
 
   // Line tracepoint can work in two modes: single threaded and multi threaded
   //
@@ -64,6 +91,10 @@ struct dd_cov_data {
   VALUE object_allocation_tracepoint;
   st_table *klasses_table; // { (VALUE) -> int } hashmap with class names that
                            // were covered by allocation during the test run
+  VALUE last_allocated_klass;
+  VALUE seen_allocated_klasses[SEEN_ALLOCATED_CLASS_CACHE_SIZE];
+  st_table *klass_files_cache; // { (VALUE) -> Array<String> } resolved files
+  size_t klass_files_cache_size;
 };
 
 static void dd_cov_mark(void *ptr) {
@@ -72,10 +103,22 @@ static void dd_cov_mark(void *ptr) {
   rb_gc_mark_movable(dd_cov_data->th_covered);
   rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
 
+  if (dd_cov_data->last_filename != Qnil) {
+    rb_gc_mark(dd_cov_data->last_filename);
+  }
+  for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
+    if (dd_cov_data->seen_filenames[i] != Qnil) {
+      rb_gc_mark(dd_cov_data->seen_filenames[i]);
+    }
+  }
+
   // if GC starts withing dd_cov_allocate() call, klasses_table might not be
   // initialized yet
   if (dd_cov_data->klasses_table != NULL) {
     st_foreach(dd_cov_data->klasses_table, mark_key_for_gc_i, 0);
+  }
+  if (dd_cov_data->klass_files_cache != NULL) {
+    st_foreach(dd_cov_data->klass_files_cache, mark_klass_files_for_gc_i, 0);
   }
 }
 
@@ -84,6 +127,7 @@ static void dd_cov_free(void *ptr) {
   xfree(dd_cov_data->root);
   xfree(dd_cov_data->ignored_path);
   st_free_table(dd_cov_data->klasses_table);
+  st_free_table(dd_cov_data->klass_files_cache);
   xfree(dd_cov_data);
 }
 
@@ -115,12 +159,20 @@ static VALUE dd_cov_allocate(VALUE klass) {
   dd_cov_data->root_len = 0;
   dd_cov_data->ignored_path = NULL;
   dd_cov_data->ignored_path_len = 0;
-  dd_cov_data->last_filename_ptr = 0;
+  dd_cov_data->last_filename = Qnil;
+  for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
+    dd_cov_data->seen_filenames[i] = Qnil;
+  }
   dd_cov_data->threading_mode = multi;
 
   dd_cov_data->object_allocation_tracepoint = Qnil;
+  dd_cov_data->last_allocated_klass = Qnil;
+  memset(dd_cov_data->seen_allocated_klasses, 0,
+         sizeof(dd_cov_data->seen_allocated_klasses));
   // numtable type is needed to store VALUE as a key
   dd_cov_data->klasses_table = st_init_numtable();
+  dd_cov_data->klass_files_cache = st_init_numtable();
+  dd_cov_data->klass_files_cache_size = 0;
 
   return dd_cov;
 }
@@ -131,8 +183,9 @@ static VALUE dd_cov_allocate(VALUE klass) {
 // not in the ignored folder) and adds it to the impacted_files hash.
 static bool record_impacted_file(struct dd_cov_data *dd_cov_data,
                                  VALUE filename) {
-  if (!dd_ci_is_path_included(RSTRING_PTR(filename), dd_cov_data->root,
-                              dd_cov_data->root_len, dd_cov_data->ignored_path,
+  if (!dd_ci_is_path_included(RSTRING_PTR(filename), RSTRING_LEN(filename),
+                              dd_cov_data->root, dd_cov_data->root_len,
+                              dd_cov_data->ignored_path,
                               dd_cov_data->ignored_path_len)) {
     return false;
   }
@@ -145,18 +198,29 @@ static bool record_impacted_file(struct dd_cov_data *dd_cov_data,
 // rb_profile_frames.
 static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
                           VALUE klass) {
-  struct dd_cov_data *dd_cov_data;
-  TypedData_Get_Struct(data, struct dd_cov_data, &dd_cov_data_type,
-                       dd_cov_data);
+  // The hook is registered only with DDCov instances, so the full typed-data
+  // type check on every Ruby line is unnecessary.
+  struct dd_cov_data *dd_cov_data = RTYPEDDATA_DATA(data);
 
   const char *c_filename = rb_sourcefile();
-
-  // skip if we cover the same file again
-  uintptr_t current_filename_ptr = (uintptr_t)c_filename;
-  if (dd_cov_data->last_filename_ptr == current_filename_ptr) {
+  if (c_filename == NULL) {
     return;
   }
-  dd_cov_data->last_filename_ptr = current_filename_ptr;
+
+  uintptr_t current_filename_ptr = (uintptr_t)c_filename;
+  if (dd_cov_data->last_filename != Qnil &&
+      RSTRING_PTR(dd_cov_data->last_filename) == c_filename) {
+    return;
+  }
+
+  size_t cache_index =
+      ((current_filename_ptr >> 4) ^ (current_filename_ptr >> 12)) &
+      (SEEN_FILENAME_CACHE_SIZE - 1);
+  VALUE cached_filename = dd_cov_data->seen_filenames[cache_index];
+  if (cached_filename != Qnil && RSTRING_PTR(cached_filename) == c_filename) {
+    dd_cov_data->last_filename = cached_filename;
+    return;
+  }
 
   VALUE top_frame;
   int captured_frames =
@@ -172,6 +236,8 @@ static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
     return;
   }
 
+  dd_cov_data->last_filename = filename;
+  dd_cov_data->seen_filenames[cache_index] = filename;
   record_impacted_file(dd_cov_data, filename);
 }
 
@@ -185,27 +251,24 @@ static VALUE safely_get_mod_ancestors(VALUE klass) {
   return dd_ci_rescue_nil(rb_mod_ancestors, klass);
 }
 
-static bool record_impacted_klass(struct dd_cov_data *dd_cov_data,
-                                  VALUE klass) {
-  VALUE klass_name = safely_get_class_name(klass);
-  if (klass_name == Qnil) {
-    return false;
-  }
-
-  VALUE filename = dd_ci_resolve_const_to_file(klass_name);
-  if (filename == Qnil) {
-    return false;
-  }
-
-  return record_impacted_file(dd_cov_data, filename);
-}
-
 // This function is called for each class that was instantiated during the test
 // run.
 static int each_instantiated_klass(st_data_t key, st_data_t _value,
                                    st_data_t data) {
   VALUE klass = (VALUE)key;
   struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+
+  st_data_t cached_files;
+  if (st_lookup(dd_cov_data->klass_files_cache, key, &cached_files)) {
+    VALUE files = (VALUE)cached_files;
+    long files_len = RARRAY_LEN(files);
+    for (long i = 0; i < files_len; i++) {
+      rb_hash_aset(dd_cov_data->impacted_files, rb_ary_entry(files, i), Qtrue);
+    }
+    return ST_CONTINUE;
+  }
+
+  VALUE files = rb_ary_new();
 
   // rb_mod_ancestors returns an array containing the "klass" itself
   // and all the parent classes and/or included/prepended modules
@@ -221,8 +284,28 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
       continue;
     }
 
-    record_impacted_klass(dd_cov_data, mod);
+    VALUE klass_name = safely_get_class_name(mod);
+    if (klass_name == Qnil) {
+      continue;
+    }
+
+    VALUE filename = dd_ci_resolve_const_to_file(klass_name);
+    if (filename == Qnil || !record_impacted_file(dd_cov_data, filename)) {
+      continue;
+    }
+
+    rb_ary_push(files, filename);
   }
+
+  rb_obj_freeze(files);
+  // Bound cross-test retention without adding eviction work to cache hits.
+  // Reaching the limit starts a fresh cache generation.
+  if (dd_cov_data->klass_files_cache_size >= KLASS_FILES_CACHE_SIZE) {
+    st_clear(dd_cov_data->klass_files_cache);
+    dd_cov_data->klass_files_cache_size = 0;
+  }
+  st_insert(dd_cov_data->klass_files_cache, key, (st_data_t)files);
+  dd_cov_data->klass_files_cache_size++;
 
   return ST_CONTINUE;
 }
@@ -244,6 +327,30 @@ static void on_newobj_event(VALUE tracepoint_data, void *data) {
   if (klass == Qnil || klass == 0) {
     return;
   }
+
+  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+
+  if (dd_cov_data->last_allocated_klass == klass) {
+    return;
+  }
+
+  uintptr_t klass_ptr = (uintptr_t)klass;
+  size_t cache_index =
+      ((klass_ptr >> 4) ^ (klass_ptr >> 12)) &
+      (SEEN_ALLOCATED_CLASS_CACHE_SIZE - 1);
+  if (dd_cov_data->seen_allocated_klasses[cache_index] == klass) {
+    dd_cov_data->last_allocated_klass = klass;
+    return;
+  }
+
+  // A direct-cache collision must not make us repeat name resolution or table
+  // insertion for a class that this test already observed.
+  if (st_is_member(dd_cov_data->klasses_table, (st_data_t)klass)) {
+    dd_cov_data->last_allocated_klass = klass;
+    dd_cov_data->seen_allocated_klasses[cache_index] = klass;
+    return;
+  }
+
   // Skip anonymous classes starting with "#<Class".
   // it allows us to skip the source location lookup that will always fail
   //
@@ -252,12 +359,12 @@ static void on_newobj_event(VALUE tracepoint_data, void *data) {
     return;
   }
 
-  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
-
   // We use VALUE directly as a key for the hashmap
   // Ruby itself does it too:
   // https://github.com/ruby/ruby/blob/94b87084a689a3bc732dcaee744508a708223d6c/ext/objspace/object_tracing.c#L113
   st_insert(dd_cov_data->klasses_table, (st_data_t)klass, 1);
+  dd_cov_data->last_allocated_klass = klass;
+  dd_cov_data->seen_allocated_klasses[cache_index] = klass;
 }
 
 // DDCov instance methods available in Ruby
@@ -265,12 +372,22 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
   VALUE opt;
 
   rb_scan_args(argc, argv, "10", &opt);
+  Check_Type(opt, T_HASH);
+
   VALUE rb_root = rb_hash_lookup(opt, ID2SYM(rb_intern("root")));
   if (!RTEST(rb_root)) {
     rb_raise(rb_eArgError, "root is required");
   }
+  Check_Type(rb_root, T_STRING);
+  const char *root = StringValueCStr(rb_root);
+
   VALUE rb_ignored_path =
       rb_hash_lookup(opt, ID2SYM(rb_intern("ignored_path")));
+  const char *ignored_path = NULL;
+  if (RTEST(rb_ignored_path)) {
+    Check_Type(rb_ignored_path, T_STRING);
+    ignored_path = StringValueCStr(rb_ignored_path);
+  }
 
   VALUE rb_threading_mode =
       rb_hash_lookup(opt, ID2SYM(rb_intern("threading_mode")));
@@ -296,13 +413,12 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
 
   dd_cov_data->threading_mode = threading_mode;
   dd_cov_data->root_len = RSTRING_LEN(rb_root);
-  dd_cov_data->root =
-      dd_ci_ruby_strndup(RSTRING_PTR(rb_root), dd_cov_data->root_len);
+  dd_cov_data->root = dd_ci_ruby_strndup(root, dd_cov_data->root_len);
 
   if (RTEST(rb_ignored_path)) {
     dd_cov_data->ignored_path_len = RSTRING_LEN(rb_ignored_path);
     dd_cov_data->ignored_path = dd_ci_ruby_strndup(
-        RSTRING_PTR(rb_ignored_path), dd_cov_data->ignored_path_len);
+        ignored_path, dd_cov_data->ignored_path_len);
   }
 
   if (rb_allocation_tracing_enabled == Qtrue) {
@@ -368,12 +484,18 @@ static VALUE dd_cov_stop(VALUE self) {
   // process classes covered by allocation tracing
   st_foreach(dd_cov_data->klasses_table, each_instantiated_klass,
              (st_data_t)dd_cov_data);
+  dd_cov_data->last_allocated_klass = Qnil;
+  memset(dd_cov_data->seen_allocated_klasses, 0,
+         sizeof(dd_cov_data->seen_allocated_klasses));
   st_clear(dd_cov_data->klasses_table);
 
   VALUE res = dd_cov_data->impacted_files;
 
   dd_cov_data->impacted_files = rb_hash_new();
-  dd_cov_data->last_filename_ptr = 0;
+  dd_cov_data->last_filename = Qnil;
+  for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
+    dd_cov_data->seen_filenames[i] = Qnil;
+  }
 
   return res;
 }
