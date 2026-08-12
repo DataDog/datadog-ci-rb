@@ -435,7 +435,12 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
 
         subject.start
 
-        2_000.times do |index|
+        # Valgrind makes each forced full-heap collection extremely expensive.
+        # Ordinary CI keeps the full pointer-reuse stress; memcheck only needs
+        # enough iterations to exercise GC ownership and marking.
+        iterations = (ENV["RUBY_MEMCHECK_RUNNING"] == "1") ? 20 : 2_000
+
+        iterations.times do |index|
           basename = format("%04d.rb", index)
           execute_transient_source.call(excluded_dir, basename)
           GC.start(full_mark: true, immediate_sweep: true)
