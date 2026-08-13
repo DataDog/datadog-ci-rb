@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 29990d874b0cb2f5a6b2738f2344636c09c0ed9a
+  revision: d11014ca70c8e86dc95ee604d2701bdc4c228a80
   branch: master
   specs:
     datadog (2.41.0.dev)
@@ -33,7 +33,7 @@ GEM
     bigdecimal (4.1.2)
     builder (3.3.0)
     cgi (0.5.2)
-    ci-queue (0.97.0)
+    ci-queue (0.98.0)
       logger
     climate_control (1.2.0)
     concurrent-ruby (1.3.8)
@@ -110,7 +110,7 @@ GEM
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
     ruby-progressbar (1.13.0)
-    simplecov (1.1.0)
+    simplecov (1.1.1)
     thor (1.5.0)
     tsort (0.2.0)
     webmock (3.26.2)
