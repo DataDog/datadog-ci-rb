@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 29990d874b0cb2f5a6b2738f2344636c09c0ed9a
+  revision: d11014ca70c8e86dc95ee604d2701bdc4c228a80
   branch: master
   specs:
     datadog (2.41.0.dev)
@@ -211,8 +211,8 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
-    sprockets (4.2.2)
-      concurrent-ruby (~> 1.0)
+    sprockets (4.3.0)
+      concurrent-ruby (~> 1.1)
       logger
       rack (>= 2.2.4, < 4)
     sprockets-rails (3.4.2)
