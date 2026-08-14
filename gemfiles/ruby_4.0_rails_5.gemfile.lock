@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: d11014ca70c8e86dc95ee604d2701bdc4c228a80
+  revision: f01eb05ffc56b84f2bfedc32a61c54f015dc990d
   branch: master
   specs:
-    datadog (2.41.0.dev)
+    datadog (2.42.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.4)
       libdatadog (~> 40.0.0.1.0)
@@ -148,7 +148,7 @@ GEM
     prism (1.9.0)
     public_suffix (7.0.5)
     racc (1.8.1)
-    rack (2.2.23)
+    rack (2.2.24)
     rack-test (2.2.0)
       rack (>= 1.3)
     rails (5.2.8.1)
@@ -280,7 +280,7 @@ CHECKSUMS
   concurrent-ruby (1.3.8) sha256=b2f1be836e968ccc78ccfce277ea79c72a88633f22306782c16ff23fb415d1e1
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
   crass (1.0.7) sha256=94868719948664c89ddcaf0a37c65048413dfcb1c869470a5f7a7ceb5390b295
-  datadog (2.41.0.dev)
+  datadog (2.42.0.dev)
   datadog-ci (1.36.1)
   datadog-ruby_core_source (3.5.4) sha256=65b9b1495ec3452bb9775e379e997c22836df333e571dbfb9a13cd810a4ec043
   date (3.5.1) sha256=750d06384d7b9c15d562c76291407d89e368dda4d4fff957eb94962d325a0dc0
@@ -324,7 +324,7 @@ CHECKSUMS
   prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
   public_suffix (7.0.5) sha256=1a8bb08f1bbea19228d3bed6e5ed908d1cb4f7c2726d18bd9cadf60bc676f623
   racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
-  rack (2.2.23) sha256=a8fe9d7e07064770b8ec123663fded8a59ef7e2b6db5cda7173d45a5718ab69c
+  rack (2.2.24) sha256=ef16526a0d871c43753452338c754040a664c8b41bf0dd7450b85f7772adca5f
   rack-test (2.2.0) sha256=005a36692c306ac0b4a9350355ee080fd09ddef1148a5f8b2ac636c720f5c463
   rails (5.2.8.1) sha256=cf18751a5e603cc1996536de8109459da9998c843dc5381ab8f87680a793c4cb
   rails-dom-testing (2.3.0) sha256=8acc7953a7b911ca44588bf08737bc16719f431a1cc3091a292bca7317925c1d
