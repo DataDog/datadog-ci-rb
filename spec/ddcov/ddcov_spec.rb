@@ -268,47 +268,42 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
           let(:threading_mode) { :single }
           let(:use_allocation_tracing) { false }
 
-          it "collects coverage for each thread separately" do
-            t1_queue = Thread::Queue.new
-            t2_queue = Thread::Queue.new
+          it "rejects overlap and preserves sequential per-thread coverage" do
+            first_collector = described_class.new(
+              root: root,
+              threading_mode: threading_mode,
+              use_allocation_tracing: use_allocation_tracing
+            )
+            second_collector = described_class.new(
+              root: root,
+              threading_mode: threading_mode,
+              use_allocation_tracing: use_allocation_tracing
+            )
 
-            t1 = Thread.new do
-              cov = thread_local_cov
-              cov.start
+            first_collector.start
+            overlap_error = Thread.new do
+              second_collector.start
+            rescue => e
+              e
+            end.value
 
-              t1_queue << :ready
-              expect(t2_queue.pop).to be(:ready)
+            expect(overlap_error).to be_a(RuntimeError)
+            expect(overlap_error.message).to eq("only one DDCov collector can be active at a time")
+            expect(calculator.add(1, 2)).to eq(3)
+            expect(calculator.multiply(1, 2)).to eq(2)
+            first_coverage = first_collector.stop
 
-              expect(calculator.add(1, 2)).to eq(3)
-              expect(calculator.multiply(1, 2)).to eq(2)
-
-              t1_queue << :done
-              expect(t2_queue.pop).to be :done
-
-              coverage = cov.stop
-              expect(coverage.size).to eq(2)
-              expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
-              expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
-            end
-
-            t2 = Thread.new do
-              cov = thread_local_cov
-              cov.start
-
-              t2_queue << :ready
-              expect(t1_queue.pop).to be(:ready)
-
+            second_coverage = Thread.new do
+              second_collector.start
               expect(calculator.subtract(1, 2)).to eq(-1)
+              second_collector.stop
+            end.value
 
-              t2_queue << :done
-              expect(t1_queue.pop).to be :done
-
-              coverage = cov.stop
-              expect(coverage.size).to eq(1)
-              expect(coverage.keys).to include(absolute_path("calculator/operations/subtract.rb"))
-            end
-
-            [t1, t2].each(&:join)
+            expect(first_coverage.size).to eq(2)
+            expect(first_coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
+            expect(first_coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+            expect(second_coverage.size).to eq(1)
+            expect(second_coverage.keys).to include(absolute_path("calculator/operations/subtract.rb"))
           end
 
           context "when allocation tracing is enabled" do

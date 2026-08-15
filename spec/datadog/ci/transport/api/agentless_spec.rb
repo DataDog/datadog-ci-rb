@@ -286,6 +286,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
           expect(args[:headers]).to eq(expected_headers)
           expect(args[:payload]).to eq(expected_payload)
           expect(args[:accept_compressed_response]).to eq(false)
+          expect(args[:compression_level]).to eq(Zlib::BEST_SPEED)
         end
       end
     end

@@ -34,6 +34,12 @@ RSpec.describe Datadog::CI::Transport::Gzip do
         expect(gzip.read).to eq(input)
       end
     end
+
+    it "supports an explicit compression level" do
+      compressed = described_class.compress(input, level: Zlib::BEST_SPEED)
+
+      expect(described_class.decompress(compressed)).to eq(input)
+    end
   end
 
   describe ".decompress" do

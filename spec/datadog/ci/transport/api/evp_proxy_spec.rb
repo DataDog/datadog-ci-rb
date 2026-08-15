@@ -188,7 +188,8 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
           path: "/evp_proxy/v2/path",
           payload: expected_payload,
           verb: "post",
-          headers: citestcov_headers
+          headers: citestcov_headers,
+          compression_level: Zlib::BEST_SPEED
         )
 
         subject.citestcov_request(path: "/path", payload: "payload")

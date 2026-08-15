@@ -43,7 +43,14 @@ module Datadog
 
             headers[Ext::Transport::HEADER_EVP_SUBDOMAIN] = Ext::Transport::TEST_COVERAGE_INTAKE_HOST_PREFIX
 
-            perform_request(@agent_intake_http, path: path, payload: @citestcov_payload, headers: headers, verb: verb)
+            perform_request(
+              @agent_intake_http,
+              path: path,
+              payload: @citestcov_payload,
+              headers: headers,
+              verb: verb,
+              compression_level: Zlib::BEST_SPEED
+            )
           end
 
           def logs_intake_request(path:, payload:, headers: {}, verb: "post")
@@ -60,13 +67,22 @@ module Datadog
 
           private
 
-          def perform_request(http_client, path:, payload:, headers:, verb:)
-            http_client.request(
+          def perform_request(
+            http_client,
+            path:,
+            payload:,
+            headers:,
+            verb:,
+            compression_level: nil
+          )
+            request_options = {
               path: path_with_prefix(path),
               payload: payload,
               headers: headers_with_default(headers),
               verb: verb
-            )
+            }
+            request_options[:compression_level] = compression_level if compression_level
+            http_client.request(**request_options)
           end
 
           def path_with_prefix(path)

@@ -16,6 +16,10 @@ module Datadog
           def initialize(coverage, custom_impacted_files = EMPTY_FILES)
             @coverage = coverage
             @custom_impacted_files = custom_impacted_files
+            # The repository root is a process invariant between coverage
+            # events. Capture it once so native normalization can reuse the
+            # same exact boundary for this event without repeated lookups.
+            @root = Git::LocalRepository.root
             @normalized_files = nil
           end
 
@@ -25,6 +29,32 @@ module Datadog
 
           def size
             normalized_files.size
+          end
+
+          # Writes the complete MessagePack files array. The native fast path
+          # combines absolute-path classification, immutable-root slicing,
+          # stable deduplication, and filename-entry packing. Any shape it does
+          # not support falls back before writing bytes.
+          def write_to(packer)
+            if defined?(DDCov) &&
+                packer.respond_to?(:compatibility_mode?) &&
+                !packer.compatibility_mode? &&
+                (packed_files = DDCov.pack_coverage_files(
+                  @coverage,
+                  @custom_impacted_files,
+                  @root
+                ))
+              packer.buffer.write(packed_files)
+              return packer
+            end
+
+            packer.write_array_header(size)
+            each do |filename|
+              packer.write_map_header(1)
+              packer.write("filename")
+              packer.write(filename)
+            end
+            packer
           end
 
           # Returns a readable view while preserving the paths supplied by

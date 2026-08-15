@@ -55,14 +55,15 @@ module Datadog
           verb: "post",
           retries: MAX_RETRIES,
           backoff: INITIAL_BACKOFF,
-          accept_compressed_response: false
+          accept_compressed_response: false,
+          compression_level: Zlib::DEFAULT_COMPRESSION
         )
           response = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
             if compress
               headers[Ext::Transport::HEADER_CONTENT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
-              payload = Gzip.compress(payload)
+              payload = Gzip.compress(payload, level: compression_level)
             end
 
             if accept_compressed_response

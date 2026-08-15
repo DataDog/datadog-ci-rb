@@ -54,7 +54,14 @@ module Datadog
           def citestcov_request(path:, payload:, headers: {}, verb: "post")
             super
 
-            perform_request(@citestcov_http, path: path, payload: @citestcov_payload, headers: headers, verb: verb)
+            perform_request(
+              @citestcov_http,
+              path: path,
+              payload: @citestcov_payload,
+              headers: headers,
+              verb: verb,
+              compression_level: Zlib::BEST_SPEED
+            )
           end
 
           def logs_intake_request(path:, payload:, headers: {}, verb: "post")
@@ -71,14 +78,24 @@ module Datadog
 
           private
 
-          def perform_request(http_client, path:, payload:, headers:, verb:, accept_compressed_response: false)
-            response = http_client.request(
+          def perform_request(
+            http_client,
+            path:,
+            payload:,
+            headers:,
+            verb:,
+            accept_compressed_response: false,
+            compression_level: nil
+          )
+            request_options = {
               path: path,
               payload: payload,
               headers: headers_with_default(headers),
               verb: verb,
               accept_compressed_response: accept_compressed_response
-            )
+            }
+            request_options[:compression_level] = compression_level if compression_level
+            response = http_client.request(**request_options)
 
             log_api_key_error(response)
 

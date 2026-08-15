@@ -9,9 +9,9 @@ module Datadog
       module Gzip
         module_function
 
-        def compress(input)
+        def compress(input, level: Zlib::DEFAULT_COMPRESSION)
           sio = StringIO.new
-          gzip_writer = Zlib::GzipWriter.new(sio, Zlib::DEFAULT_COMPRESSION, Zlib::DEFAULT_STRATEGY)
+          gzip_writer = Zlib::GzipWriter.new(sio, level, Zlib::DEFAULT_STRATEGY)
           gzip_writer << input
           gzip_writer.close
           sio.string
