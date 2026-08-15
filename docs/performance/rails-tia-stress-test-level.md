@@ -15,9 +15,10 @@ sampling, timing-dependent behavior, or load-order-dependent behavior were not.
 
 The benchmark runs 1,000 Rails examples. Its correctness gate requires all
 19,080 assertions, 1,000 coverage events, and the exact expected file
-associations before any timing is accepted. The baseline executes normal test
-tracing without TIA code coverage; the instrumented variant adds normal TIA
-test-level coverage.
+associations before any timing is accepted. The baseline is the uninstrumented
+workload; the instrumented variant enables normal test tracing and TIA
+test-level coverage. The separate `ruby-rails-tia-stress-default` benchmark is
+the tracing-only floor.
 
 The repository root is invariant for the lifetime of the process and never
 changes between coverage events. Coverage serialization may therefore capture
