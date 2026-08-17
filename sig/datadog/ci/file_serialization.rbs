@@ -1,0 +1,7 @@
+module Datadog
+  module CI
+    module FileSerialization
+      def self.pack_files: (Hash[String, untyped] primary_files, Array[String] additional_files, String root) -> String?
+    end
+  end
+end
