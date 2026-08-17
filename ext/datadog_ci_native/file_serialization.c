@@ -143,7 +143,8 @@ static bool packed_files_append_entry(struct packed_files_context *context,
   bool binary = encoding_index == rb_ascii8bit_encindex();
   if (!binary && encoding_index != rb_utf8_encindex() &&
       encoding_index != rb_usascii_encindex() &&
-      !string_bytes_are_ascii(relative_file)) {
+      (!rb_enc_str_asciicompat_p(relative_file) ||
+       !string_bytes_are_ascii(relative_file))) {
     context->supported = false;
     return false;
   }

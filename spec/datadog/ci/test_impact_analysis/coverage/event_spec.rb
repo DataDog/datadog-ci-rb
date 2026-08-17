@@ -405,6 +405,15 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
 
       expect(native_bytes).to eq(encode.call)
     end
+
+    it "falls back for ASCII-incompatible filename encodings" do
+      root = Datadog::CI::Git::LocalRepository.root
+      encoded_file = "frontend/app.js".encode(Encoding::UTF_16BE)
+
+      expect(
+        Datadog::CI::FileSerialization.pack_files({}, [encoded_file], root)
+      ).to be_nil
+    end
   end
 
   describe "#pretty_inspect" do
