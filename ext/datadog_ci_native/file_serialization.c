@@ -94,8 +94,8 @@ static bool packed_files_append_entry(struct packed_files_context *context,
 
   VALUE relative_file = file;
   VALUE dedup_file = file;
-  const char *relative_ptr = RSTRING_PTR(file);
   long relative_len = RSTRING_LEN(file);
+  long relative_offset = 0;
 #ifdef _WIN32
   context->supported = false;
   return false;
@@ -118,11 +118,10 @@ static bool packed_files_append_entry(struct packed_files_context *context,
       return true;
     }
     if (context->direct_absolute) {
-      relative_ptr = file_ptr + context->root_len + 1;
+      relative_offset = context->root_len + 1;
     } else {
       relative_file = rb_str_substr(file, context->root_len + 1, file_len);
       dedup_file = relative_file;
-      relative_ptr = RSTRING_PTR(relative_file);
     }
   } else if (!additional_file) {
     // Relative primary paths depend on cwd-to-root Pathname semantics. They
@@ -160,7 +159,9 @@ static bool packed_files_append_entry(struct packed_files_context *context,
              sizeof(filename_entry_prefix));
   packed_files_append_string_header(context->packed, (uint32_t)relative_len,
                                     binary);
+  const char *relative_ptr = RSTRING_PTR(relative_file) + relative_offset;
   rb_str_cat(context->packed, relative_ptr, relative_len);
+  RB_GC_GUARD(relative_file);
   context->files_count++;
   return true;
 }
