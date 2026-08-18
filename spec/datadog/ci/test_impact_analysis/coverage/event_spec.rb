@@ -414,6 +414,18 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         Datadog::CI::FileSerialization.pack_files({}, [encoded_file], root)
       ).to be_nil
     end
+
+    it "falls back for filenames containing NUL bytes" do
+      root = Datadog::CI::Git::LocalRepository.root
+      relative_file = "frontend/app\0.js"
+      absolute_file = "#{root}/#{relative_file}"
+
+      [relative_file, absolute_file].each do |file|
+        expect(
+          Datadog::CI::FileSerialization.pack_files({}, [file], root)
+        ).to be_nil
+      end
+    end
   end
 
   describe "#pretty_inspect" do

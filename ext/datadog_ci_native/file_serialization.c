@@ -102,6 +102,10 @@ static bool packed_files_append_entry(struct packed_files_context *context,
 #else
   const char *file_ptr = RSTRING_PTR(file);
   long file_len = RSTRING_LEN(file);
+  if (memchr(file_ptr, '\0', (size_t)file_len) != NULL) {
+    context->supported = false;
+    return false;
+  }
   bool absolute = file_len > 0 && file_ptr[0] == '/';
   if (absolute) {
     if (file_len <= context->root_len ||
