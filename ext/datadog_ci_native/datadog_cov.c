@@ -31,7 +31,7 @@
 enum threading_mode { single, multi };
 
 // functions declarations
-static void on_newobj_event(VALUE tracepoint_data, void *data);
+static void on_newobj_event(VALUE self, const rb_trace_arg_t *tracearg);
 
 static int mark_key_for_gc_i(st_data_t key, st_data_t _value, st_data_t _data) {
   VALUE klass = (VALUE)key;
@@ -88,7 +88,8 @@ struct dd_cov_data {
   // contain any methods that could be covered by line tracepoint.
   //
   // Allocation tracing works only in multi threaded mode.
-  VALUE object_allocation_tracepoint;
+  bool allocation_tracing_enabled;
+  bool allocation_hook_active;
   st_table *klasses_table; // { (VALUE) -> int } hashmap with class names that
                            // were covered by allocation during the test run
   VALUE last_allocated_klass;
@@ -101,7 +102,6 @@ static void dd_cov_mark(void *ptr) {
   struct dd_cov_data *dd_cov_data = ptr;
   rb_gc_mark_movable(dd_cov_data->impacted_files);
   rb_gc_mark_movable(dd_cov_data->th_covered);
-  rb_gc_mark_movable(dd_cov_data->object_allocation_tracepoint);
 
   if (dd_cov_data->last_filename != Qnil) {
     rb_gc_mark(dd_cov_data->last_filename);
@@ -135,8 +135,6 @@ static void dd_cov_compact(void *ptr) {
   struct dd_cov_data *dd_cov_data = ptr;
   dd_cov_data->impacted_files = rb_gc_location(dd_cov_data->impacted_files);
   dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
-  dd_cov_data->object_allocation_tracepoint =
-      rb_gc_location(dd_cov_data->object_allocation_tracepoint);
   // keys for dd_cov_data->klasses_table are not moved by GC, so we don't need
   // to update them
 }
@@ -165,7 +163,8 @@ static VALUE dd_cov_allocate(VALUE klass) {
   }
   dd_cov_data->threading_mode = multi;
 
-  dd_cov_data->object_allocation_tracepoint = Qnil;
+  dd_cov_data->allocation_tracing_enabled = false;
+  dd_cov_data->allocation_hook_active = false;
   dd_cov_data->last_allocated_klass = Qnil;
   memset(dd_cov_data->seen_allocated_klasses, 0,
          sizeof(dd_cov_data->seen_allocated_klasses));
@@ -312,9 +311,8 @@ static int each_instantiated_klass(st_data_t key, st_data_t _value,
 
 // Executed on RUBY_INTERNAL_EVENT_NEWOBJ event and captures the source file for
 // the allocated object's class.
-static void on_newobj_event(VALUE tracepoint_data, void *data) {
-  rb_trace_arg_t *tracearg = rb_tracearg_from_tracepoint(tracepoint_data);
-  VALUE new_object = rb_tracearg_object(tracearg);
+static void on_newobj_event(VALUE self, const rb_trace_arg_t *tracearg) {
+  VALUE new_object = rb_tracearg_object((rb_trace_arg_t *)tracearg);
 
   // To keep things fast and practical, we only care about objects that extend
   // either Object or Struct.
@@ -328,7 +326,7 @@ static void on_newobj_event(VALUE tracepoint_data, void *data) {
     return;
   }
 
-  struct dd_cov_data *dd_cov_data = (struct dd_cov_data *)data;
+  struct dd_cov_data *dd_cov_data = RTYPEDDATA_DATA(self);
 
   if (dd_cov_data->last_allocated_klass == klass) {
     return;
@@ -351,10 +349,7 @@ static void on_newobj_event(VALUE tracepoint_data, void *data) {
     return;
   }
 
-  // Skip anonymous classes starting with "#<Class".
-  // it allows us to skip the source location lookup that will always fail
-  //
-  // rb_mod_name returns nil for anonymous classes
+  // rb_mod_name returns nil for anonymous classes and is safe during NEWOBJ.
   if (rb_mod_name(klass) == Qnil) {
     return;
   }
@@ -422,8 +417,7 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
   }
 
   if (rb_allocation_tracing_enabled == Qtrue) {
-    dd_cov_data->object_allocation_tracepoint = rb_tracepoint_new(
-        Qnil, RUBY_INTERNAL_EVENT_NEWOBJ, on_newobj_event, (void *)dd_cov_data);
+    dd_cov_data->allocation_tracing_enabled = true;
   }
 
   return Qnil;
@@ -448,9 +442,18 @@ static VALUE dd_cov_start(VALUE self) {
     rb_add_event_hook(on_line_event, RUBY_EVENT_LINE, self);
   }
 
-  // add object allocation tracepoint
-  if (dd_cov_data->object_allocation_tracepoint != Qnil) {
-    rb_tracepoint_enable(dd_cov_data->object_allocation_tracepoint);
+  // Register the raw hook that TracePoint would wrap and dispatch directly to
+  // the allocation callback. NEWOBJ permits no general Ruby API; the callback
+  // is limited to the existing event-safe accessors plus rb_mod_name, which is
+  // explicitly safe here. Each collector owns its hook, preserving concurrent
+  // collector behavior.
+  if (dd_cov_data->allocation_tracing_enabled &&
+      !dd_cov_data->allocation_hook_active) {
+    rb_add_event_hook2((rb_event_hook_func_t)on_newobj_event,
+                       RUBY_INTERNAL_EVENT_NEWOBJ, self,
+                       RUBY_EVENT_HOOK_FLAG_SAFE |
+                           RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+    dd_cov_data->allocation_hook_active = true;
   }
 
   return self;
@@ -476,9 +479,11 @@ static VALUE dd_cov_stop(VALUE self) {
     rb_remove_event_hook(on_line_event);
   }
 
-  // stop object allocation tracepoint
-  if (dd_cov_data->object_allocation_tracepoint != Qnil) {
-    rb_tracepoint_disable(dd_cov_data->object_allocation_tracepoint);
+  // Remove only this collector's hook; other concurrently active collectors
+  // continue to receive allocation events.
+  if (dd_cov_data->allocation_hook_active) {
+    rb_remove_event_hook_with_data((rb_event_hook_func_t)on_newobj_event, self);
+    dd_cov_data->allocation_hook_active = false;
   }
 
   // process classes covered by allocation tracing
