@@ -7,6 +7,7 @@ module Datadog
 
           @coverage: Hash[String, untyped]
           @custom_impacted_files: Array[String]
+          @root: String
           @normalized_files: Array[String]?
 
           def initialize: (Hash[String, untyped] coverage, ?Array[String] custom_impacted_files) -> void
@@ -14,6 +15,8 @@ module Datadog
           def each: () { (String file) -> void } -> void
 
           def size: () -> Integer
+
+          def write_to: (untyped packer) -> untyped
 
           def inspect_coverage: () -> Hash[String, untyped]
 

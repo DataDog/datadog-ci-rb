@@ -340,6 +340,92 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         )
       end
     end
+
+    it "matches legacy MessagePack bytes for native and custom paths" do
+      root = Datadog::CI::Git::LocalRepository.root
+      absolute_native = File.join(root, "app/models/user.rb")
+      binary_file = "frontend/binary-\xFF.js".b
+      long_file = "frontend/#{"x" * 300}.js"
+      custom_files = [
+        "frontend/app.js",
+        absolute_native,
+        "frontend/app.js",
+        "frontend/emoji-❤️.js",
+        binary_file,
+        long_file
+      ] + Array.new(20) { |index| "frontend/generated-#{index}.js" }
+      coverage = {absolute_native => true}
+      files = Datadog::CI::TestImpactAnalysis::Coverage::Files.new(coverage, custom_files)
+      event = described_class.new(
+        test_id: test_id,
+        test_suite_id: test_suite_id,
+        test_session_id: test_session_id,
+        files: files
+      )
+      file_serialization = Datadog::CI::FileSerialization
+
+      expect(file_serialization.pack_files(coverage, custom_files, root)).to be_a(String)
+
+      encode = lambda do
+        packer = MessagePack::Packer.new
+        event.to_msgpack(packer)
+        packer.to_s
+      end
+      native_bytes = encode.call
+      allow(file_serialization).to receive(:pack_files).and_return(nil)
+
+      expect(native_bytes).to eq(encode.call)
+    end
+
+    it "matches legacy MessagePack bytes for all-absolute paths" do
+      root = Datadog::CI::Git::LocalRepository.root
+      absolute_files = Array.new(20) do |index|
+        File.join(root, "app/generated/model-#{index}.rb")
+      end
+      coverage = absolute_files.first(10).to_h { |file| [file, true] }
+      custom_files = absolute_files.drop(5) + [absolute_files.fetch(5)]
+      files = Datadog::CI::TestImpactAnalysis::Coverage::Files.new(coverage, custom_files)
+      event = described_class.new(
+        test_id: test_id,
+        test_suite_id: test_suite_id,
+        test_session_id: test_session_id,
+        files: files
+      )
+      file_serialization = Datadog::CI::FileSerialization
+
+      expect(file_serialization.pack_files(coverage, custom_files, root)).to be_a(String)
+
+      encode = lambda do
+        packer = MessagePack::Packer.new
+        event.to_msgpack(packer)
+        packer.to_s
+      end
+      native_bytes = encode.call
+      allow(file_serialization).to receive(:pack_files).and_return(nil)
+
+      expect(native_bytes).to eq(encode.call)
+    end
+
+    it "falls back for ASCII-incompatible filename encodings" do
+      root = Datadog::CI::Git::LocalRepository.root
+      encoded_file = "frontend/app.js".encode(Encoding::UTF_16BE)
+
+      expect(
+        Datadog::CI::FileSerialization.pack_files({}, [encoded_file], root)
+      ).to be_nil
+    end
+
+    it "falls back for filenames containing NUL bytes" do
+      root = Datadog::CI::Git::LocalRepository.root
+      relative_file = "frontend/app\0.js"
+      absolute_file = "#{root}/#{relative_file}"
+
+      [relative_file, absolute_file].each do |file|
+        expect(
+          Datadog::CI::FileSerialization.pack_files({}, [file], root)
+        ).to be_nil
+      end
+    end
   end
 
   describe "#pretty_inspect" do

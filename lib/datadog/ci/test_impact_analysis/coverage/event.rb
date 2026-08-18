@@ -58,12 +58,7 @@ module Datadog
             end
 
             packer.write("files")
-            packer.write_array_header(@files.size)
-            @files.each do |filename|
-              packer.write_map_header(1)
-              packer.write("filename")
-              packer.write(filename)
-            end
+            @files.write_to(packer)
           end
 
           def to_s
