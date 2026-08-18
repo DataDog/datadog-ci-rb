@@ -38,8 +38,6 @@ module Datadog
           # not support falls back before writing bytes.
           def write_to(packer)
             if FileSerialization.respond_to?(:pack_files) &&
-                packer.respond_to?(:compatibility_mode?) &&
-                !packer.compatibility_mode? &&
                 (packed_files = FileSerialization.pack_files(
                   @coverage,
                   @custom_impacted_files,
