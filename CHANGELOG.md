@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [1.37.0] - 2026-08-19
+
 ## [1.36.1] - 2026-08-11
 
 ### Fixed
@@ -682,7 +684,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.1...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.37.0...main
+[1.37.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.1...v1.37.0
 [1.36.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.0...v1.36.1
 [1.36.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.35.0...v1.36.0
 [1.35.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.34.0...v1.35.0
