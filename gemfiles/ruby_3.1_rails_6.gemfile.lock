@@ -1,11 +1,11 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 7077ef79573aa7a5199158ea6e5bd12e51c683bd
+  revision: 7a2184404eb561aaddcec9a094262cec7d9980d7
   branch: master
   specs:
     datadog (2.42.0.dev)
       cgi
-      datadog-ruby_core_source (~> 3.5, >= 3.5.4)
+      datadog-ruby_core_source (~> 3.5, >= 3.5.5)
       libdatadog (~> 40.0.0.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
@@ -97,7 +97,7 @@ GEM
       bigdecimal
       rexml
     crass (1.0.7)
-    datadog-ruby_core_source (3.5.4)
+    datadog-ruby_core_source (3.5.5)
     date (3.5.1)
     debug (1.11.1)
       irb (~> 1.10)
@@ -231,7 +231,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.13.2)
     simplecov_json_formatter (0.1.4)
-    sprockets (4.3.0)
+    sprockets (4.4.0)
       concurrent-ruby (~> 1.1)
       logger
       rack (>= 2.2.4, < 4)
