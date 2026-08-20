@@ -72,8 +72,6 @@ module Datadog
         end
 
         def shutdown!(replacement = nil)
-          super
-
           @test_optimization_cache&.shutdown!
           @test_tracing&.shutdown!
           @test_impact_analysis&.shutdown!
@@ -81,6 +79,8 @@ module Datadog
           @test_discovery&.shutdown!
           @code_coverage&.shutdown!
           @git_tree_upload_worker&.stop
+
+          super
         end
 
         def activate_ci!(settings)
