@@ -141,6 +141,28 @@ RSpec.describe Datadog::CI::Configuration::Components do
         context "is enabled" do
           let(:enabled) { true }
 
+          it "shuts down Test Optimization components before telemetry" do
+            shutdown_order = []
+            allow(components.test_impact_analysis).to receive(:shutdown!) { shutdown_order << :test_impact_analysis }
+            allow(components.telemetry).to receive(:shutdown!) { shutdown_order << :telemetry }
+
+            components.shutdown!
+
+            expect(shutdown_order).to eq([:test_impact_analysis, :telemetry])
+          end
+
+          it "shuts down telemetry when a Test Optimization component fails to shut down" do
+            shutdown_attempts = 0
+            allow(components.test_impact_analysis).to receive(:shutdown!) do
+              shutdown_attempts += 1
+              raise "Test Optimization shutdown failed" if shutdown_attempts == 1
+            end
+            allow(components.telemetry).to receive(:shutdown!)
+
+            expect { components.shutdown! }.to raise_error("Test Optimization shutdown failed")
+            expect(components.telemetry).to have_received(:shutdown!).once
+          end
+
           context "when tracing is disabled" do
             let(:tracing_enabled) { false }
 
