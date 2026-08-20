@@ -79,7 +79,7 @@ module Datadog
           @test_discovery&.shutdown!
           @code_coverage&.shutdown!
           @git_tree_upload_worker&.stop
-
+        ensure
           super
         end
 
