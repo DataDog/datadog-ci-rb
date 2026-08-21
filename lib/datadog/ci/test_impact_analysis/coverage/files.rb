@@ -7,20 +7,28 @@ module Datadog
   module CI
     module TestImpactAnalysis
       module Coverage
-        # Keeps native coverage and custom impacted files together and
-        # normalizes them as one set.
+        # Keeps native coverage, static dependencies, and custom impacted
+        # files together and normalizes them as one set.
         #
         # @internal
         class Files
           EMPTY_FILES = [].freeze
+          EMPTY_STATIC_DEPENDENCIES = [].freeze
 
-          def initialize(coverage, custom_impacted_files = EMPTY_FILES)
+          def initialize(
+            coverage,
+            custom_impacted_files = EMPTY_FILES,
+            static_dependencies = EMPTY_STATIC_DEPENDENCIES
+          )
             @coverage = coverage
             @custom_impacted_files = custom_impacted_files
+            @static_dependencies = static_dependencies
             # The repository root is a process invariant between coverage
-            # events. Capture it once so native normalization can reuse the
-            # same exact boundary for this event without repeated lookups.
+            # events, as is the repository-relative prefix of process-relative
+            # paths. Capture both so asynchronous encoding uses the same exact
+            # boundaries as the test thread without joining every filename.
             @root = Git::LocalRepository.root
+            @relative_path_prefix = Git::LocalRepository.relative_path_prefix
             @normalized_files = nil
           end
 
@@ -41,7 +49,9 @@ module Datadog
                 (packed_files = FileSerialization.pack_files(
                   @coverage,
                   @custom_impacted_files,
-                  @root
+                  @root,
+                  @static_dependencies,
+                  @relative_path_prefix
                 ))
               packer.buffer.write(packed_files)
               return packer
@@ -61,6 +71,11 @@ module Datadog
           # are normalized through {#each}.
           def inspect_coverage
             coverage = @coverage.dup
+            @static_dependencies.each do |dependencies|
+              dependencies.each_key do |file|
+                coverage[file] = true
+              end
+            end
             @custom_impacted_files.each do |file|
               coverage[file] = true
             end
@@ -73,20 +88,30 @@ module Datadog
             @normalized_files ||= begin
               files = []
               @coverage.each_key do |file|
-                relative_file = Git::LocalRepository.relative_to_root(file)
+                relative_file = normalize(file)
                 files << relative_file unless relative_file.empty?
               end
-              @custom_impacted_files.each do |file|
-                # The public API defines relative custom paths as repository-relative.
-                relative_file = if File.absolute_path?(file)
-                  Git::LocalRepository.relative_to_root(file)
-                else
-                  file
+              @static_dependencies.each do |dependencies|
+                dependencies.each_key do |file|
+                  relative_file = normalize(file)
+                  files << relative_file unless relative_file.empty?
                 end
+              end
+              @custom_impacted_files.each do |file|
+                relative_file = normalize(file)
                 files << relative_file unless relative_file.empty?
               end
               files.uniq
             end
+          end
+
+          def normalize(file)
+            return Git::LocalRepository.relative_to_root(file) if File.absolute_path?(file)
+
+            file = file.delete_prefix("./")
+            return file if @relative_path_prefix.empty?
+
+            File.join(@relative_path_prefix, file)
           end
         end
       end

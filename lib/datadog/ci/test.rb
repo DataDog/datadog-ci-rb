@@ -169,11 +169,9 @@ module Datadog
       #
       # This is useful for files that Datadog's native Ruby coverage cannot
       # observe, such as JavaScript executed in a browser during a Capybara
-      # test. Paths must resolve inside the Git repository. Relative paths must
-      # be relative to the repository root. Absolute paths are also accepted.
-      #
-      # If paths are relative to the current working directory, convert them to
-      # absolute paths with +File.expand_path+ before calling this method.
+      # test. Paths must resolve inside the Git repository. Relative paths are
+      # resolved from the process working directory. Absolute paths are also
+      # accepted.
       # Submitted paths must be lexically normalized without redundant +.+ or
       # +..+ components.
       #
@@ -186,9 +184,7 @@ module Datadog
       #   RSpec.configure do |config|
       #     config.after do
       #       Datadog::CI.active_test&.add_impacted_files(
-      #         javascript_files_loaded_by_browser.map do |path|
-      #           File.expand_path(path, Dir.pwd)
-      #         end
+      #         javascript_files_loaded_by_browser
       #       )
       #     end
       #   end
@@ -219,6 +215,11 @@ module Datadog
       # @return [Array<String>]
       def lock_custom_impacted_files
         return @custom_impacted_files if @custom_impacted_files.frozen?
+
+        if @custom_impacted_files.empty? && @inherited_custom_impacted_files.frozen?
+          @custom_impacted_files = @inherited_custom_impacted_files
+          return @custom_impacted_files
+        end
 
         @custom_impacted_files =
           (@inherited_custom_impacted_files | @custom_impacted_files).freeze

@@ -14,6 +14,8 @@ module Datadog
 
         def self.relative_to_root: (String? path) -> String
 
+        def self.relative_path_prefix: () -> String
+
         def self.git_repository_url: () -> String?
 
         def self.git_root: () -> String?

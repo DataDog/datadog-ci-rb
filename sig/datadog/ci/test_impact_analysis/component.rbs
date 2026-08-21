@@ -110,7 +110,7 @@ module Datadog
 
         def populate_static_dependencies_map!: () -> void
 
-        def enrich_coverage_with_static_dependencies: (Hash[String, untyped] coverage) -> void
+        def collect_static_dependencies: (Hash[String, untyped] coverage) -> Array[Hash[String, bool]]
 
         def write: (Datadog::CI::TestImpactAnalysis::Coverage::Event event) -> void
 

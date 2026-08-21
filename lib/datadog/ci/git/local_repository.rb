@@ -43,31 +43,35 @@ module Datadog
 
             res = path[prefix_index + 1..]
           else
-            # prefix_to_root is a difference between the root path and the given path
-            if defined?(@prefix_to_root)
-              # if path starts with ./ remove the dot before applying the optimization
-              # @type var path: String
-              path = path[1..] if path.start_with?("./")
+            # Relative inputs are process-relative. The cwd-to-repository
+            # prefix is invariant for the lifetime of a test process, so only
+            # derive it once instead of expanding every path independently.
+            path = path.delete_prefix("./")
+            prefix = relative_path_prefix
+            return path if prefix.empty?
 
-              if @prefix_to_root == ""
-                return path
-              elsif @prefix_to_root
-                return File.join(@prefix_to_root, path)
-              end
-            end
-
-            pathname = Pathname.new(File.expand_path(path))
-            root_path = Pathname.new(root_path)
-
-            # relative_path_from is an expensive function
-            res = pathname.relative_path_from(root_path).to_s
-
-            unless defined?(@prefix_to_root)
-              @prefix_to_root = res.gsub(path, "") if res.end_with?(path)
-            end
+            res = File.join(prefix, path)
           end
 
           res || ""
+        end
+
+        def self.relative_path_prefix
+          return @prefix_to_root if defined?(@prefix_to_root)
+
+          root_path = root
+          return "" if root_path.nil?
+
+          relative_cwd = Pathname.new(Dir.pwd).relative_path_from(Pathname.new(root_path))
+          return @prefix_to_root = "" if relative_cwd.nil?
+
+          relative_cwd = relative_cwd.to_s
+          prefix = if relative_cwd == "."
+            ""
+          else
+            "#{relative_cwd}#{File::SEPARATOR}"
+          end
+          @prefix_to_root = prefix.freeze
         end
 
         def self.repository_name

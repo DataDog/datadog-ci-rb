@@ -162,8 +162,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           let(:path) { "./baz" }
 
           it "strips the ./ and returns the path" do
-            # When @prefix_to_root is empty, it strips ./ (removes first character) and returns the path
-            expect(subject).to eq("/baz")
+            expect(subject).to eq("baz")
           end
         end
 
@@ -209,8 +208,8 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
           let(:path) { "test" }
 
-          it "returns empty string when result is nil" do
-            expect(subject).to eq("")
+          it "uses an empty prefix when the relative cwd cannot be calculated" do
+            expect(subject).to eq("test")
           end
         end
       end
@@ -238,6 +237,37 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
           it { is_expected.to eq("/double//separators") }
         end
       end
+    end
+  end
+
+  describe ".relative_path_prefix" do
+    before do
+      described_class.remove_instance_variable(:@prefix_to_root) if described_class.instance_variable_defined?(:@prefix_to_root)
+      allow(described_class).to receive(:root).and_return("/workspace/repository")
+    end
+
+    after do
+      described_class.remove_instance_variable(:@prefix_to_root) if described_class.instance_variable_defined?(:@prefix_to_root)
+    end
+
+    it "is empty when the process runs from the repository root" do
+      allow(Dir).to receive(:pwd).and_return("/workspace/repository")
+
+      expect(described_class.relative_path_prefix).to eq("")
+    end
+
+    it "contains the repository-relative process folder in a monorepo" do
+      allow(Dir).to receive(:pwd).and_return("/workspace/repository/components/payments")
+
+      expect(described_class.relative_path_prefix).to eq("components/payments/")
+    end
+
+    it "reuses the prefix computed for the process" do
+      allow(Dir).to receive(:pwd).and_return("/workspace/repository/components/payments")
+      expect(described_class.relative_path_prefix).to eq("components/payments/")
+
+      allow(Dir).to receive(:pwd).and_return("/workspace/repository/components/checkout")
+      expect(described_class.relative_path_prefix).to eq("components/payments/")
     end
   end
 

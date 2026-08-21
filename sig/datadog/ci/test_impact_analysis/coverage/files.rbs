@@ -4,13 +4,16 @@ module Datadog
       module Coverage
         class Files
           EMPTY_FILES: Array[String]
+          EMPTY_STATIC_DEPENDENCIES: Array[Hash[String, bool]]
 
           @coverage: Hash[String, untyped]
           @custom_impacted_files: Array[String]
+          @static_dependencies: Array[Hash[String, bool]]
           @root: String
+          @relative_path_prefix: String
           @normalized_files: Array[String]?
 
-          def initialize: (Hash[String, untyped] coverage, ?Array[String] custom_impacted_files) -> void
+          def initialize: (Hash[String, untyped] coverage, ?Array[String] custom_impacted_files, ?Array[Hash[String, bool]] static_dependencies) -> void
 
           def each: () { (String file) -> void } -> void
 
@@ -23,6 +26,8 @@ module Datadog
           private
 
           def normalized_files: () -> Array[String]
+
+          def normalize: (String file) -> String
         end
       end
     end

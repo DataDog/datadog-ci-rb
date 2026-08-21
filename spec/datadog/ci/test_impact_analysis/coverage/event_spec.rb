@@ -64,13 +64,15 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         test_session_id: test_session_id,
         files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
           coverage,
-          custom_impacted_files | suite_impacted_files
+          custom_impacted_files | suite_impacted_files,
+          static_dependencies
         )
       )
     end
 
     let(:custom_impacted_files) { ["file.js", "file.rb"] }
     let(:suite_impacted_files) { ["suite.js", "file.js"] }
+    let(:static_dependencies) { [{"dependency.rb" => true, "file.rb" => true}] }
 
     it "defers merging impacted files until coverage is read, including after serialization" do
       expect(coverage).to eq("file.rb" => true)
@@ -80,7 +82,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
       expect(event.inspect_coverage).to eq(
         "file.rb" => true,
         "file.js" => true,
-        "suite.js" => true
+        "suite.js" => true,
+        "dependency.rb" => true
       )
     end
   end
@@ -406,12 +409,184 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
       expect(native_bytes).to eq(encode.call)
     end
 
+    it "keeps deduplication stable while the packed output buffer grows" do
+      root = Datadog::CI::Git::LocalRepository.root
+      absolute_files = Array.new(500) do |index|
+        File.join(root, "app/generated/#{"directory/" * 3}model-#{index}.rb")
+      end
+      coverage = absolute_files.first(300).to_h { |file| [file, true] }
+      custom_files = absolute_files.drop(200).map do |file|
+        file.delete_prefix("#{root}/")
+      end
+      custom_files.concat(custom_files.first(50))
+      files = Datadog::CI::TestImpactAnalysis::Coverage::Files.new(coverage, custom_files)
+      event = described_class.new(
+        test_id: test_id,
+        test_suite_id: test_suite_id,
+        test_session_id: test_session_id,
+        files: files
+      )
+      file_serialization = Datadog::CI::FileSerialization
+
+      encode = lambda do
+        packer = MessagePack::Packer.new
+        event.to_msgpack(packer)
+        packer.to_s
+      end
+      native_bytes = encode.call
+      allow(file_serialization).to receive(:pack_files).and_return(nil)
+
+      expect(native_bytes.bytesize).to be > 4_096
+      expect(native_bytes).to eq(encode.call)
+    end
+
+    it "matches Ruby String hash-key semantics across compatible encodings" do
+      root = Datadog::CI::Git::LocalRepository.root
+      ascii_utf8 = "frontend/shared.js"
+      ascii_binary = ascii_utf8.b
+      non_ascii_utf8 = "frontend/café.js"
+      non_ascii_binary = non_ascii_utf8.b
+      custom_files = [ascii_utf8, ascii_binary, non_ascii_utf8, non_ascii_binary]
+      files = Datadog::CI::TestImpactAnalysis::Coverage::Files.new({}, custom_files)
+      event = described_class.new(
+        test_id: test_id,
+        test_suite_id: test_suite_id,
+        test_session_id: test_session_id,
+        files: files
+      )
+      file_serialization = Datadog::CI::FileSerialization
+
+      expect(file_serialization.pack_files({}, custom_files, root)).to be_a(String)
+      encode = lambda do
+        packer = MessagePack::Packer.new
+        event.to_msgpack(packer)
+        packer.to_s
+      end
+      native_bytes = encode.call
+      allow(file_serialization).to receive(:pack_files).and_return(nil)
+
+      expect(native_bytes).to eq(encode.call)
+    end
+
+    it "packs process-relative custom paths directly when the repository prefix is empty" do
+      root = Datadog::CI::Git::LocalRepository.root
+      relative_file = "frontend/app.js"
+      custom_files = [relative_file]
+      coverage = {File.join(root, "app/models/user.rb") => true}
+      allow(Datadog::CI::Git::LocalRepository).to receive(:relative_path_prefix).and_return("")
+
+      event = described_class.new(
+        test_id: test_id,
+        test_suite_id: test_suite_id,
+        test_session_id: test_session_id,
+        files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(coverage, custom_files)
+      )
+
+      native_bytes = begin
+        packer = MessagePack::Packer.new
+        event.to_msgpack(packer)
+        packer.to_s
+      end
+      allow(Datadog::CI::FileSerialization).to receive(:pack_files).and_return(nil)
+      legacy_bytes = begin
+        packer = MessagePack::Packer.new
+        event.to_msgpack(packer)
+        packer.to_s
+      end
+
+      expect(native_bytes).to eq(legacy_bytes)
+      expect(event.inspect_coverage).to include(relative_file => true)
+    end
+
+    it "prepends one stable repository prefix to process-relative custom paths" do
+      local_repository = Datadog::CI::Git::LocalRepository
+      root = "/workspace/repository"
+      prefix = "components/payments/"
+      normalized_file = "#{prefix}frontend/app.js"
+      coverage = {File.join(root, normalized_file) => true}
+      custom_files = ["frontend/app.js", "./frontend/shared.js"]
+      allow(local_repository).to receive(:root).and_return(root)
+      allow(local_repository).to receive(:relative_path_prefix).and_return(prefix)
+
+      event = described_class.new(
+        test_id: test_id,
+        test_suite_id: test_suite_id,
+        test_session_id: test_session_id,
+        files: Datadog::CI::TestImpactAnalysis::Coverage::Files.new(coverage, custom_files)
+      )
+      encode = lambda do
+        packer = MessagePack::Packer.new
+        event.to_msgpack(packer)
+        packer.to_s
+      end
+
+      native_bytes = encode.call
+      allow(Datadog::CI::FileSerialization).to receive(:pack_files).and_return(nil)
+      fallback_bytes = encode.call
+
+      expect(native_bytes).to eq(fallback_bytes)
+      expect(MessagePack.unpack(native_bytes).fetch("files")).to eq(
+        [
+          {"filename" => normalized_file},
+          {"filename" => "#{prefix}frontend/shared.js"}
+        ]
+      )
+    end
+
+    it "serializes static dependency hashes without merging them into coverage" do
+      root = Datadog::CI::Git::LocalRepository.root
+      native_file = File.join(root, "app/models/user.rb")
+      dependency = File.join(root, "app/models/account.rb")
+      shared_dependency = File.join(root, "app/models/shared.rb")
+      coverage = {native_file => true}
+      static_dependencies = [
+        {dependency => true, shared_dependency => true},
+        {shared_dependency => true, native_file => true}
+      ]
+      custom_files = ["frontend/app.js"]
+      files = Datadog::CI::TestImpactAnalysis::Coverage::Files.new(
+        coverage,
+        custom_files,
+        static_dependencies
+      )
+      event = described_class.new(
+        test_id: test_id,
+        test_suite_id: test_suite_id,
+        test_session_id: test_session_id,
+        files: files
+      )
+      file_serialization = Datadog::CI::FileSerialization
+
+      expect(
+        file_serialization.pack_files(coverage, custom_files, root, static_dependencies)
+      ).to be_a(String)
+
+      encode = lambda do
+        packer = MessagePack::Packer.new
+        event.to_msgpack(packer)
+        packer.to_s
+      end
+      native_bytes = encode.call
+      allow(file_serialization).to receive(:pack_files).and_return(nil)
+
+      expect(native_bytes).to eq(encode.call)
+      expect(coverage).to eq(native_file => true)
+    end
+
     it "falls back for ASCII-incompatible filename encodings" do
       root = Datadog::CI::Git::LocalRepository.root
       encoded_file = "frontend/app.js".encode(Encoding::UTF_16BE)
 
       expect(
         Datadog::CI::FileSerialization.pack_files({}, [encoded_file], root)
+      ).to be_nil
+    end
+
+    it "falls back for unexpected relative static dependency paths" do
+      root = Datadog::CI::Git::LocalRepository.root
+
+      expect(
+        Datadog::CI::FileSerialization.pack_files({}, [], root, [{"dependency.rb" => true}])
       ).to be_nil
     end
 
