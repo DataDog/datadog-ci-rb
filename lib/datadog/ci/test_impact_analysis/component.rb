@@ -456,16 +456,16 @@ module Datadog
           Datadog::CI::SourceCode::StaticDependencies.populate!(Git::LocalRepository.root, @bundle_location)
         end
 
-        def enrich_coverage_with_static_dependencies(coverage)
-          return unless @static_dependencies_tracking_enabled
+        def collect_static_dependencies(coverage)
+          return Coverage::Files::EMPTY_STATIC_DEPENDENCIES unless @static_dependencies_tracking_enabled
 
-          static_dependencies_map = {}
+          static_dependencies = []
           coverage.each_key do |file|
-            static_dependencies_map.merge!(
-              Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
-            )
+            dependencies = Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
+            static_dependencies << dependencies unless dependencies.empty?
           end
-          coverage.merge!(static_dependencies_map)
+
+          static_dependencies.empty? ? Coverage::Files::EMPTY_STATIC_DEPENDENCIES : static_dependencies.freeze
         end
 
         def ensure_test_source_covered(test_source_file, coverage)
@@ -490,15 +490,17 @@ module Datadog
           end
 
           ensure_test_source_covered(source_file, coverage) unless source_file.nil?
-
-          enrich_coverage_with_static_dependencies(coverage)
+          static_dependencies = collect_static_dependencies(coverage)
 
           # Avoid normalizing and deduplicating paths on the test thread. The
           # writer does that when it serializes the event. Telemetry only needs
-          # an estimate and may count overlaps between the two collections.
-          Telemetry.code_coverage_files(coverage.size + custom_impacted_files.size)
+          # an estimate and may count overlaps between the collections.
+          static_dependencies_size = static_dependencies.sum { |dependencies| dependencies.size }
+          Telemetry.code_coverage_files(
+            coverage.size + static_dependencies_size + custom_impacted_files.size
+          )
 
-          files = Coverage::Files.new(coverage, custom_impacted_files)
+          files = Coverage::Files.new(coverage, custom_impacted_files, static_dependencies)
 
           coverage_event = Coverage::Event.new(
             test_id: test_id,

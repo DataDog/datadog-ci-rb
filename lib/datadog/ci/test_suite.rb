@@ -38,11 +38,9 @@ module Datadog
       # Ruby coverage cannot observe, such as JavaScript test setup. Calls are
       # incremental: every call adds files for the remainder of the suite.
       #
-      # Paths must resolve inside the Git repository. Relative paths must be
-      # relative to the repository root. Absolute paths are also accepted.
-      #
-      # If paths are relative to the current working directory, convert them to
-      # absolute paths with +File.expand_path+ before calling this method.
+      # Paths must resolve inside the Git repository. Relative paths are
+      # resolved from the process working directory. Absolute paths are also
+      # accepted.
       # Submitted paths must be lexically normalized without redundant +.+ or
       # +..+ components. Resolution does not access the filesystem. Paths
       # outside the repository are ignored when the coverage event is

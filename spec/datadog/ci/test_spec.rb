@@ -317,6 +317,13 @@ RSpec.describe Datadog::CI::Test do
       expect(ci_test.lock_custom_impacted_files).to eq([duplicate_file, another_file])
     end
 
+    it "reuses locked inherited files when the test has no additions" do
+      inherited_files = ["app/frontend/shared.js"].freeze
+      ci_test.inherit_impacted_files(inherited_files)
+
+      expect(ci_test.lock_custom_impacted_files).to equal(inherited_files)
+    end
+
     it "does not expose APIs to inspect or clear impacted files" do
       expect(ci_test).not_to respond_to(:custom_impacted_files)
       expect(ci_test).not_to respond_to(:clear_impacted_files)

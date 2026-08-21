@@ -8,6 +8,8 @@ RSpec.describe TestImpactAnalysisOverheadBenchmark do
       "TESTS" => "4",
       "COVERED_FILES" => "4",
       "FILES_PER_TEST" => "2",
+      "COVERAGE_SEED" => "12345",
+      "PROCESS_RELATIVE_PREFIX" => "components/payments",
       "FIXTURES_PER_FILE" => "1",
       "CUSTOM_FILES" => "3",
       "TEST_CUSTOM_FILES" => "1",
@@ -26,6 +28,14 @@ RSpec.describe TestImpactAnalysisOverheadBenchmark do
   let(:configuration) { described_class::Configuration.new(environment) }
   let(:workload) { described_class::Workload.new(configuration) }
   let(:runner) { described_class::Runner.new(configuration, workload) }
+
+  it "selects reproducible, varying coverage files for each test" do
+    coverage_shapes = 4.times.map { |test_index| workload.coverage_for_test(test_index) }
+
+    expect(workload.coverage_for_test(0)).to eq(coverage_shapes.first)
+    expect(coverage_shapes.uniq.size).to be > 1
+    expect(coverage_shapes.first(2).flat_map(&:keys).uniq.size).to eq(4)
+  end
 
   it "executes generated files under native suite coverage" do
     outcome = runner.run("native_suite_alloc")
@@ -65,6 +75,23 @@ RSpec.describe TestImpactAnalysisOverheadBenchmark do
     expect(test_mode.finish_seconds).to be_positive
   end
 
+  it "compares relative custom paths with equivalent absolute paths" do
+    relative = runner.run("lifecycle_test")
+    absolute = runner.run("lifecycle_test_absolute_custom")
+
+    expect(relative.output_bytes).to eq(absolute.output_bytes)
+    expect(relative.encoded_events).to eq(absolute.encoded_events)
+  end
+
+  it "models process-relative paths from a repository subfolder" do
+    relative = runner.run("lifecycle_test_prefixed_custom")
+    absolute = runner.run("lifecycle_test_prefixed_absolute_custom")
+
+    expect(configuration.process_relative_prefix).to eq("components/payments/")
+    expect(relative.output_bytes).to eq(absolute.output_bytes)
+    expect(relative.encoded_events).to eq(absolute.encoded_events)
+  end
+
   it "reports time outside test spans separately" do
     measurement = described_class::Measurer.new.measure("lifecycle_body") do
       runner.run("lifecycle_body")
@@ -96,11 +123,16 @@ RSpec.describe TestImpactAnalysisOverheadBenchmark do
   it "exercises all MessagePack fast-path branches" do
     absolute = runner.run("packer_fast_absolute")
     relative = runner.run("packer_fast_relative")
+    prefixed_relative = runner.run("packer_fast_relative_prefixed")
+    prefixed_absolute = runner.run("packer_fast_absolute_prefixed")
     fallback = runner.run("packer_late_fallback")
+    prefixed_fallback = runner.run("packer_late_fallback_prefixed")
 
     expect(absolute.operations).to eq(2)
     expect(relative.checksum).to eq(absolute.checksum)
+    expect(prefixed_relative.checksum).to eq(prefixed_absolute.checksum)
     expect(fallback.checksum).to eq(relative.checksum)
+    expect(prefixed_fallback.checksum).to eq(prefixed_relative.checksum)
   end
 
   it "forces late MessagePack fallback through the asynchronous lifecycle" do

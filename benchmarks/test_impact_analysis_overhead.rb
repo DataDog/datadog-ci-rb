@@ -67,14 +67,15 @@
 #     SCENARIOS=lifecycle_body,lifecycle_suite,lifecycle_test \
 #     bundle exec ruby benchmarks/test_impact_analysis_overhead.rb
 #
-# Keep the suite union at exactly 5,000 covered files while partitioning those
-# files across 100 tests. This exposes per-test static dependency enrichment
-# without multiplying the number of covered application files:
+# Give each suite a different deterministic randomized permutation of the
+# 5,000-file universe, then partition that permutation across its tests. This
+# preserves a 5,000-file suite union without repeating per-test coverage shapes:
 #
-#   COVERED_FILES=5000 FILES_PER_TEST=50 LIFECYCLE_TESTS=100 \
-#     TESTS_PER_SUITE=100 CONTEXT_FILES=0 CUSTOM_FILES=0 TEST_CUSTOM_FILES=0 \
-#     STATIC_DEPENDENCIES_PER_FILE=50 \
-#     SCENARIOS=lifecycle_body,lifecycle_suite,lifecycle_test \
+#   COVERED_FILES=5000 FILES_PER_TEST=50 LIFECYCLE_TESTS=1000 \
+#     TESTS_PER_SUITE=100 CONTEXT_FILES=0 CUSTOM_FILES=3000 TEST_CUSTOM_FILES=0 \
+#     STATIC_DEPENDENCIES_PER_FILE=50 COVERAGE_SEED=12345 \
+#     PROCESS_RELATIVE_PREFIX=components/application \
+#     SCENARIOS=lifecycle_test,lifecycle_test_prefixed_custom,lifecycle_test_prefixed_absolute_custom \
 #     bundle exec ruby benchmarks/test_impact_analysis_overhead.rb
 #
 # Compare MessagePack's native all-absolute path with its relative-path and
@@ -112,6 +113,7 @@ module TestImpactAnalysisOverheadBenchmark
   EMPTY_FILES = [].freeze
   EMPTY_STATIC_DEPENDENCIES = {}.freeze
   STATIC_DEPENDENCIES_THREAD_KEY = :tia_benchmark_static_dependencies
+  RELATIVE_PATH_PREFIX_THREAD_KEY = :tia_benchmark_relative_path_prefix
 
   # Keeps synthetic dependency data inside the benchmark while executing the
   # production Component enrichment method unchanged.
@@ -132,10 +134,24 @@ module TestImpactAnalysisOverheadBenchmark
 
   Datadog::CI::SourceCode::StaticDependencies.singleton_class.prepend(SyntheticStaticDependencies)
 
+  # Lets the benchmark exercise a process running from a subdirectory without
+  # changing the host process cwd. Coverage::Files snapshots the value before
+  # handing an event to the asynchronous writer.
+  module SyntheticRelativePathPrefix
+    def relative_path_prefix
+      Thread.current[RELATIVE_PATH_PREFIX_THREAD_KEY] || super
+    end
+  end
+
+  Datadog::CI::Git::LocalRepository.singleton_class.prepend(SyntheticRelativePathPrefix)
+
   SCENARIOS = %w[
     lifecycle_body
     lifecycle_suite
     lifecycle_test
+    lifecycle_test_absolute_custom
+    lifecycle_test_prefixed_custom
+    lifecycle_test_prefixed_absolute_custom
     lifecycle_test_no_context
     lifecycle_test_no_context_merge
     lifecycle_test_no_custom
@@ -145,7 +161,10 @@ module TestImpactAnalysisOverheadBenchmark
     lifecycle_test_late_fallback
     packer_fast_absolute
     packer_fast_relative
+    packer_fast_relative_prefixed
+    packer_fast_absolute_prefixed
     packer_late_fallback
+    packer_late_fallback_prefixed
     body
     native_suite_no_alloc
     native_suite_alloc
@@ -179,9 +198,12 @@ module TestImpactAnalysisOverheadBenchmark
       TESTS=60000                  tests executed by native scenarios
       COVERED_FILES=5000           distinct generated Ruby source paths
       FILES_PER_TEST=10            generated files executed by each test
+      COVERAGE_SEED=12345          deterministic randomized suite permutations
+      PROCESS_RELATIVE_PREFIX=components/application
+                                   stable repository prefix when cwd is a subfolder
       FIXTURES_PER_FILE=5          fixture objects allocated in each file
-      CUSTOM_FILES=3000            suite-level custom files inherited per test
-      TEST_CUSTOM_FILES=0          additional custom files added by every test
+      CUSTOM_FILES=3000            relative suite-level custom files inherited per test
+      TEST_CUSTOM_FILES=0          additional relative custom files added by every test
       LIFECYCLE_TESTS=1000         tests executed by lifecycle scenarios
       TESTS_PER_SUITE=100          test spans inside each synthetic RSpec suite
       CONTEXT_FILES=5000           files covered by before(:context) fixtures per suite
@@ -201,6 +223,9 @@ module TestImpactAnalysisOverheadBenchmark
       lifecycle_body                span/body baseline; fixture setup remains outside spans
       lifecycle_suite               production suite callbacks + async encoding
       lifecycle_test                production per-test callbacks + async encoding
+      lifecycle_test_absolute_custom diagnostic control using equivalent absolute custom paths
+      lifecycle_test_prefixed_custom process-relative custom paths from a repository subfolder
+      lifecycle_test_prefixed_absolute_custom equivalent absolute-path control
       lifecycle_test_no_context     per-test mode without before(:context) coverage
       lifecycle_test_no_context_merge collect context fixtures but do not merge them into tests
       lifecycle_test_no_custom      per-test mode without custom impacted files
@@ -211,8 +236,11 @@ module TestImpactAnalysisOverheadBenchmark
 
     MessagePack fast-path scenarios:
       packer_fast_absolute         native coverage + all-absolute custom paths
-      packer_fast_relative         relative custom path forces primary-path slicing
+      packer_fast_relative         native coverage + repository-relative custom paths
+      packer_fast_relative_prefixed native coverage + process-relative custom paths from a subfolder
+      packer_fast_absolute_prefixed equivalent absolute-path control
       packer_late_fallback         unsupported final path repeats work in Ruby fallback
+      packer_late_fallback_prefixed same fallback with a non-empty process-relative prefix
 
     Primitive scenarios:
       body                         workload without coverage
@@ -239,12 +267,16 @@ module TestImpactAnalysisOverheadBenchmark
       :sample_seconds, :lifecycle_tests, :tests_per_suite, :context_files,
       :context_depth, :static_dependencies_per_file, :body_wait_us,
       :test_custom_variants, :custom_path_padding, :writer_buffer,
-      :writer_interval_ms
+      :writer_interval_ms, :coverage_seed, :process_relative_prefix
 
     def initialize(environment = ENV)
       @tests = read_integer(environment, "TESTS", 60_000, minimum: 1)
       @covered_files = read_integer(environment, "COVERED_FILES", 5_000, minimum: 1)
       @files_per_test = read_integer(environment, "FILES_PER_TEST", 10, minimum: 1)
+      @coverage_seed = read_integer(environment, "COVERAGE_SEED", 12_345, minimum: 0)
+      @process_relative_prefix = read_relative_path_prefix(
+        environment.fetch("PROCESS_RELATIVE_PREFIX", "components/application")
+      )
       @fixtures_per_file = read_integer(environment, "FIXTURES_PER_FILE", 5, minimum: 0)
       @custom_files = read_integer(environment, "CUSTOM_FILES", 3_000, minimum: 0)
       @test_custom_files = read_integer(environment, "TEST_CUSTOM_FILES", 0, minimum: 0)
@@ -310,6 +342,15 @@ module TestImpactAnalysisOverheadBenchmark
 
       scenarios
     end
+
+    def read_relative_path_prefix(value)
+      components = value.split(File::SEPARATOR).reject(&:empty?)
+      if value.start_with?(File::SEPARATOR) || components.any? { |component| [".", ".."].include?(component) }
+        raise "PROCESS_RELATIVE_PREFIX must be a normalized relative path"
+      end
+
+      components.empty? ? "" : "#{components.join(File::SEPARATOR)}#{File::SEPARATOR}"
+    end
   end
 
   class FixtureRecord
@@ -334,6 +375,10 @@ module TestImpactAnalysisOverheadBenchmark
         File.join(GENERATED_FILES_ROOT, format("covered_%05d.rb", index))
       end.freeze
       @programs = generated_files.map { |path| compile_program(path) }.freeze
+      # Packer scenarios repeat one already-collected suite event to make the
+      # native serializer long enough to profile. Build that input once so the
+      # profile does not measure synthetic Hash construction on every repeat.
+      @suite_coverage = generated_files.to_h { |path| [path, true] }.freeze
       padding = "x" * configuration.custom_path_padding
       @suite_custom_files = Array.new(configuration.custom_files) do |index|
         custom_path("suite", padding, index)
@@ -348,6 +393,12 @@ module TestImpactAnalysisOverheadBenchmark
           test_custom_files.map { |path| "#{path}.variant-#{variant}" }.freeze
         end
       end.freeze
+      @absolute_suite_custom_files = {}
+      @absolute_test_custom_file_sets = {}
+      absolute_suite_custom_files
+      absolute_test_custom_files
+      absolute_suite_custom_files(configuration.process_relative_prefix)
+      absolute_test_custom_files(relative_path_prefix: configuration.process_relative_prefix)
       @late_fallback_test_custom_file_sets = @test_custom_file_sets.map do |files|
         next EMPTY_FILES if files.empty?
 
@@ -368,9 +419,7 @@ module TestImpactAnalysisOverheadBenchmark
 
     def execute_test(test_index)
       checksum = 0
-      first_file = (test_index * @configuration.files_per_test) % @programs.size
-      @configuration.files_per_test.times do |offset|
-        file_index = (first_file + offset) % @programs.size
+      test_file_indexes(test_index).each_with_index do |file_index, offset|
         checksum ^= @programs[file_index].call(
           FixtureRecord,
           test_index + offset,
@@ -405,16 +454,11 @@ module TestImpactAnalysisOverheadBenchmark
     end
 
     def coverage_for_test(test_index)
-      coverage = {}
-      first_file = (test_index * @configuration.files_per_test) % generated_files.size
-      @configuration.files_per_test.times do |offset|
-        coverage[generated_files[(first_file + offset) % generated_files.size]] = true
-      end
-      coverage
+      test_file_indexes(test_index).to_h { |file_index| [generated_files[file_index], true] }
     end
 
     def coverage_for_suite
-      generated_files.to_h { |path| [path, true] }
+      @suite_coverage
     end
 
     def merged_custom_files
@@ -425,12 +469,26 @@ module TestImpactAnalysisOverheadBenchmark
       @test_custom_file_sets[test_index % @test_custom_file_sets.size]
     end
 
+    def absolute_suite_custom_files(relative_path_prefix = "")
+      @absolute_suite_custom_files[relative_path_prefix] ||= suite_custom_files.map do |path|
+        File.join(ROOT, relative_path_prefix, path)
+      end.freeze
+    end
+
+    def absolute_test_custom_files(test_index = 0, relative_path_prefix: "")
+      file_sets = @absolute_test_custom_file_sets[relative_path_prefix] ||= @test_custom_file_sets.map do |files|
+        files.map { |path| File.join(ROOT, relative_path_prefix, path) }.freeze
+      end.freeze
+      file_sets[test_index % file_sets.size]
+    end
+
     def late_fallback_test_custom_files(test_index)
       @late_fallback_test_custom_file_sets[test_index % @late_fallback_test_custom_file_sets.size]
     end
 
-    def absolute_custom_files
-      @absolute_custom_files ||= merged_custom_files.map { |path| File.join(ROOT, path) }.freeze
+    def absolute_custom_files(relative_path_prefix = "")
+      absolute_suite_custom_files(relative_path_prefix) |
+        absolute_test_custom_files(relative_path_prefix: relative_path_prefix)
     end
 
     def late_fallback_custom_files
@@ -444,6 +502,23 @@ module TestImpactAnalysisOverheadBenchmark
     end
 
     private
+
+    def test_file_indexes(test_index)
+      files_count = generated_files.size
+      return [0] if files_count == 1
+
+      suite_index = test_index / @configuration.tests_per_suite
+      test_index_in_suite = test_index % @configuration.tests_per_suite
+      random = Random.new(@configuration.coverage_seed + suite_index)
+      first_file = random.rand(files_count)
+      step = random.rand(1...files_count)
+      step = (step + 1) % files_count until step.gcd(files_count) == 1
+      first_sequence_index = test_index_in_suite * @configuration.files_per_test
+
+      Array.new(@configuration.files_per_test) do |offset|
+        (first_file + ((first_sequence_index + offset) * step)) % files_count
+      end
+    end
 
     def custom_path(scope, padding, index)
       components = ["custom", scope]
@@ -588,7 +663,14 @@ module TestImpactAnalysisOverheadBenchmark
     def lock_custom_impacted_files
       return @custom_impacted_files if @custom_impacted_files.frozen?
 
-      @custom_impacted_files = (@inherited_custom_impacted_files | @custom_impacted_files).freeze
+      if @custom_impacted_files.empty? && @inherited_custom_impacted_files.frozen?
+        @custom_impacted_files = @inherited_custom_impacted_files
+        return @custom_impacted_files
+      end
+
+      @custom_impacted_files = (
+        @inherited_custom_impacted_files | @custom_impacted_files
+      ).freeze
     end
   end
 
@@ -827,6 +909,28 @@ module TestImpactAnalysisOverheadBenchmark
       run_lifecycle(mode: Datadog::CI::Ext::Test::TIATestSkippingMode::TEST)
     end
 
+    def lifecycle_test_absolute_custom
+      run_lifecycle(
+        mode: Datadog::CI::Ext::Test::TIATestSkippingMode::TEST,
+        use_absolute_custom_files: true
+      )
+    end
+
+    def lifecycle_test_prefixed_custom
+      run_lifecycle(
+        mode: Datadog::CI::Ext::Test::TIATestSkippingMode::TEST,
+        relative_path_prefix: @configuration.process_relative_prefix
+      )
+    end
+
+    def lifecycle_test_prefixed_absolute_custom
+      run_lifecycle(
+        mode: Datadog::CI::Ext::Test::TIATestSkippingMode::TEST,
+        relative_path_prefix: @configuration.process_relative_prefix,
+        use_absolute_custom_files: true
+      )
+    end
+
     def lifecycle_test_no_context
       run_lifecycle(
         mode: Datadog::CI::Ext::Test::TIATestSkippingMode::TEST,
@@ -877,15 +981,44 @@ module TestImpactAnalysisOverheadBenchmark
     end
 
     def packer_fast_absolute
-      run_test_serialization(custom_files: @workload.absolute_custom_files, suite_coverage: true)
+      with_relative_path_prefix("") do
+        run_test_serialization(custom_files: @workload.absolute_custom_files, suite_coverage: true)
+      end
     end
 
     def packer_fast_relative
-      run_test_serialization(custom_files: @workload.merged_custom_files, suite_coverage: true)
+      with_relative_path_prefix("") do
+        run_test_serialization(custom_files: @workload.merged_custom_files, suite_coverage: true)
+      end
+    end
+
+    def packer_fast_relative_prefixed
+      with_relative_path_prefix(@configuration.process_relative_prefix) do
+        run_test_serialization(custom_files: @workload.merged_custom_files, suite_coverage: true)
+      end
+    end
+
+    def packer_fast_absolute_prefixed
+      prefix = @configuration.process_relative_prefix
+      with_relative_path_prefix(prefix) do
+        run_test_serialization(
+          custom_files: @workload.absolute_custom_files(prefix),
+          suite_coverage: true
+        )
+      end
     end
 
     def packer_late_fallback
       run_test_serialization(custom_files: @workload.late_fallback_custom_files, suite_coverage: true)
+    end
+
+    def packer_late_fallback_prefixed
+      with_relative_path_prefix(@configuration.process_relative_prefix) do
+        run_test_serialization(
+          custom_files: @workload.late_fallback_custom_files,
+          suite_coverage: true
+        )
+      end
     end
 
     def body
@@ -1029,9 +1162,13 @@ module TestImpactAnalysisOverheadBenchmark
       writer_mode: :async,
       use_allocation_tracing: true,
       use_late_fallback_custom_files: false,
+      use_absolute_custom_files: false,
+      relative_path_prefix: "",
       lifecycle_suites: @configuration.lifecycle_suites,
       tests_per_suite: @configuration.tests_per_suite
     )
+      previous_relative_path_prefix = Thread.current[RELATIVE_PATH_PREFIX_THREAD_KEY]
+      Thread.current[RELATIVE_PATH_PREFIX_THREAD_KEY] = relative_path_prefix
       Thread.current[:dd_coverage_collector] = nil
       static_dependencies = @workload.static_dependencies_map
       unless static_dependencies.empty?
@@ -1058,7 +1195,15 @@ module TestImpactAnalysisOverheadBenchmark
       finish_seconds = 0.0
       checksum = 0
       test_index = 0
-      suite_custom_files = include_custom_files ? @workload.suite_custom_files : EMPTY_FILES
+      suite_custom_files = if include_custom_files
+        if use_absolute_custom_files
+          @workload.absolute_suite_custom_files(relative_path_prefix)
+        else
+          @workload.suite_custom_files
+        end
+      else
+        EMPTY_FILES
+      end
 
       lifecycle_suites.times do |suite_index|
         suite = BenchmarkSuite.new(
@@ -1096,6 +1241,11 @@ module TestImpactAnalysisOverheadBenchmark
           if include_custom_files
             custom_files = if use_late_fallback_custom_files
               @workload.late_fallback_test_custom_files(test_index)
+            elsif use_absolute_custom_files
+              @workload.absolute_test_custom_files(
+                test_index,
+                relative_path_prefix: relative_path_prefix
+              )
             else
               @workload.test_custom_files(test_index)
             end
@@ -1135,6 +1285,7 @@ module TestImpactAnalysisOverheadBenchmark
       writer&.stop
       Thread.current[:dd_coverage_collector] = nil
       Thread.current[STATIC_DEPENDENCIES_THREAD_KEY] = nil
+      Thread.current[RELATIVE_PATH_PREFIX_THREAD_KEY] = previous_relative_path_prefix
     end
 
     def build_component(mode, writer, use_allocation_tracing, static_dependencies_tracking_enabled: false)
@@ -1154,6 +1305,14 @@ module TestImpactAnalysisOverheadBenchmark
 
     def monotonic_time
       Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    def with_relative_path_prefix(relative_path_prefix)
+      previous = Thread.current[RELATIVE_PATH_PREFIX_THREAD_KEY]
+      Thread.current[RELATIVE_PATH_PREFIX_THREAD_KEY] = relative_path_prefix
+      yield
+    ensure
+      Thread.current[RELATIVE_PATH_PREFIX_THREAD_KEY] = previous
     end
 
     def validate_suite_coverage(coverage)
@@ -1366,9 +1525,12 @@ module TestImpactAnalysisOverheadBenchmark
       puts "Tests: #{@configuration.tests}"
       puts "Covered files per suite: #{@configuration.covered_files}"
       puts "Covered files per test: #{@configuration.files_per_test}"
+      puts "Randomized suite coverage seed: #{@configuration.coverage_seed}"
+      prefix = @configuration.process_relative_prefix
+      puts "Process-relative subfolder prefix: #{prefix.empty? ? "(empty)" : prefix}"
       puts "Fixture allocations per covered file: #{@configuration.fixtures_per_file}"
-      puts "Inherited suite custom files per test: #{@configuration.custom_files}"
-      puts "Test-level custom files added per test: #{@configuration.test_custom_files}"
+      puts "Inherited relative suite custom files per test: #{@configuration.custom_files}"
+      puts "Relative test-level custom files added per test: #{@configuration.test_custom_files}"
       puts "Lifecycle tests: #{@configuration.lifecycle_tests} (#{@configuration.tests_per_suite} per suite)"
       puts "Context fixture files per context: #{@configuration.context_files}"
       puts "Nested context depth: #{@configuration.context_depth}"

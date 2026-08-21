@@ -702,14 +702,15 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         let(:static_dependency) do
           File.join(Datadog::CI::Git::LocalRepository.root, "app/models/account.rb")
         end
+        let(:native_coverage) { {native_file => true} }
         let(:collector) do
           instance_double(
             Datadog::CI::TestImpactAnalysis::Coverage::DDCov,
-            stop: {native_file => true}
+            stop: native_coverage
           )
         end
 
-        it "finds static dependencies only for native coverage files" do
+        it "keeps static dependency groups separate without mutating native coverage" do
           static_component = described_class.new(
             api: api,
             dd_env: "dd_env",
@@ -722,18 +723,22 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           allow(Datadog::CI::SourceCode::StaticDependencies).to receive(:populate!)
           expect(Datadog::CI::SourceCode::StaticDependencies)
             .to receive(:fetch_static_dependencies)
-            .once
+            .twice
             .with(native_file)
             .and_return(static_dependency => true)
 
           static_component.configure(remote_configuration, test_session)
           event = static_component.on_test_finished(test_span, context)
+          second_event = static_component.on_test_finished(test_span, context)
 
-          expect(event.inspect_coverage).to include(
-            custom_file => true,
-            native_file => true,
-            static_dependency => true
-          )
+          expect(native_coverage).to eq(native_file => true)
+          [event, second_event].each do |coverage_event|
+            expect(coverage_event.inspect_coverage).to include(
+              custom_file => true,
+              native_file => true,
+              static_dependency => true
+            )
+          end
         end
       end
     end
