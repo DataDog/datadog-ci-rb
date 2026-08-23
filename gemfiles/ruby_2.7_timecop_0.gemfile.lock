@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 3b3b038bd64a1822061ecf95c430f749b6454af6
+  revision: cf0d441e25476d5ce5260468a368a9e773f321f5
   branch: master
   specs:
     datadog (2.42.0.dev)
@@ -67,7 +67,7 @@ GEM
       prettyprint
     prettyprint (0.2.0)
     prism (1.9.0)
-    psych (5.4.0)
+    psych (5.5.0)
       date
       stringio
     public_suffix (5.1.1)
@@ -108,7 +108,7 @@ GEM
     thor (1.5.0)
     timecop (0.9.11)
     tsort (0.2.0)
-    webmock (3.26.2)
+    webmock (3.26.3)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
