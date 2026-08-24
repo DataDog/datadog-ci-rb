@@ -8,7 +8,7 @@ module Datadog
     module TestImpactAnalysis
       module Coverage
         # Keeps native coverage and custom impacted files together and
-        # normalizes them as one set.
+        # normalizes their paths for serialization.
         #
         # @internal
         class Files
@@ -33,9 +33,9 @@ module Datadog
           end
 
           # Writes the complete MessagePack files array. The native fast path
-          # combines absolute-path classification, immutable-root slicing,
-          # stable deduplication, and filename-entry packing. Any shape it does
-          # not support falls back before writing bytes.
+          # combines absolute-path classification, immutable-root slicing, and
+          # filename-entry packing. Any shape it does not support falls back
+          # before writing bytes.
           def write_to(packer)
             if FileSerialization.respond_to?(:pack_files) &&
                 (packed_files = FileSerialization.pack_files(
@@ -85,7 +85,7 @@ module Datadog
                 end
                 files << relative_file unless relative_file.empty?
               end
-              files.uniq
+              files
             end
           end
         end

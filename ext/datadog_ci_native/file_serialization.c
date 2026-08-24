@@ -13,11 +13,9 @@
 
 struct packed_files_context {
   VALUE root;
-  VALUE seen;
   VALUE packed;
   long root_len;
   uint32_t files_count;
-  bool direct_absolute;
   bool fast_path_supported;
 };
 
@@ -92,8 +90,6 @@ static bool packed_files_append_entry(struct packed_files_context *context,
     return false;
   }
 
-  VALUE relative_file = file;
-  VALUE dedup_file = file;
   long relative_len = RSTRING_LEN(file);
   long relative_offset = 0;
   const char *file_ptr = RSTRING_PTR(file);
@@ -117,15 +113,11 @@ static bool packed_files_append_entry(struct packed_files_context *context,
     if (relative_len == 0) {
       return true;
     }
-    if (context->direct_absolute) {
-      relative_offset = context->root_len + 1;
-    } else {
-      relative_file = rb_str_substr(file, context->root_len + 1, file_len);
-      dedup_file = relative_file;
-    }
+    relative_offset = context->root_len + 1;
   } else if (!additional_file) {
-    // Relative primary paths depend on cwd-to-root Pathname semantics. They
-    // are uncommon and retain the authoritative Ruby fallback.
+    // Production DDCov and static-dependency extraction only emit absolute
+    // paths after filtering them against the repository root. Keep the Ruby
+    // fallback for direct callers that violate this invariant.
     context->fast_path_supported = false;
     return false;
   }
@@ -133,17 +125,12 @@ static bool packed_files_append_entry(struct packed_files_context *context,
   if (relative_len == 0) {
     return true;
   }
-  if (rb_hash_lookup2(context->seen, dedup_file, Qundef) != Qundef) {
-    return true;
-  }
-  rb_hash_aset(context->seen, dedup_file, Qtrue);
 
-  int encoding_index = rb_enc_get_index(relative_file);
+  int encoding_index = rb_enc_get_index(file);
   bool binary = encoding_index == rb_ascii8bit_encindex();
   if (!binary && encoding_index != rb_utf8_encindex() &&
       encoding_index != rb_usascii_encindex() &&
-      (!rb_enc_str_asciicompat_p(relative_file) ||
-       !string_bytes_are_ascii(relative_file))) {
+      (!rb_enc_str_asciicompat_p(file) || !string_bytes_are_ascii(file))) {
     context->fast_path_supported = false;
     return false;
   }
@@ -159,9 +146,8 @@ static bool packed_files_append_entry(struct packed_files_context *context,
              sizeof(filename_entry_prefix));
   packed_files_append_string_header(context->packed, (uint32_t)relative_len,
                                     binary);
-  const char *relative_ptr = RSTRING_PTR(relative_file) + relative_offset;
+  const char *relative_ptr = RSTRING_PTR(file) + relative_offset;
   rb_str_cat(context->packed, relative_ptr, relative_len);
-  RB_GC_GUARD(relative_file);
   context->files_count++;
   return true;
 }
@@ -172,24 +158,6 @@ static int pack_primary_file_i(VALUE file, VALUE _value,
       (struct packed_files_context *)context_value;
   return packed_files_append_entry(context, file, false) ? ST_CONTINUE
                                                          : ST_STOP;
-}
-
-static bool packed_file_is_absolute(VALUE file, bool additional_file) {
-  if (file == Qnil && !additional_file) {
-    return true;
-  }
-  return RB_TYPE_P(file, T_STRING) && rb_obj_class(file) == rb_cString &&
-         RSTRING_LEN(file) > 0 && RSTRING_PTR(file)[0] == '/';
-}
-
-static int detect_absolute_primary_file_i(VALUE file, VALUE _value,
-                                          VALUE all_absolute_value) {
-  bool *all_absolute = (bool *)all_absolute_value;
-  if (!packed_file_is_absolute(file, false)) {
-    *all_absolute = false;
-    return ST_STOP;
-  }
-  return ST_CONTINUE;
 }
 
 static void
@@ -233,22 +201,13 @@ static VALUE file_serialization_pack_files(VALUE module, VALUE primary_files,
     return Qnil;
   }
 
-  bool all_absolute = true;
-  rb_hash_foreach(primary_files, detect_absolute_primary_file_i,
-                  (VALUE)&all_absolute);
   long additional_files_len = RARRAY_LEN(additional_files);
-  for (long i = 0; all_absolute && i < additional_files_len; i++) {
-    all_absolute =
-        packed_file_is_absolute(rb_ary_entry(additional_files, i), true);
-  }
 
   struct packed_files_context context = {
       .root = root,
-      .seen = rb_hash_new(),
       .packed = rb_str_buf_new(4096),
       .root_len = RSTRING_LEN(root),
       .files_count = 0,
-      .direct_absolute = all_absolute,
       .fast_path_supported = true};
   rb_str_resize(context.packed, 5);
 

@@ -843,7 +843,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:code_coverage_enabled) { true }
     end
 
-    it "normalizes documented path inputs when tests run from a subfolder" do
+    it "serializes documented path inputs when tests run from a subfolder" do
       repository_root = Datadog::CI::Git::LocalRepository.root
       working_directory = __dir__
       expected_absolute_file = "app/frontend/absolute/user_profile.tsx"
@@ -911,7 +911,7 @@ RSpec.describe "RSpec instrumentation" do
         {"filename" => expected_explicit_cwd_file},
         {"filename" => expected_shared_file}
       )
-      expect(payload.fetch("files").count { |file| file["filename"] == expected_shared_file }).to eq(1)
+      expect(payload.fetch("files").count { |file| file["filename"] == expected_shared_file }).to eq(2)
       expect(payload.fetch("files")).not_to include({"filename" => "outside.js"}, {"filename" => ""})
     end
 

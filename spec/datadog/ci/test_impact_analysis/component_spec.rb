@@ -761,7 +761,9 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         expect(Datadog::CI::Git::LocalRepository).not_to have_received(:relative_to_root)
 
         payload = MessagePack.unpack(MessagePack.pack(event))
-        expect(payload.fetch("files")).to eq([{"filename" => repository_relative_file}])
+        expect(payload.fetch("files")).to eq(
+          Array.new(2) { {"filename" => repository_relative_file} }
+        )
       end
 
       it_behaves_like "emits telemetry metric",
