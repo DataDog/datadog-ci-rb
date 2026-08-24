@@ -459,13 +459,11 @@ module Datadog
         def enrich_coverage_with_static_dependencies(coverage)
           return unless @static_dependencies_tracking_enabled
 
-          static_dependencies_map = {}
-          coverage.each_key do |file|
-            static_dependencies_map.merge!(
+          coverage.keys.each do |file|
+            coverage.merge!(
               Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
             )
           end
-          coverage.merge!(static_dependencies_map)
         end
 
         def ensure_test_source_covered(test_source_file, coverage)
@@ -493,9 +491,8 @@ module Datadog
 
           enrich_coverage_with_static_dependencies(coverage)
 
-          # Avoid normalizing and deduplicating paths on the test thread. The
-          # writer does that when it serializes the event. Telemetry only needs
-          # an estimate and may count overlaps between the two collections.
+          # Avoid normalizing paths on the test thread. The writer serializes
+          # each entry and telemetry only needs the resulting entry count.
           Telemetry.code_coverage_files(coverage.size + custom_impacted_files.size)
 
           files = Coverage::Files.new(coverage, custom_impacted_files)

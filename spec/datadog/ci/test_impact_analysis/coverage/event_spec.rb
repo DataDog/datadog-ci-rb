@@ -234,7 +234,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         )
       end
 
-      it "includes impacted files without duplicating existing coverage" do
+      it "appends impacted files after existing coverage" do
         expect(msgpack_json).to eq(
           {
             "test_session_id" => 3,
@@ -242,7 +242,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
             "span_id" => 1,
             "files" => [
               {"filename" => "file.rb"},
-              {"filename" => "file.js"}
+              {"filename" => "file.js"},
+              {"filename" => "file.rb"}
             ]
           }
         )
@@ -262,12 +263,16 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         )
       end
 
-      it "deduplicates files across native, test, and suite coverage" do
-        expect(msgpack_json.fetch("files")).to contain_exactly(
-          {"filename" => "file.rb"},
-          {"filename" => "test.js"},
-          {"filename" => "shared.js"},
-          {"filename" => "suite.js"}
+      it "preserves the impacted file list after native coverage" do
+        expect(msgpack_json.fetch("files")).to eq(
+          [
+            {"filename" => "file.rb"},
+            {"filename" => "test.js"},
+            {"filename" => "shared.js"},
+            {"filename" => "suite.js"},
+            {"filename" => "shared.js"},
+            {"filename" => "file.rb"}
+          ]
         )
       end
     end
@@ -290,13 +295,13 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
         )
       end
 
-      it "normalizes and emits the repository-relative path once" do
+      it "normalizes and emits every file" do
         expect(msgpack_json.fetch("files")).to eq(
-          [{"filename" => repository_relative_file}]
+          Array.new(3) { {"filename" => repository_relative_file} }
         )
       end
 
-      it "also deduplicates relative native coverage against an absolute impacted path" do
+      it "uses the same append-only behavior in the Ruby fallback" do
         event = described_class.new(
           test_id: test_id,
           test_suite_id: test_suite_id,
@@ -309,7 +314,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
 
         payload = MessagePack.unpack(MessagePack.pack(event))
         expect(payload.fetch("files")).to eq(
-          [{"filename" => repository_relative_file}]
+          Array.new(2) { {"filename" => repository_relative_file} }
         )
       end
     end
@@ -343,11 +348,13 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
 
     it "matches legacy MessagePack bytes for native and custom paths" do
       root = Datadog::CI::Git::LocalRepository.root
-      absolute_native = File.join(root, "app/models/user.rb")
+      native_relative = "app/models/user.rb"
+      absolute_native = File.join(root, native_relative)
       binary_file = "frontend/binary-\xFF.js".b
       long_file = "frontend/#{"x" * 300}.js"
       custom_files = [
         "frontend/app.js",
+        native_relative,
         absolute_native,
         "frontend/app.js",
         "frontend/emoji-❤️.js",
