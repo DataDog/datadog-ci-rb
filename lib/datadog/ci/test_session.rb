@@ -14,6 +14,12 @@ module Datadog
     class TestSession < ConcurrentSpan
       attr_accessor :estimated_total_tests_count, :distributed
 
+      def initialize(tracer_span)
+        super
+
+        @distributed = false
+      end
+
       # Finishes the current test session.
       # @return [void]
       def finish

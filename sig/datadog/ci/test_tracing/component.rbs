@@ -43,7 +43,7 @@ module Datadog
 
         def trace: (String span_name, ?type: String, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[Symbol | String, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool, ?local_test_suites_mode: bool) -> Datadog::CI::TestSession
+        def start_test_session: (?service: String?, ?tags: Hash[Symbol | String, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool?, ?local_test_suites_mode: bool) -> Datadog::CI::TestSession
 
         def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestModule
 

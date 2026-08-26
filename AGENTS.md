@@ -130,6 +130,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 
 - All changes should be covered by corresponding tests
 - Place tests in the `spec/datadog/ci` folder
+- Never monkey-patch production code in tests. Do not use techniques such as `prepend`, reopening production classes or modules, or replacing production singleton methods; exercise production code through its normal interfaces instead.
 - Do not use `instance_variable_set` or `instance_variable_get` in tests; use mocking or explicit APIs when needed
 - Do not make changes to `release_gem_spec.rb` if not asked
 - Do not use focused tests feature (fit, fdescribe)
