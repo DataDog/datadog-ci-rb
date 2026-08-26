@@ -141,6 +141,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
         context "is enabled" do
           let(:enabled) { true }
 
+          context "when DD_SYMBOL_DATABASE_UPLOAD_ENABLED is true" do
+            around do |example|
+              ClimateControl.modify("DD_SYMBOL_DATABASE_UPLOAD_ENABLED" => "true") { example.run }
+            end
+
+            it "disables Symbol Database upload" do
+              expect(settings.symbol_database.enabled).to be(false)
+            end
+          end
+
           it "shuts down Test Optimization components before telemetry" do
             shutdown_order = []
             allow(components.test_impact_analysis).to receive(:shutdown!) { shutdown_order << :test_impact_analysis }
@@ -512,6 +522,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
         context "is disabled" do
           let(:enabled) { false }
           let(:agentless_enabled) { false }
+
+          context "when DD_SYMBOL_DATABASE_UPLOAD_ENABLED is true" do
+            around do |example|
+              ClimateControl.modify("DD_SYMBOL_DATABASE_UPLOAD_ENABLED" => "true") { example.run }
+            end
+
+            it "leaves Symbol Database upload enabled" do
+              expect(settings.symbol_database.enabled).to be(true)
+            end
+          end
 
           it do
             expect(settings.tracing.test_mode)

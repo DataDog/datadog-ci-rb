@@ -84,6 +84,9 @@ module Datadog
         end
 
         def activate_ci!(settings)
+          # Symbol Database upload is not supported in CI mode. Older datadog versions do not expose this setting.
+          settings.symbol_database.enabled = false if settings.respond_to?(:symbol_database)
+
           unless settings.tracing.enabled
             Datadog.logger.error(
               "Test Optimization requires tracing to be enabled. Disabling Test Optimization. " \
