@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../../ext/test"
+require_relative "../../utils/file_storage"
 require_relative "../rspec/ext"
 
 module Datadog
@@ -17,7 +18,7 @@ module Datadog
               # only rspec runner is supported for now
               return super if @runner != ::ParallelTests::RSpec::Runner
 
-              begin
+              Utils::FileStorage.with_new_namespace do |storage_namespace|
                 # Preserve activation explicitly for the RSpec worker commands.
                 # Starting the distributed parent session removes inherited
                 # activation before unrelated child processes can receive it.
@@ -35,6 +36,7 @@ module Datadog
 
                 options[:env] ||= {}
                 options[:env][CI::Ext::Settings::ENV_TEST_VISIBILITY_DRB_SERVER_URI] = test_tracing_component.context_service_uri
+                options[:env][Utils::FileStorage::ENV_NAMESPACE] = storage_namespace
                 options[:env]["RUBYOPT"] ||= worker_rubyopt if worker_rubyopt
 
                 super
