@@ -321,8 +321,6 @@ module Datadog
           DeprecatedTotalCoverageMetric.extract_lines_pct(test_session)
 
           Telemetry.event_finished(test_session)
-
-          Utils::FileStorage.cleanup
         end
 
         def on_test_module_finished(test_module)

@@ -10,6 +10,8 @@ module Datadog
       # FileStorage module provides functionality for storing and retrieving arbitrary Ruby objects in a temp file
       # to share them between processes.
       module FileStorage
+        class MissingNamespaceError < StandardError; end
+
         TEMP_DIR = File.join(Dir.tmpdir, "datadog-ci-storage")
         ENV_NAMESPACE = "DD_CIVISIBILITY_PARALLEL_TESTS_RUN_ID"
 
@@ -44,8 +46,8 @@ module Datadog
           nil
         end
 
-        def self.cleanup
-          directory = storage_dir
+        def self.cleanup(namespace)
+          directory = storage_dir(namespace)
           return false unless Dir.exist?(directory)
 
           FileUtils.rm_rf(directory)
@@ -54,6 +56,7 @@ module Datadog
           Datadog.logger.error("Failed to cleanup storage directory: #{e.class}")
           false
         end
+        private_class_method :cleanup
 
         def self.with_new_namespace
           previous_namespace = ENV[ENV_NAMESPACE]
@@ -62,7 +65,7 @@ module Datadog
 
           yield namespace
         ensure
-          cleanup if namespace && ENV[ENV_NAMESPACE] == namespace
+          cleanup(namespace) if namespace
 
           if previous_namespace
             ENV[ENV_NAMESPACE] = previous_namespace
@@ -80,9 +83,10 @@ module Datadog
           File.join(storage_dir, "dd-ci-#{sanitized_key}.dat")
         end
 
-        def self.storage_dir
-          namespace = ENV[ENV_NAMESPACE]
-          return TEMP_DIR unless namespace
+        def self.storage_dir(namespace = ENV[ENV_NAMESPACE])
+          if namespace.nil? || namespace.empty?
+            raise MissingNamespaceError, "File storage namespace is not set"
+          end
 
           sanitized_namespace = namespace.gsub(/[^a-zA-Z0-9_-]/, "_")
           File.join(TEMP_DIR, sanitized_namespace)

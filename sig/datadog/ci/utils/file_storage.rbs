@@ -2,6 +2,9 @@ module Datadog
   module CI
     module Utils
       module FileStorage
+        class MissingNamespaceError < StandardError
+        end
+
         TEMP_DIR: String
         ENV_NAMESPACE: String
 
@@ -9,15 +12,17 @@ module Datadog
 
         def self.retrieve: (String key) -> Hash[Symbol, untyped]?
 
-        def self.cleanup: () -> bool
-
         def self.with_new_namespace: [T] () { (String) -> T } -> T
 
         def self.ensure_temp_dir_exists: () -> void
 
         def self.file_path_for: (String key) -> String
 
-        def self.storage_dir: () -> String
+        def self.storage_dir: (?String namespace) -> String
+
+        private
+
+        def self.cleanup: (String namespace) -> bool
       end
     end
   end

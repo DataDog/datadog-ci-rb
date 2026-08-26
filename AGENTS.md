@@ -106,6 +106,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 
 - We use Ruby 2.7 syntax
 - Use exceptions for exceptional cases, not for control flow.
+- Instrumentation must never raise its own errors into customer test processes. Log internal failures at warn or error level and degrade gracefully instead.
 - Implement proper error logging and user-friendly messages.
 - Do not use `instance_variable_set` or `instance_variable_get`; add explicit APIs instead.
 

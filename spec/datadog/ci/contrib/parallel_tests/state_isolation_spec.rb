@@ -179,6 +179,7 @@ RSpec.describe "parallel_tests state isolation" do
     {
       "TMPDIR" => shared_tmpdir,
       "RUBYOPT" => rubyopt,
+      Datadog::CI::Utils::FileStorage::ENV_NAMESPACE => nil,
       "DD_PARALLEL_TEST_LIFECYCLE_BARRIER" => barrier_path,
       "DD_SERVICE" => "parallel-tests-lifecycle",
       "DD_ENV" => "test",
@@ -194,6 +195,61 @@ RSpec.describe "parallel_tests state isolation" do
       "DD_TEST_MANAGEMENT_ENABLED" => "0",
       "DD_INSTRUMENTATION_TELEMETRY_ENABLED" => "0"
     }
+  end
+
+  def write_plain_suite(root)
+    suite = File.join(root, "plain")
+    FileUtils.mkdir_p(suite)
+    File.write(
+      File.join(suite, "plain_spec.rb"),
+      <<~RUBY
+        RSpec.describe "PlainSession" do
+          it("passes") { expect(1 + 1).to eq(2) }
+        end
+      RUBY
+    )
+    suite
+  end
+
+  def plain_environment(shared_tmpdir, backend_url)
+    rubyopt = [
+      ENV["RUBYOPT"],
+      "-I#{File.expand_path("../../../../..", __dir__)}",
+      "-rdatadog/ci/auto_instrument"
+    ].compact.join(" ")
+
+    {
+      "TMPDIR" => shared_tmpdir,
+      "RUBYOPT" => rubyopt,
+      "TEST_ENV_NUMBER" => nil,
+      Datadog::CI::Utils::FileStorage::ENV_NAMESPACE => nil,
+      "DD_SERVICE" => "plain-session",
+      "DD_ENV" => "test",
+      "DD_GIT_REPOSITORY_URL" => "https://example.test/plain-session.git",
+      "DD_GIT_COMMIT_SHA" => "b" * 40,
+      "DD_CIVISIBILITY_AGENTLESS_ENABLED" => "1",
+      "DD_CIVISIBILITY_AGENTLESS_URL" => backend_url,
+      "DD_API_KEY" => "unused-fake-key",
+      "DD_CIVISIBILITY_ITR_ENABLED" => "0",
+      "DD_CIVISIBILITY_GIT_METADATA_UPLOAD_ENABLED" => "0",
+      "DD_CIVISIBILITY_FLAKY_RETRY_ENABLED" => "0",
+      "DD_CIVISIBILITY_EARLY_FLAKE_DETECTION_ENABLED" => "0",
+      "DD_TEST_MANAGEMENT_ENABLED" => "0",
+      "DD_INSTRUMENTATION_TELEMETRY_ENABLED" => "0"
+    }
+  end
+
+  def run_rspec(environment, suite_path)
+    Open3.capture3(
+      environment,
+      Gem.ruby,
+      Gem.bin_path("rspec-core", "rspec"),
+      "--options",
+      File::NULL,
+      "--format",
+      "progress",
+      suite_path
+    )
   end
 
   def start_backend(run: nil, target_suite: nil)
@@ -310,6 +366,21 @@ RSpec.describe "parallel_tests state isolation" do
     false
   end
 
+  def wait_for_namespace(shared_tmpdir)
+    storage_root = File.join(shared_tmpdir, "datadog-ci-storage")
+
+    Timeout.timeout(30) do
+      loop do
+        namespace = Dir.children(storage_root).first if Dir.exist?(storage_root)
+        candidate = File.join(storage_root, namespace) if namespace
+        state_file = File.join(candidate, "dd-ci-remote_component_state.dat") if candidate
+        break candidate if state_file && File.file?(state_file)
+
+        sleep(0.01)
+      end
+    end
+  end
+
   it "does not mix settings and test management state between concurrent invocations sharing TMPDIR" do
     Dir.mktmpdir("dd-ci-parallel-tests-collision", "/tmp") do |root|
       shared_tmpdir = File.join(root, "tmp")
@@ -376,17 +447,7 @@ RSpec.describe "parallel_tests state isolation" do
         [worker, {pid: pid, socket: socket}]
       end
 
-      storage_root = File.join(shared_tmpdir, "datadog-ci-storage")
-      namespace_dir = Timeout.timeout(30) do
-        loop do
-          namespace = Dir.children(storage_root).first if Dir.exist?(storage_root)
-          candidate = File.join(storage_root, namespace) if namespace
-          state_file = File.join(candidate, "dd-ci-remote_component_state.dat") if candidate
-          break candidate if state_file && File.file?(state_file)
-
-          sleep(0.01)
-        end
-      end
+      namespace_dir = wait_for_namespace(shared_tmpdir)
 
       workers.fetch("fast").fetch(:socket).puts("continue")
       wait_for_process_exit(workers.fetch("fast").fetch(:pid))
@@ -399,6 +460,46 @@ RSpec.describe "parallel_tests state isolation" do
       status, stdout, stderr = finish_parallel_run(run)
 
       expect(status).to be_success, "Run failed:\n#{stdout}\n#{stderr}"
+      expect(File.exist?(namespace_dir)).to be(false)
+    ensure
+      workers&.each_value { |worker| worker.fetch(:socket).close }
+      server&.close
+      backend&.close
+      backend_thread&.join(5)
+      terminate_parallel_run(run)
+    end
+  end
+
+  it "does not let a plain test session remove state owned by a parallel parent session" do
+    Dir.mktmpdir("dd-ci-plain-session-lifecycle", "/tmp") do |root|
+      shared_tmpdir = File.join(root, "tmp")
+      FileUtils.mkdir_p(shared_tmpdir)
+      parallel_suite = write_lifecycle_suite(root)
+      plain_suite = write_plain_suite(root)
+
+      barrier_path = File.join(root, "barrier.sock")
+      server = UNIXServer.new(barrier_path)
+      backend, backend_thread, backend_url = start_backend
+      run = start_parallel_run(lifecycle_environment(shared_tmpdir, barrier_path, backend_url), parallel_suite)
+
+      workers = 2.times.map { accept_worker(server) }.to_h do |worker, pid, socket|
+        [worker, {pid: pid, socket: socket}]
+      end
+      namespace_dir = wait_for_namespace(shared_tmpdir)
+
+      plain_stdout, plain_stderr, plain_status = run_rspec(
+        plain_environment(shared_tmpdir, backend_url),
+        plain_suite
+      )
+
+      expect(plain_status).to be_success, "Plain run failed:\n#{plain_stdout}\n#{plain_stderr}"
+      expect(run.fetch(:wait_thread)).to be_alive
+      expect(File.directory?(namespace_dir)).to be(true)
+
+      workers.each_value { |worker| worker.fetch(:socket).puts("continue") }
+      status, stdout, stderr = finish_parallel_run(run)
+
+      expect(status).to be_success, "Parallel run failed:\n#{stdout}\n#{stderr}"
       expect(File.exist?(namespace_dir)).to be(false)
     ensure
       workers&.each_value { |worker| worker.fetch(:socket).close }
