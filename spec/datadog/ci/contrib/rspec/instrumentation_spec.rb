@@ -294,6 +294,19 @@ RSpec.describe "RSpec instrumentation" do
       expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
+    it "keeps using the test tracing component selected before the example" do
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          it "replaces the global test tracing component" do
+            allow(Datadog.send(:components)).to receive(:test_tracing).and_return(Object.new)
+          end
+        end.run
+      end
+
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+    end
+
     context "catches failures" do
       def expect_failure
         expect(first_test_span).to have_fail_status

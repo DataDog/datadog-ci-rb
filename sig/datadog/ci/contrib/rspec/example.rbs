@@ -6,6 +6,7 @@ module Datadog
           def self.included: (untyped base) -> untyped
           module InstanceMethods : ::RSpec::Core::Example
             @skip_reporting: bool
+            @datadog_test_tracing_component: Datadog::CI::TestTracing::Component?
 
             @datadog_test_suite_description: String
 
