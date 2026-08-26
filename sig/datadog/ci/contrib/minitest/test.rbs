@@ -19,7 +19,18 @@ module Datadog
             include ::Minitest::Test::LifecycleHooks
             extend ClassMethods
 
+            @datadog_before_step_span: Datadog::CI::Span?
+            @datadog_before_step_failures_count: Integer
+            @datadog_after_step_span: Datadog::CI::Span?
+            @datadog_after_step_failures_count: Integer
+
             def run: () -> ::Minitest::Result
+
+            def before_setup: () -> untyped
+
+            def after_setup: () -> untyped
+
+            def before_teardown: () -> untyped
 
             def after_teardown: () -> untyped
 
@@ -32,6 +43,12 @@ module Datadog
             def start_datadog_test_suite_if_parallel: () -> Datadog::CI::TestSuite?
 
             def start_datadog_test: () -> Datadog::CI::Test?
+
+            def finish_datadog_before_step: () -> void
+
+            def finish_datadog_after_step: () -> void
+
+            def finish_datadog_step: (Datadog::CI::Span span, Integer failures_count) -> void
 
             def skip_datadog_suite: (Datadog::CI::TestSuite test_suite) -> ::Minitest::Result
 

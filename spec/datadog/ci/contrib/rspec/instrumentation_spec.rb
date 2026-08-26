@@ -266,9 +266,20 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "creates spans for example with instrumentation" do
+      active_span_names = []
+
       with_new_rspec_environment do
         RSpec.describe "some test" do
+          before do
+            active_span_names << Datadog::Tracing.active_span.name
+          end
+
+          after do
+            active_span_names << Datadog::Tracing.active_span.name
+          end
+
           it "foo" do
+            active_span_names << Datadog::Tracing.active_span.name
             Datadog::Tracing.trace("get_time") do
               Time.now
             end
@@ -276,8 +287,10 @@ RSpec.describe "RSpec instrumentation" do
         end.tap(&:run)
       end
 
+      expect(active_span_names).to eq(%w[before foo after])
       expect(test_spans).to have(1).items
-      expect(custom_spans).to have(1).items
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
+      expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
       expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
@@ -335,6 +348,7 @@ RSpec.describe "RSpec instrumentation" do
         end
 
         expect_failure
+        expect(custom_spans.find { |step_span| step_span.name == "before" }).to have_error
       end
 
       it "within after" do
@@ -351,6 +365,7 @@ RSpec.describe "RSpec instrumentation" do
         end
 
         expect_failure
+        expect(custom_spans.find { |step_span| step_span.name == "after" }).to have_error
       end
     end
 

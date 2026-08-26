@@ -193,6 +193,20 @@ module Datadog
             # Run method helpers
             # ============================================
 
+            def run_before_example
+              test_tracing_component.trace(Ext::BEFORE_STEP_SPAN_NAME, type: Ext::STEP_SPAN_TYPE) { super }
+            end
+
+            def run_after_example
+              exception_before_hooks = exception
+
+              test_tracing_component.trace(Ext::AFTER_STEP_SPAN_NAME, type: Ext::STEP_SPAN_TYPE) do |span|
+                result = super
+                span.failed!(exception: exception) if exception && exception != exception_before_hooks
+                result
+              end
+            end
+
             def build_test_tags
               # @type var tags : Hash[String, String]
               tags = {

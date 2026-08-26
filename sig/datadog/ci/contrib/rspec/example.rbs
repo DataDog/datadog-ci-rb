@@ -34,10 +34,13 @@ module Datadog
             def datadog_source_file: () -> String?
             def datadog_source_start: () -> Integer?
             def datadog_source_location_from_parent?: () -> bool
+            def exception: () -> Exception?
 
             private
 
             # Run method helpers
+            def run_before_example: () -> untyped
+            def run_after_example: () -> untyped
             def build_test_tags: () -> Hash[String, String]
             def handle_test_result: (Datadog::CI::Test? test_span, Exception? test_failure) -> Exception?
             def update_formatter_metadata: (Datadog::CI::Test? test_span) -> void

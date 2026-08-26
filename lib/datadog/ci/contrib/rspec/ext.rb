@@ -13,6 +13,10 @@ module Datadog
           ENV_ENABLED = "DD_TRACE_RSPEC_ENABLED"
           ENV_DATADOG_FORMATTER_ENABLED = "DD_TRACE_RSPEC_DATADOG_FORMATTER_ENABLED"
 
+          STEP_SPAN_TYPE = "step"
+          BEFORE_STEP_SPAN_NAME = "before"
+          AFTER_STEP_SPAN_NAME = "after"
+
           # Metadata keys
           METADATA_DD_RETRIES = :dd_retries
           METADATA_DD_RETRY_RESULTS = :dd_retry_results

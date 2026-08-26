@@ -33,7 +33,7 @@ RSpec.describe "Minitest instrumentation" do
 
       klass.new(:test_foo).run
 
-      expect(span.service).to eq("datadog-ci-rb")
+      expect(first_test_span.service).to eq("datadog-ci-rb")
     end
   end
 
@@ -66,34 +66,34 @@ RSpec.describe "Minitest instrumentation" do
 
       klass.new(:test_foo).run
 
-      expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-      expect(span.name).to eq("test_foo")
-      expect(span.resource).to eq("test_foo")
-      expect(span.service).to eq("ltest")
+      expect(first_test_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+      expect(first_test_span.name).to eq("test_foo")
+      expect(first_test_span.resource).to eq("test_foo")
+      expect(first_test_span.service).to eq("ltest")
 
-      expect(span).to have_test_tag(:name, "test_foo")
-      expect(span).to have_test_tag(
+      expect(first_test_span).to have_test_tag(:name, "test_foo")
+      expect(first_test_span).to have_test_tag(
         :suite,
         "SomeTest at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(:span_kind, "test")
-      expect(span).to have_test_tag(:type, "test")
-      expect(span).to have_test_tag(:framework, "minitest")
-      expect(span).to have_test_tag(
+      expect(first_test_span).to have_test_tag(:span_kind, "test")
+      expect(first_test_span).to have_test_tag(:type, "test")
+      expect(first_test_span).to have_test_tag(:framework, "minitest")
+      expect(first_test_span).to have_test_tag(
         :framework_version,
         integration.version.to_s
       )
 
-      expect(span).to have_pass_status
+      expect(first_test_span).to have_pass_status
 
-      expect(span).to have_test_tag(
+      expect(first_test_span).to have_test_tag(
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(:source_start, "63")
-      expect(span).to have_test_tag(:source_end, "64")
+      expect(first_test_span).to have_test_tag(:source_start, "63")
+      expect(first_test_span).to have_test_tag(:source_end, "64")
 
-      expect(span).to have_test_tag(
+      expect(first_test_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ci-app-libraries\"]"
       )
@@ -118,7 +118,7 @@ RSpec.describe "Minitest instrumentation" do
         klass.new("test_#{i}").run
       end
 
-      expect(spans).to have(num_tests).items
+      expect(test_spans).to have(num_tests).items
     end
 
     it "creates span for spec" do
@@ -134,11 +134,11 @@ RSpec.describe "Minitest instrumentation" do
       method_name = klass.runnable_methods.first
       klass.new(method_name).run
 
-      expect(span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
-      expect(span.resource).to eq(method_name)
-      expect(span.service).to eq("ltest")
-      expect(span).to have_test_tag(:name, method_name)
-      expect(span).to have_test_tag(
+      expect(first_test_span.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+      expect(first_test_span.resource).to eq(method_name)
+      expect(first_test_span.service).to eq("ltest")
+      expect(first_test_span).to have_test_tag(:name, method_name)
+      expect(first_test_span).to have_test_tag(
         :suite,
         "SomeSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
@@ -156,12 +156,12 @@ RSpec.describe "Minitest instrumentation" do
       method_name = klass.runnable_methods.first
       klass.new(method_name).run
 
-      expect(span).to have_test_tag(:name, method_name)
-      expect(span).to have_test_tag(
+      expect(first_test_span).to have_test_tag(:name, method_name)
+      expect(first_test_span).to have_test_tag(
         :suite,
         "SimpleModel at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(span).to have_test_tag(
+      expect(first_test_span).to have_test_tag(
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
@@ -185,35 +185,49 @@ RSpec.describe "Minitest instrumentation" do
         klass.new(method_name).run
       end
 
-      expect(spans).to have(num_specs).items
+      expect(test_spans).to have(num_specs).items
     end
 
     it "creates spans for example with instrumentation" do
+      active_span_names = []
+
       klass = Class.new(Minitest::Test) do
         def self.name
           "SomeTest"
         end
 
-        def test_foo
+        define_method(:setup) do
+          active_span_names << Datadog::Tracing.active_span.name
+        end
+
+        define_method(:test_foo) do
+          active_span_names << Datadog::Tracing.active_span.name
           Datadog::Tracing.trace("get_time") do
             Time.now
           end
+        end
+
+        define_method(:teardown) do
+          active_span_names << Datadog::Tracing.active_span.name
         end
       end
 
       klass.new(:test_foo).run
 
-      expect(spans).to have(2).items
+      expect(active_span_names).to eq(%w[before test_foo after])
+      expect(spans).to have(4).items
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
+      expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
       expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
     context "catches failures" do
       def expect_failure
-        expect(span).to have_fail_status
-        expect(span).to have_error
-        expect(span).to have_error_type
-        expect(span).to have_error_message
-        expect(span).to have_error_stack
+        expect(first_test_span).to have_fail_status
+        expect(first_test_span).to have_error
+        expect(first_test_span).to have_error_type
+        expect(first_test_span).to have_error_message
+        expect(first_test_span).to have_error_stack
       end
 
       it "within test" do
@@ -249,6 +263,7 @@ RSpec.describe "Minitest instrumentation" do
         klass.new(:test_foo).run
 
         expect_failure
+        expect(custom_spans.find { |step_span| step_span.name == "before" }).to have_error
       end
 
       it "within teardown" do
@@ -268,16 +283,17 @@ RSpec.describe "Minitest instrumentation" do
         klass.new(:test_foo).run
 
         expect_failure
+        expect(custom_spans.find { |step_span| step_span.name == "after" }).to have_error
       end
     end
 
     context "catches errors" do
       def expect_failure
-        expect(span).to have_fail_status
-        expect(span).to have_error
-        expect(span).to have_error_type
-        expect(span).to have_error_message
-        expect(span).to have_error_stack
+        expect(first_test_span).to have_fail_status
+        expect(first_test_span).to have_error
+        expect(first_test_span).to have_error_type
+        expect(first_test_span).to have_error_message
+        expect(first_test_span).to have_error_stack
       end
 
       it "within test" do
@@ -337,8 +353,8 @@ RSpec.describe "Minitest instrumentation" do
 
     context "catches skips" do
       def expect_skip
-        expect(span).to have_skip_status
-        expect(span).to_not have_error
+        expect(first_test_span).to have_skip_status
+        expect(first_test_span).to_not have_error
       end
 
       it "with reason" do
@@ -355,7 +371,7 @@ RSpec.describe "Minitest instrumentation" do
         klass.new(:test_foo).run
 
         expect_skip
-        expect(span).to have_test_tag(:skip_reason, "Skip!")
+        expect(first_test_span).to have_test_tag(:skip_reason, "Skip!")
       end
 
       it "without reason" do
@@ -372,7 +388,7 @@ RSpec.describe "Minitest instrumentation" do
         klass.new(:test_foo).run
 
         expect_skip
-        expect(span).to have_test_tag(:skip_reason, "Skipped, no message given")
+        expect(first_test_span).to have_test_tag(:skip_reason, "Skipped, no message given")
       end
 
       it "within test" do
@@ -519,7 +535,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "446")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "462")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ci-app-libraries\"]"
@@ -2066,10 +2082,10 @@ RSpec.describe "Minitest instrumentation" do
       expected_test_name = "test_generated OBJECT:Object on DATE with ARRAY"
       expected_suite_name = "GeneratedSuite OBJECT:Object at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
 
-      expect(span.name).to eq(expected_test_name)
-      expect(span.resource).to eq(expected_test_name)
-      expect(span).to have_test_tag(:name, expected_test_name)
-      expect(span).to have_test_tag(:suite, expected_suite_name)
+      expect(first_test_span.name).to eq(expected_test_name)
+      expect(first_test_span.resource).to eq(expected_test_name)
+      expect(first_test_span).to have_test_tag(:name, expected_test_name)
+      expect(first_test_span).to have_test_tag(:suite, expected_suite_name)
     end
 
     it "normalizes unstable Minitest::Spec generated method names" do
@@ -2089,10 +2105,10 @@ RSpec.describe "Minitest instrumentation" do
 
       expected_test_name = "test_0001_sees OBJECT:Object"
 
-      expect(span.name).to eq(expected_test_name)
-      expect(span.resource).to eq(expected_test_name)
-      expect(span).to have_test_tag(:name, expected_test_name)
-      expect(span).to have_test_tag(
+      expect(first_test_span.name).to eq(expected_test_name)
+      expect(first_test_span.resource).to eq(expected_test_name)
+      expect(first_test_span).to have_test_tag(:name, expected_test_name)
+      expect(first_test_span).to have_test_tag(
         :suite,
         "GeneratedSpec at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )

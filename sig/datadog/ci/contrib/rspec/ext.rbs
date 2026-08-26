@@ -9,6 +9,10 @@ module Datadog
           FRAMEWORK: String
           DEFAULT_SERVICE_NAME: String
 
+          STEP_SPAN_TYPE: String
+          BEFORE_STEP_SPAN_NAME: String
+          AFTER_STEP_SPAN_NAME: String
+
           METADATA_DD_RETRIES: Symbol
           METADATA_DD_RETRY_RESULTS: Symbol
           METADATA_DD_RETRY_REASON: Symbol
