@@ -106,6 +106,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 
 - We use Ruby 2.7 syntax
 - Use exceptions for exceptional cases, not for control flow.
+- Instrumentation must never raise its own errors into customer test processes. Log internal failures at warn or error level and degrade gracefully instead.
 - Implement proper error logging and user-friendly messages.
 - Do not use `instance_variable_set` or `instance_variable_get`; add explicit APIs instead.
 
@@ -130,6 +131,7 @@ The native extension is in `ext/` directory and compiled for each Ruby version.
 
 - All changes should be covered by corresponding tests
 - Place tests in the `spec/datadog/ci` folder
+- Never monkey-patch production code in tests. Do not use techniques such as `prepend`, reopening production classes or modules, or replacing production singleton methods; exercise production code through its normal interfaces instead.
 - Do not use `instance_variable_set` or `instance_variable_get` in tests; use mocking or explicit APIs when needed
 - Do not make changes to `release_gem_spec.rb` if not asked
 - Do not use focused tests feature (fit, fdescribe)

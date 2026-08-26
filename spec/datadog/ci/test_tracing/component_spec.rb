@@ -454,6 +454,18 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           expect(test_tracing.local_test_suites_mode).to be true
         end
 
+        it "starts a non-distributed session by default" do
+          expect(subject.distributed).to be(false)
+        end
+
+        context "when distributed is explicitly set" do
+          subject { test_tracing.start_test_session(service: service, tags: tags, distributed: true) }
+
+          it "sets distributed to the provided value" do
+            expect(subject.distributed).to be(true)
+          end
+        end
+
         context "when local_test_suites_mode is explicitly set" do
           subject { test_tracing.start_test_session(service: service, tags: tags, local_test_suites_mode: false) }
 
@@ -496,6 +508,19 @@ RSpec.describe Datadog::CI::TestTracing::Component do
 
             expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED)).to be_falsey
             expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_TEST_SESSION)).to be_falsey
+          end
+        end
+
+        context "when a distributed test session is already active" do
+          let(:existing_test_session) do
+            test_tracing.start_test_session(service: service, tags: tags, distributed: true)
+          end
+
+          before { existing_test_session }
+
+          it "preserves its distributed value when the argument is omitted" do
+            expect(subject).to equal(existing_test_session)
+            expect(subject.distributed).to be(true)
           end
         end
 

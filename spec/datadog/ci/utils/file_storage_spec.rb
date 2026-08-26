@@ -2,20 +2,33 @@ require "spec_helper"
 require "datadog/ci/utils/file_storage"
 
 RSpec.describe Datadog::CI::Utils::FileStorage do
-  let(:temp_dir) { described_class::TEMP_DIR }
+  let(:namespace) { "file-storage-spec-#{Process.pid}" }
+  let(:additional_namespaces) { [] }
+  let(:storage_root) { described_class::TEMP_DIR }
+  let(:temp_dir) { File.join(storage_root, namespace) }
   let(:test_key) { "test_key" }
   let(:test_value) { {"key" => "value", "array" => [1, 2, 3], "nested" => {"data" => true}} }
   let(:file_path) { File.join(temp_dir, "dd-ci-#{test_key}.dat") }
 
-  # Clean up any test files before and after tests
-  before(:each) do
-    described_class.cleanup
-    # Reset any previous logger stubs
-    allow(Datadog.logger).to receive(:error).and_call_original
+  around do |example|
+    previous_namespace = ENV[described_class::ENV_NAMESPACE]
+    FileUtils.rm_rf(temp_dir)
+    ENV[described_class::ENV_NAMESPACE] = namespace
+
+    example.run
+  ensure
+    ([namespace] + additional_namespaces).each do |owned_namespace|
+      FileUtils.rm_rf(described_class.storage_dir(owned_namespace))
+    end
+    if previous_namespace
+      ENV[described_class::ENV_NAMESPACE] = previous_namespace
+    else
+      ENV.delete(described_class::ENV_NAMESPACE)
+    end
   end
 
-  after(:each) do
-    described_class.cleanup
+  before do
+    allow(Datadog.logger).to receive(:error).and_call_original
   end
 
   describe ".store" do
@@ -71,7 +84,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
 
     context "when storing data fails" do
       before do
-        allow(File).to receive(:binwrite).and_raise(IOError.new("Test IO error"))
+        allow(File).to receive(:rename).and_raise(IOError.new("Test IO error"))
       end
 
       it "returns false on failure" do
@@ -79,7 +92,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs an error message" do
-        expect(Datadog.logger).to receive(:error).with(/Failed to store data for key 'test_key': IOError - Test IO error/).once
+        expect(Datadog.logger).to receive(:error).with("Failed to store data for key 'test_key': IOError").once
         described_class.store(test_key, test_value)
       end
     end
@@ -95,9 +108,59 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs an error message" do
-        expect(Datadog.logger).to receive(:error).with(/Failed to store data for key 'test_key': TypeError - can't dump anonymous class/).once
+        expect(Datadog.logger).to receive(:error).with("Failed to store data for key 'test_key': TypeError").once
         described_class.store(test_key, test_value)
       end
+    end
+
+    context "without a namespace" do
+      before do
+        ENV.delete(described_class::ENV_NAMESPACE)
+      end
+
+      it "does not create storage" do
+        unnamespaced_file = File.join(storage_root, "dd-ci-#{test_key}.dat")
+        FileUtils.rm_f(unnamespaced_file)
+
+        expect(described_class.store(test_key, test_value)).to be(false)
+        expect(File.exist?(unnamespaced_file)).to be(false)
+      end
+
+      it "logs the missing namespace" do
+        expect(Datadog.logger).to receive(:error)
+          .with("Failed to store data for key 'test_key': Datadog::CI::Utils::FileStorage::MissingNamespaceError")
+
+        described_class.store(test_key, test_value)
+      end
+    end
+
+    it "publishes complete values atomically during concurrent writes" do
+      values = [
+        {"generation" => "a", "payload" => "a" * 64_000},
+        {"generation" => "b", "payload" => "b" * 64_000}
+      ]
+      invalid_values = []
+      invalid_values_mutex = Mutex.new
+      described_class.store(test_key, values.first)
+
+      writers = values.map do |value|
+        Thread.new do
+          50.times { described_class.store(test_key, value) }
+        end
+      end
+      reader = Thread.new do
+        while writers.any?(&:alive?)
+          value = described_class.retrieve(test_key)
+          invalid_values_mutex.synchronize { invalid_values << value } unless values.include?(value)
+        end
+      end
+
+      writers.each(&:value)
+      reader.value
+
+      expect(invalid_values).to be_empty
+      expect(values).to include(described_class.retrieve(test_key))
+      expect(Dir.glob(File.join(temp_dir, "*.tmp"))).to be_empty
     end
   end
 
@@ -145,7 +208,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs an error message" do
-        expect(Datadog.logger).to receive(:error).with(/Failed to retrieve data for key 'test_key': IOError - Test IO error/).once
+        expect(Datadog.logger).to receive(:error).with("Failed to retrieve data for key 'test_key': IOError").once
         described_class.retrieve(test_key)
       end
     end
@@ -162,13 +225,34 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs an error message" do
-        expect(Datadog.logger).to receive(:error).with(/Failed to retrieve data for key 'test_key': TypeError/).once
+        expect(Datadog.logger).to receive(:error).with("Failed to retrieve data for key 'test_key': TypeError").once
+        described_class.retrieve(test_key)
+      end
+    end
+
+    context "without a namespace" do
+      before do
+        ENV.delete(described_class::ENV_NAMESPACE)
+      end
+
+      it "does not read storage" do
+        expect(described_class.retrieve(test_key)).to be_nil
+      end
+
+      it "logs the missing namespace" do
+        expect(Datadog.logger).to receive(:error)
+          .with("Failed to retrieve data for key 'test_key': Datadog::CI::Utils::FileStorage::MissingNamespaceError")
+
         described_class.retrieve(test_key)
       end
     end
   end
 
   describe ".cleanup" do
+    it "is not a public storage operation" do
+      expect(described_class).not_to respond_to(:cleanup)
+    end
+
     context "when the directory exists" do
       before do
         # Create some test files
@@ -178,12 +262,12 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
 
       it "removes the entire directory" do
         expect(Dir.exist?(temp_dir)).to be true
-        described_class.cleanup
+        described_class.send(:cleanup, namespace)
         expect(Dir.exist?(temp_dir)).to be false
       end
 
       it "returns true on success" do
-        expect(described_class.cleanup).to be true
+        expect(described_class.send(:cleanup, namespace)).to be true
       end
     end
 
@@ -192,8 +276,94 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
         # Make sure directory doesn't exist
         FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
 
-        expect(described_class.cleanup).to be false
+        expect(described_class.send(:cleanup, namespace)).to be false
       end
+    end
+
+    it "removes only the requested namespace" do
+      run_a_namespace = "#{namespace}-run-a"
+      run_b_namespace = "#{namespace}-run-b"
+      additional_namespaces.concat([run_a_namespace, run_b_namespace])
+
+      ENV[described_class::ENV_NAMESPACE] = run_a_namespace
+      described_class.store("remote_component_state", "settings-a")
+      described_class.store("test_management_component_state", "test-management-a")
+      run_a_dir = described_class.storage_dir
+
+      ENV[described_class::ENV_NAMESPACE] = run_b_namespace
+      described_class.store("remote_component_state", "settings-b")
+      described_class.store("test_management_component_state", "test-management-b")
+      run_b_dir = described_class.storage_dir
+
+      expect(described_class.send(:cleanup, run_b_namespace)).to be true
+      expect(Dir.exist?(run_b_dir)).to be false
+      expect(Dir.exist?(run_a_dir)).to be true
+
+      ENV[described_class::ENV_NAMESPACE] = run_a_namespace
+      expect(described_class.retrieve("remote_component_state")).to eq("settings-a")
+      expect(described_class.retrieve("test_management_component_state")).to eq("test-management-a")
+    end
+  end
+
+  describe ".with_new_namespace" do
+    it "makes one namespace available to the parent and inherited workers" do
+      namespace_in_block = nil
+      directory = nil
+
+      result = described_class.with_new_namespace do |namespace|
+        namespace_in_block = namespace
+        directory = described_class.storage_dir
+        described_class.store(test_key, test_value)
+
+        child_script = <<~RUBY
+          value = Datadog::CI::Utils::FileStorage.retrieve("#{test_key}")
+          print Marshal.dump(value)
+        RUBY
+        child_output = IO.popen(
+          {described_class::ENV_NAMESPACE => namespace},
+          [Gem.ruby, "-Ilib", "-rdatadog/ci", "-e", child_script],
+          &:read
+        )
+
+        expect(Marshal.load(child_output)).to eq(test_value)
+        :block_result
+      end
+
+      expect(namespace_in_block).to match(/\A[0-9a-f-]{36}\z/)
+      expect(result).to eq(:block_result)
+      expect(Dir.exist?(directory)).to be false
+      expect(ENV[described_class::ENV_NAMESPACE]).to eq(namespace)
+    end
+
+    it "cleans its namespace and restores the environment after an exception" do
+      directory = nil
+
+      expect do
+        described_class.with_new_namespace do
+          directory = described_class.storage_dir
+          described_class.store(test_key, test_value)
+          raise "test failure"
+        end
+      end.to raise_error("test failure")
+
+      expect(Dir.exist?(directory)).to be false
+      expect(ENV[described_class::ENV_NAMESPACE]).to eq(namespace)
+    end
+
+    it "does not clean or replace an outer namespace" do
+      outer_namespace = "#{namespace}-outer-run"
+      additional_namespaces << outer_namespace
+      ENV[described_class::ENV_NAMESPACE] = outer_namespace
+      described_class.store(test_key, "outer value")
+      outer_dir = described_class.storage_dir
+
+      described_class.with_new_namespace do
+        described_class.store(test_key, "inner value")
+      end
+
+      expect(ENV[described_class::ENV_NAMESPACE]).to eq(outer_namespace)
+      expect(Dir.exist?(outer_dir)).to be true
+      expect(described_class.retrieve(test_key)).to eq("outer value")
     end
   end
 
@@ -217,6 +387,27 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       expected_path = File.join(temp_dir, "dd-ci-test_symbol.dat")
 
       expect(described_class.send(:file_path_for, symbol_key)).to eq(expected_path)
+    end
+  end
+
+  describe ".storage_dir" do
+    it "uses the current namespace directory" do
+      expect(described_class.storage_dir).to eq(temp_dir)
+    end
+
+    it "rejects storage without a namespace" do
+      ENV.delete(described_class::ENV_NAMESPACE)
+
+      expect { described_class.storage_dir }.to raise_error(
+        described_class::MissingNamespaceError,
+        "File storage namespace is not set"
+      )
+    end
+
+    it "uses a sanitized namespace directory" do
+      ENV[described_class::ENV_NAMESPACE] = "run/with spaces"
+
+      expect(described_class.storage_dir).to eq(File.join(storage_root, "run_with_spaces"))
     end
   end
 

@@ -82,7 +82,7 @@ module Datadog
           store_component_state if test_session.distributed
         end
 
-        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: false, local_test_suites_mode: true)
+        def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: nil, local_test_suites_mode: true)
           return skip_tracing unless test_suite_level_visibility_enabled
 
           @local_test_suites_mode = local_test_suites_mode
@@ -91,7 +91,7 @@ module Datadog
 
           test_session = maybe_remote_context.start_test_session(service: service, tags: tags)
           test_session.estimated_total_tests_count = estimated_total_tests_count
-          test_session.distributed = distributed
+          test_session.distributed = distributed unless distributed.nil?
 
           on_test_session_started(test_session)
 
@@ -321,8 +321,6 @@ module Datadog
           DeprecatedTotalCoverageMetric.extract_lines_pct(test_session)
 
           Telemetry.event_finished(test_session)
-
-          Utils::FileStorage.cleanup
         end
 
         def on_test_module_finished(test_module)

@@ -7,6 +7,12 @@ RSpec.describe Datadog::CI::TestSession do
   before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
   subject(:ci_test_session) { described_class.new(tracer_span) }
 
+  describe "#distributed" do
+    it "is false by default" do
+      expect(ci_test_session.distributed).to be(false)
+    end
+  end
+
   describe "#finish" do
     it "deactivates the test session" do
       ci_test_session.finish
