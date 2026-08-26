@@ -6,6 +6,12 @@ end
 module RSpec::Core
 end
 
+module RSpec::Core::Pending
+end
+
+class RSpec::Core::Pending::SkipDeclaredInExample < StandardError
+end
+
 module RSpec::Queue
 end
 

@@ -307,6 +307,36 @@ RSpec.describe "RSpec instrumentation" do
       expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
     end
 
+    it "does not trace lifecycle steps when the RSpec integration is disabled" do
+      rspec_configuration = Datadog.configuration.ci[:rspec]
+      allow(rspec_configuration).to receive(:[]).and_call_original
+      allow(rspec_configuration).to receive(:[]).with(:enabled).and_return(false)
+
+      result = with_new_rspec_environment do
+        RSpec.describe "some test" do
+          after { raise "failure" }
+          it("fails in after") {}
+        end.run
+      end
+
+      expect(result).to be(false)
+      expect(spans).to be_empty
+    end
+
+    it "does not trace lifecycle steps when Datadog CI is disabled" do
+      allow(Datadog.configuration.ci).to receive(:enabled).and_return(false)
+
+      result = with_new_rspec_environment do
+        RSpec.describe "some test" do
+          after { raise "failure" }
+          it("fails in after") {}
+        end.run
+      end
+
+      expect(result).to be(false)
+      expect(spans).to be_empty
+    end
+
     context "catches failures" do
       def expect_failure
         expect(first_test_span).to have_fail_status
@@ -462,6 +492,23 @@ RSpec.describe "RSpec instrumentation" do
         expect(first_test_span).to have_skip_status
         expect(first_test_span).to have_test_tag(:skip_reason, "No reason given")
         expect(first_test_span).not_to have_error
+      end
+
+      it "with skip call in before hook" do
+        with_new_rspec_environment do
+          RSpec.describe "some skipped test" do
+            before { skip }
+
+            it "foo" do
+              expect(1 + 1).to eq(5)
+            end
+          end.run
+        end
+
+        expect(first_test_span).to have_skip_status
+        expect(first_test_span).not_to have_error
+        expect(custom_spans.map(&:name)).to include("before")
+        expect(custom_spans.find { |span| span.name == "before" }).not_to have_error
       end
 
       it "with skip call and reason given" do
