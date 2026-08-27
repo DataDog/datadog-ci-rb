@@ -12,6 +12,10 @@ module Datadog
           FRAMEWORK = "minitest"
 
           DEFAULT_SERVICE_NAME = "minitest"
+
+          STEP_SPAN_TYPE = "step"
+          BEFORE_STEP_SPAN_NAME = "before"
+          AFTER_STEP_SPAN_NAME = "after"
         end
       end
     end

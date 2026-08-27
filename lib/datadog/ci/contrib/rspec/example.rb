@@ -26,8 +26,9 @@ module Datadog
             # ============================================
 
             def run(*args)
-              return super unless datadog_configuration[:enabled]
-              return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
+              return super unless datadog_tracing_enabled?
+
+              @datadog_test_tracing_component = test_tracing_component
 
               test_suite_span = test_tracing_component.start_test_suite(datadog_test_suite_name) if ci_queue?
 
@@ -76,6 +77,8 @@ module Datadog
               # after retries are done, we must report the test to RSpec
               @skip_reporting = false
               finish(reporter)
+            ensure
+              @datadog_test_tracing_component = nil
             end
 
             def finish(reporter)
@@ -192,6 +195,40 @@ module Datadog
             # ============================================
             # Run method helpers
             # ============================================
+
+            def run_before_example
+              return super unless @datadog_test_tracing_component
+
+              skip_exception = nil
+              # @type var skip_exception: ::RSpec::Core::Pending::SkipDeclaredInExample?
+              result = test_tracing_component.trace(Ext::BEFORE_STEP_SPAN_NAME, type: Ext::STEP_SPAN_TYPE) do
+                super
+              rescue ::RSpec::Core::Pending::SkipDeclaredInExample => e
+                skip_exception = e
+              end
+
+              raise skip_exception if skip_exception
+
+              result
+            end
+
+            def run_after_example
+              return super unless @datadog_test_tracing_component
+
+              exception_before_hooks = exception
+
+              test_tracing_component.trace(Ext::AFTER_STEP_SPAN_NAME, type: Ext::STEP_SPAN_TYPE) do |span|
+                result = super
+                span&.failed!(exception: exception) if exception && exception != exception_before_hooks
+                result
+              end
+            end
+
+            def datadog_tracing_enabled?
+              Datadog.configuration.ci.enabled &&
+                datadog_configuration[:enabled] &&
+                (!::RSpec.configuration.dry_run? || datadog_configuration[:dry_run_enabled])
+            end
 
             def build_test_tags
               # @type var tags : Hash[String, String]
@@ -376,7 +413,7 @@ module Datadog
             end
 
             def test_tracing_component
-              Datadog.send(:components).test_tracing
+              @datadog_test_tracing_component || Datadog.send(:components).test_tracing
             end
 
             def test_retries_component

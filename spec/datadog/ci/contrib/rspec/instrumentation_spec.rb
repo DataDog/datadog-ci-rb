@@ -266,9 +266,20 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "creates spans for example with instrumentation" do
+      active_span_names = []
+
       with_new_rspec_environment do
         RSpec.describe "some test" do
+          before do
+            active_span_names << Datadog::Tracing.active_span.name
+          end
+
+          after do
+            active_span_names << Datadog::Tracing.active_span.name
+          end
+
           it "foo" do
+            active_span_names << Datadog::Tracing.active_span.name
             Datadog::Tracing.trace("get_time") do
               Time.now
             end
@@ -276,9 +287,54 @@ RSpec.describe "RSpec instrumentation" do
         end.tap(&:run)
       end
 
+      expect(active_span_names).to eq(%w[before foo after])
       expect(test_spans).to have(1).items
-      expect(custom_spans).to have(1).items
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
+      expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
       expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+    end
+
+    it "keeps using the test tracing component selected before the example" do
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          it "replaces the global test tracing component" do
+            allow(Datadog.send(:components)).to receive(:test_tracing).and_return(Object.new)
+          end
+        end.run
+      end
+
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+    end
+
+    it "does not trace lifecycle steps when the RSpec integration is disabled" do
+      rspec_configuration = Datadog.configuration.ci[:rspec]
+      allow(rspec_configuration).to receive(:[]).and_call_original
+      allow(rspec_configuration).to receive(:[]).with(:enabled).and_return(false)
+
+      result = with_new_rspec_environment do
+        RSpec.describe "some test" do
+          after { raise "failure" }
+          it("fails in after") {}
+        end.run
+      end
+
+      expect(result).to be(false)
+      expect(spans).to be_empty
+    end
+
+    it "does not trace lifecycle steps when Datadog CI is disabled" do
+      allow(Datadog.configuration.ci).to receive(:enabled).and_return(false)
+
+      result = with_new_rspec_environment do
+        RSpec.describe "some test" do
+          after { raise "failure" }
+          it("fails in after") {}
+        end.run
+      end
+
+      expect(result).to be(false)
+      expect(spans).to be_empty
     end
 
     context "catches failures" do
@@ -335,6 +391,7 @@ RSpec.describe "RSpec instrumentation" do
         end
 
         expect_failure
+        expect(custom_spans.find { |step_span| step_span.name == "before" }).to have_error
       end
 
       it "within after" do
@@ -351,6 +408,7 @@ RSpec.describe "RSpec instrumentation" do
         end
 
         expect_failure
+        expect(custom_spans.find { |step_span| step_span.name == "after" }).to have_error
       end
     end
 
@@ -434,6 +492,23 @@ RSpec.describe "RSpec instrumentation" do
         expect(first_test_span).to have_skip_status
         expect(first_test_span).to have_test_tag(:skip_reason, "No reason given")
         expect(first_test_span).not_to have_error
+      end
+
+      it "with skip call in before hook" do
+        with_new_rspec_environment do
+          RSpec.describe "some skipped test" do
+            before { skip }
+
+            it "foo" do
+              expect(1 + 1).to eq(5)
+            end
+          end.run
+        end
+
+        expect(first_test_span).to have_skip_status
+        expect(first_test_span).not_to have_error
+        expect(custom_spans.map(&:name)).to include("before")
+        expect(custom_spans.find { |span| span.name == "before" }).not_to have_error
       end
 
       it "with skip call and reason given" do

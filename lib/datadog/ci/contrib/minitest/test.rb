@@ -48,16 +48,55 @@ module Datadog
               super
             end
 
+            def before_setup
+              test_span = _dd_test_tracing_component.active_test
+              return super unless test_span
+
+              @datadog_before_step_failures_count = failures.length
+              @datadog_before_step_span = _dd_test_tracing_component.trace(
+                Ext::BEFORE_STEP_SPAN_NAME,
+                type: Ext::STEP_SPAN_TYPE
+              )
+
+              super
+            end
+
+            def after_setup
+              super
+            ensure
+              finish_datadog_before_step
+            end
+
+            def before_teardown
+              test_span = _dd_test_tracing_component.active_test
+              return super unless test_span
+
+              # Setup failures prevent Minitest from invoking after_setup, so
+              # close a still-active before span before teardown begins.
+              finish_datadog_before_step
+
+              @datadog_after_step_failures_count = failures.length
+              @datadog_after_step_span = _dd_test_tracing_component.trace(
+                Ext::AFTER_STEP_SPAN_NAME,
+                type: Ext::STEP_SPAN_TYPE
+              )
+
+              super
+            end
+
             def after_teardown
               test_span = _dd_test_tracing_component.active_test
               return super unless test_span
 
-              finish_with_result(test_span, result_code)
+              begin
+                super
+              ensure
+                finish_datadog_after_step
+                finish_with_result(test_span, result_code)
 
-              # remove failures if failure can be ignored because of retries
-              self.failures = [] if test_span.should_ignore_failures?
-
-              super
+                # remove failures if failure can be ignored because of retries
+                self.failures = [] if test_span.should_ignore_failures?
+              end
             end
 
             private
@@ -113,6 +152,32 @@ module Datadog
               return unless Helpers.parallel?(self.class)
 
               Helpers.start_test_suite(self.class)
+            end
+
+            def finish_datadog_before_step
+              span = @datadog_before_step_span
+              return unless span
+
+              finish_datadog_step(span, @datadog_before_step_failures_count)
+              @datadog_before_step_span = nil
+            end
+
+            def finish_datadog_after_step
+              span = @datadog_after_step_span
+              return unless span
+
+              finish_datadog_step(span, @datadog_after_step_failures_count)
+              @datadog_after_step_span = nil
+            end
+
+            def finish_datadog_step(span, failures_count)
+              step_failure = failures[failures_count]
+              if step_failure && !step_failure.is_a?(::Minitest::Skip)
+                exception = step_failure.respond_to?(:error) ? step_failure.error : step_failure
+                span.failed!(exception: exception)
+              end
+
+              span.finish
             end
 
             def skip_datadog_test(test_span)

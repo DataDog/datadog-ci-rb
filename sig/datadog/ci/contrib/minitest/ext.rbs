@@ -8,6 +8,10 @@ module Datadog
           FRAMEWORK: String
 
           DEFAULT_SERVICE_NAME: String
+
+          STEP_SPAN_TYPE: String
+          BEFORE_STEP_SPAN_NAME: String
+          AFTER_STEP_SPAN_NAME: String
         end
       end
     end
