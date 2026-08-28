@@ -3,6 +3,9 @@ module Datadog
     module Contrib
       module Minitest
         module Test
+          SETUP_STEP_METHODS: Array[Symbol]
+          TEARDOWN_STEP_METHODS: Array[Symbol]
+
           @_dd_pre_datadog_minitest_run: untyped
 
           def self._dd_pre_datadog_minitest_run: () -> untyped
@@ -36,6 +39,10 @@ module Datadog
             def after_teardown: () -> untyped
 
             private
+
+            def datadog_trace_lifecycle_step?: (Array[Symbol] step_methods) -> bool
+
+            def datadog_lifecycle_method_overridden?: (Symbol method_name) -> bool
 
             def run_without_datadog_reentry: () -> ::Minitest::Result
 

@@ -14,6 +14,9 @@ module Datadog
       module Minitest
         # Lifecycle hooks to instrument Minitest::Test
         module Test
+          SETUP_STEP_METHODS = [:before_setup, :setup, :after_setup].freeze
+          TEARDOWN_STEP_METHODS = [:before_teardown, :teardown, :after_teardown].freeze
+
           class << self
             attr_accessor :_dd_pre_datadog_minitest_run
           end
@@ -56,7 +59,7 @@ module Datadog
 
             def before_setup
               test_span = _dd_test_tracing_component.active_test
-              return super unless test_span
+              return super unless test_span && datadog_trace_lifecycle_step?(SETUP_STEP_METHODS)
 
               @datadog_before_step_failures_count = failures.length
               @datadog_before_step_span = _dd_test_tracing_component.trace(
@@ -80,6 +83,8 @@ module Datadog
               # Setup failures prevent Minitest from invoking after_setup, so
               # close a still-active before span before teardown begins.
               finish_datadog_before_step
+
+              return super unless datadog_trace_lifecycle_step?(TEARDOWN_STEP_METHODS)
 
               @datadog_after_step_failures_count = failures.length
               @datadog_after_step_span = _dd_test_tracing_component.trace(
@@ -106,6 +111,23 @@ module Datadog
             end
 
             private
+
+            def datadog_trace_lifecycle_step?(step_methods)
+              return false unless Datadog.configuration.ci.trace_setup_teardown_enabled
+
+              step_methods.any? { |method_name| datadog_lifecycle_method_overridden?(method_name) }
+            end
+
+            def datadog_lifecycle_method_overridden?(method_name)
+              lifecycle_method = method(method_name)
+              while lifecycle_method
+                owner = lifecycle_method.owner
+                return true unless owner == InstanceMethods || owner == ::Minitest::Test::LifecycleHooks
+
+                lifecycle_method = lifecycle_method.super_method
+              end
+              false
+            end
 
             def run_without_datadog_reentry
               Datadog.logger.debug do

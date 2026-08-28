@@ -97,6 +97,7 @@ RSpec.describe "Minitest instrumentation" do
         :codeowners,
         "[\"@DataDog/ci-app-libraries\"]"
       )
+      expect(custom_spans).to be_empty
     end
 
     it "creates spans for several tests" do
@@ -221,6 +222,105 @@ RSpec.describe "Minitest instrumentation" do
       expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
+    it "creates only a before span when only setup is overridden" do
+      klass = Class.new(Minitest::Test) do
+        def self.name
+          "SomeTest"
+        end
+
+        def setup
+        end
+
+        def test_foo
+        end
+      end
+
+      klass.new(:test_foo).run
+
+      expect(custom_spans.map(&:name)).to eq(["before"])
+    end
+
+    it "creates only an after span when only teardown is overridden" do
+      klass = Class.new(Minitest::Test) do
+        def self.name
+          "SomeTest"
+        end
+
+        def teardown
+        end
+
+        def test_foo
+        end
+      end
+
+      klass.new(:test_foo).run
+
+      expect(custom_spans.map(&:name)).to eq(["after"])
+    end
+
+    it "traces inherited lifecycle methods" do
+      parent = Class.new(Minitest::Test) do
+        def setup
+        end
+
+        def teardown
+        end
+      end
+      klass = Class.new(parent) do
+        def self.name
+          "SomeTest"
+        end
+
+        def test_foo
+        end
+      end
+
+      klass.new(:test_foo).run
+
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+    end
+
+    it "traces Minitest::Spec hooks" do
+      hook_calls = []
+      klass = Class.new(Minitest::Spec) do
+        def self.name
+          "SomeSpec"
+        end
+
+        before { hook_calls << :before }
+        after { hook_calls << :after }
+        it("foo") { hook_calls << :test }
+      end
+
+      klass.new(klass.runnable_methods.first).run
+
+      expect(hook_calls).to eq([:before, :test, :after])
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+    end
+
+    it "executes lifecycle methods and traces the test when lifecycle tracing is disabled" do
+      hook_calls = []
+      original_value = Datadog.configuration.ci.trace_setup_teardown_enabled
+      Datadog.configuration.ci.trace_setup_teardown_enabled = false
+      klass = Class.new(Minitest::Test) do
+        def self.name
+          "SomeTest"
+        end
+
+        define_method(:setup) { hook_calls << :setup }
+        define_method(:test_foo) { hook_calls << :test }
+        define_method(:teardown) { hook_calls << :teardown }
+      end
+
+      klass.new(:test_foo).run
+
+      expect(hook_calls).to eq([:setup, :test, :teardown])
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans).to be_empty
+    ensure
+      Datadog.configuration.ci.trace_setup_teardown_enabled = original_value
+    end
+
     context "catches failures" do
       def expect_failure
         expect(first_test_span).to have_fail_status
@@ -264,6 +364,7 @@ RSpec.describe "Minitest instrumentation" do
 
         expect_failure
         expect(custom_spans.find { |step_span| step_span.name == "before" }).to have_error
+        expect(custom_spans.map(&:name)).to eq(["before"])
       end
 
       it "within teardown" do
@@ -284,6 +385,7 @@ RSpec.describe "Minitest instrumentation" do
 
         expect_failure
         expect(custom_spans.find { |step_span| step_span.name == "after" }).to have_error
+        expect(custom_spans.map(&:name)).to eq(["after"])
       end
     end
 
@@ -535,7 +637,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "462")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "564")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ci-app-libraries\"]"
