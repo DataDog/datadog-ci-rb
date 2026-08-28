@@ -1,5 +1,20 @@
 ## [Unreleased]
 
+## [1.38.0] - 2026-08-28
+
+### Added
+* Trace RSpec and Minitest lifecycle steps ([#595][])
+
+### Changed
+* Optimize TIA performance ([#589][])
+
+### Fixed
+* Isolate state between parallel_tests sessions ([#593][])
+* Test Optimization telemetry shutdown order ([#586][])
+
+### Removed
+* Disable LiveDebugger's SymDB upload in CI mode ([#594][])
+
 ## [1.37.0] - 2026-08-19
 
 ## [1.36.1] - 2026-08-11
@@ -684,7 +699,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.37.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.38.0...main
+[1.38.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.37.0...v1.38.0
 [1.37.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.1...v1.37.0
 [1.36.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.0...v1.36.1
 [1.36.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.35.0...v1.36.0
@@ -970,3 +986,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#555]: https://github.com/DataDog/datadog-ci-rb/issues/555
 [#566]: https://github.com/DataDog/datadog-ci-rb/issues/566
 [#570]: https://github.com/DataDog/datadog-ci-rb/issues/570
+[#586]: https://github.com/DataDog/datadog-ci-rb/issues/586
+[#589]: https://github.com/DataDog/datadog-ci-rb/issues/589
+[#593]: https://github.com/DataDog/datadog-ci-rb/issues/593
+[#594]: https://github.com/DataDog/datadog-ci-rb/issues/594
+[#595]: https://github.com/DataDog/datadog-ci-rb/issues/595
