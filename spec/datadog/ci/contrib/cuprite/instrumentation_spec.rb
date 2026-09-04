@@ -20,6 +20,7 @@ RSpec.describe "Browser tests with cuprite" do
       :current_url => "http://www.example.com",
       :options => instance_double(Ferrum::Browser::Options, browser_name: "mockbrowser"),
       :version => instance_double(Ferrum::Browser::VersionInfo, product: "mockversion"),
+      :raise_on_unhandled_modal= => nil,
       :url_blacklist= => nil,
       :url_whitelist= => nil,
       :reset => nil,
