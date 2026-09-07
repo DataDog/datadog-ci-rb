@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 019868450bfcd2e1b26cfc497f04a28b830e8429
+  revision: d640470cefaada25f2912cead0c31df9623e40ec
   branch: master
   specs:
     datadog (2.43.0.dev)
@@ -110,7 +110,7 @@ GEM
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
     ruby-progressbar (1.13.0)
-    simplecov (1.1.1)
+    simplecov (1.2.0)
     thor (1.5.0)
     tsort (0.2.0)
     webmock (3.26.4)

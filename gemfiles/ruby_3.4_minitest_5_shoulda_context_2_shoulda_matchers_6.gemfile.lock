@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 019868450bfcd2e1b26cfc497f04a28b830e8429
+  revision: d640470cefaada25f2912cead0c31df9623e40ec
   branch: master
   specs:
     datadog (2.43.0.dev)
@@ -125,7 +125,7 @@ GEM
     shoulda-context (2.0.0)
     shoulda-matchers (6.5.0)
       activesupport (>= 5.2.0)
-    simplecov (1.1.1)
+    simplecov (1.2.0)
     thor (1.5.0)
     tsort (0.2.0)
     tzinfo (2.0.6)
