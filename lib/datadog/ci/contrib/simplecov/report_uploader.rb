@@ -6,19 +6,19 @@ module Datadog
   module CI
     module Contrib
       module Simplecov
-        # Module that hooks into SimpleCov.process_results_and_report_error to upload coverage reports
+        # Module that hooks into SimpleCov.process_result to upload coverage reports
         module ReportUploader
           def self.included(base)
             base.singleton_class.prepend(ClassMethods)
           end
 
           module ClassMethods
-            def process_results_and_report_error(*args)
-              result = super
+            def process_result(*args)
+              exit_status = super
 
-              upload_coverage_report
+              upload_coverage_report if exit_status.zero?
 
-              result
+              exit_status
             end
 
             private
