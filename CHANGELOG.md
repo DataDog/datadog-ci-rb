@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+## [1.38.1] - 2026-09-07
+
+### Fixed
+* Fix: SimpleCov 1.2 compatibility for code coverage report uploads ([#606][])
+
 ## [1.38.0] - 2026-08-28
 
 ### Added
@@ -699,7 +704,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.38.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.38.1...main
+[1.38.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.38.0...v1.38.1
 [1.38.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.37.0...v1.38.0
 [1.37.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.1...v1.37.0
 [1.36.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.36.0...v1.36.1
@@ -991,3 +997,4 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#593]: https://github.com/DataDog/datadog-ci-rb/issues/593
 [#594]: https://github.com/DataDog/datadog-ci-rb/issues/594
 [#595]: https://github.com/DataDog/datadog-ci-rb/issues/595
+[#606]: https://github.com/DataDog/datadog-ci-rb/issues/606
