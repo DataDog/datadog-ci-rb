@@ -16,7 +16,7 @@ module Datadog
             def process_result(*args)
               exit_status = super
 
-              upload_coverage_report if exit_status.zero?
+              upload_coverage_report if exit_status == 0
 
               exit_status
             end

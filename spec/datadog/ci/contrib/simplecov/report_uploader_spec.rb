@@ -134,6 +134,28 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         end
       end
 
+      context "when SimpleCov has no result" do
+        let(:base_class) do
+          Class.new do
+            class << self
+              def process_result(*)
+                nil
+              end
+            end
+          end
+        end
+
+        before do
+          base_class.include(described_class)
+        end
+
+        it "does not upload the coverage report and preserves the nil result" do
+          expect(code_coverage).not_to receive(:upload)
+
+          expect(base_class.process_result(:result)).to be_nil
+        end
+      end
+
       context "when original process_result accepts multiple arguments" do
         let(:base_class) do
           Class.new do
