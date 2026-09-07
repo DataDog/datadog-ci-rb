@@ -14,7 +14,7 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::Patcher do
     end
 
     it "installs the report uploader around the loaded SimpleCov hook" do
-      hook = SimpleCov.method(:process_results_and_report_error)
+      hook = SimpleCov.method(:process_result)
 
       expect(hook.owner).to eq(Datadog::CI::Contrib::Simplecov::ReportUploader::ClassMethods)
       expect(hook.super_method).not_to be_nil

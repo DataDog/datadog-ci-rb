@@ -8,7 +8,7 @@ module Datadog
           module ClassMethods
             include ::SimpleCov
 
-            def process_results_and_report_error: (*untyped args) -> untyped
+            def process_result: (*untyped args) -> Integer?
 
             private
 

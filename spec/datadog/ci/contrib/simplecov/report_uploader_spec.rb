@@ -7,8 +7,8 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
     let(:base_class) do
       Class.new do
         class << self
-          def process_results_and_report_error
-            :original_result
+          def process_result(*)
+            0
           end
         end
       end
@@ -18,7 +18,7 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
       base_class.include(described_class)
     end
 
-    describe "#process_results_and_report_error" do
+    describe "#process_result" do
       let(:coverage_path) { Dir.mktmpdir }
       let(:coverage_file) { File.join(coverage_path, ".resultset.json") }
       let(:coverage_data) { '{"test_suite":{"coverage":{"file.rb":[1,2,null]}}}' }
@@ -45,8 +45,8 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         FileUtils.rm_rf(coverage_path)
       end
 
-      it "calls original process_results_and_report_error and returns its result" do
-        expect(base_class.process_results_and_report_error).to eq(:original_result)
+      it "calls original process_result and returns its exit status" do
+        expect(base_class.process_result(:result)).to eq(0)
       end
 
       it "uploads coverage report with correct parameters" do
@@ -55,7 +55,7 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
           format: Datadog::CI::Contrib::Simplecov::Ext::COVERAGE_FORMAT
         )
 
-        base_class.process_results_and_report_error
+        base_class.process_result(:result)
       end
 
       context "when coverage file does not exist" do
@@ -66,11 +66,11 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         it "does not upload coverage report" do
           expect(code_coverage).not_to receive(:upload)
 
-          base_class.process_results_and_report_error
+          base_class.process_result(:result)
         end
 
         it "returns the original result" do
-          expect(base_class.process_results_and_report_error).to eq(:original_result)
+          expect(base_class.process_result(:result)).to eq(0)
         end
       end
 
@@ -80,7 +80,7 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         it "does not upload coverage report" do
           expect(code_coverage).not_to receive(:upload)
 
-          base_class.process_results_and_report_error
+          base_class.process_result(:result)
         end
       end
 
@@ -90,7 +90,7 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         it "does not upload coverage report" do
           expect(code_coverage).not_to receive(:upload)
 
-          base_class.process_results_and_report_error
+          base_class.process_result(:result)
         end
       end
 
@@ -102,22 +102,66 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         it "logs the error and continues" do
           expect(Datadog.logger).to receive(:warn).with("Failed to upload coverage report: upload failed")
 
-          expect { base_class.process_results_and_report_error }.not_to raise_error
+          expect { base_class.process_result(:result) }.not_to raise_error
         end
 
         it "returns the original result" do
           allow(Datadog.logger).to receive(:warn)
 
-          expect(base_class.process_results_and_report_error).to eq(:original_result)
+          expect(base_class.process_result(:result)).to eq(0)
         end
       end
 
-      context "when original process_results_and_report_error accepts arguments" do
+      context "when SimpleCov reports a coverage failure" do
         let(:base_class) do
           Class.new do
             class << self
-              def process_results_and_report_error(arg1, arg2)
-                [arg1, arg2]
+              def process_result(*)
+                1
+              end
+            end
+          end
+        end
+
+        before do
+          base_class.include(described_class)
+        end
+
+        it "does not upload the coverage report" do
+          expect(code_coverage).not_to receive(:upload)
+
+          expect(base_class.process_result(:result)).to eq(1)
+        end
+      end
+
+      context "when SimpleCov has no result" do
+        let(:base_class) do
+          Class.new do
+            class << self
+              def process_result(*)
+                nil
+              end
+            end
+          end
+        end
+
+        before do
+          base_class.include(described_class)
+        end
+
+        it "does not upload the coverage report and preserves the nil result" do
+          expect(code_coverage).not_to receive(:upload)
+
+          expect(base_class.process_result(:result)).to be_nil
+        end
+      end
+
+      context "when original process_result accepts multiple arguments" do
+        let(:base_class) do
+          Class.new do
+            class << self
+              def process_result(arg1, arg2)
+                arg1 + arg2
               end
             end
           end
@@ -130,7 +174,7 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         it "passes arguments correctly" do
           expect(code_coverage).to receive(:upload)
 
-          expect(base_class.process_results_and_report_error(:first, :second)).to eq([:first, :second])
+          expect(base_class.process_result(0, 0)).to eq(0)
         end
       end
     end
