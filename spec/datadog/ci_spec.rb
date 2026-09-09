@@ -291,19 +291,19 @@ RSpec.describe Datadog::CI do
         end
       end
 
-      context "when test suite level visibility is disabled" do
+      context "when deprecated test level visibility is forced" do
         include_context "CI mode activated" do
-          let(:force_test_level_visibility) { true }
           let(:ci_enabled) { true }
+          let(:force_test_level_visibility) { true }
         end
 
         before do
           produce_test_session_trace(with_http_span: true)
         end
 
-        it "does not record test suite level spans" do
-          expect(spans).to have(2).items # test + http span
-          expect(test_session_span).to be_nil
+        it "records test suite level spans because the setting is a no-op" do
+          expect(spans).to have(5).items # session + module + suite + test + http span
+          expect(test_session_span).not_to be_nil
         end
       end
     end

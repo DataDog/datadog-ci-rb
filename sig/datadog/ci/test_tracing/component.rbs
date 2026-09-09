@@ -7,8 +7,6 @@ module Datadog
 
         FILE_STORAGE_KEY: String
 
-        @test_suite_level_visibility_enabled: bool
-
         @codeowners: Datadog::CI::Codeowners::Matcher
         @context: Datadog::CI::TestTracing::Context
         @context_client: Datadog::CI::TestTracing::Context
@@ -23,8 +21,6 @@ module Datadog
 
         @local_test_suites_mode: bool
 
-        attr_reader test_suite_level_visibility_enabled: bool
-
         attr_reader logical_test_session_name: String?
 
         attr_reader known_tests: Set[String]
@@ -35,7 +31,7 @@ module Datadog
 
         attr_reader local_test_suites_mode: bool
 
-        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?test_suite_level_visibility_enabled: bool, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?) -> void
+        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
@@ -95,8 +91,6 @@ module Datadog
         def null_span: () -> Datadog::CI::Span
 
         def single_active_test_suite: () -> Datadog::CI::TestSuite?
-
-        def skip_tracing: (?untyped block) -> untyped
 
         def validate_test_suite_level_visibility_correctness: (Datadog::CI::Test test) -> void
 

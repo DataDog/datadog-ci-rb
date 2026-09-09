@@ -167,7 +167,7 @@ RSpec.shared_context "CI mode activated" do
 
       c.ci.agentless_mode_enabled = agentless_mode_enabled
 
-      # test visibility
+      # Kept as a no-op to verify compatibility with legacy configuration.
       c.ci.force_test_level_visibility = force_test_level_visibility
 
       # test optimisation

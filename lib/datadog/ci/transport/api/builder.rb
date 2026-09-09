@@ -2,6 +2,7 @@
 
 require "datadog/core/configuration/agent_settings_resolver"
 require "datadog/core/remote/negotiation"
+require "datadog/core/remote/transport/http"
 
 require_relative "agentless"
 require_relative "evp_proxy"
@@ -58,6 +59,16 @@ module Datadog
             return nil if evp_proxy_path_prefix.nil?
 
             EvpProxy.new(agent_settings: agent_settings, path_prefix: evp_proxy_path_prefix)
+          end
+
+          def self.agent_available?(settings)
+            agent_settings = Datadog::Core::Configuration::AgentSettingsResolver.call(settings)
+            response = Datadog::Core::Remote::Transport::HTTP.root(
+              agent_settings: agent_settings,
+              logger: Datadog.logger
+            ).send_info
+
+            !response.internal_error?
           end
         end
       end

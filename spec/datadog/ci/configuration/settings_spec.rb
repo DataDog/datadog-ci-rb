@@ -280,35 +280,37 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       end
 
       describe "#force_test_level_visibility" do
-        subject(:force_test_level_visibility) do
-          settings.ci.force_test_level_visibility
-        end
+        subject(:force_test_level_visibility) { settings.ci.force_test_level_visibility }
 
         it { is_expected.to be false }
 
         context "when #{Datadog::CI::Ext::Settings::ENV_FORCE_TEST_LEVEL_VISIBILITY}" do
           around do |example|
             ClimateControl.modify(
-              Datadog::CI::Ext::Settings::ENV_FORCE_TEST_LEVEL_VISIBILITY => enable
+              Datadog::CI::Ext::Settings::ENV_FORCE_TEST_LEVEL_VISIBILITY => force_test_level_visibility_value
             ) do
               example.run
             end
           end
 
           context "is not defined" do
-            let(:enable) { nil }
+            let(:force_test_level_visibility_value) { nil }
 
             it { is_expected.to be false }
           end
 
           context "is set to true" do
-            let(:enable) { "true" }
+            let(:force_test_level_visibility_value) { "true" }
 
-            it { is_expected.to be true }
+            it "retains the legacy value and logs a deprecation warning" do
+              expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+
+              is_expected.to be true
+            end
           end
 
           context "is set to false" do
-            let(:enable) { "false" }
+            let(:force_test_level_visibility_value) { "false" }
 
             it { is_expected.to be false }
           end
@@ -316,7 +318,9 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       end
 
       describe "#force_test_level_visibility=" do
-        it "updates the #enabled setting" do
+        it "retains the legacy value and logs a deprecation warning" do
+          expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+
           expect { settings.ci.force_test_level_visibility = true }
             .to change { settings.ci.force_test_level_visibility }
             .from(false)

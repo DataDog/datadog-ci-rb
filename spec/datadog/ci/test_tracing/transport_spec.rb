@@ -14,7 +14,6 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
     described_class.new(
       api: api,
       dd_env: dd_env,
-      serializers_factory: serializers_factory,
       max_payload_size: max_payload_size
     )
   end
@@ -24,10 +23,11 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
 
     # this is needed to configure all the components correctky
     Datadog::CI.start_test_session
+    Datadog::CI.start_test_module("arithmetic")
+    Datadog::CI.start_test_suite("calculator_tests")
   end
 
   let(:dd_env) { nil }
-  let(:serializers_factory) { Datadog::CI::TestTracing::Serializers::Factories::TestLevel }
   let(:max_payload_size) { 4 * 1024 * 1024 }
 
   let(:api) { spy(:api) }
@@ -148,8 +148,6 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
     end
 
     context "with itr correlation id" do
-      let(:serializers_factory) { Datadog::CI::TestTracing::Serializers::Factories::TestSuiteLevel }
-
       before do
         allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Component).to receive(:correlation_id).and_return("correlation-id")
 

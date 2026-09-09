@@ -148,4 +148,39 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       end
     end
   end
+
+  describe ".agent_available?" do
+    subject { described_class.agent_available?(settings) }
+
+    let(:agent_settings) do
+      Datadog::Core::Configuration::AgentSettings.new(
+        adapter: :net_http,
+        ssl: false,
+        hostname: "localhost",
+        port: 5555,
+        uds_path: nil,
+        timeout_seconds: 42
+      )
+    end
+    let(:transport) { instance_double(Datadog::Core::Remote::Transport::Negotiation::Transport) }
+    let(:response) { double(:response, internal_error?: internal_error) }
+    let(:internal_error) { false }
+
+    before do
+      allow(Datadog::Core::Configuration::AgentSettingsResolver).to receive(:call).and_return(agent_settings)
+      allow(Datadog::Core::Remote::Transport::HTTP).to receive(:root).with(
+        agent_settings: agent_settings,
+        logger: Datadog.logger
+      ).and_return(transport)
+      allow(transport).to receive(:send_info).and_return(response)
+    end
+
+    it { is_expected.to be(true) }
+
+    context "when the agent request has an internal transport error" do
+      let(:internal_error) { true }
+
+      it { is_expected.to be(false) }
+    end
+  end
 end

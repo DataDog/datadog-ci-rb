@@ -58,6 +58,13 @@ module Datadog
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_FORCE_TEST_LEVEL_VISIBILITY
                 o.default false
+                o.after_set do |value|
+                  if value
+                    Datadog::Core.log_deprecation do
+                      "The force_test_level_visibility setting has no effect because test-level visibility is no longer supported."
+                    end
+                  end
+                end
               end
 
               option :experimental_test_suite_level_visibility_enabled do |o|
@@ -68,8 +75,7 @@ module Datadog
                   if value
                     Datadog::Core.log_deprecation do
                       "The experimental_test_suite_level_visibility_enabled setting has no effect and will be removed in 2.0. " \
-                        "Test suite level visibility is now enabled by default. " \
-                        "If you want to disable test suite level visibility set configuration.ci.force_test_level_visibility = true."
+                        "Test suite level visibility is always enabled."
                     end
                   end
                 end
