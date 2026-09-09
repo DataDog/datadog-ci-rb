@@ -33,6 +33,7 @@ module Datadog
 
           module InstanceMethods
             def run
+              return run_without_datadog_reentry unless Datadog.configuration.ci.enabled
               return super unless datadog_configuration[:enabled]
 
               return run_without_datadog_reentry if datadog_run_reentered?
