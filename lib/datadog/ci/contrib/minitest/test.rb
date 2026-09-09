@@ -33,20 +33,25 @@ module Datadog
 
           module InstanceMethods
             def run
-              return run_without_datadog_reentry unless Datadog.configuration.ci.enabled
-              return super unless datadog_configuration[:enabled]
+              return run_without_datadog_reentry if @_dd_run_in_progress
 
-              return run_without_datadog_reentry if datadog_run_reentered?
+              @_dd_run_in_progress = true
+              begin
+                return super unless Datadog.configuration.ci.enabled
+                return super unless datadog_configuration[:enabled]
 
-              test_suite = start_datadog_test_suite_if_parallel
-              if test_suite&.should_skip?
-                return skip_datadog_suite(test_suite)
+                test_suite = start_datadog_test_suite_if_parallel
+                if test_suite&.should_skip?
+                  return skip_datadog_suite(test_suite)
+                end
+
+                test_span = start_datadog_test
+                return skip_datadog_test(test_span) if test_span&.should_skip?
+
+                super
+              ensure
+                @_dd_run_in_progress = false
               end
-
-              test_span = start_datadog_test
-              return skip_datadog_test(test_span) if test_span&.should_skip?
-
-              super
             end
 
             def before_setup
@@ -101,10 +106,6 @@ module Datadog
             end
 
             private
-
-            def datadog_run_reentered?
-              !!_dd_test_tracing_component.active_test
-            end
 
             def run_without_datadog_reentry
               Datadog.logger.debug do

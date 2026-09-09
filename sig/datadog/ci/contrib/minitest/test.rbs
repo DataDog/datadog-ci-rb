@@ -23,6 +23,7 @@ module Datadog
             @datadog_before_step_failures_count: Integer
             @datadog_after_step_span: Datadog::CI::Span?
             @datadog_after_step_failures_count: Integer
+            @_dd_run_in_progress: bool
 
             def run: () -> ::Minitest::Result
 
@@ -35,8 +36,6 @@ module Datadog
             def after_teardown: () -> untyped
 
             private
-
-            def datadog_run_reentered?: () -> bool
 
             def run_without_datadog_reentry: () -> ::Minitest::Result
 
