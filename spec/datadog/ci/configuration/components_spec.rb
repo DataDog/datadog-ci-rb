@@ -55,7 +55,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.site = dd_site
           settings.api_key = api_key
 
-          negotiation = double(:negotiation)
+          agent_info_transport = instance_double(Datadog::Core::Remote::Transport::Negotiation::Transport)
+          agent_info_response = double(
+            :agent_info_response,
+            internal_error?: !agent_available,
+            ok?: agent_available,
+            endpoints: [
+              ("/evp_proxy/v4/" if evp_proxy_v4_supported),
+              ("/evp_proxy/v2/" if evp_proxy_v2_supported)
+            ].compact
+          )
 
           telemetry_double = instance_double(
             Datadog::Core::Telemetry::Component,
@@ -64,21 +73,12 @@ RSpec.describe Datadog::CI::Configuration::Components do
           )
           allow(Datadog::Core::Telemetry::Component).to receive(:build).and_return(telemetry_double)
 
-          allow(Datadog::Core::Remote::Negotiation)
-            .to receive(:new)
-            .and_return(negotiation)
-
-          allow(Datadog::CI::Transport::Api::Builder)
-            .to receive(:agent_available?)
-            .and_return(agent_available)
-
-          allow(negotiation)
-            .to receive(:endpoint?).with("/evp_proxy/v4/")
-            .and_return(evp_proxy_v4_supported)
-
-          allow(negotiation)
-            .to receive(:endpoint?).with("/evp_proxy/v2/")
-            .and_return(evp_proxy_v2_supported)
+          allow(Datadog::Core::Remote::Transport::HTTP)
+            .to receive(:root)
+            .and_return(agent_info_transport)
+          allow(agent_info_transport)
+            .to receive(:send_info)
+            .and_return(agent_info_response)
 
           # Spy on test mode behavior
           allow(settings.tracing.test_mode)

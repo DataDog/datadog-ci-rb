@@ -16,10 +16,6 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is auto instrumented" do
     expect(Datadog::CI).to receive(:start_test_suite).never
     expect(Datadog::CI).to receive(:start_test).never
 
-    allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
-      receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
-    )
-
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return("knapsack:queue:rspec")
 
     allow_any_instance_of(KnapsackPro::Runners::Queue::RSpecRunner).to receive(:test_file_paths).and_return(

@@ -16,8 +16,7 @@ module Datadog
           end
 
           def self.build_agentless_api: ((::Datadog::Core::Configuration::Settings & _SettingsExtras) settings) -> Datadog::CI::Transport::Api::Agentless?
-          def self.build_evp_proxy_api: ((::Datadog::Core::Configuration::Settings & _SettingsExtras) settings) -> Datadog::CI::Transport::Api::EvpProxy?
-          def self.agent_available?: ((::Datadog::Core::Configuration::Settings & _SettingsExtras) settings) -> bool
+          def self.build_evp_proxy_api: ((::Datadog::Core::Configuration::Settings & _SettingsExtras) settings) -> [Datadog::CI::Transport::Api::EvpProxy?, bool]
         end
       end
     end

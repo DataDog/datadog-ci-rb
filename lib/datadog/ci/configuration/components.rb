@@ -240,9 +240,9 @@ module Datadog
           else
             Datadog.logger.debug("Test Optimization configured to use agent transport via EVP proxy")
 
-            api = Transport::Api::Builder.build_evp_proxy_api(settings)
+            api, agent_available = Transport::Api::Builder.build_evp_proxy_api(settings)
             if api.nil?
-              if Transport::Api::Builder.agent_available?(settings)
+              if agent_available
                 Datadog.logger.error(
                   "Test Optimization cannot use the configured Datadog Agent because it does not support EVP proxy. " \
                   "Disabling Test Optimization. Please upgrade the Datadog Agent."

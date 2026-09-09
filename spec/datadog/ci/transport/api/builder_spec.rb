@@ -87,84 +87,24 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
     subject { described_class.build_evp_proxy_api(settings) }
 
     let(:api) { double(:api) }
-
-    let(:agent_settings) do
-      Datadog::Core::Configuration::AgentSettings.new(
-        adapter: :net_http,
-        ssl: false,
-        hostname: "localhost",
-        port: 5555,
-        uds_path: nil,
-        timeout_seconds: 42
-      )
-    end
-
-    before do
-      allow(Datadog::Core::Configuration::AgentSettingsResolver).to receive(:call).and_return(agent_settings)
-    end
-
-    context "agent does not support any evp proxy version" do
-      before do
-        allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
-          receive(:endpoint?).and_return(false)
-        )
-      end
-
-      it { is_expected.to be_nil }
-    end
-
-    context "agent supports evp proxy v2" do
-      before do
-        allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
-          receive(:endpoint?).with("/evp_proxy/v4/").and_return(false)
-        )
-        allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
-          receive(:endpoint?).with("/evp_proxy/v2/").and_return(true)
-        )
-      end
-
-      it "creates and configures http client and EvpProxy" do
-        expect(Datadog::CI::Transport::Api::EvpProxy).to(
-          receive(:new).with(agent_settings: agent_settings, path_prefix: "/evp_proxy/v2/").and_return(api)
-        )
-
-        expect(subject).to eq(api)
-      end
-    end
-
-    context "agent supports evp proxy v4" do
-      before do
-        allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
-          receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
-        )
-      end
-
-      it "creates and configures http client and EvpProxy" do
-        expect(Datadog::CI::Transport::Api::EvpProxy).to(
-          receive(:new).with(agent_settings: agent_settings, path_prefix: "/evp_proxy/v4/").and_return(api)
-        )
-
-        expect(subject).to eq(api)
-      end
-    end
-  end
-
-  describe ".agent_available?" do
-    subject { described_class.agent_available?(settings) }
-
-    let(:agent_settings) do
-      Datadog::Core::Configuration::AgentSettings.new(
-        adapter: :net_http,
-        ssl: false,
-        hostname: "localhost",
-        port: 5555,
-        uds_path: nil,
-        timeout_seconds: 42
-      )
-    end
     let(:transport) { instance_double(Datadog::Core::Remote::Transport::Negotiation::Transport) }
-    let(:response) { double(:response, internal_error?: internal_error) }
+    let(:response) do
+      double(:response, internal_error?: internal_error, ok?: ok, endpoints: endpoints)
+    end
     let(:internal_error) { false }
+    let(:ok) { true }
+    let(:endpoints) { [] }
+
+    let(:agent_settings) do
+      Datadog::Core::Configuration::AgentSettings.new(
+        adapter: :net_http,
+        ssl: false,
+        hostname: "localhost",
+        port: 5555,
+        uds_path: nil,
+        timeout_seconds: 42
+      )
+    end
 
     before do
       allow(Datadog::Core::Configuration::AgentSettingsResolver).to receive(:call).and_return(agent_settings)
@@ -175,12 +115,45 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       allow(transport).to receive(:send_info).and_return(response)
     end
 
-    it { is_expected.to be(true) }
+    context "agent does not support any evp proxy version" do
+      it { is_expected.to eq([nil, true]) }
+    end
+
+    context "agent supports evp proxy v2" do
+      let(:endpoints) { ["/evp_proxy/v2/"] }
+
+      it "creates and configures http client and EvpProxy" do
+        expect(Datadog::CI::Transport::Api::EvpProxy).to(
+          receive(:new).with(agent_settings: agent_settings, path_prefix: "/evp_proxy/v2/").and_return(api)
+        )
+
+        expect(subject).to eq([api, true])
+      end
+    end
+
+    context "agent supports evp proxy v4" do
+      let(:endpoints) { ["/evp_proxy/v4/", "/evp_proxy/v2/"] }
+
+      it "creates and configures http client and EvpProxy" do
+        expect(Datadog::CI::Transport::Api::EvpProxy).to(
+          receive(:new).with(agent_settings: agent_settings, path_prefix: "/evp_proxy/v4/").and_return(api)
+        )
+
+        expect(subject).to eq([api, true])
+      end
+    end
 
     context "when the agent request has an internal transport error" do
       let(:internal_error) { true }
+      let(:ok) { false }
 
-      it { is_expected.to be(false) }
+      it { is_expected.to eq([nil, false]) }
+    end
+
+    it "requests Agent information once" do
+      subject
+
+      expect(transport).to have_received(:send_info).once
     end
   end
 end
