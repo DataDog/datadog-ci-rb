@@ -52,8 +52,9 @@ module Datadog
 
             return [nil, false] if response.internal_error?
 
-            evp_proxy_path_prefix = if response.ok?
-              Ext::Transport::EVP_PROXY_PATH_PREFIXES.find { |path_prefix| response.endpoints.include?(path_prefix) }
+            endpoints = response.endpoints
+            evp_proxy_path_prefix = if response.ok? && endpoints.is_a?(Array)
+              Ext::Transport::EVP_PROXY_PATH_PREFIXES.find { |path_prefix| endpoints.include?(path_prefix) }
             end
 
             return [nil, true] if evp_proxy_path_prefix.nil?

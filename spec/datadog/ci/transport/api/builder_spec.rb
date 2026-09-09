@@ -119,6 +119,18 @@ RSpec.describe Datadog::CI::Transport::Api::Builder do
       it { is_expected.to eq([nil, true]) }
     end
 
+    context "when the Agent response does not contain endpoints" do
+      let(:endpoints) { nil }
+
+      it { is_expected.to eq([nil, true]) }
+    end
+
+    context "when the Agent response endpoints are not an array" do
+      let(:endpoints) { "/evp_proxy/v4/" }
+
+      it { is_expected.to eq([nil, true]) }
+    end
+
     context "agent supports evp proxy v2" do
       let(:endpoints) { ["/evp_proxy/v2/"] }
 
