@@ -31,6 +31,20 @@ module Datadog
 
         attr_reader local_test_suites_mode: bool
 
+        def self.build: (
+          api: Datadog::CI::Transport::Api::Base,
+          dd_env: String?,
+          config_tags: Hash[String, String],
+          ?codeowners: Datadog::CI::Codeowners::Matcher,
+          ?logical_test_session_name: String?,
+          ?runtime_tags_overrides: Hash[String, String],
+          ?context_service_uri: String?
+        ) -> Component
+
+        def self.default_trace_flush: () -> Datadog::CI::TestTracing::Flush::Partial
+
+        def self.build_transport: (api: Datadog::CI::Transport::Api::Base, discard_traces: bool, dd_env: String?) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
+
         def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void

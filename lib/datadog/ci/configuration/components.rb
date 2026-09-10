@@ -5,39 +5,29 @@ require "datadog/core/telemetry/ext"
 require_relative "../ext/settings"
 require_relative "../code_coverage/component"
 require_relative "../code_coverage/null_component"
-require_relative "../code_coverage/transport"
 require_relative "../git/tree_uploader"
 require_relative "../impacted_tests_detection/component"
 require_relative "../impacted_tests_detection/null_component"
 require_relative "../logs/component"
-require_relative "../logs/transport"
 require_relative "../remote/null_component"
 require_relative "../remote/component"
-require_relative "../remote/library_settings_client"
 require_relative "../test_management/component"
 require_relative "../test_management/null_component"
-require_relative "../test_management/tests_properties"
 require_relative "../test_optimization_cache/component"
 require_relative "../test_optimization_cache/null_component"
 require_relative "../test_impact_analysis/null_component"
 require_relative "../test_impact_analysis/component"
-require_relative "../test_impact_analysis/coverage/transport"
 require_relative "../test_retries/component"
 require_relative "../test_retries/null_component"
 require_relative "../test_discovery/component"
 require_relative "../test_discovery/null_component"
 require_relative "../test_tracing/component"
-require_relative "../test_tracing/flush"
-require_relative "../test_tracing/known_tests"
 require_relative "../test_tracing/null_component"
-require_relative "../test_tracing/null_transport"
-require_relative "../test_tracing/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
 require_relative "../utils/runtime_tags_overrides"
 require_relative "../utils/test_run"
-require_relative "../async_writer"
 require_relative "../worker"
 
 module Datadog
@@ -136,19 +126,26 @@ module Datadog
           # Activate underlying tracing test mode with async worker
           settings.tracing.test_mode.enabled = true
           settings.tracing.test_mode.async = true
-          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || CI::TestTracing::Flush::Partial.new
+          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || TestTracing::Component.default_trace_flush
 
           trace_writer_options = settings.ci.writer_options
           trace_writer_options[:shutdown_timeout] = 60
           trace_writer_options[:buffer_size] = 10_000
-          tracing_transport = build_tracing_transport(settings, test_visibility_api)
+          tracing_transport = TestTracing::Component.build_transport(
+            api: test_visibility_api,
+            discard_traces: settings.ci.discard_traces,
+            dd_env: settings.env
+          )
           trace_writer_options[:transport] = tracing_transport if tracing_transport
 
           settings.tracing.test_mode.writer_options = trace_writer_options
 
           @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
-          @ci_remote = Remote::Component.new(
-            library_settings_client: build_library_settings_client(settings, test_visibility_api),
+          @ci_remote = Remote::Component.build(
+            api: test_visibility_api,
+            dd_env: settings.env,
+            test_skipping_mode: settings.ci.tia_test_skipping_mode,
+            config_tags: custom_configuration(settings),
             test_discovery_enabled: settings.ci.test_discovery_enabled
           )
           @test_retries = TestRetries::Component.new(
@@ -160,16 +157,18 @@ module Datadog
             retry_flaky_fixed_tests_max_attempts: settings.ci.test_management_attempt_to_fix_retries_count
           )
 
-          @test_management = TestManagement::Component.new(
+          @test_management = TestManagement::Component.build(
             enabled: settings.ci.test_management_enabled,
-            tests_properties_client: TestManagement::TestsProperties.new(api: test_visibility_api)
+            api: test_visibility_api
           )
 
           # @type ivar @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component
           @test_impact_analysis = build_test_impact_analysis(settings, test_visibility_api)
-          @test_tracing = TestTracing::Component.new(
+          @test_tracing = TestTracing::Component.build(
+            api: test_visibility_api,
+            dd_env: settings.env,
+            config_tags: custom_configuration(settings),
             logical_test_session_name: settings.ci.test_session_name,
-            known_tests_client: build_known_tests_client(settings, test_visibility_api),
             runtime_tags_overrides: Utils::RuntimeTagsOverrides.parse(settings.ci.runtime_tags_overrides),
             context_service_uri: settings.ci.test_visibility_drb_server_uri
           )
@@ -206,12 +205,12 @@ module Datadog
             settings.ci.itr_test_impact_analysis_use_allocation_tracing = false
           end
 
-          TestImpactAnalysis::Component.new(
+          TestImpactAnalysis::Component.build(
             api: test_visibility_api,
+            discard_traces: settings.ci.discard_traces,
             dd_env: settings.env,
             config_tags: custom_configuration(settings),
             test_skipping_mode: settings.ci.tia_test_skipping_mode,
-            coverage_writer: build_coverage_writer(settings, test_visibility_api),
             enabled: settings.ci.enabled && settings.ci.itr_enabled,
             bundle_location: settings.ci.itr_code_coverage_excluded_bundle_path,
             use_single_threaded_coverage: settings.ci.itr_code_coverage_use_single_threaded_mode,
@@ -261,25 +260,6 @@ module Datadog
           api
         end
 
-        def build_tracing_transport(settings, api)
-          # NullTransport ignores traces
-          return TestTracing::NullTransport.new if settings.ci.discard_traces
-
-          TestTracing::Transport.new(
-            api: api,
-            dd_env: settings.env
-          )
-        end
-
-        def build_coverage_writer(settings, api)
-          # nil means that coverage event will be ignored
-          return nil if api.nil? || settings.ci.discard_traces
-
-          AsyncWriter.new(
-            transport: TestImpactAnalysis::Coverage::Transport.new(api: api)
-          )
-        end
-
         def build_git_upload_worker(settings, api)
           if settings.ci.git_metadata_upload_enabled
             git_tree_uploader = Git::TreeUploader.new(api: api, force_unshallow: settings.ci.impacted_tests_detection_enabled)
@@ -291,29 +271,11 @@ module Datadog
           end
         end
 
-        def build_library_settings_client(settings, api)
-          Remote::LibrarySettingsClient.new(
-            api: api,
-            dd_env: settings.env,
-            test_skipping_mode: settings.ci.tia_test_skipping_mode,
-            config_tags: custom_configuration(settings)
-          )
-        end
-
-        def build_known_tests_client(settings, api)
-          TestTracing::KnownTests.new(
-            api: api,
-            dd_env: settings.env,
-            config_tags: custom_configuration(settings)
-          )
-        end
-
         def build_code_coverage(settings, api)
-          return CodeCoverage::NullComponent.new if api.nil? || settings.ci.discard_traces
-
-          CodeCoverage::Component.new(
+          CodeCoverage::Component.build(
             enabled: settings.ci.code_coverage_report_upload_enabled,
-            transport: CodeCoverage::Transport.new(api: api),
+            api: api,
+            discard_traces: settings.ci.discard_traces,
             flags: settings.ci.code_coverage_flags
           )
         end
@@ -329,16 +291,11 @@ module Datadog
             settings.ci.agentless_logs_submission_enabled = false
           end
 
-          Logs::Component.new(
+          Logs::Component.build(
             enabled: settings.ci.agentless_logs_submission_enabled,
-            writer: build_logs_writer(settings, api)
+            api: api,
+            discard_traces: settings.ci.discard_traces
           )
-        end
-
-        def build_logs_writer(settings, api)
-          return nil if api.nil? || settings.ci.discard_traces
-
-          AsyncWriter.new(transport: Logs::Transport.new(api: api), options: {buffer_size: 1024})
         end
 
         # fetch custom tags provided by the user in DD_TAGS env var

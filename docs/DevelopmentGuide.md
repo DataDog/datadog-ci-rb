@@ -167,3 +167,15 @@ To check, run:
 ```bash
 bundle exec standardrb
 ```
+
+### Architecture checks
+
+[ArchSpec](https://archspecrb.dev/) prevents code outside a Test Optimization component from referencing its internal constants. A component's `component.rb` and `null_component.rb` files are its public entry points; callers can use their public methods, while the remaining files in that component directory are private.
+
+Run the architecture check on Ruby 3.2 or newer:
+
+```bash
+bundle exec rake archspec
+```
+
+Architecture violations fail the check and must be fixed by moving the interaction behind the owning component's public interface.

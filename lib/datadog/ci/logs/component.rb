@@ -2,11 +2,22 @@
 
 require "datadog/core/environment/platform"
 
+require_relative "../async_writer"
+require_relative "transport"
+
 module Datadog
   module CI
     module Logs
       class Component
         attr_reader :enabled
+
+        def self.build(enabled:, api:, discard_traces:)
+          writer = unless api.nil? || discard_traces
+            AsyncWriter.new(transport: Transport.new(api: api), options: {buffer_size: 1024})
+          end
+
+          new(enabled: enabled, writer: writer)
+        end
 
         def initialize(enabled:, writer:)
           @enabled = enabled && !writer.nil?

@@ -34,12 +34,15 @@ gem "os"
 # type checks, memory checks, etc.
 group :check do
   # style
-  gem "standard", "~> 1.31"
+  gem "standard", "~> 1.56"
+
+  # architecture checks (ArchSpec supports Ruby 3.2+)
+  gem "archspec", "~> 1.1.0", require: false if RUBY_VERSION >= "3.2.0"
 
   # type checks
   if RUBY_VERSION >= "3.4.0" && RUBY_PLATFORM != "java"
-    gem "rbs", "~> 4.0", require: false
-    gem "steep", "~> 2.0", require: false
+    gem "rbs", "~> 4.2", require: false
+    gem "steep", "~> 2.1", require: false
   end
 
   # memory checks

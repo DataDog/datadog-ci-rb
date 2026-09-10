@@ -5,6 +5,7 @@ require_relative "../ext/test"
 require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
 require_relative "../utils/test_run"
+require_relative "tests_properties"
 
 module Datadog
   module CI
@@ -20,6 +21,10 @@ module Datadog
         FILE_STORAGE_KEY = "test_management_component_state"
 
         attr_reader :enabled, :tests_properties
+
+        def self.build(enabled:, api:)
+          new(enabled: enabled, tests_properties_client: TestsProperties.new(api: api))
+        end
 
         def initialize(enabled:, tests_properties_client:)
           @enabled = enabled

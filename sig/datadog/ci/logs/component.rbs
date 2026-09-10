@@ -6,6 +6,8 @@ module Datadog
 
         @writer: Datadog::CI::AsyncWriter?
 
+        def self.build: (enabled: bool, api: Datadog::CI::Transport::Api::Base?, discard_traces: bool) -> Component
+
         def initialize: (enabled: bool, writer: Datadog::CI::AsyncWriter?) -> void
 
         def write: (Hash[Symbol | String, untyped] event) -> void
