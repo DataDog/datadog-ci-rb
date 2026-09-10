@@ -128,7 +128,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             expect(response.correlation_id).to eq("correlation_id_123")
             expect(response.tests).to eq(Set.new(["test_suite_name.test_name.string"]))
             expect(response.suites).to be_empty
-            expect(response.error_message).to be_nil
           end
 
           it "does not tag the test session with the library configuration error tag" do
@@ -163,7 +162,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
             expect(response.correlation_id).to be_nil
             expect(response.tests).to be_empty
             expect(response.suites).to be_empty
-            expect(response.error_message).to eq("Status code: 422, response: not authorized")
           end
 
           it "tags the test session with the library configuration error tag" do

@@ -59,12 +59,6 @@ module Datadog
             res
           end
 
-          def error_message
-            return nil if ok?
-
-            "Status code: #{@http_response&.code}, response: #{@http_response&.payload}"
-          end
-
           private
 
           def initialize(http_response, json)

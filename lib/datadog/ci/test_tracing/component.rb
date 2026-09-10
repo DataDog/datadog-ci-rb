@@ -199,14 +199,6 @@ module Datadog
           @context.deactivate_test_suite(test_suite_name)
         end
 
-        def total_tests_count
-          maybe_remote_context.total_tests_count
-        end
-
-        def tests_skipped_by_tia_count
-          maybe_remote_context.tests_skipped_by_tia_count
-        end
-
         def itr_enabled?
           test_impact_analysis.enabled?
         end
@@ -279,8 +271,6 @@ module Datadog
         end
 
         def on_test_started(test)
-          maybe_remote_context.incr_total_tests_count
-
           # Sometimes test suite is not being assigned correctly.
           # Fix it by fetching the one single running test suite from the process context.
           #

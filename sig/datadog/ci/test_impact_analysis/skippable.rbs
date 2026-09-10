@@ -23,8 +23,6 @@ module Datadog
 
           def suites: () -> Set[String]
 
-          def error_message: () -> String?
-
           private
 
           def initialize: (Datadog::CI::Transport::Adapters::Net::Response? http_response, Hash[String, untyped]? json) -> void
