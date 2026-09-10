@@ -4,7 +4,7 @@ require "datadog/core/environment/identity"
 require "datadog/core/telemetry/logging"
 require "datadog/core/utils/only_once"
 
-require_relative "serializers/factories/test_level"
+require_relative "serializers/factories/test_suite_level"
 require_relative "serializers/meta_truncation"
 
 require_relative "../ext/app_types"
@@ -18,17 +18,15 @@ module Datadog
   module CI
     module TestTracing
       class Transport < Datadog::CI::Transport::EventPlatformTransport
-        attr_reader :serializers_factory, :dd_env
+        attr_reader :dd_env
 
         def initialize(
           api:,
           dd_env:,
-          serializers_factory: Datadog::CI::TestTracing::Serializers::Factories::TestLevel,
           max_payload_size: DEFAULT_MAX_PAYLOAD_SIZE
         )
           super(api: api, max_payload_size: max_payload_size)
 
-          @serializers_factory = serializers_factory
           @dd_env = dd_env
         end
 
@@ -57,7 +55,7 @@ module Datadog
         end
 
         def encode_span(trace, span)
-          serializer = serializers_factory.serializer(
+          serializer = Serializers::Factories::TestSuiteLevel.serializer(
             trace,
             span,
             options: {itr_correlation_id: test_impact_analysis&.correlation_id}

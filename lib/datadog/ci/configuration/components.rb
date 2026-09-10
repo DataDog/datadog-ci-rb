@@ -30,8 +30,6 @@ require_relative "../test_tracing/component"
 require_relative "../test_tracing/flush"
 require_relative "../test_tracing/known_tests"
 require_relative "../test_tracing/null_component"
-require_relative "../test_tracing/serializers/factories/test_level"
-require_relative "../test_tracing/serializers/factories/test_suite_level"
 require_relative "../test_tracing/null_transport"
 require_relative "../test_tracing/transport"
 require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
@@ -100,7 +98,7 @@ module Datadog
           # Builds test visibility API layer in agentless or EvP proxy mode
           test_visibility_api = build_test_visibility_api(settings)
           # bail out early if api is misconfigured
-          return unless settings.ci.enabled
+          return unless settings.ci.enabled && test_visibility_api
 
           # Configure datadog gem for test visibility mode
           configure_telemetry(settings)
@@ -170,7 +168,6 @@ module Datadog
           # @type ivar @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component
           @test_impact_analysis = build_test_impact_analysis(settings, test_visibility_api)
           @test_tracing = TestTracing::Component.new(
-            test_suite_level_visibility_enabled: !settings.ci.force_test_level_visibility,
             logical_test_session_name: settings.ci.test_session_name,
             known_tests_client: build_known_tests_client(settings, test_visibility_api),
             runtime_tags_overrides: Utils::RuntimeTagsOverrides.parse(settings.ci.runtime_tags_overrides),
@@ -243,17 +240,21 @@ module Datadog
           else
             Datadog.logger.debug("Test Optimization configured to use agent transport via EVP proxy")
 
-            api = Transport::Api::Builder.build_evp_proxy_api(settings)
+            api, agent_available = Transport::Api::Builder.build_evp_proxy_api(settings)
             if api.nil?
-              Datadog.logger.debug(
-                "Old agent version detected, no evp_proxy support. Forcing test level visibility mode"
-              )
+              if agent_available
+                Datadog.logger.error(
+                  "Test Optimization cannot use the configured Datadog Agent because it does not support EVP proxy. " \
+                  "Disabling Test Optimization. Please upgrade the Datadog Agent."
+                )
+              else
+                Datadog.logger.error(
+                  "Test Optimization cannot connect to the Datadog Agent. " \
+                  "Disabling Test Optimization. Please ensure the Agent is running and configured to accept traces."
+                )
+              end
 
-              # only legacy APM protocol is supported, so no test suite level visibility
-              settings.ci.force_test_level_visibility = true
-
-              # ITR is not supported with APM protocol
-              settings.ci.itr_enabled = false
+              settings.ci.enabled = false
             end
           end
 
@@ -263,12 +264,9 @@ module Datadog
         def build_tracing_transport(settings, api)
           # NullTransport ignores traces
           return TestTracing::NullTransport.new if settings.ci.discard_traces
-          # nil means that default legacy APM transport will be used (only for very old Datadog Agent versions)
-          return nil if api.nil?
 
           TestTracing::Transport.new(
             api: api,
-            serializers_factory: serializers_factory(settings),
             dd_env: settings.env
           )
         end
@@ -347,14 +345,6 @@ module Datadog
         # with prefix test.configuration.
         def custom_configuration(settings)
           @custom_configuration ||= Utils::TestRun.custom_configuration(settings.tags)
-        end
-
-        def serializers_factory(settings)
-          if settings.ci.force_test_level_visibility
-            TestTracing::Serializers::Factories::TestLevel
-          else
-            TestTracing::Serializers::Factories::TestSuiteLevel
-          end
         end
 
         def check_dd_site(settings)

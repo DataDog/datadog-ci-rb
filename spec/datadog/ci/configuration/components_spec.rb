@@ -41,7 +41,6 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.ci.agentless_mode_enabled = agentless_enabled
           settings.ci.agentless_logs_submission_enabled = agentless_logs_submission_enabled
 
-          settings.ci.force_test_level_visibility = force_test_level_visibility
           settings.ci.agentless_url = agentless_url
           settings.ci.itr_enabled = itr_enabled
           settings.ci.tia_test_skipping_mode = tia_test_skipping_mode
@@ -56,7 +55,16 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.site = dd_site
           settings.api_key = api_key
 
-          negotiation = double(:negotiation)
+          agent_info_transport = instance_double(Datadog::Core::Remote::Transport::Negotiation::Transport)
+          agent_info_response = double(
+            :agent_info_response,
+            internal_error?: !agent_available,
+            ok?: agent_available,
+            endpoints: [
+              ("/evp_proxy/v4/" if evp_proxy_v4_supported),
+              ("/evp_proxy/v2/" if evp_proxy_v2_supported)
+            ].compact
+          )
 
           telemetry_double = instance_double(
             Datadog::Core::Telemetry::Component,
@@ -65,17 +73,12 @@ RSpec.describe Datadog::CI::Configuration::Components do
           )
           allow(Datadog::Core::Telemetry::Component).to receive(:build).and_return(telemetry_double)
 
-          allow(Datadog::Core::Remote::Negotiation)
-            .to receive(:new)
-            .and_return(negotiation)
-
-          allow(negotiation)
-            .to receive(:endpoint?).with("/evp_proxy/v4/")
-            .and_return(evp_proxy_v4_supported)
-
-          allow(negotiation)
-            .to receive(:endpoint?).with("/evp_proxy/v2/")
-            .and_return(evp_proxy_v2_supported)
+          allow(Datadog::Core::Remote::Transport::HTTP)
+            .to receive(:root)
+            .and_return(agent_info_transport)
+          allow(agent_info_transport)
+            .to receive(:send_info)
+            .and_return(agent_info_response)
 
           # Spy on test mode behavior
           allow(settings.tracing.test_mode)
@@ -124,9 +127,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:dd_site) { nil }
         let(:agentless_enabled) { false }
         let(:agentless_logs_submission_enabled) { false }
-        let(:force_test_level_visibility) { false }
-        let(:evp_proxy_v2_supported) { false }
+        let(:evp_proxy_v2_supported) { true }
         let(:evp_proxy_v4_supported) { false }
+        let(:agent_available) { true }
         let(:itr_enabled) { false }
         let(:tia_test_skipping_mode) { "test" }
         let(:tia_static_dependencies_tracking_enabled) { nil }
@@ -231,26 +234,6 @@ RSpec.describe Datadog::CI::Configuration::Components do
             end
           end
 
-          context "when #force_test_level_visibility" do
-            let(:evp_proxy_v2_supported) { true }
-
-            context "is false" do
-              it "creates test visibility component with test_suite_level_visibility_enabled=true" do
-                expect(components.test_tracing).to be_kind_of(Datadog::CI::TestTracing::Component)
-                expect(components.test_tracing.test_suite_level_visibility_enabled).to eq(true)
-              end
-            end
-
-            context "is true" do
-              let(:force_test_level_visibility) { true }
-
-              it "creates test visibility component with test_suite_level_visibility_enabled=false" do
-                expect(components.test_tracing).to be_kind_of(Datadog::CI::TestTracing::Component)
-                expect(components.test_tracing.test_suite_level_visibility_enabled).to eq(false)
-              end
-            end
-          end
-
           context "and when #agentless_mode" do
             context "is disabled" do
               let(:agentless_enabled) { false }
@@ -322,25 +305,35 @@ RSpec.describe Datadog::CI::Configuration::Components do
               end
 
               context "and when agent does not support EVP proxy" do
-                let(:itr_enabled) { true }
+                let(:evp_proxy_v2_supported) { false }
 
-                it "falls back to default transport and disables test suite level visibility and ITR" do
-                  expect(settings.tracing.test_mode)
-                    .to have_received(:enabled=)
-                    .with(true)
+                it "logs an unsupported Agent error and disables Test Optimization" do
+                  expect(Datadog.logger).to have_received(:error).with(
+                    "Test Optimization cannot use the configured Datadog Agent because it does not support EVP proxy. " \
+                    "Disabling Test Optimization. Please upgrade the Datadog Agent."
+                  )
+                  expect(settings.ci.enabled).to eq(false)
+                  expect(components.test_tracing).to be_kind_of(Datadog::CI::TestTracing::NullComponent)
+                  expect(components.ci_remote).to be_kind_of(Datadog::CI::Remote::NullComponent)
+                  expect(components.test_retries).to be_kind_of(Datadog::CI::TestRetries::NullComponent)
+                  expect(settings.tracing.test_mode).not_to have_received(:enabled=)
+                end
+              end
 
-                  expect(settings.tracing.test_mode)
-                    .to have_received(:trace_flush=)
-                    .with(settings.ci.trace_flush || kind_of(Datadog::CI::TestTracing::Flush::Partial))
+              context "and when the agent is unavailable" do
+                let(:evp_proxy_v2_supported) { false }
+                let(:agent_available) { false }
 
-                  expect(settings.ci.force_test_level_visibility).to eq(true)
-                  expect(settings.ci.itr_enabled).to eq(false)
-
-                  expect(settings.tracing.test_mode).to have_received(:writer_options=) do |options|
-                    expect(options[:transport]).to be_nil
-                  end
-
-                  expect(components.test_tracing.itr_enabled?).to eq(false)
+                it "logs an unavailable Agent error and disables Test Optimization" do
+                  expect(Datadog.logger).to have_received(:error).with(
+                    "Test Optimization cannot connect to the Datadog Agent. " \
+                    "Disabling Test Optimization. Please ensure the Agent is running and configured to accept traces."
+                  )
+                  expect(settings.ci.enabled).to eq(false)
+                  expect(components.test_tracing).to be_kind_of(Datadog::CI::TestTracing::NullComponent)
+                  expect(components.ci_remote).to be_kind_of(Datadog::CI::Remote::NullComponent)
+                  expect(components.test_retries).to be_kind_of(Datadog::CI::TestRetries::NullComponent)
+                  expect(settings.tracing.test_mode).not_to have_received(:enabled=)
                 end
               end
 

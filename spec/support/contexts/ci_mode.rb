@@ -86,8 +86,15 @@ RSpec.shared_context "CI mode activated" do
     setup_test_coverage_writer!
     setup_agentless_logs_writer!
 
-    allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
-      receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
+    allow_any_instance_of(Datadog::Core::Remote::Transport::Negotiation::Transport).to(
+      receive(:send_info).and_return(
+        double(
+          :agent_info_response,
+          internal_error?: false,
+          ok?: true,
+          endpoints: ["/evp_proxy/v4/"]
+        )
+      )
     )
 
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return(test_command)
@@ -167,7 +174,7 @@ RSpec.shared_context "CI mode activated" do
 
       c.ci.agentless_mode_enabled = agentless_mode_enabled
 
-      # test visibility
+      # Kept as a no-op to verify compatibility with legacy configuration.
       c.ci.force_test_level_visibility = force_test_level_visibility
 
       # test optimisation

@@ -30,19 +30,16 @@ module Datadog
 
         FILE_STORAGE_KEY = "test_tracing_component_state"
 
-        attr_reader :test_suite_level_visibility_enabled, :logical_test_session_name,
-          :known_tests, :known_tests_enabled, :context_service_uri, :local_test_suites_mode
+        attr_reader :logical_test_session_name, :known_tests, :known_tests_enabled, :context_service_uri,
+          :local_test_suites_mode
 
         def initialize(
           known_tests_client:,
-          test_suite_level_visibility_enabled: false,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse,
           logical_test_session_name: nil,
           runtime_tags_overrides: {},
           context_service_uri: nil
         )
-          @test_suite_level_visibility_enabled = test_suite_level_visibility_enabled
-
           @context = Context.new(test_tracing_component: self, runtime_tags_overrides: runtime_tags_overrides)
 
           @codeowners = codeowners
@@ -72,7 +69,6 @@ module Datadog
         end
 
         def configure(library_configuration, test_session)
-          return unless test_suite_level_visibility_enabled
           return unless library_configuration.known_tests_enabled?
 
           @known_tests_enabled = true
@@ -83,8 +79,6 @@ module Datadog
         end
 
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: nil, local_test_suites_mode: true)
-          return skip_tracing unless test_suite_level_visibility_enabled
-
           @local_test_suites_mode = local_test_suites_mode
 
           start_drb_service
@@ -99,8 +93,6 @@ module Datadog
         end
 
         def start_test_module(test_module_name, service: nil, tags: {})
-          return skip_tracing unless test_suite_level_visibility_enabled
-
           test_module = maybe_remote_context.start_test_module(test_module_name, service: service, tags: tags)
           on_test_module_started(test_module)
 
@@ -108,8 +100,6 @@ module Datadog
         end
 
         def start_test_suite(test_suite_name, service: nil, tags: {})
-          return skip_tracing unless test_suite_level_visibility_enabled
-
           test_suite_name = Utils::TestName.normalize(test_suite_name)
           context = @local_test_suites_mode ? @context : maybe_remote_context
 
@@ -352,10 +342,6 @@ module Datadog
           maybe_remote_context.single_active_test_suite
         end
 
-        def skip_tracing(block = nil)
-          block&.call(nil)
-        end
-
         def set_codeowners(span)
           source = span.source_file
           owners = @codeowners.list_owners(source) if source
@@ -384,8 +370,6 @@ module Datadog
         end
 
         def fix_test_suite!(test)
-          return unless test_suite_level_visibility_enabled
-
           test_suite = maybe_remote_context.single_active_test_suite
           unless test_suite
             Datadog.logger.debug do
@@ -404,8 +388,6 @@ module Datadog
         end
 
         def validate_test_suite_level_visibility_correctness(test)
-          return unless test_suite_level_visibility_enabled
-
           if test.test_suite_id.nil?
             Datadog.logger.debug do
               "Test [#{test.name}] does not have a test suite associated with it. " \

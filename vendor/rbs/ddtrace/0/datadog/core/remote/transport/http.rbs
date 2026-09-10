@@ -1,0 +1,15 @@
+module Datadog
+  module Core
+    module Remote
+      module Transport
+        module HTTP
+          def self.root: (
+            agent_settings: Datadog::Core::Configuration::AgentSettings,
+            logger: Datadog::Core::Logger,
+            ?headers: untyped?
+          ) ?{ (untyped) -> untyped } -> Datadog::Core::Remote::Transport::Negotiation::Transport
+        end
+      end
+    end
+  end
+end

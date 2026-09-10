@@ -49,6 +49,10 @@ module Datadog
                 next unless integration.loaded?
 
                 auto_configure_datadog
+                unless Datadog.configuration.ci.enabled
+                  tp.disable
+                  break
+                end
 
                 Datadog.logger.debug("#{integration.class} is loaded")
                 patch_integration(integration)

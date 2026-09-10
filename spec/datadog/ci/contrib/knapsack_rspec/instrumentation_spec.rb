@@ -15,10 +15,6 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the kn
   include_context "CI mode activated"
 
   before do
-    allow_any_instance_of(Datadog::Core::Remote::Negotiation).to(
-      receive(:endpoint?).with("/evp_proxy/v4/").and_return(true)
-    )
-
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return("knapsack:queue:rspec")
 
     allow_any_instance_of(KnapsackPro::Runners::Queue::RSpecRunner).to receive(:test_file_paths).and_return(

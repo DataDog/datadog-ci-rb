@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "datadog/core/configuration/agent_settings_resolver"
-require "datadog/core/remote/negotiation"
+require "datadog/core/remote/transport/http"
 
 require_relative "agentless"
 require_relative "evp_proxy"
@@ -45,19 +45,21 @@ module Datadog
 
           def self.build_evp_proxy_api(settings)
             agent_settings = Datadog::Core::Configuration::AgentSettingsResolver.call(settings)
-            negotiation = Datadog::Core::Remote::Negotiation.new(
-              settings,
-              agent_settings,
-              suppress_logging: {no_config_endpoint: true}
-            )
+            response = Datadog::Core::Remote::Transport::HTTP.root(
+              agent_settings: agent_settings,
+              logger: Datadog.logger
+            ).send_info
 
-            evp_proxy_path_prefix = Ext::Transport::EVP_PROXY_PATH_PREFIXES.find do |path_prefix|
-              negotiation.endpoint?(path_prefix)
+            return [nil, false] if response.internal_error?
+
+            endpoints = response.endpoints
+            evp_proxy_path_prefix = if response.ok? && endpoints.is_a?(Array)
+              Ext::Transport::EVP_PROXY_PATH_PREFIXES.find { |path_prefix| endpoints.include?(path_prefix) }
             end
 
-            return nil if evp_proxy_path_prefix.nil?
+            return [nil, true] if evp_proxy_path_prefix.nil?
 
-            EvpProxy.new(agent_settings: agent_settings, path_prefix: evp_proxy_path_prefix)
+            [EvpProxy.new(agent_settings: agent_settings, path_prefix: evp_proxy_path_prefix), true]
           end
         end
       end

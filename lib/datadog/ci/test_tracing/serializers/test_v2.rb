@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require_relative "test_v1"
+require_relative "base"
 require_relative "../../ext/test"
 
 module Datadog
   module CI
     module TestTracing
       module Serializers
-        class TestV2 < TestV1
-          CONTENT_FIELDS = (%w[test_session_id test_module_id test_suite_id] + TestV1::CONTENT_FIELDS).freeze
+        class TestV2 < Base
+          CONTENT_FIELDS = (%w[test_session_id test_module_id test_suite_id trace_id span_id] + Base::CONTENT_FIELDS).freeze
 
           CONTENT_FIELDS_WITH_ITR_CORRELATION_ID = (CONTENT_FIELDS + %w[itr_correlation_id]).freeze
 
@@ -16,7 +16,7 @@ module Datadog
 
           CONTENT_MAP_SIZE_WITH_ITR_CORRELATION_ID = calculate_content_map_size(CONTENT_FIELDS_WITH_ITR_CORRELATION_ID)
 
-          REQUIRED_FIELDS = (%w[test_session_id test_module_id test_suite_id] + TestV1::REQUIRED_FIELDS).freeze
+          REQUIRED_FIELDS = (%w[test_session_id test_module_id test_suite_id trace_id span_id] + Base::REQUIRED_FIELDS).freeze
 
           def content_fields
             return CONTENT_FIELDS if itr_correlation_id.nil?
@@ -32,6 +32,18 @@ module Datadog
 
           def version
             2
+          end
+
+          def event_type
+            Ext::AppTypes::TYPE_TEST
+          end
+
+          def name
+            "#{@span.get_tag(Ext::Test::TAG_FRAMEWORK)}.test"
+          end
+
+          def resource
+            "#{@span.get_tag(Ext::Test::TAG_SUITE)}.#{@span.get_tag(Ext::Test::TAG_NAME)}"
           end
 
           def itr_correlation_id

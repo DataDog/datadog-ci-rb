@@ -129,4 +129,51 @@ RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
 
     expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
   end
+
+  it "preserves Minitest wrappers loaded after Test Optimization is disabled" do
+    script = <<~RUBY
+      require "datadog/ci"
+      require "minitest"
+
+      Datadog.configure do |c|
+        c.ci.enabled = true
+        c.ci.instrument :minitest
+      end
+
+      abort "expected Test Optimization to be disabled" if Datadog.configuration.ci.enabled
+
+      wrapper_calls = 0
+      reporter = Object.new
+      reporter.define_singleton_method(:before_test) { |_| wrapper_calls += 1 }
+      reporter.define_singleton_method(:after_test) { |_| }
+
+      require "minitest/reporters"
+      Minitest::Reporters.use!([reporter])
+
+      test_class = Class.new(Minitest::Test) do
+        def test_pass
+          assert true
+        end
+      end
+
+      test_class.new(:test_pass).run
+
+      abort "expected the later Minitest wrapper to run once, got \#{wrapper_calls}" unless wrapper_calls == 1
+    RUBY
+
+    stdout, stderr, status = Open3.capture3(
+      {
+        "DD_TRACE_AGENT_URL" => "unix:///tmp/datadog-ci-rb-missing-agent.sock",
+        "DD_GIT_REPOSITORY_URL" => "https://github.com/DataDog/datadog-ci-rb",
+        "DD_GIT_COMMIT_SHA" => "0" * 40
+      },
+      RbConfig.ruby,
+      "-rbundler/setup",
+      "-I#{File.expand_path("../../../../../lib", __dir__)}",
+      "-e",
+      script
+    )
+
+    expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
+  end
 end

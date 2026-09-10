@@ -32,8 +32,6 @@ module Datadog
 
         def remove_test_finished_callback: () -> void
 
-        def test_suite_level_visibility_enabled: () -> bool
-
         def logical_test_session_name: () -> nil
 
         def shutdown!: () -> nil

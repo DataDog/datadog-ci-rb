@@ -63,70 +63,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
     end
   end
 
-  context "when test suite level visibility is disabled" do
-    let(:service) { "my-service" }
-    let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
-
-    include_context "CI mode activated" do
-      let(:force_test_level_visibility) { true }
-    end
-
-    describe "#trace_test_session" do
-      subject { test_tracing.start_test_session(service: service, tags: tags) }
-
-      it { is_expected.to be_nil }
-
-      it "does not activate session" do
-        expect(test_tracing.active_test_session).to be_nil
-      end
-    end
-
-    describe "#trace_test_module" do
-      let(:module_name) { "my-module" }
-
-      subject { test_tracing.start_test_module(module_name, service: service, tags: tags) }
-
-      it { is_expected.to be_nil }
-
-      it "does not activate module" do
-        expect(test_tracing.active_test_module).to be_nil
-      end
-    end
-
-    describe "#trace_test_suite" do
-      let(:suite_name) { "my-module" }
-
-      subject { test_tracing.start_test_suite(suite_name, service: service, tags: tags) }
-
-      it { is_expected.to be_nil }
-
-      it "does not activate test suite" do
-        expect(test_tracing.active_test_suite(suite_name)).to be_nil
-      end
-    end
-
-    describe "#trace" do
-      let(:type) { "step" }
-      let(:span_name) { "my test step" }
-      let(:tags) { {"test.framework" => "my-framework", "my.tag" => "my_value"} }
-
-      context "when given a block" do
-        before do
-          test_tracing.trace(span_name, type: type, tags: tags) do |span|
-            span.set_metric("my.metric", 42)
-          end
-        end
-        subject { span }
-
-        it "traces the block" do
-          expect(subject.resource).to eq(span_name)
-          expect(subject.type).to eq(type)
-        end
-      end
-    end
-  end
-
-  context "when test suite level visibility is enabled" do
+  context "with test suite level visibility" do
     context "without TestImpactAnalysis" do
       include_context "CI mode activated"
 
@@ -1105,8 +1042,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
   describe "#configure" do
     let(:test_tracing) do
       described_class.new(
-        known_tests_client: known_tests_client,
-        test_suite_level_visibility_enabled: true
+        known_tests_client: known_tests_client
       )
     end
 

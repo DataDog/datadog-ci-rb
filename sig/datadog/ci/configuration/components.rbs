@@ -6,6 +6,7 @@ module Datadog
         @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         @git_tree_upload_worker: Datadog::CI::Worker
         @ci_remote: Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent
+        @test_retries: Datadog::CI::TestRetries::Component | Datadog::CI::TestRetries::NullComponent
         @custom_configuration: Hash[String, String]
         @test_management: Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent
         @agentless_logs_submission: Datadog::CI::Logs::Component
@@ -18,7 +19,7 @@ module Datadog
         attr_reader test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         attr_reader git_tree_upload_worker: Datadog::CI::Worker
         attr_reader ci_remote: Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent
-        attr_reader test_retries: Datadog::CI::TestRetries::Component
+        attr_reader test_retries: Datadog::CI::TestRetries::Component | Datadog::CI::TestRetries::NullComponent
         attr_reader test_management: Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent
         attr_reader agentless_logs_submission: Datadog::CI::Logs::Component
         attr_reader impacted_tests_detection: Datadog::CI::ImpactedTestsDetection::Component | Datadog::CI::ImpactedTestsDetection::NullComponent
@@ -34,11 +35,9 @@ module Datadog
 
         def build_test_visibility_api: (untyped settings) -> Datadog::CI::Transport::Api::Base?
 
-        def serializers_factory: (untyped settings) -> (singleton(Datadog::CI::TestTracing::Serializers::Factories::TestSuiteLevel) | singleton(Datadog::CI::TestTracing::Serializers::Factories::TestLevel))
-
         def check_dd_site: (untyped settings) -> void
 
-        def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> (Datadog::CI::TestTracing::Transport? | Datadog::CI::TestTracing::NullTransport)
+        def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base api) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
 
         def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 
