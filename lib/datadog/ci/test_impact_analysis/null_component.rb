@@ -9,15 +9,13 @@ module Datadog
     module TestImpactAnalysis
       # No-op implementation used when test impact analysis is disabled.
       class NullComponent
-        attr_reader :enabled, :skippable_tests_fetch_error, :test_skipping_enabled,
-          :code_coverage_enabled, :skippable_tests, :skippable_suites, :correlation_id,
-          :test_skipping_mode
+        attr_reader :enabled, :test_skipping_enabled, :code_coverage_enabled, :skippable_tests, :skippable_suites,
+          :correlation_id, :test_skipping_mode
 
         def initialize
           @enabled = false
           @test_skipping_enabled = false
           @code_coverage_enabled = false
-          @skippable_tests_fetch_error = nil
           @skippable_tests = Set.new
           @skippable_suites = Set.new
           @correlation_id = nil
@@ -89,10 +87,6 @@ module Datadog
         end
 
         def mark_if_suite_skippable(_test_suite)
-        end
-
-        def skippables_count
-          0
         end
 
         def shutdown!

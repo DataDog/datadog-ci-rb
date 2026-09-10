@@ -140,13 +140,6 @@ RSpec.describe Datadog::CI::TestTracing::Component do
             )
           end
 
-          it "increments total tests count" do
-            expect { subject }
-              .to change { test_tracing.total_tests_count }
-              .from(0)
-              .to(1)
-          end
-
           context "when there is no active test session" do
             it "returns a new CI test span" do
               expect(subject).to be_kind_of(Datadog::CI::Test)

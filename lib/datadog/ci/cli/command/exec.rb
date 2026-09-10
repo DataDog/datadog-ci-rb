@@ -1,14 +1,9 @@
-require_relative "base"
-require_relative "../../test_impact_analysis/skippable_percentage/estimator"
-
 module Datadog
   module CI
     module CLI
       module Command
-        class Exec < Base
+        class Exec
           def initialize(args)
-            super()
-
             @args = args
           end
 

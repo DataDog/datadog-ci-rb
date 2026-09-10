@@ -2,7 +2,7 @@ module Datadog
   module CI
     module CLI
       module Command
-        class Exec < Base
+        class Exec
           @args: Array[String]
 
           def initialize: (Array[String] args) -> void

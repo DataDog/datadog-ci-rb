@@ -5,7 +5,6 @@ module Datadog
         attr_reader enabled: bool
         attr_reader test_skipping_enabled: bool
         attr_reader code_coverage_enabled: bool
-        attr_reader skippable_tests_fetch_error: String?
         attr_reader skippable_tests: Set[String]
         attr_reader skippable_suites: Set[String]
         attr_reader correlation_id: String?
@@ -50,8 +49,6 @@ module Datadog
         def mark_if_suite_skippable: (Datadog::CI::TestSuite test_suite) -> void
 
         def write_test_session_tags: (Datadog::CI::TestSession test_session, Integer skipped_tests_count) -> void
-
-        def skippables_count: () -> Integer
 
         def shutdown!: () -> void
       end

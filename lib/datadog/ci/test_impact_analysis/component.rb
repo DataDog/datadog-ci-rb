@@ -31,8 +31,8 @@ module Datadog
 
         FILE_STORAGE_KEY = "test_impact_analysis_component_state"
 
-        attr_reader :correlation_id, :skippable_tests, :skippable_suites, :skippable_tests_fetch_error,
-          :enabled, :test_skipping_enabled, :code_coverage_enabled, :test_skipping_mode
+        attr_reader :correlation_id, :skippable_tests, :skippable_suites, :enabled, :test_skipping_enabled,
+          :code_coverage_enabled, :test_skipping_mode
 
         def initialize(
           dd_env:,
@@ -373,10 +373,6 @@ module Datadog
           test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, skipped_tests_count)
         end
 
-        def skippables_count
-          current_skippables.count
-        end
-
         def shutdown!
           @coverage_writer&.stop
         end
@@ -423,6 +419,10 @@ module Datadog
         end
 
         private
+
+        def skippables_count
+          current_skippables.count
+        end
 
         def write(event)
           # skip sending events if writer is not configured
@@ -532,7 +532,6 @@ module Datadog
               test_skipping_mode: @test_skipping_mode
             )
               .fetch_skippables(test_session)
-          @skippable_tests_fetch_error = skippable_response.error_message unless skippable_response.ok?
 
           apply_skippable_response(skippable_response)
 

@@ -28,7 +28,7 @@ module Datadog
       # Its responsibility includes building domain models for test visibility as well.
       # Internally it uses Datadog::Tracing module to create spans.
       class Context
-        attr_reader :total_tests_count, :tests_skipped_by_tia_count
+        attr_reader :tests_skipped_by_tia_count
 
         def initialize(test_tracing_component:, runtime_tags_overrides: {})
           @test_tracing_component = test_tracing_component
@@ -39,7 +39,6 @@ module Datadog
 
           @mutex = Mutex.new
 
-          @total_tests_count = 0
           @tests_skipped_by_tia_count = 0
         end
 
@@ -190,10 +189,6 @@ module Datadog
 
         def deactivate_test_suite(test_suite_name)
           @process_context.deactivate_test_suite!(test_suite_name)
-        end
-
-        def incr_total_tests_count
-          @mutex.synchronize { @total_tests_count += 1 }
         end
 
         def incr_tests_skipped_by_tia_count
