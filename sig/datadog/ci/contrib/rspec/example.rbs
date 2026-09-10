@@ -44,6 +44,7 @@ module Datadog
             def run_before_example: () -> untyped
             def run_after_example: () -> untyped
             def datadog_trace_lifecycle_step?: (Symbol position) -> bool
+            def datadog_rspec_lifecycle_hooks_apply?: (Symbol position) -> bool
             def datadog_tracing_enabled?: () -> bool
             def build_test_tags: () -> Hash[String, String]
             def handle_test_result: (Datadog::CI::Test? test_span, Exception? test_failure) -> Exception?

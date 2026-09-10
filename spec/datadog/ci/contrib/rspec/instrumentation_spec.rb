@@ -372,6 +372,22 @@ RSpec.describe "RSpec instrumentation" do
       expect(custom_spans).to be_empty
     end
 
+    it "falls back to tracing lifecycle steps when RSpec hook introspection is unavailable" do
+      with_new_rspec_environment do
+        example_group = RSpec.describe "some test" do
+          it("foo") {}
+        end
+        example = example_group.examples.fetch(0)
+        allow(example).to receive(:respond_to?).and_call_original
+        allow(example).to receive(:respond_to?).with(:hooks, true).and_return(false)
+
+        example_group.run
+      end
+
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+    end
+
     it "executes hooks and traces the test when lifecycle tracing is disabled" do
       hook_calls = []
       original_value = Datadog.configuration.ci.trace_setup_teardown_enabled
