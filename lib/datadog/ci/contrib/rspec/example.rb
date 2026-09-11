@@ -197,7 +197,7 @@ module Datadog
             # ============================================
 
             def run_before_example
-              return super unless @datadog_test_tracing_component
+              return super unless datadog_trace_lifecycle_step?(:before)
 
               skip_exception = nil
               # @type var skip_exception: ::RSpec::Core::Pending::SkipDeclaredInExample?
@@ -213,7 +213,7 @@ module Datadog
             end
 
             def run_after_example
-              return super unless @datadog_test_tracing_component
+              return super unless datadog_trace_lifecycle_step?(:after)
 
               exception_before_hooks = exception
 
@@ -222,6 +222,38 @@ module Datadog
                 span&.failed!(exception: exception) if exception && exception != exception_before_hooks
                 result
               end
+            end
+
+            def datadog_trace_lifecycle_step?(position)
+              return false unless @datadog_test_tracing_component
+              return false unless Datadog.configuration.ci.trace_setup_teardown_enabled
+
+              datadog_rspec_lifecycle_hooks_apply?(position)
+            end
+
+            def datadog_rspec_lifecycle_hooks_apply?(position)
+              # Older RSpec 3 releases do not expose the hook-collection APIs
+              # needed to identify matching hooks. Preserve the previous behavior
+              # on those versions by tracing the lifecycle step.
+              return true unless respond_to?(:hooks, true)
+
+              hook_collections = hooks
+              return true unless hook_collections.respond_to?(:owner_parent_groups, true)
+
+              # Context hooks run outside the example and intentionally remain outside
+              # the per-example before/after lifecycle spans.
+              hook_collections.__send__(:owner_parent_groups).any? do |group|
+                group_hooks = group.hooks
+                return true unless group_hooks.respond_to?(:matching_hooks_for, true)
+
+                group_hooks.__send__(:matching_hooks_for, position, :example, self).any?
+              end
+            rescue => error
+              Datadog.logger.warn do
+                "Unable to determine whether RSpec #{position} hooks apply: " \
+                  "#{error.class}: #{error.message}; tracing the lifecycle step"
+              end
+              true
             end
 
             def datadog_tracing_enabled?

@@ -199,6 +199,7 @@ RSpec.describe "RSpec instrumentation" do
         :codeowners,
         "[\"@DataDog/ci-app-libraries\"]"
       )
+      expect(custom_spans).to be_empty
     end
 
     it "creates spans for several examples" do
@@ -294,6 +295,119 @@ RSpec.describe "RSpec instrumentation" do
       expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
+    it "creates only a before span when only before hooks apply" do
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          before {}
+          it("foo") {}
+        end.run
+      end
+
+      expect(custom_spans.map(&:name)).to eq(["before"])
+    end
+
+    it "creates only an after span when only after hooks apply" do
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          after {}
+          it("foo") {}
+        end.run
+      end
+
+      expect(custom_spans.map(&:name)).to eq(["after"])
+    end
+
+    it "aggregates inherited and shared context hooks into one span per phase" do
+      hook_calls = []
+
+      with_new_rspec_environment do
+        RSpec.shared_context "lifecycle hooks" do
+          before { hook_calls << :shared_before }
+          after { hook_calls << :shared_after }
+        end
+
+        RSpec.describe "some test" do
+          before { hook_calls << :inherited_before }
+          after { hook_calls << :inherited_after }
+
+          context "nested" do
+            include_context "lifecycle hooks"
+            it("foo") {}
+          end
+        end.run
+      end
+
+      expect(hook_calls).to contain_exactly(:inherited_before, :shared_before, :shared_after, :inherited_after)
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+    end
+
+    it "does not trace hooks whose metadata filters do not match" do
+      hook_calls = []
+
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          before(:example, traced: true) { hook_calls << :before }
+          after(:example, traced: true) { hook_calls << :after }
+          it("foo", traced: false) {}
+        end.run
+      end
+
+      expect(hook_calls).to be_empty
+      expect(custom_spans).to be_empty
+    end
+
+    it "does not include context hooks in per-example lifecycle spans" do
+      hook_calls = []
+
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          before(:context) { hook_calls << :before_context }
+          after(:context) { hook_calls << :after_context }
+          it("foo") {}
+        end.run
+      end
+
+      expect(hook_calls).to eq([:before_context, :after_context])
+      expect(test_spans).to have(1).item
+      expect(custom_spans).to be_empty
+    end
+
+    it "falls back to tracing lifecycle steps when RSpec hook introspection is unavailable" do
+      with_new_rspec_environment do
+        example_group = RSpec.describe "some test" do
+          it("foo") {}
+        end
+        example = example_group.examples.fetch(0)
+        allow(example).to receive(:respond_to?).and_call_original
+        allow(example).to receive(:respond_to?).with(:hooks, true).and_return(false)
+
+        example_group.run
+      end
+
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+    end
+
+    it "executes hooks and traces the test when lifecycle tracing is disabled" do
+      hook_calls = []
+      original_value = Datadog.configuration.ci.trace_setup_teardown_enabled
+      Datadog.configuration.ci.trace_setup_teardown_enabled = false
+
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          before { hook_calls << :before }
+          after { hook_calls << :after }
+          it("foo") { hook_calls << :test }
+        end.run
+      end
+
+      expect(hook_calls).to eq([:before, :test, :after])
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans).to be_empty
+    ensure
+      Datadog.configuration.ci.trace_setup_teardown_enabled = original_value
+    end
+
     it "keeps using the test tracing component selected before the example" do
       with_new_rspec_environment do
         RSpec.describe "some test" do
@@ -304,7 +418,7 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       expect(first_test_span).to have_pass_status
-      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+      expect(custom_spans).to be_empty
     end
 
     it "does not trace lifecycle steps when the RSpec integration is disabled" do
@@ -392,6 +506,7 @@ RSpec.describe "RSpec instrumentation" do
 
         expect_failure
         expect(custom_spans.find { |step_span| step_span.name == "before" }).to have_error
+        expect(custom_spans.map(&:name)).to eq(["before"])
       end
 
       it "within after" do
@@ -409,6 +524,7 @@ RSpec.describe "RSpec instrumentation" do
 
         expect_failure
         expect(custom_spans.find { |step_span| step_span.name == "after" }).to have_error
+        expect(custom_spans.map(&:name)).to eq(["after"])
       end
     end
 
