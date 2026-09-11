@@ -10,7 +10,6 @@ require_relative "strategy/retry_failed"
 require_relative "strategy/retry_flake_detection"
 require_relative "strategy/retry_flaky_fixed"
 
-require_relative "dynamic_atr_retries"
 require_relative "../ext/telemetry"
 require_relative "../utils/telemetry"
 
@@ -29,14 +28,18 @@ module Datadog
           retry_failed_tests_total_limit:,
           retry_new_tests_enabled:,
           retry_flaky_fixed_tests_enabled:,
-          retry_flaky_fixed_tests_max_attempts:
+          retry_flaky_fixed_tests_max_attempts:,
+          dynamic_atr_enabled:,
+          dynamic_atr_buckets:
         )
           no_retries_strategy = Strategy::NoRetry.new
 
           retry_failed_strategy = Strategy::RetryFailed.new(
             enabled: retry_failed_tests_enabled,
             max_attempts: retry_failed_tests_max_attempts,
-            total_limit: retry_failed_tests_total_limit
+            total_limit: retry_failed_tests_total_limit,
+            dynamic_atr_enabled: dynamic_atr_enabled,
+            dynamic_atr_buckets: dynamic_atr_buckets
           )
 
           retry_flake_detection_strategy = Strategy::RetryFlakeDetection.new(
@@ -57,9 +60,8 @@ module Datadog
           ]
           @mutex = Mutex.new
 
-          # Record telemetry for dynamic ATR if enabled
-          if DynamicATRRetries.enabled?
-            Utils::Telemetry.record_dynamic_atr_retries(has_custom_buckets: !DynamicATRRetries.buckets.nil?)
+          if dynamic_atr_enabled
+            Utils::Telemetry.record_dynamic_atr_retries(has_custom_buckets: !dynamic_atr_buckets.nil?)
           end
         end
 

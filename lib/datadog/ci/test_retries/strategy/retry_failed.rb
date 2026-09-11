@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "base"
-require_relative "../dynamic_atr_retries"
 
 require_relative "../driver/retry_failed"
 require_relative "../driver/retry_failed_dynamic"
@@ -17,14 +16,16 @@ module Datadog
           def initialize(
             enabled:,
             max_attempts:,
-            total_limit:
+            total_limit:,
+            dynamic_atr_enabled:,
+            dynamic_atr_buckets:
           )
             @enabled = enabled
             @max_attempts = max_attempts
             @total_limit = total_limit
             @retried_count = 0
-            @dynamic_atr_enabled = DynamicATRRetries.enabled?
-            @dynamic_atr_buckets = @dynamic_atr_enabled ? DynamicATRRetries.buckets : nil
+            @dynamic_atr_enabled = dynamic_atr_enabled
+            @dynamic_atr_buckets = dynamic_atr_buckets
             @slow_test_retries = nil
           end
 
@@ -51,9 +52,10 @@ module Datadog
 
             @retried_count += 1
 
-            if @dynamic_atr_enabled
+            slow_test_retries = @slow_test_retries
+            if @dynamic_atr_enabled && slow_test_retries
               Driver::RetryFailedDynamic.new(
-                @slow_test_retries,
+                slow_test_retries,
                 retries_buckets: @dynamic_atr_buckets
               )
             else

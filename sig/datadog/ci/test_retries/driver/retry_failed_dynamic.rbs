@@ -3,7 +3,7 @@ module Datadog
     module TestRetries
       module Driver
         class RetryFailedDynamic < Base
-          attr_reader max_attempts: Integer?
+          attr_reader max_attempts: Integer
 
           @slow_test_retries: Datadog::CI::Remote::SlowTestRetries
 
@@ -12,6 +12,8 @@ module Datadog
           @attempts: Integer
 
           @passed_once: bool
+
+          @duration_recorded: bool
 
           def initialize: (Datadog::CI::Remote::SlowTestRetries slow_test_retries, ?retries_buckets: ::Array[Integer]?) -> void
 
@@ -22,10 +24,6 @@ module Datadog
           def record_duration: (Float duration) -> void
 
           def retry_reason: () -> String
-
-          private
-
-          def ensure_classified: () -> void
         end
       end
     end

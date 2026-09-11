@@ -715,6 +715,94 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#dynamic_atr_enabled" do
+        subject(:dynamic_atr_enabled) { settings.ci.dynamic_atr_enabled }
+
+        it { is_expected.to be false }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_DYNAMIC_ATR_ENABLED}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_DYNAMIC_ATR_ENABLED => enable) do
+              example.run
+            end
+          end
+
+          context "is set to true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "is set to false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#dynamic_atr_enabled=" do
+        it "updates the #dynamic_atr_enabled setting" do
+          expect { settings.ci.dynamic_atr_enabled = true }
+            .to change { settings.ci.dynamic_atr_enabled }
+            .from(false)
+            .to(true)
+        end
+      end
+
+      describe "#dynamic_atr_buckets" do
+        subject(:dynamic_atr_buckets) { settings.ci.dynamic_atr_buckets }
+
+        it { is_expected.to be_nil }
+
+        context "when #{Datadog::CI::Ext::Settings::ENV_DYNAMIC_ATR_BUCKETS}" do
+          around do |example|
+            ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_DYNAMIC_ATR_BUCKETS => buckets) do
+              example.run
+            end
+          end
+
+          context "is set to five integers in range" do
+            let(:buckets) { "10, 4, 1, 1, 1" }
+
+            it { is_expected.to eq([10, 4, 1, 1, 1]) }
+          end
+
+          context "is empty" do
+            let(:buckets) { "" }
+
+            it { is_expected.to be_nil }
+          end
+
+          context "has the wrong number of values" do
+            let(:buckets) { "10,4,1" }
+
+            it { is_expected.to be_nil }
+          end
+
+          context "has a value outside the allowed range" do
+            let(:buckets) { "21,4,1,1,1" }
+
+            it { is_expected.to be_nil }
+          end
+
+          context "has a non-integer value" do
+            let(:buckets) { "10,4,nope,1,1" }
+
+            it { is_expected.to be_nil }
+          end
+        end
+      end
+
+      describe "#dynamic_atr_buckets=" do
+        it "updates the #dynamic_atr_buckets setting" do
+          expect { settings.ci.dynamic_atr_buckets = [10, 4, 1, 1, 1] }
+            .to change { settings.ci.dynamic_atr_buckets }
+            .from(nil)
+            .to([10, 4, 1, 1, 1])
+        end
+      end
+
       describe "#test_management_enabled" do
         subject(:test_management_enabled) { settings.ci.test_management_enabled }
 

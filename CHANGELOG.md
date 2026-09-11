@@ -1,8 +1,5 @@
 ## [Unreleased]
 
-### Added
-* Dynamic Auto Test Retries (ATR): duration-based retry budgets via `DD_CIVISIBILITY_DYNAMIC_ATR_ENABLED` and `DD_CIVISIBILITY_DYNAMIC_ATR_BUCKETS`
-
 ## [1.38.1] - 2026-09-07
 
 ### Fixed

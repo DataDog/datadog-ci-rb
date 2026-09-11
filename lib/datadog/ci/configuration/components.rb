@@ -156,7 +156,9 @@ module Datadog
             retry_failed_tests_total_limit: settings.ci.retry_failed_tests_total_limit,
             retry_new_tests_enabled: settings.ci.retry_new_tests_enabled,
             retry_flaky_fixed_tests_enabled: settings.ci.test_management_enabled,
-            retry_flaky_fixed_tests_max_attempts: settings.ci.test_management_attempt_to_fix_retries_count
+            retry_flaky_fixed_tests_max_attempts: settings.ci.test_management_attempt_to_fix_retries_count,
+            dynamic_atr_enabled: settings.ci.dynamic_atr_enabled,
+            dynamic_atr_buckets: settings.ci.dynamic_atr_buckets
           )
 
           @test_management = TestManagement::Component.build(

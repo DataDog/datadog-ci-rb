@@ -26,6 +26,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:retry_new_tests_max_attempts) { 5 }
   let(:retry_flaky_fixed_tests_enabled) { true }
   let(:retry_flaky_fixed_tests_max_attempts) { 42 }
+  let(:dynamic_atr_enabled) { false }
+  let(:dynamic_atr_buckets) { nil }
 
   let(:session_total_tests_count) { 30 }
 
@@ -38,7 +40,9 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:slow_test_retries) do
     instance_double(
       Datadog::CI::Remote::SlowTestRetries,
-      max_attempts_for_duration: retry_new_tests_max_attempts
+      max_attempts_for_duration: retry_new_tests_max_attempts,
+      retry_bucket_index_for_duration: 0,
+      retries_for_duration: retry_new_tests_max_attempts
     )
   end
 
@@ -56,8 +60,32 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       retry_failed_tests_total_limit: retry_failed_tests_total_limit,
       retry_new_tests_enabled: retry_new_tests_enabled,
       retry_flaky_fixed_tests_enabled: retry_flaky_fixed_tests_enabled,
-      retry_flaky_fixed_tests_max_attempts: retry_flaky_fixed_tests_max_attempts
+      retry_flaky_fixed_tests_max_attempts: retry_flaky_fixed_tests_max_attempts,
+      dynamic_atr_enabled: dynamic_atr_enabled,
+      dynamic_atr_buckets: dynamic_atr_buckets
     )
+  end
+
+  describe "dynamic ATR telemetry" do
+    subject(:build_component) { component }
+
+    context "when dynamic ATR is disabled" do
+      it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED
+    end
+
+    context "when dynamic ATR is enabled with custom buckets" do
+      let(:dynamic_atr_enabled) { true }
+      let(:dynamic_atr_buckets) { [4, 1, 1, 1, 1] }
+
+      it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED
+
+      it "marks the metric as using custom buckets" do
+        subject
+
+        metric = telemetry_metric(:inc, Datadog::CI::Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED)
+        expect(metric.tags).to eq(Datadog::CI::Ext::Telemetry::TAG_HAS_CUSTOM_BUCKETS => "true")
+      end
+    end
   end
 
   describe "#build_driver" do
@@ -135,6 +163,20 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         let(:test_failed) { false }
 
         it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
+      end
+    end
+
+    context "when dynamic ATR is enabled" do
+      let(:remote_flaky_test_retries_enabled) { true }
+      let(:test_failed) { true }
+      let(:dynamic_atr_enabled) { true }
+      let(:dynamic_atr_buckets) { [4, 1, 1, 1, 1] }
+
+      it "creates a dynamic retry driver with the configured buckets" do
+        expect(subject).to be_a(Datadog::CI::TestRetries::Driver::RetryFailedDynamic)
+
+        subject.record_duration(1.0)
+        expect(subject.max_attempts).to eq(4)
       end
     end
 

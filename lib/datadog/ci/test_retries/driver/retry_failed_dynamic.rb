@@ -20,11 +20,11 @@ module Datadog
             @retries_buckets = retries_buckets
             @attempts = 0
             @passed_once = false
-            @max_attempts = nil
+            @max_attempts = 1
+            @duration_recorded = false
           end
 
           def should_retry?
-            ensure_classified
             @attempts < @max_attempts && !@passed_once
           end
 
@@ -40,28 +40,22 @@ module Datadog
           # Classify the test once based on the initial-attempt duration.
           # Subsequent calls (from retries) are ignored — the first classification sticks.
           def record_duration(duration)
-            return if @max_attempts
+            return if @duration_recorded
 
-            if @retries_buckets
+            retries_buckets = @retries_buckets
+            if retries_buckets
               index = @slow_test_retries.retry_bucket_index_for_duration(duration)
-              @max_attempts = [1, @retries_buckets[index]].max
+              @max_attempts = [1, retries_buckets[index]].max
             else
               @max_attempts = [1, @slow_test_retries.retries_for_duration(duration)].max
             end
+            @duration_recorded = true
 
             Datadog.logger.debug { "Dynamic ATR: duration [#{duration}s], max attempts [#{@max_attempts}]" }
           end
 
           def retry_reason
             Ext::Test::RetryReason::RETRY_FAILED
-          end
-
-          private
-
-          def ensure_classified
-            # If record_duration was not called yet (shouldn't happen in normal flow),
-            # default to 1 retry so the test gets at least one retry attempt.
-            @max_attempts ||= 1
           end
         end
       end

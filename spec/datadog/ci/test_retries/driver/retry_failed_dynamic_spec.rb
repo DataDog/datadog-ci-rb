@@ -96,6 +96,14 @@ RSpec.describe Datadog::CI::TestRetries::Driver::RetryFailedDynamic do
   describe "#record_duration caching" do
     let(:retries_buckets) { nil }
 
+    it "classifies by duration after checking whether to retry" do
+      expect(driver.should_retry?).to be true
+
+      driver.record_duration(1.0)
+
+      expect(driver.max_attempts).to eq(10)
+    end
+
     it "classifies once and ignores subsequent record_duration calls" do
       driver.record_duration(1.0)  # 5s bucket -> 10 retries
       expect(driver.max_attempts).to eq(10)

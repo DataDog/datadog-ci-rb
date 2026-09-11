@@ -8,11 +8,14 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryFailed do
   let(:remote_flaky_test_retries_enabled) { false }
   let(:max_attempts) { 1 }
   let(:total_limit) { 12 }
+  let(:dynamic_atr_enabled) { false }
+  let(:dynamic_atr_buckets) { nil }
 
   let(:library_settings) do
     instance_double(
       Datadog::CI::Remote::LibrarySettings,
-      flaky_test_retries_enabled?: remote_flaky_test_retries_enabled
+      flaky_test_retries_enabled?: remote_flaky_test_retries_enabled,
+      slow_test_retries: instance_double(Datadog::CI::Remote::SlowTestRetries)
     )
   end
 
@@ -25,7 +28,9 @@ RSpec.describe Datadog::CI::TestRetries::Strategy::RetryFailed do
     described_class.new(
       enabled: enabled,
       max_attempts: max_attempts,
-      total_limit: total_limit
+      total_limit: total_limit,
+      dynamic_atr_enabled: dynamic_atr_enabled,
+      dynamic_atr_buckets: dynamic_atr_buckets
     )
   end
 
