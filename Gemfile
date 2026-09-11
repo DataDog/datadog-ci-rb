@@ -34,7 +34,7 @@ gem "os"
 # type checks, memory checks, etc.
 group :check do
   # style
-  gem "standard", "~> 1.56"
+  gem "standard", "~> 1.56" if RUBY_VERSION >= "3.0.0"
 
   # architecture checks (ArchSpec supports Ruby 3.2+)
   gem "archspec", "~> 1.1.0", require: false if RUBY_VERSION >= "3.2.0"
