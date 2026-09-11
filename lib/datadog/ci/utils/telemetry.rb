@@ -14,9 +14,24 @@ module Datadog
           telemetry.distribution(Ext::Telemetry::NAMESPACE, metric_name, value, tags: tags)
         end
 
+        def self.itr_forced_run
+          inc(Ext::Telemetry::METRIC_ITR_FORCED_RUN, 1, itr_test_tags)
+        end
+
+        def self.itr_unskippable
+          inc(Ext::Telemetry::METRIC_ITR_UNSKIPPABLE, 1, itr_test_tags)
+        end
+
         def self.telemetry
           Datadog.send(:components).telemetry
         end
+
+        def self.itr_test_tags
+          {
+            Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::TEST
+          }
+        end
+        private_class_method :itr_test_tags
       end
     end
   end

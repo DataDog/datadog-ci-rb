@@ -6,7 +6,15 @@ module Datadog
 
         def self.distribution: (String metric_name, Float value, ?Datadog::Core::Telemetry::Metric::tags_input tags) -> void
 
+        def self.itr_forced_run: () -> void
+
+        def self.itr_unskippable: () -> void
+
         def self.telemetry: () -> Datadog::Core::Telemetry::Component
+
+        private
+
+        def self.itr_test_tags: () -> ::Hash[String, String]
       end
     end
   end

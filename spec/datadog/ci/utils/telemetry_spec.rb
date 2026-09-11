@@ -36,4 +36,38 @@ RSpec.describe Datadog::CI::Utils::Telemetry do
       distribution
     end
   end
+
+  describe ".itr_forced_run" do
+    subject(:itr_forced_run) { described_class.itr_forced_run }
+
+    it "records a forced test run" do
+      expect(telemetry).to receive(:inc).with(
+        Datadog::CI::Ext::Telemetry::NAMESPACE,
+        Datadog::CI::Ext::Telemetry::METRIC_ITR_FORCED_RUN,
+        1,
+        tags: {
+          Datadog::CI::Ext::Telemetry::TAG_EVENT_TYPE => Datadog::CI::Ext::Telemetry::EventType::TEST
+        }
+      )
+
+      itr_forced_run
+    end
+  end
+
+  describe ".itr_unskippable" do
+    subject(:itr_unskippable) { described_class.itr_unskippable }
+
+    it "records an unskippable test" do
+      expect(telemetry).to receive(:inc).with(
+        Datadog::CI::Ext::Telemetry::NAMESPACE,
+        Datadog::CI::Ext::Telemetry::METRIC_ITR_UNSKIPPABLE,
+        1,
+        tags: {
+          Datadog::CI::Ext::Telemetry::TAG_EVENT_TYPE => Datadog::CI::Ext::Telemetry::EventType::TEST
+        }
+      )
+
+      itr_unskippable
+    end
+  end
 end

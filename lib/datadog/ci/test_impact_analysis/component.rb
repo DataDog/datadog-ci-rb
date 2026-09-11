@@ -44,14 +44,6 @@ module Datadog
           new(api: api, coverage_writer: coverage_writer, dd_env: dd_env, **options)
         end
 
-        def self.itr_unskippable
-          Telemetry.itr_unskippable
-        end
-
-        def self.itr_forced_run
-          Telemetry.itr_forced_run
-        end
-
         def initialize(
           dd_env:,
           config_tags: {},
@@ -324,7 +316,7 @@ module Datadog
           return if !enabled? || !skipping_suites?
 
           unskippable = test_suite.itr_unskippable?
-          Telemetry.itr_unskippable if unskippable
+          Utils::Telemetry.itr_unskippable if unskippable
 
           unless skippable_suite?(test_suite.name)
             Datadog.logger.debug { "Test suite is not skippable: #{test_suite.name}" }
@@ -332,7 +324,7 @@ module Datadog
           end
 
           if unskippable
-            Telemetry.itr_forced_run
+            Utils::Telemetry.itr_forced_run
             test_suite.set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
 
             Datadog.logger.debug { "Forced run of skippable test suite: #{test_suite.name}" }

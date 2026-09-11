@@ -41,8 +41,6 @@ module Datadog
           ?context_service_uri: String?
         ) -> Component
 
-        def self.default_trace_flush: () -> Datadog::CI::TestTracing::Flush::Partial
-
         def self.build_transport: (api: Datadog::CI::Transport::Api::Base, discard_traces: bool, dd_env: String?) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
 
         def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?) -> void

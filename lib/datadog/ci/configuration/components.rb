@@ -2,6 +2,7 @@
 
 require "datadog/core/telemetry/ext"
 
+require_relative "tracing_compatibility"
 require_relative "../ext/settings"
 require_relative "../code_coverage/component"
 require_relative "../code_coverage/null_component"
@@ -126,7 +127,8 @@ module Datadog
           # Activate underlying tracing test mode with async worker
           settings.tracing.test_mode.enabled = true
           settings.tracing.test_mode.async = true
-          settings.tracing.test_mode.trace_flush = settings.ci.trace_flush || TestTracing::Component.default_trace_flush
+          settings.tracing.test_mode.trace_flush =
+            settings.ci.trace_flush || TracingCompatibility::Flush::Partial.new
 
           trace_writer_options = settings.ci.writer_options
           trace_writer_options[:shutdown_timeout] = 60

@@ -29,14 +29,6 @@ module Datadog
           Utils::Telemetry.inc(Ext::Telemetry::METRIC_ITR_SKIPPED, 1, tags_for_itr_metrics)
         end
 
-        def self.itr_forced_run
-          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ITR_FORCED_RUN, 1, tags_for_itr_metrics)
-        end
-
-        def self.itr_unskippable
-          Utils::Telemetry.inc(Ext::Telemetry::METRIC_ITR_UNSKIPPABLE, 1, tags_for_itr_metrics)
-        end
-
         def self.tags_for_test(test)
           {
             Ext::Telemetry::TAG_TEST_FRAMEWORK => test.get_tag(Ext::Test::TAG_FRAMEWORK),

@@ -56,10 +56,6 @@ module Datadog
           ?static_dependencies_tracking_enabled: bool
         ) -> Component
 
-        def self.itr_unskippable: () -> void
-
-        def self.itr_forced_run: () -> void
-
         def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void

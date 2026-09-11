@@ -6,7 +6,6 @@ require "rbconfig"
 require "datadog/core/utils/forking"
 
 require_relative "context"
-require_relative "flush"
 require_relative "known_tests"
 require_relative "null_transport"
 require_relative "telemetry"
@@ -39,10 +38,6 @@ module Datadog
         def self.build(api:, dd_env:, config_tags:, **options)
           known_tests_client = KnownTests.new(api: api, dd_env: dd_env, config_tags: config_tags)
           new(known_tests_client: known_tests_client, **options)
-        end
-
-        def self.default_trace_flush
-          Flush::Partial.new
         end
 
         def self.build_transport(api:, discard_traces:, dd_env:)
