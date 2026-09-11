@@ -16,7 +16,7 @@ module Datadog
 
         def initialize: () -> void
 
-        def configure: (untyped library_settings) -> nil
+        def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
       end
     end
   end

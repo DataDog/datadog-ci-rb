@@ -2,6 +2,8 @@ module Datadog
   module CI
     module TestImpactAnalysis
       class NullComponent
+        FILE_STORAGE_KEY: String
+
         attr_reader enabled: bool
         attr_reader test_skipping_enabled: bool
         attr_reader code_coverage_enabled: bool
@@ -19,6 +21,10 @@ module Datadog
         def skipping_tests?: () -> bool
 
         def skipping_suites?: () -> bool
+
+        def test_skipping_mode?: () -> bool
+
+        def suite_skipping_mode?: () -> bool
 
         def code_coverage?: () -> bool
 
@@ -51,6 +57,14 @@ module Datadog
         def write_test_session_tags: (Datadog::CI::TestSession test_session, Integer skipped_tests_count) -> void
 
         def shutdown!: () -> void
+
+        def serialize_state: () -> Hash[Symbol, untyped]
+
+        def restore_state: (Hash[Symbol, untyped] state) -> void
+
+        def storage_key: () -> String
+
+        def restore_state_from_datadog_test_runner: () -> bool
       end
     end
   end

@@ -2,23 +2,33 @@ module Datadog
   module CI
     module TestManagement
       class NullComponent
-        @enabled: untyped
+        FILE_STORAGE_KEY: String
 
-        @tests_properties: untyped
+        @enabled: bool
 
-        attr_reader enabled: untyped
+        @tests_properties: Hash[String, Hash[String, bool]]
 
-        attr_reader tests_properties: untyped
+        attr_reader enabled: bool
+
+        attr_reader tests_properties: Hash[String, Hash[String, bool]]
 
         def initialize: () -> void
 
-        def configure: (untyped _, untyped _) -> nil
+        def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
-        def tag_test_from_properties: (untyped _) -> nil
+        def tag_test_from_properties: (Datadog::CI::Test test) -> void
 
         def attempt_to_fix?: (String _datadog_fqn_test_id) -> bool
 
         def disabled?: (String _datadog_fqn_test_id) -> bool
+
+        def restore_state_from_datadog_test_runner: () -> bool
+
+        def serialize_state: () -> Hash[Symbol, untyped]
+
+        def restore_state: (Hash[Symbol, untyped] state) -> void
+
+        def storage_key: () -> String
       end
     end
   end

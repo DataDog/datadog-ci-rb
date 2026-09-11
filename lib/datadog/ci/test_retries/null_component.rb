@@ -9,7 +9,7 @@ module Datadog
         def initialize
         end
 
-        def configure(library_settings)
+        def configure(_library_settings, _test_session)
         end
 
         def with_retries(&block)
