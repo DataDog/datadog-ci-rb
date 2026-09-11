@@ -42,10 +42,9 @@ module Datadog
           def record_duration(duration)
             return if @duration_recorded
 
-            retries_buckets = @retries_buckets
-            if retries_buckets
+            if (retries_buckets = @retries_buckets)
               index = @slow_test_retries.retry_bucket_index_for_duration(duration)
-              @max_attempts = [1, retries_buckets[index]].max
+              @max_attempts = [1, retries_buckets.fetch(index)].max
             else
               @max_attempts = [1, @slow_test_retries.retries_for_duration(duration)].max
             end

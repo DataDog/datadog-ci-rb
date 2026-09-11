@@ -53,14 +53,12 @@ module Datadog
             @retried_count += 1
 
             slow_test_retries = @slow_test_retries
-            if @dynamic_atr_enabled && slow_test_retries
-              Driver::RetryFailedDynamic.new(
-                slow_test_retries,
-                retries_buckets: @dynamic_atr_buckets
-              )
-            else
-              Driver::RetryFailed.new(max_attempts: max_attempts)
-            end
+            return Driver::RetryFailed.new(max_attempts: max_attempts) unless @dynamic_atr_enabled && slow_test_retries
+
+            Driver::RetryFailedDynamic.new(
+              slow_test_retries,
+              retries_buckets: @dynamic_atr_buckets
+            )
           end
         end
       end
