@@ -146,6 +146,37 @@ module Datadog
                 o.default true
               end
 
+              option :dynamic_atr_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_DYNAMIC_ATR_ENABLED
+                o.default false
+              end
+
+              option :dynamic_atr_buckets do |o|
+                o.type :array, nilable: true
+                o.env CI::Ext::Settings::ENV_DYNAMIC_ATR_BUCKETS
+                o.setter do |values|
+                  if values.nil? || values.empty?
+                    nil
+                  else
+                    buckets = values.map do |value|
+                      normalized = value.to_s.strip
+                      normalized.to_i if normalized.match?(/\A\d+\z/)
+                    end
+
+                    if buckets.length == 5 && buckets.all? { |value| value&.between?(1, 20) }
+                      buckets
+                    else
+                      Datadog.logger.warn(
+                        "Invalid #{CI::Ext::Settings::ENV_DYNAMIC_ATR_BUCKETS} value '#{values.join(",")}'; " \
+                          "expected five comma-separated integers in [1, 20]"
+                      )
+                      nil
+                    end
+                  end
+                end
+              end
+
               option :test_management_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_TEST_MANAGEMENT_ENABLED

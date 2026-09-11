@@ -11,6 +11,12 @@ module Datadog
 
           @retried_count: Integer
 
+          @dynamic_atr_enabled: bool
+
+          @dynamic_atr_buckets: ::Array[Integer]?
+
+          @slow_test_retries: Datadog::CI::Remote::SlowTestRetries?
+
           attr_reader enabled: bool
 
           attr_reader max_attempts: Integer
@@ -19,7 +25,7 @@ module Datadog
 
           attr_reader retried_count: Integer
 
-          def initialize: (enabled: bool, max_attempts: Integer, total_limit: Integer) -> void
+          def initialize: (enabled: bool, max_attempts: Integer, total_limit: Integer, dynamic_atr_enabled: bool, dynamic_atr_buckets: Array[Integer]?) -> void
 
           def covers?: (Datadog::CI::Test test_span) -> bool
 

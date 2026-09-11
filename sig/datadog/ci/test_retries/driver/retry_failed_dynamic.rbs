@@ -1,0 +1,31 @@
+module Datadog
+  module CI
+    module TestRetries
+      module Driver
+        class RetryFailedDynamic < Base
+          attr_reader max_attempts: Integer
+
+          @slow_test_retries: Datadog::CI::Remote::SlowTestRetries
+
+          @retries_buckets: ::Array[Integer]?
+
+          @attempts: Integer
+
+          @passed_once: bool
+
+          @duration_recorded: bool
+
+          def initialize: (Datadog::CI::Remote::SlowTestRetries slow_test_retries, ?retries_buckets: ::Array[Integer]?) -> void
+
+          def should_retry?: () -> bool
+
+          def record_retry: (Datadog::CI::Test test_span) -> void
+
+          def record_duration: (Float duration) -> void
+
+          def retry_reason: () -> String
+        end
+      end
+    end
+  end
+end

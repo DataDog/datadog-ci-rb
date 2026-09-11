@@ -70,4 +70,62 @@ RSpec.describe Datadog::CI::Remote::SlowTestRetries do
       it { is_expected.to eq(0) }
     end
   end
+
+  describe "#retry_bucket_index_for_duration" do
+    subject { slow_test_retries.retry_bucket_index_for_duration(duration) }
+
+    context "when duration <= 5" do
+      let(:duration) { 5 }
+      it { is_expected.to eq(0) }
+    end
+
+    context "when duration <= 10" do
+      let(:duration) { 10 }
+      it { is_expected.to eq(1) }
+    end
+
+    context "when duration <= 30" do
+      let(:duration) { 30 }
+      it { is_expected.to eq(2) }
+    end
+
+    context "when duration <= 300" do
+      let(:duration) { 300 }
+      it { is_expected.to eq(3) }
+    end
+
+    context "when duration > 300" do
+      let(:duration) { 301 }
+      it { is_expected.to eq(4) }
+    end
+  end
+
+  describe "#retries_for_duration" do
+    subject { slow_test_retries.retries_for_duration(duration) }
+
+    context "when duration is in 5s bucket" do
+      let(:duration) { 3.0 }
+      it { is_expected.to eq(10) }
+    end
+
+    context "when duration is in 10s bucket" do
+      let(:duration) { 7.0 }
+      it { is_expected.to eq(5) }
+    end
+
+    context "when duration is in 30s bucket" do
+      let(:duration) { 20.0 }
+      it { is_expected.to eq(3) }
+    end
+
+    context "when duration is in 5m bucket" do
+      let(:duration) { 100.0 }
+      it { is_expected.to eq(2) }
+    end
+
+    context "when duration is > 5m" do
+      let(:duration) { 301.0 }
+      it { is_expected.to eq(0) }
+    end
+  end
 end

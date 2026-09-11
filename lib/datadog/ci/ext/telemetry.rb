@@ -77,6 +77,8 @@ module Datadog
 
         METRIC_TEST_SESSION = "test_session"
 
+        METRIC_DYNAMIC_ATR_RETRIES_ENABLED = "dynamic_atr_retries.enabled"
+
         METRIC_GIT_COMMIT_SHA_MATCH = "git.commit_sha_match"
         METRIC_GIT_COMMIT_SHA_DISCREPANCY = "git.commit_sha_discrepancy"
 
@@ -116,6 +118,7 @@ module Datadog
         TAG_AUTO_INJECTED = "auto_injected"
         TAG_AGENTLESS_LOG_SUBMISSION_ENABLED = "agentless_log_submission_enabled"
         TAG_FAIL_FAST_TEST_ORDER_ENABLED = "fail_fast_test_order_enabled"
+        TAG_HAS_CUSTOM_BUCKETS = "has_custom_buckets"
 
         module EventType
           TEST = "test"

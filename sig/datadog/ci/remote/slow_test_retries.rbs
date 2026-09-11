@@ -18,6 +18,12 @@ module Datadog
 
         def max_attempts_for_duration: (Float duration) -> Integer
 
+        def retry_bucket_index_for_duration: (Float duration) -> Integer
+
+        def retries_for_duration: (Float duration) -> Integer
+
+        def efd_bucket_values: () -> ::Array[Integer]
+
         private
 
         def parse: (Hash[String, String | Integer] payload) -> Enumerable[Entry]

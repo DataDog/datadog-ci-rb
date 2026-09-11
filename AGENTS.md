@@ -7,12 +7,15 @@
 - Use exceptions for exceptional conditions, not control flow.
 - Do not use `instance_variable_get` or `instance_variable_set`; add explicit APIs instead.
 - Do not change `spec/datadog/ci/release_gem_spec.rb` unless explicitly asked.
+- Do not add `CHANGELOG.md` entries for individual changes; the changelog is compiled at release time.
 - Never commit or push automatically. Git operations must be reviewed and approved by the user.
 
 ## Component boundaries
 
 - Components may collaborate through the public methods exposed by their `Component` or `NullComponent` classes.
 - Code outside a component must not reference other constants defined inside that component's directory.
+- MUST not access `ENV` directly.
+- All settings MUST be defined in `lib/datadog/ci/configuration/settings.rb` and injected into every component through `lib/datadog/ci/configuration/components.rb`.
 - Run `bundle exec rake archspec` after changes and fix every architecture violation. Do not suppress or baseline violations unless explicitly approved.
 
 ## Types
