@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 require_relative "base"
+require_relative "../dynamic_atr_retries"
 
 require_relative "../driver/retry_failed"
+require_relative "../driver/retry_failed_dynamic"
 
 module Datadog
   module CI
@@ -21,6 +23,9 @@ module Datadog
             @max_attempts = max_attempts
             @total_limit = total_limit
             @retried_count = 0
+            @dynamic_atr_enabled = DynamicATRRetries.enabled?
+            @dynamic_atr_buckets = @dynamic_atr_enabled ? DynamicATRRetries.buckets : nil
+            @slow_test_retries = nil
           end
 
           def covers?(test_span)
@@ -38,6 +43,7 @@ module Datadog
 
           def configure(library_settings, test_session)
             @enabled &&= library_settings.flaky_test_retries_enabled?
+            @slow_test_retries = library_settings.slow_test_retries if @dynamic_atr_enabled
           end
 
           def build_driver(test_span)
@@ -45,7 +51,14 @@ module Datadog
 
             @retried_count += 1
 
-            Driver::RetryFailed.new(max_attempts: max_attempts)
+            if @dynamic_atr_enabled
+              Driver::RetryFailedDynamic.new(
+                @slow_test_retries,
+                retries_buckets: @dynamic_atr_buckets
+              )
+            else
+              Driver::RetryFailed.new(max_attempts: max_attempts)
+            end
           end
         end
       end

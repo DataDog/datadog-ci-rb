@@ -22,6 +22,11 @@ module Datadog
           inc(Ext::Telemetry::METRIC_ITR_UNSKIPPABLE, 1, itr_test_tags)
         end
 
+        def self.record_dynamic_atr_retries(has_custom_buckets:)
+          tags = has_custom_buckets ? {Ext::Telemetry::TAG_HAS_CUSTOM_BUCKETS => "true"} : {}
+          inc(Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED, 1, tags)
+        end
+
         def self.telemetry
           Datadog.send(:components).telemetry
         end

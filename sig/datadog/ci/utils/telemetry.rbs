@@ -10,6 +10,8 @@ module Datadog
 
         def self.itr_unskippable: () -> void
 
+        def self.record_dynamic_atr_retries: (has_custom_buckets: bool) -> void
+
         def self.telemetry: () -> Datadog::Core::Telemetry::Component
 
         private

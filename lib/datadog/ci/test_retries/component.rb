@@ -2,6 +2,7 @@
 
 require_relative "driver/no_retry"
 require_relative "driver/retry_failed"
+require_relative "driver/retry_failed_dynamic"
 require_relative "driver/retry_flake_detection"
 
 require_relative "strategy/no_retry"
@@ -9,6 +10,7 @@ require_relative "strategy/retry_failed"
 require_relative "strategy/retry_flake_detection"
 require_relative "strategy/retry_flaky_fixed"
 
+require_relative "dynamic_atr_retries"
 require_relative "../ext/telemetry"
 require_relative "../utils/telemetry"
 
@@ -54,6 +56,11 @@ module Datadog
             no_retries_strategy
           ]
           @mutex = Mutex.new
+
+          # Record telemetry for dynamic ATR if enabled
+          if DynamicATRRetries.enabled?
+            Utils::Telemetry.record_dynamic_atr_retries(has_custom_buckets: !DynamicATRRetries.buckets.nil?)
+          end
         end
 
         def configure(library_settings, test_session)

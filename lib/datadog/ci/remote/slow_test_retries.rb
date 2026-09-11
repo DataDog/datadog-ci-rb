@@ -37,6 +37,49 @@ module Datadog
           0
         end
 
+        # Return the EFD retry-bucket index for an initial test duration.
+        # Uses the same boundaries as the dynamic ATR feature: <=5->0, <=10->1,
+        # <=30->2, <=300->3, >300->4.
+        # @param duration [Float] initial attempt duration in seconds
+        # @return [Integer] bucket index 0..4
+        def retry_bucket_index_for_duration(duration)
+          if duration <= 5
+            0
+          elsif duration <= 10
+            1
+          elsif duration <= 30
+            2
+          elsif duration <= 300
+            3
+          else
+            4
+          end
+        end
+
+        # Return the configured retry budget for an initial test duration.
+        # Equivalent to max_attempts_for_duration but uses the bucket index helper.
+        # @param duration [Float] initial attempt duration in seconds
+        # @return [Integer] retry budget
+        def retries_for_duration(duration)
+          index = retry_bucket_index_for_duration(duration)
+          values = efd_bucket_values
+          values[index]
+        end
+
+        # Return the 5-element bucket values array.
+        # @return [Array<Integer>] 5-element array of retry counts for 5s/10s/30s/5m/>5m buckets
+        def efd_bucket_values
+          boundaries = [5.0, 10.0, 30.0, 300.0]
+          values = Array.new(5, 0)
+
+          boundaries.each_with_index do |boundary, index|
+            entry = @entries.find { |e| e.duration == boundary }
+            values[index] = entry ? entry.max_attempts : 0
+          end
+
+          values
+        end
+
         private
 
         def parse(payload)

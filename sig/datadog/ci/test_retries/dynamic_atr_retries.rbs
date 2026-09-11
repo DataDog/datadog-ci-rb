@@ -1,0 +1,14 @@
+module Datadog
+  module CI
+    module TestRetries
+      module DynamicATRRetries
+        BUCKET_COUNT: Integer
+        MAX_RETRIES_PER_BUCKET: Integer
+
+        def self.enabled?: () -> bool
+
+        def self.buckets: () -> ::Array[Integer]?
+      end
+    end
+  end
+end

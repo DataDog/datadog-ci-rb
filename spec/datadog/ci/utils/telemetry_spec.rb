@@ -70,4 +70,36 @@ RSpec.describe Datadog::CI::Utils::Telemetry do
       itr_unskippable
     end
   end
+
+  describe ".record_dynamic_atr_retries" do
+    context "with custom buckets" do
+      subject(:record) { described_class.record_dynamic_atr_retries(has_custom_buckets: true) }
+
+      it "records the metric with has_custom_buckets tag" do
+        expect(telemetry).to receive(:inc).with(
+          Datadog::CI::Ext::Telemetry::NAMESPACE,
+          Datadog::CI::Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED,
+          1,
+          tags: {Datadog::CI::Ext::Telemetry::TAG_HAS_CUSTOM_BUCKETS => "true"}
+        )
+
+        record
+      end
+    end
+
+    context "without custom buckets" do
+      subject(:record) { described_class.record_dynamic_atr_retries(has_custom_buckets: false) }
+
+      it "records the metric with no tags" do
+        expect(telemetry).to receive(:inc).with(
+          Datadog::CI::Ext::Telemetry::NAMESPACE,
+          Datadog::CI::Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED,
+          1,
+          tags: {}
+        )
+
+        record
+      end
+    end
+  end
 end
