@@ -24,13 +24,12 @@ RSpec.shared_examples_for "a CI trace flusher" do
     it "tags every span with the origin" do
       is_expected.to eq(trace)
 
-      # Expect each span to have an attached origin
       expect(trace.spans).to all have_origin(trace.origin)
     end
   end
 end
 
-RSpec.describe Datadog::CI::TestTracing::Flush::Finished do
+RSpec.describe Datadog::CI::Configuration::TracingCompatibility::Flush::Finished do
   subject(:trace_flush) { described_class.new }
 
   describe "#consume" do
@@ -41,7 +40,7 @@ RSpec.describe Datadog::CI::TestTracing::Flush::Finished do
   end
 end
 
-RSpec.describe Datadog::CI::TestTracing::Flush::Partial do
+RSpec.describe Datadog::CI::Configuration::TracingCompatibility::Flush::Partial do
   subject(:trace_flush) { described_class.new(min_spans_before_partial_flush: min_spans_for_partial) }
 
   let(:min_spans_for_partial) { 2 }

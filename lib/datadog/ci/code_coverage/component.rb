@@ -2,6 +2,7 @@
 
 require_relative "../ext/environment"
 require_relative "../ext/settings"
+require_relative "null_component"
 require_relative "transport"
 
 module Datadog
@@ -14,6 +15,12 @@ module Datadog
         MAX_REPORT_FLAGS = 32
 
         attr_reader :enabled
+
+        def self.build(enabled:, api:, discard_traces:, flags:)
+          return NullComponent.new if api.nil? || discard_traces
+
+          new(enabled: enabled, transport: Transport.new(api: api), flags: flags)
+        end
 
         def initialize(enabled:, transport:, flags:)
           @enabled = enabled

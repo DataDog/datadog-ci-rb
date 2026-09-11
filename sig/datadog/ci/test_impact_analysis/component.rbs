@@ -43,6 +43,19 @@ module Datadog
         attr_reader test_skipping_enabled: bool
         attr_reader test_skipping_mode: String
 
+        def self.build: (
+          api: Datadog::CI::Transport::Api::Base?,
+          discard_traces: bool,
+          dd_env: String?,
+          ?config_tags: Hash[String, String]?,
+          ?enabled: bool,
+          ?test_skipping_mode: String,
+          ?bundle_location: String?,
+          ?use_single_threaded_coverage: bool,
+          ?use_allocation_tracing: bool,
+          ?static_dependencies_tracking_enabled: bool
+        ) -> Component
+
         def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void

@@ -1,10 +1,21 @@
 # frozen_string_literal: true
 
+require "set"
+
 module Datadog
   module CI
     module TestTracing
       # Special test visibility component that does not record anything
       class NullComponent
+        attr_reader :known_tests, :known_tests_enabled, :context_service_uri, :local_test_suites_mode
+
+        def initialize
+          @known_tests = Set.new
+          @known_tests_enabled = false
+          @context_service_uri = nil
+          @local_test_suites_mode = true
+        end
+
         def configure(_, _)
         end
 
@@ -45,6 +56,18 @@ module Datadog
         def active_test_suite(test_suite_name)
         end
 
+        def deactivate_test
+        end
+
+        def deactivate_test_session
+        end
+
+        def deactivate_test_module
+        end
+
+        def deactivate_test_suite(_test_suite_name)
+        end
+
         def shutdown!
         end
 
@@ -52,16 +75,14 @@ module Datadog
           false
         end
 
-        def set_test_finished_callback(_)
-        end
-
-        def remove_test_finished_callback
-        end
-
         def logical_test_session_name
         end
 
         def client_process?
+          false
+        end
+
+        def restore_state_from_datadog_test_runner
           false
         end
 

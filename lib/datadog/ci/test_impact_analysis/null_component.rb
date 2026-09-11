@@ -9,6 +9,8 @@ module Datadog
     module TestImpactAnalysis
       # No-op implementation used when test impact analysis is disabled.
       class NullComponent
+        FILE_STORAGE_KEY = "test_impact_analysis_component_state"
+
         attr_reader :enabled, :test_skipping_enabled, :code_coverage_enabled, :skippable_tests, :skippable_suites,
           :correlation_id, :test_skipping_mode
 
@@ -34,6 +36,14 @@ module Datadog
         end
 
         def skipping_suites?
+          false
+        end
+
+        def test_skipping_mode?
+          false
+        end
+
+        def suite_skipping_mode?
           false
         end
 
@@ -90,6 +100,25 @@ module Datadog
         end
 
         def shutdown!
+        end
+
+        def serialize_state
+          {
+            correlation_id: @correlation_id,
+            skippable_tests: @skippable_tests,
+            skippable_suites: @skippable_suites
+          }
+        end
+
+        def restore_state(_state)
+        end
+
+        def storage_key
+          FILE_STORAGE_KEY
+        end
+
+        def restore_state_from_datadog_test_runner
+          false
         end
       end
     end

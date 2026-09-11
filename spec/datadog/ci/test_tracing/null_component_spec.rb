@@ -5,6 +5,15 @@ require_relative "../../../../lib/datadog/ci/test_tracing/null_component"
 RSpec.describe Datadog::CI::TestTracing::NullComponent do
   let(:test_tracing) { described_class.new }
 
+  describe "public state" do
+    it "uses neutral defaults" do
+      expect(test_tracing.known_tests).to be_empty
+      expect(test_tracing.known_tests_enabled).to be(false)
+      expect(test_tracing.context_service_uri).to be_nil
+      expect(test_tracing.local_test_suites_mode).to be(true)
+    end
+  end
+
   describe "#start_test_session" do
     subject { test_tracing.start_test_session }
 
@@ -116,5 +125,14 @@ RSpec.describe Datadog::CI::TestTracing::NullComponent do
     subject { test_tracing.active_span }
 
     it { is_expected.to be_nil }
+  end
+
+  describe "deactivation" do
+    it "is a no-op" do
+      expect(test_tracing.deactivate_test).to be_nil
+      expect(test_tracing.deactivate_test_session).to be_nil
+      expect(test_tracing.deactivate_test_module).to be_nil
+      expect(test_tracing.deactivate_test_suite("suite")).to be_nil
+    end
   end
 end

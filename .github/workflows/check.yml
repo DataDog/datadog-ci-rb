@@ -17,6 +17,8 @@ jobs:
       - name: Install dependencies
         run: bundle install
       - run: bundle exec standardrb
+      - name: Check architecture boundaries
+        run: bundle exec rake archspec
 
   typecheck:
     name: Type checking

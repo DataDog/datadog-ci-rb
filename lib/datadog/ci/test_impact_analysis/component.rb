@@ -7,6 +7,7 @@ require "datadog/core/telemetry/logging"
 require_relative "../ext/test"
 require_relative "../ext/telemetry"
 
+require_relative "../async_writer"
 require_relative "../git/local_repository"
 
 require_relative "../source_code/static_dependencies"
@@ -17,6 +18,7 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
+require_relative "coverage/transport"
 require_relative "skippable"
 require_relative "telemetry"
 
@@ -33,6 +35,14 @@ module Datadog
 
         attr_reader :correlation_id, :skippable_tests, :skippable_suites, :enabled, :test_skipping_enabled,
           :code_coverage_enabled, :test_skipping_mode
+
+        def self.build(api:, discard_traces:, dd_env:, **options)
+          coverage_writer = unless api.nil? || discard_traces
+            AsyncWriter.new(transport: Coverage::Transport.new(api: api))
+          end
+
+          new(api: api, coverage_writer: coverage_writer, dd_env: dd_env, **options)
+        end
 
         def initialize(
           dd_env:,
@@ -306,7 +316,7 @@ module Datadog
           return if !enabled? || !skipping_suites?
 
           unskippable = test_suite.itr_unskippable?
-          Telemetry.itr_unskippable if unskippable
+          Utils::Telemetry.itr_unskippable if unskippable
 
           unless skippable_suite?(test_suite.name)
             Datadog.logger.debug { "Test suite is not skippable: #{test_suite.name}" }
@@ -314,7 +324,7 @@ module Datadog
           end
 
           if unskippable
-            Telemetry.itr_forced_run
+            Utils::Telemetry.itr_forced_run
             test_suite.set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
 
             Datadog.logger.debug { "Forced run of skippable test suite: #{test_suite.name}" }

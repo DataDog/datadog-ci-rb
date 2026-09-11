@@ -2,7 +2,17 @@ module Datadog
   module CI
     module TestTracing
       class NullComponent
-        def initialize: (?untyped args) -> void
+        @known_tests: Set[String]
+        @known_tests_enabled: bool
+        @context_service_uri: nil
+        @local_test_suites_mode: bool
+
+        attr_reader known_tests: Set[String]
+        attr_reader known_tests_enabled: bool
+        attr_reader context_service_uri: nil
+        attr_reader local_test_suites_mode: bool
+
+        def initialize: () -> void
 
         def configure: (untyped _, untyped _) -> void
 
@@ -28,9 +38,13 @@ module Datadog
 
         def active_span: () -> nil
 
-        def set_test_finished_callback: (Proc callback) -> void
+        def deactivate_test: () -> void
 
-        def remove_test_finished_callback: () -> void
+        def deactivate_test_session: () -> void
+
+        def deactivate_test_module: () -> void
+
+        def deactivate_test_suite: (String test_suite_name) -> void
 
         def logical_test_session_name: () -> nil
 
@@ -39,6 +53,8 @@ module Datadog
         def itr_enabled?: () -> bool
 
         def client_process?: () -> bool
+
+        def restore_state_from_datadog_test_runner: () -> bool
 
         private
 

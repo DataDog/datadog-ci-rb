@@ -12,10 +12,6 @@ module Datadog
 
         def self.itr_skipped: () -> void
 
-        def self.itr_forced_run: () -> void
-
-        def self.itr_unskippable: () -> void
-
         def self.tags_for_test: ((Datadog::CI::Test | Datadog::CI::TestSuite) test) -> ::Hash[String, String]
 
         def self.tags_for_itr_metrics: () -> ::Hash[String, String]

@@ -16,6 +16,8 @@ module Datadog
 
         attr_reader tests_properties: Hash[String, Hash[String, bool]]
 
+        def self.build: (enabled: bool, api: Datadog::CI::Transport::Api::Base?) -> Component
+
         def initialize: (enabled: bool, tests_properties_client: Datadog::CI::TestManagement::TestsProperties) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void

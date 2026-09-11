@@ -3,6 +3,7 @@
 require_relative "../worker"
 require_relative "../utils/stateful"
 require_relative "library_settings"
+require_relative "library_settings_client"
 
 module Datadog
   module CI
@@ -13,6 +14,20 @@ module Datadog
         include Datadog::CI::Utils::Stateful
 
         FILE_STORAGE_KEY = "remote_component_state"
+
+        def self.build(api:, dd_env:, test_skipping_mode:, config_tags:, test_discovery_enabled:)
+          library_settings_client = LibrarySettingsClient.new(
+            api: api,
+            dd_env: dd_env,
+            test_skipping_mode: test_skipping_mode,
+            config_tags: config_tags
+          )
+
+          new(
+            library_settings_client: library_settings_client,
+            test_discovery_enabled: test_discovery_enabled
+          )
+        end
 
         def initialize(library_settings_client:, test_discovery_enabled: false)
           @library_settings_client = library_settings_client

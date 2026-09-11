@@ -144,6 +144,11 @@ RSpec.describe Datadog::CI::Configuration::Components do
         context "is enabled" do
           let(:enabled) { true }
 
+          it "configures the tracing compatibility flush" do
+            expect(settings.tracing.test_mode.trace_flush)
+              .to be_a(Datadog::CI::Configuration::TracingCompatibility::Flush::Partial)
+          end
+
           context "when DD_SYMBOL_DATABASE_UPLOAD_ENABLED is true" do
             around do |example|
               ClimateControl.modify("DD_SYMBOL_DATABASE_UPLOAD_ENABLED" => "true") { example.run }

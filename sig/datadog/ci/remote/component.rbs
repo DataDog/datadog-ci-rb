@@ -10,6 +10,8 @@ module Datadog
         @library_configuration: Datadog::CI::Remote::LibrarySettings
         @test_discovery_enabled: bool
 
+        def self.build: (api: Datadog::CI::Transport::Api::Base?, dd_env: String?, test_skipping_mode: String, config_tags: Hash[String, String], test_discovery_enabled: bool) -> Component
+
         def initialize: (library_settings_client: Datadog::CI::Remote::LibrarySettingsClient, ?test_discovery_enabled: bool) -> void
 
         def configure: (Datadog::CI::TestSession test_session) -> void
