@@ -16,3 +16,16 @@ Dir.glob(File.join(__dir__, "../../lib/datadog/ci/*/component.rb")).sort.each do
     because: "components collaborate through their public component interface"
   )
 end
+
+# Contrib integrations are isolated from one another. Their integration class is
+# the public entry point; the RSpec constants below are shared intentionally by
+# integrations implemented on top of RSpec.
+each_directory "lib/datadog/ci/contrib/*" do |name, path|
+  public_api = ["#{path}/integration.rb"]
+  public_api.concat(["#{path}/ext.rb", "#{path}/runner.rb"]) if name == "rspec"
+
+  component("contrib_#{name}", in: "#{path}/**/*.rb").public_api(
+    *public_api,
+    because: "contrib integrations expose only explicit integration contracts"
+  )
+end
