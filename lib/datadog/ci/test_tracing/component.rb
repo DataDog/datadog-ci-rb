@@ -33,7 +33,7 @@ module Datadog
         FILE_STORAGE_KEY = "test_tracing_component_state"
 
         attr_reader :logical_test_session_name, :known_tests, :known_tests_enabled, :context_service_uri,
-          :local_test_suites_mode
+          :local_test_suites_mode, :trace_setup_teardown_enabled
 
         def self.build(api:, dd_env:, config_tags:, **options)
           known_tests_client = KnownTests.new(api: api, dd_env: dd_env, config_tags: config_tags)
@@ -51,12 +51,14 @@ module Datadog
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse,
           logical_test_session_name: nil,
           runtime_tags_overrides: {},
-          context_service_uri: nil
+          context_service_uri: nil,
+          trace_setup_teardown_enabled: false
         )
           @context = Context.new(test_tracing_component: self, runtime_tags_overrides: runtime_tags_overrides)
 
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
+          @trace_setup_teardown_enabled = trace_setup_teardown_enabled
 
           # "Known tests" feature fetches a list of all tests known to Datadog for this repository
           # and uses this list to determine if a test is new or not. New tests are marked with "test.is_new" tag.

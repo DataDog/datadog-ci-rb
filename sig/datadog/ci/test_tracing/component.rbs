@@ -20,6 +20,7 @@ module Datadog
         @known_tests_client: Datadog::CI::TestTracing::KnownTests
 
         @local_test_suites_mode: bool
+        @trace_setup_teardown_enabled: bool
 
         attr_reader logical_test_session_name: String?
 
@@ -31,6 +32,8 @@ module Datadog
 
         attr_reader local_test_suites_mode: bool
 
+        attr_reader trace_setup_teardown_enabled: bool
+
         def self.build: (
           api: Datadog::CI::Transport::Api::Base,
           dd_env: String?,
@@ -38,12 +41,13 @@ module Datadog
           ?codeowners: Datadog::CI::Codeowners::Matcher,
           ?logical_test_session_name: String?,
           ?runtime_tags_overrides: Hash[String, String],
-          ?context_service_uri: String?
+          ?context_service_uri: String?,
+          ?trace_setup_teardown_enabled: bool
         ) -> Component
 
         def self.build_transport: (api: Datadog::CI::Transport::Api::Base, discard_traces: bool, dd_env: String?) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
 
-        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?) -> void
+        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?, ?trace_setup_teardown_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 

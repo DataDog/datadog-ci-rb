@@ -265,33 +265,53 @@ RSpec.describe "RSpec instrumentation" do
       expect(first_test_span).to have_test_tag(:suite, "some nested test at #{spec.file_path}")
     end
 
-    it "creates spans for example with instrumentation" do
-      active_span_names = []
+    context "when setup and teardown tracing is enabled" do
+      let(:trace_setup_teardown_enabled) { true }
+
+      it "creates spans for example with instrumentation" do
+        active_span_names = []
+
+        with_new_rspec_environment do
+          RSpec.describe "some test" do
+            before do
+              active_span_names << Datadog::Tracing.active_span.name
+            end
+
+            after do
+              active_span_names << Datadog::Tracing.active_span.name
+            end
+
+            it "foo" do
+              active_span_names << Datadog::Tracing.active_span.name
+              Datadog::Tracing.trace("get_time") do
+                Time.now
+              end
+            end
+          end.tap(&:run)
+        end
+
+        expect(active_span_names).to eq(%w[before foo after])
+        expect(test_spans).to have(1).items
+        expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
+        expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
+        expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+      end
+    end
+
+    it "executes hooks without tracing lifecycle steps by default" do
+      hook_calls = []
 
       with_new_rspec_environment do
         RSpec.describe "some test" do
-          before do
-            active_span_names << Datadog::Tracing.active_span.name
-          end
-
-          after do
-            active_span_names << Datadog::Tracing.active_span.name
-          end
-
-          it "foo" do
-            active_span_names << Datadog::Tracing.active_span.name
-            Datadog::Tracing.trace("get_time") do
-              Time.now
-            end
-          end
-        end.tap(&:run)
+          before { hook_calls << :before }
+          after { hook_calls << :after }
+          it("foo") { hook_calls << :test }
+        end.run
       end
 
-      expect(active_span_names).to eq(%w[before foo after])
-      expect(test_spans).to have(1).items
-      expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
-      expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
-      expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+      expect(hook_calls).to eq([:before, :test, :after])
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans).to be_empty
     end
 
     it "keeps using the test tracing component selected before the example" do
@@ -304,7 +324,7 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       expect(first_test_span).to have_pass_status
-      expect(custom_spans.map(&:name)).to contain_exactly("before", "after")
+      expect(custom_spans).to be_empty
     end
 
     it "does not trace lifecycle steps when the RSpec integration is disabled" do
@@ -338,6 +358,8 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     context "catches failures" do
+      let(:trace_setup_teardown_enabled) { true }
+
       def expect_failure
         expect(first_test_span).to have_fail_status
         expect(first_test_span).to have_error
@@ -413,6 +435,8 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     context "supports skipped examples" do
+      let(:trace_setup_teardown_enabled) { true }
+
       it "with skip: true" do
         with_new_rspec_environment do
           RSpec.describe "some skipped test" do

@@ -188,40 +188,66 @@ RSpec.describe "Minitest instrumentation" do
       expect(test_spans).to have(num_specs).items
     end
 
-    it "creates spans for example with instrumentation" do
-      active_span_names = []
+    context "when setup and teardown tracing is enabled" do
+      let(:trace_setup_teardown_enabled) { true }
+
+      it "creates spans for example with instrumentation" do
+        active_span_names = []
+
+        klass = Class.new(Minitest::Test) do
+          def self.name
+            "SomeTest"
+          end
+
+          define_method(:setup) do
+            active_span_names << Datadog::Tracing.active_span.name
+          end
+
+          define_method(:test_foo) do
+            active_span_names << Datadog::Tracing.active_span.name
+            Datadog::Tracing.trace("get_time") do
+              Time.now
+            end
+          end
+
+          define_method(:teardown) do
+            active_span_names << Datadog::Tracing.active_span.name
+          end
+        end
+
+        klass.new(:test_foo).run
+
+        expect(active_span_names).to eq(%w[before test_foo after])
+        expect(spans).to have(4).items
+        expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
+        expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
+        expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+      end
+    end
+
+    it "executes hooks without tracing lifecycle steps by default" do
+      hook_calls = []
 
       klass = Class.new(Minitest::Test) do
         def self.name
           "SomeTest"
         end
 
-        define_method(:setup) do
-          active_span_names << Datadog::Tracing.active_span.name
-        end
-
-        define_method(:test_foo) do
-          active_span_names << Datadog::Tracing.active_span.name
-          Datadog::Tracing.trace("get_time") do
-            Time.now
-          end
-        end
-
-        define_method(:teardown) do
-          active_span_names << Datadog::Tracing.active_span.name
-        end
+        define_method(:setup) { hook_calls << :setup }
+        define_method(:test_foo) { hook_calls << :test }
+        define_method(:teardown) { hook_calls << :teardown }
       end
 
       klass.new(:test_foo).run
 
-      expect(active_span_names).to eq(%w[before test_foo after])
-      expect(spans).to have(4).items
-      expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
-      expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
-      expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+      expect(hook_calls).to eq([:setup, :test, :teardown])
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans).to be_empty
     end
 
     context "catches failures" do
+      let(:trace_setup_teardown_enabled) { true }
+
       def expect_failure
         expect(first_test_span).to have_fail_status
         expect(first_test_span).to have_error
@@ -535,7 +561,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "462")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "488")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ci-app-libraries\"]"

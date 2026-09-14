@@ -174,7 +174,8 @@ module Datadog
             config_tags: custom_configuration(settings),
             logical_test_session_name: settings.ci.test_session_name,
             runtime_tags_overrides: Utils::RuntimeTagsOverrides.parse(settings.ci.runtime_tags_overrides),
-            context_service_uri: settings.ci.test_visibility_drb_server_uri
+            context_service_uri: settings.ci.test_visibility_drb_server_uri,
+            trace_setup_teardown_enabled: settings.ci.trace_setup_teardown_enabled
           )
 
           @agentless_logs_submission = build_agentless_logs_component(settings, test_visibility_api)
