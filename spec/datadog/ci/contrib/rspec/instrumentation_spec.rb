@@ -294,6 +294,26 @@ RSpec.describe "RSpec instrumentation" do
       expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
+    it "executes hooks without tracing lifecycle steps when lifecycle tracing is disabled" do
+      hook_calls = []
+      original_value = Datadog.configuration.ci.trace_setup_teardown_enabled
+      Datadog.configuration.ci.trace_setup_teardown_enabled = false
+
+      with_new_rspec_environment do
+        RSpec.describe "some test" do
+          before { hook_calls << :before }
+          after { hook_calls << :after }
+          it("foo") { hook_calls << :test }
+        end.run
+      end
+
+      expect(hook_calls).to eq([:before, :test, :after])
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans).to be_empty
+    ensure
+      Datadog.configuration.ci.trace_setup_teardown_enabled = original_value
+    end
+
     it "keeps using the test tracing component selected before the example" do
       with_new_rspec_environment do
         RSpec.describe "some test" do

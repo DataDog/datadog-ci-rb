@@ -221,6 +221,30 @@ RSpec.describe "Minitest instrumentation" do
       expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
+    it "executes hooks without tracing lifecycle steps when lifecycle tracing is disabled" do
+      hook_calls = []
+      original_value = Datadog.configuration.ci.trace_setup_teardown_enabled
+      Datadog.configuration.ci.trace_setup_teardown_enabled = false
+
+      klass = Class.new(Minitest::Test) do
+        def self.name
+          "SomeTest"
+        end
+
+        define_method(:setup) { hook_calls << :setup }
+        define_method(:test_foo) { hook_calls << :test }
+        define_method(:teardown) { hook_calls << :teardown }
+      end
+
+      klass.new(:test_foo).run
+
+      expect(hook_calls).to eq([:setup, :test, :teardown])
+      expect(first_test_span).to have_pass_status
+      expect(custom_spans).to be_empty
+    ensure
+      Datadog.configuration.ci.trace_setup_teardown_enabled = original_value
+    end
+
     context "catches failures" do
       def expect_failure
         expect(first_test_span).to have_fail_status
@@ -535,7 +559,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "462")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "486")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ci-app-libraries\"]"

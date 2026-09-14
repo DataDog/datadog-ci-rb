@@ -56,7 +56,7 @@ module Datadog
 
             def before_setup
               test_span = _dd_test_tracing_component.active_test
-              return super unless test_span
+              return super unless test_span && Datadog.configuration.ci.trace_setup_teardown_enabled
 
               @datadog_before_step_failures_count = failures.length
               @datadog_before_step_span = _dd_test_tracing_component.trace(
@@ -80,6 +80,8 @@ module Datadog
               # Setup failures prevent Minitest from invoking after_setup, so
               # close a still-active before span before teardown begins.
               finish_datadog_before_step
+
+              return super unless Datadog.configuration.ci.trace_setup_teardown_enabled
 
               @datadog_after_step_failures_count = failures.length
               @datadog_after_step_span = _dd_test_tracing_component.trace(
