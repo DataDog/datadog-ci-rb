@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 062fc522ef2887eaa232e0948a4cca1e8475e6c7
+  revision: 5f7c05340b93acd433f0df981aa8b74f65b7de93
   branch: master
   specs:
     datadog (2.43.0.dev)
@@ -88,7 +88,7 @@ GEM
       rake
       thor (>= 0.14.0)
     base64 (0.3.0)
-    bigdecimal (4.1.2)
+    bigdecimal (4.1.3)
     builder (3.3.0)
     cgi (0.5.2)
     climate_control (1.2.0)
@@ -155,7 +155,7 @@ GEM
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
-    msgpack (1.8.4)
+    msgpack (1.8.5)
     mutex_m (0.3.0)
     net-imap (0.6.7)
       date
@@ -254,7 +254,7 @@ GEM
     rspec-support (3.13.7)
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
-    simplecov (1.2.0)
+    simplecov (1.3.0)
     sprockets (4.4.1)
       concurrent-ruby (~> 1.1)
       logger
