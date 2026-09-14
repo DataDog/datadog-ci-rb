@@ -333,7 +333,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
           settings.ci.trace_setup_teardown_enabled
         end
 
-        it { is_expected.to be true }
+        it { is_expected.to be false }
 
         context "when #{Datadog::CI::Ext::Settings::ENV_TRACE_SETUP_TEARDOWN_ENABLED}" do
           around do |example|
@@ -347,7 +347,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
           context "is not defined" do
             let(:enable) { nil }
 
-            it { is_expected.to be true }
+            it { is_expected.to be false }
           end
 
           context "is set to true" do
@@ -366,10 +366,10 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
       describe "#trace_setup_teardown_enabled=" do
         it "updates the setting" do
-          expect { settings.ci.trace_setup_teardown_enabled = false }
+          expect { settings.ci.trace_setup_teardown_enabled = true }
             .to change { settings.ci.trace_setup_teardown_enabled }
-            .from(true)
-            .to(false)
+            .from(false)
+            .to(true)
         end
       end
 

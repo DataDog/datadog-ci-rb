@@ -75,6 +75,10 @@ module Datadog
           false
         end
 
+        def trace_setup_teardown_enabled
+          false
+        end
+
         def logical_test_session_name
         end
 

@@ -40,6 +40,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.ci.enabled = enabled
           settings.ci.agentless_mode_enabled = agentless_enabled
           settings.ci.agentless_logs_submission_enabled = agentless_logs_submission_enabled
+          settings.ci.trace_setup_teardown_enabled = trace_setup_teardown_enabled
 
           settings.ci.agentless_url = agentless_url
           settings.ci.itr_enabled = itr_enabled
@@ -127,6 +128,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:dd_site) { nil }
         let(:agentless_enabled) { false }
         let(:agentless_logs_submission_enabled) { false }
+        let(:trace_setup_teardown_enabled) { false }
         let(:evp_proxy_v2_supported) { true }
         let(:evp_proxy_v4_supported) { false }
         let(:agent_available) { true }
@@ -143,6 +145,14 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
         context "is enabled" do
           let(:enabled) { true }
+
+          context "when setup and teardown tracing is enabled" do
+            let(:trace_setup_teardown_enabled) { true }
+
+            it "passes the setting to test tracing" do
+              expect(components.test_tracing.trace_setup_teardown_enabled).to be(true)
+            end
+          end
 
           it "configures the tracing compatibility flush" do
             expect(settings.tracing.test_mode.trace_flush)

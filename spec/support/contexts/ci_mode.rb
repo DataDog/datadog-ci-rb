@@ -25,6 +25,7 @@ RSpec.shared_context "CI mode activated" do
   let(:agentless_mode_enabled) { false }
   let(:api_key) { nil }
   let(:force_test_level_visibility) { false }
+  let(:trace_setup_teardown_enabled) { false }
   let(:itr_enabled) { false }
   let(:code_coverage_enabled) { false }
   let(:static_dependencies_tracking_enabled) { false }
@@ -176,6 +177,7 @@ RSpec.shared_context "CI mode activated" do
 
       # Kept as a no-op to verify compatibility with legacy configuration.
       c.ci.force_test_level_visibility = force_test_level_visibility
+      c.ci.trace_setup_teardown_enabled = trace_setup_teardown_enabled
 
       # test optimisation
       c.ci.itr_enabled = itr_enabled

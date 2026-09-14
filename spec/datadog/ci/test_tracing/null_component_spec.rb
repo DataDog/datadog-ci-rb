@@ -11,6 +11,7 @@ RSpec.describe Datadog::CI::TestTracing::NullComponent do
       expect(test_tracing.known_tests_enabled).to be(false)
       expect(test_tracing.context_service_uri).to be_nil
       expect(test_tracing.local_test_suites_mode).to be(true)
+      expect(test_tracing.trace_setup_teardown_enabled).to be(false)
     end
   end
 

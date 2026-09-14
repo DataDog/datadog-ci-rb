@@ -52,6 +52,8 @@ module Datadog
 
         def itr_enabled?: () -> bool
 
+        def trace_setup_teardown_enabled: () -> bool
+
         def client_process?: () -> bool
 
         def restore_state_from_datadog_test_runner: () -> bool

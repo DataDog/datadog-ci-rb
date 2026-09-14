@@ -84,7 +84,7 @@ module Datadog
               option :trace_setup_teardown_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_TRACE_SETUP_TEARDOWN_ENABLED
-                o.default true
+                o.default false
               end
 
               option :itr_enabled do |o|
