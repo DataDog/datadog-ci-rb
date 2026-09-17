@@ -12,6 +12,8 @@ module Datadog
 
             private
 
+            def _dd_cleanup: () { () -> void } -> void
+
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 
             def datadog_configuration: () -> Datadog::CI::Contrib::RSpec::Configuration::Settings

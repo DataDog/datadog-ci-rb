@@ -31,23 +31,27 @@ module Datadog
               # @type var test_module: Datadog::CI::TestModule?
               test_module = test_tracing_component.start_test_module(CI::Contrib::RSpec::Ext::FRAMEWORK)
 
-              result = super
-              return result unless test_module && test_session
+              return super unless test_module && test_session
 
-              if result != 0
-                test_module.failed!
-                test_session.failed!
-              else
-                test_module.passed!
-                test_session.passed!
+              result = nil
+              begin
+                result = super
+              ensure
+                [test_module, test_session].each do |span|
+                  _dd_cleanup { (result == 0) ? span.passed! : span.failed! }
+                end
+                _dd_cleanup { test_module.finish }
+                _dd_cleanup { test_session.finish }
               end
-              test_module.finish
-              test_session.finish
-
-              result
             end
 
             private
+
+            def _dd_cleanup
+              yield
+            rescue => error
+              Datadog.logger.warn("Knapsack cleanup failed: #{error.class}: #{error.message}")
+            end
 
             def datadog_integration
               CI::Contrib::Instrumentation.fetch_integration(:rspec)
