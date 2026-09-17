@@ -31,24 +31,22 @@ module Datadog
               # @type var test_module: Datadog::CI::TestModule?
               test_module = test_tracing_component.start_test_module(CI::Contrib::RSpec::Ext::FRAMEWORK)
 
+              return super unless test_module && test_session
+
               result = nil
               begin
                 result = super
               ensure
-                if test_module && test_session
-                  if result == 0
-                    test_module.passed!
-                    test_session.passed!
-                  else
-                    test_module.failed!
-                    test_session.failed!
-                  end
-                  test_module.finish
-                  test_session.finish
+                if result == 0
+                  test_module.passed!
+                  test_session.passed!
+                else
+                  test_module.failed!
+                  test_session.failed!
                 end
+                test_module.finish
+                test_session.finish
               end
-
-              result
             end
 
             private
