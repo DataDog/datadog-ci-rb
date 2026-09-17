@@ -7,12 +7,17 @@ RSpec.describe Datadog::CI::Contrib::Knapsack::Runner do
     let(:test_session) { instance_double(Datadog::CI::TestSession) }
     let(:test_module) { instance_double(Datadog::CI::TestModule) }
     let(:test_tracing_component) { instance_double(Datadog::CI::TestTracing::Component) }
-    let(:interruption) { Class.new(StandardError) }
+    let(:interruption) { StandardError.new("test run interrupted") }
+    let(:run_error) { interruption }
+    let(:run_result) { nil }
     let(:runner) do
-      interruption_error = interruption
+      error = run_error
+      result = run_result
       runner_class = Class.new do
         define_method(:knapsack__run_specs) do |*|
-          raise interruption_error, "test run interrupted"
+          raise error if error
+
+          result
         end
 
         include Datadog::CI::Contrib::Knapsack::Runner
@@ -40,7 +45,52 @@ RSpec.describe Datadog::CI::Contrib::Knapsack::Runner do
       expect(test_module).to receive(:finish).ordered
       expect(test_session).to receive(:finish).ordered
 
-      expect { runner.knapsack__run_specs }.to raise_error(interruption, "test run interrupted")
+      expect { runner.knapsack__run_specs }.to raise_error { |error| expect(error).to equal(interruption) }
+    end
+
+    shared_examples "tolerates cleanup failures" do
+      [:test_module, :test_session].each do |span_name|
+        [:status, :finish].each do |operation|
+          it "preserves the run outcome and attempts all cleanup when #{span_name} #{operation} raises" do
+            status_method = (run_result == 0) ? :passed! : :failed!
+            failing_method = (operation == :status) ? status_method : :finish
+            cleanup_error = RuntimeError.new("cleanup failed")
+
+            [test_module, test_session].each do |span|
+              [status_method, :finish].each do |method|
+                expect(span).to receive(method) do
+                  raise cleanup_error if span.equal?(public_send(span_name)) && method == failing_method
+                end
+              end
+            end
+            expect(Datadog.logger).to receive(:warn).with(/Knapsack.*RuntimeError: cleanup failed/)
+
+            if run_error
+              expect { runner.knapsack__run_specs }.to raise_error { |error| expect(error).to equal(run_error) }
+            else
+              expect(runner.knapsack__run_specs).to eq(run_result)
+            end
+          end
+        end
+      end
+    end
+
+    context "when the run is interrupted" do
+      include_examples "tolerates cleanup failures"
+    end
+
+    context "when the run passes" do
+      let(:run_error) { nil }
+      let(:run_result) { 0 }
+
+      include_examples "tolerates cleanup failures"
+    end
+
+    context "when the run fails" do
+      let(:run_error) { nil }
+      let(:run_result) { 1 }
+
+      include_examples "tolerates cleanup failures"
     end
   end
 end

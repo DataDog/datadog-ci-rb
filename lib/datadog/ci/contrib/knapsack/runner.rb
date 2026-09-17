@@ -37,19 +37,21 @@ module Datadog
               begin
                 result = super
               ensure
-                if result == 0
-                  test_module.passed!
-                  test_session.passed!
-                else
-                  test_module.failed!
-                  test_session.failed!
+                [test_module, test_session].each do |span|
+                  _dd_cleanup { (result == 0) ? span.passed! : span.failed! }
                 end
-                test_module.finish
-                test_session.finish
+                _dd_cleanup { test_module.finish }
+                _dd_cleanup { test_session.finish }
               end
             end
 
             private
+
+            def _dd_cleanup
+              yield
+            rescue => error
+              Datadog.logger.warn("Knapsack cleanup failed: #{error.class}: #{error.message}")
+            end
 
             def datadog_integration
               CI::Contrib::Instrumentation.fetch_integration(:rspec)
