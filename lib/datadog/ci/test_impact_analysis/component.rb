@@ -481,7 +481,6 @@ module Datadog
           @coverage_collector ||= Coverage::DDCov.new(
             root: Git::LocalRepository.root,
             ignored_path: @bundle_location,
-            threading_mode: :multi,
             use_allocation_tracing: @use_allocation_tracing
           )
         end
@@ -489,7 +488,7 @@ module Datadog
         def load_datadog_cov!
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
-          Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: multi")
+          Datadog.logger.debug("Loaded Datadog process-wide code coverage collector")
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
           Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")

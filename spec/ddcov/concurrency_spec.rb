@@ -10,8 +10,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov, "adversarial co
   let(:paths) { %w[first second late].map { |name| File.join(root, "#{name}.rb") } }
   let(:sources) { paths.map { |path| RubyVM::InstructionSequence.compile("Thread.pass\n", path, path) } }
 
-  def collector(mode = :multi)
-    described_class.new(root: root, threading_mode: mode, use_allocation_tracing: false)
+  def collector
+    described_class.new(root: root, use_allocation_tracing: false)
   end
 
   it "makes repeated start and stop harmless to other collectors" do
@@ -72,7 +72,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov, "adversarial co
 
   it "keeps a sibling fiber's collector alive when another collector stops" do
     expect_in_fork do
-      first, second = collector(:single), collector(:single)
+      first, second = collector, collector
       code = sources
       fiber = Fiber.new do
         second.start
@@ -90,7 +90,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov, "adversarial co
 
   it "keeps another thread's allocation hook alive after stopping an overlapping collector" do
     expect_in_fork do
-      options = {root: File.expand_path("app", __dir__), threading_mode: :multi, use_allocation_tracing: true}
+      options = {root: File.expand_path("app", __dir__), use_allocation_tracing: true}
       first, second = described_class.new(options), described_class.new(options)
       ready, release = Queue.new, Queue.new
       first.start

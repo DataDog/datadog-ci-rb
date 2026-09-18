@@ -6,7 +6,7 @@ This library supports CRuby. Each process must run test attempts and framework h
 
 Application code may use background threads, fibers, servers, and existing worker pools. Coverage observes their work during the active test or setup window; the active-test API remains visible only on the owning fiber. Tests must wait for their relevant asynchronous work before finishing: detached work cannot be attributed reliably across test boundaries.
 
-The legacy `itr_code_coverage_use_single_threaded_mode` setting is accepted but ignored with a warning. Coverage includes application threads, allocation dependencies, and shared setup regardless of that setting.
+The legacy `itr_code_coverage_use_single_threaded_mode` setting is accepted but ignored with a warning. DDCov has no threading mode: it always observes application threads, allocation dependencies, and shared setup.
 
 ## Ownership and lifecycle
 
