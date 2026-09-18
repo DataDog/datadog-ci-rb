@@ -14,15 +14,15 @@ module Datadog
           end
 
           def activate_test(test)
-            if block_given?
-              begin
-                self.active_test = test
-                yield
-              ensure
-                deactivate_test
-              end
-            else
-              self.active_test = test
+            @pid = ::Process.pid
+            @fiber = Fiber.current
+            @test = test
+            return unless block_given?
+
+            begin
+              yield
+            ensure
+              deactivate_test
             end
           end
 
@@ -32,14 +32,6 @@ module Datadog
 
           def active_test
             @test if @pid == ::Process.pid && @fiber.equal?(Fiber.current)
-          end
-
-          private
-
-          def active_test=(test)
-            @pid = ::Process.pid
-            @fiber = Fiber.current
-            @test = test
           end
         end
       end

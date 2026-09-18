@@ -59,6 +59,10 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
   end
 
+  after do
+    component.shutdown!
+  end
+
   describe "#configure" do
     context "when ITR is disabled in remote configuration" do
       let(:itr_enabled) { false }

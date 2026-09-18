@@ -14,10 +14,6 @@ module Datadog
           def deactivate_test: () -> void
 
           def active_test: () -> Datadog::CI::Test?
-
-          private
-
-          def active_test=: (Datadog::CI::Test? test) -> untyped
         end
       end
     end

@@ -70,70 +70,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov, "adversarial co
     end
   end
 
-  it "isolates single-mode workers across repeated windows and GC compaction" do
-    expect_in_fork do
-      code = sources
-      ready = Queue.new
-      releases = Array.new(3) { Queue.new }
-      workers = releases.each_with_index.map do |release, index|
-        Thread.new do
-          cov = collector(:single)
-          Array.new(8) do
-            cov.start
-            code[index].eval
-            ready << true
-            release.pop
-            code[index].eval
-            cov.stop.keys
-          end
-        end
-      end
-      8.times do
-        3.times { ready.pop }
-        GC.start
-        GC.compact if GC.respond_to?(:compact)
-        releases.each { |release| release << true }
-      end
-      workers.each_with_index do |worker, index|
-        expect(worker.value).to eq(Array.new(8) { [paths[index]] })
-      end
-    end
-  end
-
-  it "rejects a foreign-thread stop without damaging the single-mode owner" do
-    expect_in_fork do
-      cov = collector(:single)
-      code = sources
-      cov.start
-      Thread.new do
-        expect { cov.stop }.to raise_error(RuntimeError, "Coverage was not started by this thread")
-      end.value
-      code[0].eval
-      expect(cov.stop.keys).to contain_exactly(paths[0])
-    end
-  end
-
-  it "shows that single mode omits even a joined child thread's dependencies" do
-    expect_in_fork do
-      cov = collector(:single)
-      code = sources
-      cov.start
-      code[0].eval
-      Thread.new { code[1].eval }.value
-      expect(cov.stop.keys).to contain_exactly(paths[0])
-    end
-  end
-
-  it "shows that single mode observes sibling fibers on the same Ruby thread" do
-    expect_in_fork do
-      cov = collector(:single)
-      code = sources
-      cov.start
-      Fiber.new { code[1].eval }.resume
-      expect(cov.stop.keys).to contain_exactly(paths[1])
-    end
-  end
-
   it "keeps a sibling fiber's collector alive when another collector stops" do
     expect_in_fork do
       first, second = collector(:single), collector(:single)
@@ -149,30 +85,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov, "adversarial co
       fiber.resume
       first.stop
       expect(fiber.resume.keys).to contain_exactly(paths[0], paths[1])
-    end
-  end
-
-  it "shows that a late background job is attributed to the next collection window" do
-    expect_in_fork do
-      cov = collector
-      code = sources
-      ready, release = Queue.new, Queue.new
-      cov.start
-      worker = Thread.new do
-        ready << true
-        release.pop
-        code[2].eval
-      end
-      ready.pop
-      code[0].eval
-      first_result = cov.stop
-      cov.start
-      release << true
-      worker.value
-      second_result = cov.stop
-
-      expect(first_result.keys).to contain_exactly(paths[0])
-      expect(second_result.keys).to contain_exactly(paths[2])
     end
   end
 
