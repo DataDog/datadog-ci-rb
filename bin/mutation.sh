@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 if [ "$#" -gt 1 ] || [ "${1:-mutineer}" != mutineer ]; then
   echo "Usage: sh bin/mutation.sh [mutineer]" >&2
