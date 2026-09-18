@@ -133,33 +133,26 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
     end
 
     context "with threads" do
-      before do
-        run_active_support_parallel_tests(:threads)
-      end
-
-      it "sets active test in worker threads" do
-        expect(worker_markers).to contain_exactly("test_one:true", "test_two:true")
-      end
-
-      it "instruments tests through Minitest" do
-        expect(test_spans).to have(2).items
-        expect(test_spans).to have_tag_values_no_order(:name, ["test_one", "test_two"])
-        expect(test_spans).to all have_pass_status
-        expect(test_spans).to all have_test_tag(:test_suite_id)
-        expect(test_spans).to all have_test_tag(:test_module_id)
-        expect(test_spans).to all have_test_tag(:test_session_id)
+      it "runs customer tests without instrumentation" do
+        expect_in_fork do
+          run_active_support_parallel_tests(:threads)
+          expect(worker_markers).to contain_exactly("test_one:false", "test_two:false")
+          expect(test_tracing.execution_supported?).to be(false)
+          expect(test_spans).to be_empty
+          expect(test_session_span).to be_nil
+        end
       end
     end
 
     context "with processes" do
-      before do
+      it "sets active test in worker processes" do
         skip "Process parallelization requires fork support" unless Process.respond_to?(:fork)
 
-        run_active_support_parallel_tests(:processes)
-      end
-
-      it "sets active test in worker processes" do
-        expect(worker_markers).to contain_exactly("test_one:true", "test_two:true")
+        expect_in_fork do
+          run_active_support_parallel_tests(:processes)
+          expect(worker_markers).to contain_exactly("test_one:true", "test_two:true")
+          expect(test_tracing).to be_execution_supported
+        end
       end
     end
   end
@@ -181,8 +174,12 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
           file.puts("#{name}:#{!active_test.nil?}")
         end
 
-        assert active_test, "expected Datadog::CI.active_test to be set"
-        active_test.set_tag("active_support_parallel_executor", executor_tag)
+        if executor == :threads
+          assert_nil active_test
+        else
+          assert active_test, "expected Datadog::CI.active_test to be set"
+          active_test.set_tag("active_support_parallel_executor", executor_tag)
+        end
       end
 
       define_method(:test_one) do

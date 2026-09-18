@@ -2,8 +2,10 @@ module Datadog
   module CI
     module TestTracing
       module Store
-        class FiberLocal
-          @key: Symbol
+        class Execution
+          @pid: Integer
+          @fiber: Fiber?
+          @test: Datadog::CI::Test?
 
           def initialize: () -> void
 

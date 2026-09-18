@@ -2,6 +2,8 @@
 
 This guide covers some of the common how-tos and technical reference material for developing changes within the Test Optimization library.
 
+For framework integrations, context management, and coverage collection, follow the accepted [test execution model](TestExecutionModel.md): one sequential test-execution fiber per process, with application background threads and fibers allowed. The decision document describes execution ownership, collector lifecycle, and runtime enforcement.
+
 ## Table of Contents
 
 - [Setting up](#setting-up)

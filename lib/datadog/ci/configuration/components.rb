@@ -29,6 +29,7 @@ require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
 require_relative "../utils/runtime_tags_overrides"
 require_relative "../utils/test_run"
+require_relative "../utils/test_execution"
 require_relative "../worker"
 
 module Datadog
@@ -41,6 +42,7 @@ module Datadog
           :test_optimization_cache
 
         def initialize(settings)
+          @test_execution = Utils::TestExecution.new
           @test_impact_analysis = TestImpactAnalysis::NullComponent.new
           @test_tracing = TestTracing::NullComponent.new
           @git_tree_upload_worker = DummyWorker.new
@@ -175,7 +177,8 @@ module Datadog
             logical_test_session_name: settings.ci.test_session_name,
             runtime_tags_overrides: Utils::RuntimeTagsOverrides.parse(settings.ci.runtime_tags_overrides),
             context_service_uri: settings.ci.test_visibility_drb_server_uri,
-            trace_setup_teardown_enabled: settings.ci.trace_setup_teardown_enabled
+            trace_setup_teardown_enabled: settings.ci.trace_setup_teardown_enabled,
+            execution: @test_execution
           )
 
           @agentless_logs_submission = build_agentless_logs_component(settings, test_visibility_api)
@@ -186,18 +189,6 @@ module Datadog
         end
 
         def build_test_impact_analysis(settings, test_visibility_api)
-          if settings.ci.itr_code_coverage_use_single_threaded_mode &&
-              settings.ci.itr_test_impact_analysis_use_allocation_tracing
-            Datadog.logger.warn(
-              "Test Impact Analysis: Single threaded coverage mode is incompatible with allocation tracing. " \
-              "Allocation tracing will be disabled. It means that test impact analysis will not be able to detect " \
-              "instantiations of objects in your code, which is important for ActiveRecord models. " \
-              "Please add your app/model folder to the list of tracked files or disable single threaded coverage mode."
-            )
-
-            settings.ci.itr_test_impact_analysis_use_allocation_tracing = false
-          end
-
           if RUBY_VERSION.start_with?("3.2.") &&
               Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2.3") &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
@@ -219,6 +210,7 @@ module Datadog
             enabled: settings.ci.enabled && settings.ci.itr_enabled,
             bundle_location: settings.ci.itr_code_coverage_excluded_bundle_path,
             use_single_threaded_coverage: settings.ci.itr_code_coverage_use_single_threaded_mode,
+            execution: @test_execution,
             use_allocation_tracing: settings.ci.itr_test_impact_analysis_use_allocation_tracing,
             static_dependencies_tracking_enabled: settings.ci.tia_static_dependencies_tracking_enabled
           )

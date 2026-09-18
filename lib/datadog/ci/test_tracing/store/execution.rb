@@ -4,22 +4,22 @@ module Datadog
   module CI
     module TestTracing
       module Store
-        class FiberLocal
+        # One active test, visible only to its execution fiber. Instance-owned
+        # storage avoids leaking a test into a replacement component.
+        class Execution
           def initialize
-            @key = :datadog_ci_active_test
-
-            self.active_test = nil
+            @pid = ::Process.pid
+            @fiber = nil
+            @test = nil
           end
 
           def activate_test(test)
-            raise "Nested tests are not supported. Currently active test: #{active_test}" unless active_test.nil?
-
             if block_given?
               begin
                 self.active_test = test
                 yield
               ensure
-                self.active_test = nil
+                deactivate_test
               end
             else
               self.active_test = test
@@ -27,17 +27,19 @@ module Datadog
           end
 
           def deactivate_test
-            self.active_test = nil
+            @test = nil if @pid == ::Process.pid && @fiber.equal?(Fiber.current)
           end
 
           def active_test
-            Thread.current[@key]
+            @test if @pid == ::Process.pid && @fiber.equal?(Fiber.current)
           end
 
           private
 
           def active_test=(test)
-            Thread.current[@key] = test
+            @pid = ::Process.pid
+            @fiber = Fiber.current
+            @test = test
           end
         end
       end

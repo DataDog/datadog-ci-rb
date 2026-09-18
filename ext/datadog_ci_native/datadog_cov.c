@@ -83,6 +83,7 @@ struct dd_cov_data {
   enum threading_mode threading_mode;
   // for single threaded mode: thread that is being covered
   VALUE th_covered;
+  bool line_hook_active;
 
   // Allocation tracing is used to track test impact for objects that do not
   // contain any methods that could be covered by line tracepoint.
@@ -162,6 +163,8 @@ static VALUE dd_cov_allocate(VALUE klass) {
     dd_cov_data->seen_filenames[i] = Qnil;
   }
   dd_cov_data->threading_mode = multi;
+  dd_cov_data->th_covered = Qnil;
+  dd_cov_data->line_hook_active = false;
 
   dd_cov_data->allocation_tracing_enabled = false;
   dd_cov_data->allocation_hook_active = false;
@@ -433,6 +436,10 @@ static VALUE dd_cov_start(VALUE self) {
     rb_raise(rb_eRuntimeError, "root is required");
   }
 
+  if (dd_cov_data->line_hook_active) {
+    return self;
+  }
+
   // add line tracepoint
   if (dd_cov_data->threading_mode == single) {
     VALUE thval = rb_thread_current();
@@ -441,6 +448,7 @@ static VALUE dd_cov_start(VALUE self) {
   } else {
     rb_add_event_hook(on_line_event, RUBY_EVENT_LINE, self);
   }
+  dd_cov_data->line_hook_active = true;
 
   // Register the raw hook that TracePoint would wrap and dispatch directly to
   // the allocation callback. NEWOBJ permits no general Ruby API; the callback
@@ -467,17 +475,18 @@ static VALUE dd_cov_stop(VALUE self) {
                        dd_cov_data);
 
   // stop line tracepoint
-  if (dd_cov_data->threading_mode == single) {
+  if (dd_cov_data->line_hook_active && dd_cov_data->threading_mode == single) {
     VALUE thval = rb_thread_current();
     if (!rb_equal(thval, dd_cov_data->th_covered)) {
       rb_raise(rb_eRuntimeError, "Coverage was not started by this thread");
     }
 
-    rb_thread_remove_event_hook(dd_cov_data->th_covered, on_line_event);
+    rb_thread_remove_event_hook_with_data(dd_cov_data->th_covered, on_line_event, self);
     dd_cov_data->th_covered = Qnil;
-  } else {
-    rb_remove_event_hook(on_line_event);
+  } else if (dd_cov_data->line_hook_active) {
+    rb_remove_event_hook_with_data(on_line_event, self);
   }
+  dd_cov_data->line_hook_active = false;
 
   // Remove only this collector's hook; other concurrently active collectors
   // continue to receive allocation events.

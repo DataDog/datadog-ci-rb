@@ -40,6 +40,11 @@ module Datadog
                 return super unless Datadog.configuration.ci.enabled
                 return super unless datadog_configuration[:enabled]
 
+                if Helpers.threaded?(self.class)
+                  _dd_test_tracing_component.disable_test_execution!("Minitest threaded executor is unsupported")
+                end
+                return super unless _dd_test_tracing_component.execution_supported?
+
                 test_suite = start_datadog_test_suite_if_parallel
                 if test_suite&.should_skip?
                   return skip_datadog_suite(test_suite)

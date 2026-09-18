@@ -19,6 +19,12 @@ module Datadog
 
               return unless datadog_configuration[:enabled]
 
+              if ::Minitest::Runnable.runnables.any? { |runnable| Helpers.threaded?(runnable) && !runnable.runnable_methods.empty? }
+                test_tracing_component.disable_test_execution!("Minitest threaded executor is unsupported")
+                return
+              end
+              return unless test_tracing_component.execution_supported?
+
               tests_count = ::Minitest::Runnable.runnables.sum { |runnable| runnable.runnable_methods.size }
 
               test_tracing_component.start_test_session(
@@ -42,7 +48,7 @@ module Datadog
             end
 
             def run_one_method(klass, method_name)
-              return old_run_one_method(klass, method_name) unless datadog_configuration[:enabled]
+              return old_run_one_method(klass, method_name) unless datadog_configuration[:enabled] && test_tracing_component.execution_supported?
 
               # @type var result: untyped
               result = nil

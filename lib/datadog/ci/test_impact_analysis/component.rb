@@ -15,6 +15,7 @@ require_relative "../source_code/static_dependencies"
 require_relative "../utils/parsing"
 require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
+require_relative "../utils/test_execution"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
@@ -54,8 +55,13 @@ module Datadog
           bundle_location: nil,
           use_single_threaded_coverage: false,
           use_allocation_tracing: true,
-          static_dependencies_tracking_enabled: false
+          static_dependencies_tracking_enabled: false,
+          execution: Utils::TestExecution.new
         )
+          @execution = execution
+          @coverage_pid = Process.pid
+          @coverage_collector = nil
+          @execution.on_disable { discard_coverage }
           @enabled = enabled
           @api = api
           @dd_env = dd_env
@@ -67,7 +73,9 @@ module Datadog
           else
             bundle_location
           end
-          @use_single_threaded_coverage = use_single_threaded_coverage
+          if use_single_threaded_coverage
+            Datadog.logger.warn("Single-thread coverage is no longer supported; collecting application work across all threads")
+          end
           @use_allocation_tracing = use_allocation_tracing
           @static_dependencies_tracking_enabled = static_dependencies_tracking_enabled
 
@@ -84,13 +92,10 @@ module Datadog
 
           # Context coverage: stores coverage collected during before(:context)/before(:all) hooks
           # keyed by context_id (e.g., RSpec scoped_id for example groups)
-          # Only used when use_single_threaded_coverage is false (multi-threaded mode)
           @context_coverages = {}
-          @context_coverages_mutex = Mutex.new
 
           # Currently active context ID for context coverage collection
           @current_context_id = nil
-          @current_context_id_mutex = Mutex.new
 
           Datadog.logger.debug("TestImpactAnalysis initialized with enabled: #{@enabled}")
         end
@@ -126,15 +131,15 @@ module Datadog
         end
 
         def enabled?
-          @enabled
+          @enabled && @execution.enabled?
         end
 
         def skipping_tests?
-          @test_skipping_enabled && test_skipping_mode?
+          enabled? && @test_skipping_enabled && test_skipping_mode?
         end
 
         def skipping_suites?
-          @test_skipping_enabled && suite_skipping_mode?
+          enabled? && @test_skipping_enabled && suite_skipping_mode?
         end
 
         def test_skipping_mode?
@@ -146,7 +151,7 @@ module Datadog
         end
 
         def code_coverage?
-          @code_coverage_enabled
+          enabled? && @code_coverage_enabled
         end
 
         # Starts coverage collection.
@@ -154,9 +159,11 @@ module Datadog
         #
         # @return [void]
         def start_coverage
-          return if !enabled? || !code_coverage?
+          with_execution do
+            return if !enabled? || !code_coverage?
 
-          coverage_collector&.start
+            coverage_collector&.start
+          end
         end
 
         # Stops coverage collection and returns raw coverage data.
@@ -164,9 +171,11 @@ module Datadog
         #
         # @return [Hash, nil] Raw coverage data or nil
         def stop_coverage
-          return if !enabled? || !code_coverage?
+          with_execution do
+            return if !enabled? || !code_coverage?
 
-          coverage_collector&.stop
+            coverage_collector&.stop
+          end
         end
 
         # Called when a test context (e.g., RSpec example group with before(:context)) starts.
@@ -175,20 +184,20 @@ module Datadog
         # @param context_id [String] A stable identifier for the context (e.g., RSpec scoped_id)
         # @return [void]
         def on_test_context_started(context_id)
-          return unless context_coverage_enabled?
+          with_execution do
+            return unless context_coverage_enabled?
 
-          # Stop and store any existing context coverage before starting new one.
-          # This ensures that outer context coverage is preserved when nested contexts start.
-          stop_context_coverage_and_store
+            # Stop and store any existing context coverage before starting new one.
+            # This ensures that outer context coverage is preserved when nested contexts start.
+            stop_context_coverage_and_store
 
-          Datadog.logger.debug { "Starting context coverage collection for context [#{context_id}]" }
+            Datadog.logger.debug { "Starting context coverage collection for context [#{context_id}]" }
 
-          # Store the context_id we're collecting for
-          @current_context_id_mutex.synchronize do
+            # Store the context_id we're collecting for
             @current_context_id = context_id
-          end
 
-          coverage_collector&.start
+            coverage_collector&.start
+          end
         end
 
         # Called when a test starts within a context. This method:
@@ -198,23 +207,25 @@ module Datadog
         # @param test [Datadog::CI::Test] The test that is starting
         # @return [void]
         def on_test_started(test)
-          inherit_suite_impacted_files(test) if test_skipping_mode?
+          with_execution do
+            inherit_suite_impacted_files(test) if test_skipping_mode?
 
-          return if !enabled? || !code_coverage?
-          return if suite_skipping_mode?
+            return if !enabled? || !code_coverage?
+            return if suite_skipping_mode?
 
-          # Stop any in-progress context coverage and store it
-          stop_context_coverage_and_store
+            # Stop any in-progress context coverage and store it
+            stop_context_coverage_and_store
 
-          Telemetry.code_coverage_started(test)
+            Telemetry.code_coverage_started(test)
 
-          context_ids = test.context_ids || []
+            context_ids = test.context_ids || []
 
-          Datadog.logger.debug do
-            "Starting test coverage for [#{test.name}] with context chain: #{context_ids.inspect}"
+            Datadog.logger.debug do
+              "Starting test coverage for [#{test.name}] with context chain: #{context_ids.inspect}"
+            end
+
+            coverage_collector&.start
           end
-
-          coverage_collector&.start
         end
 
         # Called when a test finishes. This method:
@@ -227,42 +238,44 @@ module Datadog
         # @param context [Datadog::CI::TestTracing::Context] The test tracing context for ITR stats
         # @return [Datadog::CI::TestImpactAnalysis::Coverage::Event, nil] The coverage event or nil
         def on_test_finished(test, context)
-          return unless enabled?
+          with_execution do
+            return unless enabled?
 
-          if suite_skipping_mode?
-            test.test_suite&.add_impacted_files(test.lock_custom_impacted_files)
-            return
+            if suite_skipping_mode?
+              test.test_suite&.add_impacted_files(test.lock_custom_impacted_files)
+              return
+            end
+
+            # Handle ITR statistics
+            if test.skipped_by_test_impact_analysis?
+              Telemetry.itr_skipped
+
+              context.incr_tests_skipped_by_tia_count
+            end
+
+            # Handle code coverage
+            return unless code_coverage?
+            Telemetry.code_coverage_finished(test)
+
+            coverage = coverage_collector&.stop
+
+            # if test was skipped, we discard coverage data
+            return if test.skipped?
+            coverage ||= {}
+
+            # Merge context coverage from all relevant contexts
+            context_ids = test.context_ids || []
+            merge_context_coverages_into_test(coverage, context_ids)
+
+            write_coverage_event(
+              test_id: test.id.to_s,
+              test_suite_id: test.test_suite_id.to_s,
+              test_session_id: test.test_session_id.to_s,
+              source_file: test.source_file,
+              coverage: coverage,
+              custom_impacted_files: test.lock_custom_impacted_files
+            )
           end
-
-          # Handle ITR statistics
-          if test.skipped_by_test_impact_analysis?
-            Telemetry.itr_skipped
-
-            context.incr_tests_skipped_by_tia_count
-          end
-
-          # Handle code coverage
-          return unless code_coverage?
-          Telemetry.code_coverage_finished(test)
-
-          coverage = coverage_collector&.stop
-
-          # if test was skipped, we discard coverage data
-          return if test.skipped?
-          coverage ||= {}
-
-          # Merge context coverage from all relevant contexts
-          context_ids = test.context_ids || []
-          merge_context_coverages_into_test(coverage, context_ids)
-
-          write_coverage_event(
-            test_id: test.id.to_s,
-            test_suite_id: test.test_suite_id.to_s,
-            test_session_id: test.test_session_id.to_s,
-            source_file: test.source_file,
-            coverage: coverage,
-            custom_impacted_files: test.lock_custom_impacted_files
-          )
         end
 
         # Clears stored context coverage for a specific context.
@@ -271,21 +284,20 @@ module Datadog
         # @param context_id [String] The context ID to clear
         # @return [void]
         def clear_context_coverage(context_id)
-          return unless context_coverage_enabled?
+          with_execution do
+            return unless context_coverage_enabled?
 
-          @context_coverages_mutex.synchronize do
+            stop_context_coverage_and_store if @current_context_id == context_id
             @context_coverages.delete(context_id)
-
             Datadog.logger.debug { "Cleared context coverage for [#{context_id}]" }
           end
         end
 
         # Returns whether context coverage collection is enabled.
-        # Context coverage is disabled in single-threaded mode.
         #
         # @return [Boolean]
         def context_coverage_enabled?
-          enabled? && code_coverage? && !suite_skipping_mode? && !@use_single_threaded_coverage
+          enabled? && code_coverage? && !suite_skipping_mode?
         end
 
         def skippable?(datadog_test_id)
@@ -339,38 +351,40 @@ module Datadog
 
         def on_test_suite_started(test_suite)
           return unless enabled? && suite_skipping_mode?
+          with_execution do
+            mark_if_suite_skippable(test_suite)
+            return if test_suite.should_skip?
+            return unless code_coverage?
 
-          mark_if_suite_skippable(test_suite)
-          return if test_suite.should_skip?
-          return unless code_coverage?
-
-          Telemetry.code_coverage_started(test_suite)
-          coverage_collector&.start
+            Telemetry.code_coverage_started(test_suite)
+            coverage_collector&.start
+          end
         end
 
         def on_test_suite_finished(test_suite, context)
           return unless enabled? && suite_skipping_mode?
+          with_execution do
+            if test_suite.skipped_by_test_impact_analysis?
+              Telemetry.itr_skipped
+              context.incr_tests_skipped_by_tia_count
+              return
+            end
 
-          if test_suite.skipped_by_test_impact_analysis?
-            Telemetry.itr_skipped
-            context.incr_tests_skipped_by_tia_count
-            return
+            return unless code_coverage?
+
+            Telemetry.code_coverage_finished(test_suite)
+
+            coverage = coverage_collector&.stop
+
+            write_coverage_event(
+              test_id: nil,
+              test_suite_id: test_suite.id.to_s,
+              test_session_id: test_suite.get_tag(Ext::Test::TAG_TEST_SESSION_ID).to_s,
+              source_file: test_suite.source_file,
+              coverage: coverage,
+              custom_impacted_files: test_suite.lock_custom_impacted_files
+            )
           end
-
-          return unless code_coverage?
-
-          Telemetry.code_coverage_finished(test_suite)
-
-          coverage = coverage_collector&.stop
-
-          write_coverage_event(
-            test_id: nil,
-            test_suite_id: test_suite.id.to_s,
-            test_session_id: test_suite.get_tag(Ext::Test::TAG_TEST_SESSION_ID).to_s,
-            source_file: test_suite.source_file,
-            coverage: coverage,
-            custom_impacted_files: test_suite.lock_custom_impacted_files
-          )
         end
 
         def write_test_session_tags(test_session, skipped_tests_count)
@@ -384,6 +398,7 @@ module Datadog
         end
 
         def shutdown!
+          discard_coverage
           @coverage_writer&.stop
         end
 
@@ -430,6 +445,29 @@ module Datadog
 
         private
 
+        def with_execution
+          @execution.synchronize do
+            if @coverage_pid != Process.pid
+              discard_coverage
+              @coverage_pid = Process.pid
+            end
+            yield
+          end
+        rescue => error
+          @execution.disable!("coverage collection failed: #{error}")
+          nil
+        end
+
+        def discard_coverage
+          @coverage_collector&.stop
+        rescue => error
+          Datadog.logger.warn("Could not stop coverage collection: #{error}")
+        ensure
+          @coverage_collector = nil
+          @current_context_id = nil
+          @context_coverages.clear
+        end
+
         def skippables_count
           current_skippables.count
         end
@@ -440,10 +478,10 @@ module Datadog
         end
 
         def coverage_collector
-          Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(
+          @coverage_collector ||= Coverage::DDCov.new(
             root: Git::LocalRepository.root,
             ignored_path: @bundle_location,
-            threading_mode: code_coverage_mode,
+            threading_mode: :multi,
             use_allocation_tracing: @use_allocation_tracing
           )
         end
@@ -451,7 +489,7 @@ module Datadog
         def load_datadog_cov!
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
-          Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
+          Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: multi")
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
           Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")
@@ -580,10 +618,6 @@ module Datadog
           end
         end
 
-        def code_coverage_mode
-          @use_single_threaded_coverage ? :single : :multi
-        end
-
         def git_tree_upload_worker
           Datadog.send(:components).git_tree_upload_worker
         end
@@ -593,19 +627,14 @@ module Datadog
         def stop_context_coverage_and_store
           return unless context_coverage_enabled?
 
-          context_id = @current_context_id_mutex.synchronize do
-            id = @current_context_id
-            @current_context_id = nil
-            id
-          end
+          context_id = @current_context_id
+          @current_context_id = nil
           return if context_id.nil?
 
           coverage = coverage_collector&.stop
           return if coverage.nil? || coverage.empty?
 
-          @context_coverages_mutex.synchronize do
-            @context_coverages[context_id] = coverage
-          end
+          @context_coverages[context_id] = coverage
 
           Datadog.logger.debug do
             "Stored context coverage for [#{context_id}] with #{coverage.size} files"
@@ -617,16 +646,11 @@ module Datadog
         # @param coverage [Hash] The test's coverage hash to merge into
         # @param context_ids [Array<String>] List of context IDs to merge coverage from
         def merge_context_coverages_into_test(coverage, context_ids)
-          return if @use_single_threaded_coverage
           return if context_ids.empty?
 
-          @context_coverages_mutex.synchronize do
-            context_ids.each do |context_id|
-              context_coverage = @context_coverages[context_id]
-              next unless context_coverage
-
-              coverage.merge!(context_coverage)
-            end
+          context_ids.each do |context_id|
+            context_coverage = @context_coverages[context_id]
+            coverage.merge!(context_coverage) if context_coverage
           end
 
           Datadog.logger.debug do
