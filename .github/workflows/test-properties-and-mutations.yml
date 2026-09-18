@@ -1,0 +1,57 @@
+name: Property and mutation tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: "${{ github.ref != 'refs/heads/main' }}"
+
+jobs:
+  properties:
+    name: Property tests and corpus replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Compile native extension
+        run: bundle exec rake compile
+      - name: Test interval properties and replay corpus
+        run: >-
+          bundle exec rspec spec/datadog/ci/git/changed_lines_spec.rb
+          spec/datadog/ci/git/changed_lines_property_spec.rb
+          spec/datadog/ci/git/diff_spec.rb --seed 20260918
+
+  mutineer:
+    name: Mutineer (100% required)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+      - name: Compile native extension
+        run: bundle exec rake compile
+      # Preserve the runner's nonzero exit status while survivors remain.
+      - name: Run mutation analysis
+        run: sh bin/mutation.sh
+      - name: Upload mutation report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutineer-report
+          path: tmp/mutation/mutineer.json
+          retention-days: 7
