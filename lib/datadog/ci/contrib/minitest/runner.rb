@@ -47,6 +47,9 @@ module Datadog
               result
             end
 
+            # Minitest 6 removed this entry point, but Rails process workers
+            # still call it (or prefer it when available). Keep the compatibility
+            # method and retry wrapper even though threaded executors are unsupported.
             def run_one_method(klass, method_name)
               return old_run_one_method(klass, method_name) unless datadog_configuration[:enabled] && test_tracing_component.execution_supported?
 

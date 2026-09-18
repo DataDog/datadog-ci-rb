@@ -154,12 +154,32 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
           expect(test_tracing).to be_execution_supported
         end
       end
+
+      context "with flaky test retries" do
+        let(:flaky_test_retries_enabled) { true }
+
+        it "retries through Minitest.run_one_method inside the same forked worker" do
+          expect_in_fork do
+            run_active_support_parallel_tests(:processes, flaky: true)
+            attempts = worker_markers.map { |marker| marker.split(":") }
+            flaky_attempts = attempts.select { |attempt| attempt.first == "test_one" }
+            expect(flaky_attempts.size).to eq(2)
+            expect(flaky_attempts.map { |attempt| attempt[1] }).to eq(["true", "true"])
+            expect(flaky_attempts.map { |attempt| attempt[2] }).to eq(["false", "true"])
+            expect(flaky_attempts.map { |attempt| attempt[3] }.uniq.size).to eq(1)
+            expect(flaky_attempts.map { |attempt| attempt[4] }.uniq.size).to eq(2)
+            expect(attempts.count { |attempt| attempt.first == "test_two" }).to eq(1)
+            expect(test_tracing).to be_execution_supported
+          end
+        end
+      end
     end
   end
 
-  def run_active_support_parallel_tests(executor)
+  def run_active_support_parallel_tests(executor, flaky: false)
     path = marker_path
     executor_tag = executor.to_s
+    coordinator_pid = Process.pid
     parallelize_options = {workers: 2, with: executor}
     if ActiveSupport::TestCase.method(:parallelize).parameters.any? { |_, name| name == :threshold }
       parallelize_options[:threshold] = 0
@@ -167,16 +187,22 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
 
     klass = Class.new(ActiveSupport::TestCase) do
       parallelize(**parallelize_options)
+      class << self
+        attr_accessor :attempts
+      end
 
       define_method(:record_active_test!) do
         active_test = Datadog::CI.active_test
         File.open(path, "a") do |file|
-          file.puts("#{name}:#{!active_test.nil?}")
+          marker = "#{name}:#{!active_test.nil?}"
+          marker += ":#{active_test&.is_retry?}:#{Process.pid}:#{active_test&.id}" if flaky
+          file.puts(marker)
         end
 
         if executor == :threads
           assert_nil active_test
         else
+          refute_equal coordinator_pid, Process.pid, "expected a forked worker"
           assert active_test, "expected Datadog::CI.active_test to be set"
           active_test.set_tag("active_support_parallel_executor", executor_tag)
         end
@@ -184,6 +210,10 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
 
       define_method(:test_one) do
         record_active_test!
+        if flaky
+          self.class.attempts = (self.class.attempts || 0) + 1
+          assert_operator self.class.attempts, :>, 1, "fail the first attempt"
+        end
       end
 
       define_method(:test_two) do
