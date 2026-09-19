@@ -31,7 +31,7 @@ GEM
     base64 (0.3.0)
     bigdecimal (4.1.3)
     cgi (0.5.2)
-    ci-queue (0.98.0)
+    ci-queue (0.99.0)
       logger
     climate_control (1.2.0)
     concurrent-ruby (1.3.8)
@@ -141,7 +141,7 @@ CHECKSUMS
   bigdecimal (4.1.3) sha256=61ebe1e5e559bdc3cc6f2c0ee7f427321fc838f59611c294356eb04d6e21cf66
   bundler (4.0.19) sha256=b48056e4c77fb3853cc47775b5447ede44aaa4f53c32f168014ab4fe86587d47
   cgi (0.5.2) sha256=61ca30298171190fd4fa0d8018e57ada456eae9b7a2b78526debf7f0a0e6f8bb
-  ci-queue (0.98.0) sha256=dc60cebe84803eae48e9e5ccfb4f6f80c6a9f4a768297dcab715a1be52e06f51
+  ci-queue (0.99.0) sha256=1bec715b0844d722c8321318d5c797eb813b4183aeab91ea8cf2b741b95eac73
   climate_control (1.2.0) sha256=36b21896193fa8c8536fa1cd843a07cf8ddbd03aaba43665e26c53ec1bd70aa5
   concurrent-ruby (1.3.8) sha256=b2f1be836e968ccc78ccfce277ea79c72a88633f22306782c16ff23fb415d1e1
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
