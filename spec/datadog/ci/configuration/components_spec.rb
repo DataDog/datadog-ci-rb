@@ -428,10 +428,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
                   context "when single threaded mode for line coverage is enabled" do
                     let(:itr_code_coverage_use_single_threaded_mode) { true }
 
-                    it "logs a warning and disables allocation tracing for ITR" do
-                      expect(Datadog.logger).to have_received(:warn)
-
-                      expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(false)
+                    it "warns about the obsolete option and retains allocation tracing" do
+                      expect(Datadog.logger).to have_received(:warn).with(/Single-thread coverage is no longer supported/)
+                      expect(settings.ci.itr_test_impact_analysis_use_allocation_tracing).to eq(true)
                     end
                   end
 

@@ -116,6 +116,7 @@ module Datadog
                 end
               end
 
+              # Compatibility option: ignored with a warning. Coverage always includes application threads.
               option :itr_code_coverage_use_single_threaded_mode do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_ITR_CODE_COVERAGE_USE_SINGLE_THREADED_MODE

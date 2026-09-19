@@ -27,9 +27,6 @@
 #error "SEEN_ALLOCATED_CLASS_CACHE_SIZE must be a power of two"
 #endif
 
-// threading modes
-enum threading_mode { single, multi };
-
 // functions declarations
 static void on_newobj_event(VALUE self, const rb_trace_arg_t *tracearg);
 
@@ -71,23 +68,11 @@ struct dd_cov_data {
   VALUE last_filename;
   VALUE seen_filenames[SEEN_FILENAME_CACHE_SIZE];
 
-  // Line tracepoint can work in two modes: single threaded and multi threaded
-  //
-  // In single threaded mode line tracepoint will only cover the thread that
-  // started the coverage. This mode is useful for testing frameworks that run
-  // tests in multiple threads. Do not use single threaded mode for Rails
-  // applications unless you know that you don't run any background threads.
-  //
-  // In multi threaded mode line tracepoint will cover all threads. This mode is
-  // enabled by default and is recommended for most applications.
-  enum threading_mode threading_mode;
-  // for single threaded mode: thread that is being covered
-  VALUE th_covered;
+  // Observe application work across all threads during the active test window.
+  bool line_hook_active;
 
   // Allocation tracing is used to track test impact for objects that do not
   // contain any methods that could be covered by line tracepoint.
-  //
-  // Allocation tracing works only in multi threaded mode.
   bool allocation_tracing_enabled;
   bool allocation_hook_active;
   st_table *klasses_table; // { (VALUE) -> int } hashmap with class names that
@@ -101,7 +86,6 @@ struct dd_cov_data {
 static void dd_cov_mark(void *ptr) {
   struct dd_cov_data *dd_cov_data = ptr;
   rb_gc_mark_movable(dd_cov_data->impacted_files);
-  rb_gc_mark_movable(dd_cov_data->th_covered);
 
   if (dd_cov_data->last_filename != Qnil) {
     rb_gc_mark(dd_cov_data->last_filename);
@@ -134,7 +118,6 @@ static void dd_cov_free(void *ptr) {
 static void dd_cov_compact(void *ptr) {
   struct dd_cov_data *dd_cov_data = ptr;
   dd_cov_data->impacted_files = rb_gc_location(dd_cov_data->impacted_files);
-  dd_cov_data->th_covered = rb_gc_location(dd_cov_data->th_covered);
   // keys for dd_cov_data->klasses_table are not moved by GC, so we don't need
   // to update them
 }
@@ -161,7 +144,7 @@ static VALUE dd_cov_allocate(VALUE klass) {
   for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
     dd_cov_data->seen_filenames[i] = Qnil;
   }
-  dd_cov_data->threading_mode = multi;
+  dd_cov_data->line_hook_active = false;
 
   dd_cov_data->allocation_tracing_enabled = false;
   dd_cov_data->allocation_hook_active = false;
@@ -384,29 +367,12 @@ static VALUE dd_cov_initialize(int argc, VALUE *argv, VALUE self) {
     ignored_path = StringValueCStr(rb_ignored_path);
   }
 
-  VALUE rb_threading_mode =
-      rb_hash_lookup(opt, ID2SYM(rb_intern("threading_mode")));
-  enum threading_mode threading_mode;
-  if (rb_threading_mode == ID2SYM(rb_intern("multi"))) {
-    threading_mode = multi;
-  } else if (rb_threading_mode == ID2SYM(rb_intern("single"))) {
-    threading_mode = single;
-  } else {
-    rb_raise(rb_eArgError, "threading mode is invalid");
-  }
-
   VALUE rb_allocation_tracing_enabled =
       rb_hash_lookup(opt, ID2SYM(rb_intern("use_allocation_tracing")));
-  if (rb_allocation_tracing_enabled == Qtrue && threading_mode == single) {
-    rb_raise(rb_eArgError,
-             "allocation tracing is not supported in single threaded mode");
-  }
-
   struct dd_cov_data *dd_cov_data;
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type,
                        dd_cov_data);
 
-  dd_cov_data->threading_mode = threading_mode;
   dd_cov_data->root_len = RSTRING_LEN(rb_root);
   dd_cov_data->root = dd_ci_ruby_strndup(root, dd_cov_data->root_len);
 
@@ -433,14 +399,13 @@ static VALUE dd_cov_start(VALUE self) {
     rb_raise(rb_eRuntimeError, "root is required");
   }
 
-  // add line tracepoint
-  if (dd_cov_data->threading_mode == single) {
-    VALUE thval = rb_thread_current();
-    rb_thread_add_event_hook(thval, on_line_event, RUBY_EVENT_LINE, self);
-    dd_cov_data->th_covered = thval;
-  } else {
-    rb_add_event_hook(on_line_event, RUBY_EVENT_LINE, self);
+  if (dd_cov_data->line_hook_active) {
+    return self;
   }
+
+  // add process-wide line tracepoint
+  rb_add_event_hook(on_line_event, RUBY_EVENT_LINE, self);
+  dd_cov_data->line_hook_active = true;
 
   // Register the raw hook that TracePoint would wrap and dispatch directly to
   // the allocation callback. NEWOBJ permits no general Ruby API; the callback
@@ -466,18 +431,11 @@ static VALUE dd_cov_stop(VALUE self) {
   TypedData_Get_Struct(self, struct dd_cov_data, &dd_cov_data_type,
                        dd_cov_data);
 
-  // stop line tracepoint
-  if (dd_cov_data->threading_mode == single) {
-    VALUE thval = rb_thread_current();
-    if (!rb_equal(thval, dd_cov_data->th_covered)) {
-      rb_raise(rb_eRuntimeError, "Coverage was not started by this thread");
-    }
-
-    rb_thread_remove_event_hook(dd_cov_data->th_covered, on_line_event);
-    dd_cov_data->th_covered = Qnil;
-  } else {
-    rb_remove_event_hook(on_line_event);
+  // stop only this collector's line tracepoint
+  if (dd_cov_data->line_hook_active) {
+    rb_remove_event_hook_with_data(on_line_event, self);
   }
+  dd_cov_data->line_hook_active = false;
 
   // Remove only this collector's hook; other concurrently active collectors
   // continue to receive allocation events.

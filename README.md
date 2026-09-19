@@ -24,6 +24,8 @@ Learn more on our [official website](https://docs.datadoghq.com/tests/) and chec
 - [Test visibility setup](https://docs.datadoghq.com/tests/setup/ruby/?tab=cloudciprovideragentless)
 - [Test impact analysis setup](https://docs.datadoghq.com/tests/test_impact_analysis/setup/ruby/?tab=cloudciprovideragentless) (test visibility setup is required before setting up test impact analysis)
 
+The library supports CRuby with sequential test execution on one fiber per process. Process-based parallel runners are supported; threaded and fiber-based test executors disable Test Optimization with a warning. Application code may still use threads and fibers. See the [test execution model](docs/TestExecutionModel.md).
+
 ## Upgrade from ddtrace v1.x
 
 If you used [test visibility for Ruby](https://docs.datadoghq.com/tests/setup/ruby/) with [ddtrace](https://github.com/datadog/dd-trace-rb) gem, check out our [upgrade guide](/docs/UpgradeGuide.md).
