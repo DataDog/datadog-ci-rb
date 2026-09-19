@@ -54,3 +54,9 @@ target :lib do
     hash[Ruby::UnreachableBranch] = :hint
   end
 end
+
+target :fuzz do
+  signature "sig/datadog/ci/git/changed_lines.rbs"
+  signature "spec/support/fuzz/changed_lines_target.rbs"
+  check "spec/support/fuzz/changed_lines_target.rb"
+end
