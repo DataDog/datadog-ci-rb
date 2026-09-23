@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: e35deb4f6a25892206c8faad7c9c8293c2d2446f
+  revision: b664c8c0b31f1b111cbf90f1f3da782f18be9b78
   branch: master
   specs:
-    datadog (2.43.0.dev)
+    datadog (2.44.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.5)
       libdatadog (~> 40.0.0.2.0)
@@ -90,7 +90,7 @@ GEM
     mime-types (3.7.0)
       logger
       mime-types-data (~> 3.2025, >= 3.2025.0507)
-    mime-types-data (3.2026.0921)
+    mime-types-data (3.2026.0922)
     msgpack (1.8.5)
     multi_test (1.1.0)
     os (1.1.4)
