@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   DESC
 
   spec.homepage = "https://github.com/DataDog/datadog-ci-rb"
-  spec.license = "BSD-3-Clause"
+  spec.licenses = ["BSD-3-Clause", "Apache-2.0"]
 
   spec.bindir = "exe"
   spec.executables = ["ddcirb"]
