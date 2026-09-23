@@ -2,6 +2,8 @@ name: 'Integration test run'
 on:
   # Build each branch for testing
   push:
+  # Also test pull requests opened from forks.
+  pull_request:
 
 jobs:
   build_and_run_integration_test:
