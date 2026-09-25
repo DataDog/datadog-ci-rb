@@ -153,6 +153,12 @@ def self.with_rails_gem(versions: 7)
     appraise "rails-#{rails_v}" do
       gem "rails", "~> #{rails_v}"
 
+      # Rails 7.2.4 caps both dependencies; newer majors make Bundler prefer older Rails.
+      if rails_v == 7 && Gem::Version.new("3.2") <= RUBY_VERSION
+        gem "connection_pool", "< 3"
+        gem "minitest", "< 6"
+      end
+
       # ruby 3.4 extracts more parts of stdlib into gems
       if Gem::Version.new("3.4") <= RUBY_VERSION && !RUBY_ENGINE.include?("jruby") && (4..6).cover?(rails_v)
         gem "base64"
@@ -264,6 +270,11 @@ def self.with_rswag_gem(rswag_versions: 2, rspec_rails_versions: 7..8, rails_ver
           gem "rspec-rails", "~> #{rspec_rails_v}"
           gem "rswag-specs", "~> #{rswag_v}"
           gem "rails", "~> #{rails_v}"
+          # Rails 7.2.4 caps both dependencies; newer majors make Bundler prefer older Rails.
+          if rails_v == 7 && Gem::Version.new("3.2") <= RUBY_VERSION
+            gem "connection_pool", "< 3"
+            gem "minitest", "< 6"
+          end
         end
       end
     end
