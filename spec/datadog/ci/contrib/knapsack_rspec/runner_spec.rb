@@ -37,6 +37,7 @@ RSpec.describe Datadog::CI::Contrib::Knapsack::Runner do
     before do
       allow(test_tracing_component).to receive(:start_test_session).and_return(test_session)
       allow(test_tracing_component).to receive(:start_test_module).and_return(test_module)
+      allow(test_tracing_component).to receive(:any_tests_started?).and_return(true)
     end
 
     it "marks and finishes the test run before propagating an interruption" do
@@ -91,6 +92,34 @@ RSpec.describe Datadog::CI::Contrib::Knapsack::Runner do
       let(:run_result) { 1 }
 
       include_examples "tolerates cleanup failures"
+    end
+
+    context "when no tests start" do
+      let(:run_error) { nil }
+
+      before do
+        allow(test_tracing_component).to receive(:any_tests_started?).and_return(false)
+      end
+
+      context "when the run succeeds" do
+        let(:run_result) { 0 }
+
+        it "skips and finishes the parent events" do
+          [test_module, test_session].each do |span|
+            expect(span).to receive(:skipped!).with(reason: "No tests were executed")
+            expect(span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
+            expect(span).to receive(:finish)
+          end
+
+          expect(runner.knapsack__run_specs).to eq(0)
+        end
+      end
+
+      context "when the run fails" do
+        let(:run_result) { 1 }
+
+        include_examples "tolerates cleanup failures"
+      end
     end
   end
 end
