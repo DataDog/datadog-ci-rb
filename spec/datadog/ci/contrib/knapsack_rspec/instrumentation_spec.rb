@@ -3,6 +3,7 @@ require "fileutils"
 
 RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the knapsack run like in rspec_go rake task" do
   let(:integration) { Datadog::CI::Contrib::Instrumentation.fetch_integration(:rspec) }
+  let(:exit_hooks) { [] }
 
   before do
     # expect that public manual API isn't used
@@ -15,6 +16,10 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the kn
   include_context "CI mode activated"
 
   before do
+    # Each queue run registers a bind check that deletes the same marker file at exit.
+    # Run the real checks after each example so they do not leak across queue runs.
+    allow(Kernel).to receive(:at_exit) { |&hook| exit_hooks << hook }
+
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return("knapsack:queue:rspec")
 
     allow_any_instance_of(KnapsackPro::Runners::Queue::RSpecRunner).to receive(:test_file_paths).and_return(
@@ -24,6 +29,10 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the kn
 
     # raise to prevent Knapsack from running Kernel.exit(0)
     allow(KnapsackPro::Report).to receive(:save_node_queue_to_api).and_raise(ArgumentError)
+  end
+
+  after do
+    exit_hooks.reverse_each(&:call)
   end
 
   it "instruments this rspec session" do
