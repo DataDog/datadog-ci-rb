@@ -12,6 +12,8 @@ module Datadog
 
         TAG_SKIP_REASON: "test.skip_reason"
 
+        TAG_SESSION_EMPTY_REASON: "test.session.empty_reason"
+
         TAG_STATUS: "test.status"
 
         TAG_FINAL_STATUS: "test.final_status"

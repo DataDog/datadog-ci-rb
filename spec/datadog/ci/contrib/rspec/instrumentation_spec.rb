@@ -3328,4 +3328,81 @@ RSpec.describe "RSpec instrumentation" do
       expect(first_test_span).to have_test_tag(:name, "record=Article")
     end
   end
+
+  context "with only-failures selection" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+    end
+
+    def run_only_failures(persisted_status: "passed", fail_if_no_examples: false, failing_example: false)
+      require "tmpdir"
+
+      Dir.mktmpdir("rspec-only-failures") do |directory|
+        spec_file = File.join(directory, "rerun_spec.rb")
+        status_file = File.join(directory, "example_status.txt")
+        File.write(spec_file, <<~RUBY)
+          RSpec.describe "PreviouslyRunExamples" do
+            it "reruns only when previously failed" do
+              expect(#{failing_example}).to be(false)
+            end
+          end
+        RUBY
+        File.write(status_file, <<~STATUS)
+          example_id | status | run_time |
+          ---------- | ------ | -------- |
+          #{spec_file}[1:1] | #{persisted_status} | 0.001 seconds |
+        STATUS
+
+        with_new_rspec_environment do
+          RSpec.configuration.example_status_persistence_file_path = status_file
+          RSpec.configuration.fail_if_no_examples = fail_if_no_examples
+          options = RSpec::Core::ConfigurationOptions.new([spec_file, "--only-failures", "--format", "documentation"])
+          stdout = StringIO.new
+          stderr = StringIO.new
+          exit_code = RSpec::Core::Runner.new(options).run(stderr, stdout)
+          OpenStruct.new(exit_code: exit_code, stdout: stdout.string, stderr: stderr.string)
+        end
+      end
+    end
+
+    it "reports a skipped empty session when there are no previously failed examples" do
+      result = run_only_failures
+
+      expect(result.exit_code).to eq(0)
+      expect(result.stdout).to include("0 examples, 0 failures")
+      expect(test_spans).to be_empty
+      expect(test_suite_spans).to be_empty
+      [test_session_span, test_module_span].each do |span|
+        expect(span).to have_skip_status
+        expect(span).to have_test_tag(:skip_reason, "No tests were executed")
+        expect(span).to have_test_tag("test.session.empty_reason", "zero_tests")
+      end
+    end
+
+    it "preserves an empty run failure requested by the framework" do
+      result = run_only_failures(fail_if_no_examples: true)
+
+      expect(result.exit_code).to eq(1)
+      expect(test_spans).to be_empty
+      [test_session_span, test_module_span].each do |span|
+        expect(span).to have_fail_status
+        expect(span).not_to have_test_tag(:skip_reason)
+        expect(span).not_to have_test_tag("test.session.empty_reason")
+      end
+    end
+
+    [false, true].each do |failing_example|
+      it "preserves #{failing_example ? "failed" : "passed"} reruns of previously failed examples" do
+        result = run_only_failures(persisted_status: "failed", failing_example: failing_example)
+
+        expect(result.exit_code).to eq(failing_example ? 1 : 0)
+        expect(test_spans).to have(1).item
+        [test_session_span, test_module_span, first_test_span].each do |span|
+          expect(span).to have_test_tag(:status, failing_example ? "fail" : "pass")
+          expect(span).not_to have_test_tag(:skip_reason)
+          expect(span).not_to have_test_tag("test.session.empty_reason")
+        end
+      end
+    end
+  end
 end
