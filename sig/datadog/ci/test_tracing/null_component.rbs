@@ -28,6 +28,8 @@ module Datadog
 
         def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> nil
 
+        def any_tests_started?: () -> bool
+
         def active_test_session: () -> nil
 
         def active_test_module: () -> nil

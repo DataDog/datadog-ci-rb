@@ -48,6 +48,11 @@ module Datadog
               if result != 0
                 test_module.failed!
                 test_session.failed!
+              elsif !test_tracing_component.any_tests_started?
+                test_module.skipped!(reason: "No tests were executed")
+                test_session.skipped!(reason: "No tests were executed")
+                test_module.set_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
+                test_session.set_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
               else
                 test_module.passed!
                 test_session.passed!

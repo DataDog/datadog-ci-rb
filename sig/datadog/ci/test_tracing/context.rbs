@@ -2,6 +2,7 @@ module Datadog
   module CI
     module TestTracing
       class Context
+        @any_tests_started: bool
         @mutex: Mutex
 
         @fiber_local_context: Datadog::CI::TestTracing::Store::FiberLocal
@@ -26,6 +27,8 @@ module Datadog
 
         def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) -> Datadog::CI::TestSuite
 
+        def any_tests_started?: () -> bool
+
         def active_test_session: () -> Datadog::CI::TestSession?
 
         def active_test_module: () -> Datadog::CI::TestModule?
@@ -45,6 +48,8 @@ module Datadog
         def deactivate_test_module: () -> void
 
         def deactivate_test_suite: (String test_suite_name) -> void
+
+        def record_test_started: () -> void
 
         def incr_tests_skipped_by_tia_count: () -> void
 

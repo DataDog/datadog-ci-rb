@@ -13,6 +13,7 @@ module Datadog
         TAG_FRAMEWORK_VERSION = "test.framework_version"
         TAG_NAME = "test.name"
         TAG_SKIP_REASON = "test.skip_reason"
+        TAG_SESSION_EMPTY_REASON = "test.session.empty_reason"
 
         # Status is the result of a single test run
         # See the [Datadog::CI::Ext::Test::Status] module for the list of possible values of this tag

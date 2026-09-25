@@ -162,6 +162,11 @@ module Datadog
           @context.active_test
         end
 
+        # Includes skipped tests: a session is empty only if no tests were observed.
+        def any_tests_started?
+          maybe_remote_context.any_tests_started?
+        end
+
         def active_test_session
           maybe_remote_context.active_test_session
         end
@@ -286,6 +291,8 @@ module Datadog
         end
 
         def on_test_started(test)
+          maybe_remote_context.record_test_started
+
           # Sometimes test suite is not being assigned correctly.
           # Fix it by fetching the one single running test suite from the process context.
           #

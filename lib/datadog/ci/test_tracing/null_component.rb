@@ -47,6 +47,10 @@ module Datadog
         def active_test
         end
 
+        def any_tests_started?
+          false
+        end
+
         def active_test_session
         end
 

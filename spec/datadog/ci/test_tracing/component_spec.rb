@@ -67,6 +67,56 @@ RSpec.describe Datadog::CI::TestTracing::Component do
     context "without TestImpactAnalysis" do
       include_context "CI mode activated"
 
+      describe "#any_tests_started?" do
+        before { test_tracing.start_test_session }
+
+        it "does not count suites or ordinary spans as tests" do
+          test_tracing.start_test_suite("suite")
+          test_tracing.trace("setup") { |span| span.passed! }
+
+          expect(test_tracing.any_tests_started?).to be(false)
+        end
+
+        it "records block-based tests, including skipped tests" do
+          test_tracing.trace_test("test", "suite") { |test| test.skipped! }
+
+          expect(test_tracing.any_tests_started?).to be(true)
+        end
+
+        it "records tests before they finish" do
+          test = test_tracing.trace_test("test", "suite")
+
+          expect(test_tracing.any_tests_started?).to be(true)
+          test.finish
+          expect(test_tracing.any_tests_started?).to be(true)
+        end
+
+        it "resets for a new session but not when reusing the active session" do
+          test_tracing.trace_test("test", "suite") { |test| test.passed! }
+          test_tracing.start_test_session
+          expect(test_tracing.any_tests_started?).to be(true)
+
+          test_tracing.active_test_session.finish
+          test_tracing.start_test_session
+          expect(test_tracing.any_tests_started?).to be(false)
+        end
+
+        it "records tests from a worker in the shared session" do
+          worker = described_class.new(
+            known_tests_client: instance_double(Datadog::CI::TestTracing::KnownTests),
+            context_service_uri: test_tracing.context_service_uri
+          )
+          worker.start_test_session
+          expect(worker.any_tests_started?).to be(false)
+          worker.trace_test("worker test", "suite") { |test| test.skipped! }
+
+          expect(test_tracing.any_tests_started?).to be(true)
+          worker.start_test_session
+          expect(worker.any_tests_started?).to be(true)
+          expect(test_tracing.any_tests_started?).to be(true)
+        end
+      end
+
       describe "#trace" do
         let(:type) { "step" }
         let(:span_name) { "my test step" }
