@@ -3334,7 +3334,7 @@ RSpec.describe "RSpec instrumentation" do
       let(:integration_name) { :rspec }
     end
 
-    def run_only_failures(persisted_status: "passed", fail_if_no_examples: false, failing_example: false)
+    def run_only_failures(persisted_status: "passed", fail_if_no_examples: false, failing_example: false, skipped_example: false)
       require "tmpdir"
 
       Dir.mktmpdir("rspec-only-failures") do |directory|
@@ -3342,7 +3342,7 @@ RSpec.describe "RSpec instrumentation" do
         status_file = File.join(directory, "example_status.txt")
         File.write(spec_file, <<~RUBY)
           RSpec.describe "PreviouslyRunExamples" do
-            it "reruns only when previously failed" do
+            it "reruns only when previously failed", skip: #{skipped_example} do
               expect(#{failing_example}).to be(false)
             end
           end
@@ -3376,6 +3376,18 @@ RSpec.describe "RSpec instrumentation" do
         expect(span).to have_skip_status
         expect(span).to have_test_tag(:skip_reason, "No tests were executed")
         expect(span).to have_test_tag("test.session.empty_reason", "zero_tests")
+      end
+    end
+
+    it "does not report a session containing only skipped tests as empty" do
+      result = run_only_failures(persisted_status: "failed", skipped_example: true)
+
+      expect(result.exit_code).to eq(0)
+      expect(test_spans).to have(1).item
+      expect(first_test_span).to have_skip_status
+      [test_session_span, test_module_span].each do |span|
+        expect(span).to have_pass_status
+        expect(span).not_to have_test_tag("test.session.empty_reason")
       end
     end
 

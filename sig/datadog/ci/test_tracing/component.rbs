@@ -61,6 +61,8 @@ module Datadog
 
         def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestSuite
 
+        def any_tests_started?: () -> bool
+
         def active_test_session: () -> Datadog::CI::TestSession?
 
         def active_test_module: () -> Datadog::CI::TestModule?

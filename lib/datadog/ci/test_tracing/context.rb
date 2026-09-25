@@ -40,10 +40,12 @@ module Datadog
           @mutex = Mutex.new
 
           @tests_skipped_by_tia_count = 0
+          @any_tests_started = false
         end
 
         def start_test_session(service: nil, tags: {})
           @process_context.fetch_or_activate_test_session do
+            @mutex.synchronize { @any_tests_started = false }
             tracer_span = start_datadog_tracer_span(
               "test.session", build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
             )
@@ -189,6 +191,14 @@ module Datadog
 
         def deactivate_test_suite(test_suite_name)
           @process_context.deactivate_test_suite!(test_suite_name)
+        end
+
+        def any_tests_started?
+          @mutex.synchronize { @any_tests_started }
+        end
+
+        def record_test_started
+          @mutex.synchronize { @any_tests_started = true }
         end
 
         def incr_tests_skipped_by_tia_count

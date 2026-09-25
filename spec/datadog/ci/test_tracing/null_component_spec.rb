@@ -7,6 +7,7 @@ RSpec.describe Datadog::CI::TestTracing::NullComponent do
 
   describe "public state" do
     it "uses neutral defaults" do
+      expect(test_tracing.any_tests_started?).to be(false)
       expect(test_tracing.known_tests).to be_empty
       expect(test_tracing.known_tests_enabled).to be(false)
       expect(test_tracing.context_service_uri).to be_nil

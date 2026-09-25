@@ -48,7 +48,7 @@ module Datadog
               if result != 0
                 test_module.failed!
                 test_session.failed!
-              elsif test_session.estimated_total_tests_count.zero?
+              elsif !test_tracing_component.any_tests_started?
                 test_module.skipped!(reason: "No tests were executed")
                 test_session.skipped!(reason: "No tests were executed")
                 test_module.set_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
