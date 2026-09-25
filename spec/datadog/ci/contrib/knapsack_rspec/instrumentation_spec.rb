@@ -73,6 +73,61 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the kn
     expect(test_spans).to all have_test_tag(:test_session_id)
   end
 
+  [
+    ["an empty queue", [], 0],
+    ["a batch with no matching examples", ["1:999"], 0],
+    ["a passing batch followed by an empty selection", ["1:1:1", "1:999"], 1]
+  ].each do |description, example_ids, expected_test_count|
+    context "with #{description}" do
+      before do
+        batches = example_ids.map do |id|
+          ["./spec/datadog/ci/contrib/knapsack_rspec/suite_under_test/some_test_rspec.rb[#{id}]"]
+        end
+        batches << []
+        allow_any_instance_of(KnapsackPro::Runners::Queue::RSpecRunner).to receive(:test_file_paths).and_return(*batches)
+        allow(KnapsackPro::Report).to receive(:save_node_queue_to_api).and_return(nil)
+      end
+
+      it "reports the session outcome without changing the successful exit code" do
+        with_new_rspec_environment do
+          ClimateControl.modify(
+            "KNAPSACK_PRO_CI_NODE_BUILD_ID" => "144",
+            "KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC" => "example_token",
+            "KNAPSACK_PRO_FIXED_QUEUE_SPLIT" => "true",
+            "KNAPSACK_PRO_QUEUE_ID" => nil
+          ) do
+            KnapsackPro::Adapters::RSpecAdapter.bind
+            expect do
+              KnapsackPro::Runners::Queue::RSpecRunner.run(
+                "--require knapsack_helper --format documentation --format RspecJunitFormatter --out #{File::NULL}",
+                devnull,
+                devnull
+              )
+            end.to raise_error(SystemExit) { |error| expect(error.status).to eq(0) }
+          end
+        end
+
+        expect(test_spans).to have(expected_test_count).items
+        expect(test_session_span).not_to be_nil
+        expect(test_module_span).not_to be_nil
+        [test_session_span, test_module_span].each do |span|
+          if expected_test_count.zero?
+            expect(span).to have_skip_status
+            expect(span).to have_test_tag(:skip_reason, "No tests were executed")
+            expect(span).to have_test_tag("test.session.empty_reason", "zero_tests")
+          else
+            expect(span).to have_pass_status
+            expect(span).not_to have_test_tag(:skip_reason)
+            expect(span).not_to have_test_tag("test.session.empty_reason")
+          end
+        end
+        expect(test_spans).to all have_pass_status
+        expect(test_spans).to all have_test_tag(:test_session_id, test_session_span.id.to_s)
+        expect(test_spans).to all have_test_tag(:test_module_id, test_module_span.id.to_s)
+      end
+    end
+  end
+
   context "when the queue API becomes unavailable after a completed batch and fallback is disabled" do
     let(:batch_connection) do
       instance_double(

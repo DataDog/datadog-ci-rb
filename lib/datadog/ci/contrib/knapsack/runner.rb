@@ -38,7 +38,16 @@ module Datadog
                 result = super
               ensure
                 [test_module, test_session].each do |span|
-                  _dd_cleanup { (result == 0) ? span.passed! : span.failed! }
+                  _dd_cleanup do
+                    if result != 0
+                      span.failed!
+                    elsif !test_tracing_component.any_tests_started?
+                      span.skipped!(reason: "No tests were executed")
+                      span.set_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
+                    else
+                      span.passed!
+                    end
+                  end
                 end
                 _dd_cleanup { test_module.finish }
                 _dd_cleanup { test_session.finish }
