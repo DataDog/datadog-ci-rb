@@ -19,6 +19,8 @@ gem "os"
 gem "rspec-rails", "~> 8"
 gem "rswag-specs", "~> 2"
 gem "rails", "~> 7"
+gem "connection_pool", "< 3"
+gem "minitest", "< 6"
 
 group :check do
 

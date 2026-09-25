@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: c47e5e807afa1aa59fae5d7cd3bbea1c5aeff758
+  revision: b25e12f5b1f19375121885194e42ace5a4d40f03
   branch: master
   specs:
     datadog (2.44.0.dev)
@@ -168,7 +168,7 @@ GEM
     rspec_junit_formatter (0.6.0)
       rspec-core (>= 2, < 4, != 2.12.0)
     securerandom (0.4.1)
-    simplecov (1.3.0)
+    simplecov (1.3.1)
     sys-uname (1.5.1)
       ffi (~> 1.1)
       memoist3 (~> 1.0.0)
