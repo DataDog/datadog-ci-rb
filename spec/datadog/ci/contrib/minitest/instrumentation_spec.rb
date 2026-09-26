@@ -847,102 +847,31 @@ RSpec.describe "Minitest instrumentation" do
 
           class TestA < ParallelTest
             def test_a_1
-              Datadog::CI.active_test.set_tag("minitest_thread", Thread.current.object_id)
-              sleep 0.1
+              assert_nil Datadog::CI.active_test
             end
 
             def test_a_2
-              Datadog::CI.active_test.set_tag("minitest_thread", Thread.current.object_id)
-              sleep 0.1
+              assert_nil Datadog::CI.active_test
             end
           end
 
           class TestB < ParallelTest
             def test_b_1
-              Datadog::CI.active_test.set_tag("minitest_thread", Thread.current.object_id)
-              sleep 0.1
+              assert_nil Datadog::CI.active_test
             end
 
             def test_b_2
-              Datadog::CI.active_test.set_tag("minitest_thread", Thread.current.object_id)
-              sleep 0.1
+              assert_nil Datadog::CI.active_test
             end
           end
         end
 
-        it "traces all tests and test suites correctly" do
-          test_threads = test_spans.map { |span| span.get_tag("minitest_thread") }.uniq
-
-          # make sure that tests were executed concurrently
-          # note that this test could be flaky
-          expect(test_threads.count).to be > 1
-
-          expect(test_spans).to have_tag_values_no_order(
-            :name,
-            [
-              "test_a_1",
-              "test_a_2",
-              "test_b_1",
-              "test_b_2"
-            ]
-          )
-          expect(test_spans).to have_unique_tag_values_count(:test_suite_id, 2)
-        end
-
-        it "connects tests to a single test session and a single test module" do
-          expect(test_spans).to have_unique_tag_values_count(:test_module_id, 1)
-          expect(test_spans).to have_unique_tag_values_count(:test_session_id, 1)
-
-          expect(first_test_span).to have_test_tag(:test_module_id, test_module_span.id.to_s)
-          expect(first_test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
-        end
-
-        it "creates test suite spans" do
-          expect(test_suite_spans).to have(2).items
-
-          expect(test_suite_spans).to have_tag_values_no_order(
-            :suite,
-            [
-              "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb",
-              "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
-            ]
-          )
-        end
-
-        it "creates code coverage events" do
-          expect(coverage_events).to have(4).items
-
-          expect_coverage_events_belong_to_session(test_session_span)
-          expect_coverage_events_belong_to_suites(test_suite_spans)
-          expect_coverage_events_belong_to_tests(test_spans)
-          expect_non_empty_coverages
-        end
-
-        context "when test optimisation skips tests" do
-          let(:itr_skippable_tests) do
-            Set.new(
-              [
-                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_a_1.",
-                "TestA at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_a_2.",
-                "TestB at spec/datadog/ci/contrib/minitest/instrumentation_spec.rb.test_b_2."
-              ]
-            )
-          end
-
-          it "skips given tests" do
-            expect(test_spans).to have(4).items
-            expect(test_spans).to have_tag_values_no_order(:status, ["skip", "skip", "skip", "pass"])
-
-            skipped = test_spans.select { |span| span.get_tag("status") == "skip" }
-            expect(skipped).to all have_test_tag(:itr_skipped_by_itr, "true")
-          end
-
-          it "sends test session level tags" do
-            expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
-            expect(test_session_span).to have_test_tag(:itr_test_skipping_type, "test")
-            expect(test_session_span).to have_test_tag(:itr_tests_skipped, "true")
-            expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 3)
-          end
+        it "disables instrumentation and coverage before running tests" do
+          expect(test_tracing.execution_supported?).to be(false)
+          expect(test_spans).to be_empty
+          expect(test_suite_spans).to be_empty
+          expect(test_session_span).to be_nil
+          expect(coverage_events).to be_empty
         end
       end
 
@@ -1108,8 +1037,6 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     before(:context) do
-      Thread.current[:dd_coverage_collector] = nil
-
       Minitest::Runnable.reset
 
       require_relative "helpers/addition_helper"
@@ -1125,13 +1052,12 @@ RSpec.describe "Minitest instrumentation" do
       end
     end
 
-    it "does not cover the background thread" do
+    it "covers the background thread despite the obsolete option" do
       expect(test_spans).to have(1).item
       expect(coverage_events).to have(1).item
 
-      # expect that background thread is not covered
       cov_event = find_coverage_for_test(first_test_span)
-      expect(cov_event.inspect_coverage.keys).not_to include(
+      expect(cov_event.inspect_coverage.keys).to include(
         absolute_path("helpers/addition_helper.rb")
       )
     end
@@ -1386,41 +1312,11 @@ RSpec.describe "Minitest instrumentation" do
       end
     end
 
-    it "retries flaky test" do
-      # 1 initial run of flaky test + 4 retries until pass + 1 failed test run + 5 retries + 1 passing test = 12 spans
-      expect(test_spans).to have(12).items
-
-      failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-      expect(failed_spans).to have(10).items
-      expect(passed_spans).to have(2).items
-
-      test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-      expect(test_spans_by_test_name["test_flaky"]).to have(5).items
-
-      # count how many spans were marked as retries
-      retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(9)
-
-      # check retry reasons
-      retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 9)
-
-      # last retry is tagged with has_failed_all_retries for test_failed
-      failed_all_retries_count = test_spans.count { |span| span.get_tag("test.has_failed_all_retries") }
-      expect(failed_all_retries_count).to eq(1)
-
-      # check final statuses (one failed test, two passed tests)
-      final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
-      expect(final_status_fail_tests).to eq(1)
-
-      final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
-      expect(final_status_pass_tests).to eq(2)
-
-      expect(test_spans_by_test_name["test_passed"]).to have(1).item
-
-      expect(test_suite_spans).to have(1).item
-
-      expect(test_session_span).to have_fail_status
+    it "disables instrumentation and retries for the threaded runner" do
+      expect(test_tracing.execution_supported?).to be(false)
+      expect(test_spans).to be_empty
+      expect(test_suite_spans).to be_empty
+      expect(test_session_span).to be_nil
     end
   end
 

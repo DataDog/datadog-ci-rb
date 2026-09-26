@@ -6,7 +6,6 @@ require_relative "test"
 require_relative "runnable"
 
 require_relative "runnable_minitest_6"
-require_relative "parallel_executor_minitest_6"
 
 module Datadog
   module CI
@@ -25,7 +24,6 @@ module Datadog
             # test suites (when not executed concurrently)
             if ::Minitest::Runnable.respond_to?(:run_suite)
               ::Minitest::Runnable.include(RunnableMinitest6)
-              ::Minitest::Parallel::Executor.include(ParallelExecutorMinitest6)
             else
               ::Minitest::Runnable.include(Runnable)
             end

@@ -60,7 +60,7 @@ module Datadog
         def active_test_suite(test_suite_name)
         end
 
-        def deactivate_test
+        def deactivate_test(_test = nil)
         end
 
         def deactivate_test_session
@@ -70,6 +70,13 @@ module Datadog
         end
 
         def deactivate_test_suite(_test_suite_name)
+        end
+
+        def execution_supported?
+          false
+        end
+
+        def disable_test_execution!(_reason)
         end
 
         def shutdown!

@@ -18,7 +18,7 @@ module Datadog
 
         def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (nil span) -> untyped } -> untyped
 
-        def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+        def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span? span) -> untyped } -> untyped
 
         def start_test_session: (
           ?service: String?, ?tags: Hash[untyped, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool?, ?local_test_suites_mode: bool
@@ -40,7 +40,7 @@ module Datadog
 
         def active_span: () -> nil
 
-        def deactivate_test: () -> void
+        def deactivate_test: (?Datadog::CI::Test? test) -> void
 
         def deactivate_test_session: () -> void
 
@@ -51,6 +51,10 @@ module Datadog
         def logical_test_session_name: () -> nil
 
         def shutdown!: () -> nil
+
+        def execution_supported?: () -> bool
+
+        def disable_test_execution!: (String reason) -> void
 
         def itr_enabled?: () -> bool
 

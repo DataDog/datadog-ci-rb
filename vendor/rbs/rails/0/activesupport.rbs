@@ -17,3 +17,9 @@ end
 class ActiveSupport::Logger < Logger
   def formatter: () -> untyped
 end
+
+module ActiveSupport::Testing
+end
+
+class ActiveSupport::Testing::Parallelization
+end
