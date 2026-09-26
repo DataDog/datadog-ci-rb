@@ -2228,4 +2228,80 @@ RSpec.describe "Minitest instrumentation" do
       )
     end
   end
+
+  context "with empty test selection" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :minitest }
+    end
+
+    before do
+      Minitest::Runnable.reset
+    end
+
+    after do
+      Minitest::Runnable.reset
+    end
+
+    it "reports an empty run as skipped" do
+      expect(Minitest.run([])).to be true
+      expect(test_spans).to be_empty
+      [test_session_span, test_module_span].each do |span|
+        expect(span).to have_skip_status
+        expect(span).to have_test_tag(:skip_reason, "No tests were executed")
+        expect(span).to have_test_tag("test.session.empty_reason", "zero_tests")
+      end
+    end
+
+    it "reports a run with all tests excluded as skipped" do
+      stub_const("FilteredMinitest", Class.new(Minitest::Test) do
+        def test_pass
+          assert true
+        end
+      end)
+
+      expect(Minitest.run(["--exclude", "test_pass"])).to be true
+      expect(test_spans).to be_empty
+      [test_session_span, test_module_span].each do |span|
+        expect(span).to have_skip_status
+        expect(span).to have_test_tag(:skip_reason, "No tests were executed")
+        expect(span).to have_test_tag("test.session.empty_reason", "zero_tests")
+      end
+    end
+
+    it "does not classify individually skipped tests as an empty session" do
+      stub_const("SkippedMinitest", Class.new(Minitest::Test) do
+        def test_skipped
+          skip "Skipped by the test"
+        end
+      end)
+
+      expect(Minitest.run([])).to be true
+      expect(test_spans).to have(1).item
+      expect(first_test_span).to have_skip_status
+      [test_session_span, test_module_span].each do |span|
+        expect(span).to have_pass_status
+        expect(span).not_to have_test_tag("test.session.empty_reason")
+      end
+    end
+
+    it "preserves a reporter failure when no tests ran" do
+      test_tracing.start_test_session
+      test_tracing.start_test_module("minitest")
+      failed_reporter = Class.new(Minitest::AbstractReporter) do
+        def passed?
+          false
+        end
+      end.new
+      reporter = Minitest::CompositeReporter.new
+      reporter << failed_reporter
+      reporter.report
+
+      expect(test_spans).to be_empty
+      [test_session_span, test_module_span].each do |span|
+        expect(span).to have_fail_status
+        expect(span).not_to have_test_tag(:skip_reason)
+        expect(span).not_to have_test_tag("test.session.empty_reason")
+      end
+    end
+  end
 end
