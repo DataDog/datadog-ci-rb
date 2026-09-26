@@ -23,12 +23,17 @@ module Datadog
 
               return res if active_test_session.nil? || active_test_module.nil?
 
-              if passed?
-                active_test_module.passed!
-                active_test_session.passed!
-              else
+              if !passed?
                 active_test_module.failed!
                 active_test_session.failed!
+              elsif !test_tracing_component.any_tests_started?
+                active_test_module.skipped!(reason: "No tests were executed")
+                active_test_session.skipped!(reason: "No tests were executed")
+                active_test_module.set_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
+                active_test_session.set_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
+              else
+                active_test_module.passed!
+                active_test_session.passed!
               end
 
               active_test_module.finish
@@ -38,6 +43,10 @@ module Datadog
             end
 
             private
+
+            def test_tracing_component
+              Datadog.send(:components).test_tracing
+            end
 
             def datadog_configuration
               Datadog.configuration.ci[:minitest]

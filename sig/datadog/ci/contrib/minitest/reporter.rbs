@@ -10,6 +10,8 @@ module Datadog
 
             private
 
+            def test_tracing_component: () -> Datadog::CI::TestTracing::Component
+
             def datadog_configuration: () -> Datadog::CI::Contrib::Minitest::Configuration::Settings
           end
         end

@@ -160,6 +160,10 @@ RSpec.describe "ActiveSupport::TestCase instrumentation" do
 
       it "sets active test in worker processes" do
         expect(worker_markers).to contain_exactly("test_one:true", "test_two:true")
+        [test_session_span, test_module_span].each do |span|
+          expect(span).to have_pass_status
+          expect(span).not_to have_test_tag("test.session.empty_reason")
+        end
       end
     end
   end
