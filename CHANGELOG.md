@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.40.0] - 2026-09-28
+
+### Changed
+
+* Knapsack Pro: mark successful empty sessions as skipped ([#634][])
+* RSpec: mark successful zero-example sessions as skipped ([#633][])
+
 ## [1.39.0] - 2026-09-21
 
 ### Added
@@ -723,7 +730,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.39.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.40.0...main
+[1.40.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.39.0...v1.40.0
 [1.39.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.38.1...v1.39.0
 [1.38.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.38.0...v1.38.1
 [1.38.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.37.0...v1.38.0
@@ -1023,3 +1031,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#615]: https://github.com/DataDog/datadog-ci-rb/issues/615
 [#617]: https://github.com/DataDog/datadog-ci-rb/issues/617
 [#619]: https://github.com/DataDog/datadog-ci-rb/issues/619
+[#633]: https://github.com/DataDog/datadog-ci-rb/issues/633
+[#634]: https://github.com/DataDog/datadog-ci-rb/issues/634
