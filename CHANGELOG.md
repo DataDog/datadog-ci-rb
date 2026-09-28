@@ -2,6 +2,11 @@
 
 ## [1.40.0] - 2026-09-28
 
+### Changed
+
+* Knapsack Pro: mark successful empty sessions as skipped ([#634][])
+* RSpec: mark successful zero-example sessions as skipped ([#633][])
+
 ## [1.39.0] - 2026-09-21
 
 ### Added
@@ -1026,3 +1031,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#615]: https://github.com/DataDog/datadog-ci-rb/issues/615
 [#617]: https://github.com/DataDog/datadog-ci-rb/issues/617
 [#619]: https://github.com/DataDog/datadog-ci-rb/issues/619
+[#633]: https://github.com/DataDog/datadog-ci-rb/issues/633
+[#634]: https://github.com/DataDog/datadog-ci-rb/issues/634
