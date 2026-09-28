@@ -59,6 +59,10 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
   end
 
+  after do
+    component.shutdown!
+  end
+
   describe "#configure" do
     context "when ITR is disabled in remote configuration" do
       let(:itr_enabled) { false }
@@ -629,7 +633,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FINISHED, 1
-      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 6.0
+      it "reports the number of files in the emitted event" do
+        event = subject
+        metric = telemetry_metric(:distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES)
+        expect(metric.value).to eq(event.inspect_coverage.size.to_f)
+      end
     end
 
     context "when test is skipped" do
@@ -829,8 +837,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         single_threaded_component.configure(remote_configuration, test_session)
       end
 
-      it "returns false" do
-        expect(single_threaded_component.context_coverage_enabled?).to be false
+      it "retains context coverage despite the legacy single-thread option" do
+        expect(single_threaded_component.context_coverage_enabled?).to be true
       end
     end
 
@@ -1012,10 +1020,10 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         single_threaded_component.configure(remote_configuration, test_session)
       end
 
-      it "does not start context coverage collection" do
-        expect(single_threaded_component).not_to receive(:coverage_collector)
-
+      it "starts context coverage despite the legacy single-thread option" do
+        expect(single_threaded_component).to receive(:coverage_collector).and_call_original
         single_threaded_component.on_test_context_started(context_id)
+        single_threaded_component.shutdown!
       end
     end
 
@@ -1122,10 +1130,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         single_threaded_component.configure(remote_configuration, test_session)
       end
 
-      it "does not merge context coverage but still collects test coverage" do
-        # Try to start context coverage (should be skipped)
+      it "merges setup dependencies despite the legacy single-thread option" do
+        path = File.join(Datadog::CI::Git::LocalRepository.root, "legacy_setup.rb")
+        code = RubyVM::InstructionSequence.compile("1 + 1", path, path)
         single_threaded_component.on_test_context_started("1")
-        expect(1 + 1).to eq(2)
+        code.eval
 
         # Set context IDs on test span
         test_span.context_ids = ["1"]
@@ -1140,9 +1149,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         event = single_threaded_component.on_test_finished(test_span, context)
 
         expect(event).not_to be_nil
-        # Context coverage should not be stored in single-threaded mode
-        context_coverages = single_threaded_component.instance_variable_get(:@context_coverages)
-        expect(context_coverages).to be_empty
+        expect(event.inspect_coverage.keys).to include(path)
+        single_threaded_component.shutdown!
       end
     end
   end

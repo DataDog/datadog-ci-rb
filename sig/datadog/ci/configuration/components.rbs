@@ -2,6 +2,7 @@ module Datadog
   module CI
     module Configuration
       module Components : Datadog::Core::Configuration::Components
+        @test_execution: Datadog::CI::Utils::TestExecution
         @test_tracing: Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent
         @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         @git_tree_upload_worker: Datadog::CI::Worker

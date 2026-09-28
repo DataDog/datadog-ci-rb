@@ -8,6 +8,8 @@ module Datadog
         FILE_STORAGE_KEY: String
 
         @codeowners: Datadog::CI::Codeowners::Matcher
+        @execution: Datadog::CI::Utils::TestExecution
+
         @context: Datadog::CI::TestTracing::Context
         @context_client: Datadog::CI::TestTracing::Context
 
@@ -42,24 +44,25 @@ module Datadog
           ?logical_test_session_name: String?,
           ?runtime_tags_overrides: Hash[String, String],
           ?context_service_uri: String?,
-          ?trace_setup_teardown_enabled: bool
+          ?trace_setup_teardown_enabled: bool,
+          ?execution: Datadog::CI::Utils::TestExecution
         ) -> Component
 
         def self.build_transport: (api: Datadog::CI::Transport::Api::Base, discard_traces: bool, dd_env: String?) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
 
-        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?, ?trace_setup_teardown_enabled: bool) -> void
+        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?, ?trace_setup_teardown_enabled: bool, ?execution: Datadog::CI::Utils::TestExecution) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
-        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
+        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Test? span) -> untyped } -> untyped
 
-        def trace: (String span_name, ?type: String, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
+        def trace: (String span_name, ?type: String, ?tags: Hash[Symbol | String, untyped]) ?{ (Datadog::CI::Span? span) -> untyped } -> untyped
 
-        def start_test_session: (?service: String?, ?tags: Hash[Symbol | String, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool?, ?local_test_suites_mode: bool) -> Datadog::CI::TestSession
+        def start_test_session: (?service: String?, ?tags: Hash[Symbol | String, untyped], ?estimated_total_tests_count: Integer, ?distributed: bool?, ?local_test_suites_mode: bool) -> Datadog::CI::TestSession?
 
-        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestModule
+        def start_test_module: (String test_module_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestModule?
 
-        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestSuite
+        def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestSuite?
 
         def any_tests_started?: () -> bool
 
@@ -73,13 +76,17 @@ module Datadog
 
         def active_span: () -> Datadog::CI::Span?
 
-        def deactivate_test: () -> void
+        def deactivate_test: (?Datadog::CI::Test? test) -> void
 
         def deactivate_test_session: () -> void
 
         def deactivate_test_module: () -> void
 
         def deactivate_test_suite: (String test_suite_name) -> void
+
+        def execution_supported?: () -> bool
+
+        def disable_test_execution!: (String reason) -> void
 
         def itr_enabled?: () -> bool
 
@@ -95,6 +102,8 @@ module Datadog
         def restore_state: (Hash[Symbol, untyped] state) -> void
 
         def configure_library: (Datadog::CI::TestSession test_session) -> void
+
+        def finish_test_suite: (String test_suite_name) -> void
 
         def fix_test_suite!: (Datadog::CI::Test test) -> void
 

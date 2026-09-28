@@ -96,6 +96,20 @@ module Datadog
             []
           end
 
+          def self.threaded?(klass)
+            executor = ::Minitest.parallel_executor
+            # Rails uses Minitest's parallel test marker for both process and
+            # thread workers, and installs it only when the executor starts.
+            if executor.respond_to?(:parallelize_with)
+              return executor.parallelize_with == :threads
+            end
+            if defined?(::ActiveSupport::Testing::Parallelization) && executor.is_a?(::ActiveSupport::Testing::Parallelization)
+              return false
+            end
+
+            klass.ancestors.include?(::Minitest::Parallel::Test)
+          end
+
           def self.parallel?(klass)
             klass.ancestors.include?(::Minitest::Parallel::Test) || ci_queue?
           end

@@ -41,7 +41,7 @@ module Datadog
           set_tag(Ext::Test::TAG_RETRY_REASON, Ext::Test::RetryReason::RETRY_EXTERNAL)
         end
 
-        test_tracing.deactivate_test
+        test_tracing.deactivate_test(self)
 
         super
       end

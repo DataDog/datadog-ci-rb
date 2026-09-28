@@ -5,7 +5,7 @@ module Datadog
         @any_tests_started: bool
         @mutex: Mutex
 
-        @fiber_local_context: Datadog::CI::TestTracing::Store::FiberLocal
+        @execution_context: Datadog::CI::TestTracing::Store::Execution
         @process_context: Datadog::CI::TestTracing::Store::Process
         @environment_tags: Hash[String, String]
         @runtime_tags_overrides: Hash[String, String]

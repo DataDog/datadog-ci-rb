@@ -23,7 +23,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
     )
   end
 
-  subject { described_class.new(root: root, threading_mode: :multi) }
+  subject { described_class.new(root: root) }
 
   describe "code coverage collection" do
     let!(:calculator) { Calculator.new }

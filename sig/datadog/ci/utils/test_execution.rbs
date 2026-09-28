@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Utils
+      class TestExecution
+        @pid: Integer
+        @owner: Fiber?
+        @disabled: bool
+        @monitor: Monitor
+        @disable_callbacks: Array[^() -> void]
+
+        def initialize: () -> void
+        def synchronize: [A] () { () -> A } -> A?
+        def enabled?: () -> bool
+        def disable!: (String reason) -> void
+        def on_disable: () { () -> void } -> void
+
+        private
+
+        def reset_after_fork: () -> void
+      end
+    end
+  end
+end

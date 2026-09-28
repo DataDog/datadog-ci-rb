@@ -36,6 +36,8 @@ module Datadog
 
           def self.test_suite_name: (_RunnableClass klass, String method_name) -> ::String
 
+          def self.threaded?: (_RunnableClass klass) -> bool
+
           def self.parallel?: (_RunnableClass klass) -> bool
 
           def self.ci_queue?: () -> bool

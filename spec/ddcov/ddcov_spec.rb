@@ -11,14 +11,12 @@ require_relative "calculator/code_with_❤️"
 
 RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
   let(:ignored_path) { nil }
-  let(:threading_mode) { :multi }
   let(:use_allocation_tracing) { true }
 
   subject do
     described_class.new(
       root: root,
       ignored_path: ignored_path,
-      threading_mode: threading_mode,
       use_allocation_tracing: use_allocation_tracing
     )
   end
@@ -38,19 +36,19 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
       it "rejects non-hash options and non-string paths" do
         expect { described_class.new(nil) }.to raise_error(TypeError)
         expect do
-          described_class.new(root: Object.new, threading_mode: :multi)
+          described_class.new(root: Object.new)
         end.to raise_error(TypeError)
         expect do
-          described_class.new(root: "/tmp", ignored_path: Object.new, threading_mode: :multi)
+          described_class.new(root: "/tmp", ignored_path: Object.new)
         end.to raise_error(TypeError)
       end
 
       it "rejects paths containing null bytes" do
         expect do
-          described_class.new(root: "/tmp\0other", threading_mode: :multi)
+          described_class.new(root: "/tmp\0other")
         end.to raise_error(ArgumentError)
         expect do
-          described_class.new(root: "/tmp", ignored_path: "/tmp\0other", threading_mode: :multi)
+          described_class.new(root: "/tmp", ignored_path: "/tmp\0other")
         end.to raise_error(ArgumentError)
       end
     end
@@ -256,164 +254,83 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::DDCov do
       end
 
       context "multi threaded execution" do
-        def thread_local_cov
-          Thread.current[:datadog_ci_cov] ||= described_class.new(
-            root: root,
-            threading_mode: threading_mode,
-            use_allocation_tracing: use_allocation_tracing
-          )
-        end
+        it "collects coverage for background threads" do
+          cov = subject
+          cov.start
 
-        context "in single threaded coverage mode" do
-          let(:threading_mode) { :single }
-          let(:use_allocation_tracing) { false }
-
-          it "collects coverage for each thread separately" do
-            t1_queue = Thread::Queue.new
-            t2_queue = Thread::Queue.new
-
-            t1 = Thread.new do
-              cov = thread_local_cov
-              cov.start
-
-              t1_queue << :ready
-              expect(t2_queue.pop).to be(:ready)
-
-              expect(calculator.add(1, 2)).to eq(3)
-              expect(calculator.multiply(1, 2)).to eq(2)
-
-              t1_queue << :done
-              expect(t2_queue.pop).to be :done
-
-              coverage = cov.stop
-              expect(coverage.size).to eq(2)
-              expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
-              expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
-            end
-
-            t2 = Thread.new do
-              cov = thread_local_cov
-              cov.start
-
-              t2_queue << :ready
-              expect(t1_queue.pop).to be(:ready)
-
-              expect(calculator.subtract(1, 2)).to eq(-1)
-
-              t2_queue << :done
-              expect(t1_queue.pop).to be :done
-
-              coverage = cov.stop
-              expect(coverage.size).to eq(1)
-              expect(coverage.keys).to include(absolute_path("calculator/operations/subtract.rb"))
-            end
-
-            [t1, t2].each(&:join)
-          end
-
-          context "when allocation tracing is enabled" do
-            let(:use_allocation_tracing) { true }
-
-            it "raises an error" do
-              expect { thread_local_cov }.to(
-                raise_error(ArgumentError, "allocation tracing is not supported in single threaded mode")
-              )
-            end
-          end
-        end
-
-        context "in multi threaded code coverage mode" do
-          let(:threading_mode) { :multi }
-
-          it "collects coverage for background threads" do
-            cov = thread_local_cov
-            cov.start
-
-            t = Thread.new do
-              expect(calculator.add(1, 2)).to eq(3)
-            end
-
-            expect(calculator.multiply(1, 2)).to eq(2)
-            t.join
-
-            coverage = cov.stop
-            expect(coverage.size).to eq(2)
-            expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
-            expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
-          end
-
-          it "collects coverage for background threads that started before the coverage collection" do
-            jobs_queue = Thread::Queue.new
-            background_jobs_worker = Thread.new do
-              loop do
-                job = jobs_queue.pop
-                break if job == :done
-
-                job.call
-              end
-            end
-
-            cov = described_class.new(root: root, threading_mode: :multi)
-            cov.start
-
-            jobs_queue << -> { expect(calculator.add(1, 2)).to eq(3) }
-            jobs_queue << -> { expect(calculator.multiply(1, 2)).to eq(2) }
-
-            jobs_queue << :done
-
-            background_jobs_worker.join
-
-            coverage = cov.stop
-            expect(coverage.size).to eq(2)
-            expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
-            expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
-          end
-
-          it "does not track coverage when stopped" do
-            subject.start
+          t = Thread.new do
             expect(calculator.add(1, 2)).to eq(3)
-            subject.stop
-
-            expect(calculator.subtract(1, 2)).to eq(-1)
-
-            subject.start
-            expect(calculator.multiply(1, 2)).to eq(2)
-            coverage = subject.stop
-            expect(coverage.size).to eq(1)
-            expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
           end
 
-          it "collects distinct dynamic sources executed by many threads" do
-            root = absolute_path("dynamic/threaded")
-            collector = described_class.new(
-              root: root,
-              threading_mode: :multi,
-              use_allocation_tracing: false
-            )
-            sources = Array.new(256) do |index|
-              path = File.join(root, "#{index}.rb")
-              [path, RubyVM::InstructionSequence.compile("Thread.pass\n", path, path)]
-            end
+          expect(calculator.multiply(1, 2)).to eq(2)
+          t.join
 
-            collector.start
-            sources.each_slice(32).map do |slice|
-              Thread.new { slice.each { |_, iseq| iseq.eval } }
-            end.each(&:join)
-            coverage = collector.stop
-
-            expected_files = sources.map(&:first)
-            expect((coverage.keys & expected_files).size).to eq(expected_files.size)
-          end
+          coverage = cov.stop
+          expect(coverage.size).to eq(2)
+          expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
+          expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
         end
 
-        context "when threading mode is invalid" do
-          let(:threading_mode) { :invalid_mode }
+        it "collects coverage for background threads that started before the coverage collection" do
+          jobs_queue = Thread::Queue.new
+          background_jobs_worker = Thread.new do
+            loop do
+              job = jobs_queue.pop
+              break if job == :done
 
-          it "raises an error" do
-            expect { described_class.new(root: root, threading_mode: threading_mode) }.to(
-              raise_error(ArgumentError, "threading mode is invalid")
-            )
+              job.call
+            end
           end
+
+          cov = described_class.new(root: root)
+          cov.start
+
+          jobs_queue << -> { expect(calculator.add(1, 2)).to eq(3) }
+          jobs_queue << -> { expect(calculator.multiply(1, 2)).to eq(2) }
+
+          jobs_queue << :done
+
+          background_jobs_worker.join
+
+          coverage = cov.stop
+          expect(coverage.size).to eq(2)
+          expect(coverage.keys).to include(absolute_path("calculator/operations/add.rb"))
+          expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+        end
+
+        it "does not track coverage when stopped" do
+          subject.start
+          expect(calculator.add(1, 2)).to eq(3)
+          subject.stop
+
+          expect(calculator.subtract(1, 2)).to eq(-1)
+
+          subject.start
+          expect(calculator.multiply(1, 2)).to eq(2)
+          coverage = subject.stop
+          expect(coverage.size).to eq(1)
+          expect(coverage.keys).to include(absolute_path("calculator/operations/multiply.rb"))
+        end
+
+        it "collects distinct dynamic sources executed by many threads" do
+          root = absolute_path("dynamic/threaded")
+          collector = described_class.new(
+            root: root,
+            use_allocation_tracing: false
+          )
+          sources = Array.new(256) do |index|
+            path = File.join(root, "#{index}.rb")
+            [path, RubyVM::InstructionSequence.compile("Thread.pass\n", path, path)]
+          end
+
+          collector.start
+          sources.each_slice(32).map do |slice|
+            Thread.new { slice.each { |_, iseq| iseq.eval } }
+          end.each(&:join)
+          coverage = collector.stop
+
+          expected_files = sources.map(&:first)
+          expect((coverage.keys & expected_files).size).to eq(expected_files.size)
         end
       end
     end

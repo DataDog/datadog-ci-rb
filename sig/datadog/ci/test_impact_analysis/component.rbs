@@ -7,6 +7,10 @@ module Datadog
 
         FILE_STORAGE_KEY: String
 
+        @execution: Datadog::CI::Utils::TestExecution
+        @coverage_pid: Integer
+        @coverage_collector: Datadog::CI::TestImpactAnalysis::Coverage::DDCov?
+
         @enabled: bool
         @test_skipping_enabled: bool
         @code_coverage_enabled: bool
@@ -20,7 +24,6 @@ module Datadog
         @config_tags: Hash[String, String]
 
         @bundle_location: String?
-        @use_single_threaded_coverage: bool
         @use_allocation_tracing: bool
         @static_dependencies_tracking_enabled: bool
         @test_skipping_mode: String
@@ -29,11 +32,9 @@ module Datadog
 
         # Context coverage: stores coverage collected during before(:context)/before(:all) hooks
         @context_coverages: Hash[String, Hash[String, untyped]]
-        @context_coverages_mutex: Thread::Mutex
 
         # Currently active context ID for context coverage collection
         @current_context_id: String?
-        @current_context_id_mutex: Thread::Mutex
 
         attr_reader skippable_tests: Set[String]
         attr_reader skippable_suites: Set[String]
@@ -53,10 +54,11 @@ module Datadog
           ?bundle_location: String?,
           ?use_single_threaded_coverage: bool,
           ?use_allocation_tracing: bool,
-          ?static_dependencies_tracking_enabled: bool
+          ?static_dependencies_tracking_enabled: bool,
+          ?execution: Datadog::CI::Utils::TestExecution
         ) -> Component
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool, ?execution: Datadog::CI::Utils::TestExecution) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 
@@ -114,6 +116,10 @@ module Datadog
 
         private
 
+        def with_execution: [A] () { () -> A } -> A?
+
+        def discard_coverage: () -> void
+
         def skippables_count: () -> Integer
 
         def coverage_collector: () -> Datadog::CI::TestImpactAnalysis::Coverage::DDCov?
@@ -141,8 +147,6 @@ module Datadog
         def current_skippables: () -> Set[String]
 
         def skippable_response_metric: () -> String
-
-        def code_coverage_mode: () -> Datadog::CI::TestImpactAnalysis::Coverage::DDCov::threading_mode
 
         def git_tree_upload_worker: () -> Datadog::CI::Worker
 

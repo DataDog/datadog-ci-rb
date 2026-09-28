@@ -3,9 +3,7 @@ module Datadog
     module TestImpactAnalysis
       module Coverage
         class DDCov
-          type threading_mode = :multi | :single
-
-          def initialize: (root: String, ignored_path: String?, threading_mode: threading_mode, use_allocation_tracing: bool) -> void
+          def initialize: (root: String, ignored_path: String?, use_allocation_tracing: bool) -> void
 
           def start: () -> void
 

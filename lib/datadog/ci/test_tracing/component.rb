@@ -19,6 +19,7 @@ require_relative "../git/local_repository"
 require_relative "../utils/file_storage"
 require_relative "../utils/stateful"
 require_relative "../utils/test_name"
+require_relative "../utils/test_execution"
 
 require_relative "../worker"
 
@@ -52,8 +53,10 @@ module Datadog
           logical_test_session_name: nil,
           runtime_tags_overrides: {},
           context_service_uri: nil,
-          trace_setup_teardown_enabled: false
+          trace_setup_teardown_enabled: false,
+          execution: Utils::TestExecution.new
         )
+          @execution = execution
           @context = Context.new(test_tracing_component: self, runtime_tags_overrides: runtime_tags_overrides)
 
           @codeowners = codeowners
@@ -94,57 +97,82 @@ module Datadog
         end
 
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: nil, local_test_suites_mode: true)
-          @local_test_suites_mode = local_test_suites_mode
+          @execution.synchronize do
+            @local_test_suites_mode = local_test_suites_mode
 
-          start_drb_service
+            start_drb_service
 
-          test_session = maybe_remote_context.start_test_session(service: service, tags: tags)
-          test_session.estimated_total_tests_count = estimated_total_tests_count
-          test_session.distributed = distributed unless distributed.nil?
+            test_session = maybe_remote_context.start_test_session(service: service, tags: tags)
+            test_session.estimated_total_tests_count = estimated_total_tests_count
+            test_session.distributed = distributed unless distributed.nil?
 
-          on_test_session_started(test_session)
+            on_test_session_started(test_session)
 
-          test_session
+            test_session
+          end
         end
 
         def start_test_module(test_module_name, service: nil, tags: {})
-          test_module = maybe_remote_context.start_test_module(test_module_name, service: service, tags: tags)
-          on_test_module_started(test_module)
+          @execution.synchronize do
+            test_module = maybe_remote_context.start_test_module(test_module_name, service: service, tags: tags)
+            on_test_module_started(test_module)
 
-          test_module
+            test_module
+          end
         end
 
         def start_test_suite(test_suite_name, service: nil, tags: {})
-          test_suite_name = Utils::TestName.normalize(test_suite_name)
-          context = @local_test_suites_mode ? @context : maybe_remote_context
+          @execution.synchronize do
+            test_suite_name = Utils::TestName.normalize(test_suite_name)
+            context = @local_test_suites_mode ? @context : maybe_remote_context
 
-          test_suite = context.start_test_suite(test_suite_name, service: service, tags: tags)
-          on_test_suite_started(test_suite)
-          test_suite
+            test_suite = context.start_test_suite(test_suite_name, service: service, tags: tags)
+            on_test_suite_started(test_suite)
+            test_suite
+          end
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
-          test_name = Utils::TestName.normalize(test_name)
-          test_suite_name = Utils::TestName.normalize(test_suite_name)
-
-          test_suite = active_test_suite(test_suite_name)
-          tags[Ext::Test::TAG_SUITE] ||= test_suite_name
-
-          if block
-            @context.trace_test(test_name, test_suite, service: service, tags: tags) do |test|
-              on_test_started(test)
-              res = block.call(test)
-              on_test_finished(test)
-              res
+          test = @execution.synchronize do
+            if @context.active_test
+              disable_test_execution!("nested test attempts are unsupported")
+              next
             end
-          else
-            test = @context.trace_test(test_name, test_suite, service: service, tags: tags)
-            on_test_started(test)
-            test
+
+            test_name = Utils::TestName.normalize(test_name)
+            test_suite_name = Utils::TestName.normalize(test_suite_name)
+            test_suite = active_test_suite(test_suite_name)
+            tags[Ext::Test::TAG_SUITE] ||= test_suite_name
+
+            active = @context.trace_test(test_name, test_suite, service: service, tags: tags)
+            begin
+              on_test_started(active)
+            rescue => error
+              disable_test_execution!("test initialization failed: #{error}")
+            end
+            unless @execution.enabled?
+              @context.deactivate_test
+              active.tracer_span.finish
+              next
+            end
+            active
+          end
+          return test unless block
+          return block.call(nil) unless test
+
+          begin
+            block.call(test)
+          rescue => error
+            test.tracer_span.set_error(error)
+            raise
+          ensure
+            test.finish
           end
         end
 
         def trace(span_name, type: "span", tags: {}, &block)
+          return block&.call(nil) unless @execution.enabled?
+
           if block
             @context.trace(span_name, type: type, tags: tags) do |span|
               block.call(span)
@@ -155,10 +183,14 @@ module Datadog
         end
 
         def active_span
+          return unless @execution.enabled?
+
           @context.active_span
         end
 
         def active_test
+          return unless @execution.enabled?
+
           @context.active_test
         end
 
@@ -189,34 +221,59 @@ module Datadog
           maybe_remote_context.active_test_suite(test_suite_name)
         end
 
-        def deactivate_test
-          test = active_test
-          on_test_finished(test) if test
+        def deactivate_test(test = nil)
+          @execution.synchronize do
+            active = @context.active_test
+            if test && !active.equal?(test)
+              disable_test_execution!("a test was finished outside its active attempt") unless test.tracer_span.finished?
+              next
+            end
 
-          @context.deactivate_test
+            # Clear first: explicit finish inside a trace block and repeated
+            # finish calls must not finalize coverage or retry state twice.
+            @context.deactivate_test
+            begin
+              on_test_finished(active) if active
+            rescue => error
+              disable_test_execution!("test finalization failed: #{error}")
+            end
+          end
+        end
+
+        def execution_supported?
+          @execution.enabled?
+        end
+
+        def disable_test_execution!(reason)
+          @execution.disable!(reason)
         end
 
         def deactivate_test_session
-          test_session = active_test_session
-          on_test_session_finished(test_session) if test_session
+          @execution.synchronize do
+            test_session = active_test_session
+            on_test_session_finished(test_session) if test_session
 
-          @context.deactivate_test_session
+            @context.deactivate_test_session
+          end
         end
 
         def deactivate_test_module
-          test_module = active_test_module
-          on_test_module_finished(test_module) if test_module
+          @execution.synchronize do
+            test_module = active_test_module
+            on_test_module_finished(test_module) if test_module
 
-          @context.deactivate_test_module
+            @context.deactivate_test_module
+          end
         end
 
         def deactivate_test_suite(test_suite_name)
-          test_suite_name = Utils::TestName.normalize(test_suite_name)
-          test_suite = active_test_suite(test_suite_name)
-          on_test_suite_finished(test_suite) if test_suite
-
-          # deactivation always happens on the same process where test suite is located
-          @context.deactivate_test_suite(test_suite_name)
+          if @local_test_suites_mode
+            @execution.synchronize { finish_test_suite(test_suite_name) }
+          elsif @execution.enabled?
+            # Rails process workers finish remote suite metadata through DRb.
+            # That is coordinator bookkeeping, not a test-execution handoff.
+            finish_test_suite(test_suite_name)
+          end
         end
 
         def itr_enabled?
@@ -259,6 +316,13 @@ module Datadog
         end
 
         private
+
+        def finish_test_suite(test_suite_name)
+          test_suite_name = Utils::TestName.normalize(test_suite_name)
+          test_suite = active_test_suite(test_suite_name)
+          on_test_suite_finished(test_suite) if test_suite
+          @context.deactivate_test_suite(test_suite_name)
+        end
 
         # DOMAIN EVENTS
         def on_test_session_started(test_session)
@@ -313,6 +377,7 @@ module Datadog
 
           test_impact_analysis.mark_if_skippable(test)
           test_impact_analysis.on_test_started(test)
+          return unless @execution.enabled?
 
           test_retries.record_test_started(test)
         end
