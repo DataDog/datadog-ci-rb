@@ -33,6 +33,7 @@ module RSpec::Core::Example
   def full_description: () -> String
   def finish: (untyped) -> void
   def fail_with_exception: (RSpec::Core::Reporter | singleton(RSpec::Core::NullReporter) reporter, Exception exception) -> bool
+  def skip_with_exception: (RSpec::Core::Reporter | singleton(RSpec::Core::NullReporter) reporter, RSpec::Core::Pending::SkipDeclaredInExample exception) -> bool
 end
 
 class RSpec::Core::ConfigurationOptions

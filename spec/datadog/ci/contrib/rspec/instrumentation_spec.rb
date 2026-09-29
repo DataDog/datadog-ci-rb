@@ -792,11 +792,12 @@ RSpec.describe "RSpec instrumentation" do
 
     context "with a failing before(:context) hook" do
       let(:flaky_test_retries_enabled) { true }
+      let(:fixture) { "before_context_failure.rb" }
 
       let(:result) do
         with_new_rspec_environment do
-          load File.join(__dir__, "fixtures/before_context_failure.rb")
-          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format progress])
+          load File.join(__dir__, "fixtures", fixture)
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
           stdout = StringIO.new
           exit_code = ::RSpec::Core::Runner.new(options).run(StringIO.new, stdout)
           [exit_code, stdout.string]
@@ -841,6 +842,44 @@ RSpec.describe "RSpec instrumentation" do
           expect(result.first).to eq(1)
           expect(result.last).to include("3 examples, 2 failures")
           expect(test_spans).to be_empty
+        end
+      end
+
+      context "with mixed runnable and skippable examples" do
+        let(:fixture) { "before_context_failure_with_skips.rb" }
+        let(:itr_enabled) { true }
+        let(:tests_skipping_enabled) { true }
+        let(:test_management_enabled) { true }
+        let(:suite_name) do
+          "Context failure with managed examples at ./spec/datadog/ci/contrib/rspec/fixtures/#{fixture}"
+        end
+        let(:test_properties) { {"#{suite_name}.disabled." => {"disabled" => true}} }
+        let(:itr_skippable_tests) do
+          Set.new([
+            "#{suite_name}.skippable.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:3\"}}",
+            "#{suite_name}.unskippable.{\"arguments\":{},\"metadata\":{\"scoped_id\":\"1:4\"}}"
+          ])
+        end
+
+        it "preserves skip decisions and the unskippable override" do
+          expect(result.first).to eq(1)
+          expect(result.last).to include("4 examples, 2 failures, 2 pending")
+          expect(result.last).to include("1 disabled", "1 skipped by test impact analysis")
+          expect(test_spans).to have(4).items
+          by_name = test_spans.to_h { |span| [span.name, span] }
+
+          expect(by_name.fetch("disabled")).to have_skip_status
+          expect(by_name.fetch("disabled")).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+          expect(by_name.fetch("disabled")).to have_test_tag(:is_test_disabled, "true")
+          expect(by_name.fetch("skippable")).to have_skip_status
+          expect(by_name.fetch("skippable")).to have_test_tag(:itr_skipped_by_itr, "true")
+          expect(by_name.fetch("disabled")).not_to have_error
+          expect(by_name.fetch("skippable")).not_to have_error
+          expect(by_name.values_at("runnable", "unskippable")).to all have_fail_status
+          expect(by_name.fetch("unskippable")).to have_test_tag(:itr_unskippable, "true")
+          expect(by_name.fetch("unskippable")).to have_test_tag(:itr_forced_run, "true")
+          expect(by_name.fetch("unskippable")).not_to have_test_tag(:itr_skipped_by_itr)
+          expect(test_spans).to all have_test_tag(:is_retry, nil)
         end
       end
     end

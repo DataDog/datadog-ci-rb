@@ -85,6 +85,7 @@ module Datadog
             def fail_with_exception(reporter, exception)
               return super unless datadog_tracing_enabled?
 
+              test_suite_span = test_tracing_component.start_test_suite(datadog_test_suite_name) if ci_queue?
               result = false
               test_retries_component.with_retries do
                 test_tracing_component.trace_test(
@@ -96,11 +97,22 @@ module Datadog
                   # Retrying an example cannot rerun its failed context setup.
                   test_span.retryable = false
                   test_span.context_ids = datadog_context_ids
-                  test_span.failed!(exception: exception)
-                  result = super
+                  test_span.itr_unskippable! if datadog_unskippable?
+                  update_formatter_metadata(test_span)
+
+                  if test_span.should_skip?
+                    reason = test_span.datadog_skip_reason
+                    test_span.skipped!(reason: reason)
+                    result = skip_with_exception(reporter, ::RSpec::Core::Pending::SkipDeclaredInExample.new(reason))
+                  else
+                    test_span.failed!(exception: exception)
+                    result = super
+                  end
                 end
               end
               result
+            ensure
+              test_suite_span&.finish
             end
 
             def finish(reporter)
