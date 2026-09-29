@@ -36,6 +36,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:remote_known_tests_enabled) { true }
   let(:remote_test_management_enabled) { false }
   let(:remote_attempt_to_fix_retries_count) { 43 }
+  let(:test_retryable) { true }
 
   let(:slow_test_retries) do
     instance_double(
@@ -102,6 +103,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         Datadog::CI::Test,
         name: "test",
         test_suite_name: "suite",
+        retryable: test_retryable,
         failed?: test_failed,
         passed?: !test_failed,
         skipped?: test_skipped,
@@ -114,6 +116,18 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
     before do
       component.configure(library_settings, test_session)
+    end
+
+    context "when the framework cannot retry the test" do
+      let(:test_retryable) { false }
+      let(:test_failed) { true }
+      let(:test_is_new) { true }
+      let(:test_attempt_to_fix) { true }
+      let(:remote_flaky_test_retries_enabled) { true }
+      let(:remote_early_flake_detection_enabled) { true }
+      let(:remote_test_management_enabled) { true }
+
+      it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
     end
 
     context "when retry failed tests is enabled" do
@@ -259,6 +273,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         type: "test",
         name: "mytest",
         test_suite_name: "mysuite",
+        retryable: test_retryable,
         attempt_to_fix?: test_attempt_to_fix,
         all_executions_failed?: false,
         all_executions_passed?: false,
@@ -387,6 +402,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         Datadog::CI::Test,
         name: "test",
         test_suite_name: "suite",
+        retryable: test_retryable,
         failed?: test_failed,
         passed?: !test_failed,
         skipped?: false,

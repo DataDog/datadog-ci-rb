@@ -17,12 +17,17 @@ module Datadog
 
         @custom_impacted_files = []
         @inherited_custom_impacted_files = []
+        @retryable = true
       end
 
       # Context IDs for this test (used for TIA context coverage merging).
       # Contains list of context identifiers from outermost to innermost.
       # @return [Array<String>] list of context IDs
       attr_accessor :context_ids
+
+      # Whether the framework can rerun this example after it finishes.
+      # @internal
+      attr_accessor :retryable
 
       # @return [String] the name of the test.
       def name

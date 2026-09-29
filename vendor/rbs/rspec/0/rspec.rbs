@@ -32,6 +32,7 @@ module RSpec::Core::Example
   def description: () -> String
   def full_description: () -> String
   def finish: (untyped) -> void
+  def fail_with_exception: (RSpec::Core::Reporter | singleton(RSpec::Core::NullReporter) reporter, Exception exception) -> bool
 end
 
 class RSpec::Core::ConfigurationOptions
@@ -57,6 +58,9 @@ module RSpec::Core::ExampleGroup
 end
 
 class RSpec::Core::NullReporter
+end
+
+class RSpec::Core::Reporter
 end
 
 class RSpec::Core::Configuration

@@ -81,6 +81,28 @@ module Datadog
               @datadog_test_tracing_component = nil
             end
 
+            # RSpec bypasses #run when a before(:context) hook fails.
+            def fail_with_exception(reporter, exception)
+              return super unless datadog_tracing_enabled?
+
+              result = false
+              test_retries_component.with_retries do
+                test_tracing_component.trace_test(
+                  datadog_test_name,
+                  datadog_test_suite_name,
+                  tags: build_test_tags,
+                  service: datadog_configuration[:service_name]
+                ) do |test_span|
+                  # Retrying an example cannot rerun its failed context setup.
+                  test_span.retryable = false
+                  test_span.context_ids = datadog_context_ids
+                  test_span.failed!(exception: exception)
+                  result = super
+                end
+              end
+              result
+            end
+
             def finish(reporter)
               # By default finish test but do not report it to RSpec::Core::Reporter
               # it is going to be reported once after retries are done.

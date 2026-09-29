@@ -85,6 +85,8 @@ module Datadog
         end
 
         def build_driver(test_span)
+          return Driver::NoRetry.new unless test_span.retryable
+
           @mutex.synchronize do
             # find the first strategy that covers the test span and let it build the driver
             strategy = @retry_strategies.find { |strategy| strategy.covers?(test_span) }

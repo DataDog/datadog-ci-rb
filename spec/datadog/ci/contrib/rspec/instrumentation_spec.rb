@@ -790,6 +790,61 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
 
+    context "with a failing before(:context) hook" do
+      let(:flaky_test_retries_enabled) { true }
+
+      let(:result) do
+        with_new_rspec_environment do
+          load File.join(__dir__, "fixtures/before_context_failure.rb")
+          options = ::RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format progress])
+          stdout = StringIO.new
+          exit_code = ::RSpec::Core::Runner.new(options).run(StringIO.new, stdout)
+          [exit_code, stdout.string]
+        end
+      end
+
+      it "reports each affected example once with the context error" do
+        expect(result.first).to eq(1)
+        expect(result.last).to include("3 examples, 2 failures")
+        expect(test_spans).to have(3).items
+
+        failed_tests = test_spans.reject { |span| span.name == "still passes" }
+        expect(failed_tests.map(&:name)).to contain_exactly(
+          "fails before its body runs", "nested also fails before its body runs"
+        )
+        expect(failed_tests).to all have_fail_status
+        expect(failed_tests).to all have_error_type("RuntimeError")
+        expect(failed_tests).to all have_error_message("Context setup failed")
+        expect(test_spans).to all have_test_tag(:is_retry, nil)
+        expect(test_spans).to all have_test_tag(:test_session_id, test_session_span.id.to_s)
+        expect(test_spans).to all have_test_tag(:test_module_id, test_module_span.id.to_s)
+
+        failed_suite = test_suite_spans.find { |span| span.get_tag("test.suite").start_with?("Failing context setup") }
+        expect(failed_suite).to have_fail_status
+        expect(failed_tests).to all have_test_tag(:test_suite_id, failed_suite.id.to_s)
+        expect(test_spans.find { |span| span.name == "still passes" }).to have_pass_status
+        expect(test_session_span).to have_fail_status
+        expect(test_module_span).to have_fail_status
+      end
+
+      context "with instrumentation disabled" do
+        let(:integration_options) { {enabled: false} }
+
+        around do |example|
+          enabled = integration.configuration[:enabled]
+          example.run
+        ensure
+          integration.configure(enabled: enabled)
+        end
+
+        it "preserves RSpec failures without emitting test events" do
+          expect(result.first).to eq(1)
+          expect(result.last).to include("3 examples, 2 failures")
+          expect(test_spans).to be_empty
+        end
+      end
+    end
+
     context "with shared examples" do
       let!(:result) { rspec_session_run(with_shared_test: true) }
       let!(:spec) { result.spec }

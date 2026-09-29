@@ -23,6 +23,7 @@ module Datadog
             @datadog_source_location_from_parent: bool
 
             def run: (untyped example_group_instance, untyped reporter) -> untyped
+            def fail_with_exception: (::RSpec::Core::Reporter | singleton(::RSpec::Core::NullReporter) reporter, Exception exception) -> bool
 
             def datadog_test_id: () -> String
             def datadog_fqn_test_id: () -> String

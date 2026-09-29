@@ -9,6 +9,7 @@ module Datadog
 
       # Context IDs for this test (used for TIA context coverage merging)
       attr_accessor context_ids: Array[String]?
+      attr_accessor retryable: bool
 
       def initialize: (Datadog::Tracing::SpanOperation tracer_span) -> void
       def datadog_test_id: () -> String
