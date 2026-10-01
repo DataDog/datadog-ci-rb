@@ -63,6 +63,93 @@ RSpec.describe Datadog::CI::TestTracing::Component do
     end
   end
 
+  describe "tracing without an active test session" do
+    include_context "CI mode activated" do
+      let(:flaky_test_retries_enabled) { true }
+      let(:early_flake_detection_enabled) { true }
+      let(:test_management_enabled) { true }
+      let(:known_tests) { Set.new(["suite.test."]) }
+    end
+
+    let(:retries) { Datadog.send(:components).test_retries }
+
+    after { retries.reset_retries! }
+
+    it "runs the block once with nil and returns its result without creating spans or retries" do
+      executions = 0
+      result = nil
+      retries.with_retries do
+        result = test_tracing.trace_test("test", "suite") do |test|
+          expect(test).to be_nil
+          executions += 1
+          :test_result
+        end
+      end
+
+      expect(executions).to eq(1)
+      expect(result).to eq(:test_result)
+      expect(retries.should_retry?).to be false
+      expect(test_tracing.active_test).to be_nil
+      expect(spans).to be_empty
+    end
+
+    it "preserves exceptions from the test block" do
+      failure = StandardError.new("test failure")
+
+      expect do
+        test_tracing.trace_test("test", "suite") { raise failure }
+      end.to raise_error { |error| expect(error).to equal(failure) }
+
+      expect(spans).to be_empty
+      expect(retries.should_retry?).to be false
+    end
+
+    it "does not create a test after its session finishes" do
+      test_tracing.start_test_session.finish
+
+      expect(test_tracing.trace_test("test", "suite")).to be_nil
+      expect(test_spans).to be_empty
+    end
+
+    it "does not create a test after components are replaced during a session" do
+      original_session = test_tracing.start_test_session
+      Datadog.configure { |c| c.service = "reconfigured" }
+      replacement = Datadog.send(:components).test_tracing
+
+      expect(replacement.trace_test("test", "suite")).to be_nil
+      expect(replacement.active_test).to be_nil
+      expect(test_spans).to be_empty
+    ensure
+      original_session&.finish
+    end
+
+    {
+      "ATR" => [true, {}],
+      "EFD" => [false, {Datadog::CI::Ext::Test::TAG_IS_NEW => "true"}],
+      "attempt-to-fix" => [false, {Datadog::CI::Ext::Test::TAG_IS_ATTEMPT_TO_FIX => "true"}]
+    }.each do |strategy, (failed, tags)|
+      [true, false].each do |with_block|
+        it "clears a pending #{strategy} retry when tracing #{with_block ? "with" : "without"} a block after session loss" do
+          session = test_tracing.start_test_session(estimated_total_tests_count: 100)
+          test_tracing.start_test_module("module")
+          test_tracing.start_test_suite("suite")
+          test_tracing.trace_test("test", "suite", tags: tags.dup) do |test|
+            failed ? test.failed! : test.passed!
+          end
+          expect(retries.should_retry?).to be true
+          session.finish
+
+          block = with_block ? proc { |test| expect(test).to be_nil } : nil
+          test_tracing.trace_test("test", "suite", &block)
+
+          expect(retries.should_retry?).to be false
+          expect(test_tracing.active_test).to be_nil
+          expect(test_spans.length).to eq(1)
+        end
+      end
+    end
+  end
+
   context "with test suite level visibility" do
     context "without TestImpactAnalysis" do
       include_context "CI mode activated"
@@ -191,26 +278,29 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           end
 
           context "when there is no active test session" do
-            it "returns a new CI test span" do
-              expect(subject).to be_kind_of(Datadog::CI::Test)
-              expect(subject.name).to eq(test_name)
-              expect(subject.service).to eq(test_service)
-              expect(subject.tracer_span.name).to eq(test_name)
-              expect(subject.type).to eq(Datadog::CI::Ext::AppTypes::TYPE_TEST)
+            it "warns and does not create or activate a test span" do
+              expect(Datadog.logger).to receive(:warn).with(
+                "Skipping tracing for test [#{test_name}]: no active test session."
+              )
+
+              expect(subject).to be_nil
+              expect(test_tracing.active_test).to be_nil
+              expect(test_tracing.any_tests_started?).to be false
+              expect(spans).to be_empty
             end
 
-            it "sets the provided tags correctly" do
-              expect(subject).to have_test_tag("test.framework", "my-framework")
-              expect(subject).to have_test_tag("my.tag", "my_value")
-            end
+            it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
+          end
 
-            it "does not connect the test span to the test session" do
-              expect(subject).not_to have_test_tag(:test_session_id)
-            end
+          context "when there is an active test session" do
+            let(:test_session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
+            let(:session_service) { "my-session-service" }
+            let(:test_service) { nil }
 
-            it "sets the test suite name as one of the tags" do
-              expect(subject).to have_test_tag(:suite, test_suite_name)
-              expect(subject).not_to have_test_tag(:test_suite_id)
+            let(:test_session) { test_tracing.start_test_session(service: session_service, tags: test_session_tags) }
+
+            before do
+              test_session
             end
 
             context "when test identity contains generated Ruby values" do
@@ -224,30 +314,6 @@ RSpec.describe Datadog::CI::TestTracing::Component do
                 expect(subject).to have_test_tag(:name, "is expected to eq OBJECT:User")
                 expect(subject).to have_test_tag(:suite, "suite for DATE")
               end
-            end
-
-            it_behaves_like "span with environment tags"
-            it_behaves_like "span with default tags"
-            it_behaves_like "span with runtime tags"
-            it_behaves_like "trace with ciapp-test origin" do
-              let(:trace_under_test) do
-                subject.finish
-
-                trace
-              end
-            end
-            it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_EVENT_CREATED
-          end
-
-          context "when there is an active test session" do
-            let(:test_session_tags) { {"test.framework_version" => "1.0", "my.session.tag" => "my_session_value"} }
-            let(:session_service) { "my-session-service" }
-            let(:test_service) { nil }
-
-            let(:test_session) { test_tracing.start_test_session(service: session_service, tags: test_session_tags) }
-
-            before do
-              test_session
             end
 
             context "when there is no active test module" do
@@ -376,6 +442,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
 
         context "when given a block" do
           before do
+            test_tracing.start_test_session
             test_tracing.trace_test(
               test_name,
               test_suite_name,
@@ -915,6 +982,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           let(:ci_test) { test_tracing.trace_test("my test", "my suite") }
 
           before do
+            test_tracing.start_test_session
             ci_test
           end
 
@@ -959,7 +1027,10 @@ RSpec.describe Datadog::CI::TestTracing::Component do
         end
 
         context "when deactivating the currently active test" do
-          let(:ci_test) { test_tracing.trace_test("my test", "my suite") }
+          let(:ci_test) do
+            test_tracing.start_test_session
+            test_tracing.trace_test("my test", "my suite")
+          end
 
           it "deactivates the test" do
             subject

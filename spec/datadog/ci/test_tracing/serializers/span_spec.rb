@@ -10,6 +10,8 @@ RSpec.describe Datadog::CI::TestTracing::Serializers::Span do
     subject { described_class.new(trace_for_span(first_custom_span), first_custom_span) }
   end
 
+  before { test_tracing.start_test_session }
+
   describe "#to_msgpack" do
     context "traced a single test execution with test visibility" do
       before do

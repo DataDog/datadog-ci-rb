@@ -1000,3 +1000,62 @@ RSpec.describe "Cucumber instrumentation" do
     end
   end
 end
+
+RSpec.describe "Cucumber instrumentation after losing its test session" do
+  include_context "CI mode activated" do
+    let(:integration_name) { :cucumber }
+    let(:flaky_test_retries_enabled) { true }
+    let(:early_flake_detection_enabled) { true }
+    let(:test_management_enabled) { true }
+    let(:known_tests) { Set.new(["another.test."]) }
+  end
+
+  [:finished, :replaced].each do |session_state|
+    [false, true].each do |fails|
+      it "runs a #{fails ? "failing" : "passing"} scenario once when the session is #{session_state}" do
+        recorder = spy("scenario execution")
+        stub_const("DatadogMissingSessionExecutionRecorder", recorder)
+        Datadog.configuration.logger.instance = Datadog.logger
+        allow(Datadog.logger).to receive(:warn).and_call_original
+
+        Dir.mktmpdir("datadog-missing-session") do |directory|
+          feature = File.join(directory, "session.feature")
+          steps = File.join(directory, "steps.rb")
+          File.write(feature, <<~FEATURE)
+            Feature: Session lifetime
+              Scenario: Lose session
+                Then lose the session
+              Scenario: Untraced scenario
+                Then execute the untraced test
+          FEATURE
+          File.write(steps, <<~RUBY)
+            Then "lose the session" do
+              DatadogMissingSessionExecutionRecorder.call(:bootstrap)
+              Datadog::CI.active_test.set_tag("test.is_new", "false")
+              #{(session_state == :finished) ? "Datadog::CI.active_test_session.finish" : 'Datadog.configure { |c| c.service = "reconfigured" }'}
+            end
+            Then "execute the untraced test" do
+              DatadogMissingSessionExecutionRecorder.call(:test)
+              raise "original test failure" if #{fails}
+            end
+          RUBY
+
+          kernel = double("kernel")
+          expect(kernel).to receive(:exit).with(fails ? 1 : 0)
+          args = ["-r", steps, feature]
+          streams = [StringIO.new, StringIO.new]
+          streams.unshift(StringIO.new) if Gem::Version.new(Cucumber::VERSION) < Gem::Version.new("8.0.0")
+          Cucumber::Cli::Main.new(args, *streams, kernel).execute!(Cucumber::Runtime.new)
+        end
+
+        expect(recorder).to have_received(:call).with(:bootstrap).once
+        expect(recorder).to have_received(:call).with(:test).once
+        expect(test_spans.map(&:name)).not_to include("Untraced scenario")
+        expect(Datadog.send(:components).test_retries.should_retry?).to be false
+        expect(Datadog.logger).to have_received(:warn).with(
+          "Skipping tracing for test [Untraced scenario]: no active test session."
+        ).once
+      end
+    end
+  end
+end
