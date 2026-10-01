@@ -67,6 +67,33 @@ RSpec.describe Datadog::CI::TestTracing::Component do
     context "without TestImpactAnalysis" do
       include_context "CI mode activated"
 
+      describe "#configuration_locked?" do
+        it "protects session startup and releases protection after the session finishes" do
+          expect(test_tracing.configuration_locked?).to be(false)
+          session = test_tracing.start_test_session
+          expect(test_tracing.configuration_locked?).to be(true)
+
+          session.finish
+          expect(test_tracing.configuration_locked?).to be(false)
+        end
+
+        it "keeps workers protected after the parent session finishes without contacting DRb" do
+          session = test_tracing.start_test_session
+          worker = described_class.new(
+            known_tests_client: instance_double(Datadog::CI::TestTracing::KnownTests),
+            context_service_uri: test_tracing.context_service_uri
+          )
+          expect(worker.configuration_locked?).to be(false)
+          worker.start_test_session
+          expect(worker.configuration_locked?).to be(true)
+
+          session.finish
+          worker.deactivate_test_session
+          DRb.stop_service
+          expect(worker.configuration_locked?).to be(true)
+        end
+      end
+
       describe "#any_tests_started?" do
         before { test_tracing.start_test_session }
 

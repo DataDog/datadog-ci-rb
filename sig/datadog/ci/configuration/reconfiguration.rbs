@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module Configuration
+      module Reconfiguration : Datadog::Core::Configuration
+        def configure: () ?{ (Datadog::Core::Configuration::Settings) -> void } -> Datadog::Core::Configuration::Settings
+
+        private
+
+        def replace_components!: (Datadog::Core::Configuration::Settings settings, Datadog::Core::Configuration::Components old) -> Datadog::Core::Configuration::Components
+
+        def warn_about_ci_reconfiguration: () -> void
+      end
+    end
+  end
+end

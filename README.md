@@ -24,6 +24,27 @@ Learn more on our [official website](https://docs.datadoghq.com/tests/) and chec
 - [Test visibility setup](https://docs.datadoghq.com/tests/setup/ruby/?tab=cloudciprovideragentless)
 - [Test impact analysis setup](https://docs.datadoghq.com/tests/test_impact_analysis/setup/ruby/?tab=cloudciprovideragentless) (test visibility setup is required before setting up test impact analysis)
 
+### Configuration during tests
+
+Call `Datadog.configure` before the test session starts. Once a session starts,
+later calls log a warning and return the current configuration without executing
+the block. This preserves the session, quarantine properties, and remote retry
+settings through test setup and cleanup. Protection starts before the first test
+because session startup already creates this state.
+
+Reconfiguration is allowed again after the owning session finishes, including an
+empty session. Forked workers inherit protection; fresh distributed workers can
+configure themselves before joining the session and remain protected afterward
+for their lifetime. The guard uses local state and does not contact the parent
+process. Custom integrations that trace tests without a session are protected from
+their first test onward; use an explicit session to define when reconfiguration
+can resume. Configuration is unaffected when CI is disabled.
+
+If a session starts inside an already running configuration block, component
+replacement is still prevented, but settings already changed by that block are
+not rolled back. Direct mutation of `Datadog.configuration`, the private reset
+API, and explicit shutdown are outside this guard.
+
 ## Upgrade from ddtrace v1.x
 
 If you used [test visibility for Ruby](https://docs.datadoghq.com/tests/setup/ruby/) with [ddtrace](https://github.com/datadog/dd-trace-rb) gem, check out our [upgrade guide](/docs/UpgradeGuide.md).

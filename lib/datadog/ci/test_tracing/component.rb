@@ -59,6 +59,7 @@ module Datadog
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
           @trace_setup_teardown_enabled = trace_setup_teardown_enabled
+          @configuration_locked = false
 
           # "Known tests" feature fetches a list of all tests known to Datadog for this repository
           # and uses this list to determine if a test is new or not. New tests are marked with "test.is_new" tag.
@@ -94,6 +95,9 @@ module Datadog
         end
 
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: nil, local_test_suites_mode: true)
+          # Lock before session setup, which already creates state that reconfiguration would discard.
+          # Forks inherit this flag; fresh workers acquire it when joining the distributed session.
+          @configuration_locked = true
           @local_test_suites_mode = local_test_suites_mode
 
           start_drb_service
@@ -124,6 +128,8 @@ module Datadog
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
+          # Custom integrations can trace tests without explicitly starting a session.
+          @configuration_locked = true
           test_name = Utils::TestName.normalize(test_name)
           test_suite_name = Utils::TestName.normalize(test_suite_name)
 
@@ -167,6 +173,11 @@ module Datadog
           maybe_remote_context.any_tests_started?
         end
 
+        # This must be a local check: configuration must not depend on a DRb round trip.
+        def configuration_locked?
+          @configuration_locked
+        end
+
         def active_test_session
           maybe_remote_context.active_test_session
         end
@@ -201,6 +212,10 @@ module Datadog
           on_test_session_finished(test_session) if test_session
 
           @context.deactivate_test_session
+          # Only the session owner can release the lock. Distributed workers retain their
+          # remote feature state for their lifetime, including after the parent's session ends.
+          @configuration_locked = false unless client_process?
+          nil
         end
 
         def deactivate_test_module

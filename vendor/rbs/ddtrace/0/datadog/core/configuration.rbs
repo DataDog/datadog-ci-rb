@@ -6,6 +6,14 @@ module Datadog
       def logger: () -> Datadog::Core::Logger
 
       def configuration: () -> untyped # The DSL methods have to be explicitly declared for this to be typed
+
+      def configure: () ?{ (Datadog::Core::Configuration::Settings) -> void } -> Datadog::Core::Configuration::Settings
+
+      def components: (?allow_initialization: bool) -> Datadog::Core::Configuration::Components?
+
+      private
+
+      def replace_components!: (Datadog::Core::Configuration::Settings settings, Datadog::Core::Configuration::Components old) -> Datadog::Core::Configuration::Components
     end
   end
 end
