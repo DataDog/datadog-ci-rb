@@ -220,5 +220,7 @@ RSpec.shared_context "CI mode activated" do
     # Test isolation uses the tracer's internal reset API. Customer reconfiguration
     # is intentionally ignored while an unfinished test session is protected.
     Datadog.send(:reset!)
+    # Session startup caches environment tags independently of the tracer components.
+    Datadog::CI::Ext::Environment.reset!
   end
 end
