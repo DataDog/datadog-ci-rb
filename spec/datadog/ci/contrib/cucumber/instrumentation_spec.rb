@@ -85,8 +85,11 @@ RSpec.describe "Cucumber instrumentation" do
   end
 
   let(:expected_test_run_code) { 0 }
+  let(:run_fixture_feature) { true }
 
   before do
+    next unless run_fixture_feature
+
     events = cucumber_execution_events
     stub_const(
       "DatadogCucumberExecutionRecorder",
@@ -120,7 +123,7 @@ RSpec.describe "Cucumber instrumentation" do
   end
 
   after do
-    FileUtils.rm(steps_file_for_run_path)
+    FileUtils.rm(steps_file_for_run_path) if run_fixture_feature
   end
 
   context "executing a passing test suite" do
@@ -999,62 +1002,60 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
-end
 
-RSpec.describe "Cucumber instrumentation after losing its test session" do
-  include_context "CI mode activated" do
-    let(:integration_name) { :cucumber }
-    let(:flaky_test_retries_enabled) { true }
-    let(:early_flake_detection_enabled) { true }
-    let(:test_management_enabled) { true }
-    let(:known_tests) { Set.new(["another.test."]) }
-  end
+  context "after losing its test session" do
+    let(:run_fixture_feature) { false }
+    let(:enable_retries_failed) { true }
+    let(:enable_retries_new) { true }
+    let(:enable_test_management) { true }
+    let(:known_tests_set) { Set.new(["another.test."]) }
 
-  [:finished, :replaced].each do |session_state|
-    [false, true].each do |fails|
-      it "runs a #{fails ? "failing" : "passing"} scenario once when the session is #{session_state}" do
-        recorder = spy("scenario execution")
-        stub_const("DatadogMissingSessionExecutionRecorder", recorder)
-        Datadog.configuration.logger.instance = Datadog.logger
-        allow(Datadog.logger).to receive(:warn).and_call_original
+    [:finished, :replaced].each do |session_state|
+      [false, true].each do |fails|
+        it "runs a #{fails ? "failing" : "passing"} scenario once when the session is #{session_state}" do
+          recorder = spy("scenario execution")
+          stub_const("DatadogMissingSessionExecutionRecorder", recorder)
+          Datadog.configuration.logger.instance = Datadog.logger
+          allow(Datadog.logger).to receive(:warn).and_call_original
 
-        Dir.mktmpdir("datadog-missing-session") do |directory|
-          feature = File.join(directory, "session.feature")
-          steps = File.join(directory, "steps.rb")
-          File.write(feature, <<~FEATURE)
-            Feature: Session lifetime
-              Scenario: Lose session
-                Then lose the session
-              Scenario: Untraced scenario
-                Then execute the untraced test
-          FEATURE
-          File.write(steps, <<~RUBY)
-            Then "lose the session" do
-              DatadogMissingSessionExecutionRecorder.call(:bootstrap)
-              Datadog::CI.active_test.set_tag("test.is_new", "false")
-              #{(session_state == :finished) ? "Datadog::CI.active_test_session.finish" : 'Datadog.configure { |c| c.service = "reconfigured" }'}
-            end
-            Then "execute the untraced test" do
-              DatadogMissingSessionExecutionRecorder.call(:test)
-              raise "original test failure" if #{fails}
-            end
-          RUBY
+          Dir.mktmpdir("datadog-missing-session") do |directory|
+            feature = File.join(directory, "session.feature")
+            steps = File.join(directory, "steps.rb")
+            File.write(feature, <<~FEATURE)
+              Feature: Session lifetime
+                Scenario: Lose session
+                  Then lose the session
+                Scenario: Untraced scenario
+                  Then execute the untraced test
+            FEATURE
+            File.write(steps, <<~RUBY)
+              Then "lose the session" do
+                DatadogMissingSessionExecutionRecorder.call(:bootstrap)
+                Datadog::CI.active_test.set_tag("test.is_new", "false")
+                #{(session_state == :finished) ? "Datadog::CI.active_test_session.finish" : 'Datadog.configure { |c| c.service = "reconfigured" }'}
+              end
+              Then "execute the untraced test" do
+                DatadogMissingSessionExecutionRecorder.call(:test)
+                raise "original test failure" if #{fails}
+              end
+            RUBY
 
-          kernel = double("kernel")
-          expect(kernel).to receive(:exit).with(fails ? 1 : 0)
-          args = ["-r", steps, feature]
-          streams = [StringIO.new, StringIO.new]
-          streams.unshift(StringIO.new) if Gem::Version.new(Cucumber::VERSION) < Gem::Version.new("8.0.0")
-          Cucumber::Cli::Main.new(args, *streams, kernel).execute!(Cucumber::Runtime.new)
+            kernel = double("kernel")
+            expect(kernel).to receive(:exit).with(fails ? 1 : 0)
+            args = ["-r", steps, feature]
+            streams = [StringIO.new, StringIO.new]
+            streams.unshift(StringIO.new) if Gem::Version.new(Cucumber::VERSION) < Gem::Version.new("8.0.0")
+            Cucumber::Cli::Main.new(args, *streams, kernel).execute!(Cucumber::Runtime.new)
+          end
+
+          expect(recorder).to have_received(:call).with(:bootstrap).once
+          expect(recorder).to have_received(:call).with(:test).once
+          expect(test_spans.map(&:name)).not_to include("Untraced scenario")
+          expect(Datadog.send(:components).test_retries.should_retry?).to be false
+          expect(Datadog.logger).to have_received(:warn).with(
+            "Skipping tracing for test [Untraced scenario]: no active test session."
+          ).once
         end
-
-        expect(recorder).to have_received(:call).with(:bootstrap).once
-        expect(recorder).to have_received(:call).with(:test).once
-        expect(test_spans.map(&:name)).not_to include("Untraced scenario")
-        expect(Datadog.send(:components).test_retries.should_retry?).to be false
-        expect(Datadog.logger).to have_received(:warn).with(
-          "Skipping tracing for test [Untraced scenario]: no active test session."
-        ).once
       end
     end
   end
