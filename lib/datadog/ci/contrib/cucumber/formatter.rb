@@ -108,9 +108,7 @@ module Datadog
           end
 
           def on_test_step_finished(event)
-            return unless test_tracing_component&.active_test
-
-            current_step_span = test_tracing_component.active_span
+            current_step_span = Datadog::CI.active_span
             return if current_step_span.nil?
 
             finish_span(current_step_span, event.result)

@@ -1003,28 +1003,83 @@ RSpec.describe "Cucumber instrumentation" do
     end
   end
 
+  context "tracing steps" do
+    let(:run_fixture_feature) { false }
+    let(:formatter) do
+      existing_runtime.formatters
+      existing_runtime.datadog_formatter
+    end
+    let(:event) { double("step event", test_step: "a step", result: double(passed?: true)) }
+
+    it "does not create a step span without an active test" do
+      expect(formatter.on_test_step_started(event)).to be_nil
+      expect { formatter.on_test_step_finished(event) }.not_to raise_error
+
+      expect(custom_spans).to be_empty
+    end
+
+    it "finishes an active custom span even without an active test" do
+      test_tracing.trace("a step", type: "step") do |span|
+        expect(test_tracing.active_test).to be_nil
+        formatter.on_test_step_finished(event)
+
+        expect(span.tracer_span).to be_finished
+        expect(span).to be_passed
+      end
+    end
+
+    it "leaves active test, suite, module, and session spans untouched" do
+      session = test_tracing.start_test_session
+      test_module = test_tracing.start_test_module("cucumber")
+      suite = test_tracing.start_test_suite("feature")
+      test = test_tracing.trace_test("scenario", "feature")
+
+      [test, suite, test_module, session].each do |span|
+        expect(Datadog::Tracing.active_span).to equal(span.tracer_span)
+
+        formatter.on_test_step_finished(event)
+
+        expect(span.tracer_span).not_to be_finished
+        expect(span).to be_undefined
+        span.finish
+      end
+    ensure
+      test&.finish
+      suite&.finish
+      test_module&.finish
+      session&.finish
+    end
+
+    it "leaves the suite open when step code finishes the test" do
+      session = test_tracing.start_test_session
+      test_module = test_tracing.start_test_module("cucumber")
+      suite = test_tracing.start_test_suite("feature")
+      test = test_tracing.trace_test("scenario", "feature")
+      step = formatter.on_test_step_started(event)
+
+      test.finish
+      expect(test_tracing.active_test).to be_nil
+      expect(Datadog::Tracing.active_span).to equal(suite.tracer_span)
+
+      formatter.on_test_step_finished(event)
+
+      expect(suite.tracer_span).not_to be_finished
+      expect(suite).to be_undefined
+    ensure
+      step&.finish
+      test&.finish
+      suite&.finish
+      test_module&.finish
+      session&.finish
+    end
+  end
+
   context "after losing its test session" do
     let(:run_fixture_feature) { false }
     let(:enable_retries_failed) { true }
     let(:enable_retries_new) { true }
     let(:enable_test_management) { true }
     let(:known_tests_set) { Set.new(["another.test."]) }
-
-    it "does not create a step span or finish an unrelated span without an active test" do
-      existing_runtime.formatters
-      formatter = existing_runtime.datadog_formatter
-      event = double("step event", test_step: "untraced step", result: double(passed?: true))
-
-      test_tracing.trace("user span") do |span|
-        formatter.on_test_step_started(event)
-        formatter.on_test_step_finished(event)
-
-        expect(Datadog::Tracing.active_span).to equal(span.tracer_span)
-        expect(span.tracer_span).not_to be_finished
-      end
-
-      expect(custom_spans.map(&:name)).to eq(["user span"])
-    end
 
     [:finished, :replaced].each do |session_state|
       [false, true].each do |fails|
