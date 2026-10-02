@@ -24,6 +24,9 @@ module Datadog
       #
       # Returns the existing test session if one is already active. There is at most a single test session per process.
       #
+      # Complete all `Datadog.configure` calls before starting the session.
+      # Concurrent configuration and session startup are unsupported.
+      #
       # The {.start_test_session} method is used to mark the start of the test session:
       # ```
       # Datadog::CI.start_test_session(

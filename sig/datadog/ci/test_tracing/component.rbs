@@ -21,6 +21,7 @@ module Datadog
 
         @local_test_suites_mode: bool
         @trace_setup_teardown_enabled: bool
+        @configuration_locked: bool
 
         attr_reader logical_test_session_name: String?
 
@@ -62,6 +63,8 @@ module Datadog
         def start_test_suite: (String test_suite_name, ?service: String?, ?tags: Hash[Symbol | String, untyped]) -> Datadog::CI::TestSuite
 
         def any_tests_started?: () -> bool
+
+        def configuration_locked?: () -> bool
 
         def active_test_session: () -> Datadog::CI::TestSession?
 

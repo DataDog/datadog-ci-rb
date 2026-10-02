@@ -67,6 +67,56 @@ RSpec.describe Datadog::CI::TestTracing::Component do
     context "without TestImpactAnalysis" do
       include_context "CI mode activated"
 
+      describe "#configuration_locked?" do
+        it "releases protection when joining a remote session fails before activation" do
+          remote_context = instance_double(Datadog::CI::TestTracing::Context)
+          allow(remote_context).to receive(:start_test_session).and_raise(DRb::DRbConnError, "Session unavailable")
+          allow(DRbObject).to receive(:new_with_uri).and_return(remote_context)
+          worker = described_class.new(
+            known_tests_client: instance_double(Datadog::CI::TestTracing::KnownTests),
+            context_service_uri: "drbunix:/unavailable-session"
+          )
+
+          expect { worker.start_test_session }.to raise_error(DRb::DRbConnError, "Session unavailable")
+
+          expect(worker.configuration_locked?).to be(false)
+        end
+
+        it "retains existing protection when a later session startup fails" do
+          test_tracing.trace_test("standalone", "suite") { |test| test.passed! }
+          allow(DRb).to receive(:start_service).and_raise(DRb::DRbConnError, "DRb startup failed")
+
+          expect { test_tracing.start_test_session }.to raise_error(DRb::DRbConnError, "DRb startup failed")
+
+          expect(test_tracing.configuration_locked?).to be(true)
+        end
+
+        it "protects session startup and releases protection after the session finishes" do
+          expect(test_tracing.configuration_locked?).to be(false)
+          session = test_tracing.start_test_session
+          expect(test_tracing.configuration_locked?).to be(true)
+
+          session.finish
+          expect(test_tracing.configuration_locked?).to be(false)
+        end
+
+        it "keeps workers protected after the parent session finishes without contacting DRb" do
+          session = test_tracing.start_test_session
+          worker = described_class.new(
+            known_tests_client: instance_double(Datadog::CI::TestTracing::KnownTests),
+            context_service_uri: test_tracing.context_service_uri
+          )
+          expect(worker.configuration_locked?).to be(false)
+          worker.start_test_session
+          expect(worker.configuration_locked?).to be(true)
+
+          session.finish
+          worker.deactivate_test_session
+          DRb.stop_service
+          expect(worker.configuration_locked?).to be(true)
+        end
+      end
+
       describe "#any_tests_started?" do
         before { test_tracing.start_test_session }
 
