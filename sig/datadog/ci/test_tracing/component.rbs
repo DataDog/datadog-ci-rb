@@ -63,6 +63,7 @@ module Datadog
 
         def any_tests_started?: () -> bool
 
+        # Returns nil when no session is active or the context lookup fails.
         def active_test_session: () -> Datadog::CI::TestSession?
 
         def active_test_module: () -> Datadog::CI::TestModule?
