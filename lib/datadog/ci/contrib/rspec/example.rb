@@ -197,7 +197,7 @@ module Datadog
             # ============================================
 
             def run_before_example
-              return super unless @datadog_test_tracing_component&.trace_setup_teardown_enabled
+              return super unless datadog_step_tracing_enabled?
 
               skip_exception = nil
               # @type var skip_exception: ::RSpec::Core::Pending::SkipDeclaredInExample?
@@ -213,7 +213,7 @@ module Datadog
             end
 
             def run_after_example
-              return super unless @datadog_test_tracing_component&.trace_setup_teardown_enabled
+              return super unless datadog_step_tracing_enabled?
 
               exception_before_hooks = exception
 
@@ -222,6 +222,11 @@ module Datadog
                 span&.failed!(exception: exception) if exception && exception != exception_before_hooks
                 result
               end
+            end
+
+            def datadog_step_tracing_enabled?
+              component = @datadog_test_tracing_component
+              !!(component&.active_test && component.trace_setup_teardown_enabled)
             end
 
             def datadog_tracing_enabled?

@@ -1010,6 +1010,22 @@ RSpec.describe "Cucumber instrumentation" do
     let(:enable_test_management) { true }
     let(:known_tests_set) { Set.new(["another.test."]) }
 
+    it "does not create a step span or finish an unrelated span without an active test" do
+      existing_runtime.formatters
+      formatter = existing_runtime.datadog_formatter
+      event = double("step event", test_step: "untraced step", result: double(passed?: true))
+
+      test_tracing.trace("user span") do |span|
+        formatter.on_test_step_started(event)
+        formatter.on_test_step_finished(event)
+
+        expect(Datadog::Tracing.active_span).to equal(span.tracer_span)
+        expect(span.tracer_span).not_to be_finished
+      end
+
+      expect(custom_spans.map(&:name)).to eq(["user span"])
+    end
+
     [:finished, :replaced].each do |session_state|
       [false, true].each do |fails|
         it "runs a #{fails ? "failing" : "passing"} scenario once when the session is #{session_state}" do
@@ -1025,17 +1041,24 @@ RSpec.describe "Cucumber instrumentation" do
               Feature: Session lifetime
                 Scenario: Lose session
                   Then lose the session
+                @untraced
                 Scenario: Untraced scenario
                   Then execute the untraced test
             FEATURE
             File.write(steps, <<~RUBY)
+              Before("@untraced") do
+                DatadogMissingSessionExecutionRecorder.call(:before, Datadog::CI.active_span)
+              end
+              After("@untraced") do
+                DatadogMissingSessionExecutionRecorder.call(:after, Datadog::CI.active_span)
+              end
               Then "lose the session" do
                 DatadogMissingSessionExecutionRecorder.call(:bootstrap)
                 Datadog::CI.active_test.set_tag("test.is_new", "false")
                 #{(session_state == :finished) ? "Datadog::CI.active_test_session.finish" : 'Datadog.configure { |c| c.service = "reconfigured" }'}
               end
               Then "execute the untraced test" do
-                DatadogMissingSessionExecutionRecorder.call(:test)
+                DatadogMissingSessionExecutionRecorder.call(:test, Datadog::CI.active_span)
                 raise "original test failure" if #{fails}
               end
             RUBY
@@ -1049,8 +1072,11 @@ RSpec.describe "Cucumber instrumentation" do
           end
 
           expect(recorder).to have_received(:call).with(:bootstrap).once
-          expect(recorder).to have_received(:call).with(:test).once
+          expect(recorder).to have_received(:call).with(:before, nil).once
+          expect(recorder).to have_received(:call).with(:test, nil).once
+          expect(recorder).to have_received(:call).with(:after, nil).once
           expect(test_spans.map(&:name)).not_to include("Untraced scenario")
+          expect(custom_spans.map(&:name)).not_to include(a_string_including("execute the untraced test"))
           expect(Datadog.send(:components).test_retries.should_retry?).to be false
           expect(Datadog.logger).to have_received(:warn).with(
             "Skipping tracing for test [Untraced scenario]: no active test session."

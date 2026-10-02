@@ -27,9 +27,9 @@ module Datadog
 
           def on_test_case_finished: (untyped event) -> (nil | untyped)
 
-          def on_test_step_started: (untyped event) -> untyped
+          def on_test_step_started: (untyped event) -> Datadog::CI::Span?
 
-          def on_test_step_finished: (untyped event) -> (nil | untyped)
+          def on_test_step_finished: (untyped event) -> void
 
           private
 
