@@ -129,7 +129,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
       "attempt-to-fix" => [false, {Datadog::CI::Ext::Test::TAG_IS_ATTEMPT_TO_FIX => "true"}]
     }.each do |strategy, (failed, tags)|
       [true, false].each do |with_block|
-        it "clears a pending #{strategy} retry when tracing #{with_block ? "with" : "without"} a block after session loss" do
+        it "blocks a pending #{strategy} retry when tracing #{with_block ? "with" : "without"} a block after session loss" do
           session = test_tracing.start_test_session(estimated_total_tests_count: 100)
           test_tracing.start_test_module("module")
           test_tracing.start_test_suite("suite")
@@ -138,6 +138,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           end
           expect(retries.should_retry?).to be true
           session.finish
+          expect(retries.should_retry?).to be false
 
           block = with_block ? proc { |test| expect(test).to be_nil } : nil
           test_tracing.trace_test("test", "suite", &block)
