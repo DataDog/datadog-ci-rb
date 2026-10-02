@@ -30,6 +30,8 @@ module Datadog
 
         private
 
+        def test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
+
         def current_retry_driver: () -> Datadog::CI::TestRetries::Driver::Base?
 
         def current_retry_driver=: (Datadog::CI::TestRetries::Driver::Base? driver) -> void

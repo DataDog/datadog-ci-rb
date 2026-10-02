@@ -169,6 +169,9 @@ module Datadog
 
         def active_test_session
           maybe_remote_context.active_test_session
+        rescue => e
+          Datadog.logger.error("Failed to get active test session: #{e.class}: #{e.message}")
+          nil
         end
 
         def active_test_module

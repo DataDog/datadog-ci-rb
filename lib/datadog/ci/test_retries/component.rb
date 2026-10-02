@@ -147,10 +147,16 @@ module Datadog
         end
 
         def should_retry?
+          return false unless test_tracing.active_test_session
+
           !!current_retry_driver&.should_retry?
         end
 
         private
+
+        def test_tracing
+          Datadog.send(:components).test_tracing
+        end
 
         def current_retry_driver
           Thread.current[FIBER_LOCAL_CURRENT_RETRY_DRIVER_KEY]
