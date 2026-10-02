@@ -403,6 +403,39 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
     let(:test_failed) { false }
 
+    [:record_test_started, :record_test_finished].each do |callback|
+      context "when #{callback} receives nil" do
+        before do
+          component.configure(library_settings, test_session)
+          component.reset_retries!
+        end
+
+        after { component.reset_retries! }
+
+        it "does not start retries" do
+          component.public_send(callback, nil)
+
+          expect(component.should_retry?).to be false
+        end
+
+        context "with a pending retry" do
+          let(:remote_flaky_test_retries_enabled) { true }
+          let(:test_failed) { true }
+
+          it "stops the current retries and allows retries for the next traced test" do
+            component.record_test_finished(test_span)
+            expect(component.should_retry?).to be true
+
+            component.public_send(callback, nil)
+            expect(component.should_retry?).to be false
+
+            component.record_test_finished(test_span)
+            expect(component.should_retry?).to be true
+          end
+        end
+      end
+    end
+
     context "when test is run only once (no retries)" do
       before do
         component.configure(library_settings, test_session)

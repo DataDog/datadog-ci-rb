@@ -126,7 +126,7 @@ module Datadog
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
           unless active_test_session
             Datadog.logger.warn("Skipping tracing for test [#{test_name}]: no active test session.")
-            test_retries.reset_retries!
+            test_retries.record_test_started(nil)
             return block&.call(nil)
           end
 

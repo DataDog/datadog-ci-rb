@@ -17,9 +17,9 @@ module Datadog
 
         def build_driver: (Datadog::CI::Test test) -> Datadog::CI::TestRetries::Driver::Base
 
-        def record_test_started: (Datadog::CI::Test test_span) -> void
+        def record_test_started: (Datadog::CI::Test? test_span) -> void
 
-        def record_test_finished: (Datadog::CI::Test test) -> void
+        def record_test_finished: (Datadog::CI::Test? test) -> void
 
         def reset_retries!: () -> void
 
