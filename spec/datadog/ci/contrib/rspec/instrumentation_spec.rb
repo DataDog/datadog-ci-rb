@@ -3417,49 +3417,4 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
   end
-
-  context "without an active test session" do
-    include_context "CI mode activated" do
-      let(:integration_name) { :rspec }
-      let(:trace_setup_teardown_enabled) { true }
-      let(:flaky_test_retries_enabled) { true }
-      let(:early_flake_detection_enabled) { true }
-      let(:test_management_enabled) { true }
-      let(:known_tests) { Set.new(["another.test."]) }
-    end
-
-    [:not_started, :finished, :replaced].each do |session_state|
-      [false, true].each do |fails|
-        it "runs a #{fails ? "failing" : "passing"} test once when the session is #{session_state}" do
-          session = test_tracing.start_test_session(estimated_total_tests_count: 100) unless session_state == :not_started
-          session.finish if session_state == :finished
-          Datadog.configure { |c| c.service = "reconfigured" } if session_state == :replaced
-          allow(Datadog.logger).to receive(:warn).and_call_original
-          hook_calls = []
-
-          result = with_new_rspec_environment do
-            group = RSpec.describe "Untraced test" do
-              before { hook_calls << :before }
-              after { hook_calls << :after }
-
-              it "runs once" do
-                hook_calls << :test
-                expect(1).to eq(fails ? 2 : 1)
-              end
-            end
-            group.run
-          end
-
-          expect(result).to eq(!fails)
-          expect(hook_calls).to eq([:before, :test, :after])
-          expect(test_spans).to be_empty
-          expect(custom_spans).to be_empty
-          expect(Datadog.send(:components).test_retries.should_retry?).to be false
-          expect(Datadog.logger).to have_received(:warn).with(/Skipping tracing for test .*no active test session/).once
-        ensure
-          session&.finish
-        end
-      end
-    end
-  end
 end

@@ -124,11 +124,6 @@ module Datadog
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
-          unless active_test_session
-            Datadog.logger.warn("Skipping tracing for test [#{test_name}]: no active test session.")
-            return block&.call(nil)
-          end
-
           test_name = Utils::TestName.normalize(test_name)
           test_suite_name = Utils::TestName.normalize(test_suite_name)
 

@@ -25,8 +25,6 @@ RSpec.describe "Minitest instrumentation" do
       let(:integration_name) { :minitest }
     end
 
-    before { test_tracing.start_test_session }
-
     it "uses repo name as default service name" do
       klass = Class.new(Minitest::Test) do
         def test_foo
@@ -51,12 +49,9 @@ RSpec.describe "Minitest instrumentation" do
       let(:static_dependencies_tracking_enabled) { true }
     end
 
-    let(:run_full_suite) { false }
-
     before do
       # required to call .runnable_methods
       Minitest.seed = 1
-      test_tracing.start_test_session unless run_full_suite
     end
 
     it "creates span for test" do
@@ -95,8 +90,8 @@ RSpec.describe "Minitest instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "68")
-      expect(first_test_span).to have_test_tag(:source_end, "69")
+      expect(first_test_span).to have_test_tag(:source_start, "63")
+      expect(first_test_span).to have_test_tag(:source_end, "64")
 
       expect(first_test_span).to have_test_tag(
         :codeowners,
@@ -105,7 +100,7 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     it "creates spans for several tests" do
-      expect(Datadog::CI::Ext::Environment).not_to receive(:tags)
+      expect(Datadog::CI::Ext::Environment).to receive(:tags).once.and_call_original
 
       num_tests = 20
 
@@ -480,8 +475,6 @@ RSpec.describe "Minitest instrumentation" do
     context "run minitest suite" do
       include_context "Telemetry spy"
 
-      let(:run_full_suite) { true }
-
       before do
         Minitest.run([])
       end
@@ -568,7 +561,7 @@ RSpec.describe "Minitest instrumentation" do
             :source_file,
             "spec/datadog/ci/contrib/minitest/instrumentation_spec.rb"
           )
-          expect(first_test_suite_span).to have_test_tag(:source_start, "495")
+          expect(first_test_suite_span).to have_test_tag(:source_start, "488")
           expect(first_test_suite_span).to have_test_tag(
             :codeowners,
             "[\"@DataDog/ci-app-libraries\"]"
@@ -2099,7 +2092,6 @@ RSpec.describe "Minitest instrumentation" do
 
     before do
       Minitest.seed = 1
-      test_tracing.start_test_session
     end
 
     it "normalizes unstable Minitest::Test method and suite names" do
@@ -2309,51 +2301,6 @@ RSpec.describe "Minitest instrumentation" do
         expect(span).to have_fail_status
         expect(span).not_to have_test_tag(:skip_reason)
         expect(span).not_to have_test_tag("test.session.empty_reason")
-      end
-    end
-  end
-
-  context "without an active test session" do
-    include_context "CI mode activated" do
-      let(:integration_name) { :minitest }
-      let(:trace_setup_teardown_enabled) { true }
-      let(:flaky_test_retries_enabled) { true }
-      let(:early_flake_detection_enabled) { true }
-      let(:test_management_enabled) { true }
-      let(:known_tests) { Set.new(["another.test."]) }
-    end
-
-    [:not_started, :finished, :replaced].each do |session_state|
-      [false, true].each do |fails|
-        it "runs a #{fails ? "failing" : "passing"} test once when the session is #{session_state}" do
-          session = test_tracing.start_test_session(estimated_total_tests_count: 100) unless session_state == :not_started
-          session.finish if session_state == :finished
-          Datadog.configure { |c| c.service = "reconfigured" } if session_state == :replaced
-          allow(Datadog.logger).to receive(:warn).and_call_original
-          hook_calls = []
-
-          klass = Class.new(Minitest::Test) do
-            define_method(:setup) { hook_calls << :before }
-            define_method(:teardown) { hook_calls << :after }
-
-            define_method(:test_example) do
-              hook_calls << :test
-              assert_equal(fails ? 2 : 1, 1)
-            end
-          end
-          result = Minitest.run_one_method(klass, "test_example")
-
-          expect(result.passed?).to eq(!fails)
-          expect(result.error?).to be false
-          expect(result.failures.length).to eq(fails ? 1 : 0)
-          expect(hook_calls).to eq([:before, :test, :after])
-          expect(test_spans).to be_empty
-          expect(custom_spans).to be_empty
-          expect(Datadog.send(:components).test_retries.should_retry?).to be false
-          expect(Datadog.logger).to have_received(:warn).with(/Skipping tracing for test .*no active test session/).once
-        ensure
-          session&.finish
-        end
       end
     end
   end

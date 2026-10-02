@@ -251,10 +251,10 @@ module Datadog
       # @return [Object] If a block is provided, returns the result of the block execution.
       # @return [Datadog::CI::Test] If no block is provided, returns the active,
       #         unfinished {Datadog::CI::Test}.
-      # @return [nil] if no block is provided and CI mode is disabled or no test session is active.
+      # @return [nil] if no block is provided and CI mode is disabled.
       # @yield Optional block where newly created {Datadog::CI::Test} captures the execution.
       # @yieldparam [Datadog::CI::Test] ci_test the newly created and active [Datadog::CI::Test]
-      # @yieldparam [nil] if CI mode is disabled or no test session is active
+      # @yieldparam [nil] if CI mode is disabled
       def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
         Utils::Telemetry.inc(
           Ext::Telemetry::METRIC_MANUAL_API_EVENTS,
@@ -286,7 +286,7 @@ module Datadog
       # @param [String] service the service name for this span (optional, inherited from test session if not provided)
       # @param [Hash<String,String>] tags extra tags which should be added to the test.
       # @return [Datadog::CI::Test] the active, unfinished {Datadog::CI::Test}.
-      # @return [nil] if CI mode is disabled or no test session is active.
+      # @return [nil] if CI mode is disabled.
       def start_test(test_name, test_suite_name, service: nil, tags: {})
         Utils::Telemetry.inc(
           Ext::Telemetry::METRIC_MANUAL_API_EVENTS,

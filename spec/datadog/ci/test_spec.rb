@@ -998,7 +998,6 @@ RSpec.describe Datadog::CI::Test do
       allow_any_instance_of(described_class).to receive(:test_tracing).and_call_original
 
       @started_peek_duration_tests = []
-      peek_duration_test_tracing.start_test_session
     end
 
     after do

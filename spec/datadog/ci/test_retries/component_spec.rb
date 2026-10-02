@@ -372,6 +372,48 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
   end
 
+  context "after losing its test session" do
+    include_context "CI mode activated" do
+      let(:flaky_test_retries_enabled) { true }
+      let(:early_flake_detection_enabled) { true }
+      let(:test_management_enabled) { true }
+      let(:known_tests) { Set.new(["suite.test."]) }
+    end
+
+    let(:component) { Datadog.send(:components).test_retries }
+
+    {
+      "ATR" => [true, {}],
+      "EFD" => [false, {Datadog::CI::Ext::Test::TAG_IS_NEW => "true"}],
+      "attempt-to-fix" => [false, {Datadog::CI::Ext::Test::TAG_IS_ATTEMPT_TO_FIX => "true"}]
+    }.each do |strategy, (failed, tags)|
+      it "does not run a pending #{strategy} retry after the session finishes" do
+        session = test_tracing.start_test_session(estimated_total_tests_count: 100)
+        test_module = test_tracing.start_test_module("module")
+        suite = test_tracing.start_test_suite("suite")
+        executions = 0
+
+        component.with_retries do
+          executions += 1
+          test_tracing.trace_test("test", "suite", tags: tags.dup) do |test|
+            failed ? test.failed! : test.passed!
+          end
+          expect(component.should_retry?).to be true
+
+          session.finish
+
+          expect(component.should_retry?).to be false
+        end
+
+        expect(executions).to eq(1)
+      ensure
+        suite&.finish
+        test_module&.finish
+        session&.finish
+      end
+    end
+  end
+
   describe "#tag_last_retry" do
     let(:test_span) do
       instance_double(
