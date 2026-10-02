@@ -3417,4 +3417,44 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
   end
+
+  context "when the test session disappears with retries enabled" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:flaky_test_retries_enabled) { true }
+      let(:retry_failed_tests_max_attempts) { 2 }
+    end
+
+    [false, true].each do |finish_session|
+      it(finish_session ? "does not retry after the session finishes" : "retries while the session remains active") do
+        executions = 0
+        sessions_before = []
+        sessions_after = []
+        failure = StandardError.new("original test failure")
+        example = nil
+
+        exit_code = with_new_rspec_environment do
+          spec = RSpec.describe "Session lifetime" do
+            it "fails" do
+              executions += 1
+              sessions_before << Datadog::CI.active_test_session
+              Datadog::CI.active_test_session&.finish if finish_session
+              sessions_after << Datadog::CI.active_test_session
+              raise failure
+            end
+          end
+          example = spec.examples.first
+
+          options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format progress])
+          RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+        end
+
+        expect(sessions_before.first).not_to be_nil
+        expect(executions).to eq(finish_session ? 1 : retry_failed_tests_max_attempts + 1)
+        expect(sessions_after).to all(be_nil) if finish_session
+        expect(exit_code).to eq(1)
+        expect(example.execution_result.exception).to equal(failure)
+      end
+    end
+  end
 end
