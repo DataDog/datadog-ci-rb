@@ -62,13 +62,30 @@ RSpec.describe Datadog::CI::Configuration::Reconfiguration do
     expect(Datadog::CI.active_test_session).to equal(session)
   end
 
-  it "preserves components if another thread starts a session during configuration" do
+  it "allows recovery through configuration when DRb startup fails before creating a session" do
+    allow(DRb).to receive(:start_service).and_raise(DRb::DRbConnError, "DRb startup failed")
+
+    expect { Datadog::CI.start_test_session }.to raise_error(DRb::DRbConnError, "DRb startup failed")
+    expect(Datadog::CI.active_test_session).to be_nil
+
+    Datadog.configure { |c| c.service = "recovered-service" }
+
+    expect(Datadog.configuration.service).to eq("recovered-service")
+  end
+
+  it "keeps configuration locked when setup fails after creating a session" do
     original = Datadog.send(:components)
+    allow(original.ci_remote).to receive(:configure).and_raise("Remote configuration failed")
 
-    Datadog.configure { Thread.new { Datadog::CI.start_test_session }.value }
+    expect { Datadog::CI.start_test_session }.to raise_error("Remote configuration failed")
+    session = Datadog::CI.active_test_session
+    expect(session).not_to be_nil
 
+    Datadog.configure { |c| c.service = "ignored-service" }
+
+    expect(Datadog.configuration.service).to eq("original-service")
     expect(Datadog.send(:components)).to equal(original)
-    expect(Datadog::CI.active_test_session).not_to be_nil
+    expect(Datadog::CI.active_test_session).to equal(session)
   end
 
   it "allows reconfiguration after the owning session finishes, including empty sessions" do

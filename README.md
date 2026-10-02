@@ -32,6 +32,12 @@ the block. This preserves the session, quarantine properties, and remote retry
 settings through test setup and cleanup. Protection starts before the first test
 because session startup already creates this state.
 
+Within each process, configuration must finish before starting or joining a test
+session, or tracing the first standalone test. Concurrent configuration and
+session startup are unsupported; the guard does not synchronize them. Custom
+threaded runners must finish configuration before launching threads that start
+the session or standalone tests.
+
 Reconfiguration is allowed again after the owning session finishes, including an
 empty session. Forked workers inherit protection; fresh distributed workers can
 configure themselves before joining the session and remain protected afterward

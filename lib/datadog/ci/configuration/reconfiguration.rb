@@ -18,7 +18,8 @@ module Datadog
         private
 
         def replace_components!(settings, old)
-          # A session may have started while the configuration block was running.
+          # A session may have started inside the configuration block on this thread.
+          # Concurrent session startup and reconfiguration are unsupported.
           if old.test_tracing&.configuration_locked?
             warn_about_ci_reconfiguration
             return old

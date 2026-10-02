@@ -97,6 +97,7 @@ module Datadog
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: nil, local_test_suites_mode: true)
           # Lock before session setup, which already creates state that reconfiguration would discard.
           # Forks inherit this flag; fresh workers acquire it when joining the distributed session.
+          configuration_was_locked = @configuration_locked
           @configuration_locked = true
           @local_test_suites_mode = local_test_suites_mode
 
@@ -109,6 +110,11 @@ module Datadog
           on_test_session_started(test_session)
 
           test_session
+        ensure
+          # Allow recovery after failed startup, preserving any earlier session/test protection.
+          if test_session.nil? && @context.active_test_session.nil?
+            @configuration_locked = configuration_was_locked
+          end
         end
 
         def start_test_module(test_module_name, service: nil, tags: {})
