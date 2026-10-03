@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 96ddffc4cdb911f6567765ac8a18b207d076d9cc
+  revision: cc4e00b69a181b8771ae18a3d1ebba879d396961
   branch: master
   specs:
     datadog (2.44.0.dev)
@@ -33,7 +33,7 @@ GEM
     bigdecimal (4.1.3)
     builder (3.3.0)
     cgi (0.5.2)
-    ci-queue (0.100.0)
+    ci-queue (0.101.0)
       logger
     climate_control (1.2.0)
     concurrent-ruby (1.3.8)
