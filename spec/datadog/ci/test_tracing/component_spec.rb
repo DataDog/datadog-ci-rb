@@ -82,15 +82,6 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           expect(worker.configuration_locked?).to be(false)
         end
 
-        it "retains existing protection when a later session startup fails" do
-          test_tracing.trace_test("standalone", "suite") { |test| test.passed! }
-          allow(DRb).to receive(:start_service).and_raise(DRb::DRbConnError, "DRb startup failed")
-
-          expect { test_tracing.start_test_session }.to raise_error(DRb::DRbConnError, "DRb startup failed")
-
-          expect(test_tracing.configuration_locked?).to be(true)
-        end
-
         it "protects session startup and releases protection after the session finishes" do
           expect(test_tracing.configuration_locked?).to be(false)
           session = test_tracing.start_test_session
@@ -113,6 +104,9 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           session.finish
           worker.deactivate_test_session
           DRb.stop_service
+          expect(worker.configuration_locked?).to be(true)
+
+          expect { worker.start_test_session }.to raise_error(DRb::DRbConnError)
           expect(worker.configuration_locked?).to be(true)
         end
       end

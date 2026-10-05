@@ -111,7 +111,7 @@ module Datadog
 
           test_session
         ensure
-          # Allow recovery after failed startup, preserving any earlier session/test protection.
+          # Allow recovery after failed startup, preserving any earlier session protection.
           if test_session.nil? && @context.active_test_session.nil?
             @configuration_locked = configuration_was_locked
           end
@@ -134,8 +134,6 @@ module Datadog
         end
 
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
-          # Custom integrations can trace tests without explicitly starting a session.
-          @configuration_locked = true
           test_name = Utils::TestName.normalize(test_name)
           test_suite_name = Utils::TestName.normalize(test_suite_name)
 

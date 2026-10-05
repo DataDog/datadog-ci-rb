@@ -101,14 +101,14 @@ RSpec.describe Datadog::CI::Configuration::Reconfiguration do
     expect(Datadog.configuration.ci.enabled).to be(true)
   end
 
-  it "protects standalone tests through subsequent cleanup calls" do
+  it "allows reconfiguration after tests traced without a session" do
     original = Datadog.send(:components)
     Datadog::CI.trace_test("standalone", "suite") { |test| test.passed! }
 
     Datadog.configure { |c| c.ci.enabled = false }
 
-    expect(Datadog.configuration.ci.enabled).to be(true)
-    expect(Datadog.send(:components)).to equal(original)
+    expect(Datadog.configuration.ci.enabled).to be(false)
+    expect(Datadog.send(:components)).not_to equal(original)
   end
 
   context "with test management enabled and Auto Test Retry disabled remotely" do
