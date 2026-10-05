@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 3ffe5d6222a6b5110d79ab2aa252a5171f2545c7
+  revision: b328f4c5f132ebbaf7a8128bc4aca8eb9bae43e0
   branch: master
   specs:
     datadog (2.44.0.dev)
@@ -14,7 +14,7 @@ GIT
 PATH
   remote: ..
   specs:
-    datadog-ci (1.40.0)
+    datadog-ci (1.41.0)
       datadog (~> 2.4)
       drb
       msgpack
@@ -60,7 +60,7 @@ GEM
     msgpack (1.8.5)
     os (1.1.4)
     ostruct (0.6.3)
-    parallel (2.2.0)
+    parallel (2.3.0)
     parallel_tests (5.8.0)
       parallel
     pp (0.6.4)
@@ -140,7 +140,7 @@ CHECKSUMS
   climate_control (1.2.0) sha256=36b21896193fa8c8536fa1cd843a07cf8ddbd03aaba43665e26c53ec1bd70aa5
   crack (1.0.1) sha256=ff4a10390cd31d66440b7524eb1841874db86201d5b70032028553130b6d4c7e
   datadog (2.44.0.dev)
-  datadog-ci (1.40.0)
+  datadog-ci (1.41.0)
   datadog-ruby_core_source (3.5.5) sha256=5df55ea06feda22e5d4b7db62a70f19a86660bd06d3a3ff739d2f549eaff45e6
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
@@ -159,7 +159,7 @@ CHECKSUMS
   msgpack (1.8.5) sha256=97419eaa7b35dfe3e462c0e6c1a3dfdcbfc8756605c09e46e4c6daef127517ba
   os (1.1.4) sha256=57816d6a334e7bd6aed048f4b0308226c5fb027433b67d90a9ab435f35108d3f
   ostruct (0.6.3) sha256=95a2ed4a4bd1d190784e666b47b2d3f078e4a9efda2fccf18f84ddc6538ed912
-  parallel (2.2.0) sha256=e1059c5fd7b649558a0aec38a769f06a42942bdb40503d005a59c352fe011cd8
+  parallel (2.3.0) sha256=f75a3e904101ce6a1ccb6b8dc800cbafd42166d83330192438dcf29395167a6f
   parallel_tests (5.8.0) sha256=181898cbee2ffb1c796274ce31d27f792a421324609bfc7e9b5531d929d91eda
   pp (0.6.4) sha256=dfcb0fce700c41456265922884f9fe195d7fbb0674a3578e6c0f69588e82b570
   prettyprint (0.2.0) sha256=2bc9e15581a94742064a3cc8b0fb9d45aae3d03a1baa6ef80922627a0766f193

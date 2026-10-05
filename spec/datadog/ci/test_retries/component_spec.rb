@@ -284,6 +284,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
 
     before do
+      allow(test_tracing).to receive(:active_test_session).and_return(test_session)
       component.configure(library_settings, test_session)
     end
 
@@ -329,6 +330,87 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       let(:test_attempt_to_fix) { true }
 
       it { is_expected.to eq(remote_attempt_to_fix_retries_count + 1) }
+    end
+  end
+
+  describe "#should_retry?" do
+    let(:active_test_session) { test_session }
+    let(:test_tracing) { instance_double(Datadog::CI::TestTracing::Component, active_test_session: active_test_session) }
+    let(:test_span) { instance_double(Datadog::CI::Test, peek_duration: 1.0, record_final_status: nil) }
+    let(:retry_driver) do
+      instance_spy(Datadog::CI::TestRetries::Driver::Base, should_retry?: true, tracks_retry_results?: false)
+    end
+
+    before do
+      allow(Datadog.send(:components)).to receive(:test_tracing).and_return(test_tracing)
+      allow(component).to receive(:build_driver).and_return(retry_driver)
+      component.record_test_finished(test_span)
+    end
+
+    after { component.reset_retries! }
+
+    it "consults the retry driver while a session is active" do
+      expect(component.should_retry?).to be true
+      expect(retry_driver).to have_received(:should_retry?).at_least(:once)
+    end
+
+    context "without an active session" do
+      let(:active_test_session) { nil }
+
+      it "returns false without consulting the retry driver" do
+        expect(component.should_retry?).to be false
+        expect(retry_driver).not_to have_received(:should_retry?)
+      end
+    end
+
+    it "checks the current tracing component after replacement" do
+      replacement = instance_double(Datadog::CI::TestTracing::Component, active_test_session: nil)
+      allow(Datadog.send(:components)).to receive(:test_tracing).and_return(replacement)
+      expect(retry_driver).not_to receive(:should_retry?)
+
+      expect(component.should_retry?).to be false
+    end
+  end
+
+  context "after losing its test session" do
+    include_context "CI mode activated" do
+      let(:flaky_test_retries_enabled) { true }
+      let(:early_flake_detection_enabled) { true }
+      let(:test_management_enabled) { true }
+      let(:known_tests) { Set.new(["suite.test."]) }
+    end
+
+    let(:component) { Datadog.send(:components).test_retries }
+
+    {
+      "ATR" => [true, {}],
+      "EFD" => [false, {Datadog::CI::Ext::Test::TAG_IS_NEW => "true"}],
+      "attempt-to-fix" => [false, {Datadog::CI::Ext::Test::TAG_IS_ATTEMPT_TO_FIX => "true"}]
+    }.each do |strategy, (failed, tags)|
+      it "does not run a pending #{strategy} retry after the session finishes" do
+        session = test_tracing.start_test_session(estimated_total_tests_count: 100)
+        test_module = test_tracing.start_test_module("module")
+        suite = test_tracing.start_test_suite("suite")
+        executions = 0
+
+        component.with_retries do
+          executions += 1
+          test_tracing.trace_test("test", "suite", tags: tags.dup) do |test|
+            failed ? test.failed! : test.passed!
+          end
+          expect(component.should_retry?).to be true
+
+          session.finish
+
+          expect(component.should_retry?).to be false
+        end
+
+        expect(executions).to eq(1)
+      ensure
+        suite&.finish
+        test_module&.finish
+        session&.finish
+      end
     end
   end
 
@@ -402,6 +484,10 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
 
     let(:test_failed) { false }
+
+    before do
+      allow(Datadog.send(:components).test_tracing).to receive(:active_test_session).and_return(test_session)
+    end
 
     context "when test is run only once (no retries)" do
       before do

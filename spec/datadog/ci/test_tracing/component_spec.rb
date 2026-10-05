@@ -864,6 +864,40 @@ RSpec.describe Datadog::CI::TestTracing::Component do
             expect(subject).to be(test_session)
           end
         end
+
+        context "when the parent DRb service disappears" do
+          let(:flaky_test_retries_enabled) { true }
+
+          it "logs the lookup failure, returns nil, and stops pending retries" do
+            parent = test_tracing
+            session = parent.start_test_session
+            worker = described_class.new(
+              known_tests_client: instance_double(Datadog::CI::TestTracing::KnownTests),
+              context_service_uri: parent.context_service_uri
+            )
+            retries = Datadog.send(:components).test_retries
+            retries.reset_retries!
+            parent.trace_test("test", "suite") { |test| test.failed! }
+            allow(Datadog.send(:components)).to receive(:test_tracing).and_return(worker)
+
+            expect(worker.active_test_session).to be(session)
+            expect(retries.should_retry?).to be(true)
+
+            DRb.fetch_server(parent.context_service_uri).stop_service
+            allow(Datadog.logger).to receive(:error)
+
+            expect(worker.active_test_session).to be_nil
+            expect(retries.should_retry?).to be(false)
+            expect(Datadog.logger).to have_received(:error).with(
+              a_string_starting_with("Failed to get active test session: DRb::DRbConnError:")
+            ).twice
+          ensure
+            allow(Datadog.send(:components)).to receive(:test_tracing).and_return(parent)
+            retries&.reset_retries!
+            session&.finish
+            DRb.fetch_server(parent.context_service_uri)&.stop_service
+          end
+        end
       end
 
       describe "#active_test_module" do
