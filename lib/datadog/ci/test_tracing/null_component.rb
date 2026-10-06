@@ -16,6 +16,10 @@ module Datadog
           @local_test_suites_mode = true
         end
 
+        def environment_tags
+          {}
+        end
+
         def configure(_, _)
         end
 

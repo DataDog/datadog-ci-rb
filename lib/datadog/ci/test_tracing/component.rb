@@ -84,6 +84,10 @@ module Datadog
           @local_test_suites_mode = true
         end
 
+        def environment_tags
+          @context.environment_tags
+        end
+
         def configure(library_configuration, test_session)
           return unless library_configuration.known_tests_enabled?
 

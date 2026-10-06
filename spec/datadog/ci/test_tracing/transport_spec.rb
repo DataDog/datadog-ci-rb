@@ -21,12 +21,15 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
   before do
     allow(Datadog.logger).to receive(:warn)
 
-    # this is needed to configure all the components correctky
+    allow(Datadog::CI::Ext::Environment).to receive(:tags).and_return(environment_tags) if environment_tags
+
+    # this is needed to configure all the components correctly
     Datadog::CI.start_test_session
     Datadog::CI.start_test_module("arithmetic")
     Datadog::CI.start_test_suite("calculator_tests")
   end
 
+  let(:environment_tags) { nil }
   let(:dd_env) { nil }
   let(:max_payload_size) { 4 * 1024 * 1024 }
 
@@ -53,19 +56,17 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           expect(metadata).to include("runtime-id", "library_version")
           expect(metadata["language"]).to eq("ruby")
 
-          Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
-            type_metadata = payload["metadata"][type]
-            expect(type_metadata).to include(
-              "test_session.name" => logical_test_session_name,
-              "_dd.library_capabilities.test_impact_analysis" => "1",
-              "_dd.library_capabilities.early_flake_detection" => "1",
-              "_dd.library_capabilities.auto_test_retries" => "1",
-              "_dd.library_capabilities.test_management.quarantine" => "1",
-              "_dd.library_capabilities.test_management.disable" => "1",
-              "_dd.library_capabilities.test_management.attempt_to_fix" => "5",
-              "_dd.test.is_user_provided_service" => "true"
-            )
-          end
+          expect(payload["metadata"].keys).to contain_exactly("*", "test_levels")
+          expect(payload["metadata"]["test_levels"]).to include(
+            "test_session.name" => logical_test_session_name,
+            "_dd.library_capabilities.test_impact_analysis" => "1",
+            "_dd.library_capabilities.early_flake_detection" => "1",
+            "_dd.library_capabilities.auto_test_retries" => "1",
+            "_dd.library_capabilities.test_management.quarantine" => "1",
+            "_dd.library_capabilities.test_management.disable" => "1",
+            "_dd.library_capabilities.test_management.attempt_to_fix" => "5",
+            "_dd.test.is_user_provided_service" => "true"
+          )
 
           events = payload["events"]
           expect(events.count).to eq(1)
@@ -140,8 +141,104 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
 
           expect(payload["metadata"]["*"]["env"]).to eq("e" * 5000)
 
-          Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
-            expect(payload["metadata"][type]["test_session.name"]).to eq("s" * 5000)
+          expect(payload["metadata"]["test_levels"]["test_session.name"]).to eq("s" * 5000)
+        end
+      end
+    end
+
+    context "with shared environment metadata" do
+      let(:environment_tags) do
+        {
+          "ci.job.name" => "tests",
+          "ci.pipeline.id" => "123",
+          "git.branch" => "main",
+          "git.commit.message" => "m" * 5001,
+          "git.commit.head.sha" => "a" * 40,
+          "git.pull_request.base_branch" => "main",
+          "ci.custom" => "custom CI metadata",
+          "git.custom" => "custom Git metadata",
+          "_dd.ci.env_vars" => '{"JOB_ID":"123"}',
+          "pr.number" => "42"
+        }
+      end
+
+      before do
+        produce_test_session_trace(tests_count: 4, with_http_span: true)
+      end
+
+      it "deduplicates every test event type without modifying original spans" do
+        original_metadata = spans.map { |span| span.meta.dup }
+        transport.send_events(traces)
+
+        expect(api).to have_received(:citestcycle_request) do |args|
+          payload = MessagePack.unpack(args[:payload])
+          shared_metadata = payload["metadata"]["test_levels"]
+          expect(shared_metadata).to include(
+            "ci.job.name" => "tests",
+            "ci.pipeline.id" => "123",
+            "git.branch" => "main",
+            "git.commit.message" => "m" * 5000,
+            "git.commit.head.sha" => "a" * 40,
+            "git.pull_request.base_branch" => "main"
+          )
+          expect(payload["metadata"]["*"]).not_to have_key("git.branch")
+          expect(shared_metadata).not_to include("ci.custom", "git.custom", "_dd.ci.env_vars", "pr.number")
+
+          test_events = payload["events"].reject { |event| event["type"] == "span" }
+          expect(test_events.map { |event| event["type"] }.uniq).to match_array(Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES)
+          test_events.each do |event|
+            expect(event["content"]["meta"].keys & shared_metadata.keys).to be_empty
+            expect(event["content"]["meta"]).to include(
+              "ci.custom" => "custom CI metadata",
+              "git.custom" => "custom Git metadata",
+              "_dd.ci.env_vars" => '{"JOB_ID":"123"}',
+              "pr.number" => "42"
+            )
+          end
+        end
+        expect(spans.map(&:meta)).to eq(original_metadata)
+      end
+
+      it "preserves event overrides and metadata on ordinary spans" do
+        first_test_span.set_tag("git.branch", "feature")
+        first_test_span.set_tag("test_session.name", "custom session")
+        first_custom_span.set_tag("git.branch", "main")
+        first_custom_span.set_tag("ci.job.name", "tests")
+        first_custom_span.set_tag("test_session.name", logical_test_session_name)
+
+        transport.send_events(traces)
+
+        expect(api).to have_received(:citestcycle_request) do |args|
+          events = MessagePack.unpack(args[:payload])["events"]
+          test_event = events.find { |event| event["content"]["span_id"] == first_test_span.id }
+          expect(test_event["content"]["meta"]).to include("git.branch" => "feature", "test_session.name" => "custom session")
+          span_event = events.find { |event| event["content"]["span_id"] == first_custom_span.id }
+          expect(span_event["content"]["meta"]).to include(
+            "git.branch" => "main", "ci.job.name" => "tests", "test_session.name" => logical_test_session_name
+          )
+        end
+      end
+
+      context "when splitting payloads" do
+        let(:max_payload_size) { 2500 }
+
+        it "includes shared metadata in every chunk so removed tags can be restored" do
+          expect(Datadog::CI.send(:test_tracing)).to receive(:environment_tags).once.and_call_original
+          payloads = []
+          allow(api).to receive(:citestcycle_request) do |args|
+            payloads << MessagePack.unpack(args[:payload])
+            api
+          end
+
+          transport.send_events(traces)
+
+          expect(payloads.size).to be > 1
+          expect(payloads.sum { |payload| payload["events"].size }).to eq(spans.size)
+          payloads.each do |payload|
+            expect(payload["metadata"]["test_levels"]).to include("ci.job.name" => "tests", "git.branch" => "main")
+            payload["events"].reject { |event| event["type"] == "span" }.each do |event|
+              expect(event["content"]["meta"]).not_to include("ci.job.name", "git.branch", "git.commit.message")
+            end
           end
         end
       end

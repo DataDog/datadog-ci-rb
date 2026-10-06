@@ -43,6 +43,10 @@ module Datadog
           @any_tests_started = false
         end
 
+        def environment_tags
+          @environment_tags || {}
+        end
+
         def start_test_session(service: nil, tags: {})
           @process_context.fetch_or_activate_test_session do
             @mutex.synchronize { @any_tests_started = false }

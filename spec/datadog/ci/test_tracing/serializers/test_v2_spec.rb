@@ -61,6 +61,18 @@ RSpec.describe Datadog::CI::TestTracing::Serializers::TestV2 do
       end
     end
 
+    context "without shared metadata" do
+      before do
+        produce_test_session_trace
+        first_test_span.set_tag("git.branch", "main")
+        first_test_span.set_tag("ci.job.name", "tests")
+      end
+
+      it "keeps environment tags when serialized without a payload header" do
+        expect(meta).to include("git.branch" => "main", "ci.job.name" => "tests")
+      end
+    end
+
     context "trace several tests executions with test visibility" do
       let(:test_spans) { spans.select { |span| span.type == "test" } }
       subject { test_spans.map { |span| described_class.new(trace_for_span(span), span) } }
