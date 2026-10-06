@@ -92,8 +92,7 @@ RSpec.configure do |config|
   # can create noise for test assertions. For example:
   # +expect(Datadog).to receive(:shutdown!).once+
   config.before do
-    Datadog.shutdown!
-    # without_warnings { Datadog.configuration.reset! }
-    Datadog.configuration.reset!
+    # Dispose of components as well as settings, including any unfinished CI lifecycle.
+    Datadog.send(:reset!)
   end
 end

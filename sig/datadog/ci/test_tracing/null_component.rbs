@@ -30,6 +30,8 @@ module Datadog
 
         def any_tests_started?: () -> bool
 
+        def configuration_locked?: () -> bool
+
         def active_test_session: () -> nil
 
         def active_test_module: () -> nil

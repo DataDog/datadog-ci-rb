@@ -64,3 +64,14 @@ module Datadog
     end
   end
 end
+
+module Datadog
+  module Core
+    module Configuration
+      class Components
+        # Components initialized before CI loads have no test tracing component.
+        attr_reader test_tracing: (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)?
+      end
+    end
+  end
+end

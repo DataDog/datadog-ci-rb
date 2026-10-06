@@ -51,6 +51,10 @@ module Datadog
           false
         end
 
+        def configuration_locked?
+          false
+        end
+
         def active_test_session
         end
 

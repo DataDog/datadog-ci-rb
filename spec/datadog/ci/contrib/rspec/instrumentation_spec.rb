@@ -27,6 +27,7 @@ RSpec.describe "RSpec instrumentation" do
     with_test_outside_context: false,
     with_invalid_end_line: false,
     with_skipped_test: false,
+    with_reconfiguration: false,
     unskippable: {
       test: false,
       context: false,
@@ -50,6 +51,13 @@ RSpec.describe "RSpec instrumentation" do
 
     with_new_rspec_environment do
       spec = RSpec.describe "SomeTest", suite_meta do
+        if with_reconfiguration
+          before(:context) { Datadog.configure { |c| c.service = "context-setup" } }
+          before { Datadog.configure { |c| c.service = "example-setup" } }
+          after { Datadog.configure { |c| c.service = "example-cleanup" } }
+          after(:context) { Datadog.configure { |c| c.ci.enabled = false } }
+        end
+
         before(:all) do
           before_all_spy_local.call
         end
@@ -192,8 +200,8 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_span).to have_test_tag(:source_start, "164")
-      expect(first_test_span).to have_test_tag(:source_end, "166")
+      expect(first_test_span).to have_test_tag(:source_start, "172")
+      expect(first_test_span).to have_test_tag(:source_end, "174")
 
       expect(first_test_span).to have_test_tag(
         :codeowners,
@@ -727,7 +735,7 @@ RSpec.describe "RSpec instrumentation" do
         :source_file,
         "spec/datadog/ci/contrib/rspec/instrumentation_spec.rb"
       )
-      expect(first_test_suite_span).to have_test_tag(:source_start, "52")
+      expect(first_test_suite_span).to have_test_tag(:source_start, "53")
       expect(first_test_suite_span).to have_test_tag(
         :codeowners,
         "[\"@DataDog/ci-app-libraries\"]"
@@ -2289,6 +2297,25 @@ RSpec.describe "RSpec instrumentation" do
           }
         }
       end
+    end
+
+    it "preserves quarantine and remote-disabled retries across setup and cleanup reconfiguration" do
+      original = Datadog.send(:components)
+      result = rspec_session_run(with_failed_test: true, with_reconfiguration: true)
+
+      expect(Datadog.send(:components)).to equal(original)
+      expect(test_spans).to have(2).items
+      test_spans.each do |test_span|
+        expect(test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)
+        expect(test_span).to have_test_tag(:test_module_id, test_module_span.id.to_s)
+        expect(test_span).not_to have_test_tag(:is_retry)
+      end
+
+      quarantined_test = test_spans.find { |test_span| test_span.name == "nested fails" }
+      expect(quarantined_test).to have_test_tag(:is_quarantined)
+      expect(quarantined_test).to have_fail_status
+      expect(test_session_span).to have_pass_status
+      expect(result.stdout.string).to include("0 failures")
     end
 
     it "runs failing test but ignores its failure" do
