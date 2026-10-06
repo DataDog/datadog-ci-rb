@@ -95,7 +95,6 @@ module Datadog
         end
 
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: nil, local_test_suites_mode: true)
-          # Lock before session setup, which already creates state that reconfiguration would discard.
           # Forks inherit this flag; fresh workers acquire it when joining the distributed session.
           @configuration_locked = true
           @local_test_suites_mode = local_test_suites_mode
@@ -171,7 +170,6 @@ module Datadog
           maybe_remote_context.any_tests_started?
         end
 
-        # This must be a local check: configuration must not depend on a DRb round trip.
         def configuration_locked?
           @configuration_locked
         end
