@@ -17,17 +17,6 @@ module Datadog
 
         private
 
-        def replace_components!(settings, old)
-          # A session may have started inside the configuration block on this thread.
-          # Concurrent session startup and reconfiguration are unsupported.
-          if old.test_tracing&.configuration_locked?
-            warn_about_ci_reconfiguration
-            return old
-          end
-
-          super
-        end
-
         def warn_about_ci_reconfiguration
           logger.warn(
             "Datadog.configure ignored during an active Test Optimization session to preserve test context and remote settings. " \

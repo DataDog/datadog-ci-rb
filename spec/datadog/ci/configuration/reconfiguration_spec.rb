@@ -52,16 +52,6 @@ RSpec.describe Datadog::CI::Configuration::Reconfiguration do
     expect(Datadog::CI.active_test_session).to equal(session)
   end
 
-  it "preserves components if a session starts inside a configuration block" do
-    original = Datadog.send(:components)
-    session = nil
-
-    Datadog.configure { session = Datadog::CI.start_test_session }
-
-    expect(Datadog.send(:components)).to equal(original)
-    expect(Datadog::CI.active_test_session).to equal(session)
-  end
-
   it "allows recovery through configuration when DRb startup fails before creating a session" do
     allow(DRb).to receive(:start_service).and_raise(DRb::DRbConnError, "DRb startup failed")
 

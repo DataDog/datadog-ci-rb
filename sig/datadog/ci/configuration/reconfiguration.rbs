@@ -6,8 +6,6 @@ module Datadog
 
         private
 
-        def replace_components!: (Datadog::Core::Configuration::Settings settings, Datadog::Core::Configuration::Components old) -> Datadog::Core::Configuration::Components
-
         def warn_about_ci_reconfiguration: () -> void
       end
     end
