@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: b328f4c5f132ebbaf7a8128bc4aca8eb9bae43e0
+  revision: 801e9b29e0510c33f01132fb21a369931f2700b4
   branch: master
   specs:
     datadog (2.44.0.dev)
