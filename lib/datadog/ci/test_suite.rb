@@ -25,6 +25,7 @@ module Datadog
         # tracks final status for each test (the status that is reported after all retries):
         #   { "MySuite.mytest.a:1" => "pass" }
         @final_statuses_per_test = {}
+        @tests_skipped_by_tia_count = 0
       end
 
       # Adds files that Test Impact Analysis should consider capable of
@@ -95,6 +96,16 @@ module Datadog
 
           super
         end
+      end
+
+      # @internal
+      def tests_skipped_by_tia_count
+        synchronize { @tests_skipped_by_tia_count }
+      end
+
+      # @internal
+      def incr_tests_skipped_by_tia_count
+        synchronize { @tests_skipped_by_tia_count += 1 }
       end
 
       # @internal
