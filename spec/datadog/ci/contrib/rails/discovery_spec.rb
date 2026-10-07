@@ -7,13 +7,16 @@ require "rbconfig"
 require "tmpdir"
 
 RSpec.describe "Rails plugin test discovery" do
-  let(:fixture_directory) { Dir.mktmpdir("rails-plugin-discovery") }
-  let(:test_file) { File.join(fixture_directory, "discovery_test.rb") }
+  let(:fixture_directory) { File.realpath(Dir.mktmpdir("rails-plugin-discovery")) }
+  let(:test_file) { File.join(fixture_directory, "test", "discovery_test.rb") }
   let(:execution_marker) { File.join(fixture_directory, "executed.txt") }
   let(:discovery_file) { File.join(fixture_directory, "tests.json") }
 
   before do
+    FileUtils.mkdir_p(File.dirname(test_file))
     File.write(test_file, <<~RUBY)
+      require "logger"
+      require "active_support"
       require "active_support/test_case"
 
       class PluginDiscoveryTest < ActiveSupport::TestCase
@@ -44,7 +47,15 @@ RSpec.describe "Rails plugin test discovery" do
 
   it "discovers the selected test file without executing test bodies" do
     # Rails 8.1 loads test files while processing Minitest arguments, after autorun starts.
-    stdout, stderr, status = run_plugin_tests(discovery: true)
+    expect_discovery(arguments: ["--seed", "123", test_file])
+  end
+
+  it "discovers the default test selection without executing test bodies" do
+    expect_discovery(arguments: [])
+  end
+
+  def expect_discovery(arguments:)
+    stdout, stderr, status = run_plugin_tests(discovery: true, arguments: arguments)
 
     expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
     expect(File.exist?(execution_marker)).to be(false)
@@ -53,12 +64,12 @@ RSpec.describe "Rails plugin test discovery" do
 
     records = File.readlines(discovery_file).map { |line| JSON.parse(line) }
     expect(records).to contain_exactly(
-      a_hash_including("name" => "test_one", "module" => "minitest", "suiteSourceFile" => "discovery_test.rb"),
-      a_hash_including("name" => "test_two", "module" => "minitest", "suiteSourceFile" => "discovery_test.rb")
+      a_hash_including("name" => "test_one", "module" => "minitest", "suiteSourceFile" => "test/discovery_test.rb"),
+      a_hash_including("name" => "test_two", "module" => "minitest", "suiteSourceFile" => "test/discovery_test.rb")
     )
   end
 
-  def run_plugin_tests(discovery:)
+  def run_plugin_tests(discovery:, arguments: [test_file])
     requires = discovery ? ["-rdatadog/ci/auto_instrument"] : []
 
     Open3.capture3(
@@ -76,7 +87,7 @@ RSpec.describe "Rails plugin test discovery" do
       "-I#{File.expand_path("../../../../../lib", __dir__)}",
       *requires,
       "-e", 'require "rails/plugin/test"',
-      "--", test_file,
+      "--", *arguments,
       chdir: fixture_directory
     )
   end

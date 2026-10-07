@@ -1,5 +1,11 @@
 module Rails
   def self.logger: () -> ActiveSupport::Logger
+
+  module TestUnit
+    class Runner
+      def self.load_test_files: () -> bool
+    end
+  end
 end
 
 module ActiveSupport
