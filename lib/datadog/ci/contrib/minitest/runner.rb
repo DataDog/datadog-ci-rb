@@ -74,19 +74,15 @@ module Datadog
             private
 
             def prepare_test_discovery(args)
-              # Rails 8.1 defers test loading to its Minitest options callback. Minitest 5
-              # normally auto-loads that plugin in run, which discovery bypasses.
-              if defined?(::Rails::TestUnit::Runner) &&
-                  ::Rails::TestUnit::Runner.respond_to?(:load_test_files) &&
-                  ::Rails::TestUnit::Runner.load_test_files &&
-                  !::Minitest.extensions.include?("rails")
-                require "minitest/rails_plugin"
-                ::Minitest.extensions << "rails"
+              args = args.dup
+              # Minitest 5 auto-loads plugins in run; Minitest 6 uses explicit loading.
+              unless ::Minitest.respond_to?(:load) || args.delete("--no-plugins") ||
+                  !test_discovery_component.minitest_plugin_autoload_enabled?
+                ::Minitest.load_plugins
               end
 
-              # Earlier Rails versions load tests before autorun. Only process arguments
-              # for registered plugins, so their eager-loading path needs no new setup.
-              ::Minitest.process_args(args) unless ::Minitest.extensions.empty?
+              # Plugins may load tests while parsing arguments, before execution begins.
+              ::Minitest.process_args(args)
             end
 
             def datadog_integration

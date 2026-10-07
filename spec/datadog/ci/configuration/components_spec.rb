@@ -52,6 +52,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           settings.ci.itr_test_impact_analysis_use_allocation_tracing = itr_test_impact_analysis_use_allocation_tracing
           settings.ci.discard_traces = discard_traces
           settings.ci.test_discovery_enabled = test_discovery_enabled
+          settings.ci.minitest_no_plugins = minitest_no_plugins
           settings.ci.code_coverage_flags = code_coverage_flags
           settings.site = dd_site
           settings.api_key = api_key
@@ -141,6 +142,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:itr_test_impact_analysis_use_allocation_tracing) { true }
         let(:discard_traces) { false }
         let(:test_discovery_enabled) { false }
+        let(:minitest_no_plugins) { nil }
         let(:code_coverage_flags) { nil }
 
         context "is enabled" do
@@ -469,6 +471,18 @@ RSpec.describe Datadog::CI::Configuration::Components do
                     expect(settings.ci.discard_traces).to eq(true)
                     expect(settings.ci.itr_enabled).to eq(false)
                     expect(settings.ci.agentless_logs_submission_enabled).to eq(false)
+                  end
+
+                  it "enables Minitest plugin auto-loading by default" do
+                    expect(components.test_discovery.minitest_plugin_autoload_enabled?).to be(true)
+                  end
+
+                  context "when Minitest plugin auto-loading is disabled" do
+                    let(:minitest_no_plugins) { "0" }
+
+                    it "passes the opt-out to discovery" do
+                      expect(components.test_discovery.minitest_plugin_autoload_enabled?).to be(false)
+                    end
                   end
                 end
               end

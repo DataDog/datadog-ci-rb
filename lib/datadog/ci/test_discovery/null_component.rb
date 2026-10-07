@@ -26,6 +26,10 @@ module Datadog
         def enabled?
           false
         end
+
+        def minitest_plugin_autoload_enabled?
+          true
+        end
       end
     end
   end

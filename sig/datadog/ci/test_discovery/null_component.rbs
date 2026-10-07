@@ -17,6 +17,8 @@ module Datadog
         def shutdown!: () -> void
 
         def enabled?: () -> bool
+
+        def minitest_plugin_autoload_enabled?: () -> bool
       end
     end
   end
