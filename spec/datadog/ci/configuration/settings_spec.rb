@@ -1220,6 +1220,16 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#minitest_no_plugins" do
+        [nil, "1", "0", ""].each do |value|
+          it "preserves MT_NO_PLUGINS=#{value.inspect}" do
+            ClimateControl.modify("MT_NO_PLUGINS" => value) do
+              expect(settings.ci.minitest_no_plugins).to eq(value)
+            end
+          end
+        end
+      end
+
       describe "#test_discovery_output_path" do
         subject(:test_discovery_output_path) { settings.ci.test_discovery_output_path }
 

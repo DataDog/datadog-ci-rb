@@ -968,6 +968,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       expect(collector).not_to have_received(:start)
       expect(context).to have_received(:incr_tests_skipped_by_tia_count)
       expect(writer).not_to have_received(:write)
+      expect(test_suite.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TESTS_SKIPPED)).to eq("true")
+      expect(test_suite.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT)).to eq(1)
     end
 
     it "forces a skippable suite to run when the suite is marked unskippable" do
@@ -978,6 +980,16 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       expect(test_suite.skipped_by_test_impact_analysis?).to be false
       expect(test_suite.get_tag(Datadog::CI::Ext::Test::TAG_ITR_FORCED_RUN)).to eq("true")
       expect(collector).to have_received(:start)
+    end
+
+    it "reports zero skips for a forced run" do
+      test_suite.set_internal_tag(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
+      component.on_test_suite_started(test_suite)
+      component.on_test_suite_finished(test_suite, context)
+
+      expect(test_suite.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TESTS_SKIPPED)).to eq("false")
+      expect(test_suite.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT)).to eq(0)
+      expect(context).not_to have_received(:incr_tests_skipped_by_tia_count)
     end
   end
 

@@ -239,6 +239,7 @@ module Datadog
             Telemetry.itr_skipped
 
             context.incr_tests_skipped_by_tia_count
+            test.test_suite&.incr_tests_skipped_by_tia_count
           end
 
           # Handle code coverage
@@ -349,7 +350,17 @@ module Datadog
         end
 
         def on_test_suite_finished(test_suite, context)
-          return unless enabled? && suite_skipping_mode?
+          return unless enabled?
+
+          skipped_count = if suite_skipping_mode?
+            test_suite.skipped_by_test_impact_analysis? ? 1 : 0
+          else
+            test_suite.tests_skipped_by_tia_count
+          end
+          test_suite.set_internal_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, skipped_count.positive?.to_s)
+          test_suite.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, skipped_count)
+
+          return unless suite_skipping_mode?
 
           if test_suite.skipped_by_test_impact_analysis?
             Telemetry.itr_skipped

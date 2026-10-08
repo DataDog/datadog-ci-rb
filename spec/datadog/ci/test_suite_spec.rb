@@ -18,6 +18,21 @@ RSpec.describe Datadog::CI::TestSuite do
   end
   subject(:ci_test_suite) { described_class.new(tracer_span) }
 
+  describe "TIA skip count" do
+    it "starts at zero" do
+      expect(ci_test_suite.tests_skipped_by_tia_count).to eq(0)
+    end
+
+    it "counts skips from concurrent threads" do
+      threads = Array.new(4) do
+        Thread.new { 100.times { ci_test_suite.incr_tests_skipped_by_tia_count } }
+      end
+      threads.each(&:value)
+
+      expect(ci_test_suite.tests_skipped_by_tia_count).to eq(400)
+    end
+  end
+
   describe "custom impacted files" do
     it "adds unique paths incrementally" do
       ci_test_suite.add_impacted_files(["app/frontend/shared.js", "app/frontend/shared.js"])

@@ -8,6 +8,68 @@ RSpec.describe Datadog::CI::TestTracing::Serializers::TestSuite do
   end
 
   describe "#to_msgpack" do
+    context "with Test Impact Analysis" do
+      let(:itr_enabled) { true }
+      let(:tests_skipping_enabled) { true }
+      let(:itr_skippable_tests) do
+        Set.new(["calculator_tests.tia_skip_1.", "calculator_tests.tia_skip_2."])
+      end
+
+      before do
+        session = Datadog::CI.start_test_session
+        test_module = Datadog::CI.start_test_module("arithmetic")
+        suite = Datadog::CI.start_test_suite("calculator_tests")
+        other_suite = Datadog::CI.start_test_suite("other_tests")
+
+        ["tia_skip_1", "tia_skip_2", "framework_skip", "passing"].each do |name|
+          Datadog::CI.trace_test(name, "calculator_tests") do |test|
+            if test.should_skip? || name == "framework_skip"
+              test.skipped!
+            else
+              test.passed!
+            end
+          end
+        end
+        Datadog::CI.trace_test("framework_skip", "other_tests") { |test| test.skipped! }
+
+        suite.finish
+        other_suite.finish
+        test_module.finish
+        session.finish
+      end
+
+      it "serializes the suite's TIA skip count and boolean independently of framework skips" do
+        expect(meta).to include("_dd.ci.itr.tests_skipped" => "true")
+        expect(metrics).to include("test.itr.tests_skipping.count" => 2)
+        expect(test_session_span).to have_test_tag(:itr_test_skipping_count, 2)
+
+        other_suite_span = test_suite_spans.find { |span| span.get_tag("test.suite") == "other_tests" }
+        other_event = MessagePack.unpack(MessagePack.pack(
+          described_class.new(trace_for_span(other_suite_span), other_suite_span)
+        ))
+        expect(other_event["content"]["meta"]).to include("_dd.ci.itr.tests_skipped" => "false")
+        expect(other_event["content"]["metrics"]).to include("test.itr.tests_skipping.count" => 0)
+      end
+
+      context "when test skipping is disabled" do
+        let(:tests_skipping_enabled) { false }
+
+        it "serializes zero skips and false" do
+          expect(meta).to include("_dd.ci.itr.tests_skipped" => "false")
+          expect(metrics).to include("test.itr.tests_skipping.count" => 0)
+        end
+      end
+
+      context "when Test Impact Analysis is disabled" do
+        let(:itr_enabled) { false }
+
+        it "omits both suite tags" do
+          expect(meta).not_to have_key("_dd.ci.itr.tests_skipped")
+          expect(metrics).not_to have_key("test.itr.tests_skipping.count")
+        end
+      end
+    end
+
     context "traced a single test execution with test visibility" do
       before do
         produce_test_session_trace

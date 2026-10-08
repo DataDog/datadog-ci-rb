@@ -5,6 +5,11 @@ module Datadog
       @final_statuses_per_test: Hash[String, String]
       @expected_tests_set: Set[String]
       @custom_impacted_files: Array[String]
+      @tests_skipped_by_tia_count: Integer
+
+      def tests_skipped_by_tia_count: () -> Integer
+
+      def incr_tests_skipped_by_tia_count: () -> void
 
       def add_impacted_files: (Array[String] file_paths) -> void
 

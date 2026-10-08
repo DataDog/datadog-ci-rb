@@ -235,6 +235,12 @@ module Datadog
                 o.env CI::Ext::Settings::ENV_TEST_DISCOVERY_OUTPUT_PATH
               end
 
+              # Minitest treats any value, including "0", as disabling plugin auto-loading.
+              option :minitest_no_plugins do |o|
+                o.type :string, nilable: true
+                o.env "MT_NO_PLUGINS"
+              end
+
               option :test_optimization_cache_manifest_file do |o|
                 o.type :string, nilable: true
                 o.env CI::Ext::TestOptimizationCache::ENV_MANIFEST_FILE
