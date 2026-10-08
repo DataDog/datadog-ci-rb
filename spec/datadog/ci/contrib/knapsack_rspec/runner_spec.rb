@@ -107,7 +107,7 @@ RSpec.describe Datadog::CI::Contrib::Knapsack::Runner do
         it "skips and finishes the parent events" do
           [test_module, test_session].each do |span|
             expect(span).to receive(:skipped!).with(reason: "No tests were executed")
-            expect(span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
+            expect(span).to receive(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
             expect(span).to receive(:finish)
           end
 
