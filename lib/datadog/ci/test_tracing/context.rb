@@ -10,6 +10,7 @@ require_relative "telemetry"
 
 require_relative "../ext/app_types"
 require_relative "../ext/environment"
+require_relative "../ext/metadata"
 require_relative "../ext/test"
 
 require_relative "../utils/configuration"
@@ -38,6 +39,7 @@ module Datadog
           @process_context = Store::Process.new
 
           @mutex = Mutex.new
+          @environment_mutex = Mutex.new
 
           @tests_skipped_by_tia_count = 0
           @any_tests_started = false
@@ -45,6 +47,10 @@ module Datadog
 
         def environment_tags
           @environment_tags || {}
+        end
+
+        def shared_environment_tags
+          @shared_environment_tags || Span::EMPTY_TAGS
         end
 
         def start_test_session(service: nil, tags: {})
@@ -154,7 +160,11 @@ module Datadog
 
         def active_span
           tracer_span = Datadog::Tracing.active_span
-          Span.new(tracer_span) if tracer_span
+          return unless tracer_span
+
+          span = Span.new(tracer_span)
+          span.shared_tags = shared_environment_tags if Ext::AppTypes::CI_SPAN_TYPES.include?(span.type)
+          span
         end
 
         def active_test
@@ -244,16 +254,35 @@ module Datadog
 
         # TAGGING
         def set_initial_tags(ci_span, tags)
-          @environment_tags ||= Ext::Environment.tags(ENV).freeze
+          initialize_environment_tags
 
           ci_span.set_default_tags
           ci_span.set_environment_runtime_tags
 
-          ci_span.set_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
-          ci_span.set_tags(tags)
-          ci_span.set_tags(@environment_tags)
+          ci_span.set_internal_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
+          ci_span.set_internal_tags(tags)
+          if Ext::AppTypes::CI_SPAN_TYPES.include?(ci_span.type)
+            ci_span.shared_tags = @shared_environment_tags
+            ci_span.set_internal_tags(@local_environment_tags)
+          else
+            ci_span.set_internal_tags(@environment_tags)
+          end
 
-          ci_span.set_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
+          ci_span.set_internal_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
+        end
+
+        def initialize_environment_tags
+          return if @environment_tags
+
+          @environment_mutex.synchronize do
+            return if @environment_tags
+
+            tags = Ext::Environment.tags(ENV).transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }.freeze
+            @shared_environment_tags = tags.slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS).freeze
+            @local_environment_tags = tags.reject { |key, _| @shared_environment_tags.key?(key) }.freeze
+            # Publish only after both views are ready for concurrent span creation.
+            @environment_tags = tags
+          end
         end
 
         # PROPAGATING CONTEXT FROM TOP-LEVEL TO THE LOWER LEVELS

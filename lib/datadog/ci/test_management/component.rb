@@ -38,7 +38,7 @@ module Datadog
 
           return unless @enabled
 
-          test_session.set_tag(Ext::Test::TAG_TEST_MANAGEMENT_ENABLED, "true")
+          test_session.set_internal_tag(Ext::Test::TAG_TEST_MANAGEMENT_ENABLED, "true")
 
           return if load_component_state
 
@@ -64,9 +64,9 @@ module Datadog
 
           Datadog.logger.debug { "Test properties for test #{datadog_test_id} are: [#{test_properties}]" }
 
-          test_span.set_tag(Ext::Test::TAG_IS_QUARANTINED, "true") if test_properties["quarantined"]
-          test_span.set_tag(Ext::Test::TAG_IS_TEST_DISABLED, "true") if test_properties["disabled"]
-          test_span.set_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX, "true") if test_properties["attempt_to_fix"]
+          test_span.set_internal_tag(Ext::Test::TAG_IS_QUARANTINED, "true") if test_properties["quarantined"]
+          test_span.set_internal_tag(Ext::Test::TAG_IS_TEST_DISABLED, "true") if test_properties["disabled"]
+          test_span.set_internal_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX, "true") if test_properties["attempt_to_fix"]
         end
 
         def attempt_to_fix?(datadog_fqn_test_id)

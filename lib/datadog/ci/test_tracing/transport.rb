@@ -8,8 +8,6 @@ require_relative "serializers/factories/test_suite_level"
 require_relative "serializers/meta_truncation"
 
 require_relative "../ext/app_types"
-require_relative "../ext/environment"
-require_relative "../ext/git"
 require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/event_platform_transport"
@@ -20,45 +18,6 @@ module Datadog
   module CI
     module TestTracing
       class Transport < Datadog::CI::Transport::EventPlatformTransport
-        # Explicitly allowlist environment fields; custom ci.* and git.* tags belong to individual events.
-        SHARED_ENVIRONMENT_TAGS = [
-          Ext::Environment::TAG_JOB_ID,
-          Ext::Environment::TAG_JOB_NAME,
-          Ext::Environment::TAG_JOB_URL,
-          Ext::Environment::TAG_NODE_LABELS,
-          Ext::Environment::TAG_NODE_NAME,
-          Ext::Environment::TAG_PIPELINE_ID,
-          Ext::Environment::TAG_PIPELINE_NAME,
-          Ext::Environment::TAG_PIPELINE_DISPLAY_NAME,
-          Ext::Environment::TAG_PIPELINE_NUMBER,
-          Ext::Environment::TAG_PIPELINE_URL,
-          Ext::Environment::TAG_PROVIDER_NAME,
-          Ext::Environment::TAG_STAGE_NAME,
-          Ext::Environment::TAG_WORKSPACE_PATH,
-          Ext::Git::TAG_BRANCH,
-          Ext::Git::TAG_TAG,
-          Ext::Git::TAG_REPOSITORY_URL,
-          Ext::Git::TAG_COMMIT_SHA,
-          Ext::Git::TAG_COMMIT_MESSAGE,
-          Ext::Git::TAG_COMMIT_AUTHOR_NAME,
-          Ext::Git::TAG_COMMIT_AUTHOR_EMAIL,
-          Ext::Git::TAG_COMMIT_AUTHOR_DATE,
-          Ext::Git::TAG_COMMIT_COMMITTER_NAME,
-          Ext::Git::TAG_COMMIT_COMMITTER_EMAIL,
-          Ext::Git::TAG_COMMIT_COMMITTER_DATE,
-          Ext::Git::TAG_COMMIT_HEAD_SHA,
-          Ext::Git::TAG_COMMIT_HEAD_MESSAGE,
-          Ext::Git::TAG_COMMIT_HEAD_AUTHOR_NAME,
-          Ext::Git::TAG_COMMIT_HEAD_AUTHOR_EMAIL,
-          Ext::Git::TAG_COMMIT_HEAD_AUTHOR_DATE,
-          Ext::Git::TAG_COMMIT_HEAD_COMMITTER_NAME,
-          Ext::Git::TAG_COMMIT_HEAD_COMMITTER_EMAIL,
-          Ext::Git::TAG_COMMIT_HEAD_COMMITTER_DATE,
-          Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH,
-          Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA,
-          Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_HEAD_SHA
-        ].freeze
-
         attr_reader :dd_env
 
         def initialize(
@@ -78,7 +37,7 @@ module Datadog
 
           # Keep one metadata snapshot for serialization and every split payload, even if callers flush concurrently.
           @send_mutex.synchronize do
-            @test_level_metadata = build_test_level_metadata(events)
+            @test_level_metadata = build_test_level_metadata
             super
           end
         end
@@ -175,18 +134,8 @@ module Datadog
           packer.write("events")
         end
 
-        def build_test_level_metadata(traces)
-          environment_tags = test_tracing&.environment_tags || {}
-          shared_tags = environment_tags.slice(*SHARED_ENVIRONMENT_TAGS)
-
-          # Inherited metadata must not restore a tag explicitly cleared on any test event.
-          traces.each do |trace|
-            trace.spans.each do |span|
-              next unless Ext::AppTypes::CI_SPAN_TYPES.include?(span.type)
-
-              shared_tags.delete_if { |key, _| !span.meta.key?(key) }
-            end
-          end
+        def build_test_level_metadata
+          shared_tags = (test_tracing&.shared_environment_tags || {}).dup
 
           session_name = test_tracing&.logical_test_session_name
           shared_tags[Ext::Test::TAG_TEST_SESSION_NAME] = session_name unless session_name.nil?

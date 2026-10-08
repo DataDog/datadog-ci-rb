@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Ext
+      module Metadata
+        SHARED_ENVIRONMENT_TAGS: Array[String]
+        PROTECTED_TAGS: Set[String]
+        INITIAL_TAGS: Set[String]
+      end
+    end
+  end
+end

@@ -31,14 +31,11 @@ module Datadog
             @span = span
             @options = options
 
-            @meta = MetaTruncation.truncate_string_values(
-              @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
-            )
+            shared_metadata = Ext::AppTypes::CI_SPAN_TYPES.include?(event_type) ? options.fetch(:test_level_metadata, {}) : {}
+            @meta = @span.meta.each_with_object({}) do |(key, value), result|
+              next if Ext::Test::TRANSIENT_TAGS.include?(key) || shared_metadata.key?(key)
 
-            # Only test events inherit test_levels metadata. Keep overrides and ordinary spans intact.
-            if Ext::AppTypes::CI_SPAN_TYPES.include?(event_type)
-              shared_metadata = options.fetch(:test_level_metadata, {})
-              @meta.reject! { |key, value| shared_metadata.key?(key) && shared_metadata[key] == value }
+              result[key] = MetaTruncation.truncate_value(value)
             end
 
             @errors = {}

@@ -104,9 +104,9 @@ module Datadog
           @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
           @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled?
 
-          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
-          test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
-          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, @test_skipping_mode)
+          test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
+          test_session.set_internal_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
+          test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, @test_skipping_mode)
 
           if @code_coverage_enabled
             load_datadog_cov!
@@ -304,7 +304,7 @@ module Datadog
           return if !enabled? || !skipping_tests?
 
           if skippable?(test.datadog_test_id) && !test.attempt_to_fix?
-            test.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
+            test.set_internal_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
             Datadog.logger.debug { "Marked test as skippable: #{test.datadog_test_id}" }
           else
@@ -325,13 +325,13 @@ module Datadog
 
           if unskippable
             Utils::Telemetry.itr_forced_run
-            test_suite.set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
+            test_suite.set_internal_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
 
             Datadog.logger.debug { "Forced run of skippable test suite: #{test_suite.name}" }
             return
           end
 
-          test_suite.set_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
+          test_suite.set_internal_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
           test_suite.skipped!(reason: Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS)
 
           Datadog.logger.debug { "Marked test suite as skippable: #{test_suite.name}" }
@@ -379,8 +379,8 @@ module Datadog
           Datadog.logger.debug { "Finished optimised session with test skipping enabled: #{@test_skipping_enabled}" }
           Datadog.logger.debug { "#{skipped_tests_count} tests were skipped" }
 
-          test_session.set_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, skipped_tests_count.positive?.to_s)
-          test_session.set_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, skipped_tests_count)
+          test_session.set_internal_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, skipped_tests_count.positive?.to_s)
+          test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, skipped_tests_count)
         end
 
         def shutdown!

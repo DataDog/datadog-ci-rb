@@ -169,6 +169,9 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
       end
 
       it "deduplicates every test event type without modifying original spans" do
+        spans.select { |span| Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span.type) }.each do |span|
+          expect(span.meta.keys & Datadog::CI::Ext::Metadata::SHARED_ENVIRONMENT_TAGS).to be_empty
+        end
         original_metadata = spans.map { |span| span.meta.dup }
         transport.send_events(traces)
 
@@ -201,7 +204,8 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
         expect(spans.map(&:meta)).to eq(original_metadata)
       end
 
-      it "preserves event overrides and metadata on ordinary spans" do
+      it "keeps shared fields authoritative and leaves ordinary span metadata intact" do
+        # A raw tracer span bypasses the CI API. It still cannot override payload defaults.
         first_test_span.set_tag("git.branch", "feature")
         first_test_span.set_tag("test_session.name", "custom session")
         first_custom_span.set_tag("git.branch", "main")
@@ -211,9 +215,11 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
         transport.send_events(traces)
 
         expect(api).to have_received(:citestcycle_request) do |args|
-          events = MessagePack.unpack(args[:payload])["events"]
+          payload = MessagePack.unpack(args[:payload])
+          events = payload["events"]
           test_event = events.find { |event| event["content"]["span_id"] == first_test_span.id }
-          expect(test_event["content"]["meta"]).to include("git.branch" => "feature", "test_session.name" => "custom session")
+          expect(test_event["content"]["meta"]).not_to include("git.branch", "test_session.name")
+          expect(payload["metadata"]["test_levels"]).to include("git.branch" => "main", "test_session.name" => logical_test_session_name)
           span_event = events.find { |event| event["content"]["span_id"] == first_custom_span.id }
           expect(span_event["content"]["meta"]).to include(
             "git.branch" => "main", "ci.job.name" => "tests", "test_session.name" => logical_test_session_name
@@ -221,79 +227,8 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
         end
       end
 
-      Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
-        it "preserves cleared Git and CI tags on #{type} events" do
-          cleared_span = spans.find { |span| span.type == type }
-          cleared_span.clear_tag("git.branch")
-          cleared_span.clear_tag("ci.job.name")
-          original_metadata = spans.map { |span| span.meta.dup }
-
-          transport.send_events(traces)
-
-          expect(api).to have_received(:citestcycle_request) do |args|
-            payload = MessagePack.unpack(args[:payload])
-            shared_metadata = payload["metadata"]["test_levels"]
-            expect(shared_metadata).not_to include("git.branch", "ci.job.name")
-            expect(shared_metadata).to include("ci.pipeline.id" => "123")
-            test_events = payload["events"].reject { |event| event["type"] == "span" }
-            test_events.each do |event|
-              restored = shared_metadata.merge(event["content"]["meta"])
-              if event["type"] == type && (type != "test" || event["content"]["span_id"] == cleared_span.id)
-                expect(restored).not_to include("git.branch", "ci.job.name")
-              else
-                expect(restored).to include("git.branch" => "main", "ci.job.name" => "tests")
-              end
-            end
-          end
-          expect(spans.map(&:meta)).to eq(original_metadata)
-        end
-      end
-
-      it "reconsiders cleared tags on the next flush" do
-        first_test_span.clear_tag("git.branch")
-        payloads = []
-        allow(api).to receive(:citestcycle_request) do |args|
-          payloads << MessagePack.unpack(args[:payload])
-          api
-        end
-
-        transport.send_events(traces)
-        first_test_span.set_tag("git.branch", "main")
-        transport.send_events(traces)
-
-        expect(payloads.size).to eq(2)
-        expect(payloads.first["metadata"]["test_levels"]).not_to have_key("git.branch")
-        expect(payloads.last["metadata"]["test_levels"]).to include("git.branch" => "main")
-      end
-
       context "when splitting payloads" do
         let(:max_payload_size) { 2500 }
-
-        it "preserves cleared tags across split payloads" do
-          first_test_span.clear_tag("git.branch")
-          payloads = []
-          allow(api).to receive(:citestcycle_request) do |args|
-            payloads << MessagePack.unpack(args[:payload])
-            api
-          end
-
-          transport.send_events(traces)
-
-          expect(payloads.size).to be > 1
-          expect(payloads.sum { |payload| payload["events"].size }).to eq(spans.size)
-          payloads.each do |payload|
-            shared_metadata = payload["metadata"]["test_levels"]
-            expect(shared_metadata).not_to have_key("git.branch")
-            payload["events"].reject { |event| event["type"] == "span" }.each do |event|
-              restored = shared_metadata.merge(event["content"]["meta"])
-              if event["content"]["span_id"] == first_test_span.id
-                expect(restored).not_to have_key("git.branch")
-              else
-                expect(restored).to include("git.branch" => "main")
-              end
-            end
-          end
-        end
 
         it "includes shared metadata in every chunk so removed tags can be restored" do
           payloads = []

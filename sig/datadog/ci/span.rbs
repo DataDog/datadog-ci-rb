@@ -3,6 +3,10 @@ module Datadog
     class Span
       ENVIRONMENT_RUNTIME_TAGS: Hash[String, String]
 
+      EMPTY_TAGS: Hash[String, String]
+      @shared_tags: Hash[String, String]
+      attr_writer shared_tags: Hash[String, String]
+
       @tracer_span: Datadog::Tracing::SpanOperation
 
       attr_reader tracer_span: Datadog::Tracing::SpanOperation
@@ -39,11 +43,16 @@ module Datadog
 
       def clear_tag: (String key) -> void
 
-      def get_metric: (String key) -> Numeric?
+      def get_metric: (String key) -> (Numeric | String)?
 
       def set_metric: (String key, untyped value) -> void
 
       def set_tags: (Hash[untyped, untyped] tags) -> void
+
+      def set_internal_tag: (String key, untyped? value) -> void
+      def set_internal_tags: (Hash[untyped, untyped] tags) -> void
+      def set_internal_metric: (String key, untyped value) -> void
+      def clear_internal_tag: (String key) -> void
 
       def finish: () -> void
 

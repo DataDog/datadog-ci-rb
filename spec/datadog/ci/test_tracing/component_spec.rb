@@ -31,7 +31,17 @@ RSpec.describe Datadog::CI::TestTracing::Component do
 
     it "has all the environment tags" do
       environment_tags.each do |key, value|
-        expect(span_under_test).to have_test_tag(key, value)
+        if Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span_under_test.type) && Datadog::CI::Ext::Metadata::SHARED_ENVIRONMENT_TAGS.include?(key)
+          if span_under_test.is_a?(Datadog::CI::Span)
+            expect(span_under_test.get_tag(key)).to eq(value)
+            expect(span_under_test.tracer_span.get_tag(key)).to be_nil
+          else
+            expect(span_under_test.get_tag(key)).to be_nil
+          end
+          expect(test_tracing.shared_environment_tags[key]).to eq(value)
+        else
+          expect(span_under_test).to have_test_tag(key, value)
+        end
       end
     end
   end
@@ -773,7 +783,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           it "uses remote context to start test suite" do
             expect(remote_context).to receive(:start_test_suite)
               .with(suite_name, service: nil, tags: tags)
-              .and_return(double("test_suite", source_file: "test_suite.rb", set_tag: true))
+              .and_return(double("test_suite", source_file: "test_suite.rb", set_internal_tag: true))
 
             test_tracing.start_test_suite(suite_name, tags: tags)
           end
@@ -1196,7 +1206,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           let(:known_tests) { Set.new }
 
           it "disables known tests functionality" do
-            expect(test_session).to receive(:set_tag).with("test.early_flake.abort_reason", "faulty")
+            expect(test_session).to receive(:set_internal_tag).with("test.early_flake.abort_reason", "faulty")
 
             subject
 

@@ -84,6 +84,10 @@ module Datadog
           @local_test_suites_mode = true
         end
 
+        def shared_environment_tags
+          @context.shared_environment_tags
+        end
+
         def environment_tags
           @context.environment_tags
         end
@@ -375,7 +379,7 @@ module Datadog
         def set_codeowners(span)
           source = span.source_file
           owners = @codeowners.list_owners(source) if source
-          span.set_tag(Ext::Test::TAG_CODEOWNERS, owners) unless owners.nil?
+          span.set_internal_tag(Ext::Test::TAG_CODEOWNERS, owners) unless owners.nil?
         end
 
         def validate_source_location(test)
@@ -395,7 +399,7 @@ module Datadog
               "end line (#{end_line}) is before the start line (#{start_line}). " \
               "Removing #{Ext::Test::TAG_SOURCE_END} tag."
             end
-            test.clear_tag(Ext::Test::TAG_SOURCE_END)
+            test.clear_internal_tag(Ext::Test::TAG_SOURCE_END)
           end
         end
 
@@ -413,8 +417,8 @@ module Datadog
             "but it was not found. Fixing it by assigning test suite [#{test_suite.name}] to the test."
           end
 
-          test.set_tag(Ext::Test::TAG_TEST_SUITE_ID, test_suite.id.to_s)
-          test.set_tag(Ext::Test::TAG_SUITE, test_suite.name)
+          test.set_internal_tag(Ext::Test::TAG_TEST_SUITE_ID, test_suite.id.to_s)
+          test.set_internal_tag(Ext::Test::TAG_SUITE, test_suite.name)
         end
 
         def validate_test_suite_level_visibility_correctness(test)
@@ -473,7 +477,7 @@ module Datadog
             @known_tests_enabled = false
 
             # this adds unfortunate knowledge on EFD from Testvisibility, rethink this
-            test_session&.set_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
+            test_session&.set_internal_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
 
             Datadog.logger.warn("Empty set of tests known to Datadog")
           end
@@ -491,7 +495,7 @@ module Datadog
         end
 
         def mark_test_as_new(test_span)
-          test_span.set_tag(Ext::Test::TAG_IS_NEW, "true")
+          test_span.set_internal_tag(Ext::Test::TAG_IS_NEW, "true")
         end
 
         def test_impact_analysis

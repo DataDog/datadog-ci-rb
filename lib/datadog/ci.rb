@@ -3,6 +3,7 @@
 require_relative "ci/version"
 require_relative "ci/utils/configuration"
 require_relative "ci/utils/telemetry"
+require_relative "ci/utils/protected_tags"
 require_relative "ci/ext/app_types"
 require_relative "ci/ext/telemetry"
 
@@ -52,7 +53,7 @@ module Datadog
           1,
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::SESSION}
         )
-        test_tracing.start_test_session(service: service, tags: tags, estimated_total_tests_count: total_tests_count)
+        test_tracing.start_test_session(service: service, tags: Utils::ProtectedTags.initial_tags(tags), estimated_total_tests_count: total_tests_count)
       end
 
       # The active, unfinished test session.
@@ -112,7 +113,7 @@ module Datadog
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::MODULE}
         )
 
-        test_tracing.start_test_module(test_module_name, service: service, tags: tags)
+        test_tracing.start_test_module(test_module_name, service: service, tags: Utils::ProtectedTags.initial_tags(tags))
       end
 
       # The active, unfinished test module.
@@ -170,7 +171,7 @@ module Datadog
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::SUITE}
         )
 
-        test_tracing.start_test_suite(test_suite_name, service: service, tags: tags)
+        test_tracing.start_test_suite(test_suite_name, service: service, tags: Utils::ProtectedTags.initial_tags(tags))
       end
 
       # The active, unfinished test suite.
@@ -265,7 +266,7 @@ module Datadog
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::TEST}
         )
 
-        test_tracing.trace_test(test_name, test_suite_name, service: service, tags: tags, &block)
+        test_tracing.trace_test(test_name, test_suite_name, service: service, tags: Utils::ProtectedTags.initial_tags(tags), &block)
       end
 
       # Same as {.trace_test} but it does not accept a block.
@@ -296,7 +297,7 @@ module Datadog
           1,
           {Ext::Telemetry::TAG_EVENT_TYPE => Ext::Telemetry::EventType::TEST}
         )
-        test_tracing.trace_test(test_name, test_suite_name, service: service, tags: tags)
+        test_tracing.trace_test(test_name, test_suite_name, service: service, tags: Utils::ProtectedTags.initial_tags(tags))
       end
 
       # Trace any custom span inside a test. For example, you could trace:
@@ -348,7 +349,7 @@ module Datadog
           )
         end
 
-        test_tracing.trace(span_name, type: type, tags: tags, &block)
+        test_tracing.trace(span_name, type: type, tags: Utils::ProtectedTags.initial_tags(tags), &block)
       end
 
       # The active, unfinished custom (i.e. not test/suite/module/session) span.

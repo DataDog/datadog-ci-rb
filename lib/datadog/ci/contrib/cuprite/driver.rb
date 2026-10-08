@@ -40,13 +40,13 @@ module Datadog
               set_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID, active_test.trace_id.to_s)
 
               # set the test type to browser
-              active_test.set_tag(CI::Ext::Test::TAG_TYPE, CI::Ext::Test::Type::BROWSER)
+              active_test.set_internal_tag(CI::Ext::Test::TAG_TYPE, CI::Ext::Test::Type::BROWSER)
 
               # set the tags specific to the browser test
-              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_DRIVER, "cuprite")
-              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_DRIVER_VERSION, datadog_integration.version)
-              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_NAME, browser.options.browser_name || "chrome")
-              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_VERSION, browser.version.product)
+              active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_DRIVER, "cuprite")
+              active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_DRIVER_VERSION, datadog_integration.version)
+              active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_NAME, browser.options.browser_name || "chrome")
+              active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_VERSION, browser.version.product)
 
               result
             end
