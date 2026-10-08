@@ -74,9 +74,11 @@ module Datadog
         end
 
         def send_events(events)
+          return [] if events.nil? || events.empty?
+
           # Keep one metadata snapshot for serialization and every split payload, even if callers flush concurrently.
           @send_mutex.synchronize do
-            @test_level_metadata = build_test_level_metadata
+            @test_level_metadata = build_test_level_metadata(events)
             super
           end
         end
@@ -173,9 +175,19 @@ module Datadog
           packer.write("events")
         end
 
-        def build_test_level_metadata
+        def build_test_level_metadata(traces)
           environment_tags = test_tracing&.environment_tags || {}
           shared_tags = environment_tags.slice(*SHARED_ENVIRONMENT_TAGS)
+
+          # Inherited metadata must not restore a tag explicitly cleared on any test event.
+          traces.each do |trace|
+            trace.spans.each do |span|
+              next unless Ext::AppTypes::CI_SPAN_TYPES.include?(span.type)
+
+              shared_tags.delete_if { |key, _| !span.meta.key?(key) }
+            end
+          end
+
           session_name = test_tracing&.logical_test_session_name
           shared_tags[Ext::Test::TAG_TEST_SESSION_NAME] = session_name unless session_name.nil?
           shared_tags[Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE] = Utils::Configuration.service_name_provided_by_user?.to_s
