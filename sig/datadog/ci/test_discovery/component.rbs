@@ -4,10 +4,11 @@ module Datadog
       class Component
         @enabled: bool
         @output_path: String?
+        @minitest_plugin_autoload_enabled: bool
         @buffer: Array[Hash[String, String?]]
         @buffer_mutex: Mutex
 
-        def initialize: (enabled: bool, output_path: String?) -> void
+        def initialize: (enabled: bool, output_path: String?, ?minitest_plugin_autoload_enabled: bool) -> void
 
         def configure: (untyped library_settings, untyped test_session) -> void
 
@@ -22,6 +23,8 @@ module Datadog
         def shutdown!: () -> void
 
         def enabled?: () -> bool
+
+        def minitest_plugin_autoload_enabled?: () -> bool
 
         private
 

@@ -12,9 +12,11 @@ module Datadog
 
             def old_run_one_method: (untyped klass, String method_name) -> untyped
 
-            def run: (*untyped) -> untyped
+            def run: (?Array[String] args) -> bool?
 
             private
+
+            def prepare_test_discovery: (Array[String] args) -> void
 
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 

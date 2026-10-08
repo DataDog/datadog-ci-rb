@@ -107,7 +107,8 @@ module Datadog
           # @type ivar @test_discovery: Datadog::CI::TestDiscovery::Component
           @test_discovery = TestDiscovery::Component.new(
             enabled: settings.ci.test_discovery_enabled,
-            output_path: settings.ci.test_discovery_output_path
+            output_path: settings.ci.test_discovery_output_path,
+            minitest_plugin_autoload_enabled: settings.ci.minitest_no_plugins.nil?
           )
           @test_discovery.disable_features_for_test_discovery!(settings)
 

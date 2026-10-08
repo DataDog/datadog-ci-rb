@@ -13,10 +13,12 @@ module Datadog
       class Component
         def initialize(
           enabled:,
-          output_path:
+          output_path:,
+          minitest_plugin_autoload_enabled: true
         )
           @enabled = enabled
           @output_path = output_path
+          @minitest_plugin_autoload_enabled = minitest_plugin_autoload_enabled
 
           @buffer = []
           @buffer_mutex = Mutex.new
@@ -28,6 +30,10 @@ module Datadog
 
         def enabled?
           @enabled
+        end
+
+        def minitest_plugin_autoload_enabled?
+          @minitest_plugin_autoload_enabled
         end
 
         def disable_features_for_test_discovery!(settings)

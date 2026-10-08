@@ -60,8 +60,9 @@ module Datadog
               result
             end
 
-            def run(*args)
+            def run(args = [])
               if datadog_configuration[:enabled] && test_discovery_component.enabled?
+                prepare_test_discovery(args)
                 ::Minitest.seed = 1
                 discover_tests
 
@@ -71,6 +72,18 @@ module Datadog
             end
 
             private
+
+            def prepare_test_discovery(args)
+              args = args.dup
+              # Minitest 5 auto-loads plugins in run; Minitest 6 uses explicit loading.
+              unless ::Minitest.respond_to?(:load) || args.delete("--no-plugins") ||
+                  !test_discovery_component.minitest_plugin_autoload_enabled?
+                ::Minitest.load_plugins
+              end
+
+              # Plugins may load tests while parsing arguments, before execution begins.
+              ::Minitest.process_args(args)
+            end
 
             def datadog_integration
               CI::Contrib::Instrumentation.fetch_integration(:minitest)
