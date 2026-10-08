@@ -21,15 +21,12 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
   before do
     allow(Datadog.logger).to receive(:warn)
 
-    allow(Datadog::CI::Ext::Environment).to receive(:tags).and_return(environment_tags) if environment_tags
-
     # this is needed to configure all the components correctly
     Datadog::CI.start_test_session
     Datadog::CI.start_test_module("arithmetic")
     Datadog::CI.start_test_suite("calculator_tests")
   end
 
-  let(:environment_tags) { nil }
   let(:dd_env) { nil }
   let(:max_payload_size) { 4 * 1024 * 1024 }
 
@@ -147,23 +144,28 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
     end
 
     context "with shared environment metadata" do
-      let(:environment_tags) do
-        {
-          "ci.job.name" => "tests",
-          "ci.pipeline.id" => "123",
-          "git.branch" => "main",
-          "git.commit.message" => "m" * 5001,
-          "git.commit.head.sha" => "a" * 40,
-          "git.pull_request.base_branch" => "main",
-          "ci.custom" => "custom CI metadata",
-          "git.custom" => "custom Git metadata",
-          "_dd.ci.env_vars" => '{"JOB_ID":"123"}',
-          "pr.number" => "42"
-        }
+      around do |example|
+        ClimateControl.modify(
+          "GITHUB_SHA" => nil,
+          "GITLAB_CI" => "true",
+          "CI_JOB_NAME" => "tests",
+          "CI_PIPELINE_ID" => "123",
+          "CI_JOB_ID" => "456",
+          "CI_PROJECT_URL" => "https://gitlab.example/project",
+          "CI_MERGE_REQUEST_IID" => "42",
+          "DD_GIT_BRANCH" => "main",
+          "DD_GIT_COMMIT_MESSAGE" => "m" * 5001,
+          "DD_GIT_COMMIT_HEAD_SHA" => "a" * 40,
+          "DD_GIT_PULL_REQUEST_BASE_BRANCH" => "main"
+        ) { example.run }
       end
 
       before do
         produce_test_session_trace(tests_count: 4, with_http_span: true)
+        spans.each do |span|
+          span.set_tag("ci.custom", "custom CI metadata")
+          span.set_tag("git.custom", "custom Git metadata")
+        end
       end
 
       it "deduplicates every test event type without modifying original spans" do
@@ -191,7 +193,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
             expect(event["content"]["meta"]).to include(
               "ci.custom" => "custom CI metadata",
               "git.custom" => "custom Git metadata",
-              "_dd.ci.env_vars" => '{"JOB_ID":"123"}',
+              "_dd.ci.env_vars" => '{"CI_PROJECT_URL":"https://gitlab.example/project","CI_PIPELINE_ID":"123","CI_JOB_ID":"456"}',
               "pr.number" => "42"
             )
           end
@@ -223,7 +225,6 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
         let(:max_payload_size) { 2500 }
 
         it "includes shared metadata in every chunk so removed tags can be restored" do
-          expect(Datadog::CI.send(:test_tracing)).to receive(:environment_tags).once.and_call_original
           payloads = []
           allow(api).to receive(:citestcycle_request) do |args|
             payloads << MessagePack.unpack(args[:payload])
