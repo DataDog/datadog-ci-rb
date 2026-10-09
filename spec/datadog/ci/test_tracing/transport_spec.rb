@@ -221,33 +221,10 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
         end
       end
 
-      it "keeps shared fields authoritative and leaves ordinary span metadata intact" do
-        # A raw tracer span bypasses the CI API. It still cannot override payload defaults.
-        first_test_span.set_tag("git.branch", "feature")
-        first_test_span.set_tag("test_session.name", "custom session")
-        first_custom_span.set_tag("git.branch", "main")
-        first_custom_span.set_tag("ci.job.name", "tests")
-        first_custom_span.set_tag("test_session.name", logical_test_session_name)
-
-        transport.send_events(traces)
-
-        expect(api).to have_received(:citestcycle_request) do |args|
-          payload = MessagePack.unpack(args[:payload])
-          events = payload["events"]
-          test_event = events.find { |event| event["content"]["span_id"] == first_test_span.id }
-          expect(test_event["content"]["meta"]).not_to include("git.branch", "test_session.name")
-          expect(payload["metadata"]["test_levels"]).to include("git.branch" => "main", "test_session.name" => logical_test_session_name)
-          span_event = events.find { |event| event["content"]["span_id"] == first_custom_span.id }
-          expect(span_event["content"]["meta"]).to include(
-            "git.branch" => "main", "ci.job.name" => "tests", "test_session.name" => logical_test_session_name
-          )
-        end
-      end
-
       context "when splitting payloads" do
         let(:max_payload_size) { 2500 }
 
-        it "includes shared metadata in every chunk so removed tags can be restored" do
+        it "includes shared metadata in every chunk" do
           payloads = []
           allow(api).to receive(:citestcycle_request) do |args|
             payloads << MessagePack.unpack(args[:payload])

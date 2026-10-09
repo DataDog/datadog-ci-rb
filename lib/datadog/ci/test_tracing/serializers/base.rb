@@ -3,7 +3,6 @@
 require "set"
 
 require_relative "../../ext/test"
-require_relative "../../ext/app_types"
 require_relative "meta_truncation"
 
 module Datadog
@@ -31,12 +30,9 @@ module Datadog
             @span = span
             @options = options
 
-            shared_metadata = Ext::AppTypes::CI_SPAN_TYPES.include?(event_type) ? options.fetch(:shared_tags, {}) : {}
-            @meta = @span.meta.each_with_object({}) do |(key, value), result|
-              next if Ext::Test::TRANSIENT_TAGS.include?(key) || shared_metadata.key?(key)
-
-              result[key] = MetaTruncation.truncate_value(value)
-            end
+            @meta = MetaTruncation.truncate_string_values(
+              @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
+            )
 
             @errors = {}
             @validated = false

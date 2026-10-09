@@ -7,7 +7,6 @@ require "datadog/core/utils/only_once"
 require_relative "serializers/factories/test_suite_level"
 require_relative "serializers/meta_truncation"
 
-require_relative "../ext/app_types"
 require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/event_platform_transport"
@@ -57,7 +56,7 @@ module Datadog
           serializer = Serializers::Factories::TestSuiteLevel.serializer(
             trace,
             span,
-            options: {itr_correlation_id: test_impact_analysis&.correlation_id, shared_tags: test_tracing&.shared_tags || {}}
+            options: {itr_correlation_id: test_impact_analysis&.correlation_id}
           )
 
           if serializer.valid?
