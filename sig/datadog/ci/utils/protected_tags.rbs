@@ -5,7 +5,6 @@ module Datadog
         @mutex: Mutex
         @reported: Hash[[String, Symbol], bool]
         def self.reject?: (String | Symbol key, Symbol operation) -> bool
-        def self.initial_tags: (Hash[untyped, untyped] tags) -> Hash[untyped, untyped]
       end
     end
   end

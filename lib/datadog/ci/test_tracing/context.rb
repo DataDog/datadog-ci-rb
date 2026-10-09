@@ -265,7 +265,7 @@ module Datadog
           ci_span.set_default_tags
           ci_span.set_environment_runtime_tags
           ci_span.set_internal_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
-          ci_span.set_internal_tags(tags)
+          ci_span.set_internal_tags(tags.reject { |key, _| Ext::Metadata::SHARED_TAGS.include?(key.to_s) })
           ci_span.set_internal_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
         end
 

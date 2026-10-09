@@ -3,8 +3,8 @@ module Datadog
     module Ext
       module Metadata
         SHARED_ENVIRONMENT_TAGS: Array[String]
+        SHARED_TAGS: Set[String]
         PROTECTED_TAGS: Set[String]
-        INITIAL_TAGS: Set[String]
       end
     end
   end

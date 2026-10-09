@@ -144,6 +144,24 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
       end
     end
 
+    it "ignores shared creation tags while serializing other manual tags" do
+      shared_branch = test_tracing.shared_tags.fetch("git.branch")
+      expect(shared_branch).not_to eq("manual-branch")
+      test = Datadog::CI.start_test("manual", "calculator_tests", tags: {"git.branch" => "manual-branch", "test.status" => "pass"})
+      expect(test.git_branch).to eq(shared_branch)
+      test.finish
+
+      transport.send_events(traces)
+
+      expect(api).to have_received(:citestcycle_request) do |args|
+        payload = MessagePack.unpack(args[:payload])
+        event = payload["events"].find { |entry| entry["content"]["span_id"] == test.id }
+        expect(event["content"]["meta"]).not_to have_key("git.branch")
+        expect(event["content"]["meta"]).to include("test.status" => "pass")
+        expect(payload["metadata"]["test_levels"]).to include("git.branch" => shared_branch)
+      end
+    end
+
     context "with shared environment metadata" do
       around do |example|
         ClimateControl.modify(

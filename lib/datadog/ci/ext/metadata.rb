@@ -10,7 +10,7 @@ module Datadog
     module Ext
       # SDK-owned metadata. Custom tag names outside this set remain writable.
       module Metadata
-        # Explicitly allowlist environment fields; custom ci.* and git.* tags belong to individual events.
+        # Explicitly whitelist environment fields; custom ci.* and git.* tags belong to individual events.
         SHARED_ENVIRONMENT_TAGS = [
           Environment::TAG_JOB_ID,
           Environment::TAG_JOB_NAME,
@@ -50,6 +50,11 @@ module Datadog
           Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA,
           Git::TAG_PULL_REQUEST_BASE_BRANCH_HEAD_SHA
         ].freeze
+
+        SHARED_TAGS = Set.new(SHARED_ENVIRONMENT_TAGS + Test::LibraryCapabilities::CAPABILITY_VERSIONS.keys + [
+          Test::TAG_TEST_SESSION_NAME,
+          Test::TAG_USER_PROVIDED_TEST_SERVICE
+        ]).freeze
 
         PROTECTED_TAGS = Set.new([
           Test::TAG_FRAMEWORK,
@@ -153,13 +158,6 @@ module Datadog
           Environment::TAG_NODE_NAME,
           Environment::TAG_CI_ENV_VARS,
           Environment::TAG_PR_NUMBER
-        ]).freeze
-
-        # Supported inputs to the manual instrumentation API, before SDK initialization.
-        INITIAL_TAGS = Set.new([
-          Test::TAG_FRAMEWORK, Test::TAG_FRAMEWORK_VERSION, Test::TAG_TYPE,
-          Test::TAG_SOURCE_FILE, Test::TAG_SOURCE_START, Test::TAG_SOURCE_END,
-          Test::TAG_CODEOWNERS, Test::TAG_PARAMETERS
         ]).freeze
       end
     end
