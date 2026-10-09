@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe Datadog::CI::TestSession do
-  let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session") }
-  let(:test_tracing) { spy("test_tracing", logical_test_session_name: "my_test_session") }
+  let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session", type: "test_session_end") }
+  let(:test_tracing) { spy("test_tracing", shared_tags: {}, logical_test_session_name: "my_test_session") }
 
   before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
   subject(:ci_test_session) { described_class.new(tracer_span) }
@@ -57,7 +57,7 @@ RSpec.describe Datadog::CI::TestSession do
     context "when an inheritable tag is set after inherited tags were read" do
       before do
         ci_test_session.inheritable_tags
-        ci_test_session.set_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, true)
+        ci_test_session.set_internal_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, true)
       end
 
       it "returns the updated inheritable tags" do

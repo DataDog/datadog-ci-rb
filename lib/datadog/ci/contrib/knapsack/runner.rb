@@ -43,7 +43,7 @@ module Datadog
                       span.failed!
                     elsif !test_tracing_component.any_tests_started?
                       span.skipped!(reason: "No tests were executed")
-                      span.set_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
+                      span.set_internal_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
                     else
                       span.passed!
                     end

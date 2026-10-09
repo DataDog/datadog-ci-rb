@@ -973,7 +973,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
 
     it "forces a skippable suite to run when the suite is marked unskippable" do
-      test_suite.set_tag(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
+      test_suite.set_internal_tag(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
 
       component.on_test_suite_started(test_suite)
 
@@ -983,7 +983,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
 
     it "reports zero skips for a forced run" do
-      test_suite.set_tag(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
+      test_suite.set_internal_tag(Datadog::CI::Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
       component.on_test_suite_started(test_suite)
       component.on_test_suite_finished(test_suite, context)
 

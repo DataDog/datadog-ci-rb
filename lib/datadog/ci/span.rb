@@ -5,7 +5,9 @@ require "drb"
 require "datadog/core/environment/platform"
 
 require_relative "ext/test"
+require_relative "ext/app_types"
 require_relative "utils/test_run"
+require_relative "utils/protected_tags"
 require_relative "ext/git"
 
 module Datadog
@@ -24,6 +26,8 @@ module Datadog
         Ext::Test::TAG_RUNTIME_NAME => Core::Environment::Ext::LANG_ENGINE,
         Ext::Test::TAG_RUNTIME_VERSION => Core::Environment::Ext::ENGINE_VERSION
       }.freeze
+
+      EMPTY_TAGS = {}.freeze
 
       attr_reader :tracer_span
 
@@ -115,21 +119,35 @@ module Datadog
       # @param [String] key the key of the tag.
       # @return [String] the value of the tag.
       def get_tag(key)
-        tracer_span.get_tag(key)
+        shared_tags[key] || tracer_span.get_tag(key)
       end
 
-      # Sets tag value by key.
+      # Sets a custom tag. SDK-owned fields are read-only through this method.
       # @param [String] key the key of the tag.
       # @param [String] value the value of the tag.
       # @return [void]
       def set_tag(key, value)
+        return if Utils::ProtectedTags.reject?(key, :set_tag)
+
+        set_internal_tag(key, value)
+      end
+
+      # @internal_api
+      def set_internal_tag(key, value)
         tracer_span.set_tag(key, value)
       end
 
-      # Removes tag by key.
+      # Removes a custom tag. SDK-owned fields are read-only through this method.
       # @param [String] key the key of the tag.
       # @return [void]
       def clear_tag(key)
+        return if Utils::ProtectedTags.reject?(key, :clear_tag)
+
+        clear_internal_tag(key)
+      end
+
+      # @internal_api
+      def clear_internal_tag(key)
         tracer_span.clear_tag(key)
       end
 
@@ -137,14 +155,21 @@ module Datadog
       # @param [String] key the key of the metric.
       # @return [Numeric] value the value of the metric.
       def get_metric(key)
-        tracer_span.get_metric(key)
+        shared_tags[key] || tracer_span.get_metric(key)
       end
 
-      # Sets metric value by key.
+      # Sets a custom metric. SDK-owned fields are read-only through this method.
       # @param [String] key the key of the metric.
       # @param [Numeric] value the value of the metric.
       # @return [void]
       def set_metric(key, value)
+        return if Utils::ProtectedTags.reject?(key, :set_metric)
+
+        set_internal_metric(key, value)
+      end
+
+      # @internal_api
+      def set_internal_metric(key, value)
         tracer_span.set_metric(key, value)
       end
 
@@ -158,19 +183,24 @@ module Datadog
       # @param [Hash[String, String]] tags the tags to set.
       # @return [void]
       def set_tags(tags)
+        tags.each { |key, value| set_tag(key, value) }
+      end
+
+      # @internal_api
+      def set_internal_tags(tags)
         tracer_span.set_tags(tags)
       end
 
       # Returns the git repository URL extracted from the environment.
       # @return [String] the repository URL.
       def git_repository_url
-        tracer_span.get_tag(Ext::Git::TAG_REPOSITORY_URL)
+        get_tag(Ext::Git::TAG_REPOSITORY_URL)
       end
 
       # Returns the latest commit SHA extracted from the environment.
       # @return [String] the commit SHA of the last commit.
       def git_commit_sha
-        tracer_span.get_tag(Ext::Git::TAG_COMMIT_SHA)
+        get_tag(Ext::Git::TAG_COMMIT_SHA)
       end
 
       # Returns the git commit message extracted from the environment.
@@ -200,19 +230,19 @@ module Datadog
       # Returns the git branch name extracted from the environment.
       # @return [String] the branch.
       def git_branch
-        tracer_span.get_tag(Ext::Git::TAG_BRANCH)
+        get_tag(Ext::Git::TAG_BRANCH)
       end
 
       # Returns the git tag extracted from the environment.
       # @return [String, nil] the tag or nil if not set.
       def git_tag
-        tracer_span.get_tag(Ext::Git::TAG_TAG)
+        get_tag(Ext::Git::TAG_TAG)
       end
 
       # Returns the base commit SHA for the pull request, if available.
       # @return [String, nil] the base commit SHA or nil if not set.
       def base_commit_sha
-        tracer_span.get_tag(Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA)
+        get_tag(Ext::Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA)
       end
 
       # Returns the OS architecture extracted from the environment.
@@ -266,6 +296,12 @@ module Datadog
       end
 
       private
+
+      def shared_tags
+        return EMPTY_TAGS unless Ext::AppTypes::CI_SPAN_TYPES.include?(type)
+
+        test_tracing.shared_tags
+      end
 
       # provides access to the test tracing component for CI models to deactivate themselves
       def test_tracing

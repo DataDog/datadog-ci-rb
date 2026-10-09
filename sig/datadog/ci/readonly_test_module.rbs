@@ -8,6 +8,10 @@ module Datadog
       def id: () -> Integer
       def name: () -> String
       def finish: () -> void
+      def set_internal_tag: (String key, untyped? value) -> void
+      def set_internal_tags: (Hash[untyped, untyped] tags) -> void
+      def set_internal_metric: (String key, untyped value) -> void
+      def clear_internal_tag: (String key) -> void
       def set_tag: (untyped key, untyped value) -> void
       def set_metric: (untyped key, untyped value) -> void
     end

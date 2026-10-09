@@ -1,0 +1,7 @@
+module Datadog
+  module Core
+    module Utils
+      def self.utf8_encode: (untyped value, ?binary: bool, ?placeholder: String) -> String
+    end
+  end
+end

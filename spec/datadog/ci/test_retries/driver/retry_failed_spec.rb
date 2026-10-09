@@ -8,7 +8,7 @@ RSpec.describe Datadog::CI::TestRetries::Driver::RetryFailed do
     subject { driver.should_retry? }
 
     context "when the test has not passed yet" do
-      let(:test_span) { double(:test_span, set_tag: true, passed?: false) }
+      let(:test_span) { double(:test_span, set_internal_tag: true, passed?: false) }
 
       it { is_expected.to be true }
 
@@ -20,7 +20,7 @@ RSpec.describe Datadog::CI::TestRetries::Driver::RetryFailed do
     end
 
     context "when the test has passed" do
-      let(:test_span) { double(:test_span, set_tag: true, passed?: true) }
+      let(:test_span) { double(:test_span, set_internal_tag: true, passed?: true) }
 
       before { driver.record_retry(test_span) }
 

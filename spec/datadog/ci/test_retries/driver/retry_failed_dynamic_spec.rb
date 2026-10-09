@@ -13,7 +13,7 @@ RSpec.describe Datadog::CI::TestRetries::Driver::RetryFailedDynamic do
     })
   end
 
-  let(:test_span) { double(:test_span, set_tag: true, passed?: false, failed?: true) }
+  let(:test_span) { double(:test_span, set_internal_tag: true, passed?: false, failed?: true) }
 
   subject(:driver) { described_class.new(slow_test_retries, retries_buckets: retries_buckets) }
 
@@ -82,7 +82,7 @@ RSpec.describe Datadog::CI::TestRetries::Driver::RetryFailedDynamic do
 
   describe "#should_retry? when test passes" do
     let(:retries_buckets) { [5, 1, 1, 1, 1] }
-    let(:passing_span) { double(:test_span, set_tag: true, passed?: true, failed?: false) }
+    let(:passing_span) { double(:test_span, set_internal_tag: true, passed?: true, failed?: false) }
 
     before { driver.record_duration(1.0) }
 

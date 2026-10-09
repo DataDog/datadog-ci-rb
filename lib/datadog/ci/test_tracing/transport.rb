@@ -7,12 +7,10 @@ require "datadog/core/utils/only_once"
 require_relative "serializers/factories/test_suite_level"
 require_relative "serializers/meta_truncation"
 
-require_relative "../ext/app_types"
 require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/event_platform_transport"
 require_relative "../transport/telemetry"
-require_relative "../utils/configuration"
 
 module Datadog
   module CI
@@ -96,7 +94,7 @@ module Datadog
           packer.write(1)
 
           packer.write("metadata")
-          packer.write_map_header(1 + Ext::AppTypes::CI_SPAN_TYPES.size)
+          packer.write_map_header(2)
 
           packer.write("*")
           metadata_fields_count = dd_env ? 4 : 3
@@ -116,25 +114,8 @@ module Datadog
           packer.write("library_version")
           packer.write(Serializers::MetaTruncation.truncate_value(Datadog::CI::VERSION::STRING))
 
-          library_capabilities_tags = Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS
-
-          Ext::AppTypes::CI_SPAN_TYPES.each do |ci_span_type|
-            packer.write(ci_span_type)
-            packer.write_map_header(2 + library_capabilities_tags.count)
-
-            packer.write(Ext::Test::TAG_TEST_SESSION_NAME)
-            packer.write(Serializers::MetaTruncation.truncate_value(test_tracing&.logical_test_session_name))
-
-            packer.write(Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE)
-            packer.write(
-              Serializers::MetaTruncation.truncate_value(Utils::Configuration.service_name_provided_by_user?.to_s)
-            )
-
-            library_capabilities_tags.each do |tag, value|
-              packer.write(tag)
-              packer.write(Serializers::MetaTruncation.truncate_value(value))
-            end
-          end
+          packer.write("test_levels")
+          packer.write(Serializers::MetaTruncation.truncate_string_values(test_tracing&.shared_tags || {}))
 
           packer.write("events")
         end

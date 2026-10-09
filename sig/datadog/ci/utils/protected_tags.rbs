@@ -1,0 +1,11 @@
+module Datadog
+  module CI
+    module Utils
+      module ProtectedTags
+        @mutex: Mutex
+        @reported: Hash[[String, Symbol], bool]
+        def self.reject?: (String | Symbol key, Symbol operation) -> bool
+      end
+    end
+  end
+end

@@ -116,7 +116,7 @@ module Datadog
 
             # mark the test session so that all events emitted in this session are tagged
             # with the hidden _dd.ci.library_configuration_error.test_management_tests tag
-            test_session.set_tag(Ext::Test::LibraryConfigurationError::TAG_TEST_MANAGEMENT_TESTS, "true")
+            test_session.set_internal_tag(Ext::Test::LibraryConfigurationError::TAG_TEST_MANAGEMENT_TESTS, "true")
           end
 
           Response.from_http_response(http_response).tests
