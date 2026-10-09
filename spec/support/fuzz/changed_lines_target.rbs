@@ -1,0 +1,3 @@
+module ChangedLinesTarget
+  def self.check: (String data) -> true
+end
