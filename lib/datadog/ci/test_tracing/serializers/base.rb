@@ -31,7 +31,7 @@ module Datadog
             @span = span
             @options = options
 
-            shared_metadata = Ext::AppTypes::CI_SPAN_TYPES.include?(event_type) ? options.fetch(:test_level_metadata, {}) : {}
+            shared_metadata = Ext::AppTypes::CI_SPAN_TYPES.include?(event_type) ? options.fetch(:shared_tags, {}) : {}
             @meta = @span.meta.each_with_object({}) do |(key, value), result|
               next if Ext::Test::TRANSIENT_TAGS.include?(key) || shared_metadata.key?(key)
 

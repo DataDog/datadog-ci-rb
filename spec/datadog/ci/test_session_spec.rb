@@ -2,7 +2,7 @@
 
 RSpec.describe Datadog::CI::TestSession do
   let(:tracer_span) { Datadog::Tracing::SpanOperation.new("session", type: "test_session_end") }
-  let(:test_tracing) { spy("test_tracing", shared_environment_tags: {}, logical_test_session_name: "my_test_session") }
+  let(:test_tracing) { spy("test_tracing", shared_tags: {}, logical_test_session_name: "my_test_session") }
 
   before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
   subject(:ci_test_session) { described_class.new(tracer_span) }

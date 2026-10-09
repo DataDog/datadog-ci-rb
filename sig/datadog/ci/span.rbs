@@ -92,7 +92,7 @@ module Datadog
 
       private
 
-      def shared_environment_tags: () -> Hash[String, String]
+      def shared_tags: () -> Hash[String, String]
 
       def test_tracing: () -> Datadog::CI::TestTracing::Component
     end

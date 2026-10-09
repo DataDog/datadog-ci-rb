@@ -2,7 +2,7 @@
 
 RSpec.describe Datadog::CI::TestModule do
   let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, type: "test_module_end", finish: true) }
-  let(:test_tracing) { spy("test_tracing", shared_environment_tags: {}) }
+  let(:test_tracing) { spy("test_tracing", shared_tags: {}) }
 
   before { allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing) }
 

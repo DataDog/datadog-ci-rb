@@ -16,11 +16,7 @@ module Datadog
           @local_test_suites_mode = true
         end
 
-        def test_level_metadata
-          {}
-        end
-
-        def shared_environment_tags
+        def shared_tags
           {}
         end
 

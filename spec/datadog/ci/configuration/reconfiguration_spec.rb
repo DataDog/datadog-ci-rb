@@ -195,12 +195,12 @@ RSpec.describe Datadog::CI::Configuration::Reconfiguration do
         worker_session = Datadog::CI.start_test_session
         expect(worker_session.id).to eq(session.id)
         worker_tracing = Datadog::CI.send(:test_tracing)
-        expect(worker_tracing.test_level_metadata).to include("test_session.name" => worker_session.name)
+        expect(worker_tracing.shared_tags).to include("test_session.name" => worker_session.name)
 
         worker_test = Datadog::CI.start_test("worker test", "worker suite")
-        expect(worker_tracing.shared_environment_tags).not_to be_empty
-        expect(worker_tracing.test_level_metadata).to include(worker_tracing.shared_environment_tags)
-        expect(worker_tracing.test_level_metadata).to include("test_session.name" => worker_session.name)
+        expect(worker_tracing.shared_tags).not_to be_empty
+        expect(worker_tracing.shared_tags).to include("git.repository_url" => worker_test.git_repository_url)
+        expect(worker_tracing.shared_tags).to include("test_session.name" => worker_session.name)
         worker_test.finish
 
         Datadog.configure { |c| c.ci.enabled = false }

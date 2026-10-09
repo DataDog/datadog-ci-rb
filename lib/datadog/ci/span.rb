@@ -119,7 +119,7 @@ module Datadog
       # @param [String] key the key of the tag.
       # @return [String] the value of the tag.
       def get_tag(key)
-        shared_environment_tags[key] || tracer_span.get_tag(key)
+        shared_tags[key] || tracer_span.get_tag(key)
       end
 
       # Sets a custom tag. SDK-owned fields are read-only through this method.
@@ -155,7 +155,7 @@ module Datadog
       # @param [String] key the key of the metric.
       # @return [Numeric] value the value of the metric.
       def get_metric(key)
-        shared_environment_tags[key] || tracer_span.get_metric(key)
+        shared_tags[key] || tracer_span.get_metric(key)
       end
 
       # Sets a custom metric. SDK-owned fields are read-only through this method.
@@ -297,10 +297,10 @@ module Datadog
 
       private
 
-      def shared_environment_tags
+      def shared_tags
         return EMPTY_TAGS unless Ext::AppTypes::CI_SPAN_TYPES.include?(type)
 
-        test_tracing.shared_environment_tags
+        test_tracing.shared_tags
       end
 
       # provides access to the test tracing component for CI models to deactivate themselves

@@ -139,7 +139,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           expect(payload["metadata"]["*"]["env"]).to eq("e" * 5000)
 
           expect(payload["metadata"]["test_levels"]["test_session.name"]).to eq("s" * 5000)
-          expect(test_tracing.test_level_metadata["test_session.name"]).to eq("s" * 5001)
+          expect(test_tracing.shared_tags["test_session.name"]).to eq("s" * 5001)
         end
       end
     end
@@ -174,7 +174,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           expect(span.meta.keys & Datadog::CI::Ext::Metadata::SHARED_ENVIRONMENT_TAGS).to be_empty
         end
         original_metadata = spans.map { |span| span.meta.dup }
-        shared_snapshot = test_tracing.test_level_metadata
+        shared_snapshot = test_tracing.shared_tags
         transport.send_events(traces)
 
         expect(api).to have_received(:citestcycle_request) do |args|
@@ -204,7 +204,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           end
         end
         expect(spans.map(&:meta)).to eq(original_metadata)
-        expect(test_tracing.test_level_metadata).to equal(shared_snapshot)
+        expect(test_tracing.shared_tags).to equal(shared_snapshot)
         expect(shared_snapshot["git.commit.message"]).to eq("m" * 5001)
       end
 

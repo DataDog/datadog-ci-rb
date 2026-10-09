@@ -103,11 +103,13 @@ RSpec.describe "SDK-owned metadata" do
     first = Datadog::CI.start_test("first", "suite")
     first.finish
     ClimateControl.modify("DD_GIT_BRANCH" => "other") do
+      session = Datadog::CI.start_test_session
       second = Datadog::CI.start_test("second", "suite")
       expect(second.git_branch).to equal(first.git_branch)
       expect(second.git_branch).to eq("main")
       expect(second.git_branch).to be_frozen
       second.finish
+      session.finish
     end
   end
 
@@ -120,7 +122,7 @@ RSpec.describe "SDK-owned metadata" do
     end
     test.finish
     custom_span = spans.find { |span| span.name == "setup" }
-    expect(custom_span.meta.keys & test_tracing.shared_environment_tags.keys).to be_empty
+    expect(custom_span.meta.keys & test_tracing.shared_tags.keys).to be_empty
   end
 
   it "looks up shared metadata on each read, even for wrappers created before initialization" do
@@ -136,7 +138,7 @@ RSpec.describe "SDK-owned metadata" do
 
   it "finalizes shared payload metadata when the session starts" do
     session = Datadog::CI.start_test_session
-    metadata = test_tracing.test_level_metadata
+    metadata = test_tracing.shared_tags
     expect(metadata).to be_frozen
     expect(metadata).to include(
       "test_session.name" => session.name,
@@ -144,14 +146,22 @@ RSpec.describe "SDK-owned metadata" do
       "_dd.library_capabilities.auto_test_retries" => "1"
     )
     expect(metadata).to have_key("_dd.test.is_user_provided_service")
-    expect(test_tracing.test_level_metadata).to equal(metadata)
+    test = Datadog::CI.start_test("example", "suite")
+    metadata.each do |key, value|
+      expect(value).to be_frozen
+      expect(session.get_tag(key)).to eq(value)
+      expect(test.get_tag(key)).to eq(value)
+      expect(test.tracer_span.get_tag(key)).to be_nil
+    end
+    expect(test_tracing.shared_tags).to equal(metadata)
+    test.finish
     session.finish
   end
 
   it "assembles shared payload metadata for manual tests without a session" do
     test = Datadog::CI.start_test("example", "suite")
-    expect(test_tracing.test_level_metadata).to include("git.branch" => "main")
-    expect(test_tracing.test_level_metadata).to include(Datadog::CI::Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS)
+    expect(test_tracing.shared_tags).to include("git.branch" => "main")
+    expect(test_tracing.shared_tags).to include(Datadog::CI::Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS)
     test.finish
   end
 

@@ -54,11 +54,7 @@ module Datadog
           context_service_uri: nil,
           trace_setup_teardown_enabled: false
         )
-          @context = Context.new(
-            test_tracing_component: self,
-            runtime_tags_overrides: runtime_tags_overrides,
-            logical_test_session_name: logical_test_session_name
-          )
+          @context = Context.new(test_tracing_component: self, runtime_tags_overrides: runtime_tags_overrides)
 
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
@@ -88,12 +84,8 @@ module Datadog
           @local_test_suites_mode = true
         end
 
-        def shared_environment_tags
-          @context.shared_environment_tags
-        end
-
-        def test_level_metadata
-          @context.test_level_metadata
+        def shared_tags
+          @context.shared_tags
         end
 
         def configure(library_configuration, test_session)
@@ -301,7 +293,7 @@ module Datadog
 
           # sets logical test session name if none provided by the user
           override_logical_test_session_name!(test_session) if logical_test_session_name.nil?
-          @context.test_session_name = logical_test_session_name
+          @context.finalize_shared_tags
 
           # Signal Remote::Component to configure the library.
           # Note that it will call this component back (unfortunate circular dependency).

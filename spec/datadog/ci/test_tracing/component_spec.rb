@@ -38,7 +38,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           else
             expect(span_under_test.get_tag(key)).to be_nil
           end
-          expect(test_tracing.shared_environment_tags[key]).to eq(value)
+          expect(test_tracing.shared_tags[key]).to eq(value)
         else
           expect(span_under_test.get_tag(key)).to be_nil
         end

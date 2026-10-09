@@ -57,7 +57,7 @@ module Datadog
           serializer = Serializers::Factories::TestSuiteLevel.serializer(
             trace,
             span,
-            options: {itr_correlation_id: test_impact_analysis&.correlation_id, test_level_metadata: test_tracing&.test_level_metadata || {}}
+            options: {itr_correlation_id: test_impact_analysis&.correlation_id, shared_tags: test_tracing&.shared_tags || {}}
           )
 
           if serializer.valid?
@@ -116,7 +116,7 @@ module Datadog
           packer.write(Serializers::MetaTruncation.truncate_value(Datadog::CI::VERSION::STRING))
 
           packer.write("test_levels")
-          packer.write(Serializers::MetaTruncation.truncate_string_values(test_tracing&.test_level_metadata || {}))
+          packer.write(Serializers::MetaTruncation.truncate_string_values(test_tracing&.shared_tags || {}))
 
           packer.write("events")
         end
