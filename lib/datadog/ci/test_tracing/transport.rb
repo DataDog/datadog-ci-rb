@@ -12,7 +12,6 @@ require_relative "../ext/telemetry"
 require_relative "../ext/transport"
 require_relative "../transport/event_platform_transport"
 require_relative "../transport/telemetry"
-require_relative "../utils/configuration"
 
 module Datadog
   module CI
@@ -28,14 +27,6 @@ module Datadog
           super(api: api, max_payload_size: max_payload_size)
 
           @dd_env = dd_env
-          @test_level_metadata = {}
-        end
-
-        def send_events(events)
-          return [] if events.nil? || events.empty?
-
-          @test_level_metadata = build_test_level_metadata
-          super
         end
 
         # this method is needed for compatibility with Datadog::Tracing::Writer that uses this Transport
@@ -66,7 +57,7 @@ module Datadog
           serializer = Serializers::Factories::TestSuiteLevel.serializer(
             trace,
             span,
-            options: {itr_correlation_id: test_impact_analysis&.correlation_id, test_level_metadata: @test_level_metadata}
+            options: {itr_correlation_id: test_impact_analysis&.correlation_id, test_level_metadata: test_tracing&.test_level_metadata || {}}
           )
 
           if serializer.valid?
@@ -125,20 +116,9 @@ module Datadog
           packer.write(Serializers::MetaTruncation.truncate_value(Datadog::CI::VERSION::STRING))
 
           packer.write("test_levels")
-          packer.write(@test_level_metadata)
+          packer.write(Serializers::MetaTruncation.truncate_string_values(test_tracing&.test_level_metadata || {}))
 
           packer.write("events")
-        end
-
-        def build_test_level_metadata
-          shared_tags = (test_tracing&.shared_environment_tags || {}).dup
-
-          session_name = test_tracing&.logical_test_session_name
-          shared_tags[Ext::Test::TAG_TEST_SESSION_NAME] = session_name unless session_name.nil?
-          shared_tags[Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE] = Utils::Configuration.service_name_provided_by_user?.to_s
-          shared_tags.merge!(Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS)
-
-          Serializers::MetaTruncation.truncate_string_values(shared_tags)
         end
 
         def test_impact_analysis

@@ -29,11 +29,15 @@ module Datadog
       # Its responsibility includes building domain models for test visibility as well.
       # Internally it uses Datadog::Tracing module to create spans.
       class Context
-        attr_reader :tests_skipped_by_tia_count
+        attr_reader :tests_skipped_by_tia_count, :test_level_metadata
 
-        def initialize(test_tracing_component:, runtime_tags_overrides: {})
+        def initialize(test_tracing_component:, runtime_tags_overrides: {}, logical_test_session_name: nil)
           @test_tracing_component = test_tracing_component
           @runtime_tags_overrides = runtime_tags_overrides
+          @test_level_metadata = Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS.merge(
+            Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE => Utils::Configuration.service_name_provided_by_user?.to_s
+          ).freeze
+          self.test_session_name = logical_test_session_name
 
           @fiber_local_context = Store::FiberLocal.new
           @process_context = Store::Process.new
@@ -46,6 +50,12 @@ module Datadog
 
         def shared_environment_tags
           @shared_environment_tags || Span::EMPTY_TAGS
+        end
+
+        def test_session_name=(name)
+          return if name.nil?
+
+          @test_level_metadata = @test_level_metadata.merge(Ext::Test::TAG_TEST_SESSION_NAME => name.dup.freeze).freeze
         end
 
         def start_test_session(service: nil, tags: {})
@@ -245,9 +255,13 @@ module Datadog
 
         # TAGGING
         def set_initial_tags(ci_span, tags)
-          @shared_environment_tags ||= Ext::Environment.tags(ENV)
-            .slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS)
-            .transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }.freeze
+          @shared_environment_tags ||= begin
+            environment_tags = Ext::Environment.tags(ENV)
+              .slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS)
+              .transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }.freeze
+            @test_level_metadata = @test_level_metadata.merge(environment_tags).freeze
+            environment_tags
+          end
 
           ci_span.set_default_tags
           ci_span.set_environment_runtime_tags

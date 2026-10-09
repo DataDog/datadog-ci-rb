@@ -194,6 +194,14 @@ RSpec.describe Datadog::CI::Configuration::Reconfiguration do
         original = Datadog.send(:components)
         worker_session = Datadog::CI.start_test_session
         expect(worker_session.id).to eq(session.id)
+        worker_tracing = Datadog::CI.send(:test_tracing)
+        expect(worker_tracing.test_level_metadata).to include("test_session.name" => worker_session.name)
+
+        worker_test = Datadog::CI.start_test("worker test", "worker suite")
+        expect(worker_tracing.shared_environment_tags).not_to be_empty
+        expect(worker_tracing.test_level_metadata).to include(worker_tracing.shared_environment_tags)
+        expect(worker_tracing.test_level_metadata).to include("test_session.name" => worker_session.name)
+        worker_test.finish
 
         Datadog.configure { |c| c.ci.enabled = false }
         expect(Datadog.send(:components)).to equal(original)

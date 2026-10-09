@@ -134,6 +134,27 @@ RSpec.describe "SDK-owned metadata" do
     test.finish
   end
 
+  it "finalizes shared payload metadata when the session starts" do
+    session = Datadog::CI.start_test_session
+    metadata = test_tracing.test_level_metadata
+    expect(metadata).to be_frozen
+    expect(metadata).to include(
+      "test_session.name" => session.name,
+      "git.branch" => "main",
+      "_dd.library_capabilities.auto_test_retries" => "1"
+    )
+    expect(metadata).to have_key("_dd.test.is_user_provided_service")
+    expect(test_tracing.test_level_metadata).to equal(metadata)
+    session.finish
+  end
+
+  it "assembles shared payload metadata for manual tests without a session" do
+    test = Datadog::CI.start_test("example", "suite")
+    expect(test_tracing.test_level_metadata).to include("git.branch" => "main")
+    expect(test_tracing.test_level_metadata).to include(Datadog::CI::Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS)
+    test.finish
+  end
+
   it "logs a rejected operation once, without including the attempted value" do
     output = StringIO.new
     Datadog.configure { |c| c.logger.instance = Logger.new(output) }
