@@ -156,9 +156,7 @@ module Datadog
 
         def active_span
           tracer_span = Datadog::Tracing.active_span
-          return unless tracer_span
-
-          Span.new(tracer_span)
+          Span.new(tracer_span) if tracer_span
         end
 
         def active_test
