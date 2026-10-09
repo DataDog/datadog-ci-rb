@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 10bb4076980785b32f1b055dd6ca299ea8509da8
+  revision: ac74293386da5aef6e7439387ee40ebcaa44882b
   branch: master
   specs:
     datadog (2.45.0.dev)
@@ -65,11 +65,11 @@ GEM
       parallel
     pp (0.6.4)
       prettyprint
-    prettyprint (0.2.0)
+    prettyprint (0.2.1)
     prism (1.9.0)
     public_suffix (7.0.5)
     rake (13.4.2)
-    rake-compiler (1.3.1)
+    rake-compiler (1.3.2)
       rake
     rbs (4.1.3)
       logger
