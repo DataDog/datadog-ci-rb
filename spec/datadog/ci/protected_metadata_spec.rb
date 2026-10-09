@@ -10,6 +10,9 @@ RSpec.describe "SDK-owned metadata" do
   it "reads shared metadata without storing it on test spans, including active wrappers" do
     test = Datadog::CI.start_test("example", "suite")
     expect(test.git_branch).to eq("main")
+    wrapper = Datadog::CI::Span.new(test.tracer_span)
+    expect(wrapper.git_branch).to eq("main")
+    expect(wrapper.get_metric("git.branch")).to eq("main")
     expect(test_tracing.active_span.get_tag("git.branch")).to eq("main")
     expect(test.tracer_span.get_tag("git.branch")).to be_nil
     test.finish
@@ -88,6 +91,14 @@ RSpec.describe "SDK-owned metadata" do
     expect(Datadog::CI::Ext::Metadata::PROTECTED_TAGS).to match_array(keys.uniq)
   end
 
+  it "shares every SDK environment tag" do
+    namespaces = [Datadog::CI::Ext::Git, Datadog::CI::Ext::Environment]
+    keys = namespaces.flat_map do |namespace|
+      namespace.constants(false).select { |name| name.to_s.start_with?("TAG_") }.map { |name| namespace.const_get(name) }
+    end
+    expect(Datadog::CI::Ext::Metadata::SHARED_ENVIRONMENT_TAGS).to match_array(keys.uniq)
+  end
+
   it "preserves a snapshot when the environment changes and shares values between tests" do
     first = Datadog::CI.start_test("first", "suite")
     first.finish
@@ -100,12 +111,30 @@ RSpec.describe "SDK-owned metadata" do
     end
   end
 
-  it "preserves environment metadata on ordinary CI custom spans" do
-    Datadog::CI.trace("setup") do |span|
-      expect(span.git_branch).to eq("main")
-      expect(Datadog::CI.active_span.git_branch).to eq("main")
+  it "does not attach environment metadata to ordinary CI custom spans" do
+    test = Datadog::CI.start_test("example", "suite")
+    Datadog::CI.trace("setup", tags: {"custom.tag" => "value"}) do |span|
+      expect(span.git_branch).to be_nil
+      expect(Datadog::CI.active_span.git_branch).to be_nil
+      expect(span.os_architecture).to be_nil
+      expect(span.runtime_version).to be_nil
+      expect(span.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to be_nil
+      expect(span.get_tag("custom.tag")).to eq("value")
     end
-    expect(spans.first.get_tag("git.branch")).to eq("main")
+    test.finish
+    custom_span = spans.find { |span| span.name == "setup" }
+    expect(custom_span.meta.keys & test_tracing.shared_environment_tags.keys).to be_empty
+  end
+
+  it "looks up shared metadata on each read, even for wrappers created before initialization" do
+    raw_span = Datadog::Tracing::SpanOperation.new("example", type: "test")
+    wrapper = Datadog::CI::Span.new(raw_span)
+    expect(wrapper.git_branch).to be_nil
+    test = Datadog::CI.start_test("example", "suite")
+    expect(wrapper.git_branch).to eq("main")
+    expect(wrapper.get_metric("git.branch")).to eq("main")
+    expect(raw_span.get_tag("git.branch")).to be_nil
+    test.finish
   end
 
   it "logs a rejected operation once, without including the attempted value" do

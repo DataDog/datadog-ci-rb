@@ -3,8 +3,8 @@
 RSpec.describe Datadog::CI::Test do
   include_context "Telemetry spy"
 
-  let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true) }
-  let(:test_tracing) { spy("test_tracing") }
+  let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, type: "test", finish: true) }
+  let(:test_tracing) { spy("test_tracing", shared_environment_tags: {}) }
   let(:test_impact_analysis) do
     Datadog::CI::TestImpactAnalysis::Component.new(dd_env: "test", enabled: true)
   end

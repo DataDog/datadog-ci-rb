@@ -184,10 +184,12 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
             "git.branch" => "main",
             "git.commit.message" => "m" * 5000,
             "git.commit.head.sha" => "a" * 40,
-            "git.pull_request.base_branch" => "main"
+            "git.pull_request.base_branch" => "main",
+            "_dd.ci.env_vars" => '{"CI_PROJECT_URL":"https://gitlab.example/project","CI_PIPELINE_ID":"123","CI_JOB_ID":"456"}',
+            "pr.number" => "42"
           )
           expect(payload["metadata"]["*"]).not_to have_key("git.branch")
-          expect(shared_metadata).not_to include("ci.custom", "git.custom", "_dd.ci.env_vars", "pr.number")
+          expect(shared_metadata).not_to include("ci.custom", "git.custom")
 
           test_events = payload["events"].reject { |event| event["type"] == "span" }
           expect(test_events.map { |event| event["type"] }.uniq).to match_array(Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES)
@@ -195,13 +197,24 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
             expect(event["content"]["meta"].keys & shared_metadata.keys).to be_empty
             expect(event["content"]["meta"]).to include(
               "ci.custom" => "custom CI metadata",
-              "git.custom" => "custom Git metadata",
-              "_dd.ci.env_vars" => '{"CI_PROJECT_URL":"https://gitlab.example/project","CI_PIPELINE_ID":"123","CI_JOB_ID":"456"}',
-              "pr.number" => "42"
+              "git.custom" => "custom Git metadata"
             )
           end
         end
         expect(spans.map(&:meta)).to eq(original_metadata)
+      end
+
+      it "does not emit shared environment fields on ordinary spans" do
+        transport.send_events(traces)
+
+        expect(api).to have_received(:citestcycle_request) do |args|
+          payload = MessagePack.unpack(args[:payload])
+          ordinary_events = payload["events"].select { |event| event["type"] == "span" }
+          expect(ordinary_events).not_to be_empty
+          ordinary_events.each do |event|
+            expect(event["content"]["meta"].keys & Datadog::CI::Ext::Metadata::SHARED_ENVIRONMENT_TAGS).to be_empty
+          end
+        end
       end
 
       it "keeps shared fields authoritative and leaves ordinary span metadata intact" do

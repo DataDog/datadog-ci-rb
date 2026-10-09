@@ -4,8 +4,6 @@ module Datadog
       ENVIRONMENT_RUNTIME_TAGS: Hash[String, String]
 
       EMPTY_TAGS: Hash[String, String]
-      @shared_tags: Hash[String, String]
-      attr_writer shared_tags: Hash[String, String]
 
       @tracer_span: Datadog::Tracing::SpanOperation
 
@@ -93,6 +91,8 @@ module Datadog
       def base_commit_sha: () -> String?
 
       private
+
+      def shared_environment_tags: () -> Hash[String, String]
 
       def test_tracing: () -> Datadog::CI::TestTracing::Component
     end

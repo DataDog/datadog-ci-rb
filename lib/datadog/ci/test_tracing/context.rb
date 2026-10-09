@@ -45,10 +45,6 @@ module Datadog
           @any_tests_started = false
         end
 
-        def environment_tags
-          @environment_tags || {}
-        end
-
         def shared_environment_tags
           @shared_environment_tags || Span::EMPTY_TAGS
         end
@@ -162,9 +158,7 @@ module Datadog
           tracer_span = Datadog::Tracing.active_span
           return unless tracer_span
 
-          span = Span.new(tracer_span)
-          span.shared_tags = shared_environment_tags if Ext::AppTypes::CI_SPAN_TYPES.include?(span.type)
-          span
+          Span.new(tracer_span)
         end
 
         def active_test
@@ -254,34 +248,23 @@ module Datadog
 
         # TAGGING
         def set_initial_tags(ci_span, tags)
-          initialize_environment_tags
-
           ci_span.set_default_tags
-          ci_span.set_environment_runtime_tags
-
-          ci_span.set_internal_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
-          ci_span.set_internal_tags(tags)
           if Ext::AppTypes::CI_SPAN_TYPES.include?(ci_span.type)
-            ci_span.shared_tags = @shared_environment_tags
-            ci_span.set_internal_tags(@local_environment_tags)
-          else
-            ci_span.set_internal_tags(@environment_tags)
+            initialize_environment_tags
+            ci_span.set_environment_runtime_tags
+            ci_span.set_internal_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
+            ci_span.set_internal_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
           end
-
-          ci_span.set_internal_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
+          ci_span.set_internal_tags(tags)
         end
 
         def initialize_environment_tags
-          return if @environment_tags
+          return if @shared_environment_tags
 
           @environment_mutex.synchronize do
-            return if @environment_tags
-
-            tags = Ext::Environment.tags(ENV).transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }.freeze
-            @shared_environment_tags = tags.slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS).freeze
-            @local_environment_tags = tags.reject { |key, _| @shared_environment_tags.key?(key) }.freeze
-            # Publish only after both views are ready for concurrent span creation.
-            @environment_tags = tags
+            @shared_environment_tags ||= Ext::Environment.tags(ENV)
+              .slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS)
+              .transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }.freeze
           end
         end
 

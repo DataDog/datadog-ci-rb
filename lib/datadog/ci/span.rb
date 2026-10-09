@@ -5,6 +5,7 @@ require "drb"
 require "datadog/core/environment/platform"
 
 require_relative "ext/test"
+require_relative "ext/app_types"
 require_relative "utils/test_run"
 require_relative "utils/protected_tags"
 require_relative "ext/git"
@@ -30,12 +31,8 @@ module Datadog
 
       attr_reader :tracer_span
 
-      # @internal_api Shared immutable environment metadata owned by Context.
-      attr_writer :shared_tags
-
       def initialize(tracer_span)
         @tracer_span = tracer_span
-        @shared_tags = EMPTY_TAGS
       end
 
       # @return [Integer] the ID of the span.
@@ -122,7 +119,7 @@ module Datadog
       # @param [String] key the key of the tag.
       # @return [String] the value of the tag.
       def get_tag(key)
-        @shared_tags[key] || tracer_span.get_tag(key)
+        shared_environment_tags[key] || tracer_span.get_tag(key)
       end
 
       # Sets a custom tag. SDK-owned fields are read-only through this method.
@@ -158,7 +155,7 @@ module Datadog
       # @param [String] key the key of the metric.
       # @return [Numeric] value the value of the metric.
       def get_metric(key)
-        @shared_tags[key] || tracer_span.get_metric(key)
+        shared_environment_tags[key] || tracer_span.get_metric(key)
       end
 
       # Sets a custom metric. SDK-owned fields are read-only through this method.
@@ -299,6 +296,12 @@ module Datadog
       end
 
       private
+
+      def shared_environment_tags
+        return EMPTY_TAGS unless Ext::AppTypes::CI_SPAN_TYPES.include?(type)
+
+        test_tracing.shared_environment_tags
+      end
 
       # provides access to the test tracing component for CI models to deactivate themselves
       def test_tracing

@@ -20,10 +20,6 @@ module Datadog
           {}
         end
 
-        def environment_tags
-          {}
-        end
-
         def configure(_, _)
         end
 

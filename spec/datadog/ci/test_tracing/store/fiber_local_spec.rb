@@ -5,7 +5,7 @@ require_relative "../../../../../lib/datadog/ci/test_tracing/store/fiber_local"
 RSpec.describe Datadog::CI::TestTracing::Store::FiberLocal do
   subject { described_class.new }
 
-  let(:tracer_span) { double(Datadog::Tracing::SpanOperation, get_tag: "my test") }
+  let(:tracer_span) { double(Datadog::Tracing::SpanOperation, type: "test", get_tag: "my test") }
   let(:ci_test) { Datadog::CI::Test.new(tracer_span) }
   let(:ci_test2) { Datadog::CI::Test.new(tracer_span) }
 

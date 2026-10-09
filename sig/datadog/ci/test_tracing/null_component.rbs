@@ -14,8 +14,6 @@ module Datadog
 
         def shared_environment_tags: () -> Hash[String, String]
 
-        def environment_tags: () -> Hash[String, String]
-
         def initialize: () -> void
 
         def configure: (untyped _, untyped _) -> void

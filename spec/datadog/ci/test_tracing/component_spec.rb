@@ -29,7 +29,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
     let(:environment_tags) { Datadog::CI::Ext::Environment.tags(ENV) }
     let(:span_under_test) { subject }
 
-    it "has all the environment tags" do
+    it "exposes environment tags only on CI events" do
       environment_tags.each do |key, value|
         if Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span_under_test.type) && Datadog::CI::Ext::Metadata::SHARED_ENVIRONMENT_TAGS.include?(key)
           if span_under_test.is_a?(Datadog::CI::Span)
@@ -40,7 +40,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           end
           expect(test_tracing.shared_environment_tags[key]).to eq(value)
         else
-          expect(span_under_test).to have_test_tag(key, value)
+          expect(span_under_test.get_tag(key)).to be_nil
         end
       end
     end
@@ -59,17 +59,26 @@ RSpec.describe Datadog::CI::TestTracing::Component do
   shared_examples_for "span with runtime tags" do
     let(:span_under_test) { subject }
 
-    it "runtime tags are all set" do
+    it "sets runtime tags only on CI events" do
       [
         Datadog::CI::Ext::Test::TAG_OS_ARCHITECTURE,
         Datadog::CI::Ext::Test::TAG_OS_PLATFORM,
         Datadog::CI::Ext::Test::TAG_RUNTIME_NAME,
         Datadog::CI::Ext::Test::TAG_RUNTIME_VERSION
       ].each do |tag|
-        expect(span_under_test).to have_test_tag(tag)
+        if Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span_under_test.type)
+          expect(span_under_test).to have_test_tag(tag)
+        else
+          expect(span_under_test.get_tag(tag)).to be_nil
+        end
       end
-      expect(span_under_test).to have_test_tag(:command, test_command)
-      expect(span_under_test.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to eq(Etc.nprocessors)
+      if Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span_under_test.type)
+        expect(span_under_test).to have_test_tag(:command, test_command)
+        expect(span_under_test.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to eq(Etc.nprocessors)
+      else
+        expect(span_under_test.get_tag(Datadog::CI::Ext::Test::TAG_COMMAND)).to be_nil
+        expect(span_under_test.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to be_nil
+      end
     end
   end
 
@@ -823,13 +832,15 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           test = test_tracing.trace_test("my-test", "my-suite")
           custom_span = test_tracing.trace("my-step", type: "step")
 
-          [test_session, test_module, test_suite, test, custom_span].each do |span|
+          [test_session, test_module, test_suite, test].each do |span|
             expect(span).to have_test_tag(:os_version, "ubuntu-22.04")
             expect(span).to have_test_tag(:runtime_version, "3.2.0")
           end
+          expect(custom_span.os_version).to be_nil
+          expect(custom_span.runtime_version).to be_nil
         end
 
-        it "lets explicit span tags override configured runtime tags" do
+        it "preserves explicit internal tags on custom spans without adding runtime defaults" do
           custom_span = test_tracing.trace(
             "my-step",
             type: "step",
@@ -837,7 +848,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           )
 
           expect(custom_span).to have_test_tag(:os_version, "manual-version")
-          expect(custom_span).to have_test_tag(:runtime_version, "3.2.0")
+          expect(custom_span.runtime_version).to be_nil
         end
       end
 

@@ -25,6 +25,8 @@ module Datadog
           Environment::TAG_PROVIDER_NAME,
           Environment::TAG_STAGE_NAME,
           Environment::TAG_WORKSPACE_PATH,
+          Environment::TAG_CI_ENV_VARS,
+          Environment::TAG_PR_NUMBER,
           Git::TAG_BRANCH,
           Git::TAG_TAG,
           Git::TAG_REPOSITORY_URL,
