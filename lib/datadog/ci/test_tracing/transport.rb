@@ -28,18 +28,14 @@ module Datadog
           super(api: api, max_payload_size: max_payload_size)
 
           @dd_env = dd_env
-          @send_mutex = Mutex.new
           @test_level_metadata = {}
         end
 
         def send_events(events)
           return [] if events.nil? || events.empty?
 
-          # Keep one metadata snapshot for serialization and every split payload, even if callers flush concurrently.
-          @send_mutex.synchronize do
-            @test_level_metadata = build_test_level_metadata
-            super
-          end
+          @test_level_metadata = build_test_level_metadata
+          super
         end
 
         # this method is needed for compatibility with Datadog::Tracing::Writer that uses this Transport
