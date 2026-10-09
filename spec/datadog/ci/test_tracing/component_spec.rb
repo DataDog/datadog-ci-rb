@@ -59,26 +59,17 @@ RSpec.describe Datadog::CI::TestTracing::Component do
   shared_examples_for "span with runtime tags" do
     let(:span_under_test) { subject }
 
-    it "sets runtime tags only on CI events" do
+    it "sets runtime tags on all CI API spans" do
       [
         Datadog::CI::Ext::Test::TAG_OS_ARCHITECTURE,
         Datadog::CI::Ext::Test::TAG_OS_PLATFORM,
         Datadog::CI::Ext::Test::TAG_RUNTIME_NAME,
         Datadog::CI::Ext::Test::TAG_RUNTIME_VERSION
       ].each do |tag|
-        if Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span_under_test.type)
-          expect(span_under_test).to have_test_tag(tag)
-        else
-          expect(span_under_test.get_tag(tag)).to be_nil
-        end
+        expect(span_under_test).to have_test_tag(tag)
       end
-      if Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span_under_test.type)
-        expect(span_under_test).to have_test_tag(:command, test_command)
-        expect(span_under_test.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to eq(Etc.nprocessors)
-      else
-        expect(span_under_test.get_tag(Datadog::CI::Ext::Test::TAG_COMMAND)).to be_nil
-        expect(span_under_test.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to be_nil
-      end
+      expect(span_under_test).to have_test_tag(:command, test_command)
+      expect(span_under_test.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to eq(Etc.nprocessors)
     end
   end
 
@@ -832,15 +823,13 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           test = test_tracing.trace_test("my-test", "my-suite")
           custom_span = test_tracing.trace("my-step", type: "step")
 
-          [test_session, test_module, test_suite, test].each do |span|
+          [test_session, test_module, test_suite, test, custom_span].each do |span|
             expect(span).to have_test_tag(:os_version, "ubuntu-22.04")
             expect(span).to have_test_tag(:runtime_version, "3.2.0")
           end
-          expect(custom_span.os_version).to be_nil
-          expect(custom_span.runtime_version).to be_nil
         end
 
-        it "preserves explicit internal tags on custom spans without adding runtime defaults" do
+        it "lets explicit span tags override configured runtime tags" do
           custom_span = test_tracing.trace(
             "my-step",
             type: "step",
@@ -848,7 +837,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           )
 
           expect(custom_span).to have_test_tag(:os_version, "manual-version")
-          expect(custom_span.runtime_version).to be_nil
+          expect(custom_span).to have_test_tag(:runtime_version, "3.2.0")
         end
       end
 

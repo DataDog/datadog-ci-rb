@@ -4,7 +4,6 @@ module Datadog
       class Context
         @any_tests_started: bool
         @mutex: Mutex
-        @environment_mutex: Mutex
 
         @fiber_local_context: Datadog::CI::TestTracing::Store::FiberLocal
         @process_context: Datadog::CI::TestTracing::Store::Process
@@ -71,8 +70,6 @@ module Datadog
         def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
 
         def set_trace_origin: (Datadog::Tracing::TraceOperation trace) -> void
-
-        def initialize_environment_tags: () -> void
 
         def set_initial_tags: (Datadog::CI::Span ci_span, Hash[untyped, untyped] tags) -> void
 

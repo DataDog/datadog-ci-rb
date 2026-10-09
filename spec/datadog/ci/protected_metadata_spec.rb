@@ -111,14 +111,11 @@ RSpec.describe "SDK-owned metadata" do
     end
   end
 
-  it "does not attach environment metadata to ordinary CI custom spans" do
+  it "does not attach shared environment metadata to ordinary CI custom spans" do
     test = Datadog::CI.start_test("example", "suite")
     Datadog::CI.trace("setup", tags: {"custom.tag" => "value"}) do |span|
       expect(span.git_branch).to be_nil
       expect(Datadog::CI.active_span.git_branch).to be_nil
-      expect(span.os_architecture).to be_nil
-      expect(span.runtime_version).to be_nil
-      expect(span.get_metric(Datadog::CI::Ext::Test::METRIC_CPU_COUNT)).to be_nil
       expect(span.get_tag("custom.tag")).to eq("value")
     end
     test.finish

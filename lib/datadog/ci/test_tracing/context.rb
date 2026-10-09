@@ -39,7 +39,6 @@ module Datadog
           @process_context = Store::Process.new
 
           @mutex = Mutex.new
-          @environment_mutex = Mutex.new
 
           @tests_skipped_by_tia_count = 0
           @any_tests_started = false
@@ -246,24 +245,15 @@ module Datadog
 
         # TAGGING
         def set_initial_tags(ci_span, tags)
+          @shared_environment_tags ||= Ext::Environment.tags(ENV)
+            .slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS)
+            .transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }.freeze
+
           ci_span.set_default_tags
-          if Ext::AppTypes::CI_SPAN_TYPES.include?(ci_span.type)
-            initialize_environment_tags
-            ci_span.set_environment_runtime_tags
-            ci_span.set_internal_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
-            ci_span.set_internal_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
-          end
+          ci_span.set_environment_runtime_tags
+          ci_span.set_internal_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
           ci_span.set_internal_tags(tags)
-        end
-
-        def initialize_environment_tags
-          return if @shared_environment_tags
-
-          @environment_mutex.synchronize do
-            @shared_environment_tags ||= Ext::Environment.tags(ENV)
-              .slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS)
-              .transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }.freeze
-          end
+          ci_span.set_internal_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
         end
 
         # PROPAGATING CONTEXT FROM TOP-LEVEL TO THE LOWER LEVELS
