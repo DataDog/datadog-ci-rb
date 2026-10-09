@@ -42,7 +42,7 @@ class BenchmarkCoverageWriter
 end
 
 class BenchmarkTestSession
-  def set_tag(_name, _value)
+  def set_internal_tag(_name, _value)
   end
 
   def distributed
@@ -113,11 +113,11 @@ def build_test(test_suite, test_impacted_files, test_impact_analysis)
   test = BenchmarkTest.new(tracer_span)
   test.benchmark_test_suite = test_suite
   test.benchmark_test_impact_analysis = test_impact_analysis
-  test.set_tag(Datadog::CI::Ext::Test::TAG_NAME, "benchmark test")
-  test.set_tag(Datadog::CI::Ext::Test::TAG_STATUS, Datadog::CI::Ext::Test::Status::PASS)
-  test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "1")
-  test.set_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID, test_suite.id.to_s)
-  test.set_tag(
+  test.set_internal_tag(Datadog::CI::Ext::Test::TAG_NAME, "benchmark test")
+  test.set_internal_tag(Datadog::CI::Ext::Test::TAG_STATUS, Datadog::CI::Ext::Test::Status::PASS)
+  test.set_internal_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, "1")
+  test.set_internal_tag(Datadog::CI::Ext::Test::TAG_TEST_SUITE_ID, test_suite.id.to_s)
+  test.set_internal_tag(
     Datadog::CI::Ext::Test::TAG_SOURCE_FILE,
     "benchmarks/test_impact_analysis_impacted_files.rb"
   )

@@ -123,8 +123,8 @@ RSpec.describe "RSpec instrumentation" do
 
           if with_invalid_end_line
             it "invalid end line" do
-              Datadog::CI.active_test&.set_tag(Datadog::CI::Ext::Test::TAG_SOURCE_END, "1")
-              expect(1 + 1).to eq(2)
+              Datadog::CI.active_test&.set_internal_tag(Datadog::CI::Ext::Test::TAG_SOURCE_END, "1")
+              expect(Datadog::CI.active_test&.get_tag(Datadog::CI::Ext::Test::TAG_SOURCE_END)).to eq("1")
             end
           end
 
@@ -827,6 +827,7 @@ RSpec.describe "RSpec instrumentation" do
         rspec_session_run(with_invalid_end_line: true)
 
         invalid_end_line_test = test_spans.find { |span| span.name == "nested invalid end line" }
+        expect(invalid_end_line_test).to have_pass_status
         expect(invalid_end_line_test).to have_test_tag(:source_start)
         expect(invalid_end_line_test).not_to have_test_tag(:source_end)
       end
