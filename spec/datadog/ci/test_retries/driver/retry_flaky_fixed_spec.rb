@@ -2,8 +2,8 @@ require_relative "../../../../../lib/datadog/ci/test_retries/driver/retry_flaky_
 
 RSpec.describe Datadog::CI::TestRetries::Driver::RetryFlakyFixed do
   let(:max_attempts) { 10 }
-  let(:passing_span) { double(:test_span, set_tag: true, failed?: false) }
-  let(:failing_span) { double(:test_span, set_tag: true, failed?: true) }
+  let(:passing_span) { double(:test_span, set_internal_tag: true, failed?: false) }
+  let(:failing_span) { double(:test_span, set_internal_tag: true, failed?: true) }
 
   subject(:driver) { described_class.new(first_test_span, max_attempts: max_attempts) }
 

@@ -16,6 +16,22 @@ module Datadog
         raise "ReadonlyTestModule cannot be finished"
       end
 
+      def set_internal_tag(key, value)
+        raise "ReadonlyTestModule cannot be modified"
+      end
+
+      def set_internal_tags(tags)
+        raise "ReadonlyTestModule cannot be modified"
+      end
+
+      def set_internal_metric(key, value)
+        raise "ReadonlyTestModule cannot be modified"
+      end
+
+      def clear_internal_tag(key)
+        raise "ReadonlyTestModule cannot be modified"
+      end
+
       def set_tag(key, value)
         raise "ReadonlyTestModule cannot be modified"
       end

@@ -2,8 +2,8 @@
 
 RSpec.describe Datadog::CI::TestSuite do
   let(:test_suite_name) { "my.suite" }
-  let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, finish: true, name: test_suite_name) }
-  let(:test_tracing) { spy("test_tracing") }
+  let(:tracer_span) { instance_double(Datadog::Tracing::SpanOperation, type: "test_suite_end", finish: true, name: test_suite_name) }
+  let(:test_tracing) { spy("test_tracing", shared_tags: {}) }
   let(:test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::TEST }
   let(:test_impact_analysis) do
     Datadog::CI::TestImpactAnalysis::Component.new(

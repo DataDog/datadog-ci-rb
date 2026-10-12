@@ -38,7 +38,7 @@ module Datadog
       # @return [void]
       def finish
         if is_retry? && retry_reason.nil?
-          set_tag(Ext::Test::TAG_RETRY_REASON, Ext::Test::RetryReason::RETRY_EXTERNAL)
+          set_internal_tag(Ext::Test::TAG_RETRY_REASON, Ext::Test::RetryReason::RETRY_EXTERNAL)
         end
 
         test_tracing.deactivate_test
@@ -154,13 +154,13 @@ module Datadog
       # @return [void]
       def itr_unskippable!
         Utils::Telemetry.itr_unskippable
-        set_tag(Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
+        set_internal_tag(Ext::Test::TAG_ITR_UNSKIPPABLE, "true")
 
         if skipped_by_test_impact_analysis?
-          clear_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
+          clear_internal_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR)
 
           Utils::Telemetry.itr_forced_run
-          set_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
+          set_internal_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
         end
       end
 
@@ -260,7 +260,7 @@ module Datadog
       def set_parameters(arguments, metadata = {})
         return if arguments.nil?
 
-        set_tag(Ext::Test::TAG_PARAMETERS, Utils::TestRun.test_parameters(arguments: arguments, metadata: metadata))
+        set_internal_tag(Ext::Test::TAG_PARAMETERS, Utils::TestRun.test_parameters(arguments: arguments, metadata: metadata))
       end
 
       # Gets the parameters for this test (e.g. Cucumber example or RSpec specs) as a serialized JSON.
@@ -319,7 +319,7 @@ module Datadog
         return if status.nil?
 
         final_status = compute_final_status(status)
-        set_tag(Ext::Test::TAG_FINAL_STATUS, final_status)
+        set_internal_tag(Ext::Test::TAG_FINAL_STATUS, final_status)
         test_suite&.record_test_final_status(datadog_test_id, final_status)
       end
 
@@ -352,7 +352,7 @@ module Datadog
       def record_test_result(datadog_status)
         # if this test was already executed in this test suite, mark it as retried
         if test_suite&.test_executed?(datadog_test_id)
-          set_tag(Ext::Test::TAG_IS_RETRY, "true")
+          set_internal_tag(Ext::Test::TAG_IS_RETRY, "true")
         end
 
         test_suite&.record_test_result(datadog_test_id, datadog_status)

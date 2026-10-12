@@ -144,7 +144,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       end
 
       it "sets the is_modified tag" do
-        expect(test_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED, "true")
+        expect(test_span).to receive(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_TEST_IS_MODIFIED, "true")
 
         component.tag_modified_test(test_span)
       end
@@ -156,7 +156,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       end
 
       it "does not set the is_modified tag" do
-        expect(test_span).not_to receive(:set_tag)
+        expect(test_span).not_to receive(:set_internal_tag)
 
         component.tag_modified_test(test_span)
       end

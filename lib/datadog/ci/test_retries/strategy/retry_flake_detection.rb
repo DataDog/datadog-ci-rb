@@ -40,7 +40,7 @@ module Datadog
             return unless @enabled
 
             # mark early flake detection enabled for test session
-            test_session.set_tag(Ext::Test::TAG_EARLY_FLAKE_ENABLED, "true")
+            test_session.set_internal_tag(Ext::Test::TAG_EARLY_FLAKE_ENABLED, "true")
 
             set_max_attempts_thresholds(library_settings)
             calculate_total_retries_limit(library_settings, test_session)
@@ -58,7 +58,7 @@ module Datadog
           private
 
           def mark_test_session_faulty(test_session)
-            test_session&.set_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
+            test_session&.set_internal_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
           end
 
           def set_max_attempts_thresholds(library_settings)

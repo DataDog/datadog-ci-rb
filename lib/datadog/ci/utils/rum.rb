@@ -23,7 +23,7 @@ module Datadog
         def self.stop_rum_session(script_executor, rum_flush_wait_millis: 500)
           return unless is_rum_active?(script_executor)
 
-          Datadog::CI.active_test&.set_tag(
+          Datadog::CI.active_test&.set_internal_tag(
             CI::Ext::Test::TAG_IS_RUM_ACTIVE,
             "true"
           )

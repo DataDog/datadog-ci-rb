@@ -108,7 +108,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         is_new?: test_is_new,
         attempt_to_fix?: test_attempt_to_fix,
         modified?: test_modified,
-        set_tag: nil
+        set_internal_tag: nil
       )
     end
 
@@ -253,7 +253,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         passed?: !test_failed,
         is_new?: test_is_new,
         modified?: false,
-        set_tag: true,
+        set_internal_tag: true,
         get_tag: true,
         skipped?: false,
         type: "test",
@@ -421,7 +421,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         all_executions_failed?: all_executions_failed,
         all_executions_passed?: all_executions_passed,
         attempt_to_fix?: attempt_to_fix,
-        set_tag: nil
+        set_internal_tag: nil
       )
     end
 
@@ -436,7 +436,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
       it "sets TAG_HAS_FAILED_ALL_RETRIES to true" do
         subject
-        expect(test_span).to have_received(:set_tag).with(Datadog::CI::Ext::Test::TAG_HAS_FAILED_ALL_RETRIES, "true")
+        expect(test_span).to have_received(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_HAS_FAILED_ALL_RETRIES, "true")
       end
     end
 
@@ -448,7 +448,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
         it "sets TAG_ATTEMPT_TO_FIX_PASSED to true" do
           subject
-          expect(test_span).to have_received(:set_tag).with(Datadog::CI::Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "true")
+          expect(test_span).to have_received(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "true")
         end
       end
 
@@ -457,7 +457,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
         it "sets TAG_ATTEMPT_TO_FIX_PASSED to false" do
           subject
-          expect(test_span).to have_received(:set_tag).with(Datadog::CI::Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "false")
+          expect(test_span).to have_received(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, "false")
         end
       end
     end
@@ -478,7 +478,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         all_executions_failed?: false,
         all_executions_passed?: false,
         peek_duration: 1.0,
-        set_tag: nil,
+        set_internal_tag: nil,
         record_final_status: nil
       )
     end

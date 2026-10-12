@@ -73,7 +73,7 @@ module Datadog
             "Impacted tests detection: test #{test_span.name} with source file #{test_span.source_file} is modified"
           end
 
-          test_span.set_tag(Ext::Test::TAG_TEST_IS_MODIFIED, "true")
+          test_span.set_internal_tag(Ext::Test::TAG_TEST_IS_MODIFIED, "true")
         end
 
         private

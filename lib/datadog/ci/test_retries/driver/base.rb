@@ -16,8 +16,8 @@ module Datadog
           end
 
           def mark_as_retry(test_span)
-            test_span&.set_tag(Ext::Test::TAG_IS_RETRY, "true")
-            test_span&.set_tag(Ext::Test::TAG_RETRY_REASON, retry_reason)
+            test_span&.set_internal_tag(Ext::Test::TAG_IS_RETRY, "true")
+            test_span&.set_internal_tag(Ext::Test::TAG_RETRY_REASON, retry_reason)
           end
 
           def record_retry(test_span)

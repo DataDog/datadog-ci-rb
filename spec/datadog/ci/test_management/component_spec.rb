@@ -60,7 +60,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
           )
         end
 
-        expect(test_session).to receive(:set_tag).with(
+        expect(test_session).to receive(:set_internal_tag).with(
           Datadog::CI::Ext::Test::TAG_TEST_MANAGEMENT_ENABLED, "true"
         ).and_return(nil)
       end
@@ -344,9 +344,9 @@ RSpec.describe Datadog::CI::TestManagement::Component do
           let(:test_span) { instance_double(Datadog::CI::Test, name: "test2", test_suite_name: "suite") }
 
           it "tags test span with test properties" do
-            expect(test_span).to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_IS_QUARANTINED, "true")
-            expect(test_span).not_to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_IS_TEST_DISABLED, "true")
-            expect(test_span).not_to receive(:set_tag).with(Datadog::CI::Ext::Test::TAG_IS_ATTEMPT_TO_FIX, "true")
+            expect(test_span).to receive(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_IS_QUARANTINED, "true")
+            expect(test_span).not_to receive(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_IS_TEST_DISABLED, "true")
+            expect(test_span).not_to receive(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_IS_ATTEMPT_TO_FIX, "true")
 
             tag
           end
@@ -356,7 +356,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
           let(:test_span) { instance_double(Datadog::CI::Test, name: "test3", test_suite_name: "suite") }
 
           it "does not tag test span" do
-            expect(test_span).not_to receive(:set_tag)
+            expect(test_span).not_to receive(:set_internal_tag)
 
             tag
           end
@@ -366,7 +366,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
           let(:test_span) { instance_double(Datadog::CI::Test, name: "test", test_suite_name: "suite") }
 
           it "does not tag test span" do
-            expect(test_span).not_to receive(:set_tag)
+            expect(test_span).not_to receive(:set_internal_tag)
 
             tag
           end
@@ -419,7 +419,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
     before do
       component.configure(
         instance_double(Datadog::CI::Remote::LibrarySettings, test_management_enabled?: true),
-        instance_double(Datadog::CI::TestSession, distributed: false, set_tag: true)
+        instance_double(Datadog::CI::TestSession, distributed: false, set_internal_tag: true)
       )
     end
 
@@ -483,7 +483,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
     before do
       component.configure(
         instance_double(Datadog::CI::Remote::LibrarySettings, test_management_enabled?: true),
-        instance_double(Datadog::CI::TestSession, distributed: false, set_tag: true)
+        instance_double(Datadog::CI::TestSession, distributed: false, set_internal_tag: true)
       )
     end
 

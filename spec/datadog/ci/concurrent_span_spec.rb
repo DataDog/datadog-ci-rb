@@ -99,7 +99,8 @@ RSpec.describe Datadog::CI::ConcurrentSpan do
 
   describe "#set_tags" do
     it "sets the tags" do
-      expect(tracer_span).to receive(:set_tags).with({"foo" => "bar", "baz" => "qux"})
+      expect(tracer_span).to receive(:set_tag).with("foo", "bar")
+      expect(tracer_span).to receive(:set_tag).with("baz", "qux")
 
       span.set_tags("foo" => "bar", "baz" => "qux")
     end

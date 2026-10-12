@@ -10,6 +10,7 @@ require_relative "telemetry"
 
 require_relative "../ext/app_types"
 require_relative "../ext/environment"
+require_relative "../ext/metadata"
 require_relative "../ext/test"
 
 require_relative "../utils/configuration"
@@ -41,6 +42,14 @@ module Datadog
 
           @tests_skipped_by_tia_count = 0
           @any_tests_started = false
+        end
+
+        def shared_tags
+          @shared_tags || Span::EMPTY_TAGS
+        end
+
+        def finalize_shared_tags
+          @shared_tags = build_shared_tags
         end
 
         def start_test_session(service: nil, tags: {})
@@ -239,17 +248,25 @@ module Datadog
         end
 
         # TAGGING
+        def build_shared_tags
+          environment_tags = @shared_tags || Ext::Environment.tags(ENV)
+            .slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS)
+            .transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }
+          tags = environment_tags.merge(Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS)
+          tags[Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE] = Utils::Configuration.service_name_provided_by_user?.to_s.freeze
+          session_name = @test_tracing_component.logical_test_session_name
+          tags[Ext::Test::TAG_TEST_SESSION_NAME] = session_name.dup.freeze unless session_name.nil?
+          tags.freeze
+        end
+
         def set_initial_tags(ci_span, tags)
-          @environment_tags ||= Ext::Environment.tags(ENV).freeze
+          @shared_tags ||= build_shared_tags
 
           ci_span.set_default_tags
           ci_span.set_environment_runtime_tags
-
-          ci_span.set_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
-          ci_span.set_tags(tags)
-          ci_span.set_tags(@environment_tags)
-
-          ci_span.set_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
+          ci_span.set_internal_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
+          ci_span.set_internal_tags(tags.reject { |key, _| Ext::Metadata::SHARED_TAGS.include?(key.to_s) })
+          ci_span.set_internal_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
         end
 
         # PROPAGATING CONTEXT FROM TOP-LEVEL TO THE LOWER LEVELS

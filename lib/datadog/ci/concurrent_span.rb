@@ -39,6 +39,26 @@ module Datadog
         synchronize { super }
       end
 
+      # @internal_api
+      def set_internal_tag(key, value)
+        synchronize { super }
+      end
+
+      # @internal_api
+      def set_internal_tags(tags)
+        synchronize { super }
+      end
+
+      # @internal_api
+      def set_internal_metric(key, value)
+        synchronize { super }
+      end
+
+      # @internal_api
+      def clear_internal_tag(key)
+        synchronize { super }
+      end
+
       # Finishes the span. This method is thread-safe.
       # @return [void]
       def finish

@@ -10,6 +10,10 @@ module Datadog
       def get_tag: (String key) -> untyped?
       def set_tag: (String key, untyped? value) -> void
       def set_metric: (String key, untyped value) -> void
+      def set_internal_tag: (String key, untyped? value) -> void
+      def set_internal_tags: (Hash[untyped, untyped] tags) -> void
+      def set_internal_metric: (String key, untyped value) -> void
+      def clear_internal_tag: (String key) -> void
       def finish: () -> void
       def set_tags: (Hash[untyped, untyped] tags) -> void
 

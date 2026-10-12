@@ -28,7 +28,7 @@ module Datadog
             return
           end
 
-          test_session.set_tag(Ext::Test::TAG_CODE_COVERAGE_LINES_PCT, result.covered_percent)
+          test_session.set_internal_tag(Ext::Test::TAG_CODE_COVERAGE_LINES_PCT, result.covered_percent)
         rescue => e
           Datadog.logger.warn("Failed to extract SimpleCov code coverage: #{e.class}: #{e.message}")
         end

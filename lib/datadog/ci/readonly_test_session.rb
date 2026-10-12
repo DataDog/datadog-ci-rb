@@ -19,6 +19,22 @@ module Datadog
         raise "ReadonlyTestSession cannot be finished"
       end
 
+      def set_internal_tag(key, value)
+        raise "ReadonlyTestSession cannot be modified"
+      end
+
+      def set_internal_tags(tags)
+        raise "ReadonlyTestSession cannot be modified"
+      end
+
+      def set_internal_metric(key, value)
+        raise "ReadonlyTestSession cannot be modified"
+      end
+
+      def clear_internal_tag(key)
+        raise "ReadonlyTestSession cannot be modified"
+      end
+
       def set_tag(key, value)
         raise "ReadonlyTestSession cannot be modified"
       end

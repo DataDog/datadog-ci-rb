@@ -37,19 +37,19 @@ module Datadog
               @bridge.manage.add_cookie(cookie_hash)
 
               # set the test type to browser
-              active_test.set_tag(CI::Ext::Test::TAG_TYPE, CI::Ext::Test::Type::BROWSER)
+              active_test.set_internal_tag(CI::Ext::Test::TAG_TYPE, CI::Ext::Test::Type::BROWSER)
 
               # set the tags specific to the browser test
-              active_test.set_tag(CI::Ext::Test::TAG_BROWSER_DRIVER, "selenium")
-              active_test.set_tag(
+              active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_DRIVER, "selenium")
+              active_test.set_internal_tag(
                 CI::Ext::Test::TAG_BROWSER_DRIVER_VERSION,
                 datadog_integration.version
               )
-              active_test.set_tag(
+              active_test.set_internal_tag(
                 CI::Ext::Test::TAG_BROWSER_NAME,
                 @bridge.browser
               )
-              active_test.set_tag(
+              active_test.set_internal_tag(
                 CI::Ext::Test::TAG_BROWSER_VERSION,
                 @bridge.capabilities.browser_version
               )

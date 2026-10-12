@@ -7,7 +7,7 @@ RSpec.describe Datadog::CI::TestTracing::DeprecatedTotalCoverageMetric do
   describe ".extract_lines_pct" do
     subject(:extract_lines_pct) { described_class.extract_lines_pct(test_session) }
 
-    let(:test_session) { instance_double(Datadog::CI::TestSession, set_tag: true) }
+    let(:test_session) { instance_double(Datadog::CI::TestSession, set_internal_tag: true) }
     let(:simplecov_config) { {enabled: true} }
 
     before do
@@ -22,7 +22,7 @@ RSpec.describe Datadog::CI::TestTracing::DeprecatedTotalCoverageMetric do
       it "does not set the code coverage tag" do
         extract_lines_pct
 
-        expect(test_session).not_to have_received(:set_tag)
+        expect(test_session).not_to have_received(:set_internal_tag)
       end
     end
 
@@ -34,7 +34,7 @@ RSpec.describe Datadog::CI::TestTracing::DeprecatedTotalCoverageMetric do
       it "does not set the code coverage tag" do
         extract_lines_pct
 
-        expect(test_session).not_to have_received(:set_tag)
+        expect(test_session).not_to have_received(:set_internal_tag)
       end
     end
 
@@ -49,7 +49,7 @@ RSpec.describe Datadog::CI::TestTracing::DeprecatedTotalCoverageMetric do
 
         extract_lines_pct
 
-        expect(test_session).to have_received(:set_tag).with(
+        expect(test_session).to have_received(:set_internal_tag).with(
           Datadog::CI::Ext::Test::TAG_CODE_COVERAGE_LINES_PCT,
           be_between(0, 100)
         )
@@ -61,7 +61,7 @@ RSpec.describe Datadog::CI::TestTracing::DeprecatedTotalCoverageMetric do
         it "does not set the code coverage tag" do
           extract_lines_pct
 
-          expect(test_session).not_to have_received(:set_tag)
+          expect(test_session).not_to have_received(:set_internal_tag)
         end
       end
 
@@ -86,7 +86,7 @@ RSpec.describe Datadog::CI::TestTracing::DeprecatedTotalCoverageMetric do
         it "logs a warning without interrupting the test session" do
           expect { extract_lines_pct }.not_to raise_error
 
-          expect(test_session).not_to have_received(:set_tag)
+          expect(test_session).not_to have_received(:set_internal_tag)
           expect(Datadog.logger).to have_received(:warn).with(
             a_string_starting_with("Failed to extract SimpleCov code coverage: NoMethodError: upstream API changed")
           )

@@ -21,7 +21,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
   before do
     allow(Datadog.logger).to receive(:warn)
 
-    # this is needed to configure all the components correctky
+    # this is needed to configure all the components correctly
     Datadog::CI.start_test_session
     Datadog::CI.start_test_module("arithmetic")
     Datadog::CI.start_test_suite("calculator_tests")
@@ -53,19 +53,17 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           expect(metadata).to include("runtime-id", "library_version")
           expect(metadata["language"]).to eq("ruby")
 
-          Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
-            type_metadata = payload["metadata"][type]
-            expect(type_metadata).to include(
-              "test_session.name" => logical_test_session_name,
-              "_dd.library_capabilities.test_impact_analysis" => "1",
-              "_dd.library_capabilities.early_flake_detection" => "1",
-              "_dd.library_capabilities.auto_test_retries" => "1",
-              "_dd.library_capabilities.test_management.quarantine" => "1",
-              "_dd.library_capabilities.test_management.disable" => "1",
-              "_dd.library_capabilities.test_management.attempt_to_fix" => "5",
-              "_dd.test.is_user_provided_service" => "true"
-            )
-          end
+          expect(payload["metadata"].keys).to contain_exactly("*", "test_levels")
+          expect(payload["metadata"]["test_levels"]).to include(
+            "test_session.name" => logical_test_session_name,
+            "_dd.library_capabilities.test_impact_analysis" => "1",
+            "_dd.library_capabilities.early_flake_detection" => "1",
+            "_dd.library_capabilities.auto_test_retries" => "1",
+            "_dd.library_capabilities.test_management.quarantine" => "1",
+            "_dd.library_capabilities.test_management.disable" => "1",
+            "_dd.library_capabilities.test_management.attempt_to_fix" => "5",
+            "_dd.test.is_user_provided_service" => "true"
+          )
 
           events = payload["events"]
           expect(events.count).to eq(1)
@@ -140,8 +138,126 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
 
           expect(payload["metadata"]["*"]["env"]).to eq("e" * 5000)
 
-          Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.each do |type|
-            expect(payload["metadata"][type]["test_session.name"]).to eq("s" * 5000)
+          expect(payload["metadata"]["test_levels"]["test_session.name"]).to eq("s" * 5000)
+          expect(test_tracing.shared_tags["test_session.name"]).to eq("s" * 5001)
+        end
+      end
+    end
+
+    it "ignores shared creation tags while serializing other manual tags" do
+      shared_branch = test_tracing.shared_tags.fetch("git.branch")
+      expect(shared_branch).not_to eq("manual-branch")
+      test = Datadog::CI.start_test("manual", "calculator_tests", tags: {"git.branch" => "manual-branch", "test.status" => "pass"})
+      expect(test.git_branch).to eq(shared_branch)
+      test.finish
+
+      transport.send_events(traces)
+
+      expect(api).to have_received(:citestcycle_request) do |args|
+        payload = MessagePack.unpack(args[:payload])
+        event = payload["events"].find { |entry| entry["content"]["span_id"] == test.id }
+        expect(event["content"]["meta"]).not_to have_key("git.branch")
+        expect(event["content"]["meta"]).to include("test.status" => "pass")
+        expect(payload["metadata"]["test_levels"]).to include("git.branch" => shared_branch)
+      end
+    end
+
+    context "with shared environment metadata" do
+      around do |example|
+        ClimateControl.modify(
+          "GITHUB_SHA" => nil,
+          "GITLAB_CI" => "true",
+          "CI_JOB_NAME" => "tests",
+          "CI_PIPELINE_ID" => "123",
+          "CI_JOB_ID" => "456",
+          "CI_PROJECT_URL" => "https://gitlab.example/project",
+          "CI_MERGE_REQUEST_IID" => "42",
+          "DD_GIT_BRANCH" => "main",
+          "DD_GIT_COMMIT_MESSAGE" => "m" * 5001,
+          "DD_GIT_COMMIT_HEAD_SHA" => "a" * 40,
+          "DD_GIT_PULL_REQUEST_BASE_BRANCH" => "main"
+        ) { example.run }
+      end
+
+      before do
+        produce_test_session_trace(tests_count: 4, with_http_span: true)
+        spans.each do |span|
+          span.set_tag("ci.custom", "custom CI metadata")
+          span.set_tag("git.custom", "custom Git metadata")
+        end
+      end
+
+      it "deduplicates every test event type without modifying original spans" do
+        spans.select { |span| Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES.include?(span.type) }.each do |span|
+          expect(span.meta.keys & Datadog::CI::Ext::Metadata::SHARED_ENVIRONMENT_TAGS).to be_empty
+        end
+        original_metadata = spans.map { |span| span.meta.dup }
+        shared_snapshot = test_tracing.shared_tags
+        transport.send_events(traces)
+
+        expect(api).to have_received(:citestcycle_request) do |args|
+          payload = MessagePack.unpack(args[:payload])
+          shared_metadata = payload["metadata"]["test_levels"]
+          expect(shared_metadata).to include(
+            "ci.job.name" => "tests",
+            "ci.pipeline.id" => "123",
+            "git.branch" => "main",
+            "git.commit.message" => "m" * 5000,
+            "git.commit.head.sha" => "a" * 40,
+            "git.pull_request.base_branch" => "main",
+            "_dd.ci.env_vars" => '{"CI_PROJECT_URL":"https://gitlab.example/project","CI_PIPELINE_ID":"123","CI_JOB_ID":"456"}',
+            "pr.number" => "42"
+          )
+          expect(payload["metadata"]["*"]).not_to have_key("git.branch")
+          expect(shared_metadata).not_to include("ci.custom", "git.custom")
+
+          test_events = payload["events"].reject { |event| event["type"] == "span" }
+          expect(test_events.map { |event| event["type"] }.uniq).to match_array(Datadog::CI::Ext::AppTypes::CI_SPAN_TYPES)
+          test_events.each do |event|
+            expect(event["content"]["meta"].keys & shared_metadata.keys).to be_empty
+            expect(event["content"]["meta"]).to include(
+              "ci.custom" => "custom CI metadata",
+              "git.custom" => "custom Git metadata"
+            )
+          end
+        end
+        expect(spans.map(&:meta)).to eq(original_metadata)
+        expect(test_tracing.shared_tags).to equal(shared_snapshot)
+        expect(shared_snapshot["git.commit.message"]).to eq("m" * 5001)
+      end
+
+      it "does not emit shared environment fields on ordinary spans" do
+        transport.send_events(traces)
+
+        expect(api).to have_received(:citestcycle_request) do |args|
+          payload = MessagePack.unpack(args[:payload])
+          ordinary_events = payload["events"].select { |event| event["type"] == "span" }
+          expect(ordinary_events).not_to be_empty
+          ordinary_events.each do |event|
+            expect(event["content"]["meta"].keys & Datadog::CI::Ext::Metadata::SHARED_ENVIRONMENT_TAGS).to be_empty
+          end
+        end
+      end
+
+      context "when splitting payloads" do
+        let(:max_payload_size) { 2500 }
+
+        it "includes shared metadata in every chunk" do
+          payloads = []
+          allow(api).to receive(:citestcycle_request) do |args|
+            payloads << MessagePack.unpack(args[:payload])
+            api
+          end
+
+          transport.send_events(traces)
+
+          expect(payloads.size).to be > 1
+          expect(payloads.sum { |payload| payload["events"].size }).to eq(spans.size)
+          payloads.each do |payload|
+            expect(payload["metadata"]["test_levels"]).to include("ci.job.name" => "tests", "git.branch" => "main")
+            payload["events"].reject { |event| event["type"] == "span" }.each do |event|
+              expect(event["content"]["meta"]).not_to include("ci.job.name", "git.branch", "git.commit.message")
+            end
           end
         end
       end
