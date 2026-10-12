@@ -1,5 +1,16 @@
 ## [Unreleased]
 
+## [1.42.0] - 2026-10-12
+
+### Added
+
+* Report Test Impact Analysis skip counts on test suites ([#653][])
+
+### Fixed
+
+* Fix Minitest tests discovery with Rails 8.1 deferred test loading for Test Parallelization feature ([#655][])
+* Prevent reconfiguration from replacing live CI components ([#644][])
+
 ## [1.41.0] - 2026-10-05
 
 ### Fixed
@@ -737,7 +748,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.41.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.42.0...main
+[1.42.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.41.0...v1.42.0
 [1.41.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.40.0...v1.41.0
 [1.40.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.39.0...v1.40.0
 [1.39.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.38.1...v1.39.0
@@ -1042,4 +1054,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#633]: https://github.com/DataDog/datadog-ci-rb/issues/633
 [#634]: https://github.com/DataDog/datadog-ci-rb/issues/634
 [#636]: https://github.com/DataDog/datadog-ci-rb/issues/636
+[#644]: https://github.com/DataDog/datadog-ci-rb/issues/644
 [#645]: https://github.com/DataDog/datadog-ci-rb/issues/645
+[#653]: https://github.com/DataDog/datadog-ci-rb/issues/653
+[#655]: https://github.com/DataDog/datadog-ci-rb/issues/655
