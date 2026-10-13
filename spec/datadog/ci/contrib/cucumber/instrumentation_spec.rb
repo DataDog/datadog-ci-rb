@@ -50,6 +50,8 @@ RSpec.describe "Cucumber instrumentation" do
   let(:cucumber_9_or_above) { Gem::Version.new("9.0.0") <= integration.version }
   let(:cucumber_8_or_above) { Gem::Version.new("8.0.0") <= integration.version }
   let(:cucumber_4_or_above) { Gem::Version.new("4.0.0") <= integration.version }
+  let(:cucumber_12_or_above) { Gem::Version.new("12.0.0") <= integration.version }
+  let(:failed_test_run_code) { cucumber_12_or_above ? 1 : 2 }
 
   let(:run_id) { SecureRandom.random_number(2**64 - 1) }
   let(:cucumber_execution_events) { [] }
@@ -125,6 +127,7 @@ RSpec.describe "Cucumber instrumentation" do
 
   context "executing a passing test suite" do
     let(:feature_file_to_run) { "passing.feature" }
+    let(:expected_test_run_code) { cucumber_12_or_above ? failed_test_run_code : 0 }
 
     it "creates spans for each scenario and step" do
       expect(test_spans).to have(4).items
@@ -170,18 +173,27 @@ RSpec.describe "Cucumber instrumentation" do
       expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
-    it "marks undefined cucumber scenario as skipped" do
+    it "marks undefined cucumber scenario according to Cucumber's result" do
       undefined_scenario_span = spans.find { |s| s.resource == "undefined scenario" }
       expect(undefined_scenario_span).not_to be_nil
-      expect(undefined_scenario_span).to have_skip_status
-      expect(undefined_scenario_span).to have_test_tag(:skip_reason, 'Undefined step: "undefined"')
+      if cucumber_12_or_above
+        expect(undefined_scenario_span).to have_fail_status
+        expect(undefined_scenario_span).to have_error_message('Undefined step: "undefined"')
+      else
+        expect(undefined_scenario_span).to have_skip_status
+        expect(undefined_scenario_span).to have_test_tag(:skip_reason, 'Undefined step: "undefined"')
+      end
     end
 
-    it "marks pending cucumber scenario as skipped" do
+    it "marks pending cucumber scenario according to Cucumber's result" do
       pending_scenario_span = spans.find { |s| s.resource == "pending scenario" }
       expect(pending_scenario_span).not_to be_nil
-      expect(pending_scenario_span).to have_skip_status
-      expect(pending_scenario_span).to have_test_tag(:skip_reason, "implementation")
+      if cucumber_12_or_above
+        expect(pending_scenario_span).to have_fail_status
+      else
+        expect(pending_scenario_span).to have_skip_status
+        expect(pending_scenario_span).to have_test_tag(:skip_reason, "implementation")
+      end
     end
 
     it "marks skipped cucumber scenario as skipped" do
@@ -197,7 +209,11 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_session_span).to have_test_tag(:span_kind, "test")
       expect(test_session_span).to have_test_tag(:framework, "cucumber")
       expect(test_session_span).to have_test_tag(:framework_version, integration.version.to_s)
-      expect(test_session_span).to have_pass_status
+      if cucumber_12_or_above
+        expect(test_session_span).to have_fail_status
+      else
+        expect(test_session_span).to have_pass_status
+      end
 
       # ITR
       expect(test_session_span).to have_test_tag(:itr_test_skipping_enabled, "true")
@@ -219,7 +235,11 @@ RSpec.describe "Cucumber instrumentation" do
         :framework_version,
         integration.version.to_s
       )
-      expect(test_module_span).to have_pass_status
+      if cucumber_12_or_above
+        expect(test_module_span).to have_fail_status
+      else
+        expect(test_module_span).to have_pass_status
+      end
     end
 
     it "creates test suite span" do
@@ -244,7 +264,11 @@ RSpec.describe "Cucumber instrumentation" do
         "[\"@test-owner\"]"
       )
 
-      expect(first_test_suite_span).to have_pass_status
+      if cucumber_12_or_above
+        expect(first_test_suite_span).to have_fail_status
+      else
+        expect(first_test_suite_span).to have_pass_status
+      end
     end
 
     it "connects test span to test session, test module, and test suite" do
@@ -256,6 +280,17 @@ RSpec.describe "Cucumber instrumentation" do
     end
 
     context "collecting coverage with features dir as root" do
+      let(:args) do
+        [
+          "--name",
+          "cucumber scenario",
+          "-r",
+          steps_file_for_run_path,
+          features_path
+        ]
+      end
+      let(:expected_test_run_code) { 0 }
+
       it "creates coverage events for each non-skipped test ignoring bundle_path" do
         expect(coverage_events).to have(1).item
 
@@ -283,7 +318,11 @@ RSpec.describe "Cucumber instrumentation" do
 
       it "skips the test" do
         expect(test_spans).to have(4).items
-        expect(test_spans).to all have_skip_status
+        if cucumber_12_or_above
+          expect(test_spans).to have_tag_values_no_order(:status, ["skip", "fail", "fail", "skip"])
+        else
+          expect(test_spans).to all have_skip_status
+        end
 
         itr_skipped_test = test_spans.find { |span| span.name == "cucumber scenario" }
         expect(itr_skipped_test).to have_test_tag(:itr_skipped_by_itr, "true")
@@ -304,6 +343,7 @@ RSpec.describe "Cucumber instrumentation" do
 
     context "skipping a feature suite with a later unskippable scenario in suite mode" do
       let(:feature_file_to_run) { "unskippable_later_scenario.feature" }
+      let(:expected_test_run_code) { 0 }
       let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
       let(:itr_skippable_suites) do
         Set.new([
@@ -331,6 +371,7 @@ RSpec.describe "Cucumber instrumentation" do
     end
 
     context "skipping a feature suite in suite mode" do
+      let(:expected_test_run_code) { 0 }
       let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
       let(:itr_skippable_suites) do
         Set.new(["Datadog integration at spec/datadog/ci/contrib/cucumber/features/passing.feature"])
@@ -357,7 +398,7 @@ RSpec.describe "Cucumber instrumentation" do
 
   context "executing a failing test suite" do
     let(:feature_file_to_run) { "failing.feature" }
-    let(:expected_test_run_code) { 2 }
+    let(:expected_test_run_code) { failed_test_run_code }
 
     it "creates all CI spans with failed state" do
       expect(first_test_span.name).to eq("cucumber failing scenario")
@@ -434,14 +475,18 @@ RSpec.describe "Cucumber instrumentation" do
   end
 
   context "executing several features at once" do
-    let(:expected_test_run_code) { 2 }
+    let(:expected_test_run_code) { failed_test_run_code }
 
     let(:passing_test_suite) { test_suite_spans.find { |span| span.name =~ /passing/ } }
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
       expect(test_suite_spans).to have(8).items
-      expect(passing_test_suite).to have_pass_status
+      if cucumber_12_or_above
+        expect(passing_test_suite).to have_fail_status
+      else
+        expect(passing_test_suite).to have_pass_status
+      end
       expect(failing_test_suite).to have_fail_status
     end
 
@@ -459,15 +504,15 @@ RSpec.describe "Cucumber instrumentation" do
   end
 
   context "executing a feature with undefined steps in strict mode" do
-    let(:expected_test_run_code) { 2 }
+    let(:expected_test_run_code) { failed_test_run_code }
     let(:feature_file_to_run) { "passing.feature" }
     let(:args) do
       [
-        "--strict",
+        ("--strict" unless cucumber_12_or_above),
         "-r",
         steps_file_for_run_path,
         features_path
-      ]
+      ].compact
     end
 
     it "marks test session as failed" do
@@ -497,20 +542,33 @@ RSpec.describe "Cucumber instrumentation" do
     end
   end
 
-  context "executing a feature where all scenarios are skipped" do
+  context "executing a feature with undefined and skipped scenarios" do
     let(:feature_file_to_run) { "skipped.feature" }
+    let(:expected_test_run_code) { cucumber_12_or_above ? failed_test_run_code : 0 }
 
-    it "marks all test spans as skipped" do
+    it "marks test spans according to Cucumber's results" do
       expect(test_spans).to have(2).items
-      expect(test_spans).to all have_skip_status
+      if cucumber_12_or_above
+        expect(test_spans).to have_tag_values_no_order(:status, ["fail", "skip"])
+      else
+        expect(test_spans).to all have_skip_status
+      end
     end
 
-    it "marks test session as passed" do
-      expect(test_session_span).to have_pass_status
+    it "marks the test session according to Cucumber's result" do
+      if cucumber_12_or_above
+        expect(test_session_span).to have_fail_status
+      else
+        expect(test_session_span).to have_pass_status
+      end
     end
 
-    it "marks test suite as skipped" do
-      expect(first_test_suite_span).to have_skip_status
+    it "marks the test suite according to Cucumber's result" do
+      if cucumber_12_or_above
+        expect(first_test_suite_span).to have_fail_status
+      else
+        expect(first_test_suite_span).to have_skip_status
+      end
     end
   end
 
@@ -654,7 +712,7 @@ RSpec.describe "Cucumber instrumentation" do
 
     context "when max retries attempts configuration value is too low" do
       let(:single_test_retries_count) { 1 }
-      let(:expected_test_run_code) { 2 }
+      let(:expected_test_run_code) { failed_test_run_code }
 
       it "retries the test once" do
         # 1 initial run of flaky test + 1 retry + 1 passing + 1 other flaky + 1 retry = 5 spans
@@ -690,7 +748,7 @@ RSpec.describe "Cucumber instrumentation" do
 
     context "when total limit of failed tests to retry is 1" do
       let(:total_test_retries_limit) { 1 }
-      let(:expected_test_run_code) { 2 }
+      let(:expected_test_run_code) { failed_test_run_code }
 
       it "does not retry the test" do
         # 1 initial run of flaky test + 4 retries + 1 passing + 1 failed run of flaky test = 7 spans
@@ -727,6 +785,7 @@ RSpec.describe "Cucumber instrumentation" do
 
   context "executing a feature with Datadog's new test retries aka early flake detection" do
     let(:feature_file_to_run) { "passing.feature" }
+    let(:expected_test_run_code) { cucumber_12_or_above ? failed_test_run_code : 0 }
     let(:enable_retries_new) { true }
     let(:known_tests_set) do
       Set.new(
@@ -737,41 +796,56 @@ RSpec.describe "Cucumber instrumentation" do
       )
     end
 
-    it "retries passing test and doesn't retry undefined test" do
-      # 1 initial run of passing test + 10 retries + 3 skipped tests = 14 spans
-      expect(test_spans).to have(14).items
+    it "retries tests according to Cucumber's status" do
+      expected_spans_count = cucumber_12_or_above ? 24 : 14
+      expect(test_spans).to have(expected_spans_count).items
 
-      skipped_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
-      expect(skipped_spans).to have(3).items # see steps.rb
-      expect(passed_spans).to have(11).items
+      skipped_spans, other_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
+      if cucumber_12_or_above
+        expect(skipped_spans).to have(1).item
+        expect(other_spans).to have(23).items
+      else
+        expect(skipped_spans).to have(3).items # see steps.rb
+        expect(other_spans).to have(11).items
+      end
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["cucumber scenario"]).to have(11).items
-      expect(test_spans_by_test_name["undefined scenario"]).to have(1).item
+      expected_undefined_spans_count = cucumber_12_or_above ? 11 : 1
+      expect(test_spans_by_test_name["undefined scenario"]).to have(expected_undefined_spans_count).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(cucumber_12_or_above ? 20 : 10)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      retry_reasons_count = cucumber_12_or_above ? 20 : 10
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * retry_reasons_count)
 
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(12)
+      expect(new_tests_count).to eq(cucumber_12_or_above ? 22 : 12)
 
-      # check final statuses (passing scenario succeeded, others were skipped)
+      # check final statuses
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
-      expect(final_status_fail_tests).to eq(0)
+      expect(final_status_fail_tests).to eq(cucumber_12_or_above ? 2 : 0)
 
       final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
       expect(final_status_pass_tests).to eq(1)
 
       expect(test_suite_spans).to have(1).item
-      expect(test_suite_spans.first).to have_pass_status
+      if cucumber_12_or_above
+        expect(test_suite_spans.first).to have_fail_status
+      else
+        expect(test_suite_spans.first).to have_pass_status
+      end
 
-      expect(test_session_span).to have_pass_status
+      if cucumber_12_or_above
+        expect(test_session_span).to have_fail_status
+      else
+        expect(test_session_span).to have_pass_status
+      end
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
@@ -842,7 +916,7 @@ RSpec.describe "Cucumber instrumentation" do
 
   context "executing failing test scenario with attempt to fix" do
     let(:feature_file_to_run) { "failing.feature" }
-    let(:expected_test_run_code) { 2 }
+    let(:expected_test_run_code) { failed_test_run_code }
 
     let(:enable_test_management) { true }
     let(:test_properties_hash) do
@@ -896,7 +970,7 @@ RSpec.describe "Cucumber instrumentation" do
 
   context "executing failing test scenario that is both quarantined and attempt_to_fix" do
     let(:feature_file_to_run) { "failing.feature" }
-    let(:expected_test_run_code) { 2 }
+    let(:expected_test_run_code) { failed_test_run_code }
 
     let(:enable_test_management) { true }
     let(:test_properties_hash) do
@@ -941,6 +1015,7 @@ RSpec.describe "Cucumber instrumentation" do
 
   context "executing a feature with Datadog's early flake detection and impacted tests detection enabled" do
     let(:feature_file_to_run) { "passing.feature" }
+    let(:expected_test_run_code) { cucumber_12_or_above ? failed_test_run_code : 0 }
     let(:enable_retries_new) { true }
     let(:enable_impacted_tests) { true }
 
@@ -963,39 +1038,53 @@ RSpec.describe "Cucumber instrumentation" do
     end
 
     it "retries modified test" do
-      # 1 initial run of passing test + 10 retries + 3 skipped tests = 14 spans
-      expect(test_spans).to have(14).items
+      expected_spans_count = cucumber_12_or_above ? 34 : 14
+      expect(test_spans).to have(expected_spans_count).items
 
-      skipped_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
-      expect(skipped_spans).to have(3).items # see steps.rb
-      expect(passed_spans).to have(11).items
+      skipped_spans, other_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
+      if cucumber_12_or_above
+        expect(skipped_spans).to have(1).item
+        expect(other_spans).to have(33).items
+      else
+        expect(skipped_spans).to have(3).items # see steps.rb
+        expect(other_spans).to have(11).items
+      end
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["cucumber scenario"]).to have(11).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(cucumber_12_or_above ? 30 : 10)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      retry_reasons_count = cucumber_12_or_above ? 30 : 10
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * retry_reasons_count)
 
       # modified tests - all tests are marked as modified because we don't have end lines in cucumber
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
-      expect(modified_count).to eq(14)
+      expect(modified_count).to eq(cucumber_12_or_above ? 34 : 14)
 
-      # check final statuses (one test passed, others were skipped)
+      # check final statuses
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
-      expect(final_status_fail_tests).to eq(0)
+      expect(final_status_fail_tests).to eq(cucumber_12_or_above ? 2 : 0)
 
       final_status_pass_tests = test_spans.count { |span| span.get_tag("test.final_status") == "pass" }
       expect(final_status_pass_tests).to eq(1)
 
       expect(test_suite_spans).to have(1).item
-      expect(test_suite_spans.first).to have_pass_status
+      if cucumber_12_or_above
+        expect(test_suite_spans.first).to have_fail_status
+      else
+        expect(test_suite_spans.first).to have_pass_status
+      end
 
-      expect(test_session_span).to have_pass_status
+      if cucumber_12_or_above
+        expect(test_session_span).to have_fail_status
+      else
+        expect(test_session_span).to have_pass_status
+      end
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end

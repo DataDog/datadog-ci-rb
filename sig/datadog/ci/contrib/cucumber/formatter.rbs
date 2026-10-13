@@ -47,7 +47,7 @@ module Datadog
 
           def extract_parameters_hash: (untyped test_case) -> Hash[String, String]?
 
-          def ok?: (Cucumber::Core::Test::Result result, untyped strict) -> bool
+          def ok?: (Cucumber::Core::Test::Result result) -> bool
 
           def datadog_integration: () -> Datadog::CI::Contrib::Integration
 
