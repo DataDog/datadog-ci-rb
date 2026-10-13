@@ -63,6 +63,7 @@ def self.with_cucumber_gem(versions:)
     next if v < 10 && Gem::Version.new("4.0") <= RUBY_VERSION
     next if v == 10 && Gem::Version.new("3.1") > RUBY_VERSION
     next if v == 11 && Gem::Version.new("3.2") > RUBY_VERSION
+    next if v == 12 && Gem::Version.new("3.3") > RUBY_VERSION
 
     appraise "cucumber-#{v}" do
       gem "cucumber", "~> #{v}"
@@ -287,7 +288,7 @@ with_minitest_gem(versions: 5..6)
 with_minitest_maxitest_gem
 with_rspec_gem
 with_simplecov_gem
-with_cucumber_gem(versions: 3..11)
+with_cucumber_gem(versions: 3..12)
 with_ci_queue_minitest_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_ci_queue_rspec_gem if Gem::Version.new("3.1") <= RUBY_VERSION
 with_parallel_tests_gem(parallel_tests_versions: 4..5) if Gem::Version.new("3.2") <= RUBY_VERSION

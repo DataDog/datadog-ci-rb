@@ -1,0 +1,195 @@
+GIT
+  remote: https://github.com/DataDog/dd-trace-rb.git
+  revision: 5fd4ab94090ca173d529a471d639bfac22e96dd1
+  branch: master
+  specs:
+    datadog (2.45.0.dev)
+      cgi
+      datadog-ruby_core_source (~> 3.5, >= 3.5.5)
+      libdatadog (~> 45.0.0.1.0)
+      libddwaf (~> 1.30.0.0.0)
+      logger
+      msgpack
+
+PATH
+  remote: ..
+  specs:
+    datadog-ci (1.41.0)
+      datadog (~> 2.4)
+      drb
+      msgpack
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    addressable (2.9.0)
+      public_suffix (>= 2.0.2, < 8.0)
+    appraisal (2.5.0)
+      bundler
+      rake
+      thor (>= 0.14.0)
+    base64 (0.3.0)
+    bigdecimal (4.1.3)
+    builder (3.3.0)
+    cgi (0.5.2)
+    climate_control (1.2.0)
+    crack (1.0.1)
+      bigdecimal
+      rexml
+    cucumber (12.0.0)
+      base64 (~> 0.2)
+      builder (~> 3.2)
+      cucumber-ci-environment (> 9, < 14)
+      cucumber-core (>= 20, < 21)
+      cucumber-cucumber-expressions (> 17, < 21)
+      cucumber-html-formatter (> 21, < 25)
+      cucumber-query (~> 16.1)
+      diff-lcs (>= 1.5, < 3.0)
+      logger (~> 1.6)
+      mini_mime (~> 1.1)
+      multi_test (> 1, < 4)
+      sys-uname (~> 1.5)
+    cucumber-ci-environment (13.0.0)
+    cucumber-core (20.0.0)
+      cucumber-gherkin (> 36, < 43)
+      cucumber-messages (> 31, < 35)
+      cucumber-tag-expressions (> 6, < 12)
+    cucumber-cucumber-expressions (20.1.0)
+      bigdecimal
+    cucumber-gherkin (42.0.1)
+      cucumber-messages (>= 34, < 35)
+    cucumber-html-formatter (24.2.0)
+      cucumber-messages (> 23, < 35)
+    cucumber-messages (34.2.1)
+    cucumber-query (16.1.1)
+      cucumber-messages (>= 34.1, < 36)
+    cucumber-tag-expressions (11.0.1)
+    datadog-ruby_core_source (3.5.5)
+    debug (1.11.1)
+      irb (~> 1.10)
+      reline (>= 0.3.8)
+    diff-lcs (1.6.2)
+    drb (2.2.3)
+    erb (6.0.7)
+    ffi (1.17.4)
+    ffi (1.17.4-aarch64-linux-gnu)
+    ffi (1.17.4-aarch64-linux-musl)
+    ffi (1.17.4-arm-linux-gnu)
+    ffi (1.17.4-arm-linux-musl)
+    ffi (1.17.4-arm64-darwin)
+    ffi (1.17.4-x86-linux-gnu)
+    ffi (1.17.4-x86-linux-musl)
+    ffi (1.17.4-x86_64-darwin)
+    ffi (1.17.4-x86_64-linux-gnu)
+    ffi (1.17.4-x86_64-linux-musl)
+    hashdiff (1.2.1)
+    io-console (0.9.4)
+    irb (1.18.0)
+      pp (>= 0.6.0)
+      prism (>= 1.3.0)
+      rdoc (>= 4.0.0)
+      reline (>= 0.4.2)
+    libdatadog (45.0.0.1.0)
+    libdatadog (45.0.0.1.0-aarch64-linux)
+    libdatadog (45.0.0.1.0-arm64-darwin)
+    libdatadog (45.0.0.1.0-x86_64-linux)
+    libddwaf (1.30.0.0.2)
+      ffi (~> 1.0)
+    libddwaf (1.30.0.0.2-aarch64-linux)
+      ffi (~> 1.0)
+    libddwaf (1.30.0.0.2-arm64-darwin)
+      ffi (~> 1.0)
+    libddwaf (1.30.0.0.2-x86_64-darwin)
+      ffi (~> 1.0)
+    libddwaf (1.30.0.0.2-x86_64-linux)
+      ffi (~> 1.0)
+    logger (1.7.0)
+    memoist3 (1.0.0)
+    mini_mime (1.1.5)
+    msgpack (1.8.5)
+    multi_test (2.0.0)
+    os (1.1.4)
+    ostruct (0.6.3)
+    pp (0.6.4)
+      prettyprint
+    prettyprint (0.2.1)
+    prism (1.9.0)
+    public_suffix (7.0.5)
+    rake (13.4.2)
+    rake-compiler (1.3.2)
+      rake
+    rbs (4.2.0)
+      logger
+      prism (>= 1.6.0)
+      tsort
+    rdoc (8.1.0)
+      erb
+      prism (>= 1.6.0)
+      rbs (>= 4.0.0)
+      tsort
+    reline (0.7.0)
+      io-console (~> 0.5)
+    rexml (3.4.4)
+    rspec (3.13.2)
+      rspec-core (~> 3.13.0)
+      rspec-expectations (~> 3.13.0)
+      rspec-mocks (~> 3.13.0)
+    rspec-collection_matchers (1.2.1)
+      rspec-expectations (>= 2.99.0.beta1)
+    rspec-core (3.13.6)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.5)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-mocks (3.13.8)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-support (3.13.7)
+    rspec_junit_formatter (0.6.0)
+      rspec-core (>= 2, < 4, != 2.12.0)
+    simplecov (1.3.2)
+    sys-uname (1.5.1)
+      ffi (~> 1.1)
+      memoist3 (~> 1.0.0)
+    thor (1.5.0)
+    tsort (0.2.0)
+    webmock (3.30.0)
+      addressable (>= 2.8.0)
+      crack (>= 0.3.2)
+      hashdiff (>= 0.4.0, < 2.0.0)
+    yard (0.9.45)
+
+PLATFORMS
+  aarch64-linux-gnu
+  aarch64-linux-musl
+  arm-linux-gnu
+  arm-linux-musl
+  arm64-darwin
+  ruby
+  x86-linux-gnu
+  x86-linux-musl
+  x86_64-darwin
+  x86_64-linux
+  x86_64-linux-gnu
+  x86_64-linux-musl
+
+DEPENDENCIES
+  appraisal
+  climate_control
+  cucumber (~> 12)
+  datadog!
+  datadog-ci!
+  debug
+  os
+  ostruct
+  rake
+  rake-compiler
+  rspec
+  rspec-collection_matchers
+  rspec_junit_formatter
+  simplecov
+  webmock
+  yard
+
+BUNDLED WITH
+   2.7.2
