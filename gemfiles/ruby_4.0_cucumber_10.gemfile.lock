@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 5fd4ab94090ca173d529a471d639bfac22e96dd1
+  revision: 8fbb460b7e2bfbeb1b579165ed9b36ddebff0b50
   branch: master
   specs:
-    datadog (2.45.0.dev)
+    datadog (2.46.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.5)
       libdatadog (~> 45.0.0.1.0)
@@ -61,7 +61,7 @@ GEM
       cucumber-messages (> 23, < 33)
     cucumber-messages (32.3.1)
     cucumber-tag-expressions (8.1.0)
-    datadog-ruby_core_source (3.5.5)
+    datadog-ruby_core_source (3.5.6)
     debug (1.11.1)
       irb (~> 1.10)
       reline (>= 0.3.8)
@@ -133,7 +133,7 @@ GEM
       memoist3 (~> 1.0.0)
     thor (1.5.0)
     tsort (0.2.0)
-    webmock (3.30.0)
+    webmock (3.32.0)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
@@ -179,9 +179,9 @@ CHECKSUMS
   cucumber-html-formatter (22.3.0) sha256=f9768ed05588dbd73a5f3824c2cc648bd86b00206e6972d743af8051281d0729
   cucumber-messages (32.3.1) sha256=ddc88e4c1cf7afb96c06005b92a4a6f221a2fa435a8b4ca04677d215fd82771c
   cucumber-tag-expressions (8.1.0) sha256=9bd8c4b6654f8e5bf2a9c99329b6f32136a75e50cd39d4cfb3927d0fa9f52e21
-  datadog (2.45.0.dev)
+  datadog (2.46.0.dev)
   datadog-ci (1.42.0)
-  datadog-ruby_core_source (3.5.5) sha256=5df55ea06feda22e5d4b7db62a70f19a86660bd06d3a3ff739d2f549eaff45e6
+  datadog-ruby_core_source (3.5.6) sha256=07d8909b9314af709da80966cf7e160da19ca1c396a8f45d175615f675a89569
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   drb (2.2.3) sha256=0b00d6fdb50995fe4a45dea13663493c841112e4068656854646f418fda13373
@@ -223,7 +223,7 @@ CHECKSUMS
   sys-uname (1.5.1) sha256=784d7e6491b0393c25cbbe5ac38324ac7be9fda083a6094832648af669386d7b
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
-  webmock (3.30.0) sha256=9d3bb917f82bb02effb95bcee36da3783232efacee7783bac4e357c6e650c136
+  webmock (3.32.0) sha256=4a3afeff1e5fb0f13750a1204aba8baff02cf970a9f1ac262a7a1513f894c671
   yard (0.9.45) sha256=52e211493f7cb8a3ebf7e104a25a1e73937a3103092545d34cb88fafebb3dc51
 
 BUNDLED WITH
