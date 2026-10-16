@@ -16,6 +16,7 @@ gem "simplecov"
 
 # build&test
 gem "rspec"
+gem "prop_check", "~> 1.0.2", require: false
 gem "rspec-collection_matchers"
 gem "rspec_junit_formatter"
 gem "appraisal"
@@ -33,6 +34,9 @@ gem "os"
 
 # type checks, memory checks, etc.
 group :check do
+  # mutation testing (Mutineer requires Ruby 3.4+ and fork)
+  gem "mutineer", "1.0.0", require: false if RUBY_VERSION >= "3.4.0" && RUBY_ENGINE == "ruby"
+
   # style
   gem "standard", "~> 1.56" if RUBY_VERSION >= "3.0.0"
 

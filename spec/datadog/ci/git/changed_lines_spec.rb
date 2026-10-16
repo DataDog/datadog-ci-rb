@@ -221,6 +221,14 @@ RSpec.describe Datadog::CI::Git::ChangedLines do
     end
 
     context "with automatic building" do
+      it "finds a lower interval added after a higher interval without an explicit build" do
+        fresh_lines = described_class.new
+        fresh_lines.add_interval(10, 15)
+        fresh_lines.add_interval(1, 5)
+
+        expect(fresh_lines.overlaps?(1, 1)).to be true
+      end
+
       it "automatically builds when needed for queries" do
         # Use a fresh instance to avoid interference from before block
         fresh_lines = described_class.new
