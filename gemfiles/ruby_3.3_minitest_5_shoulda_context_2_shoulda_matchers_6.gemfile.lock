@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 027dae8bfb3c56513628564d1d507a338cef6780
+  revision: e49b950adc97af607034848f958fb3c67911a9b7
   branch: master
   specs:
     datadog (2.46.0.dev)
       cgi
-      datadog-ruby_core_source (~> 3.5, >= 3.5.5)
-      libdatadog (~> 45.0.0.1.0)
+      datadog-ruby_core_source (~> 3.5, >= 3.5.6)
+      libdatadog (~> 46.0.0.1.0)
       libddwaf (~> 1.30.0.0.0)
       logger
       msgpack
@@ -70,9 +70,9 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (3.1.0)
-    libdatadog (45.0.0.1.0-aarch64-linux)
-    libdatadog (45.0.0.1.0-arm64-darwin)
-    libdatadog (45.0.0.1.0-x86_64-linux)
+    libdatadog (46.0.0.1.0-aarch64-linux)
+    libdatadog (46.0.0.1.0-arm64-darwin)
+    libdatadog (46.0.0.1.0-x86_64-linux)
     libddwaf (1.30.0.0.2-aarch64-linux)
       ffi (~> 1.0)
     libddwaf (1.30.0.0.2-arm64-darwin)
