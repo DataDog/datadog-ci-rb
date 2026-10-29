@@ -22,7 +22,7 @@ module Datadog
             @datadog_source_start: Integer?
             @datadog_source_location_from_parent: bool
 
-            def run: (untyped example_group_instance, untyped reporter) -> untyped
+            def run: (Object example_group_instance, untyped reporter) -> untyped
 
             def datadog_test_id: () -> String
             def datadog_fqn_test_id: () -> String

@@ -26,7 +26,7 @@ module RSpec::Core::Example
 
   attr_reader reporter: untyped
 
-  def run: () -> untyped
+  def run: (Object example_group_instance, untyped reporter) -> untyped
   def execution_result: () -> untyped
   def metadata: () -> untyped
   def description: () -> String

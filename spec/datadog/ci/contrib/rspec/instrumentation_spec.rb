@@ -3485,4 +3485,33 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
   end
+
+  context "retried example instance isolation" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+      let(:early_flake_detection_enabled) { true }
+      let(:faulty_session_threshold) { 100 }
+      let(:known_tests) { Set.new(["previous test"]) }
+    end
+
+    it "does not reuse expired mocks on a retried example instance" do
+      with_new_rspec_environment do
+        RSpec.describe "RetryIsolation" do
+          before(:context) { @shared_fixture = :ready }
+          before { @cached_mock ||= double("request collaborator", value: :ready) }
+
+          it "isolates cached request state" do
+            expect(@shared_fixture).to eq(:ready)
+            expect(@cached_mock.value).to eq(:ready)
+          end
+        end
+
+        options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format progress])
+        RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+      end
+
+      expect(test_spans).to have(11).items
+      expect(test_spans).to all(have_pass_status)
+    end
+  end
 end
