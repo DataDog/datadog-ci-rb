@@ -25,7 +25,7 @@ module Datadog
             # Main entry points
             # ============================================
 
-            def run(*args)
+            def run(example_group_instance, reporter)
               return super unless datadog_tracing_enabled?
 
               @datadog_test_tracing_component = test_tracing_component
@@ -55,7 +55,10 @@ module Datadog
                   # before each run remove any previous exception
                   @exception = nil
 
-                  result = super
+                  # RSpec normally gives every example a fresh instance. Keep the
+                  # caller's initial context state, including singleton methods,
+                  # without carrying request or fixture caches into later attempts.
+                  result = super(example_group_instance.clone, reporter)
 
                   # When test job is canceled and RSpec is quitting we don't want to report the last test
                   # before RSpec context unwinds. This test might have some unrelated errors that we don't want to
