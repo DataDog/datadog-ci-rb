@@ -1,13 +1,13 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: e49b950adc97af607034848f958fb3c67911a9b7
+  revision: 53fc66ec61aa5c8d37ff050063133d0fd8463adf
   branch: master
   specs:
-    datadog (2.46.0.dev)
+    datadog (2.48.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.6)
-      libdatadog (~> 46.0.0.1.0)
-      libddwaf (~> 1.30.0.0.0)
+      libdatadog (~> 46.1.0.1.1)
+      libddwaf (~> 1.30.0.1.0)
       logger
       msgpack
 
@@ -22,7 +22,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.9.0)
+    addressable (2.9.1)
       public_suffix (>= 2.0.2, < 8.0)
     appraisal (2.5.0)
       bundler
@@ -80,37 +80,45 @@ GEM
     ffi (1.17.4-x86_64-linux-gnu)
     ffi (1.17.4-x86_64-linux-musl)
     hashdiff (1.2.1)
-    io-console (0.9.4)
+    io-console (0.9.5)
     irb (1.18.0)
       pp (>= 0.6.0)
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    libdatadog (46.0.0.1.0)
-    libdatadog (46.0.0.1.0-aarch64-linux)
-    libdatadog (46.0.0.1.0-arm64-darwin)
-    libdatadog (46.0.0.1.0-x86_64-linux)
-    libddwaf (1.30.0.0.2)
+    libdatadog (46.1.0.1.1)
+    libdatadog (46.1.0.1.1-aarch64-linux)
+    libdatadog (46.1.0.1.1-arm64-darwin)
+    libdatadog (46.1.0.1.1-x86_64-linux)
+    libddwaf (1.30.0.1.0)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.2-aarch64-linux)
+    libddwaf (1.30.0.1.0-aarch64-linux)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.2-arm64-darwin)
+    libddwaf (1.30.0.1.0-arm64-darwin)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.2-x86_64-darwin)
+    libddwaf (1.30.0.1.0-x86_64-darwin)
       ffi (~> 1.0)
-    libddwaf (1.30.0.0.2-x86_64-linux)
+    libddwaf (1.30.0.1.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
     memoist3 (1.0.0)
     mini_mime (1.1.5)
-    msgpack (1.8.5)
+    msgpack (1.8.7)
     multi_test (1.1.0)
     os (1.1.4)
     ostruct (0.6.3)
     pp (0.6.4)
       prettyprint
     prettyprint (0.2.1)
-    prism (1.9.0)
+    prism (2.1.0)
+    prism (2.1.0-aarch64-linux-gnu)
+    prism (2.1.0-aarch64-linux-musl)
+    prism (2.1.0-arm-linux-gnu)
+    prism (2.1.0-arm-linux-musl)
+    prism (2.1.0-arm64-darwin)
+    prism (2.1.0-x86_64-darwin)
+    prism (2.1.0-x86_64-linux-gnu)
+    prism (2.1.0-x86_64-linux-musl)
     public_suffix (7.0.5)
     rake (13.4.2)
     rake-compiler (1.3.2)
@@ -142,8 +150,8 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
     rspec-support (3.13.7)
-    rspec_junit_formatter (0.6.0)
-      rspec-core (>= 2, < 4, != 2.12.0)
+    rspec_junit_formatter (0.8.0)
+      rspec-core (>= 3.13, < 4)
     simplecov (1.3.2)
     sys-uname (1.5.1)
       ffi (~> 1.1)
@@ -189,7 +197,7 @@ DEPENDENCIES
   yard
 
 CHECKSUMS
-  addressable (2.9.0) sha256=7fdf6ac3660f7f4e867a0838be3f6cf722ace541dd97767fa42bc6cfa980c7af
+  addressable (2.9.1) sha256=f1212365945455c84e8d031eea40fc6bedf0c663a78d95b3ab93591040bc5c35
   appraisal (2.5.0) sha256=36989221be127913b0dba8d114da2001e6b2dceea7bd4951200eaba764eed3ce
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
   bigdecimal (4.1.3) sha256=61ebe1e5e559bdc3cc6f2c0ee7f427321fc838f59611c294356eb04d6e21cf66
@@ -206,7 +214,7 @@ CHECKSUMS
   cucumber-html-formatter (23.1.0) sha256=7789b4a792c876394b9604aeb66aa5cf4c61514473b7e712c76d5eaedcdd8cdf
   cucumber-messages (32.3.1) sha256=ddc88e4c1cf7afb96c06005b92a4a6f221a2fa435a8b4ca04677d215fd82771c
   cucumber-tag-expressions (8.1.0) sha256=9bd8c4b6654f8e5bf2a9c99329b6f32136a75e50cd39d4cfb3927d0fa9f52e21
-  datadog (2.46.0.dev)
+  datadog (2.48.0.dev)
   datadog-ci (1.42.0)
   datadog-ruby_core_source (3.5.6) sha256=07d8909b9314af709da80966cf7e160da19ca1c396a8f45d175615f675a89569
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
@@ -225,27 +233,35 @@ CHECKSUMS
   ffi (1.17.4-x86_64-linux-gnu) sha256=9d3db14c2eae074b382fa9c083fe95aec6e0a1451da249eab096c34002bc752d
   ffi (1.17.4-x86_64-linux-musl) sha256=3fdf9888483de005f8ef8d1cf2d3b20d86626af206cbf780f6a6a12439a9c49e
   hashdiff (1.2.1) sha256=9c079dbc513dfc8833ab59c0c2d8f230fa28499cc5efb4b8dd276cf931457cd1
-  io-console (0.9.4) sha256=a403304f32928ee85e56d457b4612ca43f2703b561a3258844992bd24085fbb1
+  io-console (0.9.5) sha256=83dd9bbf4c4680416629245b39cd4212eb5f4d9a4ea91804870c1f6b846414d5
   irb (1.18.0) sha256=de9454a0703a54704b9811a5ef31a60c86949fbf4013fcf244fabc7c775248e3
-  libdatadog (46.0.0.1.0) sha256=038ac540874ba8085c5fca0dc95303f6fa9e65faf2e3f888ba54e538902d7ab8
-  libdatadog (46.0.0.1.0-aarch64-linux) sha256=81f22bb7c485a0c89aae3973970e311a2ea32d23c2e272eb0f48d32b9dac0a31
-  libdatadog (46.0.0.1.0-arm64-darwin) sha256=92406627b174641bacc7661e2a6b770b7718c383f4509f8b2738f721a48e42c8
-  libdatadog (46.0.0.1.0-x86_64-linux) sha256=1bd59f911922582114dbd1ea163dfe0feb28bf284ecb66345d8eb978eb1bdeff
-  libddwaf (1.30.0.0.2) sha256=f6dd8d70f1925acce795ad0e974b12cb532c958056ac14e497f13d8c1af143d2
-  libddwaf (1.30.0.0.2-aarch64-linux) sha256=f4d8498cce66cb30d81f46bb046b11c3a2202e21ca73c9edb80c3a37939a3dc2
-  libddwaf (1.30.0.0.2-arm64-darwin) sha256=cbbec7eee8fe7dbdc6c11bf1429fcfc217fad84e822fc6f252cb1c45daf663cc
-  libddwaf (1.30.0.0.2-x86_64-darwin) sha256=3fb97292a9e6eb4b50d48ed0805c48278a261744ce6944e0ded73144a0395060
-  libddwaf (1.30.0.0.2-x86_64-linux) sha256=d6f628bfb91a7f89a4ef702c3fce3991ec0678c50031128b70799fde8362111d
+  libdatadog (46.1.0.1.1) sha256=0129262ca0595292716140e330f9e68d9aa3a047804918ab15a209273adee03e
+  libdatadog (46.1.0.1.1-aarch64-linux) sha256=0fded57652e5a7edeb95ca7ce9679c1e47cf97afa2ffce09b80ec5b09663731c
+  libdatadog (46.1.0.1.1-arm64-darwin) sha256=8696975b4397932011b033b082b6daa20fba6bec94d7cad6b8b9336e0c3b9bd0
+  libdatadog (46.1.0.1.1-x86_64-linux) sha256=a57573ebc623fcdd5ee991da293257d6e342378000e33d327c395304c98249ca
+  libddwaf (1.30.0.1.0) sha256=331632114ef21cc2538d93335ad0b1a6f37de448b5ce9d091a690eec321308d3
+  libddwaf (1.30.0.1.0-aarch64-linux) sha256=c36650249bbbcaf81f0a0715e021d3db37fb1df989390f2744f445d1032d4314
+  libddwaf (1.30.0.1.0-arm64-darwin) sha256=68a67d0daf6bcd8f621fb4a5390c1c2c241433fd3b8aa1516b4ef7518d316c2c
+  libddwaf (1.30.0.1.0-x86_64-darwin) sha256=722b93006eeeaee42a3a5149bd0ab14bca1246524b87a1f40fb7bdbdfc42a624
+  libddwaf (1.30.0.1.0-x86_64-linux) sha256=5cd88c67ed8703cdc9878e089e4eea679d3825cec18de2a9b6093e489fa900eb
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   memoist3 (1.0.0) sha256=686e42402cf150a362050c23143dc57b0ef88f8c344943ff8b7845792b50d56f
   mini_mime (1.1.5) sha256=8681b7e2e4215f2a159f9400b5816d85e9d8c6c6b491e96a12797e798f8bccef
-  msgpack (1.8.5) sha256=97419eaa7b35dfe3e462c0e6c1a3dfdcbfc8756605c09e46e4c6daef127517ba
+  msgpack (1.8.7) sha256=dfefec761b5f9047e6e8d95d2c7f8af4b3725d984a01942adc533aa819a2df33
   multi_test (1.1.0) sha256=e9e550cdd863fb72becfe344aefdcd4cbd26ebf307847f4a6c039a4082324d10
   os (1.1.4) sha256=57816d6a334e7bd6aed048f4b0308226c5fb027433b67d90a9ab435f35108d3f
   ostruct (0.6.3) sha256=95a2ed4a4bd1d190784e666b47b2d3f078e4a9efda2fccf18f84ddc6538ed912
   pp (0.6.4) sha256=dfcb0fce700c41456265922884f9fe195d7fbb0674a3578e6c0f69588e82b570
   prettyprint (0.2.1) sha256=d555d57ea6d7cf001d4774b693546a6bd88bec1e778ddffb5c60b68ceec4b7d4
-  prism (1.9.0) sha256=7b530c6a9f92c24300014919c9dcbc055bf4cdf51ec30aed099b06cd6674ef85
+  prism (2.1.0) sha256=1c0a7c6dea0e93183390fb123f007564dbe663198e2f86ad87204151147601f3
+  prism (2.1.0-aarch64-linux-gnu) sha256=808dddc72def68e1a0463689414c97e0ba211938eddbab05387a4844aa2b3ec2
+  prism (2.1.0-aarch64-linux-musl) sha256=dd1a0732620c1e575dabb07a297a62911fabd72f8e20ce850b522a866f877930
+  prism (2.1.0-arm-linux-gnu) sha256=96b2426b9dbab05448c4add735619929042be3cd7e871ff186468121b62bcfa8
+  prism (2.1.0-arm-linux-musl) sha256=00ef918e42a3dc98f11a461bf473586a3424b0f78bee8a4e43b5a65a5f5e2cd0
+  prism (2.1.0-arm64-darwin) sha256=2d0c2e3e011cfd89c041940907d3ff3def379d7b0f2ba158d1d42238e8ad8afc
+  prism (2.1.0-x86_64-darwin) sha256=6c645d8e6afc742956c7518220ce5106367727c4d9980ac9ab386d55004ddab4
+  prism (2.1.0-x86_64-linux-gnu) sha256=b2b647afce09551e650b8bb3e2fc91d7d73d392a09534ca307ec0d619c33bfd4
+  prism (2.1.0-x86_64-linux-musl) sha256=249f45981726923e259b927902246219fa25ad10a76f43849c9aee1a3d3ec5b8
   public_suffix (7.0.5) sha256=1a8bb08f1bbea19228d3bed6e5ed908d1cb4f7c2726d18bd9cadf60bc676f623
   rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
   rake-compiler (1.3.2) sha256=12fed13fa07f9caee829599935e0332ba76e2047a617f8f7918a222d68427760
@@ -259,7 +275,7 @@ CHECKSUMS
   rspec-expectations (3.13.5) sha256=33a4d3a1d95060aea4c94e9f237030a8f9eae5615e9bd85718fe3a09e4b58836
   rspec-mocks (3.13.8) sha256=086ad3d3d17533f4237643de0b5c42f04b66348c28bf6b9c2d3f4a3b01af1d47
   rspec-support (3.13.7) sha256=0640e5570872aafefd79867901deeeeb40b0c9875a36b983d85f54fb7381c47c
-  rspec_junit_formatter (0.6.0) sha256=40dde674e6ae4e6cc0ff560da25497677e34fefd2338cc467a8972f602b62b15
+  rspec_junit_formatter (0.8.0) sha256=2c505d4a79713d298bc8361532cc3eb3427d9279ffe3f8ceeeeeb72ffc279a20
   simplecov (1.3.2) sha256=2a22ec1759f1b8db60881a2e038758956fc69ef93ed669be0bde0678de6d0e85
   sys-uname (1.5.1) sha256=784d7e6491b0393c25cbbe5ac38324ac7be9fda083a6094832648af669386d7b
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
