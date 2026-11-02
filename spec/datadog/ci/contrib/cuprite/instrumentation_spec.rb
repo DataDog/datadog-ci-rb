@@ -67,6 +67,10 @@ RSpec.describe "Browser tests with cuprite" do
     allow(browser).to receive(:visit) do |url|
       visited_urls << url
     end
+    allow(browser).to receive(:base_url=)
+    allow(browser).to receive(:goto) do |url|
+      visited_urls << url
+    end
 
     expect(kernel).to receive(:exit).with(expected_test_run_code)
     ClimateControl.modify("DD_CIVISIBILITY_SELENIUM_ENABLED" => "1", "DD_CIVISIBILITY_RUM_FLUSH_WAIT_MILLIS" => "1") do
