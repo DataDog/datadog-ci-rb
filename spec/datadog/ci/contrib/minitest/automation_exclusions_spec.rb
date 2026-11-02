@@ -62,9 +62,14 @@ RSpec.describe "Minitest test automation exclusions" do
       datadog_no_auto_retry :test_example
     end
     child = Class.new(parent)
+    child.datadog_prevent_failure_suppression :test_example
+    expect(child.dd_test_prevent_failure_suppression?("test_example")).to be(true)
+    expect(Class.new(child).dd_test_prevent_failure_suppression?("test_example")).to be(true)
+    expect(parent.dd_test_prevent_failure_suppression?("test_example")).to be(false)
     expect(child.dd_test_no_auto_retry?("test_example")).to be(true)
     child.class_eval { define_method(:test_example) {} }
     expect(child.dd_test_no_auto_retry?("test_example")).to be(false)
+    expect(child.dd_test_prevent_failure_suppression?("test_example")).to be(false)
     expect(parent.dd_test_no_auto_retry?("test_example")).to be(true)
   end
 

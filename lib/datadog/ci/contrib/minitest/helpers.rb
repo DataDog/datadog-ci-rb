@@ -11,28 +11,35 @@ module Datadog
             # Apply these declarations to named test methods, after defining them.
             def datadog_prevent_failure_suppression(*test_names)
               declarations = (@datadog_prevent_failure_suppression_tests ||= {})
-              test_names.each { |test_name| declarations[test_name.to_s] = instance_method(test_name) }
+              test_names.each { |test_name| declarations[test_name.to_s] = dd_automation_exclusion_declaration(test_name) }
               nil
             end
 
             def datadog_no_auto_retry(*test_names)
               declarations = (@datadog_no_auto_retry_tests ||= {})
-              test_names.each { |test_name| declarations[test_name.to_s] = instance_method(test_name) }
+              test_names.each { |test_name| declarations[test_name.to_s] = dd_automation_exclusion_declaration(test_name) }
               nil
             end
 
-            def dd_test_prevent_failure_suppression?(test_name, declaration = instance_method(test_name))
+            def dd_test_prevent_failure_suppression?(test_name, declaration = dd_automation_exclusion_declaration(test_name))
               return true if @datadog_prevent_failure_suppression_tests&.fetch(test_name.to_s, nil) == declaration
 
               parent = superclass
               !!(parent&.respond_to?(:dd_test_prevent_failure_suppression?) && parent.public_send(:dd_test_prevent_failure_suppression?, test_name, declaration))
             end
 
-            def dd_test_no_auto_retry?(test_name, declaration = instance_method(test_name))
+            def dd_test_no_auto_retry?(test_name, declaration = dd_automation_exclusion_declaration(test_name))
               return true if @datadog_no_auto_retry_tests&.fetch(test_name.to_s, nil) == declaration
 
               parent = superclass
               !!(parent&.respond_to?(:dd_test_no_auto_retry?) && parent.public_send(:dd_test_no_auto_retry?, test_name, declaration))
+            end
+
+            def dd_automation_exclusion_declaration(test_name)
+              declaration = instance_method(test_name)
+              # Ruby 2.7 includes the lookup class in inherited UnboundMethod equality.
+              # Resolve through the owner to compare the actual declaration consistently.
+              declaration.owner.instance_method(test_name)
             end
 
             def dd_clear_automation_exclusions(test_name)
