@@ -35,3 +35,46 @@ See [development guide](/docs/DevelopmentGuide.md), [static typing guide](docs/S
 ## Code of Conduct
 
 Everyone interacting in the `Datadog::CI` project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](/CODE_OF_CONDUCT.md).
+
+## Test automation exclusions
+
+Protect selected tests from Datadog quarantine and disabling with
+`datadog_prevent_failure_suppression`. Exclude selected tests from Datadog Auto
+Test Retries, Early Flake Detection, and Attempt to Fix with
+`datadog_no_auto_retry`. Both declarations may be applied together. They preserve
+explicit skips, Test Impact Analysis selection, and framework-native retries.
+
+RSpec uses example metadata:
+
+```ruby
+it "checks a critical behavior", datadog_prevent_failure_suppression: true, datadog_no_auto_retry: true do
+  expect(critical_behavior).to be_valid
+end
+```
+
+Minitest exposes per-method declarations after the test method is defined:
+
+```ruby
+class CriticalTest < Minitest::Test
+  def test_critical_behavior
+    assert critical_behavior.valid?
+  end
+
+  datadog_prevent_failure_suppression :test_critical_behavior
+  datadog_no_auto_retry :test_critical_behavior
+end
+```
+
+Cucumber uses scenario tags, including scenario outlines:
+
+```gherkin
+@datadog_prevent_failure_suppression @datadog_no_auto_retry
+Scenario: A critical behavior
+  Then the critical behavior succeeds
+```
+
+Load Datadog's instrumentation before defining these tests. Annotated executions
+report `test.test_management.prevent_failure_suppression: true` and/or
+`test.test_management.no_auto_retry: true`. Backend-assigned management tags stay
+visible even when annotations change the effective execution policy. Setting a
+span tag directly does not apply an exclusion.

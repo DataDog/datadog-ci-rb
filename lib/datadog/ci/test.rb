@@ -15,6 +15,8 @@ module Datadog
       def initialize(tracer_span)
         super
 
+        @prevent_failure_suppression = false
+        @no_auto_retry = false
         @custom_impacted_files = []
         @inherited_custom_impacted_files = []
       end
@@ -134,6 +136,42 @@ module Datadog
       # @return [Boolean] true if this test is attempted to be fixed.
       def attempt_to_fix?
         get_tag(Ext::Test::TAG_IS_ATTEMPT_TO_FIX) == "true"
+      end
+
+      # Records execution exclusions from the framework's test declaration.
+      # Span tags alone never change execution policy.
+      # @internal
+      def apply_automation_exclusions(prevent_failure_suppression:, no_auto_retry:)
+        @prevent_failure_suppression = prevent_failure_suppression
+        @no_auto_retry = no_auto_retry
+        set_internal_tag(Ext::Test::TAG_PREVENT_FAILURE_SUPPRESSION, "true") if prevent_failure_suppression
+        set_internal_tag(Ext::Test::TAG_NO_AUTO_RETRY, "true") if no_auto_retry
+      end
+
+      # @internal
+      def prevent_failure_suppression?
+        @prevent_failure_suppression
+      end
+
+      # @internal
+      def no_auto_retry?
+        @no_auto_retry
+      end
+
+      # Assigned properties stay observable independently of effective policy.
+      # @internal
+      def quarantine_enforced?
+        quarantined? && !prevent_failure_suppression?
+      end
+
+      # @internal
+      def disabling_enforced?
+        disabled? && !prevent_failure_suppression?
+      end
+
+      # @internal
+      def attempt_to_fix_enabled?
+        attempt_to_fix? && !no_auto_retry?
       end
 
       # Returns "true" if this test is marked as modified (e.g., impacted by code changes).
@@ -290,20 +328,20 @@ module Datadog
       def datadog_skip_reason
         if skipped_by_test_impact_analysis?
           Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS
-        elsif disabled? || quarantined?
+        elsif disabling_enforced? || quarantine_enforced?
           Ext::Test::SkipReason::TEST_MANAGEMENT_DISABLED
         end
       end
 
       # @internal
       def should_skip?
-        skipped_by_test_impact_analysis? || (disabled? && !attempt_to_fix?)
+        skipped_by_test_impact_analysis? || (disabling_enforced? && !attempt_to_fix_enabled?)
       end
 
       # @internal
       def should_ignore_failures?
-        return false if attempt_to_fix?
-        return true if quarantined? || disabled?
+        return false if attempt_to_fix_enabled?
+        return true if quarantine_enforced? || disabling_enforced?
 
         any_retry_passed?
       end
@@ -340,7 +378,7 @@ module Datadog
 
         # attempt_to_fix takes precedence over quarantine/disabled flags:
         # any failure across attempts means the fix didn't work.
-        if attempt_to_fix?
+        if attempt_to_fix_enabled?
           return all_executions_passed? ? Ext::Test::Status::PASS : Ext::Test::Status::FAIL
         end
 

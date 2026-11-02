@@ -28,7 +28,7 @@ module Datadog
           def covers?(test_span)
             return false unless @enabled
 
-            !!test_span&.attempt_to_fix?
+            !!test_span&.attempt_to_fix_enabled?
           end
 
           def build_driver(test_span)

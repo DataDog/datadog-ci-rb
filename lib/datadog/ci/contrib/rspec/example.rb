@@ -43,6 +43,8 @@ module Datadog
                   datadog_test_name,
                   datadog_test_suite_name,
                   tags: build_test_tags,
+                  prevent_failure_suppression: datadog_prevent_failure_suppression?,
+                  no_auto_retry: datadog_no_auto_retry?,
                   service: datadog_configuration[:service_name]
                 ) do |test_span|
                   # Set context IDs on the test span for TIA context coverage merging
@@ -140,6 +142,14 @@ module Datadog
               @datadog_test_parameters = Utils::TestRun.test_parameters(
                 metadata: {"scoped_id" => metadata[:scoped_id]}
               )
+            end
+
+            def datadog_prevent_failure_suppression?
+              metadata[CI::Ext::Test::PREVENT_FAILURE_SUPPRESSION_OPTION] == true
+            end
+
+            def datadog_no_auto_retry?
+              metadata[CI::Ext::Test::NO_AUTO_RETRY_OPTION] == true
             end
 
             def datadog_unskippable?
@@ -278,8 +288,8 @@ module Datadog
 
               update_retry_metadata(test_span) if test_span&.is_retry?
 
-              metadata[Ext::METADATA_DD_QUARANTINED] = true if test_span&.quarantined?
-              metadata[Ext::METADATA_DD_DISABLED] = true if test_span&.disabled?
+              metadata[Ext::METADATA_DD_QUARANTINED] = !!test_span&.quarantine_enforced?
+              metadata[Ext::METADATA_DD_DISABLED] = !!test_span&.disabling_enforced?
               metadata[Ext::METADATA_DD_SKIPPED_BY_ITR] = true if test_span&.skipped_by_test_impact_analysis?
             end
 

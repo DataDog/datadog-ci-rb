@@ -77,14 +77,15 @@ module Datadog
                 datadog_fqn_test_id = example.datadog_fqn_test_id
 
                 # Don't skip if the test is marked as attempt_to_fix (it should run and be retried)
-                next false if test_management_component&.attempt_to_fix?(datadog_fqn_test_id)
+                next false if !example.datadog_no_auto_retry? && test_management_component&.attempt_to_fix?(datadog_fqn_test_id)
 
                 # Skip by Test Impact Analysis: test is skippable and not marked as unskippable
                 tia_skipped = !example.datadog_unskippable? &&
                   test_impact_analysis_component&.skippable?(datadog_test_id)
 
                 # Skip by Test Management: test is disabled
-                test_management_disabled = test_management_component&.disabled?(datadog_fqn_test_id)
+                test_management_disabled = !example.datadog_prevent_failure_suppression? &&
+                  test_management_component&.disabled?(datadog_fqn_test_id)
 
                 tia_skipped || test_management_disabled
               end

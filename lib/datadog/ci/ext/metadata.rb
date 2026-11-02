@@ -102,6 +102,8 @@ module Datadog
           Test::TAG_CODE_COVERAGE_LINES_PCT,
           Test::TAG_TEST_MANAGEMENT_ENABLED,
           Test::TAG_IS_ATTEMPT_TO_FIX,
+          Test::TAG_PREVENT_FAILURE_SUPPRESSION,
+          Test::TAG_NO_AUTO_RETRY,
           Test::TAG_IS_TEST_DISABLED,
           Test::TAG_IS_QUARANTINED,
           Test::TAG_HAS_FAILED_ALL_RETRIES,

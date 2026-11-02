@@ -3,9 +3,17 @@ module Datadog
     module Contrib
       module Minitest
         module Helpers
-          module RunnableClassMethods
+          module RunnableClassMethods : Class
+            @datadog_prevent_failure_suppression_tests: Hash[String, UnboundMethod]?
+            @datadog_no_auto_retry_tests: Hash[String, UnboundMethod]?
             @datadog_itr_unskippable_suite: bool
             @datadog_itr_unskippable_tests: Array[String]?
+
+            def datadog_prevent_failure_suppression: (*(String | Symbol) test_names) -> void
+            def datadog_no_auto_retry: (*(String | Symbol) test_names) -> void
+            def dd_test_prevent_failure_suppression?: ((String | Symbol) test_name, ?UnboundMethod declaration) -> bool
+            def dd_test_no_auto_retry?: ((String | Symbol) test_name, ?UnboundMethod declaration) -> bool
+            def dd_clear_automation_exclusions: (String | Symbol test_name) -> void
 
             def datadog_itr_unskippable: (*untyped) -> void
 
@@ -17,11 +25,12 @@ module Datadog
           end
 
           interface _RunnableClass
+            def dd_clear_automation_exclusions: ((String | Symbol) test_name) -> void
             def runnable_methods: () -> Array[String]
 
             def name: () -> String?
 
-            def instance_method: (String method_name) -> UnboundMethod
+            def instance_method: ((String | Symbol) method_name) -> UnboundMethod
 
             def ancestors: () -> Array[Module]
 

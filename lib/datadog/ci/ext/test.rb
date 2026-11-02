@@ -171,6 +171,11 @@ module Datadog
         end
 
         DEFAULT_TIA_TEST_SKIPPING_MODE = TIATestSkippingMode::TEST
+        PREVENT_FAILURE_SUPPRESSION_OPTION = :datadog_prevent_failure_suppression
+        NO_AUTO_RETRY_OPTION = :datadog_no_auto_retry
+        TAG_PREVENT_FAILURE_SUPPRESSION = "test.test_management.prevent_failure_suppression"
+        TAG_NO_AUTO_RETRY = "test.test_management.no_auto_retry"
+
         ITR_UNSKIPPABLE_OPTION = :datadog_itr_unskippable
 
         EARLY_FLAKE_FAULTY = "faulty"

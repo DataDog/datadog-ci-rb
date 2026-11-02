@@ -5,7 +5,7 @@ module Datadog
         module RunnableMinitest6
           def self.included: (untyped base) -> untyped
 
-          module ClassMethods
+          module ClassMethods : Class
             include Datadog::CI::Contrib::Minitest::Helpers::_RunnableClass
             include Datadog::CI::Contrib::Minitest::Helpers::RunnableClassMethods
 
