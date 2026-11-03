@@ -97,6 +97,7 @@ module Datadog
           Test::TAG_IS_NEW,
           Test::TAG_IS_RETRY,
           Test::TAG_RETRY_REASON,
+          Test::TAG_FAILURE_SUPPRESSION_REASON,
           Test::TAG_EARLY_FLAKE_ENABLED,
           Test::TAG_EARLY_FLAKE_ABORT_REASON,
           Test::TAG_CODE_COVERAGE_LINES_PCT,

@@ -116,6 +116,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       instance_double(
         Datadog::CI::Test,
         no_auto_retry?: false,
+        should_quarantine?: false,
+        any_retry_passed?: false,
         name: "test",
         test_suite_name: "suite",
         failed?: test_failed,
@@ -299,6 +301,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       instance_double(
         Datadog::CI::Test,
         no_auto_retry?: false,
+        should_quarantine?: false,
+        any_retry_passed?: false,
         failed?: test_failed,
         passed?: !test_failed,
         is_new?: test_is_new,
@@ -386,7 +390,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   describe "#should_retry?" do
     let(:active_test_session) { test_session }
     let(:test_tracing) { instance_double(Datadog::CI::TestTracing::Component, active_test_session: active_test_session) }
-    let(:test_span) { instance_double(Datadog::CI::Test, peek_duration: 1.0, record_final_status: nil) }
+    let(:test_span) { instance_double(Datadog::CI::Test, failed?: false, peek_duration: 1.0, record_final_status: nil) }
     let(:retry_driver) do
       instance_spy(Datadog::CI::TestRetries::Driver::Base, should_retry?: true, tracks_retry_results?: false)
     end
@@ -510,11 +514,131 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
   end
 
+  describe "failure reporting through the tracing component" do
+    include_context "CI mode activated" do
+      let(:flaky_test_retries_enabled) { true }
+      let(:retry_failed_tests_max_attempts) { 2 }
+      let(:early_flake_detection_enabled) { efd_enabled }
+      let(:known_tests) { Set.new(["suite.test."]) }
+      let(:slow_test_retries_payload) { {"1s" => 3} }
+    end
+
+    let(:component) { Datadog.send(:components).test_retries }
+    let(:efd_enabled) { false }
+    let(:outcomes) { [false, false, false] }
+    let(:tags) { {} }
+    let(:duration) { 0.1 }
+    let(:prevent_failure_suppression) { false }
+    let(:no_auto_retry) { false }
+    let(:executions) { [] }
+
+    before do
+      test_tracing.start_test_session(estimated_total_tests_count: 100)
+      test_tracing.start_test_module("module")
+      test_tracing.start_test_suite("suite")
+      component.with_retries do
+        test_tracing.trace_test(
+          "test", "suite", tags: tags.dup,
+          prevent_failure_suppression: prevent_failure_suppression, no_auto_retry: no_auto_retry
+        ) do |test|
+          allow(test).to receive(:peek_duration).and_return(duration)
+          outcomes[executions.length] ? test.passed! : test.failed!
+          executions << test
+        end
+      end
+    end
+
+    after do
+      test_tracing.active_test_suite(nil)&.finish
+      test_tracing.active_test_module&.finish
+      test_tracing.active_test_session&.finish
+    end
+
+    def suppression_reasons
+      executions.map { |test| test.get_tag("test.failure_suppression_reason") }
+    end
+
+    it "tags failed ATR attempts only while another retry is scheduled" do
+      expect(suppression_reasons).to eq(["auto_test_retry", "auto_test_retry", nil])
+      expect(executions.last.get_tag("test.final_status")).to eq("fail")
+    end
+
+    context "when ATR recovers" do
+      let(:outcomes) { [false, true] }
+
+      it "tags the failed attempt and preserves the recovered final status" do
+        expect(suppression_reasons).to eq(["auto_test_retry", nil])
+        expect(executions.last.get_tag("test.final_status")).to eq("pass")
+      end
+    end
+
+    context "when quarantined" do
+      let(:tags) { {"test.test_management.is_quarantined" => "true"} }
+
+      it "keeps quarantine as the reason through terminal ATR failure" do
+        expect(suppression_reasons).to eq(["quarantine"] * 3)
+        expect(executions.last.get_tag("test.final_status")).to eq("pass")
+      end
+    end
+
+    context "when quarantined with automatic retries excluded" do
+      let(:tags) { {"test.test_management.is_quarantined" => "true"} }
+      let(:no_auto_retry) { true }
+
+      it "executes once and keeps quarantine suppression" do
+        expect(suppression_reasons).to eq(["quarantine"])
+        expect(executions.last.get_tag("test.final_status")).to eq("pass")
+      end
+
+      context "when failure suppression is also prevented" do
+        let(:prevent_failure_suppression) { true }
+
+        it "leaves the single failure blocking and unsuppressed" do
+          expect(suppression_reasons).to eq([nil])
+          expect(executions.last.get_tag("test.final_status")).to eq("fail")
+        end
+      end
+    end
+
+    context "with EFD" do
+      let(:efd_enabled) { true }
+      let(:tags) { {"test.is_new" => "true"} }
+
+      it "uses three total executions and leaves the terminal failure unsuppressed" do
+        expect(executions.length).to eq(3)
+        expect(suppression_reasons).to eq(["early_flake_detection", "early_flake_detection", nil])
+        expect(executions.last.get_tag("test.final_status")).to eq("fail")
+      end
+
+      context "when a passing test becomes flaky" do
+        let(:outcomes) { [true, false] }
+
+        it "suppresses the terminal failure after an earlier pass" do
+          expect(suppression_reasons).to eq([nil, "early_flake_detection"])
+          expect(executions.last.get_tag("test.final_status")).to eq("pass")
+        end
+      end
+
+      context "when the first execution is too slow" do
+        let(:duration) { 1.0 }
+
+        it "tags the slow abort and does not fall back to ATR" do
+          expect(executions.length).to eq(1)
+          expect(executions.first.get_tag("test.early_flake.abort_reason")).to eq("slow")
+          expect(executions.first.get_tag("test.final_status")).to eq("fail")
+          expect(suppression_reasons).to eq([nil])
+        end
+      end
+    end
+  end
+
   describe "#tag_last_retry" do
     let(:test_span) do
       instance_double(
         Datadog::CI::Test,
         no_auto_retry?: false,
+        should_quarantine?: false,
+        any_retry_passed?: false,
         all_executions_failed?: all_executions_failed,
         all_executions_passed?: all_executions_passed,
         should_retry_attempt_to_fix?: attempt_to_fix,
@@ -565,6 +689,8 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       instance_double(
         Datadog::CI::Test,
         no_auto_retry?: false,
+        should_quarantine?: false,
+        any_retry_passed?: false,
         name: "test",
         test_suite_name: "suite",
         failed?: test_failed,

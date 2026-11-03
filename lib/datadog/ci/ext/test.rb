@@ -180,6 +180,11 @@ module Datadog
 
         EARLY_FLAKE_FAULTY = "faulty"
         EARLY_FLAKE_SLOW = "slow"
+        TAG_FAILURE_SUPPRESSION_REASON = "test.failure_suppression_reason"
+
+        module FailureSuppressionReason
+          QUARANTINE = "quarantine"
+        end
 
         # test status as recognized by Datadog
         module Status

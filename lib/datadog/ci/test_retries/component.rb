@@ -121,6 +121,7 @@ module Datadog
           if !should_retry? && current_retry_driver&.tracks_retry_results?
             tag_last_retry(test_span)
           end
+          record_failure_suppression(test_span)
 
           # We need to set the final status of the test (what will be reported to the test framework) on the last execution
           # no matter if test was retried or not
@@ -151,6 +152,23 @@ module Datadog
         end
 
         private
+
+        def record_failure_suppression(test_span)
+          return unless test_span.failed?
+
+          reason = if test_span.should_quarantine? && !test_span.should_retry_attempt_to_fix?
+            Ext::Test::FailureSuppressionReason::QUARANTINE
+          else
+            retry_reason = current_retry_driver&.retry_reason
+            if retry_reason == Ext::Test::RetryReason::RETRY_FAILED && should_retry?
+              retry_reason
+            elsif retry_reason == Ext::Test::RetryReason::RETRY_DETECT_FLAKY && (should_retry? || test_span.any_retry_passed?)
+              retry_reason
+            end
+          end
+
+          test_span.set_internal_tag(Ext::Test::TAG_FAILURE_SUPPRESSION_REASON, reason) if reason
+        end
 
         def test_tracing
           Datadog.send(:components).test_tracing

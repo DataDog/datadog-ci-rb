@@ -870,6 +870,7 @@ RSpec.describe "Cucumber instrumentation" do
 
       expect(quarantined_test_span).to have_fail_status
       expect(quarantined_test_span).to have_test_tag(:final_status, "pass")
+      expect(quarantined_test_span).to have_test_tag(:failure_suppression_reason, "quarantine")
       expect(cucumber_execution_events).to include(:failure_step)
       expect(quarantined_test_span).to have_test_tag(:is_quarantined)
       expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
@@ -888,6 +889,7 @@ RSpec.describe "Cucumber instrumentation" do
       it "retries the quarantined scenario and suppresses every failed attempt" do
         expect(test_spans.length).to eq(6)
         expect(test_spans).to all(have_fail_status)
+        expect(test_spans).to all(have_test_tag(:failure_suppression_reason, "quarantine"))
         expect(test_spans.last).to have_test_tag(:final_status, "pass")
         expect(test_session_span).to have_pass_status
       end

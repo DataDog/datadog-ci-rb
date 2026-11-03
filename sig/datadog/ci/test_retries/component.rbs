@@ -32,6 +32,8 @@ module Datadog
 
         private
 
+        def record_failure_suppression: (Datadog::CI::Test test_span) -> void
+
         def test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 
         def current_retry_driver: () -> Datadog::CI::TestRetries::Driver::Base?
