@@ -4,6 +4,7 @@ module Datadog
       module Strategy
         class RetryFlakyFixed < Base
           @enabled: bool
+          @configured_max_attempts: Integer?
 
           @max_attempts: Integer
 
@@ -11,7 +12,7 @@ module Datadog
 
           attr_reader max_attempts: Integer
 
-          def initialize: (enabled: bool, max_attempts: Integer) -> void
+          def initialize: (enabled: bool, max_attempts: Integer?) -> void
 
           def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> untyped
 

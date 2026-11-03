@@ -481,7 +481,7 @@ RSpec.describe "Cucumber instrumentation" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans).to have(9).items
+      expect(test_suite_spans).to have(11).items
       if cucumber_12_or_above
         expect(passing_test_suite).to have_fail_status
       else
@@ -797,35 +797,35 @@ RSpec.describe "Cucumber instrumentation" do
     end
 
     it "retries tests according to Cucumber's status" do
-      expected_spans_count = cucumber_12_or_above ? 24 : 14
+      expected_spans_count = cucumber_12_or_above ? 22 : 13
       expect(test_spans).to have(expected_spans_count).items
 
       skipped_spans, other_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
       if cucumber_12_or_above
         expect(skipped_spans).to have(1).item
-        expect(other_spans).to have(23).items
+        expect(other_spans).to have(21).items
       else
         expect(skipped_spans).to have(3).items # see steps.rb
-        expect(other_spans).to have(11).items
+        expect(other_spans).to have(10).items
       end
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-      expect(test_spans_by_test_name["cucumber scenario"]).to have(11).items
-      expected_undefined_spans_count = cucumber_12_or_above ? 11 : 1
+      expect(test_spans_by_test_name["cucumber scenario"]).to have(10).items
+      expected_undefined_spans_count = cucumber_12_or_above ? 10 : 1
       expect(test_spans_by_test_name["undefined scenario"]).to have(expected_undefined_spans_count).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(cucumber_12_or_above ? 20 : 10)
+      expect(retries_count).to eq(cucumber_12_or_above ? 18 : 9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      retry_reasons_count = cucumber_12_or_above ? 20 : 10
+      retry_reasons_count = cucumber_12_or_above ? 18 : 9
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * retry_reasons_count)
 
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(cucumber_12_or_above ? 22 : 12)
+      expect(new_tests_count).to eq(cucumber_12_or_above ? 20 : 11)
 
       # check final statuses
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
@@ -863,22 +863,36 @@ RSpec.describe "Cucumber instrumentation" do
       }
     end
 
-    it "skips the test without failing the build" do
-      expect(test_spans).to have(1).item
+    it "executes the quarantined failure without failing the build" do
+      expect(test_spans.length).to eq(enable_retries_failed ? 6 : 1)
 
       quarantined_test_span = test_spans.first
 
-      expect(quarantined_test_span).to have_skip_status
-      expect(quarantined_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(quarantined_test_span).to have_fail_status
+      expect(quarantined_test_span).to have_test_tag(:final_status, "pass")
+      expect(quarantined_test_span).to have_test_tag(:failure_suppression_reason, "quarantine")
+      expect(cucumber_execution_events).to include(:failure_step)
       expect(quarantined_test_span).to have_test_tag(:is_quarantined)
       expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
       expect(quarantined_test_span).not_to have_test_tag(:is_attempt_to_fix)
 
       expect(test_suite_spans).to have(1).item
-      expect(test_suite_spans.first).to have_skip_status
+      expect(test_suite_spans.first).to have_pass_status
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+
+    context "with ATR enabled" do
+      let(:enable_retries_failed) { true }
+
+      it "retries the quarantined scenario and suppresses every failed attempt" do
+        expect(test_spans.length).to eq(6)
+        expect(test_spans).to all(have_fail_status)
+        expect(test_spans).to all(have_test_tag(:failure_suppression_reason, "quarantine"))
+        expect(test_spans.last).to have_test_tag(:final_status, "pass")
+        expect(test_session_span).to have_pass_status
+      end
     end
   end
 
@@ -1038,33 +1052,33 @@ RSpec.describe "Cucumber instrumentation" do
     end
 
     it "retries modified test" do
-      expected_spans_count = cucumber_12_or_above ? 34 : 14
+      expected_spans_count = cucumber_12_or_above ? 31 : 13
       expect(test_spans).to have(expected_spans_count).items
 
       skipped_spans, other_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
       if cucumber_12_or_above
         expect(skipped_spans).to have(1).item
-        expect(other_spans).to have(33).items
+        expect(other_spans).to have(30).items
       else
         expect(skipped_spans).to have(3).items # see steps.rb
-        expect(other_spans).to have(11).items
+        expect(other_spans).to have(10).items
       end
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-      expect(test_spans_by_test_name["cucumber scenario"]).to have(11).items
+      expect(test_spans_by_test_name["cucumber scenario"]).to have(10).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(cucumber_12_or_above ? 30 : 10)
+      expect(retries_count).to eq(cucumber_12_or_above ? 27 : 9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      retry_reasons_count = cucumber_12_or_above ? 30 : 10
+      retry_reasons_count = cucumber_12_or_above ? 27 : 9
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * retry_reasons_count)
 
       # modified tests - all tests are marked as modified because we don't have end lines in cucumber
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
-      expect(modified_count).to eq(cucumber_12_or_above ? 34 : 14)
+      expect(modified_count).to eq(cucumber_12_or_above ? 31 : 13)
 
       # check final statuses
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
@@ -1088,6 +1102,73 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
+
+  context "with same-named scenarios" do
+    let(:feature_file_to_run) { "same_named_scenarios.feature" }
+    let(:expected_test_run_code) { failed_test_run_code }
+    let(:failed_executions) { 1 }
+
+    shared_examples "preserves the distinct scenario failure" do
+      it "keeps the command and session failed after the later scenario passes" do
+        expect(test_spans.size).to eq(failed_executions + 1)
+        expect(test_spans.map { |span| span.get_tag("test.name") }.uniq).to eq(["same name"])
+        expect(test_spans.map { |span| span.get_tag("test.source.start") }.uniq.size).to eq(2)
+        expect(test_spans.count { |span| span.get_tag("test.status") == "fail" }).to eq(failed_executions)
+        expect(test_spans.last).to have_pass_status
+        expect(existing_runtime.failure?).to be true
+        expect(test_session_span).to have_fail_status
+      end
+    end
+
+    it_behaves_like "preserves the distinct scenario failure"
+
+    context "with automatic test retries" do
+      let(:enable_retries_failed) { true }
+      let(:single_test_retries_count) { 1 }
+      let(:failed_executions) { 2 }
+
+      it_behaves_like "preserves the distinct scenario failure"
+    end
+
+    context "with Cucumber's built in retries" do
+      let(:args) { super() + ["--retry", "1"] }
+      let(:failed_executions) { 2 }
+
+      it_behaves_like "preserves the distinct scenario failure"
+    end
+  end
+
+  context "with a passing scenario before a same-named failure" do
+    let(:feature_file_to_run) { "same_named_scenarios_pass_first.feature" }
+    let(:expected_test_run_code) { failed_test_run_code }
+
+    it "does not treat the distinct failure as a recovered retry" do
+      expect(test_spans.size).to eq(2)
+      expect(test_spans.map { |span| span.get_tag("test.name") }).to eq(["same name", "same name"])
+      expect(test_spans.map { |span| span.get_tag("test.status") }).to eq(["pass", "fail"])
+      expect(test_spans.map { |span| span.get_tag("test.final_status") }).to eq(["pass", "fail"])
+      expect(test_spans).to all(have_test_tag(:is_retry, nil))
+      expect(existing_runtime.failure?).to be true
+      expect(test_suite_spans.first).to have_fail_status
+      expect(test_session_span).to have_fail_status
+    end
+  end
+
+  context "with a failure followed by repeated passing scenarios" do
+    let(:feature_file_to_run) { "automation_exclusions.feature" }
+    let(:args) { super() + ["spec/datadog/ci/contrib/cucumber/features/passing.feature"] }
+    let(:enable_test_management) { true }
+    let(:test_properties_hash) { Hash.new({"attempt_to_fix" => true}.freeze) }
+    let(:expected_test_run_code) { failed_test_run_code }
+
+    it "keeps protected failures blocking after other scenarios retry" do
+      expect(test_spans.count { |span| span.get_tag("test.retry_reason") == "attempt_to_fix" }).to be > 1
+      expect(test_spans).to include(have_test_tag(:final_status, "fail"))
+      expect(test_suite_spans).to include(have_fail_status)
+      expect(test_session_span).to have_fail_status
+    end
+  end
+
   context "with test automation exclusions" do
     let(:feature_file_to_run) { "automation_exclusions.feature" }
     let(:expected_test_run_code) { failed_test_run_code }
@@ -1104,5 +1185,62 @@ RSpec.describe "Cucumber instrumentation" do
       expect(first_test_span.get_tag("test.test_management.no_auto_retry")).to eq("true")
       expect(first_test_span.get_tag("test.test_management.attempt_to_fix_passed")).to be_nil
     end
+  end
+end
+
+RSpec.describe Datadog::CI::Contrib::Cucumber::Formatter do
+  include_context "CI mode activated"
+
+  let(:config) { double(:config, on_event: nil, strict: false) }
+  let(:formatter) { described_class.new(config) }
+
+  it "preserves scenario failures when the run-finished event has no success field" do
+    test_tracing.start_test_session
+    test_tracing.start_test_module("cucumber")
+    test_tracing.start_test_suite("suite")
+
+    results = [
+      double(:failed_result, passed?: false, ok?: false, exception: StandardError.new("failure")),
+      double(:passed_result, passed?: true)
+    ]
+
+    results.each_with_index do |result, index|
+      test_tracing.trace_test("same name", "suite")
+      event = double(
+        :event,
+        result: result,
+        test_case: double(:test_case, location: double(:location, file: "test.feature", line: index + 1))
+      )
+      formatter.on_test_case_finished(event)
+    end
+    test_tracing.active_test_suite(nil)&.finish
+
+    formatter.on_test_run_finished(double(:run_finished_event))
+
+    expect(test_session_span).to have_fail_status
+    expect(test_module_span).to have_fail_status
+  ensure
+    test_tracing.active_test_suite(nil)&.finish
+    test_tracing.active_test_module&.finish
+    test_tracing.active_test_session&.finish
+  end
+
+  it "defers to Cucumber if any scenario result could not be traced" do
+    test_tracing.start_test_session
+    test_tracing.start_test_suite("suite")
+    test_tracing.trace_test("passing test", "suite")
+    event = double(
+      :event,
+      result: double(:result, passed?: true),
+      test_case: double(:test_case, location: double(:location, file: "test.feature", line: 1))
+    )
+    formatter.on_test_case_finished(event)
+    expect(formatter.failure?).to be false
+
+    formatter.on_test_case_finished(event)
+    expect(formatter.failure?).to be_nil
+  ensure
+    test_tracing.active_test_suite(nil)&.finish
+    test_tracing.active_test_session&.finish
   end
 end

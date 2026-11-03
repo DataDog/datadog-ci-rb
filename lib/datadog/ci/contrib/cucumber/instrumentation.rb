@@ -36,6 +36,16 @@ module Datadog
               filters_list
             end
 
+            def failure?
+              # Cucumber's summary subtracts a failure for every repeated pass,
+              # including EFD and attempt-to-fix passes. Use each test's final
+              # result so retries of one scenario cannot erase another failure.
+              return super if @configuration.wip? || @configuration.dry_run?
+
+              failure = datadog_formatter&.failure?
+              failure.nil? ? super : failure
+            end
+
             def begin_scenario(test_case)
               active_suite = Datadog::CI.active_test_suite
               if active_suite&.should_skip?
@@ -44,9 +54,7 @@ module Datadog
 
               datadog_test = Datadog::CI.active_test
 
-              # special case for cucumber-ruby: we skip quarantined tests, thus for cucumber quarantined is the same as disabled.
-              # attempt_to_fix takes precedence over quarantine: such tests must run (and be retried) even when quarantined.
-              if datadog_test&.should_skip? || (datadog_test&.should_quarantine? && !datadog_test.should_retry_attempt_to_fix?)
+              if datadog_test&.should_skip?
                 raise ::Cucumber::Core::Test::Result::Skipped, datadog_test.datadog_skip_reason
               end
 

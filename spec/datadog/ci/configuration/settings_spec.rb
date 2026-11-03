@@ -672,6 +672,18 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
             it { is_expected.to eq attempts.to_i }
           end
+
+          context "is negative" do
+            let(:attempts) { "-1" }
+
+            it { is_expected.to eq 5 }
+          end
+
+          context "is zero" do
+            let(:attempts) { "0" }
+
+            it { is_expected.to eq 0 }
+          end
         end
       end
 
@@ -892,7 +904,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       describe "#test_management_attempt_to_fix_retries_count" do
         subject(:test_management_attempt_to_fix_retries_count) { settings.ci.test_management_attempt_to_fix_retries_count }
 
-        it { is_expected.to eq 20 }
+        it { is_expected.to be_nil }
 
         context "when #{Datadog::CI::Ext::Settings::ENV_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES}" do
           around do |example|
@@ -904,7 +916,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
           context "is not defined" do
             let(:attempts) { nil }
 
-            it { is_expected.to eq 20 }
+            it { is_expected.to be_nil }
           end
 
           context "is set to value" do
@@ -919,8 +931,17 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         it "updates the #test_management_attempt_to_fix_retries_count setting" do
           expect { settings.ci.test_management_attempt_to_fix_retries_count = 42 }
             .to change { settings.ci.test_management_attempt_to_fix_retries_count }
-            .from(20)
+            .from(nil)
             .to(42)
+        end
+
+        it "allows clearing an explicit override" do
+          settings.ci.test_management_attempt_to_fix_retries_count = 42
+
+          expect { settings.ci.test_management_attempt_to_fix_retries_count = nil }
+            .to change { settings.ci.test_management_attempt_to_fix_retries_count }
+            .from(42)
+            .to(nil)
         end
       end
 

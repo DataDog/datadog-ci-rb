@@ -2,6 +2,7 @@ module Datadog
   module CI
     class Test < Span
       @datadog_test_id: String
+      @local_test_id: Datadog::CI::TestSuite::test_id?
       @in_test_discovery_mode: bool
       @context_ids: Array[String]?
       @custom_impacted_files: Array[String]
@@ -51,6 +52,8 @@ module Datadog
       def lock_custom_impacted_files: () -> Array[String]
 
       private
+
+      def local_test_id: () -> Datadog::CI::TestSuite::test_id
 
       def compute_final_status: (String status) -> String
 

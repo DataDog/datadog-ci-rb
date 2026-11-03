@@ -10,6 +10,8 @@ module Datadog
           @current_test_suite: Datadog::CI::TestSuite?
 
           @failed_test_suites_count: Integer
+          @test_results: Hash[[String, Integer], String]
+          @incomplete_results: bool
 
           attr_reader config: untyped
 
@@ -17,11 +19,13 @@ module Datadog
 
           def initialize: (untyped config) -> void
 
+          def failure?: () -> bool?
+
           def bind_events: (untyped config) -> untyped
 
           def on_test_run_started: (untyped event) -> untyped
 
-          def on_test_run_finished: (untyped event) -> untyped
+          def on_test_run_finished: (untyped event) -> void
 
           def on_test_case_started: (untyped event) -> untyped
 

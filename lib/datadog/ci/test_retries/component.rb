@@ -60,12 +60,15 @@ module Datadog
           ]
           @mutex = Mutex.new
 
-          if dynamic_atr_enabled
-            Utils::Telemetry.record_dynamic_atr_retries(has_custom_buckets: !dynamic_atr_buckets.nil?)
-          end
+          @dynamic_atr_enabled = dynamic_atr_enabled
+          @dynamic_atr_has_custom_buckets = !dynamic_atr_buckets.nil?
         end
 
         def configure(library_settings, test_session)
+          if @dynamic_atr_enabled
+            Utils::Telemetry.record_dynamic_atr_retries(has_custom_buckets: @dynamic_atr_has_custom_buckets)
+          end
+
           # let all strategies configure themselves
           @retry_strategies.each do |strategy|
             strategy.configure(library_settings, test_session)
@@ -107,26 +110,18 @@ module Datadog
           if current_retry_driver.nil?
             # We always run test at least once and after the first pass create a correct retry driver
             self.current_retry_driver = build_driver(test_span)
-
-            # When the driver decides no retries are needed after the first execution
-            # (e.g., attempt-to-fix test that failed immediately), we still need to tag
-            # the outcome for strategies that track retry results.
-            if !should_retry? && current_retry_driver&.tracks_retry_results?
-              tag_last_retry(test_span)
-            end
           else
-            # After each retry we let the driver to record the result.
-            # Then the driver will decide if we should retry again.
             current_retry_driver&.record_retry(test_span)
-
-            # We know that the test was already retried at least once so if we should not retry anymore, then this
-            # is the last retry.
-            tag_last_retry(test_span) unless should_retry?
           end
 
           # Some retry strategies such as Early Flake Detection change the number of retries based on
           # how long the test was.
           current_retry_driver&.record_duration(test_span.peek_duration)
+
+          if !should_retry? && current_retry_driver&.tracks_retry_results?
+            tag_last_retry(test_span)
+          end
+          record_failure_suppression(test_span)
 
           # We need to set the final status of the test (what will be reported to the test framework) on the last execution
           # no matter if test was retried or not
@@ -157,6 +152,23 @@ module Datadog
         end
 
         private
+
+        def record_failure_suppression(test_span)
+          return unless test_span.failed?
+
+          reason = if test_span.should_quarantine? && !test_span.should_retry_attempt_to_fix?
+            Ext::Test::FailureSuppressionReason::QUARANTINE
+          else
+            retry_reason = current_retry_driver&.retry_reason
+            if retry_reason == Ext::Test::RetryReason::RETRY_FAILED && should_retry?
+              retry_reason
+            elsif retry_reason == Ext::Test::RetryReason::RETRY_DETECT_FLAKY && (should_retry? || test_span.any_retry_passed?)
+              retry_reason
+            end
+          end
+
+          test_span.set_internal_tag(Ext::Test::TAG_FAILURE_SUPPRESSION_REASON, reason) if reason
+        end
 
         def test_tracing
           Datadog.send(:components).test_tracing

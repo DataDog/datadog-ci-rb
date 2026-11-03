@@ -16,6 +16,8 @@ RSpec.describe Datadog::CI::Test do
     allow_any_instance_of(described_class).to receive(:test_impact_analysis).and_return(test_impact_analysis)
     allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_PREVENT_FAILURE_SUPPRESSION).and_return(nil)
     allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_NO_AUTO_RETRY).and_return(nil)
+    allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_SOURCE_FILE).and_return(nil)
+    allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_SOURCE_START).and_return(nil)
   end
 
   describe "#name" do
@@ -1060,5 +1062,101 @@ RSpec.describe Datadog::CI::Test do
         expect(real_test.peek_duration).to be_within(1e-9).of(expected_duration)
       end
     end
+  end
+end
+
+RSpec.describe Datadog::CI::Test, "retry history" do
+  include_context "CI mode activated"
+
+  let(:source_tags) { {"test.source.file" => "test.rb", "test.source.start" => "10"} }
+
+  before do
+    test_tracing.start_test_session
+    test_tracing.start_test_suite("suite")
+  end
+
+  after do
+    test_tracing.active_test_suite(nil)&.finish
+    test_tracing.active_test_session&.finish
+  end
+
+  def record_execution(tags, passed:)
+    Datadog.send(:components).test_retries.reset_retries!
+    test = test_tracing.trace_test("same name", "suite", tags: tags.dup)
+    passed ? test.passed! : test.failed!
+    test.finish
+    test
+  end
+
+  shared_examples "independent declarations" do
+    it "does not reuse another declaration's passing history or change the backend ID" do
+      first = record_execution(source_tags, passed: true)
+      second = record_execution(second_source_tags, passed: false)
+
+      expect(first.datadog_test_id).to eq("suite.same name.")
+      expect(second.datadog_test_id).to eq(first.datadog_test_id)
+      expect(first.all_executions_passed?).to be true
+      expect(second.is_retry?).to be false
+      expect(second.any_retry_passed?).to be false
+      expect(second.all_executions_failed?).to be true
+      expect(second.get_tag("test.final_status")).to eq("fail")
+      suite = test_tracing.active_test_suite(nil)
+      suite.finish
+      expect(suite.failed?).to be true
+    end
+  end
+
+  context "with different source lines" do
+    let(:second_source_tags) { source_tags.merge("test.source.start" => "20") }
+
+    it_behaves_like "independent declarations"
+
+    it "also preserves a failure before a distinct passing declaration" do
+      first = record_execution(source_tags, passed: false)
+      second = record_execution(second_source_tags, passed: true)
+
+      expect(first.all_executions_failed?).to be true
+      expect(second.all_executions_passed?).to be true
+      expect(second.is_retry?).to be false
+      suite = test_tracing.active_test_suite(nil)
+      suite.finish
+      expect(suite.failed?).to be true
+    end
+  end
+
+  context "with different source files" do
+    let(:second_source_tags) { source_tags.merge("test.source.file" => "another_test.rb") }
+
+    it_behaves_like "independent declarations"
+  end
+
+  it "shares history across genuine retries at the same source location" do
+    record_execution(source_tags, passed: false)
+    retry_test = record_execution(source_tags, passed: true)
+
+    expect(retry_test.is_retry?).to be true
+    expect(retry_test.any_retry_passed?).to be true
+    expect(retry_test.all_executions_passed?).to be false
+    expect(retry_test.get_tag("test.final_status")).to eq("pass")
+  end
+
+  it "keeps parameterized tests at the same location independent" do
+    first_tags = source_tags.merge("test.parameters" => '{"arguments":{"value":1},"metadata":{}}')
+    second_tags = source_tags.merge("test.parameters" => '{"arguments":{"value":2},"metadata":{}}')
+    first = record_execution(first_tags, passed: true)
+    second = record_execution(second_tags, passed: false)
+
+    expect(second.datadog_test_id).not_to eq(first.datadog_test_id)
+    expect(second.is_retry?).to be false
+    expect(second.get_tag("test.final_status")).to eq("fail")
+  end
+
+  it "preserves retry tracking when source location is unavailable" do
+    record_execution({}, passed: false)
+    retry_test = record_execution({}, passed: true)
+
+    expect(retry_test.is_retry?).to be true
+    expect(retry_test.any_retry_passed?).to be true
+    expect(retry_test.get_tag("test.final_status")).to eq("pass")
   end
 end

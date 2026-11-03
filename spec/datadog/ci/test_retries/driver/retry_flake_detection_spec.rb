@@ -1,7 +1,7 @@
 require_relative "../../../../../lib/datadog/ci/test_retries/driver/retry_flake_detection"
 
 RSpec.describe Datadog::CI::TestRetries::Driver::RetryFlakeDetection do
-  let(:max_attempts) { 10 }
+  let(:max_attempts) { 9 }
   let(:max_attempts_thresholds) {
     Datadog::CI::Remote::SlowTestRetries.new({
       "5s" => 10,
@@ -15,6 +15,8 @@ RSpec.describe Datadog::CI::TestRetries::Driver::RetryFlakeDetection do
   let(:test_span) { double(:test_span, set_internal_tag: true, passed?: first_test_passed, failed?: first_test_failed) }
 
   subject(:driver) { described_class.new(test_span, max_attempts_thresholds: max_attempts_thresholds) }
+
+  before { driver.record_duration(1.0) }
 
   describe "#should_retry?" do
     subject { driver.should_retry? }
@@ -74,13 +76,27 @@ RSpec.describe Datadog::CI::TestRetries::Driver::RetryFlakeDetection do
     end
   end
 
-  describe "#record_duration" do
-    subject { driver.record_duration(duration) }
+  describe "duration classification" do
+    it "uses the original duration for all executions" do
+      driver.record_duration(600.0)
+      8.times { driver.record_retry(test_span) }
+      expect(driver.should_retry?).to be true
+      driver.record_retry(test_span)
+      expect(driver.should_retry?).to be false
+    end
 
-    let(:duration) { 5 }
+    [0, 1, 2, 3].each do |executions|
+      context "with #{executions} total executions configured" do
+        let(:max_attempts_thresholds) { Datadog::CI::Remote::SlowTestRetries.new("5s" => executions) }
 
-    it "updates the max attempts based on the duration" do
-      expect { subject }.to change { driver.instance_variable_get(:@max_attempts) }.from(10).to(5)
+        it "counts the original execution in the budget" do
+          [executions - 1, 0].max.times do
+            expect(driver.should_retry?).to be true
+            driver.record_retry(test_span)
+          end
+          expect(driver.should_retry?).to be false
+        end
+      end
     end
   end
 end

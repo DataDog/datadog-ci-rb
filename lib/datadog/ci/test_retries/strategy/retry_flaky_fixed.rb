@@ -3,6 +3,7 @@
 require_relative "base"
 
 require_relative "../driver/retry_flaky_fixed"
+require_relative "../../ext/settings"
 
 module Datadog
   module CI
@@ -17,12 +18,14 @@ module Datadog
             max_attempts:
           )
             @enabled = enabled
-            @max_attempts = max_attempts
+            @configured_max_attempts = max_attempts
+            @max_attempts = max_attempts || Ext::Settings::DEFAULT_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES
           end
 
           def configure(library_settings, test_session)
             @enabled &&= library_settings.test_management_enabled?
-            @max_attempts = library_settings.attempt_to_fix_retries_count || @max_attempts
+            @max_attempts = @configured_max_attempts || library_settings.attempt_to_fix_retries_count ||
+              Ext::Settings::DEFAULT_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES
           end
 
           def covers?(test_span)
