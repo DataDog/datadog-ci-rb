@@ -179,6 +179,7 @@ module Datadog
         ITR_UNSKIPPABLE_OPTION = :datadog_itr_unskippable
 
         EARLY_FLAKE_FAULTY = "faulty"
+        EARLY_FLAKE_SLOW = "slow"
 
         # test status as recognized by Datadog
         module Status

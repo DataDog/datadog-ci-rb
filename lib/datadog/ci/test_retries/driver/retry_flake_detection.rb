@@ -16,6 +16,7 @@ module Datadog
             @attempts = 0
             @max_attempts = 0
             @duration_recorded = false
+            @test_span = test_span
 
             # track outcomes to stop early once flakiness is confirmed
             @passed_once = !!test_span&.passed?
@@ -42,6 +43,9 @@ module Datadog
             total_executions = @max_attempts_thresholds.max_attempts_for_duration(duration)
             @max_attempts = [total_executions - 1, 0].max
             @duration_recorded = true
+            if total_executions.zero?
+              @test_span.set_internal_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_SLOW)
+            end
 
             Datadog.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
           end

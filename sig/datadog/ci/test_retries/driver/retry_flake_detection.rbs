@@ -7,6 +7,7 @@ module Datadog
 
           @attempts: Integer
           @duration_recorded: bool
+          @test_span: Datadog::CI::Test
           @max_attempts: Integer
           @passed_once: bool
           @failed_once: bool

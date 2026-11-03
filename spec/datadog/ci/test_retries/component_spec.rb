@@ -532,6 +532,27 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       end
     end
 
+    context "when EFD aborts a slow failed test" do
+      let(:remote_early_flake_detection_enabled) { true }
+      let(:remote_flaky_test_retries_enabled) { true }
+      let(:retry_new_tests_max_attempts) { 0 }
+      let(:test_failed) { true }
+
+      before do
+        allow(test_span).to receive(:is_new?).and_return(true)
+        component.configure(library_settings, test_session)
+        component.reset_retries!
+      end
+
+      it "reports the slow abort and a final failure without falling back to ATR" do
+        component.record_test_finished(test_span)
+
+        expect(component.should_retry?).to be false
+        expect(test_span).to have_received(:set_internal_tag).with(Datadog::CI::Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, "slow")
+        expect(test_span).to have_received(:record_final_status).once
+      end
+    end
+
     context "when test passes on first execution" do
       let(:remote_flaky_test_retries_enabled) { true }
       let(:test_failed) { false }
