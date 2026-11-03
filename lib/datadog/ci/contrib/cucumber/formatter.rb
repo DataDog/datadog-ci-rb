@@ -22,8 +22,16 @@ module Datadog
             @current_test_suite = nil
 
             @failed_test_suites_count = 0
+            @test_results = {}
+            @incomplete_results = false
 
             bind_events(config)
+          end
+
+          def failure?
+            return nil if @incomplete_results || @test_results.empty?
+
+            @test_results.value?(CI::Ext::Test::Status::FAIL)
           end
 
           def bind_events(config)
@@ -98,9 +106,14 @@ module Datadog
 
           def on_test_case_finished(event)
             test_span = test_tracing_component.active_test
-            return if test_span.nil?
+            if test_span.nil?
+              @incomplete_results = true
+              return
+            end
 
             finish_span(test_span, event.result)
+            final_status = test_span.get_tag(CI::Ext::Test::TAG_FINAL_STATUS)
+            @test_results[test_span.datadog_test_id] = final_status if final_status
           end
 
           def on_test_step_started(event)

@@ -36,6 +36,16 @@ module Datadog
               filters_list
             end
 
+            def failure?
+              # Cucumber's summary subtracts a failure for every repeated pass,
+              # including EFD and attempt-to-fix passes. Use each test's final
+              # result so retries of one scenario cannot erase another failure.
+              return super if @configuration.wip? || @configuration.dry_run?
+
+              failure = datadog_formatter&.failure?
+              failure.nil? ? super : failure
+            end
+
             def begin_scenario(test_case)
               active_suite = Datadog::CI.active_test_suite
               if active_suite&.should_skip?

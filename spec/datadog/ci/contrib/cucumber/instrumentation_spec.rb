@@ -1088,6 +1088,21 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
+  context "with a failure followed by repeated passing scenarios" do
+    let(:feature_file_to_run) { "automation_exclusions.feature" }
+    let(:args) { super() + ["spec/datadog/ci/contrib/cucumber/features/passing.feature"] }
+    let(:enable_test_management) { true }
+    let(:test_properties_hash) { Hash.new({"attempt_to_fix" => true}.freeze) }
+    let(:expected_test_run_code) { failed_test_run_code }
+
+    it "keeps protected failures blocking after other scenarios retry" do
+      expect(test_spans.count { |span| span.get_tag("test.retry_reason") == "attempt_to_fix" }).to be > 1
+      expect(test_spans).to include(have_test_tag(:final_status, "fail"))
+      expect(test_suite_spans).to include(have_fail_status)
+      expect(test_session_span).to have_fail_status
+    end
+  end
+
   context "with test automation exclusions" do
     let(:feature_file_to_run) { "automation_exclusions.feature" }
     let(:expected_test_run_code) { failed_test_run_code }
@@ -1104,5 +1119,27 @@ RSpec.describe "Cucumber instrumentation" do
       expect(first_test_span.get_tag("test.test_management.no_auto_retry")).to eq("true")
       expect(first_test_span.get_tag("test.test_management.attempt_to_fix_passed")).to be_nil
     end
+  end
+end
+
+RSpec.describe Datadog::CI::Contrib::Cucumber::Formatter do
+  include_context "CI mode activated"
+
+  let(:config) { double(:config, on_event: nil) }
+  let(:formatter) { described_class.new(config) }
+
+  it "defers to Cucumber if any scenario result could not be traced" do
+    test_tracing.start_test_session
+    test_tracing.start_test_suite("suite")
+    test_tracing.trace_test("passing test", "suite")
+    event = double(:event, result: double(:result, passed?: true))
+    formatter.on_test_case_finished(event)
+    expect(formatter.failure?).to be false
+
+    formatter.on_test_case_finished(event)
+    expect(formatter.failure?).to be_nil
+  ensure
+    test_tracing.active_test_suite(nil)&.finish
+    test_tracing.active_test_session&.finish
   end
 end
