@@ -25,7 +25,7 @@ module Datadog
 
           def on_test_run_started: (untyped event) -> untyped
 
-          def on_test_run_finished: (untyped event) -> untyped
+          def on_test_run_finished: (untyped event) -> void
 
           def on_test_case_started: (untyped event) -> untyped
 

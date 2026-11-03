@@ -60,7 +60,8 @@ module Datadog
             if event.respond_to?(:success)
               finish_session(event.success)
             else
-              finish_session(@failed_test_suites_count.zero?)
+              failure = failure?
+              finish_session(failure.nil? ? @failed_test_suites_count.zero? : !failure)
             end
           end
 

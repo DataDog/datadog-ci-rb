@@ -1175,8 +1175,39 @@ end
 RSpec.describe Datadog::CI::Contrib::Cucumber::Formatter do
   include_context "CI mode activated"
 
-  let(:config) { double(:config, on_event: nil) }
+  let(:config) { double(:config, on_event: nil, strict: false) }
   let(:formatter) { described_class.new(config) }
+
+  it "preserves scenario failures when the run-finished event has no success field" do
+    test_tracing.start_test_session
+    test_tracing.start_test_module("cucumber")
+    test_tracing.start_test_suite("suite")
+
+    results = [
+      double(:failed_result, passed?: false, ok?: false, exception: StandardError.new("failure")),
+      double(:passed_result, passed?: true)
+    ]
+
+    results.each_with_index do |result, index|
+      test_tracing.trace_test("same name", "suite")
+      event = double(
+        :event,
+        result: result,
+        test_case: double(:test_case, location: double(:location, file: "test.feature", line: index + 1))
+      )
+      formatter.on_test_case_finished(event)
+    end
+    test_tracing.active_test_suite(nil)&.finish
+
+    formatter.on_test_run_finished(double(:run_finished_event))
+
+    expect(test_session_span).to have_fail_status
+    expect(test_module_span).to have_fail_status
+  ensure
+    test_tracing.active_test_suite(nil)&.finish
+    test_tracing.active_test_module&.finish
+    test_tracing.active_test_session&.finish
+  end
 
   it "defers to Cucumber if any scenario result could not be traced" do
     test_tracing.start_test_session
