@@ -1,8 +1,10 @@
 module Datadog
   module CI
     class TestSuite < ConcurrentSpan
-      @execution_stats_per_test: Hash[String, Hash[String, Integer]]
-      @final_statuses_per_test: Hash[String, String]
+      type test_id = String | [String, String, String]
+
+      @execution_stats_per_test: Hash[test_id, Hash[String, Integer]]
+      @final_statuses_per_test: Hash[test_id, String]
       @expected_tests_set: Set[String]
       @custom_impacted_files: Array[String]
       @tests_skipped_by_tia_count: Integer
@@ -13,21 +15,21 @@ module Datadog
 
       def add_impacted_files: (Array[String] file_paths) -> void
 
-      def record_test_result: (String test_id, String datadog_test_status) -> void
+      def record_test_result: (test_id test_id, String datadog_test_status) -> void
 
       def lock_custom_impacted_files: () -> Array[String]
 
-      def record_test_final_status: (String test_id, String final_status) -> void
+      def record_test_final_status: (test_id test_id, String final_status) -> void
 
       def any_passed?: () -> bool
 
-      def test_executed?: (String test_id) -> bool
+      def test_executed?: (test_id test_id) -> bool
 
-      def any_test_retry_passed?: (String) -> bool
+      def any_test_retry_passed?: (test_id) -> bool
 
-      def all_executions_failed?: (String) -> bool
+      def all_executions_failed?: (test_id) -> bool
 
-      def all_executions_passed?: (String) -> bool
+      def all_executions_passed?: (test_id) -> bool
 
       def set_expected_tests!: (Enumerable[String] tests) -> void
 

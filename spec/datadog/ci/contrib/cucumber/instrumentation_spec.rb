@@ -481,7 +481,7 @@ RSpec.describe "Cucumber instrumentation" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans).to have(10).items
+      expect(test_suite_spans).to have(11).items
       if cucumber_12_or_above
         expect(passing_test_suite).to have_fail_status
       else
@@ -1135,6 +1135,22 @@ RSpec.describe "Cucumber instrumentation" do
       let(:failed_executions) { 2 }
 
       it_behaves_like "preserves the distinct scenario failure"
+    end
+  end
+
+  context "with a passing scenario before a same-named failure" do
+    let(:feature_file_to_run) { "same_named_scenarios_pass_first.feature" }
+    let(:expected_test_run_code) { failed_test_run_code }
+
+    it "does not treat the distinct failure as a recovered retry" do
+      expect(test_spans.size).to eq(2)
+      expect(test_spans.map { |span| span.get_tag("test.name") }).to eq(["same name", "same name"])
+      expect(test_spans.map { |span| span.get_tag("test.status") }).to eq(["pass", "fail"])
+      expect(test_spans.map { |span| span.get_tag("test.final_status") }).to eq(["pass", "fail"])
+      expect(test_spans).to all(have_test_tag(:is_retry, nil))
+      expect(existing_runtime.failure?).to be true
+      expect(test_suite_spans.first).to have_fail_status
+      expect(test_session_span).to have_fail_status
     end
   end
 

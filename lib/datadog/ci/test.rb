@@ -316,17 +316,17 @@ module Datadog
 
       # @internal
       def any_retry_passed?
-        !!test_suite&.any_test_retry_passed?(datadog_test_id)
+        !!test_suite&.any_test_retry_passed?(local_test_id)
       end
 
       # @internal
       def all_executions_failed?
-        !!test_suite&.all_executions_failed?(datadog_test_id)
+        !!test_suite&.all_executions_failed?(local_test_id)
       end
 
       # @internal
       def all_executions_passed?
-        !!test_suite&.all_executions_passed?(datadog_test_id)
+        !!test_suite&.all_executions_passed?(local_test_id)
       end
 
       # @internal
@@ -363,7 +363,7 @@ module Datadog
 
         final_status = compute_final_status(status)
         set_internal_tag(Ext::Test::TAG_FINAL_STATUS, final_status)
-        test_suite&.record_test_final_status(datadog_test_id, final_status)
+        test_suite&.record_test_final_status(local_test_id, final_status)
       end
 
       # @internal
@@ -376,6 +376,20 @@ module Datadog
       end
 
       private
+
+      # Distinct declarations can share the backend ID but must not share retry history.
+      def local_test_id
+        @local_test_id ||= begin
+          source_file = get_tag(Ext::Test::TAG_SOURCE_FILE)
+          source_start = get_tag(Ext::Test::TAG_SOURCE_START)
+
+          if source_file && source_start
+            [datadog_test_id, source_file, source_start]
+          else
+            datadog_test_id
+          end
+        end
+      end
 
       def compute_final_status(status)
         # Skip status is always preserved
@@ -394,11 +408,11 @@ module Datadog
 
       def record_test_result(datadog_status)
         # if this test was already executed in this test suite, mark it as retried
-        if test_suite&.test_executed?(datadog_test_id)
+        if test_suite&.test_executed?(local_test_id)
           set_internal_tag(Ext::Test::TAG_IS_RETRY, "true")
         end
 
-        test_suite&.record_test_result(datadog_test_id, datadog_status)
+        test_suite&.record_test_result(local_test_id, datadog_status)
       end
     end
   end
