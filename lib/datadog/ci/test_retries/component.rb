@@ -60,12 +60,15 @@ module Datadog
           ]
           @mutex = Mutex.new
 
-          if dynamic_atr_enabled
-            Utils::Telemetry.record_dynamic_atr_retries(has_custom_buckets: !dynamic_atr_buckets.nil?)
-          end
+          @dynamic_atr_enabled = dynamic_atr_enabled
+          @dynamic_atr_has_custom_buckets = !dynamic_atr_buckets.nil?
         end
 
         def configure(library_settings, test_session)
+          if @dynamic_atr_enabled
+            Utils::Telemetry.record_dynamic_atr_retries(has_custom_buckets: @dynamic_atr_has_custom_buckets)
+          end
+
           # let all strategies configure themselves
           @retry_strategies.each do |strategy|
             strategy.configure(library_settings, test_session)

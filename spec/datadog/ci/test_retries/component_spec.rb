@@ -67,7 +67,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   end
 
   describe "dynamic ATR telemetry" do
-    subject(:build_component) { component }
+    subject(:configure_component) { component.configure(library_settings, test_session) }
 
     context "when dynamic ATR is disabled" do
       it_behaves_like "emits no metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED
@@ -78,6 +78,21 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       let(:dynamic_atr_buckets) { [4, 1, 1, 1, 1] }
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED
+
+      it "defers telemetry until after construction" do
+        expect(Datadog::CI::Utils::Telemetry).not_to receive(:record_dynamic_atr_retries)
+        expect(Datadog).not_to receive(:components)
+        component
+      end
+
+      it "emits telemetry again on subsequent configurations" do
+        component.configure(library_settings, test_session)
+        reset_telemetry_spy!
+
+        component.configure(library_settings, test_session)
+
+        expect(received_telemetry_metric?(:inc, Datadog::CI::Ext::Telemetry::METRIC_DYNAMIC_ATR_RETRIES_ENABLED)).to be true
+      end
 
       it "marks the metric as using custom buckets" do
         subject

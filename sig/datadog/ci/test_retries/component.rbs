@@ -5,6 +5,8 @@ module Datadog
         FIBER_LOCAL_CURRENT_RETRY_DRIVER_KEY: Symbol
 
         @mutex: Thread::Mutex
+        @dynamic_atr_enabled: bool
+        @dynamic_atr_has_custom_buckets: bool
 
         @retry_strategies: Array[Datadog::CI::TestRetries::Strategy::Base]
 
