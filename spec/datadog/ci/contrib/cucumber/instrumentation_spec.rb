@@ -797,35 +797,35 @@ RSpec.describe "Cucumber instrumentation" do
     end
 
     it "retries tests according to Cucumber's status" do
-      expected_spans_count = cucumber_12_or_above ? 24 : 14
+      expected_spans_count = cucumber_12_or_above ? 22 : 13
       expect(test_spans).to have(expected_spans_count).items
 
       skipped_spans, other_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
       if cucumber_12_or_above
         expect(skipped_spans).to have(1).item
-        expect(other_spans).to have(23).items
+        expect(other_spans).to have(21).items
       else
         expect(skipped_spans).to have(3).items # see steps.rb
-        expect(other_spans).to have(11).items
+        expect(other_spans).to have(10).items
       end
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-      expect(test_spans_by_test_name["cucumber scenario"]).to have(11).items
-      expected_undefined_spans_count = cucumber_12_or_above ? 11 : 1
+      expect(test_spans_by_test_name["cucumber scenario"]).to have(10).items
+      expected_undefined_spans_count = cucumber_12_or_above ? 10 : 1
       expect(test_spans_by_test_name["undefined scenario"]).to have(expected_undefined_spans_count).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(cucumber_12_or_above ? 20 : 10)
+      expect(retries_count).to eq(cucumber_12_or_above ? 18 : 9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      retry_reasons_count = cucumber_12_or_above ? 20 : 10
+      retry_reasons_count = cucumber_12_or_above ? 18 : 9
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * retry_reasons_count)
 
       # count how many spans were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(cucumber_12_or_above ? 22 : 12)
+      expect(new_tests_count).to eq(cucumber_12_or_above ? 20 : 11)
 
       # check final statuses
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
@@ -1038,33 +1038,33 @@ RSpec.describe "Cucumber instrumentation" do
     end
 
     it "retries modified test" do
-      expected_spans_count = cucumber_12_or_above ? 34 : 14
+      expected_spans_count = cucumber_12_or_above ? 31 : 13
       expect(test_spans).to have(expected_spans_count).items
 
       skipped_spans, other_spans = test_spans.partition { |span| span.get_tag("test.status") == "skip" }
       if cucumber_12_or_above
         expect(skipped_spans).to have(1).item
-        expect(other_spans).to have(33).items
+        expect(other_spans).to have(30).items
       else
         expect(skipped_spans).to have(3).items # see steps.rb
-        expect(other_spans).to have(11).items
+        expect(other_spans).to have(10).items
       end
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-      expect(test_spans_by_test_name["cucumber scenario"]).to have(11).items
+      expect(test_spans_by_test_name["cucumber scenario"]).to have(10).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(cucumber_12_or_above ? 30 : 10)
+      expect(retries_count).to eq(cucumber_12_or_above ? 27 : 9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      retry_reasons_count = cucumber_12_or_above ? 30 : 10
+      retry_reasons_count = cucumber_12_or_above ? 27 : 9
       expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * retry_reasons_count)
 
       # modified tests - all tests are marked as modified because we don't have end lines in cucumber
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
-      expect(modified_count).to eq(cucumber_12_or_above ? 34 : 14)
+      expect(modified_count).to eq(cucumber_12_or_above ? 31 : 13)
 
       # check final statuses
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }

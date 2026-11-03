@@ -6,6 +6,7 @@ module Datadog
           @max_attempts_thresholds: Datadog::CI::Remote::SlowTestRetries
 
           @attempts: Integer
+          @duration_recorded: bool
           @max_attempts: Integer
           @passed_once: bool
           @failed_once: bool

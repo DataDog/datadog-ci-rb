@@ -42,7 +42,7 @@ RSpec.describe "RSpec instrumentation" do
     max_flaky_test_failures = 4
     flaky_test_failures = 0
 
-    max_flaky_test_that_fails_once_passes = 10
+    max_flaky_test_that_fails_once_passes = 9
     flaky_test_that_fails_once_passes = 0
 
     current_let_value = 0
@@ -1854,32 +1854,32 @@ RSpec.describe "RSpec instrumentation" do
       let(:known_tests) { Set.new(["SomeTest at ./spec/datadog/ci/contrib/rspec/instrumentation_spec.rb.nested fails."]) }
     end
 
-    it "retries the new test 10 times" do
+    it "retries the new test nine times" do
       result = rspec_session_run(with_failed_test: true)
 
-      # 1 passing test + 10 new test retries + 1 failed test run = 12 spans
-      expect(test_spans).to have(12).items
+      # 1 passing test + 9 new test retries + 1 failed test run = 11 spans
+      expect(test_spans).to have(11).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
       expect(failed_spans).to have(1).items
-      expect(passed_spans).to have(11).items
+      expect(passed_spans).to have(10).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
 
-      # it retried the new test 10 times
-      expect(test_spans_by_test_name["nested foo"]).to have(11).item
+      # it retried the new test nine times
+      expect(test_spans_by_test_name["nested foo"]).to have(10).item
 
       # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 9)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(11)
+      expect(new_tests_count).to eq(10)
 
       # check final statuses
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
@@ -1895,8 +1895,8 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
 
       # validate that we have the Datadog's output
-      expect(result.stdout.string).to include("Retried 10 times by Datadog Early Flake Detection")
-      expect(result.stdout.string).to include("Results were: 10 / 10 pass")
+      expect(result.stdout.string).to include("Retried 9 times by Datadog Early Flake Detection")
+      expect(result.stdout.string).to include("Results were: 9 / 9 pass")
     end
 
     context "when test is slower than 5 seconds" do
@@ -1904,27 +1904,27 @@ RSpec.describe "RSpec instrumentation" do
         allow_any_instance_of(Datadog::CI::Test).to receive(:peek_duration).and_return(6.0)
       end
 
-      it "retries the new test 5 times" do
+      it "retries the new test four times" do
         rspec_session_run(with_failed_test: true)
 
-        # 1 passing test + 5 new test retries + 1 failed test run = 7 spans
-        expect(test_spans).to have(7).items
+        # 1 passing test + 4 new test retries + 1 failed test run = 6 spans
+        expect(test_spans).to have(6).items
 
         test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-        # it retried the new test 5 times
-        expect(test_spans_by_test_name["nested foo"]).to have(6).item
+        # it retried the new test four times
+        expect(test_spans_by_test_name["nested foo"]).to have(5).item
 
         # count how many spans were marked as retries
         retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-        expect(retries_count).to eq(5)
+        expect(retries_count).to eq(4)
 
         # check retry reasons
         retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-        expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 5)
+        expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 4)
 
         # count how many tests were marked as new
         new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-        expect(new_tests_count).to eq(6)
+        expect(new_tests_count).to eq(5)
 
         # check final statuses
         final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
@@ -2015,34 +2015,34 @@ RSpec.describe "RSpec instrumentation" do
       let(:flaky_test_retries_enabled) { true }
     end
 
-    it "retries the new test 10 times and the flaky test until it passes" do
+    it "retries the new test nine times and the flaky test until it passes" do
       rspec_session_run(with_flaky_test: true)
 
-      # 1 initial run of flaky test + 4 retries until pass + 1 passing new test + 10 new test retries = 16 spans
-      expect(test_spans).to have(16).items
+      # 1 initial run of flaky test + 4 retries until pass + 1 passing new test + 9 new test retries = 15 spans
+      expect(test_spans).to have(15).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
       expect(failed_spans).to have(4).items
-      expect(passed_spans).to have(12).items
+      expect(passed_spans).to have(11).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["nested flaky"]).to have(5).items
-      expect(test_spans_by_test_name["nested foo"]).to have(11).item
+      expect(test_spans_by_test_name["nested foo"]).to have(10).item
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(14)
+      expect(retries_count).to eq(13)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact.sort
       expect(retry_reasons).to eq(
         ([Datadog::CI::Ext::Test::RetryReason::RETRY_FAILED] * 4) +
-          ([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+          ([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 9)
       )
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(11)
+      expect(new_tests_count).to eq(10)
 
       # check final statuses
       # 0 failed
@@ -2082,28 +2082,28 @@ RSpec.describe "RSpec instrumentation" do
     it "retries both new tests, stopping the flaky one early once flakiness is detected" do
       rspec_session_run(with_flaky_test: true)
 
-      # 1 initial run of flaky test + 4 retries (stop on first pass) + 1 passing new test + 10 new test retries = 16 spans
-      expect(test_spans).to have(16).items
+      # 1 initial run of flaky test + 4 retries (stop on first pass) + 1 passing new test + 9 new test retries = 15 spans
+      expect(test_spans).to have(15).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
       expect(failed_spans).to have(4).items
-      expect(passed_spans).to have(12).items
+      expect(passed_spans).to have(11).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["nested flaky"]).to have(5).items
-      expect(test_spans_by_test_name["nested foo"]).to have(11).item
+      expect(test_spans_by_test_name["nested foo"]).to have(10).item
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(14)
+      expect(retries_count).to eq(13)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 14)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 13)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(16)
+      expect(new_tests_count).to eq(15)
 
       # check final statuses
       # 0 failed
@@ -2140,28 +2140,28 @@ RSpec.describe "RSpec instrumentation" do
     it "retries first test only and then bails out of retrying new tests" do
       rspec_session_run(with_flaky_test: true)
 
-      # 1 initial run of passing test + 10 retries + 1 flaky test = 12 spans
-      expect(test_spans).to have(12).items
+      # 1 initial run of passing test + 9 retries + 1 flaky test = 11 spans
+      expect(test_spans).to have(11).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
       expect(failed_spans).to have(1).items
-      expect(passed_spans).to have(11).items
+      expect(passed_spans).to have(10).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["nested flaky"]).to have(1).item
-      expect(test_spans_by_test_name["nested foo"]).to have(11).items
+      expect(test_spans_by_test_name["nested foo"]).to have(10).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 9)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(12)
+      expect(new_tests_count).to eq(11)
 
       # no attempt_to_fix_passed tags as the test was not retried because of attempt_to_fix tag
       fix_passed_tests_count = test_spans.count { |span| span.get_tag("test.test_management.attempt_to_fix_passed") }
@@ -2196,31 +2196,31 @@ RSpec.describe "RSpec instrumentation" do
       let(:code_coverage_enabled) { true }
     end
 
-    it "retries the new test 10 times" do
+    it "retries the new test nine times" do
       result = rspec_session_run(with_flaky_test_that_fails_once: true)
 
-      # 1 passing test + 1 flaky test run + 10 new test retries = 12 spans
-      expect(test_spans).to have(12).items
+      # 1 passing test + 1 flaky test run + 9 new test retries = 11 spans
+      expect(test_spans).to have(11).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
       expect(failed_spans).to have(1).items
-      expect(passed_spans).to have(11).items
+      expect(passed_spans).to have(10).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["nested foo"]).to have(1).item
-      expect(test_spans_by_test_name["nested flaky that fails once"]).to have(11).items
+      expect(test_spans_by_test_name["nested flaky that fails once"]).to have(10).items
 
       # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 9)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(11)
+      expect(new_tests_count).to eq(10)
 
       # check final statuses
       # no tests failed
@@ -2696,26 +2696,26 @@ RSpec.describe "RSpec instrumentation" do
       end
     end
 
-    it "retries each of the modified tests 10 times" do
+    it "retries each of the modified tests nine times" do
       rspec_session_run(with_failed_test: true)
 
-      expect(test_spans).to have(22).items
+      expect(test_spans).to have(20).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
-      expect(failed_spans).to have(11).item
-      expect(passed_spans).to have(11).item
+      expect(failed_spans).to have(10).item
+      expect(passed_spans).to have(10).item
 
       # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(20)
+      expect(retries_count).to eq(18)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["early_flake_detection"] * 20)
+      expect(retry_reasons).to eq(["early_flake_detection"] * 18)
 
       # count how many test spans were marked as modified
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
-      expect(modified_count).to eq(22)
+      expect(modified_count).to eq(20)
 
       # check final statuses
       # 1 failed all retries

@@ -1451,24 +1451,24 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     it "retries new test" do
-      # 1 initial run of test_passed + 1 run of test_passed_second + 10 retries = 12 spans
-      expect(test_spans).to have(12).items
+      # 1 initial run of test_passed + 1 run of test_passed_second + 9 retries = 11 spans
+      expect(test_spans).to have(11).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
-      expect(test_spans_by_test_name["test_passed_second"]).to have(11).items
+      expect(test_spans_by_test_name["test_passed_second"]).to have(10).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 9)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(11)
+      expect(new_tests_count).to eq(10)
 
       # check final statuses (both tests passed)
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
@@ -1514,20 +1514,20 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     it "bails out of retrying new tests and marks EFD as faulty" do
-      # 1 initial run of a test + 10 retries + 1 run of another test = 12 spans
-      expect(test_spans).to have(12).items
+      # 1 initial run of a test + 9 retries + 1 run of another test = 11 spans
+      expect(test_spans).to have(11).items
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 9)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(12)
+      expect(new_tests_count).to eq(11)
 
       # check final statuses (both tests passed)
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
@@ -1561,7 +1561,7 @@ RSpec.describe "Minitest instrumentation" do
       Minitest::Runnable.reset
 
       class FlakyTestThatFailsOnceSuite < Minitest::Test
-        @@max_flaky_test_passes = 10
+        @@max_flaky_test_passes = 9
         @@flaky_test_passes = 0
 
         def test_passed
@@ -1580,28 +1580,28 @@ RSpec.describe "Minitest instrumentation" do
     end
 
     it "does not fail the build" do
-      # 1 initial run of new test + 10 retries + 1 passing test = 12 spans
-      expect(test_spans).to have(12).items
+      # 1 initial run of new test + 9 retries + 1 passing test = 11 spans
+      expect(test_spans).to have(11).items
 
       failed_spans, passed_spans = test_spans.partition { |span| span.get_tag("test.status") == "fail" }
       expect(failed_spans).to have(1).items
-      expect(passed_spans).to have(11).items
+      expect(passed_spans).to have(10).items
 
       test_spans_by_test_name = test_spans.group_by { |span| span.get_tag("test.name") }
-      expect(test_spans_by_test_name["test_flaky"]).to have(11).item
+      expect(test_spans_by_test_name["test_flaky"]).to have(10).item
       expect(test_spans_by_test_name["test_passed"]).to have(1).item
 
       # count how many spans were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 10)
+      expect(retry_reasons).to eq([Datadog::CI::Ext::Test::RetryReason::RETRY_DETECT_FLAKY] * 9)
 
       # count how many tests were marked as new
       new_tests_count = test_spans.count { |span| span.get_tag("test.is_new") == "true" }
-      expect(new_tests_count).to eq(11)
+      expect(new_tests_count).to eq(10)
 
       # check final statuses (no tests failed, two tests passed)
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }
@@ -2032,20 +2032,20 @@ RSpec.describe "Minitest instrumentation" do
       end
     end
 
-    it "retries the modified test 10 times" do
-      expect(test_spans).to have(11).items
+    it "retries the modified test nine times" do
+      expect(test_spans).to have(10).items
 
       # count how many tests were marked as retries
       retries_count = test_spans.count { |span| span.get_tag("test.is_retry") == "true" }
-      expect(retries_count).to eq(10)
+      expect(retries_count).to eq(9)
 
       # check retry reasons
       retry_reasons = test_spans.map { |span| span.get_tag("test.retry_reason") }.compact
-      expect(retry_reasons).to eq(["early_flake_detection"] * 10)
+      expect(retry_reasons).to eq(["early_flake_detection"] * 9)
 
       # count how many test spans were marked as modified
       modified_count = test_spans.count { |span| span.get_tag("test.is_modified") == "true" }
-      expect(modified_count).to eq(11)
+      expect(modified_count).to eq(10)
 
       # check final statuses (single test passed after retries)
       final_status_fail_tests = test_spans.count { |span| span.get_tag("test.final_status") == "fail" }

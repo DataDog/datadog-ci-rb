@@ -107,26 +107,17 @@ module Datadog
           if current_retry_driver.nil?
             # We always run test at least once and after the first pass create a correct retry driver
             self.current_retry_driver = build_driver(test_span)
-
-            # When the driver decides no retries are needed after the first execution
-            # (e.g., attempt-to-fix test that failed immediately), we still need to tag
-            # the outcome for strategies that track retry results.
-            if !should_retry? && current_retry_driver&.tracks_retry_results?
-              tag_last_retry(test_span)
-            end
           else
-            # After each retry we let the driver to record the result.
-            # Then the driver will decide if we should retry again.
             current_retry_driver&.record_retry(test_span)
-
-            # We know that the test was already retried at least once so if we should not retry anymore, then this
-            # is the last retry.
-            tag_last_retry(test_span) unless should_retry?
           end
 
           # Some retry strategies such as Early Flake Detection change the number of retries based on
           # how long the test was.
           current_retry_driver&.record_duration(test_span.peek_duration)
+
+          if !should_retry? && current_retry_driver&.tracks_retry_results?
+            tag_last_retry(test_span)
+          end
 
           # We need to set the final status of the test (what will be reported to the test framework) on the last execution
           # no matter if test was retried or not

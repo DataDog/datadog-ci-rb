@@ -13,8 +13,9 @@ module Datadog
       #  "5m" => 2
       # }
       #
-      # The payload above means that for tests that run less than 5 seconds, we should retry them 10 times,
-      # for tests that run less than 10 seconds, we should retry them 5 times, and so on.
+      # Each EFD value includes the original execution: tests that run less than
+      # 5 seconds execute at most 10 times, tests below 10 seconds execute at most
+      # 5 times, and so on.
       class SlowTestRetries
         attr_reader :entries
 

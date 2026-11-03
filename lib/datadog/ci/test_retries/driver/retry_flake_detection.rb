@@ -8,14 +8,14 @@ module Datadog
   module CI
     module TestRetries
       module Driver
-        # retry every new test up to 10 times (early flake detection)
+        # repeat new tests within the configured total execution budget (early flake detection)
         # stop early once both a pass and a fail have been observed (flakiness confirmed)
         class RetryFlakeDetection < Base
           def initialize(test_span, max_attempts_thresholds:)
             @max_attempts_thresholds = max_attempts_thresholds
             @attempts = 0
-            # will be changed based on test span duration
-            @max_attempts = 10
+            @max_attempts = 0
+            @duration_recorded = false
 
             # track outcomes to stop early once flakiness is confirmed
             @passed_once = !!test_span&.passed?
@@ -37,7 +37,11 @@ module Datadog
           end
 
           def record_duration(duration)
-            @max_attempts = @max_attempts_thresholds.max_attempts_for_duration(duration)
+            return if @duration_recorded
+
+            total_executions = @max_attempts_thresholds.max_attempts_for_duration(duration)
+            @max_attempts = [total_executions - 1, 0].max
+            @duration_recorded = true
 
             Datadog.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
           end

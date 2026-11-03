@@ -315,15 +315,15 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       let(:remote_early_flake_detection_enabled) { true }
       let(:test_is_new) { true }
 
-      it { is_expected.to eq(11) }
+      it { is_expected.to eq(10) }
 
       context "when test duration increases" do
         before do
           allow(test_span).to receive(:peek_duration).and_return(5.1, 10.1, 30.1, 600.1)
         end
 
-        # 5.1s (5 retries) -> 10.1s (3 retries) -> 30.1s (2 retries) -> done => 3 executions in total
-        it { is_expected.to eq(3) }
+        # The original duration selects five total executions, even if retries are slower.
+        it { is_expected.to eq(5) }
       end
     end
 
