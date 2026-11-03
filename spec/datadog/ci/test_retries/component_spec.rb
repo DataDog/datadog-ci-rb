@@ -107,7 +107,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         passed?: !test_failed,
         skipped?: test_skipped,
         is_new?: test_is_new,
-        attempt_to_fix_enabled?: test_attempt_to_fix,
+        should_retry_attempt_to_fix?: test_attempt_to_fix,
         modified?: test_modified,
         set_internal_tag: nil
       )
@@ -261,7 +261,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         type: "test",
         name: "mytest",
         test_suite_name: "mysuite",
-        attempt_to_fix_enabled?: test_attempt_to_fix,
+        should_retry_attempt_to_fix?: test_attempt_to_fix,
         all_executions_failed?: false,
         all_executions_passed?: false,
         peek_duration: 1.2,
@@ -423,7 +423,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         no_auto_retry?: false,
         all_executions_failed?: all_executions_failed,
         all_executions_passed?: all_executions_passed,
-        attempt_to_fix_enabled?: attempt_to_fix,
+        should_retry_attempt_to_fix?: attempt_to_fix,
         set_internal_tag: nil
       )
     end
@@ -477,7 +477,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         passed?: !test_failed,
         skipped?: false,
         is_new?: false,
-        attempt_to_fix_enabled?: false,
+        should_retry_attempt_to_fix?: false,
         modified?: false,
         all_executions_failed?: false,
         all_executions_passed?: false,

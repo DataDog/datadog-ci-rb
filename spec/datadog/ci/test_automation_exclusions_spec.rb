@@ -93,6 +93,59 @@ RSpec.describe "Test automation exclusion policy" do
       end
     end
 
+    it "ignores initial exclusion tags supplied through the public block API" do
+      Datadog::CI.trace_test("test", "suite", tags: {
+        "test.test_management.no_auto_retry" => "true",
+        "test.test_management.prevent_failure_suppression" => "true"
+      }) do |test|
+        expect(test.no_auto_retry?).to be(false)
+        expect(test.prevent_failure_suppression?).to be(false)
+        expect(test.get_tag("test.test_management.no_auto_retry")).to be_nil
+        expect(test.get_tag("test.test_management.prevent_failure_suppression")).to be_nil
+        test.passed!
+      end
+    end
+
+    it "ignores initial exclusion tags supplied through the public non-block API" do
+      test = Datadog::CI.start_test("test", "suite", tags: {
+        "test.test_management.no_auto_retry" => "true",
+        "test.test_management.prevent_failure_suppression" => "true"
+      })
+      expect(test.no_auto_retry?).to be(false)
+      expect(test.prevent_failure_suppression?).to be(false)
+      expect(test.get_tag("test.test_management.no_auto_retry")).to be_nil
+      expect(test.get_tag("test.test_management.prevent_failure_suppression")).to be_nil
+      test.passed!
+      test.finish
+    end
+
+    it "protects declared exclusions from public tag mutations" do
+      test_tracing.trace_test("test", "suite", prevent_failure_suppression: true, no_auto_retry: true) do |test|
+        test.set_tags(
+          "test.test_management.no_auto_retry" => "false",
+          "test.test_management.prevent_failure_suppression" => "false"
+        )
+        test.clear_tag("test.test_management.no_auto_retry")
+        test.clear_tag("test.test_management.prevent_failure_suppression")
+        expect(test.no_auto_retry?).to be(true)
+        expect(test.prevent_failure_suppression?).to be(true)
+        expect(test.get_tag("test.test_management.no_auto_retry")).to eq("true")
+        expect(test.get_tag("test.test_management.prevent_failure_suppression")).to eq("true")
+        test.passed!
+      end
+    end
+
+    it "clears the policy tags when internal declarations are removed" do
+      test_tracing.trace_test("test", "suite", prevent_failure_suppression: true, no_auto_retry: true) do |test|
+        test.apply_automation_exclusions(prevent_failure_suppression: false, no_auto_retry: false)
+        expect(test.no_auto_retry?).to be(false)
+        expect(test.prevent_failure_suppression?).to be(false)
+        expect(test.get_tag("test.test_management.no_auto_retry")).to be_nil
+        expect(test.get_tag("test.test_management.prevent_failure_suppression")).to be_nil
+        test.passed!
+      end
+    end
+
     it "does not retain exclusions in a later execution" do
       test_tracing.trace_test("test", "suite", no_auto_retry: true) { |test| test.passed! }
       test_tracing.trace_test("test", "suite") do |test|

@@ -65,6 +65,8 @@ class CriticalTest < Minitest::Test
 end
 ```
 
+Undefined method names are ignored with a warning.
+
 Cucumber uses scenario tags, including scenario outlines:
 
 ```gherkin

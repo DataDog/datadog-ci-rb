@@ -55,6 +55,31 @@ RSpec.describe "Minitest test automation exclusions" do
     expect(protected_class.dd_test_no_auto_retry?("test_example")).to be(true)
     expect(ordinary_class.dd_test_no_auto_retry?("test_example")).to be(false)
   end
+
+  it "ignores undefined methods with a warning and still annotates valid methods" do
+    klass = Class.new(Minitest::Test) do
+      def test_example
+      end
+    end
+    expect(Datadog.logger).to receive(:warn).with(include("undefined test method", "test_missing")).twice
+
+    klass.datadog_no_auto_retry :test_missing, :test_example
+    klass.datadog_prevent_failure_suppression :test_missing, :test_example
+    expect(klass.dd_test_no_auto_retry?("test_example")).to be(true)
+    expect(klass.dd_test_prevent_failure_suppression?("test_example")).to be(true)
+
+    klass.class_eval { define_method(:test_missing) {} }
+    expect(klass.dd_test_no_auto_retry?("test_missing")).to be(false)
+    expect(klass.dd_test_prevent_failure_suppression?("test_missing")).to be(false)
+  end
+
+  it "returns false for queries about undefined methods" do
+    klass = Class.new(Minitest::Test)
+    expect(Datadog.logger).to receive(:warn).with(include("undefined test method", "test_missing")).twice
+    expect(klass.dd_test_no_auto_retry?("test_missing")).to be(false)
+    expect(klass.dd_test_prevent_failure_suppression?("test_missing")).to be(false)
+  end
+
   it "preserves an inherited individual declaration but not an overridden method" do
     parent = Class.new(Minitest::Test) do
       def test_example
@@ -73,6 +98,25 @@ RSpec.describe "Minitest test automation exclusions" do
     expect(parent.dd_test_no_auto_retry?("test_example")).to be(true)
   end
 
+  it "drops child declarations when the inherited implementation is replaced in the parent" do
+    parent = Class.new(Minitest::Test) do
+      def test_example
+      end
+    end
+    child = Class.new(parent)
+    child.datadog_prevent_failure_suppression :test_example
+    child.datadog_no_auto_retry :test_example
+    grandchild = Class.new(child)
+    expect(grandchild.dd_test_prevent_failure_suppression?("test_example")).to be(true)
+    expect(grandchild.dd_test_no_auto_retry?("test_example")).to be(true)
+
+    parent.class_eval { define_method(:test_example) {} }
+    expect(child.dd_test_prevent_failure_suppression?("test_example")).to be(false)
+    expect(child.dd_test_no_auto_retry?("test_example")).to be(false)
+    expect(grandchild.dd_test_prevent_failure_suppression?("test_example")).to be(false)
+    expect(grandchild.dd_test_no_auto_retry?("test_example")).to be(false)
+  end
+
   it "keeps aliases of the same method independently annotated" do
     klass = Class.new(Minitest::Test) do
       def test_example
@@ -81,6 +125,20 @@ RSpec.describe "Minitest test automation exclusions" do
       datadog_no_auto_retry :test_example
     end
     expect(klass.dd_test_no_auto_retry?("test_example")).to be(true)
+    expect(klass.dd_test_no_auto_retry?("test_alias")).to be(false)
+  end
+
+  it "does not copy declarations to an alias defined afterward" do
+    klass = Class.new(Minitest::Test) do
+      def test_example
+      end
+      datadog_prevent_failure_suppression :test_example
+      datadog_no_auto_retry :test_example
+      alias_method :test_alias, :test_example
+    end
+    expect(klass.dd_test_prevent_failure_suppression?("test_example")).to be(true)
+    expect(klass.dd_test_no_auto_retry?("test_example")).to be(true)
+    expect(klass.dd_test_prevent_failure_suppression?("test_alias")).to be(false)
     expect(klass.dd_test_no_auto_retry?("test_alias")).to be(false)
   end
 end

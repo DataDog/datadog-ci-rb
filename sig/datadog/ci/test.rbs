@@ -1,8 +1,6 @@
 module Datadog
   module CI
     class Test < Span
-      @prevent_failure_suppression: bool
-      @no_auto_retry: bool
       @datadog_test_id: String
       @in_test_discovery_mode: bool
       @context_ids: Array[String]?
@@ -44,9 +42,9 @@ module Datadog
       def apply_automation_exclusions: (prevent_failure_suppression: bool, no_auto_retry: bool) -> void
       def prevent_failure_suppression?: () -> bool
       def no_auto_retry?: () -> bool
-      def quarantine_enforced?: () -> bool
-      def disabling_enforced?: () -> bool
-      def attempt_to_fix_enabled?: () -> bool
+      def should_quarantine?: () -> bool
+      def should_disable?: () -> bool
+      def should_retry_attempt_to_fix?: () -> bool
       def modified?: () -> bool
       def add_impacted_files: (Array[String] file_paths) -> void
       def inherit_impacted_files: (Array[String] custom_impacted_files) -> void

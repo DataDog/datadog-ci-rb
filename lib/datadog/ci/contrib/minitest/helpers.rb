@@ -11,34 +11,50 @@ module Datadog
             # Apply these declarations to named test methods, after defining them.
             def datadog_prevent_failure_suppression(*test_names)
               declarations = (@datadog_prevent_failure_suppression_tests ||= {})
-              test_names.each { |test_name| declarations[test_name.to_s] = dd_automation_exclusion_declaration(test_name) }
+              test_names.each do |test_name|
+                declaration = dd_automation_exclusion_declaration(test_name)
+                declarations[test_name.to_s] = declaration if declaration
+              end
               nil
             end
 
             def datadog_no_auto_retry(*test_names)
               declarations = (@datadog_no_auto_retry_tests ||= {})
-              test_names.each { |test_name| declarations[test_name.to_s] = dd_automation_exclusion_declaration(test_name) }
+              test_names.each do |test_name|
+                declaration = dd_automation_exclusion_declaration(test_name)
+                declarations[test_name.to_s] = declaration if declaration
+              end
               nil
             end
 
             def dd_test_prevent_failure_suppression?(test_name, declaration = dd_automation_exclusion_declaration(test_name))
+              return false unless declaration
               return true if @datadog_prevent_failure_suppression_tests&.fetch(test_name.to_s, nil) == declaration
 
+              # Class instance variables are not inherited. Search parents using
+              # the child's method identity so overrides cannot inherit exclusions.
               parent = superclass
-              !!(parent&.respond_to?(:dd_test_prevent_failure_suppression?) && parent.public_send(:dd_test_prevent_failure_suppression?, test_name, declaration))
+              parent.is_a?(RunnableClassMethods) && parent.dd_test_prevent_failure_suppression?(test_name, declaration)
             end
 
             def dd_test_no_auto_retry?(test_name, declaration = dd_automation_exclusion_declaration(test_name))
+              return false unless declaration
               return true if @datadog_no_auto_retry_tests&.fetch(test_name.to_s, nil) == declaration
 
               parent = superclass
-              !!(parent&.respond_to?(:dd_test_no_auto_retry?) && parent.public_send(:dd_test_no_auto_retry?, test_name, declaration))
+              parent.is_a?(RunnableClassMethods) && parent.dd_test_no_auto_retry?(test_name, declaration)
             end
 
             def dd_automation_exclusion_declaration(test_name)
+              unless method_defined?(test_name) || private_method_defined?(test_name)
+                Datadog.logger.warn("Ignoring Datadog automation exclusion for undefined test method #{self}##{test_name}; define the method before declaring exclusions")
+                return nil
+              end
+
               declaration = instance_method(test_name)
-              # Ruby 2.7 includes the lookup class in inherited UnboundMethod equality.
-              # Resolve through the owner to compare the actual declaration consistently.
+              # On Ruby 2.7, Child.instance_method(:test) != Parent.instance_method(:test)
+              # even when Child inherits the same implementation. Resolve through the
+              # defining owner so inherited methods match and replacements do not.
               declaration.owner.instance_method(test_name)
             end
 

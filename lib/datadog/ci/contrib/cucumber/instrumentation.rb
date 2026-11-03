@@ -46,7 +46,7 @@ module Datadog
 
               # special case for cucumber-ruby: we skip quarantined tests, thus for cucumber quarantined is the same as disabled.
               # attempt_to_fix takes precedence over quarantine: such tests must run (and be retried) even when quarantined.
-              if datadog_test&.should_skip? || (datadog_test&.quarantine_enforced? && !datadog_test.attempt_to_fix_enabled?)
+              if datadog_test&.should_skip? || (datadog_test&.should_quarantine? && !datadog_test.should_retry_attempt_to_fix?)
                 raise ::Cucumber::Core::Test::Result::Skipped, datadog_test.datadog_skip_reason
               end
 

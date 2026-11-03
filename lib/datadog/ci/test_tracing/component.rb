@@ -130,6 +130,9 @@ module Datadog
           test_suite
         end
 
+        # Exclusion keywords are for framework instrumentation only; the public
+        # Datadog::CI.trace_test and .start_test APIs do not expose them.
+        # @internal_api
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, prevent_failure_suppression: false, no_auto_retry: false, &block)
           test_name = Utils::TestName.normalize(test_name)
           test_suite_name = Utils::TestName.normalize(test_suite_name)

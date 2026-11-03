@@ -37,6 +37,7 @@ module Datadog
           skip_tracing
         end
 
+        # @internal_api
         def trace_test(test_name, test_suite_name, service: nil, tags: {}, prevent_failure_suppression: false, no_auto_retry: false, &block)
           skip_tracing(block)
         end

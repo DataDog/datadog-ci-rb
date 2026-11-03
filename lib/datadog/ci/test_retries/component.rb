@@ -147,7 +147,7 @@ module Datadog
 
           # if we are attempting to fix the test and all retries passed, we indicate that the fix might have worked
           # otherwise we send "false" to show that it didn't work
-          test_span&.set_internal_tag(Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, test_span&.all_executions_passed?.to_s) if test_span&.attempt_to_fix_enabled?
+          test_span&.set_internal_tag(Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, test_span&.all_executions_passed?.to_s) if test_span&.should_retry_attempt_to_fix?
         end
 
         def should_retry?

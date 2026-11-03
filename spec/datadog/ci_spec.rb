@@ -54,6 +54,16 @@ RSpec.describe Datadog::CI do
       it_behaves_like "emits telemetry metric", :inc, "manual_api_events", 1
     end
 
+    [:trace_test, :start_test].each do |api|
+      [:prevent_failure_suppression, :no_auto_retry].each do |exclusion|
+        it "does not expose #{exclusion} through the public #{api} API" do
+          expect do
+            described_class.public_send(api, "test", "suite", **{exclusion => true})
+          end.to raise_error(ArgumentError, /unknown keyword/)
+        end
+      end
+    end
+
     describe "::trace" do
       subject(:trace) { described_class.trace(span_name, type: type, **options, &block) }
 

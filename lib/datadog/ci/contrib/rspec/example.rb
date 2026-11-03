@@ -288,8 +288,8 @@ module Datadog
 
               update_retry_metadata(test_span) if test_span&.is_retry?
 
-              metadata[Ext::METADATA_DD_QUARANTINED] = !!test_span&.quarantine_enforced?
-              metadata[Ext::METADATA_DD_DISABLED] = !!test_span&.disabling_enforced?
+              metadata[Ext::METADATA_DD_QUARANTINED] = !!test_span&.should_quarantine?
+              metadata[Ext::METADATA_DD_DISABLED] = !!test_span&.should_disable?
               metadata[Ext::METADATA_DD_SKIPPED_BY_ITR] = true if test_span&.skipped_by_test_impact_analysis?
             end
 

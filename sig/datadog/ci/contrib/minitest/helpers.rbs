@@ -11,9 +11,9 @@ module Datadog
 
             def datadog_prevent_failure_suppression: (*(String | Symbol) test_names) -> void
             def datadog_no_auto_retry: (*(String | Symbol) test_names) -> void
-            def dd_test_prevent_failure_suppression?: ((String | Symbol) test_name, ?UnboundMethod declaration) -> bool
-            def dd_test_no_auto_retry?: ((String | Symbol) test_name, ?UnboundMethod declaration) -> bool
-            def dd_automation_exclusion_declaration: ((String | Symbol) test_name) -> UnboundMethod
+            def dd_test_prevent_failure_suppression?: ((String | Symbol) test_name, ?UnboundMethod? declaration) -> bool
+            def dd_test_no_auto_retry?: ((String | Symbol) test_name, ?UnboundMethod? declaration) -> bool
+            def dd_automation_exclusion_declaration: ((String | Symbol) test_name) -> UnboundMethod?
             def dd_clear_automation_exclusions: (String | Symbol test_name) -> void
 
             def datadog_itr_unskippable: (*untyped) -> void
