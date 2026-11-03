@@ -61,3 +61,7 @@ Then "flaky" do
     flaky_test_executions = 0
   end
 end
+
+Then("a test automation exclusion failure occurs") do
+  raise "protected failure"
+end

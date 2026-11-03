@@ -130,7 +130,10 @@ module Datadog
           test_suite
         end
 
-        def trace_test(test_name, test_suite_name, service: nil, tags: {}, &block)
+        # Exclusion keywords are for framework instrumentation only; the public
+        # Datadog::CI.trace_test and .start_test APIs do not expose them.
+        # @internal_api
+        def trace_test(test_name, test_suite_name, service: nil, tags: {}, prevent_failure_suppression: false, no_auto_retry: false, &block)
           test_name = Utils::TestName.normalize(test_name)
           test_suite_name = Utils::TestName.normalize(test_suite_name)
 
@@ -139,6 +142,7 @@ module Datadog
 
           if block
             @context.trace_test(test_name, test_suite, service: service, tags: tags) do |test|
+              test.apply_automation_exclusions(prevent_failure_suppression: prevent_failure_suppression, no_auto_retry: no_auto_retry)
               on_test_started(test)
               res = block.call(test)
               on_test_finished(test)
@@ -146,6 +150,7 @@ module Datadog
             end
           else
             test = @context.trace_test(test_name, test_suite, service: service, tags: tags)
+            test.apply_automation_exclusions(prevent_failure_suppression: prevent_failure_suppression, no_auto_retry: no_auto_retry)
             on_test_started(test)
             test
           end

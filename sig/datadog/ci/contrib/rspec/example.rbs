@@ -30,6 +30,8 @@ module Datadog
             def datadog_test_suite_name: () -> String
             def datadog_test_parameters: () -> String
             def datadog_test_suite_source_file_path: () -> String
+            def datadog_prevent_failure_suppression?: () -> bool
+            def datadog_no_auto_retry?: () -> bool
             def datadog_unskippable?: () -> bool
             def datadog_context_ids: () -> Array[String]
             def datadog_source_file: () -> String?

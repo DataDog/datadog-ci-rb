@@ -87,7 +87,9 @@ module Datadog
               event.test_case.name,
               test_suite_name,
               tags: tags,
-              service: datadog_configuration[:service_name]
+              service: datadog_configuration[:service_name],
+              prevent_failure_suppression: event.test_case.match_tags?("@#{CI::Ext::Test::PREVENT_FAILURE_SUPPRESSION_OPTION}"),
+              no_auto_retry: event.test_case.match_tags?("@#{CI::Ext::Test::NO_AUTO_RETRY_OPTION}")
             )
             if event.test_case.match_tags?("@#{CI::Ext::Test::ITR_UNSKIPPABLE_OPTION}")
               test_span&.itr_unskippable!

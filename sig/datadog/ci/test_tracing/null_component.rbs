@@ -18,7 +18,7 @@ module Datadog
 
         def configure: (untyped _, untyped _) -> void
 
-        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (nil span) -> untyped } -> untyped
+        def trace_test: (String span_name, String test_suite_name, ?service: String?, ?tags: Hash[untyped, untyped], ?prevent_failure_suppression: bool, ?no_auto_retry: bool) ?{ (nil span) -> untyped } -> untyped
 
         def trace: (String span_name, ?type: String, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Span span) -> untyped } -> untyped
 

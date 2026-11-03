@@ -8,6 +8,65 @@ module Datadog
       module Minitest
         module Helpers
           module RunnableClassMethods
+            # Apply these declarations to named test methods, after defining them.
+            def datadog_prevent_failure_suppression(*test_names)
+              declarations = (@datadog_prevent_failure_suppression_tests ||= {})
+              test_names.each do |test_name|
+                declaration = dd_automation_exclusion_declaration(test_name)
+                declarations[test_name.to_s] = declaration if declaration
+              end
+              nil
+            end
+
+            def datadog_no_auto_retry(*test_names)
+              declarations = (@datadog_no_auto_retry_tests ||= {})
+              test_names.each do |test_name|
+                declaration = dd_automation_exclusion_declaration(test_name)
+                declarations[test_name.to_s] = declaration if declaration
+              end
+              nil
+            end
+
+            def dd_test_prevent_failure_suppression?(test_name, declaration = dd_automation_exclusion_declaration(test_name))
+              return false unless declaration
+              return true if @datadog_prevent_failure_suppression_tests&.fetch(test_name.to_s, nil) == declaration
+
+              # Class instance variables are not inherited. Search parents using
+              # the child's method identity so overrides cannot inherit exclusions.
+              # Steep cannot infer the exclusion API from respond_to?.
+              # @type var parent : untyped
+              parent = superclass
+              parent.respond_to?(:dd_test_prevent_failure_suppression?) && parent.dd_test_prevent_failure_suppression?(test_name, declaration)
+            end
+
+            def dd_test_no_auto_retry?(test_name, declaration = dd_automation_exclusion_declaration(test_name))
+              return false unless declaration
+              return true if @datadog_no_auto_retry_tests&.fetch(test_name.to_s, nil) == declaration
+
+              # Steep cannot infer the exclusion API from respond_to?.
+              # @type var parent : untyped
+              parent = superclass
+              parent.respond_to?(:dd_test_no_auto_retry?) && parent.dd_test_no_auto_retry?(test_name, declaration)
+            end
+
+            def dd_automation_exclusion_declaration(test_name)
+              unless method_defined?(test_name) || private_method_defined?(test_name)
+                Datadog.logger.warn("Ignoring Datadog automation exclusion for undefined test method #{self}##{test_name}; define the method before declaring exclusions")
+                return nil
+              end
+
+              declaration = instance_method(test_name)
+              # On Ruby 2.7, Child.instance_method(:test) != Parent.instance_method(:test)
+              # even when Child inherits the same implementation. Resolve through the
+              # defining owner so inherited methods match and replacements do not.
+              declaration.owner.instance_method(test_name)
+            end
+
+            def dd_clear_automation_exclusions(test_name)
+              @datadog_prevent_failure_suppression_tests&.delete(test_name.to_s)
+              @datadog_no_auto_retry_tests&.delete(test_name.to_s)
+            end
+
             def datadog_itr_unskippable(*args)
               if args.nil? || args.empty?
                 @datadog_itr_unskippable_suite = true

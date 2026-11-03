@@ -481,7 +481,7 @@ RSpec.describe "Cucumber instrumentation" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans).to have(8).items
+      expect(test_suite_spans).to have(9).items
       if cucumber_12_or_above
         expect(passing_test_suite).to have_fail_status
       else
@@ -1086,6 +1086,23 @@ RSpec.describe "Cucumber instrumentation" do
         expect(test_session_span).to have_pass_status
       end
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
+    end
+  end
+  context "with test automation exclusions" do
+    let(:feature_file_to_run) { "automation_exclusions.feature" }
+    let(:expected_test_run_code) { failed_test_run_code }
+    let(:enable_test_management) { true }
+    let(:enable_retries_failed) { true }
+    let(:test_properties_hash) { Hash.new({"quarantined" => true, "disabled" => true, "attempt_to_fix" => true}.freeze) }
+
+    it "keeps the protected scenario failure blocking without automatic retries" do
+      expect(test_spans.size).to eq(3)
+      expect(test_spans).to all(have_fail_status)
+      expect(first_test_span.get_tag("test.test_management.is_test_disabled")).to eq("true")
+      expect(first_test_span.get_tag("test.test_management.is_quarantined")).to eq("true")
+      expect(first_test_span.get_tag("test.test_management.prevent_failure_suppression")).to eq("true")
+      expect(first_test_span.get_tag("test.test_management.no_auto_retry")).to eq("true")
+      expect(first_test_span.get_tag("test.test_management.attempt_to_fix_passed")).to be_nil
     end
   end
 end

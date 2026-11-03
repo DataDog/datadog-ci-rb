@@ -145,7 +145,9 @@ module Datadog
                 name,
                 test_suite_name,
                 tags: tags,
-                service: datadog_configuration[:service_name]
+                service: datadog_configuration[:service_name],
+                prevent_failure_suppression: self.class.dd_test_prevent_failure_suppression?(name),
+                no_auto_retry: self.class.dd_test_no_auto_retry?(name)
               )
               test_span&.itr_unskippable! if self.class.dd_suite_unskippable? || self.class.dd_test_unskippable?(name)
 
@@ -236,6 +238,7 @@ module Datadog
 
           module ClassMethods
             def method_added(method_name)
+              dd_clear_automation_exclusions(method_name) if respond_to?(:dd_clear_automation_exclusions)
               RunMethodCapture.capture_concrete_pre_datadog_run!(Test, self, InstanceMethods) if method_name == :run
             ensure
               super

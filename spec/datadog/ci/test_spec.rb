@@ -14,6 +14,8 @@ RSpec.describe Datadog::CI::Test do
   before do
     allow_any_instance_of(described_class).to receive(:test_tracing).and_return(test_tracing)
     allow_any_instance_of(described_class).to receive(:test_impact_analysis).and_return(test_impact_analysis)
+    allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_PREVENT_FAILURE_SUPPRESSION).and_return(nil)
+    allow(tracer_span).to receive(:get_tag).with(Datadog::CI::Ext::Test::TAG_NO_AUTO_RETRY).and_return(nil)
   end
 
   describe "#name" do

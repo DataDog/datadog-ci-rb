@@ -85,6 +85,8 @@ module Datadog
         end
 
         def build_driver(test_span)
+          return Driver::NoRetry.new if test_span.no_auto_retry?
+
           @mutex.synchronize do
             # find the first strategy that covers the test span and let it build the driver
             strategy = @retry_strategies.find { |strategy| strategy.covers?(test_span) }
@@ -139,11 +141,13 @@ module Datadog
         end
 
         def tag_last_retry(test_span)
+          return if test_span&.no_auto_retry?
+
           test_span&.set_internal_tag(Ext::Test::TAG_HAS_FAILED_ALL_RETRIES, "true") if test_span&.all_executions_failed?
 
           # if we are attempting to fix the test and all retries passed, we indicate that the fix might have worked
           # otherwise we send "false" to show that it didn't work
-          test_span&.set_internal_tag(Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, test_span&.all_executions_passed?.to_s) if test_span&.attempt_to_fix?
+          test_span&.set_internal_tag(Ext::Test::TAG_ATTEMPT_TO_FIX_PASSED, test_span&.all_executions_passed?.to_s) if test_span&.should_retry_attempt_to_fix?
         end
 
         def should_retry?
