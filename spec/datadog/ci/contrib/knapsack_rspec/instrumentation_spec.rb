@@ -139,10 +139,12 @@ RSpec.describe "Knapsack Pro runner when Datadog::CI is configured during the kn
 
   context "when the queue API becomes unavailable after a completed batch and fallback is disabled" do
     let(:batch_connection) do
+      path = "./spec/datadog/ci/contrib/knapsack_rspec/suite_under_test/some_test_rspec.rb[1:1:1]"
       instance_double(
         KnapsackPro::Client::Connection,
         # Assign only the passing example, as Knapsack's split-by-example mode does.
-        call: {"test_files" => [{"path" => "./spec/datadog/ci/contrib/knapsack_rspec/suite_under_test/some_test_rspec.rb[1:1:1]"}]},
+        # Knapsack Pro 11 renamed the queue response field from test_files to paths.
+        call: {"test_files" => [{"path" => path}], "paths" => [path]},
         success?: true,
         errors?: false,
         api_code: nil
