@@ -25,6 +25,9 @@ TEST_METADATA = {
   "main" => {
     "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 3.4 / ✅ 4.0"
   },
+  "ddcov" => {
+    "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0"
+  },
   "git" => {
     "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0"
   },
@@ -165,8 +168,15 @@ end
 namespace :spec do
   desc "" # "Explicitly hiding from `rake -T`"
   RSpec::Core::RakeTask.new(:main) do |t, args|
-    t.pattern = "spec/datadog/**/*_spec.rb,spec/ddcov/**/*_spec.rb"
+    t.pattern = "spec/datadog/**/*_spec.rb"
     t.exclude_pattern = "spec/datadog/**/contrib/**/*_spec.rb,spec/datadog/**/git/**/*_spec.rb"
+    t.rspec_opts = args.to_a.join(" ")
+  end
+
+  # Run GC stress on a fresh heap, separate from the main suite.
+  desc ""
+  RSpec::Core::RakeTask.new(:ddcov) do |t, args|
+    t.pattern = "spec/ddcov/**/*_spec.rb"
     t.rspec_opts = args.to_a.join(" ")
   end
 

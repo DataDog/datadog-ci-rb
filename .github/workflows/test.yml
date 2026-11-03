@@ -104,7 +104,7 @@ jobs:
           pattern: junit-*
           merge-multiple: true
       - name: Format file paths
-        run: sed -i 's;file="./;file=";g' tmp/rspec/*.xml
+        run: sed -i 's;file="./;file=";g' tmp/rspec/*/*.xml
 
       - name: Download all simplecov reports
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -138,7 +138,14 @@ jobs:
       - name: Upload junit reports to Datadog
         env:
           DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
-        run: datadog-ci junit upload --verbose tmp/rspec/
+        run: |
+          for reports in tmp/rspec/*/; do
+            runtime=$(basename "$reports")
+            datadog-ci junit upload --verbose \
+              --tags "runtime.name:${runtime%-*}" \
+              --tags "runtime.version:${runtime##*-}" \
+              "$reports"
+          done
 
       - name: Upload simplecov reports to Datadog
         env:
