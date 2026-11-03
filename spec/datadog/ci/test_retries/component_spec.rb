@@ -25,7 +25,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
   let(:retry_new_tests_percentage_limit) { 30 }
   let(:retry_new_tests_max_attempts) { 5 }
   let(:retry_flaky_fixed_tests_enabled) { true }
-  let(:retry_flaky_fixed_tests_max_attempts) { 42 }
+  let(:retry_flaky_fixed_tests_max_attempts) { nil }
   let(:dynamic_atr_enabled) { false }
   let(:dynamic_atr_buckets) { nil }
 
@@ -225,6 +225,39 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         end
       end
 
+      [3, 20].each do |count|
+        context "with an explicit local retry count of #{count}" do
+          let(:test_attempt_to_fix) { true }
+          let(:retry_flaky_fixed_tests_max_attempts) { count }
+
+          it "keeps the local count over the remote count" do
+            expect(subject.max_attempts).to eq(count)
+          end
+        end
+      end
+
+      context "without a local or remote retry count" do
+        let(:test_attempt_to_fix) { true }
+        let(:remote_attempt_to_fix_retries_count) { nil }
+
+        it "uses the default of twenty retries" do
+          expect(subject.max_attempts).to eq(20)
+        end
+      end
+
+      context "when the remote count changes between sessions" do
+        let(:test_attempt_to_fix) { true }
+
+        it "uses the new remote count" do
+          expect(component.build_driver(test_span).max_attempts).to eq(remote_attempt_to_fix_retries_count)
+          allow(library_settings).to receive(:attempt_to_fix_retries_count).and_return(2)
+
+          component.configure(library_settings, test_session)
+
+          expect(component.build_driver(test_span).max_attempts).to eq(2)
+        end
+      end
+
       context "when test is not attempted to be fixed" do
         it { is_expected.to be_a(Datadog::CI::TestRetries::Driver::NoRetry) }
       end
@@ -412,6 +445,52 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         suite&.finish
         test_module&.finish
         session&.finish
+      end
+    end
+  end
+
+  describe "Attempt to Fix configuration precedence" do
+    include_context "CI mode activated" do
+      let(:test_management_enabled) { true }
+      let(:attempt_to_fix_retries_count) { remote_count }
+    end
+
+    let(:component) { Datadog.send(:components).test_retries }
+
+    {
+      "remote count without an override" => [nil, 2, 3],
+      "local override" => ["3", 2, 4],
+      "explicit local value of twenty" => ["20", 2, 21],
+      "neither local nor remote count" => [nil, nil, 21]
+    }.each do |description, (local_count, backend_count, expected_executions)|
+      context "with #{description}" do
+        let(:remote_count) { backend_count }
+
+        around do |example|
+          ClimateControl.modify(Datadog::CI::Ext::Settings::ENV_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES => local_count) do
+            example.run
+          end
+        end
+
+        it "resolves the retry count through normal component construction" do
+          test_tracing.start_test_session(estimated_total_tests_count: 100)
+          test_tracing.start_test_module("module")
+          test_tracing.start_test_suite("suite")
+          executions = 0
+
+          component.with_retries do
+            test_tracing.trace_test("test", "suite", tags: {"test.test_management.is_attempt_to_fix" => "true"}) do |test|
+              executions += 1
+              test.passed!
+            end
+          end
+
+          expect(executions).to eq(expected_executions)
+        ensure
+          test_tracing.active_test_suite(nil)&.finish
+          test_tracing.active_test_module&.finish
+          test_tracing.active_test_session&.finish
+        end
       end
     end
   end

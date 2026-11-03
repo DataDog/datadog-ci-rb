@@ -191,9 +191,9 @@ module Datadog
               end
 
               option :test_management_attempt_to_fix_retries_count do |o|
-                o.type :int
+                o.type :int, nilable: true
                 o.env CI::Ext::Settings::ENV_TEST_MANAGEMENT_ATTEMPT_TO_FIX_RETRIES
-                o.default 20
+                o.default nil
               end
 
               option :agentless_logs_submission_enabled do |o|
