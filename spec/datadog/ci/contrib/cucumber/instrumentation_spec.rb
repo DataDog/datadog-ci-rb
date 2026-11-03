@@ -863,22 +863,34 @@ RSpec.describe "Cucumber instrumentation" do
       }
     end
 
-    it "skips the test without failing the build" do
-      expect(test_spans).to have(1).item
+    it "executes the quarantined failure without failing the build" do
+      expect(test_spans.length).to eq(enable_retries_failed ? 6 : 1)
 
       quarantined_test_span = test_spans.first
 
-      expect(quarantined_test_span).to have_skip_status
-      expect(quarantined_test_span).to have_test_tag(:skip_reason, "Flaky test is disabled by Datadog")
+      expect(quarantined_test_span).to have_fail_status
+      expect(quarantined_test_span).to have_test_tag(:final_status, "pass")
+      expect(cucumber_execution_events).to include(:failure_step)
       expect(quarantined_test_span).to have_test_tag(:is_quarantined)
       expect(quarantined_test_span).not_to have_test_tag(:is_test_disabled)
       expect(quarantined_test_span).not_to have_test_tag(:is_attempt_to_fix)
 
       expect(test_suite_spans).to have(1).item
-      expect(test_suite_spans.first).to have_skip_status
+      expect(test_suite_spans.first).to have_pass_status
 
       expect(test_session_span).to have_pass_status
       expect(test_session_span).to have_test_tag(:test_management_enabled, "true")
+    end
+
+    context "with ATR enabled" do
+      let(:enable_retries_failed) { true }
+
+      it "retries the quarantined scenario and suppresses every failed attempt" do
+        expect(test_spans.length).to eq(6)
+        expect(test_spans).to all(have_fail_status)
+        expect(test_spans.last).to have_test_tag(:final_status, "pass")
+        expect(test_session_span).to have_pass_status
+      end
     end
   end
 
