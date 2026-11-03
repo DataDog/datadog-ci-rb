@@ -672,6 +672,18 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
             it { is_expected.to eq attempts.to_i }
           end
+
+          context "is negative" do
+            let(:attempts) { "-1" }
+
+            it { is_expected.to eq 5 }
+          end
+
+          context "is zero" do
+            let(:attempts) { "0" }
+
+            it { is_expected.to eq 0 }
+          end
         end
       end
 
