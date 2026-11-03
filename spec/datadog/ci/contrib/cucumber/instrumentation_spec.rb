@@ -481,7 +481,7 @@ RSpec.describe "Cucumber instrumentation" do
     let(:failing_test_suite) { test_suite_spans.find { |span| span.name =~ /failing/ } }
 
     it "creates a test suite span for each feature" do
-      expect(test_suite_spans).to have(9).items
+      expect(test_suite_spans).to have(10).items
       if cucumber_12_or_above
         expect(passing_test_suite).to have_fail_status
       else
@@ -1102,6 +1102,42 @@ RSpec.describe "Cucumber instrumentation" do
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
+
+  context "with same-named scenarios" do
+    let(:feature_file_to_run) { "same_named_scenarios.feature" }
+    let(:expected_test_run_code) { failed_test_run_code }
+    let(:failed_executions) { 1 }
+
+    shared_examples "preserves the distinct scenario failure" do
+      it "keeps the command and session failed after the later scenario passes" do
+        expect(test_spans.size).to eq(failed_executions + 1)
+        expect(test_spans.map { |span| span.get_tag("test.name") }.uniq).to eq(["same name"])
+        expect(test_spans.map { |span| span.get_tag("test.source.start") }.uniq.size).to eq(2)
+        expect(test_spans.count { |span| span.get_tag("test.status") == "fail" }).to eq(failed_executions)
+        expect(test_spans.last).to have_pass_status
+        expect(existing_runtime.failure?).to be true
+        expect(test_session_span).to have_fail_status
+      end
+    end
+
+    it_behaves_like "preserves the distinct scenario failure"
+
+    context "with automatic test retries" do
+      let(:enable_retries_failed) { true }
+      let(:single_test_retries_count) { 1 }
+      let(:failed_executions) { 2 }
+
+      it_behaves_like "preserves the distinct scenario failure"
+    end
+
+    context "with Cucumber's built in retries" do
+      let(:args) { super() + ["--retry", "1"] }
+      let(:failed_executions) { 2 }
+
+      it_behaves_like "preserves the distinct scenario failure"
+    end
+  end
+
   context "with a failure followed by repeated passing scenarios" do
     let(:feature_file_to_run) { "automation_exclusions.feature" }
     let(:args) { super() + ["spec/datadog/ci/contrib/cucumber/features/passing.feature"] }
@@ -1146,7 +1182,11 @@ RSpec.describe Datadog::CI::Contrib::Cucumber::Formatter do
     test_tracing.start_test_session
     test_tracing.start_test_suite("suite")
     test_tracing.trace_test("passing test", "suite")
-    event = double(:event, result: double(:result, passed?: true))
+    event = double(
+      :event,
+      result: double(:result, passed?: true),
+      test_case: double(:test_case, location: double(:location, file: "test.feature", line: 1))
+    )
     formatter.on_test_case_finished(event)
     expect(formatter.failure?).to be false
 

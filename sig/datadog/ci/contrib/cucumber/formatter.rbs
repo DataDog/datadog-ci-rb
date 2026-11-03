@@ -10,7 +10,7 @@ module Datadog
           @current_test_suite: Datadog::CI::TestSuite?
 
           @failed_test_suites_count: Integer
-          @test_results: Hash[String, String]
+          @test_results: Hash[[String, Integer], String]
           @incomplete_results: bool
 
           attr_reader config: untyped

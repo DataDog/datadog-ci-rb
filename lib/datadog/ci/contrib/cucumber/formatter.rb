@@ -113,7 +113,8 @@ module Datadog
 
             finish_span(test_span, event.result)
             final_status = test_span.get_tag(CI::Ext::Test::TAG_FINAL_STATUS)
-            @test_results[test_span.datadog_test_id] = final_status if final_status
+            location = event.test_case.location
+            @test_results[[location.file, location.line]] = final_status if final_status
           end
 
           def on_test_step_started(event)
