@@ -33,16 +33,20 @@ module Datadog
 
               # Class instance variables are not inherited. Search parents using
               # the child's method identity so overrides cannot inherit exclusions.
+              # Steep cannot infer the exclusion API from respond_to?.
+              # @type var parent : untyped
               parent = superclass
-              parent.is_a?(RunnableClassMethods) && parent.dd_test_prevent_failure_suppression?(test_name, declaration)
+              parent.respond_to?(:dd_test_prevent_failure_suppression?) && parent.dd_test_prevent_failure_suppression?(test_name, declaration)
             end
 
             def dd_test_no_auto_retry?(test_name, declaration = dd_automation_exclusion_declaration(test_name))
               return false unless declaration
               return true if @datadog_no_auto_retry_tests&.fetch(test_name.to_s, nil) == declaration
 
+              # Steep cannot infer the exclusion API from respond_to?.
+              # @type var parent : untyped
               parent = superclass
-              parent.is_a?(RunnableClassMethods) && parent.dd_test_no_auto_retry?(test_name, declaration)
+              parent.respond_to?(:dd_test_no_auto_retry?) && parent.dd_test_no_auto_retry?(test_name, declaration)
             end
 
             def dd_automation_exclusion_declaration(test_name)

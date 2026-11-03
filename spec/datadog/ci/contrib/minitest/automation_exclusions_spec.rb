@@ -117,6 +117,26 @@ RSpec.describe "Minitest test automation exclusions" do
     expect(grandchild.dd_test_no_auto_retry?("test_example")).to be(false)
   end
 
+  it "delegates to a parent implementing exclusion queries without the helper module" do
+    parent = Class.new do
+      def test_example
+      end
+
+      def self.dd_test_prevent_failure_suppression?(test_name, declaration)
+        test_name == "test_example" && declaration == instance_method(test_name)
+      end
+
+      def self.dd_test_no_auto_retry?(test_name, declaration)
+        test_name == "test_example" && declaration == instance_method(test_name)
+      end
+    end
+    child = Class.new(parent)
+    child.extend(Datadog::CI::Contrib::Minitest::Helpers::RunnableClassMethods)
+
+    expect(child.dd_test_prevent_failure_suppression?("test_example")).to be(true)
+    expect(child.dd_test_no_auto_retry?("test_example")).to be(true)
+  end
+
   it "keeps aliases of the same method independently annotated" do
     klass = Class.new(Minitest::Test) do
       def test_example
