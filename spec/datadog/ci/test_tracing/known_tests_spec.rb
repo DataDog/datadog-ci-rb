@@ -5,7 +5,6 @@ require_relative "../../../../lib/datadog/ci/test_tracing/known_tests"
 RSpec.describe Datadog::CI::TestTracing::KnownTests do
   include_context "Telemetry spy"
 
-  let(:api) { spy("api") }
   let(:dd_env) { "ci" }
   let(:config_tags) { {} }
 
@@ -13,6 +12,8 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
 
   describe "#fetch" do
     subject { client.fetch(test_session) }
+
+    let(:api) { spy("api", api_request: default_http_response) }
 
     # Default http_response stub for tests that call fetch but don't care about response content
     let(:default_http_response) do
@@ -25,10 +26,6 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
         gzipped_content?: false,
         response_size: 0
       )
-    end
-
-    before do
-      allow(api).to receive(:api_request).and_return(default_http_response)
     end
 
     let(:service) { "service" }

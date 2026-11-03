@@ -1,5 +1,5 @@
-<% require 'digest' %>
+<% require 'bundler'; require 'digest' %>
 --require spec_helper
 --format documentation
 --format RspecJunitFormatter
---out <%= "tmp/rspec/" + Digest::MD5.hexdigest(ENV['BUNDLE_GEMFILE'] + ARGV.join) + ".xml" %>
+--out <%= "tmp/rspec/#{RUBY_ENGINE}-#{RUBY_ENGINE_VERSION}/" + Digest::MD5.hexdigest([Bundler.default_gemfile.to_s, *ARGV].join("\0")) + ".xml" %>
