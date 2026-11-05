@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2ebed7f1abf68eec554291cf7ef5eb0573b33894
+  revision: a53f98d980a3c96d1b579e2df2596df19e55612e
   branch: master
   specs:
     datadog (2.49.0.dev)
@@ -253,7 +253,7 @@ GEM
       tsort (>= 0.2)
       zeitwerk (~> 2.6)
     rake (13.4.2)
-    rake-compiler (1.3.2)
+    rake-compiler (1.3.3)
       rake
     rbs (4.2.0)
       logger
@@ -450,7 +450,7 @@ CHECKSUMS
   rails-html-sanitizer (1.7.2) sha256=a21ef45b7a6639fc8e2282473c547514cb86ae271616162a946bf89148fa2424
   railties (7.2.4) sha256=e4b754edc7b42c9f3d6cc3048832efe634d727aa59093a03bf8a78096917f121
   rake (13.4.2) sha256=cb825b2bd5f1f8e91ca37bddb4b9aaf345551b4731da62949be002fa89283701
-  rake-compiler (1.3.2) sha256=12fed13fa07f9caee829599935e0332ba76e2047a617f8f7918a222d68427760
+  rake-compiler (1.3.3) sha256=8ed1a2cebd91ef02f2fd8285f85009d5b066ba219a1c03c5739c428ee84ceff9
   rbs (4.2.0) sha256=51f7b886dcc05bc09e10b901daa6a81829f6adc03101d6ca9ea4aac6103e0674
   rdoc (8.1.0) sha256=befc37880a5cfd36dcb176c748b5fd5ee39dd3536a75e81824e4972ce230f60a
   reline (0.7.0) sha256=5b012d8e55dbf9d450f12bde2cf7d15ff546ae80b3f8f3b30e570d431815583d
