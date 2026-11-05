@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 2ebed7f1abf68eec554291cf7ef5eb0573b33894
+  revision: a53f98d980a3c96d1b579e2df2596df19e55612e
   branch: master
   specs:
     datadog (2.49.0.dev)
@@ -231,7 +231,7 @@ GEM
       tsort (>= 0.2)
       zeitwerk (~> 2.6)
     rake (13.4.2)
-    rake-compiler (1.3.2)
+    rake-compiler (1.3.3)
       rake
     rdoc (7.2.0)
       erb
