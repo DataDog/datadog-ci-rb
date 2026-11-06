@@ -109,7 +109,6 @@ RSpec.describe Datadog::CI::AsyncWriter do
 
         it "backs off" do
           perform
-          sent.pop
 
           expect(try_wait_until { writer.loop_wait_time > writer.loop_base_interval }).to be true
         end
@@ -120,10 +119,12 @@ RSpec.describe Datadog::CI::AsyncWriter do
 
         it "doesn't back off" do
           perform
-          sent.pop
+          try_wait_until { sent.size == 1 }
+          # The worker sends the second event once it has handled the first response.
+          writer.write(double("event"))
+          try_wait_until { sent.size == 2 }
 
-          expect { try_wait_until(attempts: 5, backoff: 0.05) { writer.loop_wait_time > writer.loop_base_interval } }
-            .to raise_error("Wait time exhausted!")
+          expect(writer.loop_wait_time).to eq(writer.loop_base_interval)
         end
       end
     end
