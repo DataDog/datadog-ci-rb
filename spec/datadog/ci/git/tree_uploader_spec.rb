@@ -79,6 +79,23 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
         end
       end
 
+      context "when a selected SHA exists but local history is empty" do
+        let(:latest_commits) { [] }
+        let(:commit_sha) { "a" * 40 }
+
+        [false, true].each do |force|
+          context "with force_unshallow set to #{force}" do
+            let(:force_unshallow) { force }
+
+            it "does not search commits or generate packfiles" do
+              expect(search_commits).not_to receive(:call)
+              expect(Datadog::CI::Git::Packfiles).not_to receive(:generate)
+              subject
+            end
+          end
+        end
+      end
+
       context "when the backend commits search fails" do
         before do
           expect(search_commits).to receive(:call).and_raise(Datadog::CI::Git::SearchCommits::ApiError, "test error")

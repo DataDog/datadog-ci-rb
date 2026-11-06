@@ -42,7 +42,7 @@ module Datadog
 
           latest_commits = LocalRepository.git_commits
           head_commit = commit_sha || latest_commits&.first
-          if head_commit.nil?
+          if head_commit.nil? || latest_commits.nil? || latest_commits.empty?
             Datadog.logger.debug("Got empty latest commits list, aborting git upload")
             return
           end
