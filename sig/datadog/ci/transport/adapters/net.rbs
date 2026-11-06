@@ -68,6 +68,8 @@ module Datadog
 
             def unexpected_error?: () -> bool
 
+            def system_error?: () -> bool
+
             def response_size: () -> Integer
 
             def trace_count: () -> 0

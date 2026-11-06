@@ -146,6 +146,11 @@ module Datadog
               false
             end
 
+            # Whether the request failed with a server error or an unexpected transport error.
+            def system_error?
+              server_error? || unexpected_error?
+            end
+
             def telemetry_error_type
               return nil if ok?
 

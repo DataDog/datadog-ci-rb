@@ -88,6 +88,10 @@ module Datadog
           response.request_size = payload.bytesize
           response.duration_ms = duration_ms
 
+          if response.server_error?
+            Datadog.logger.warn("Failed to send request to #{path} with server error #{response.code}")
+          end
+
           response
         end
 

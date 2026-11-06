@@ -124,6 +124,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         expect(response.response_size).to eq(response_payload.bytesize)
         expect(response.duration_ms).to be > 0
         expect(response.telemetry_error_type).to be_nil
+        expect(response.system_error?).to be false
       end
 
       context "when accepting gzipped response" do
@@ -176,6 +177,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         it "produces a response" do
           expect(response).not_to be_ok
           expect(response.code).to eq(400)
+          expect(response.system_error?).to be false
           expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::STATUS_CODE)
         end
       end
@@ -233,6 +235,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
         context "when succeeds after retries" do
           before do
+            expect(Datadog.logger).not_to receive(:warn)
             expect(adapter).to receive(:call).and_return(response_503).exactly(described_class::MAX_RETRIES).times
             expect(adapter).to receive(:call).and_return(http_response)
           end
@@ -250,9 +253,25 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           end
 
           it "returns failed response" do
+            expect(Datadog.logger).to receive(:warn).with("Failed to send request to #{path} with server error 503").once
+
             is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
 
             expect(response.code).to eq(503)
+            expect(response.system_error?).to be true
+          end
+        end
+
+        context "when the retry time limit is exceeded" do
+          before do
+            allow(Datadog::Core::Utils::Time).to receive(:get_time).and_return(0, 0, 51)
+            expect(adapter).to receive(:call).and_return(response_503).once
+          end
+
+          it "logs the final server error once" do
+            expect(Datadog.logger).to receive(:warn).with("Failed to send request to #{path} with server error 503").once
+
+            expect(response).to eq(response_503)
           end
         end
       end
@@ -291,6 +310,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
             expect(response).to be_a(described_class::ErrorResponse)
             expect(response.error).to be_kind_of(error_class)
             expect(response.unexpected_error?).to be false
+            expect(response.system_error?).to be false
           end
         end
 
@@ -316,6 +336,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
             expect(response).to be_a(described_class::ErrorResponse)
             expect(response.error).to be_kind_of(error_class)
             expect(response.unexpected_error?).to be true
+            expect(response.system_error?).to be true
             expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::NETWORK)
           end
         end
@@ -356,6 +377,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
               expect(response).to be_a(described_class::ErrorResponse)
               expect(response.error).to be_kind_of(error_class)
               expect(response.unexpected_error?).to be false
+              expect(response.system_error?).to be false
             end
           end
         end
