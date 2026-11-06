@@ -18,7 +18,8 @@ module Datadog
           :port,
           :ssl,
           :timeout,
-          :compress
+          :compress,
+          :uds_path
 
         DEFAULT_TIMEOUT = 30
         MAX_RETRIES = 3
@@ -40,9 +41,10 @@ module Datadog
           SocketError        # DNS/network issues
         ].freeze
 
-        def initialize(host:, port:, timeout: DEFAULT_TIMEOUT, ssl: true, compress: false)
+        def initialize(host:, port:, timeout: DEFAULT_TIMEOUT, ssl: true, compress: false, uds_path: nil)
           @host = host
           @port = port
+          @uds_path = uds_path
           @timeout = timeout
           @ssl = ssl.nil? || ssl
           @compress = compress.nil? ? false : compress
@@ -70,7 +72,7 @@ module Datadog
             end
 
             Datadog.logger.debug do
-              "Sending #{verb} request: host=#{host}; port=#{port}; ssl_enabled=#{ssl}; " \
+              "Sending #{verb} request: host=#{host}; port=#{port}; uds_path=#{uds_path}; ssl_enabled=#{ssl}; " \
                 "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
             end
 
@@ -153,7 +155,7 @@ module Datadog
 
         def adapter
           @adapter ||= Datadog::CI::Transport::Adapters::Net.new(
-            hostname: host, port: port, ssl: ssl, timeout_seconds: timeout
+            hostname: host, port: port, ssl: ssl, timeout_seconds: timeout, uds_path: uds_path
           )
         end
 

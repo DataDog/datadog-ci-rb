@@ -18,7 +18,8 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           hostname: transport.host,
           port: transport.port,
           timeout_seconds: transport.timeout,
-          ssl: transport.ssl
+          ssl: transport.ssl,
+          uds_path: transport.uds_path
         ).and_return(adapter)
     end
   end
@@ -32,9 +33,16 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           host: host,
           port: port,
           timeout: Datadog::CI::Transport::HTTP::DEFAULT_TIMEOUT,
-          ssl: true
+          ssl: true,
+          uds_path: nil
         )
       end
+    end
+
+    context "given a :uds_path option" do
+      let(:options) { {uds_path: "/var/run/datadog/apm.socket"} }
+
+      it { is_expected.to have_attributes(uds_path: "/var/run/datadog/apm.socket") }
     end
 
     context "given a :port option" do

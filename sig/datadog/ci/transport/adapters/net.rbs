@@ -11,6 +11,8 @@ module Datadog
 
           @ssl: bool
 
+          @uds_path: String?
+
           attr_reader hostname: String
 
           attr_reader port: Integer
@@ -19,7 +21,9 @@ module Datadog
 
           attr_reader ssl: bool
 
-          def initialize: (hostname: String, port: Integer, ssl: bool, timeout_seconds: Integer) -> void
+          attr_reader uds_path: String?
+
+          def initialize: (hostname: String, port: Integer, ssl: bool, timeout_seconds: Integer, ?uds_path: String?) -> void
 
           def open: () { (Net::HTTP http) -> ::Net::HTTPResponse } -> ::Net::HTTPResponse
 

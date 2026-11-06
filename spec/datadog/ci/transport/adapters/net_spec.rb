@@ -1,5 +1,7 @@
 require "webmock"
 require "socket"
+require "tmpdir"
+require "fileutils"
 
 require_relative "../../../../../lib/datadog/ci/transport/adapters/net"
 
@@ -112,6 +114,57 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
       it "makes a request and fails" do
         expect { call }.to raise_error(expected_error)
       end
+    end
+  end
+
+  context "with a uds_path" do
+    subject(:adapter) do
+      described_class.new(hostname: nil, port: nil, ssl: false, timeout_seconds: 5, uds_path: uds_path)
+    end
+
+    let(:socket_dir) { Dir.mktmpdir("datadog-ci-") }
+    let(:uds_path) { File.join(socket_dir, "apm.socket") }
+    let(:server) { UNIXServer.new(uds_path) }
+    let(:received) { Queue.new }
+    let!(:server_thread) do
+      listening = server
+      Thread.new do
+        connection = listening.accept
+        request_line = connection.gets
+        headers = {}
+        while (line = connection.gets) && line != "\r\n"
+          name, value = line.split(":", 2)
+          headers[name.downcase] = value.strip
+        end
+        body = connection.read(headers["content-length"].to_i)
+        received << [request_line, headers, body]
+        connection.write("HTTP/1.1 202 Accepted\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}")
+        connection.close
+      end
+    end
+
+    before do
+      WebMock.enable!
+      WebMock.disable_net_connect!
+    end
+
+    after do
+      WebMock.allow_net_connect!
+      WebMock.disable!
+      server_thread.join(5)
+      server.close
+      FileUtils.remove_entry(socket_dir)
+    end
+
+    it "sends the request over the socket, out of WebMock's reach" do
+      response = adapter.call(verb: "post", path: "/evp_proxy/v4/api/v2/citestcycle", payload: "{}", headers: {})
+
+      expect(response.code).to eq(202)
+      expect(response.payload).to eq("{}")
+      request_line, headers, body = received.pop
+      expect(request_line).to eq("POST /evp_proxy/v4/api/v2/citestcycle HTTP/1.1\r\n")
+      expect(headers["host"]).to eq("localhost")
+      expect(body).to eq("{}")
     end
   end
 
