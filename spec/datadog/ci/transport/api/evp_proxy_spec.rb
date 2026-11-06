@@ -50,7 +50,8 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
         port: agent_settings.port,
         ssl: agent_settings.ssl,
         timeout: agent_settings.timeout_seconds,
-        compress: false
+        compress: false,
+        uds_path: agent_settings.uds_path
       ).and_return(intake_http, api_http)
     end
 
@@ -277,7 +278,8 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
         port: agent_settings.port,
         ssl: agent_settings.ssl,
         timeout: agent_settings.timeout_seconds,
-        compress: true
+        compress: true,
+        uds_path: agent_settings.uds_path
       ).and_return(intake_http)
 
       expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
@@ -285,7 +287,8 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
         port: agent_settings.port,
         ssl: agent_settings.ssl,
         timeout: agent_settings.timeout_seconds,
-        compress: false
+        compress: false,
+        uds_path: agent_settings.uds_path
       ).and_return(api_http)
     end
 
@@ -313,6 +316,41 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
 
         subject.api_request(path: "path", payload: "payload")
       end
+    end
+  end
+
+  context "with an agent on a Unix domain socket" do
+    let(:path_prefix) { Datadog::CI::Ext::Transport::EVP_PROXY_V4_PATH_PREFIX }
+    let(:agent_settings) do
+      Datadog::Core::Configuration::AgentSettings.new(
+        adapter: :unix,
+        ssl: false,
+        hostname: nil,
+        port: nil,
+        uds_path: "/var/run/datadog/apm.socket",
+        timeout_seconds: 42
+      )
+    end
+
+    it "sends its requests to the socket" do
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: nil,
+        port: nil,
+        ssl: false,
+        timeout: 42,
+        compress: true,
+        uds_path: "/var/run/datadog/apm.socket"
+      ).and_return(intake_http)
+      expect(Datadog::CI::Transport::HTTP).to receive(:new).with(
+        host: nil,
+        port: nil,
+        ssl: false,
+        timeout: 42,
+        compress: false,
+        uds_path: "/var/run/datadog/apm.socket"
+      ).and_return(api_http)
+
+      subject
     end
   end
 end

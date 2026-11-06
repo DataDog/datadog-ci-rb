@@ -4,8 +4,25 @@ module Datadog
       module Adapters
         module NetHttpClient
           def self.original_net_http: () -> singleton(Net::HTTP)
+
+          def self.unix_socket_net_http: (String uds_path) -> Net::HTTP
+
+          module UnixSocketConnection : Net::HTTP
+            attr_accessor uds_path: String
+
+            private
+
+            def connect: () -> void
+          end
         end
       end
     end
+  end
+end
+
+# The constructor of net-protocol's Net::BufferedIO, which rbs's net-protocol signatures leave out.
+module Net
+  class BufferedIO
+    def initialize: (BasicSocket io, ?read_timeout: Numeric?, ?write_timeout: Numeric?, ?continue_timeout: Numeric?) -> void
   end
 end

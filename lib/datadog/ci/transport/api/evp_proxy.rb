@@ -94,7 +94,8 @@ module Datadog
               port: agent_settings.port,
               ssl: agent_settings.ssl,
               timeout: agent_settings.timeout_seconds,
-              compress: compress
+              compress: compress,
+              uds_path: agent_settings.uds_path
             )
           end
         end

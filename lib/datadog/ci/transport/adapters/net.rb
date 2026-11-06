@@ -18,19 +18,28 @@ module Datadog
             :hostname,
             :port,
             :timeout,
-            :ssl
+            :ssl,
+            :uds_path
 
-          def initialize(hostname:, port:, ssl:, timeout_seconds:)
+          # With uds_path, connects to the Unix domain socket at that path
+          # instead of hostname and port.
+          def initialize(hostname:, port:, ssl:, timeout_seconds:, uds_path: nil)
             @hostname = hostname
             @port = port
             @timeout = timeout_seconds
             @ssl = ssl
+            @uds_path = uds_path
           end
 
           def open(&block)
-            req = NetHttpClient.original_net_http.new(hostname, port)
+            path = uds_path
+            req = if path
+              NetHttpClient.unix_socket_net_http(path)
+            else
+              # Without a socket, the agent settings or the agentless intake give a host.
+              NetHttpClient.original_net_http.new(_ = hostname, port).tap { |http| http.use_ssl = ssl }
+            end
 
-            req.use_ssl = ssl
             req.open_timeout = req.read_timeout = timeout
 
             req.start(&block)

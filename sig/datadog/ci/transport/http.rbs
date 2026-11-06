@@ -4,11 +4,12 @@ module Datadog
       class HTTP
         @adapter: Datadog::CI::Transport::Adapters::Net
 
-        attr_reader host: String
-        attr_reader port: Integer
+        attr_reader host: String?
+        attr_reader port: Integer?
         attr_reader ssl: bool
         attr_reader timeout: Integer
         attr_reader compress: bool
+        attr_reader uds_path: String?
 
         DEFAULT_TIMEOUT: 30
         MAX_RETRIES: 3
@@ -19,7 +20,7 @@ module Datadog
         NON_RETRIABLE_ERRORS: Array[singleton(StandardError)]
         RETRIABLE_ERRORS: Array[singleton(StandardError)]
 
-        def initialize: (host: String, port: Integer, ?ssl: bool, ?timeout: Integer, ?compress: bool) -> void
+        def initialize: (host: String?, port: Integer?, ?ssl: bool, ?timeout: Integer, ?compress: bool, ?uds_path: String?) -> void
 
         def request: (?verb: String, payload: String, headers: Hash[String, String], path: String, ?retries: Integer, ?backoff: Integer, ?accept_compressed_response: bool) -> Datadog::CI::Transport::Adapters::Net::Response
 
