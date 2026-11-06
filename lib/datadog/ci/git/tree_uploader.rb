@@ -22,7 +22,7 @@ module Datadog
           @force_unshallow = force_unshallow
         end
 
-        def call(repository_url)
+        def call(repository_url, commit_sha: nil)
           if api.nil?
             Datadog.logger.debug("API is not configured, aborting git upload")
             return
@@ -41,7 +41,7 @@ module Datadog
           Datadog.logger.debug { "Uploading git tree for repository #{repository_url}" }
 
           latest_commits = LocalRepository.git_commits
-          head_commit = latest_commits&.first
+          head_commit = commit_sha || latest_commits&.first
           if head_commit.nil?
             Datadog.logger.debug("Got empty latest commits list, aborting git upload")
             return

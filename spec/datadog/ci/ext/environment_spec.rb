@@ -34,7 +34,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
               context "with git information" do
                 include_context "with git fixture", "gitdir_with_commit"
 
-                it "matches CI tags, with git fallback information" do
+                it "prefers local Git metadata while retaining CI and explicit user tags" do
                   is_expected
                     .to eq(
                       {
@@ -49,7 +49,11 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                         "git.commit.message" => "First commit with ❤️",
                         "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
                         "git.repository_url" => "https://datadoghq.com/git/test.git"
-                      }.merge(fixture_tags)
+                      }.merge(fixture_tags.reject do |key, _|
+                        key.start_with?("git.") && !key.start_with?("git.commit.head.", "git.pull_request.") &&
+                          !env.key?("DD_#{key.upcase.tr(".", "_")}") &&
+                          !(key == "git.tag" && env["DD_GIT_BRANCH"].to_s.include?("tags/"))
+                      end)
                     )
                 end
               end
@@ -91,6 +95,32 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
             "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
             "git.repository_url" => "https://datadoghq.com/git/test.git"
           )
+        end
+      end
+
+      context "when a readable checkout has no remote, branch, or tag" do
+        include_context "with git fixture", "gitdir_with_commit"
+
+        let(:env) do
+          {
+            "GITHUB_SHA" => "a" * 40,
+            "GITHUB_REPOSITORY" => "provider/repository",
+            "GITHUB_REF" => "refs/heads/provider-branch"
+          }
+        end
+
+        before do
+          allow(Datadog::CI::Git::LocalRepository).to receive(:git_repository_url).and_return(nil)
+          allow(Datadog::CI::Git::LocalRepository).to receive(:git_branch).and_return(nil)
+          allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return(nil)
+        end
+
+        it "does not mix provider Git metadata into the checkout identity" do
+          expect(extracted_tags["git.commit.sha"]).to eq("c7f893648f656339f62fb7b4d8a6ecdf7d063835")
+          expect(extracted_tags).not_to have_key("git.repository_url")
+          expect(extracted_tags).not_to have_key("git.branch")
+          expect(extracted_tags).not_to have_key("git.tag")
+          expect(extracted_tags["ci.provider.name"]).to eq("github")
         end
       end
 

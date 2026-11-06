@@ -80,3 +80,5 @@ report `test.test_management.prevent_failure_suppression: true` and/or
 `test.test_management.no_auto_retry: true`. Backend-assigned management tags stay
 visible even when annotations change the effective execution policy. Setting a
 span tag directly does not apply an exclusion.
+
+Git metadata uses explicit `DD_GIT_*` overrides first, then the local Git checkout. CI-provider Git metadata is used only when the checkout cannot be read. This applies to commit SHA, repository URL, branch/tag, author, committer, and message; CI job and pull-request metadata are preserved.
