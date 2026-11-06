@@ -87,6 +87,8 @@ module Datadog
           end
 
           local_git_tags = Environment::Extractor.new(env, provider_klass: Providers::LocalGit).tags
+          local_git_tags.delete(Git::TAG_BRANCH) if local_git_tags[Git::TAG_BRANCH] == "HEAD"
+          local_git_tags.delete(Git::TAG_TAG) if local_git_tags[Git::TAG_TAG]&.include?("\n")
           if local_git_tags[Git::TAG_COMMIT_SHA]
             tags.delete_if do |key, _|
               key.start_with?("git.") && !key.start_with?("git.commit.head.", "git.pull_request.")

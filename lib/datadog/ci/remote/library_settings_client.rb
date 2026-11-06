@@ -86,7 +86,7 @@ module Datadog
                 "service" => test_session.service,
                 "env" => @dd_env,
                 "repository_url" => test_session.git_repository_url,
-                "branch" => test_session.git_branch || test_session.git_tag,
+                "branch" => test_session.git_branch || test_session.git_tag || "auto:git-detached-head",
                 "sha" => test_session.git_commit_sha,
                 "test_level" => @test_skipping_mode,
                 "configurations" => {

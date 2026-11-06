@@ -71,6 +71,29 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
       end
     end
 
+    context "with ambiguous local refs" do
+      include_context "with git fixture", "gitdir_with_commit"
+
+      before do
+        allow(Datadog::CI::Git::LocalRepository).to receive(:git_branch).and_return("HEAD")
+        allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return("latest\nv1.0")
+      end
+
+      it "omits detached HEAD and a list of tag aliases" do
+        expect(extracted_tags).not_to have_key("git.branch")
+        expect(extracted_tags).not_to have_key("git.tag")
+      end
+
+      context "with explicit overrides" do
+        let(:env) { {"DD_GIT_BRANCH" => "explicit-branch", "DD_GIT_TAG" => "v1.0"} }
+
+        it "retains customer-selected refs" do
+          expect(extracted_tags["git.branch"]).to eq("explicit-branch")
+          expect(extracted_tags["git.tag"]).to eq("v1.0")
+        end
+      end
+    end
+
     context "inside a git directory" do
       context "with a newly created git repository" do
         include_context "with git fixture", "gitdir_empty"

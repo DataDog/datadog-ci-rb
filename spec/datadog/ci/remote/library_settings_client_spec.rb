@@ -158,6 +158,23 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
         end
       end
 
+      context "when a detached checkout has no branch or tag" do
+        before do
+          allow(test_session).to receive_messages(git_branch: nil, git_tag: nil)
+        end
+
+        it "requests settings without inventing event Git metadata" do
+          subject
+
+          expect(api).to have_received(:api_request) do |args|
+            attributes = JSON.parse(args[:payload])["data"]["attributes"]
+            expect(attributes["branch"]).to eq("auto:git-detached-head")
+          end
+          expect(test_session.git_branch).to be_nil
+          expect(test_session.git_tag).to be_nil
+        end
+      end
+
       context "parsing response" do
         context "when response is OK" do
           it "does not tag the test session with the library configuration error tag" do
