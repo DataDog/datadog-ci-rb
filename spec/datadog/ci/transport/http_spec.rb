@@ -390,11 +390,12 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
   describe "#request to a port nobody listens on" do
     let(:host) { "127.0.0.1" }
-    let(:port) do
-      server = TCPServer.new(host, 0)
-      server.addr[1].tap { server.close }
-    end
+    # A socket bound to the port and not listening holds it, so connections to it are refused.
+    let(:reserved) { Socket.new(:INET, :STREAM).tap { |socket| socket.bind(Addrinfo.tcp(host, 0)) } }
+    let(:port) { reserved.local_address.ip_port }
     let(:options) { {ssl: false, timeout: 1} }
+
+    after { reserved.close }
 
     it "returns ErrorResponse with the refused connection instead of raising" do
       allow(Datadog.logger).to receive(:warn)

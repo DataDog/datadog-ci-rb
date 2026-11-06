@@ -91,6 +91,43 @@ RSpec.describe Datadog::CI::AsyncWriter do
 
     after { writer.stop(true, 0) }
 
+    context "when sending the events" do
+      subject(:perform) { writer.write(double("event")) }
+
+      let(:options) { {interval: 0.1} }
+      let(:sent) { Queue.new }
+
+      before do
+        allow(transport).to receive(:send_events) do
+          sent << true
+          responses
+        end
+      end
+
+      context "and a request gets no response" do
+        let(:responses) { [Datadog::CI::Transport::HTTP::ErrorResponse.new(Errno::ECONNREFUSED.new)] }
+
+        it "backs off" do
+          perform
+          sent.pop
+
+          expect(try_wait_until { writer.loop_wait_time > writer.loop_base_interval }).to be true
+        end
+      end
+
+      context "and the requests succeed" do
+        let(:responses) { [instance_double(Datadog::CI::Transport::Adapters::Net::Response, server_error?: false, error: nil)] }
+
+        it "doesn't back off" do
+          perform
+          sent.pop
+
+          expect { try_wait_until(attempts: 5, backoff: 0.05) { writer.loop_wait_time > writer.loop_base_interval } }
+            .to raise_error("Wait time exhausted!")
+        end
+      end
+    end
+
     it "starts a worker thread" do
       perform
 

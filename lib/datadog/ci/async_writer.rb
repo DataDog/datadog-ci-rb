@@ -61,6 +61,10 @@ module Datadog
         if responses.find(&:server_error?)
           loop_back_off!
           Datadog.logger.warn { "Encountered server error while sending events: #{responses}" }
+        elsif responses.find(&:error)
+          # The request got no response, such as when the agent stopped listening;
+          # the transport has logged the error.
+          loop_back_off!
         end
 
         nil
