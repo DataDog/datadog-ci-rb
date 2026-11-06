@@ -1,3 +1,5 @@
+require "socket"
+
 require_relative "../../../../lib/datadog/ci/transport/http"
 
 RSpec.describe Datadog::CI::Transport::HTTP do
@@ -304,6 +306,31 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         end
       end
 
+      context "when unexpected errors occur" do
+        shared_examples "unexpected error behavior" do |error_class|
+          it "returns ErrorResponse without retries instead of raising" do
+            expect(adapter).to receive(:call).and_raise(error_class).once
+            expect(Datadog.logger).to receive(:warn).with(/unexpected error #{error_class}/)
+
+            expect(response).to be_a(described_class::ErrorResponse)
+            expect(response.error).to be_kind_of(error_class)
+            expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::NETWORK)
+          end
+        end
+
+        context "with Errno::ECONNREFUSED" do
+          include_examples "unexpected error behavior", Errno::ECONNREFUSED
+        end
+
+        context "with Errno::ENOENT" do
+          include_examples "unexpected error behavior", Errno::ENOENT
+        end
+
+        context "with IOError" do
+          include_examples "unexpected error behavior", IOError
+        end
+      end
+
       context "when retriable errors occur" do
         shared_examples "retriable error behavior" do |error_class|
           context "when succeeds after retries" do
@@ -358,6 +385,25 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           expect(response.error).to be_kind_of(Errno::ECONNRESET)
         end
       end
+    end
+  end
+
+  describe "#request to a port nobody listens on" do
+    let(:host) { "127.0.0.1" }
+    let(:port) do
+      server = TCPServer.new(host, 0)
+      server.addr[1].tap { server.close }
+    end
+    let(:options) { {ssl: false, timeout: 1} }
+
+    it "returns ErrorResponse with the refused connection instead of raising" do
+      allow(Datadog.logger).to receive(:warn)
+
+      response = transport.request(path: "/api/v2/citestcycle", payload: "{}", headers: {})
+
+      expect(response).to be_a(described_class::ErrorResponse)
+      expect(response.error).to be_kind_of(Errno::ECONNREFUSED)
+      expect(Datadog.logger).to have_received(:warn).with(/unexpected error Errno::ECONNREFUSED/)
     end
   end
 end
