@@ -140,6 +140,12 @@ module Datadog
               nil
             end
 
+            # Whether the request failed with an error the transport doesn't expect,
+            # which it used to raise; see Transport::HTTP.
+            def unexpected_error?
+              false
+            end
+
             def telemetry_error_type
               return nil if ok?
 

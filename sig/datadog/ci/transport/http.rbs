@@ -30,7 +30,11 @@ module Datadog
         def perform_http_call: (payload: String, headers: Hash[String, String], path: String, verb: String, ?retries: Integer, ?backoff: Integer, ?retry_start_time: Numeric) -> Datadog::CI::Transport::Adapters::Net::Response
 
         class ErrorResponse < Datadog::CI::Transport::Adapters::Net::Response
-          def initialize: (StandardError error) -> void
+          @unexpected: bool
+
+          def initialize: (StandardError error, ?unexpected: bool) -> void
+
+          def unexpected_error?: () -> bool
         end
       end
     end

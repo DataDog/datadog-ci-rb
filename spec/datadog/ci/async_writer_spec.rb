@@ -104,19 +104,7 @@ RSpec.describe Datadog::CI::AsyncWriter do
         end
       end
 
-      context "and a request gets no response" do
-        let(:responses) { [Datadog::CI::Transport::HTTP::ErrorResponse.new(Errno::ECONNREFUSED.new)] }
-
-        it "backs off" do
-          perform
-
-          expect(try_wait_until { writer.loop_wait_time > writer.loop_base_interval }).to be true
-        end
-      end
-
-      context "and the requests succeed" do
-        let(:responses) { [instance_double(Datadog::CI::Transport::Adapters::Net::Response, server_error?: false, error: nil)] }
-
+      shared_examples "no back off" do
         it "doesn't back off" do
           perform
           try_wait_until { sent.size == 1 }
@@ -126,6 +114,28 @@ RSpec.describe Datadog::CI::AsyncWriter do
 
           expect(writer.loop_wait_time).to eq(writer.loop_base_interval)
         end
+      end
+
+      context "and a request fails with an error the transport used to raise" do
+        let(:responses) { [Datadog::CI::Transport::HTTP::ErrorResponse.new(Errno::ECONNREFUSED.new, unexpected: true)] }
+
+        it "backs off, as when the error was raised" do
+          perform
+
+          expect(try_wait_until { writer.loop_wait_time > writer.loop_base_interval }).to be true
+        end
+      end
+
+      context "and a request fails with an error the transport already returned" do
+        let(:responses) { [Datadog::CI::Transport::HTTP::ErrorResponse.new(Timeout::Error.new)] }
+
+        include_examples "no back off"
+      end
+
+      context "and the requests succeed" do
+        let(:responses) { [instance_double(Datadog::CI::Transport::Adapters::Net::Response, server_error?: false, unexpected_error?: false)] }
+
+        include_examples "no back off"
       end
     end
 

@@ -290,6 +290,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
             expect(response).to be_a(described_class::ErrorResponse)
             expect(response.error).to be_kind_of(error_class)
+            expect(response.unexpected_error?).to be false
           end
         end
 
@@ -314,6 +315,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
             expect(response).to be_a(described_class::ErrorResponse)
             expect(response.error).to be_kind_of(error_class)
+            expect(response.unexpected_error?).to be true
             expect(response.telemetry_error_type).to eq(Datadog::CI::Ext::Telemetry::ErrorType::NETWORK)
           end
         end
@@ -353,6 +355,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
             it "returns ErrorResponse after all retries" do
               expect(response).to be_a(described_class::ErrorResponse)
               expect(response.error).to be_kind_of(error_class)
+              expect(response.unexpected_error?).to be false
             end
           end
         end
@@ -404,6 +407,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
       expect(response).to be_a(described_class::ErrorResponse)
       expect(response.error).to be_kind_of(Errno::ECONNREFUSED)
+      expect(response.unexpected_error?).to be true
       expect(Datadog.logger).to have_received(:warn).with(/unexpected error Errno::ECONNREFUSED/)
     end
   end
