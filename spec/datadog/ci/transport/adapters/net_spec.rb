@@ -367,4 +367,10 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net::Response do
 
     it { is_expected.to eq(value) }
   end
+
+  describe "#unexpected_error?" do
+    subject { response.unexpected_error? }
+
+    it { is_expected.to be false }
+  end
 end

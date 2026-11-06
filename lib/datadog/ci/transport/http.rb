@@ -90,6 +90,10 @@ module Datadog
           response.request_size = payload.bytesize
           response.duration_ms = duration_ms
 
+          if response.server_error?
+            Datadog.logger.warn("Failed to send request to #{path} with server error #{response.code}")
+          end
+
           response
         end
 
@@ -121,6 +125,11 @@ module Datadog
           rescue *RETRIABLE_ERRORS => e
             Datadog.logger.debug { "Failed to send request with retriable error #{e} (#{e.message})" }
             response = ErrorResponse.new(e)
+          rescue => e
+            # Any other error, such as a refused connection (Errno::ECONNREFUSED) or a
+            # TLS failure, would otherwise reach the customer's test process.
+            Datadog.logger.warn("Failed to send request to #{path} with unexpected error #{e.class} (#{e.message})")
+            return ErrorResponse.new(e)
           end
 
           # Check if we've exceeded the maximum retry time
@@ -165,6 +174,11 @@ module Datadog
           end
 
           attr_reader :error
+
+          def unexpected_error?
+            NON_RETRIABLE_ERRORS.none? { |type| type === error } &&
+              RETRIABLE_ERRORS.none? { |type| type === error }
+          end
 
           def payload
             ""

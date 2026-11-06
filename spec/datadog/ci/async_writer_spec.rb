@@ -91,6 +91,70 @@ RSpec.describe Datadog::CI::AsyncWriter do
 
     after { writer.stop(true, 0) }
 
+    context "when sending the events" do
+      subject(:perform) { writer.write(double("event")) }
+
+      let(:options) { {interval: 0.1} }
+      let(:sent) { Queue.new }
+
+      before do
+        allow(transport).to receive(:send_events) do
+          sent << true
+          responses
+        end
+      end
+
+      shared_examples "no back off" do
+        it "doesn't back off" do
+          perform
+          try_wait_until { sent.size == 1 }
+          # The worker sends the second event once it has handled the first response.
+          writer.write(double("event"))
+          try_wait_until { sent.size == 2 }
+
+          expect(writer.loop_wait_time).to eq(writer.loop_base_interval)
+        end
+      end
+
+      context "and a request fails with an error the transport used to raise" do
+        let(:responses) { [Datadog::CI::Transport::HTTP::ErrorResponse.new(Errno::ECONNREFUSED.new)] }
+
+        it "backs off, as when the error was raised" do
+          expect(Datadog.logger).not_to receive(:warn)
+
+          perform
+
+          expect(try_wait_until { writer.loop_wait_time > writer.loop_base_interval }).to be true
+        end
+      end
+
+      context "and a request fails with an error the transport already returned" do
+        let(:responses) { [Datadog::CI::Transport::HTTP::ErrorResponse.new(Timeout::Error.new)] }
+
+        include_examples "no back off"
+      end
+
+      context "and a request returns a server error" do
+        let(:responses) do
+          [Datadog::CI::Transport::Adapters::Net::Response.new(instance_double(Net::HTTPResponse, code: "503"))]
+        end
+
+        it "backs off without logging the transport failure again" do
+          expect(Datadog.logger).not_to receive(:warn)
+
+          perform
+
+          expect(try_wait_until { writer.loop_wait_time > writer.loop_base_interval }).to be true
+        end
+      end
+
+      context "and the requests succeed" do
+        let(:responses) { [instance_double(Datadog::CI::Transport::Adapters::Net::Response, system_error?: false)] }
+
+        include_examples "no back off"
+      end
+    end
+
     it "starts a worker thread" do
       perform
 

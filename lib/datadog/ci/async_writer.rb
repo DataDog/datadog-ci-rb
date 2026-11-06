@@ -58,10 +58,7 @@ module Datadog
       def perform(*events)
         responses = transport.send_events(events)
 
-        if responses.find(&:server_error?)
-          loop_back_off!
-          Datadog.logger.warn { "Encountered server error while sending events: #{responses}" }
-        end
+        loop_back_off! if responses.any?(&:system_error?)
 
         nil
       rescue => e
