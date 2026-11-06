@@ -13,13 +13,23 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
   let(:environment_variables) { {} }
 
-  describe "selected commit history and objects" do
+  describe "local Git metadata and selected history" do
     around do |example|
       Dir.mktmpdir do |checkout|
         git_directory = File.join(checkout, ".git")
         FileUtils.cp_r("#{FIXTURE_DIR}/git/gitdir_with_commit", git_directory)
         ClimateControl.modify("GIT_DIR" => git_directory, "GIT_WORK_TREE" => checkout) { example.run }
       end
+    end
+
+    it "keeps tag names separate with forced column formatting" do
+      cli = Datadog::CI::Git::CLI
+      cli.exec_git_command(["config", "column.ui", "always"])
+      cli.exec_git_command(["config", "column.tag", "always"])
+      cli.exec_git_command(["update-ref", "refs/tags/v1", "HEAD"])
+      expect(described_class.git_tag).to eq("v1")
+      cli.exec_git_command(["update-ref", "refs/tags/stable", "HEAD"])
+      expect(described_class.git_tag.to_s.split("\n")).to match_array(["v1", "stable"])
     end
 
     it "includes a selected commit outside HEAD history without walking old ancestors" do
