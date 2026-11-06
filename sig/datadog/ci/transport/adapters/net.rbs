@@ -3,9 +3,9 @@ module Datadog
     module Transport
       module Adapters
         class Net
-          @hostname: String
+          @hostname: String?
 
-          @port: Integer
+          @port: Integer?
 
           @timeout: Integer
 
@@ -13,9 +13,9 @@ module Datadog
 
           @uds_path: String?
 
-          attr_reader hostname: String
+          attr_reader hostname: String?
 
-          attr_reader port: Integer
+          attr_reader port: Integer?
 
           attr_reader timeout: Integer
 
@@ -23,7 +23,7 @@ module Datadog
 
           attr_reader uds_path: String?
 
-          def initialize: (hostname: String, port: Integer, ssl: bool, timeout_seconds: Integer, ?uds_path: String?) -> void
+          def initialize: (hostname: String?, port: Integer?, ssl: bool, timeout_seconds: Integer, ?uds_path: String?) -> void
 
           def open: () { (Net::HTTP http) -> ::Net::HTTPResponse } -> ::Net::HTTPResponse
 

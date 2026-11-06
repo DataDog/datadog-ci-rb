@@ -36,7 +36,8 @@ module Datadog
             req = if path
               NetHttpClient.unix_socket_net_http(path)
             else
-              NetHttpClient.original_net_http.new(hostname, port).tap { |http| http.use_ssl = ssl }
+              # Without a socket, the agent settings or the agentless intake give a host.
+              NetHttpClient.original_net_http.new(_ = hostname, port).tap { |http| http.use_ssl = ssl }
             end
 
             req.open_timeout = req.read_timeout = timeout
