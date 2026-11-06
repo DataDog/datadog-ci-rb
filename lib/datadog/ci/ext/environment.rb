@@ -97,6 +97,14 @@ module Datadog
           local_git_tags.each do |key, value|
             tags[key] ||= value
           end
+          user_sha = user_provided_tags[Git::TAG_COMMIT_SHA]
+          collected_sha = local_git_tags[Git::TAG_COMMIT_SHA] || ci_provider_tags[Git::TAG_COMMIT_SHA]
+          if user_sha && !user_sha.casecmp?(collected_sha.to_s)
+            tags.delete_if do |key, _|
+              key == Git::TAG_TAG ||
+                (key.start_with?("git.commit.") && key != Git::TAG_COMMIT_SHA && !key.start_with?("git.commit.head."))
+            end
+          end
           tags.merge!(user_provided_tags)
 
           # send some telemetry for the cases where git commit sha is overriden

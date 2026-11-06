@@ -94,6 +94,31 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
       end
     end
 
+    context "with a SHA-only override" do
+      include_context "with git fixture", "gitdir_with_commit"
+
+      let(:env) { {"DD_GIT_COMMIT_SHA" => "a" * 40} }
+
+      before do
+        allow(Datadog::CI::Git::LocalRepository).to receive(:git_branch).and_return("HEAD")
+        allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return("v1")
+      end
+
+      it "does not attach another commit's tag or details" do
+        expect(extracted_tags["git.commit.sha"]).to eq("a" * 40)
+        expect(extracted_tags).not_to have_key("git.tag")
+        expect(extracted_tags.keys.grep(/^git\.commit\./)).to eq(["git.commit.sha"])
+      end
+
+      context "with an explicit tag" do
+        let(:env) { super().merge("DD_GIT_TAG" => "user-tag") }
+
+        it "retains the selected tag" do
+          expect(extracted_tags["git.tag"]).to eq("user-tag")
+        end
+      end
+    end
+
     context "inside a git directory" do
       context "with a newly created git repository" do
         include_context "with git fixture", "gitdir_empty"
