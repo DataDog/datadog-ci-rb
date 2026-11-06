@@ -1,3 +1,6 @@
+require "fileutils"
+require "tmpdir"
+
 require_relative "../../../../lib/datadog/ci/git/local_repository"
 
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
@@ -9,6 +12,38 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
   end
 
   let(:environment_variables) { {} }
+
+  describe "selected commit history and objects" do
+    around do |example|
+      Dir.mktmpdir do |checkout|
+        git_directory = File.join(checkout, ".git")
+        FileUtils.cp_r("#{FIXTURE_DIR}/git/gitdir_with_commit", git_directory)
+        ClimateControl.modify("GIT_DIR" => git_directory, "GIT_WORK_TREE" => checkout) { example.run }
+      end
+    end
+
+    it "includes a selected commit outside HEAD history without walking old ancestors" do
+      cli = Datadog::CI::Git::CLI
+      head = cli.exec_git_command(["rev-parse", "HEAD"]).strip
+      tree = cli.exec_git_command(["rev-parse", "HEAD^{tree}"]).strip
+      content = "tree #{tree}\nparent #{head}\nauthor Author <author@example.com> 1 +0000\ncommitter Committer <committer@example.com> 1 +0000\n\nSelected commit\n"
+      selected = cli.exec_git_command(["hash-object", "-t", "commit", "-w", "--stdin"], stdin: content).strip
+
+      expect(described_class.git_commits(selected)).to eq([selected])
+      objects = described_class.git_commits_rev_list(included_commits: [selected], excluded_commits: []).split("\n")
+      expect(objects).to include(selected)
+      expect(objects).not_to include(head)
+    end
+
+    it "does not substitute HEAD for an unavailable selected commit" do
+      expect(described_class.git_commits("f" * 40)).to eq([])
+    end
+
+    it "rejects options before executing Git" do
+      expect(Datadog::CI::Git::CLI).not_to receive(:exec_git_command)
+      expect(described_class.git_commits("--all")).to eq([])
+    end
+  end
 
   def with_custom_git_environment
     ClimateControl.modify(environment_variables) do

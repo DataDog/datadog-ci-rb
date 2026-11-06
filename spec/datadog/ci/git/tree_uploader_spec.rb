@@ -66,7 +66,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
 
     context "when API is configured" do
       before do
-        expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(latest_commits)
+        expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).with(commit_sha).and_return(latest_commits)
       end
 
       context "when the latest commits list is empty" do
@@ -75,6 +75,24 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
         it "logs a debug message and aborts the git upload" do
           expect(Datadog.logger).to receive(:debug).with("Got empty latest commits list, aborting git upload")
 
+          subject
+        end
+      end
+
+      context "when selected history differs from local HEAD" do
+        let(:commit_sha) { "a" * 40 }
+        let(:latest_commits) { [commit_sha] }
+        let(:backend_commits) { [] }
+
+        it "searches and packs the selected revision with the same upload SHA" do
+          expect(search_commits).to receive(:call).with(repository_url, [commit_sha]).and_return([])
+          expect(Datadog::CI::Git::LocalRepository).to receive(:git_shallow_clone?).and_return(false)
+          expect(Datadog::CI::Git::UploadPackfile).to receive(:new).with(
+            api: api, head_commit_sha: commit_sha, repository_url: repository_url
+          ).and_return(double("upload_packfile", call: nil))
+          expect(Datadog::CI::Git::Packfiles).to receive(:generate).with(
+            included_commits: [commit_sha], excluded_commits: []
+          ).and_yield("packfile_path")
           subject
         end
       end
@@ -125,7 +143,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
             expect(Datadog::CI::Git::LocalRepository).to receive(:git_unshallow).and_return(true)
 
             # expect additional call to fetch git commits
-            expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(latest_commits)
+            expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).with(commit_sha).and_return(latest_commits)
 
             subject
           end
@@ -158,7 +176,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
           context "when the unshallowing succeeds" do
             before do
               expect(Datadog::CI::Git::LocalRepository).to receive(:git_unshallow).and_return("unshallow_result")
-              expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(
+              expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).with(commit_sha).and_return(
                 latest_commits + %w[782d09e3fbfd8cf1b5c13f3eb9621362f9089ed5]
               )
             end
