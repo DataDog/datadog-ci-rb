@@ -117,7 +117,7 @@ RSpec.describe Datadog::CI::AsyncWriter do
       end
 
       context "and a request fails with an error the transport used to raise" do
-        let(:responses) { [Datadog::CI::Transport::HTTP::ErrorResponse.new(Errno::ECONNREFUSED.new, unexpected: true)] }
+        let(:responses) { [Datadog::CI::Transport::HTTP::ErrorResponse.new(Errno::ECONNREFUSED.new)] }
 
         it "backs off, as when the error was raised" do
           perform

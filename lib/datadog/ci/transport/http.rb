@@ -123,7 +123,7 @@ module Datadog
             # Any other error, such as a refused connection (Errno::ECONNREFUSED) or a
             # TLS failure, would otherwise reach the customer's test process.
             Datadog.logger.warn("Failed to send request to #{path} with unexpected error #{e.class} (#{e.message})")
-            return ErrorResponse.new(e, unexpected: true)
+            return ErrorResponse.new(e)
           end
 
           # Check if we've exceeded the maximum retry time
@@ -163,15 +163,15 @@ module Datadog
         end
 
         class ErrorResponse < Adapters::Net::Response
-          def initialize(error, unexpected: false)
+          def initialize(error)
             @error = error
-            @unexpected = unexpected
           end
 
           attr_reader :error
 
           def unexpected_error?
-            @unexpected
+            NON_RETRIABLE_ERRORS.none? { |type| type === error } &&
+              RETRIABLE_ERRORS.none? { |type| type === error }
           end
 
           def payload
