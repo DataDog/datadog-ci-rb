@@ -32,6 +32,10 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
 
   let(:api) { spy(:api) }
 
+  around do |example|
+    ClimateControl.modify("DD_GIT_BRANCH" => "shared-branch") { example.run }
+  end
+
   describe "#send_events" do
     context "with a single trace and a single span" do
       subject { transport.send_events([trace]) }

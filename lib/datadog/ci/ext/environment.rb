@@ -64,6 +64,7 @@ module Datadog
         def extract_tags(env)
           # Extract metadata from CI provider environment variables
           tags = Environment::Extractor.new(env).tags
+          ci_provider_tags = tags.dup
 
           # If user defined metadata is defined, overwrite
           user_provided_tags = Environment::Extractor.new(env, provider_klass: Providers::UserDefinedTags).tags
@@ -85,14 +86,29 @@ module Datadog
             env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
           end
 
-          # Fill out tags from local git as fallback
           local_git_tags = Environment::Extractor.new(env, provider_klass: Providers::LocalGit).tags
+          local_git_tags.delete(Git::TAG_BRANCH) if local_git_tags[Git::TAG_BRANCH] == "HEAD"
+          local_git_tags.delete(Git::TAG_TAG) if local_git_tags[Git::TAG_TAG]&.include?("\n")
+          if local_git_tags[Git::TAG_COMMIT_SHA]
+            tags.delete_if do |key, _|
+              key.start_with?("git.") && !key.start_with?("git.commit.head.", "git.pull_request.")
+            end
+          end
           local_git_tags.each do |key, value|
             tags[key] ||= value
           end
+          user_sha = user_provided_tags[Git::TAG_COMMIT_SHA]
+          collected_sha = local_git_tags[Git::TAG_COMMIT_SHA] || ci_provider_tags[Git::TAG_COMMIT_SHA]
+          if user_sha && !user_sha.casecmp?(collected_sha.to_s)
+            tags.delete_if do |key, _|
+              key == Git::TAG_TAG ||
+                (key.start_with?("git.commit.") && key != Git::TAG_COMMIT_SHA && !key.start_with?("git.commit.head."))
+            end
+          end
+          tags.merge!(user_provided_tags)
 
           # send some telemetry for the cases where git commit sha is overriden
-          discrepancy_checker = ConfigurationDiscrepancyChecker.new(tags, local_git_tags, user_provided_tags)
+          discrepancy_checker = ConfigurationDiscrepancyChecker.new(ci_provider_tags, local_git_tags, user_provided_tags)
           discrepancy_checker.check_for_discrepancies
 
           ensure_post_conditions(tags)

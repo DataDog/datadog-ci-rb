@@ -1,3 +1,6 @@
+require "fileutils"
+require "tmpdir"
+
 require_relative "../../../../lib/datadog/ci/git/local_repository"
 
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
@@ -9,6 +12,55 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
   end
 
   let(:environment_variables) { {} }
+
+  describe "local Git metadata and selected history" do
+    around do |example|
+      Dir.mktmpdir do |checkout|
+        git_directory = File.join(checkout, ".git")
+        FileUtils.cp_r("#{FIXTURE_DIR}/git/gitdir_with_commit", git_directory)
+        ClimateControl.modify("GIT_DIR" => git_directory, "GIT_WORK_TREE" => checkout) { example.run }
+      end
+    end
+
+    it "keeps tag names separate with forced column formatting" do
+      cli = Datadog::CI::Git::CLI
+      cli.exec_git_command(["config", "column.ui", "always"])
+      cli.exec_git_command(["config", "column.tag", "always"])
+      cli.exec_git_command(["update-ref", "refs/tags/v1", "HEAD"])
+      expect(described_class.git_tag).to eq("v1")
+      cli.exec_git_command(["update-ref", "refs/tags/stable", "HEAD"])
+      expect(described_class.git_tag.to_s.split("\n")).to match_array(["v1", "stable"])
+    end
+
+    it "includes a selected commit outside HEAD history without walking old ancestors" do
+      cli = Datadog::CI::Git::CLI
+      head = cli.exec_git_command(["rev-parse", "HEAD"]).strip
+      tree = cli.exec_git_command(["rev-parse", "HEAD^{tree}"]).strip
+      content = "tree #{tree}\nparent #{head}\nauthor Author <author@example.com> 1 +0000\ncommitter Committer <committer@example.com> 1 +0000\n\nSelected commit\n"
+      selected = cli.exec_git_command(["hash-object", "-t", "commit", "-w", "--stdin"], stdin: content).strip
+
+      expect(described_class.git_commits(selected)).to eq([selected])
+      expect(described_class.git_commits(selected.upcase)).to eq([selected])
+      objects = described_class.git_commits_rev_list(included_commits: [selected], excluded_commits: []).split("\n")
+      expect(objects).to include(selected)
+      expect(objects).not_to include(head)
+    end
+
+    it "accepts a mixed-case selected HEAD" do
+      head = Datadog::CI::Git::CLI.exec_git_command(["rev-parse", "HEAD"]).strip
+      mixed_case = head[0, 20].upcase + head[20..]
+      expect(described_class.git_commits(mixed_case)).to eq([head])
+    end
+
+    it "does not substitute HEAD for an unavailable selected commit" do
+      expect(described_class.git_commits("f" * 40)).to eq([])
+    end
+
+    it "rejects options before executing Git" do
+      expect(Datadog::CI::Git::CLI).not_to receive(:exec_git_command)
+      expect(described_class.git_commits("--all")).to eq([])
+    end
+  end
 
   def with_custom_git_environment
     ClimateControl.modify(environment_variables) do

@@ -22,7 +22,7 @@ module Datadog
           @force_unshallow = force_unshallow
         end
 
-        def call(repository_url)
+        def call(repository_url, commit_sha: nil)
           if api.nil?
             Datadog.logger.debug("API is not configured, aborting git upload")
             return
@@ -40,9 +40,9 @@ module Datadog
 
           Datadog.logger.debug { "Uploading git tree for repository #{repository_url}" }
 
-          latest_commits = LocalRepository.git_commits
-          head_commit = latest_commits&.first
-          if head_commit.nil?
+          latest_commits = LocalRepository.git_commits(commit_sha)
+          head_commit = commit_sha || latest_commits&.first
+          if head_commit.nil? || latest_commits.nil? || latest_commits.empty?
             Datadog.logger.debug("Got empty latest commits list, aborting git upload")
             return
           end
@@ -69,7 +69,7 @@ module Datadog
               # re-run the search with the updated commit list after unshallowing
               known_commits, new_commits = fetch_known_commits_and_split(
                 repository_url,
-                LocalRepository.git_commits
+                LocalRepository.git_commits(commit_sha)
               )
             end
           rescue SearchCommits::ApiError => e

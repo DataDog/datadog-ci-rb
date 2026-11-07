@@ -6,6 +6,7 @@ require "set"
 
 require_relative "../ext/telemetry"
 require_relative "../utils/command"
+require_relative "../utils/git"
 require_relative "base_branch_sha_detector"
 require_relative "cli"
 require_relative "diff"
@@ -137,7 +138,7 @@ module Datadog
         end
 
         def self.git_tag
-          CLI.exec_git_command(["tag", "--points-at", "HEAD"])
+          CLI.exec_git_command(["tag", "--no-column", "--points-at", "HEAD"])
         rescue => e
           log_failure(e, "git tag")
           nil
@@ -175,22 +176,32 @@ module Datadog
           [nil_user, nil_user]
         end
 
-        # returns maximum of 1000 latest commits in the last month
-        def self.git_commits
+        # Returns recent history, retaining the selected commit outside the one-month window.
+        def self.git_commits(commit_sha = nil)
+          commit_sha = commit_sha&.downcase
+          return [] if commit_sha && !Utils::Git.valid_commit_sha?(commit_sha)
+
           Telemetry.git_command(Ext::Telemetry::Command::GET_LOCAL_COMMITS)
 
           # @type var output: String?
           output = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            output = CLI.exec_git_command(["log", "--format=%H", "-n", "1000", "--since=\"1 month ago\""], timeout: CLI::LONG_TIMEOUT)
+            cmd = ["log", "--format=%H", "-n", "1000", "--since=\"1 month ago\""]
+            cmd.concat([commit_sha, "--"]) if commit_sha
+            output = CLI.exec_git_command(cmd, timeout: CLI::LONG_TIMEOUT)
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_LOCAL_COMMITS, duration_ms)
 
-          return [] if output.nil?
+          commits = output.to_s.split("\n")
+          if commit_sha && !commits.include?(commit_sha)
+            selected = CLI.exec_git_command(["rev-parse", "--verify", "#{commit_sha}^{commit}"])
+            return [] unless selected&.strip == commit_sha
 
-          output.split("\n")
+            commits.unshift(commit_sha)
+          end
+          commits
         rescue => e
           log_failure(e, "git commits")
           Telemetry.track_error(e, Ext::Telemetry::Command::GET_LOCAL_COMMITS)
@@ -215,6 +226,15 @@ module Datadog
             ] + excluded_commits_list + included_commits_list
 
             res = CLI.exec_git_command(cmd, timeout: CLI::LONG_TIMEOUT)
+            objects = res.to_s.split("\n")
+            outside_window = included_commits_list - filter_invalid_commits(excluded_commits) - objects
+            unless outside_window.empty?
+              selected_objects = CLI.exec_git_command(
+                ["rev-list", "--objects", "--no-object-names", "--filter=blob:none", "--no-walk=unsorted"] + outside_window,
+                timeout: CLI::LONG_TIMEOUT
+              )
+              res = (objects + selected_objects.to_s.split("\n")).uniq.join("\n") + "\n"
+            end
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_OBJECTS, duration_ms)

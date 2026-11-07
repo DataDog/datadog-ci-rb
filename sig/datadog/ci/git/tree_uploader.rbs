@@ -9,7 +9,7 @@ module Datadog
         attr_reader force_unshallow: bool
 
         def initialize: (api: Datadog::CI::Transport::Api::Base?, ?force_unshallow: bool) -> void
-        def call: (String repository_url) -> void
+        def call: (String repository_url, ?commit_sha: String?) -> void
 
         private
 
