@@ -40,9 +40,16 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       selected = cli.exec_git_command(["hash-object", "-t", "commit", "-w", "--stdin"], stdin: content).strip
 
       expect(described_class.git_commits(selected)).to eq([selected])
+      expect(described_class.git_commits(selected.upcase)).to eq([selected])
       objects = described_class.git_commits_rev_list(included_commits: [selected], excluded_commits: []).split("\n")
       expect(objects).to include(selected)
       expect(objects).not_to include(head)
+    end
+
+    it "accepts a mixed-case selected HEAD" do
+      head = Datadog::CI::Git::CLI.exec_git_command(["rev-parse", "HEAD"]).strip
+      mixed_case = head[0, 20].upcase + head[20..]
+      expect(described_class.git_commits(mixed_case)).to eq([head])
     end
 
     it "does not substitute HEAD for an unavailable selected commit" do

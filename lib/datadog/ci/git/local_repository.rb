@@ -178,6 +178,7 @@ module Datadog
 
         # Returns recent history, retaining the selected commit outside the one-month window.
         def self.git_commits(commit_sha = nil)
+          commit_sha = commit_sha&.downcase
           return [] if commit_sha && !Utils::Git.valid_commit_sha?(commit_sha)
 
           Telemetry.git_command(Ext::Telemetry::Command::GET_LOCAL_COMMITS)
