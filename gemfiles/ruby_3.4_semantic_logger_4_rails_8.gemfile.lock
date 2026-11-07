@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 15441b505ba4044a21627fa91a355a8f3125adb7
+  revision: 7feafb8131c6a2a7e883069e4874514717451a43
   branch: master
   specs:
     datadog (2.49.0.dev)
@@ -274,15 +274,15 @@ GEM
       rspec-mocks (~> 3.13.0)
     rspec-collection_matchers (1.2.1)
       rspec-expectations (>= 2.99.0.beta1)
-    rspec-core (3.13.6)
+    rspec-core (3.13.7)
       rspec-support (~> 3.13.0)
-    rspec-expectations (3.13.5)
+    rspec-expectations (3.13.6)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
-    rspec-mocks (3.13.8)
+    rspec-mocks (3.13.9)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.13.0)
-    rspec-support (3.13.7)
+    rspec-support (3.13.8)
     rspec_junit_formatter (0.8.0)
       rspec-core (>= 3.13, < 4)
     securerandom (0.4.1)
