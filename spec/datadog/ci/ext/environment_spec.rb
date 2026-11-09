@@ -99,6 +99,24 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
         )
       end
 
+      context "with a detached checkout" do
+        let(:env) { super().merge("GITHUB_REF" => "refs/heads/provider-branch") }
+
+        before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_branch).and_return("HEAD") }
+
+        it "retains the provider branch" do
+          expect(extracted_tags["git.branch"]).to eq("provider-branch")
+        end
+
+        context "without a provider branch" do
+          let(:env) { super().reject { |key, _| key == "GITHUB_REF" } }
+
+          it "omits the branch" do
+            expect(extracted_tags).not_to have_key("git.branch")
+          end
+        end
+      end
+
       context "with a local tag" do
         before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return("local-tag") }
 
