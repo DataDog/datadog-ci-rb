@@ -86,8 +86,8 @@ module Datadog
           end
 
           # Prefer local Git tags over CI metadata, keeping explicit user overrides highest.
-          local_git_tags = Environment::Extractor.new(env, provider_klass: Providers::LocalGit).tags
-          local_git_tags.delete(Git::TAG_BRANCH) if local_git_tags[Git::TAG_BRANCH] == "HEAD"
+          local_git = Providers::LocalGit.new(env, preferred_tag: ci_provider_tags[Git::TAG_TAG])
+          local_git_tags = Environment::Extractor.new(env, provider: local_git).tags
           local_git_tags.each do |key, value|
             tags[key] = value if key.start_with?("git.") || !tags.key?(key)
           end

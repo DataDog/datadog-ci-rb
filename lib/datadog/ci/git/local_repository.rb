@@ -137,7 +137,7 @@ module Datadog
         end
 
         def self.git_tag
-          CLI.exec_git_command(["tag", "--points-at", "HEAD"])
+          CLI.exec_git_command(["tag", "--no-column", "--points-at", "HEAD"])
         rescue => e
           log_failure(e, "git tag")
           nil
