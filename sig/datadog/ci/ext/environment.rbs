@@ -60,6 +60,7 @@ module Datadog
         @tags: Hash[String, String]?
 
         # Git tag precedence: explicit DD_GIT_* overrides, local Git, CI provider.
+        # A detached local HEAD falls back to the provider branch.
         def self?.tags: (untyped env) -> Hash[String, String]
 
         def self?.reset!: () -> nil
