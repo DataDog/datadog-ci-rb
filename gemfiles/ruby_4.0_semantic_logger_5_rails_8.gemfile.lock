@@ -132,7 +132,7 @@ GEM
     ffi (1.17.4-x86_64-linux-musl)
     globalid (1.4.0)
       activesupport (>= 6.1)
-    hashdiff (1.2.1)
+    hashdiff (1.2.2)
     i18n (1.15.2)
       concurrent-ruby (~> 1.0)
     io-console (0.9.5)
@@ -382,7 +382,7 @@ CHECKSUMS
   ffi (1.17.4-x86_64-linux-gnu) sha256=9d3db14c2eae074b382fa9c083fe95aec6e0a1451da249eab096c34002bc752d
   ffi (1.17.4-x86_64-linux-musl) sha256=3fdf9888483de005f8ef8d1cf2d3b20d86626af206cbf780f6a6a12439a9c49e
   globalid (1.4.0) sha256=037f12fbf1d9d7a014d501c2d5c77356fd4ddd96d7a7991d6700bba96706f427
-  hashdiff (1.2.1) sha256=9c079dbc513dfc8833ab59c0c2d8f230fa28499cc5efb4b8dd276cf931457cd1
+  hashdiff (1.2.2) sha256=e2e287452b42f18d2a8d82dd48c435e214a81dbadccf49344b956842a3b9127f
   i18n (1.15.2) sha256=00f9eb62412fe593b2a65a97daa75300d37abb8f7202ec748e94b6d46a9dd1b5
   io-console (0.9.5) sha256=83dd9bbf4c4680416629245b39cd4212eb5f4d9a4ea91804870c1f6b846414d5
   irb (1.19.0) sha256=55ee56acbdd6c9fe06a2e6909f46a24e5c41f45f16906bab04e8049cf46f1d27

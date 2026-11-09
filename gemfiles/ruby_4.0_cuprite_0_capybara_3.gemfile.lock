@@ -71,7 +71,7 @@ GEM
       cucumber-messages (> 23, < 33)
     cucumber-messages (32.3.1)
     cucumber-tag-expressions (8.1.0)
-    cuprite (0.20)
+    cuprite (0.20.1)
       capybara (~> 3.0)
       ferrum (~> 0.20.1)
     datadog-ruby_core_source (3.5.6)
@@ -88,7 +88,7 @@ GEM
       websocket-driver (~> 0.7)
     ffi (1.17.4)
     ffi (1.17.4-aarch64-linux-gnu)
-    hashdiff (1.2.1)
+    hashdiff (1.2.2)
     io-console (0.9.5)
     irb (1.19.0)
       pp (>= 0.6.0)
@@ -220,7 +220,7 @@ CHECKSUMS
   cucumber-html-formatter (22.3.0) sha256=f9768ed05588dbd73a5f3824c2cc648bd86b00206e6972d743af8051281d0729
   cucumber-messages (32.3.1) sha256=ddc88e4c1cf7afb96c06005b92a4a6f221a2fa435a8b4ca04677d215fd82771c
   cucumber-tag-expressions (8.1.0) sha256=9bd8c4b6654f8e5bf2a9c99329b6f32136a75e50cd39d4cfb3927d0fa9f52e21
-  cuprite (0.20) sha256=7e112967d07242041032c28569ea221759a130fe361a80b8179758f203135340
+  cuprite (0.20.1) sha256=98694e0ca7be79f066db4dcdb46fada42fb058c2c38aafd9c1d1567bc4b08994
   datadog (2.49.0.dev)
   datadog-ci (1.42.0)
   datadog-ruby_core_source (3.5.6) sha256=07d8909b9314af709da80966cf7e160da19ca1c396a8f45d175615f675a89569
@@ -231,7 +231,7 @@ CHECKSUMS
   ferrum (0.20.1) sha256=3a33d27f3e48ec66a36f7eaffa29180a9f1f4ff32694e8f2bc43d249f47612dc
   ffi (1.17.4) sha256=bcd1642e06f0d16fc9e09ac6d49c3a7298b9789bcb58127302f934e437d60acf
   ffi (1.17.4-aarch64-linux-gnu) sha256=b208f06f91ffd8f5e1193da3cae3d2ccfc27fc36fba577baf698d26d91c080df
-  hashdiff (1.2.1) sha256=9c079dbc513dfc8833ab59c0c2d8f230fa28499cc5efb4b8dd276cf931457cd1
+  hashdiff (1.2.2) sha256=e2e287452b42f18d2a8d82dd48c435e214a81dbadccf49344b956842a3b9127f
   io-console (0.9.5) sha256=83dd9bbf4c4680416629245b39cd4212eb5f4d9a4ea91804870c1f6b846414d5
   irb (1.19.0) sha256=55ee56acbdd6c9fe06a2e6909f46a24e5c41f45f16906bab04e8049cf46f1d27
   libdatadog (46.1.0.1.1) sha256=0129262ca0595292716140e330f9e68d9aa3a047804918ab15a209273adee03e
