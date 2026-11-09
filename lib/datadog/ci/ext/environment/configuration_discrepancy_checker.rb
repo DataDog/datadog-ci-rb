@@ -21,8 +21,8 @@ module Datadog
                 left: normalize_value(@ci_provider_env_tags[Git::TAG_COMMIT_SHA]),
                 right: normalize_value(@local_git_tags[Git::TAG_COMMIT_SHA]),
                 type: "commit_discrepancy",
-                expected: "ci_provider",
-                discrepant: "git_client"
+                expected: "git_client",
+                discrepant: "ci_provider"
               },
               {
                 left: normalize_value(@user_provided_tags[Git::TAG_COMMIT_SHA]),
@@ -42,8 +42,8 @@ module Datadog
                 left: normalize_value(@ci_provider_env_tags[Git::TAG_REPOSITORY_URL]),
                 right: normalize_value(@local_git_tags[Git::TAG_REPOSITORY_URL]),
                 type: "repository_discrepancy",
-                expected: "ci_provider",
-                discrepant: "git_client"
+                expected: "git_client",
+                discrepant: "ci_provider"
               },
               {
                 left: normalize_value(@user_provided_tags[Git::TAG_REPOSITORY_URL]),
