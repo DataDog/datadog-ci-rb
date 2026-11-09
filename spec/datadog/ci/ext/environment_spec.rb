@@ -131,6 +131,22 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
             expect(extracted_tags["git.tag"]).to eq("user-tag")
           end
         end
+
+        context "with multiple local tags" do
+          before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return("local-tag\nprovider-tag") }
+
+          it "preserves the provider's selection when it names a local tag" do
+            expect(extracted_tags["git.tag"]).to eq("provider-tag")
+          end
+
+          context "with an explicit user override" do
+            let(:env) { super().merge("DD_GIT_TAG" => "user-tag") }
+
+            it "retains the user override" do
+              expect(extracted_tags["git.tag"]).to eq("user-tag")
+            end
+          end
+        end
       end
     end
 

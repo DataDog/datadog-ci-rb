@@ -22,6 +22,7 @@ module Datadog
 
         def self.git_branch: () -> String?
 
+        # Newline-separated tag names pointing at HEAD, without column formatting.
         def self.git_tag: () -> String?
 
         def self.git_commit_message: (?String? commit_sha) -> String?

@@ -4,8 +4,11 @@ module Datadog
       module Environment
         module Providers
           class LocalGit < Base
+            def initialize: (Hash[String, String?] env, ?preferred_tag: String?) -> void
+
             private
 
+            @preferred_tag: String?
             @head_commit_sha_from_env: String?
             @author: Datadog::CI::Git::User?
             @committer: Datadog::CI::Git::User?

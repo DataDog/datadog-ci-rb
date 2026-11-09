@@ -14,9 +14,9 @@ module Datadog
         # Extractor is responsible for detecting where pipeline is being executed based on environment vars
         # and return the specific extractor that is able to return environment- and git-specific tags
         class Extractor
-          def initialize(env, provider_klass: nil)
+          def initialize(env, provider_klass: nil, provider: nil)
             @env = env
-            @provider = provider_klass ? provider_klass.new(env) : Providers.for_environment(env)
+            @provider = provider || (provider_klass ? provider_klass.new(env) : Providers.for_environment(env))
           end
 
           def tags
