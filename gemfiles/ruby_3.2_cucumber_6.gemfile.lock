@@ -91,7 +91,7 @@ GEM
     erb (6.0.7)
     ffi (1.17.4-aarch64-linux-gnu)
     ffi (1.17.4-x86_64-linux-gnu)
-    hashdiff (1.2.1)
+    hashdiff (1.2.2)
     i18n (1.15.2)
       concurrent-ruby (~> 1.0)
     io-console (0.9.5)
