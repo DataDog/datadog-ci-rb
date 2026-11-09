@@ -1,5 +1,23 @@
 ## [Unreleased]
 
+## [1.43.0] - 2026-11-09
+
+### Added
+
+* Add Ruby test automation exclusions ([#669][])
+* Unix domain socket support for Datadog Agent transport ([#678][])
+* knapsack_pro 11 support ([#671][])
+* Cucumber 12 support ([#661][])
+
+### Changed
+
+* Protect SDK-owned tags and deduplicate CI ENV and git metadata on transport level ([#651][])
+
+### Fixed
+
+* Fix test retries: retry budgets, suppression reporting, and Cucumber failures ([#673][])
+* Don't fail the test run when a request to the agent fails unexpectedly ([#679][])
+
 ## [1.42.0] - 2026-10-12
 
 ### Added
@@ -748,7 +766,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.42.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.43.0...main
+[1.43.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.42.0...v1.43.0
 [1.42.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.41.0...v1.42.0
 [1.41.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.40.0...v1.41.0
 [1.40.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.39.0...v1.40.0
@@ -1056,5 +1075,12 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#636]: https://github.com/DataDog/datadog-ci-rb/issues/636
 [#644]: https://github.com/DataDog/datadog-ci-rb/issues/644
 [#645]: https://github.com/DataDog/datadog-ci-rb/issues/645
+[#651]: https://github.com/DataDog/datadog-ci-rb/issues/651
 [#653]: https://github.com/DataDog/datadog-ci-rb/issues/653
 [#655]: https://github.com/DataDog/datadog-ci-rb/issues/655
+[#661]: https://github.com/DataDog/datadog-ci-rb/issues/661
+[#669]: https://github.com/DataDog/datadog-ci-rb/issues/669
+[#671]: https://github.com/DataDog/datadog-ci-rb/issues/671
+[#673]: https://github.com/DataDog/datadog-ci-rb/issues/673
+[#678]: https://github.com/DataDog/datadog-ci-rb/issues/678
+[#679]: https://github.com/DataDog/datadog-ci-rb/issues/679
