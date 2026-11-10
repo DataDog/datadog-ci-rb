@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
+require "json"
+require "logger"
+require "open3"
+require "rbconfig"
+require "stringio"
+require "tmpdir"
 require "minitest"
 require "minitest/spec"
-
-module Kernel
-  alias_method :minitest_describe, :describe
-end
+require_relative "helpers/shared_discovery_tests"
 
 RSpec.describe "Minitest discovery source files" do
   include_context "CI mode activated" do
@@ -15,52 +18,67 @@ RSpec.describe "Minitest discovery source files" do
 
   let(:fixture_path) { "spec/datadog/ci/contrib/minitest/helpers/discovery_test.rb" }
   let(:shared_path) { "spec/datadog/ci/contrib/minitest/helpers/shared_discovery_tests.rb" }
-  let(:helpers) { Datadog::CI::Contrib::Minitest::Helpers }
 
   before do
     Minitest::Runnable.reset
-    load File.expand_path("helpers/discovery_test.rb", __dir__)
-    Minitest::Runnable.runnables.delete(SharedDiscoveryBase)
   end
 
   after do
     Minitest::Runnable.reset
-    Object.send(:remove_const, :MinitestDiscoveryFixtures)
-    FileUtils.rm_rf(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH)
   end
 
   it "discovers executable files for shared, nested, generated, anonymous and ordinary tests without changing identities" do
-    Minitest.seed = 1
-    identities = Minitest::Runnable.runnables.flat_map do |klass|
-      klass.runnable_methods.map { |method| helpers.test_suite_name(klass, method) }
+    tests = discover_fixture
+
+    expected_suites = [
+      "CustomerContract at #{shared_path}",
+      "CustomerContract::shared nested context at #{shared_path}",
+      "CustomerContract::nested context at #{shared_path}",
+      "SimpleModel at #{fixture_path}",
+      "GeneratedContract0 at #{shared_path}",
+      "GeneratedContract1 at #{shared_path}",
+      " at #{shared_path}",
+      "MinitestDiscoveryFixtures::ClassContract at #{fixture_path}",
+      "MinitestDiscoveryFixtures::SpecContract at #{shared_path}",
+      "MinitestDiscoveryFixtures::InheritedContract at #{shared_path}"
+    ]
+    # The shared base class is itself runnable in Minitest. Keep it in discovery
+    # rather than removing it from the framework's registry to fit expectations.
+    expect(tests).to contain_exactly(
+      *expected_suites.map { |suite| hash_including("suite" => suite, "suiteSourceFile" => fixture_path) },
+      hash_including("suite" => "SharedDiscoveryBase at #{shared_path}", "suiteSourceFile" => shared_path)
+    )
+    expect(tests).to include(hash_including("suite" => "CustomerContract at #{shared_path}", "name" => "test_contract"))
+  end
+
+  it "uses legacy attribution when specs were defined before instrumentation" do
+    tests = discover_fixture(instrument_after_definition: true)
+
+    expect(tests).to include(hash_including(
+      "suite" => "CustomerContract at #{shared_path}",
+      "name" => "test_contract",
+      "suiteSourceFile" => shared_path
+    ))
+  end
+
+  it "logs a real capture failure when a customer's inheritance hook freezes the subclass" do
+    output = StringIO.new
+    Datadog.configure { |c| c.logger.instance = Logger.new(output) }
+    parent = Class.new(Minitest::Spec) do
+      include SharedDiscoveryMethods
+
+      def self.inherited(subclass)
+        subclass.freeze
+        super
+      end
     end
 
-    expect(Minitest.run([])).to be true
-    tests = File.readlines(Datadog::CI::Ext::TestDiscovery::DEFAULT_OUTPUT_PATH).map { |line| JSON.parse(line) }
+    klass = Class.new(parent)
 
-    expect(tests.size).to eq(10)
-    expect(tests.map { |test| test["suite"] }).to match_array(identities)
-    expect(tests.map { |test| test["suiteSourceFile"] }.uniq).to eq([fixture_path])
-    expect(tests).to include(hash_including("suite" => "CustomerContract at #{shared_path}", "name" => "test_contract"))
-    expect(tests).to include(hash_including("suite" => "MinitestDiscoveryFixtures::ClassContract at #{fixture_path}"))
-    expect(tests).to include(hash_including("suite" => "SimpleModel at #{fixture_path}"))
-    expect(test_spans).to be_empty
-  end
-
-  it "falls back to existing source attribution if definition metadata is unavailable" do
-    klass = Minitest::Runnable.runnables.find { |runnable| runnable.name == "CustomerContract" }
-    klass.dd_spec_source_file = nil
-
-    expect(helpers.discovery_source_file(klass, "test_contract")).to eq(klass.instance_method(:test_contract).source_location.first)
-  end
-
-  it "logs capture failures and leaves the customer's runnable intact" do
-    allow(Datadog::CI::Contrib::Minitest::SpecSourceLocation).to receive(:resolve).and_raise("capture failed")
-    expect(Datadog.logger).to receive(:warn).with(include("Could not capture Minitest spec definition", "capture failed"))
-
-    klass = Class.new(Minitest::Spec) { include SharedDiscoveryMethods }
+    expect(klass).to be_frozen
     expect(Minitest::Runnable.runnables).to include(klass)
     expect(klass.dd_spec_source_file).to be_nil
+    expect(output.string).to include("WARN", "Could not capture Minitest spec definition", "FrozenError")
     expect(klass.new("test_shared_nested").run.passed?).to be true
   end
 
@@ -68,13 +86,44 @@ RSpec.describe "Minitest discovery source files" do
     let(:test_discovery_enabled) { false }
 
     it "preserves shared-method source attribution" do
-      expect(Minitest.run([])).to be true
-      contract = test_spans.find { |span| span.name == "test_contract" }
-      suite = test_suite_spans.find { |span| span.name == "CustomerContract at #{shared_path}" }
+      Class.new(Minitest::Spec) { include SharedDiscoveryMethods }
 
-      expect(contract).to have_test_tag(:suite, "CustomerContract at #{shared_path}")
-      expect(contract).to have_test_tag(:source_file, shared_path)
-      expect(suite).to have_test_tag(:source_file, shared_path)
+      expect(Minitest.run([])).to be true
+      expect(first_test_span).to have_test_tag(:suite, " at #{shared_path}")
+      expect(first_test_span).to have_test_tag(:source_file, shared_path)
+      expect(first_test_suite_span).to have_test_tag(:source_file, shared_path)
+    end
+  end
+
+  def discover_fixture(instrument_after_definition: false)
+    Dir.mktmpdir("minitest-discovery") do |directory|
+      output_path = File.join(directory, "tests.json")
+      # Use a fresh Ruby process: RSpec deliberately undefines the global
+      # describe DSL on Module, so real Minitest fixtures cannot run beside it.
+      script = <<~RUBY
+        require "minitest/spec"
+        require "datadog/ci"
+        require #{File.expand_path(fixture_path).inspect} if #{instrument_after_definition}
+        Datadog.configure do |c|
+          c.ci.enabled = true
+          c.ci.agentless_mode_enabled = true
+          c.api_key = "unused-discovery-key"
+          c.ci.test_discovery_enabled = true
+          c.ci.test_discovery_output_path = #{output_path.inspect}
+          c.ci.instrument :minitest
+        end
+        require #{File.expand_path(fixture_path).inspect} unless #{instrument_after_definition}
+        exit(Minitest.run(["--no-plugins"]) ? 0 : 1)
+      RUBY
+      stdout, stderr, status = Open3.capture3(
+        {"RUBYOPT" => nil},
+        RbConfig.ruby, "-rbundler/setup", "-I#{File.expand_path("../../../../../lib", __dir__)}", "-e", script
+      )
+
+      expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
+      expect(stdout).not_to include("EXECUTED_SHARED_")
+      expect(File.exist?(output_path)).to be(true), "Missing discovery output. stdout:\n#{stdout}\nstderr:\n#{stderr}"
+      File.readlines(output_path).map { |line| JSON.parse(line) }
     end
   end
 end

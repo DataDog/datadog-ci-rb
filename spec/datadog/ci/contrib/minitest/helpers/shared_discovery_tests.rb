@@ -2,12 +2,13 @@
 
 module SharedDiscoveryTests
   def test_contract
+    puts "EXECUTED_SHARED_CONTRACT"
     assert_equal 2, 1 + 1
   end
 
   def self.included(base)
     base.class_eval do
-      minitest_describe "shared nested context" do
+      describe "shared nested context" do
         include SharedDiscoveryMethods
       end
     end
@@ -16,6 +17,7 @@ end
 
 module SharedDiscoveryMethods
   def test_shared_nested
+    puts "EXECUTED_SHARED_NESTED"
     assert true
   end
 end
