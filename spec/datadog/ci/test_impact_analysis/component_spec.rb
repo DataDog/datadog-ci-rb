@@ -40,6 +40,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
   let(:configure) { component.configure(remote_configuration, test_session) }
 
+  after { component.shutdown! }
+
   before do
     allow(writer).to receive(:write)
     allow_any_instance_of(Datadog::CI::Test)
