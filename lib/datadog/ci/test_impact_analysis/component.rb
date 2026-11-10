@@ -18,6 +18,7 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
+require_relative "coverage/session"
 require_relative "coverage/collector"
 require_relative "coverage/transport"
 require_relative "skippable"
@@ -78,6 +79,8 @@ module Datadog
           @coverage_writer = coverage_writer
           @coverage_collectors = {}
           @coverage_collectors_mutex = Mutex.new
+          @session_coverage = nil
+          @coverage_session_id = nil
 
           @correlation_id = nil
           @skippable_tests = Set.new
@@ -152,6 +155,33 @@ module Datadog
           @code_coverage_enabled
         end
 
+        # Start on the runner thread, after remote configuration has completed.
+        def on_test_session_started(test_session)
+          unless enabled? && code_coverage?
+            on_test_session_finished
+            return
+          end
+          return if @coverage_session_id == test_session.id.to_s
+
+          on_test_session_finished
+          @coverage_session_id = test_session.id.to_s
+          collector = Coverage::Session.new(root: Git::LocalRepository.root, ignored_path: @bundle_location)
+          @session_coverage = collector
+          collector.start
+        rescue => e
+          Datadog.logger.warn("Failed to start session coverage: #{e.class}: #{e.message}")
+        end
+
+        def on_test_session_finished
+          # No tests means no dependency event. Also releases tracing on shutdown.
+          collector = @session_coverage
+          @session_coverage = nil
+          @coverage_session_id = nil
+          collector&.stop
+        rescue => e
+          Datadog.logger.warn("Failed to stop session coverage: #{e.class}: #{e.message}")
+        end
+
         # Starts coverage collection.
         # This is a low-level method that only starts the collector.
         #
@@ -178,6 +208,7 @@ module Datadog
         # @param context_id [String] A stable identifier for the context (e.g., RSpec scoped_id)
         # @return [void]
         def on_test_context_started(context_id)
+          write_session_coverage
           return unless context_coverage_enabled?
 
           # Stop and store any existing context coverage before starting new one.
@@ -201,6 +232,7 @@ module Datadog
         # @param test [Datadog::CI::Test] The test that is starting
         # @return [void]
         def on_test_started(test)
+          write_session_coverage
           inherit_suite_impacted_files(test) if test_skipping_mode?
 
           return if !enabled? || !code_coverage?
@@ -342,6 +374,7 @@ module Datadog
         end
 
         def on_test_suite_started(test_suite)
+          write_session_coverage
           return unless enabled? && suite_skipping_mode?
 
           mark_if_suite_skippable(test_suite)
@@ -398,6 +431,7 @@ module Datadog
         end
 
         def shutdown!
+          on_test_session_finished
           @coverage_collectors_mutex.synchronize do
             @coverage_collectors.each_value(&:stop)
             @coverage_collectors.clear
@@ -447,6 +481,31 @@ module Datadog
         end
 
         private
+
+        def write_session_coverage
+          # Other test threads must wait until tracing has stopped before they
+          # start their own coverage windows.
+          coverage = @mutex.synchronize do
+            collector = @session_coverage
+            @session_coverage = nil
+            collector&.stop
+          end
+          return if coverage.nil?
+
+          session_id = @coverage_session_id
+          return if coverage.empty? || session_id.nil?
+
+          # Session dependencies must not be expanded through the static require
+          # graph: that would turn eager-loaded, unused files into global inputs.
+          write(Coverage::Event.new(
+            test_id: nil,
+            test_suite_id: nil,
+            test_session_id: session_id,
+            files: Coverage::Files.new(coverage)
+          ))
+        rescue => e
+          Datadog.logger.warn("Failed to report session coverage: #{e.class}: #{e.message}")
+        end
 
         def skippables_count
           current_skippables.count

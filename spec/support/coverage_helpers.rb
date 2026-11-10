@@ -1,45 +1,36 @@
 require "datadog/ci"
 
 module CoverageHelpers
+  # Existing assertions describe per-test/per-suite attribution. Session
+  # dependencies are exposed separately so they cannot hide cross-test leaks.
   def coverage_events
-    @coverage_events ||= fetch_coverage_events
+    fetch_coverage_events.reject { |event| event.test_suite_id.nil? }
+  end
+
+  def session_coverage_events
+    fetch_coverage_events.select { |event| event.test_suite_id.nil? }
   end
 
   def find_coverage_for_test(test_span)
     coverage_events.find { |event| event.test_id == test_span.id.to_s }
   end
 
-  # Retrieves all traces in the current tracer instance.
-  # This method does not cache its results.
   def fetch_coverage_events
-    test_impact_analysis_component.instance_variable_get(:@coverage_events) || []
+    @captured_coverage_events || []
   end
 
-  # Remove all traces from the current tracer instance and
-  # busts cache of +#spans+ and +#span+.
   def clear_coverage_events!
-    test_impact_analysis_component.instance_variable_set(:@coverage_events, [])
-
-    @coverage_events = nil
+    @captured_coverage_events&.clear
   end
 
   def setup_test_coverage_writer!
-    # DEV `*_any_instance_of` has concurrency issues when tests run in parallel.
-    # DEV Single object `allow` and `expect` work as intended with parallelism.
-    allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_wrap_original do |method, **args, &block|
-      instance = method.call(**args, &block)
-
-      write_lock = Mutex.new
-      allow(instance).to receive(:write) do |event|
-        instance.instance_exec do
-          write_lock.synchronize do
-            @coverage_events ||= []
-            @coverage_events << event
-          end
-        end
-      end
-
-      instance
+    @captured_coverage_events = []
+    events = @captured_coverage_events
+    write_lock = Mutex.new
+    writer = instance_double(Datadog::CI::AsyncWriter, stop: nil)
+    allow(writer).to receive(:write) { |event| write_lock.synchronize { events << event } }
+    allow(Datadog::CI::TestImpactAnalysis::Component).to receive(:new).and_wrap_original do |method, **args|
+      method.call(**args.merge(coverage_writer: writer))
     end
   end
 

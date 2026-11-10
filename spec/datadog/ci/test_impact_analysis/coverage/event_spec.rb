@@ -435,6 +435,22 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
     end
   end
 
+  context "session-level dependencies" do
+    let(:test_id) { nil }
+    let(:test_suite_id) { nil }
+
+    it "accepts a session without a suite or test ID" do
+      expect(subject).to be_valid
+    end
+
+    it "omits suite and test IDs from the wire payload" do
+      expect(MessagePack.unpack(MessagePack.pack(subject))).to eq(
+        "test_session_id" => 3,
+        "files" => [{"filename" => "file.rb"}]
+      )
+    end
+  end
+
   describe "#pretty_inspect" do
     it "returns a human readable version of the event" do
       expect(subject.pretty_inspect).to eq(" Test ID: 1\n" \

@@ -51,6 +51,12 @@ module Datadog
           false
         end
 
+        def on_test_session_started(_test_session)
+        end
+
+        def on_test_session_finished
+        end
+
         def start_coverage
         end
 

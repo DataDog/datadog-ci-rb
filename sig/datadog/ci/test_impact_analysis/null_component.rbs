@@ -28,6 +28,10 @@ module Datadog
 
         def code_coverage?: () -> bool
 
+        def on_test_session_started: (Datadog::CI::TestSession test_session) -> void
+
+        def on_test_session_finished: () -> void
+
         def start_coverage: () -> void
 
         def stop_coverage: () -> Hash[String, untyped]?

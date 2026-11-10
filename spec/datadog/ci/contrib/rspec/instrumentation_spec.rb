@@ -897,6 +897,21 @@ RSpec.describe "RSpec instrumentation" do
       let(:static_dependencies_tracking_enabled) { true }
     end
 
+    it "reports shared helpers without promoting context dependencies to the session" do
+      root = File.expand_path("../../../../..", __dir__)
+      allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(root)
+      rspec_session_run(with_failed_test: true, with_shared_context: true)
+
+      expect(session_coverage_events.size).to eq(1)
+      shared_coverage = session_coverage_events.first
+      expect(shared_coverage.test_session_id).to eq(test_session_span.id.to_s)
+      expect(shared_coverage.test_id).to be_nil
+      expect(shared_coverage.inspect_coverage).to include(
+        File.join(Datadog::CI::Git::LocalRepository.root, "spec/spec_helper.rb") => true
+      )
+      expect(shared_coverage.inspect_coverage).not_to have_key(File.join(__dir__, "some_shared_context.rb"))
+    end
+
     it "collects code coverage" do
       rspec_session_run(with_failed_test: true, with_shared_context: true)
 

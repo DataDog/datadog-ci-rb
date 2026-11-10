@@ -28,9 +28,14 @@ module Datadog
           end
 
           def valid?
+            if !test_id.nil? && test_suite_id.nil?
+              Datadog.logger.warn("citestcov event is invalid: [test_suite_id] is nil. Event: #{self}")
+              return false
+            end
+
             valid = true
 
-            %i[test_suite_id test_session_id files].each do |key|
+            %i[test_session_id files].each do |key|
               value = (key == :files) ? @files : send(key)
               next unless value.nil?
 
@@ -44,13 +49,15 @@ module Datadog
           def to_msgpack(packer = nil)
             packer ||= MessagePack::Packer.new
 
-            packer.write_map_header(test_id.nil? ? 3 : 4)
+            packer.write_map_header(2 + (test_suite_id.nil? ? 0 : 1) + (test_id.nil? ? 0 : 1))
 
             packer.write("test_session_id")
             packer.write(test_session_id.to_i)
 
-            packer.write("test_suite_id")
-            packer.write(test_suite_id.to_i)
+            unless test_suite_id.nil?
+              packer.write("test_suite_id")
+              packer.write(test_suite_id.to_i)
+            end
 
             unless test_id.nil?
               packer.write("span_id")

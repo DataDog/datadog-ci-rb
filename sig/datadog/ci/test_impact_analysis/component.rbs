@@ -13,6 +13,8 @@ module Datadog
         @correlation_id: String?
         @skippable_tests: Set[String]
         @skippable_suites: Set[String]
+        @session_coverage: Coverage::Session?
+        @coverage_session_id: String?
         @coverage_writer: Datadog::CI::AsyncWriter?
         @coverage_collectors: Hash[Thread, Coverage::Collector]
         @coverage_collectors_mutex: Mutex
@@ -74,6 +76,10 @@ module Datadog
 
         def code_coverage?: () -> bool
 
+        def on_test_session_started: (Datadog::CI::TestSession test_session) -> void
+
+        def on_test_session_finished: () -> void
+
         def start_coverage: () -> void
 
         def stop_coverage: () -> Hash[String, untyped]?
@@ -115,6 +121,8 @@ module Datadog
         def restore_state_from_datadog_test_runner: () -> bool
 
         private
+
+        def write_session_coverage: () -> void
 
         def skippables_count: () -> Integer
 

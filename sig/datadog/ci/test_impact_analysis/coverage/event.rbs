@@ -7,7 +7,7 @@ module Datadog
 
           @test_session_id: String
 
-          @test_suite_id: String
+          @test_suite_id: String?
 
           @files: Datadog::CI::TestImpactAnalysis::Coverage::Files
 
@@ -15,11 +15,11 @@ module Datadog
 
           attr_reader test_session_id: String
 
-          attr_reader test_suite_id: String
+          attr_reader test_suite_id: String?
 
           def inspect_coverage: () -> Hash[String, untyped]
 
-          def initialize: (test_id: String?, test_suite_id: String, test_session_id: String, files: Datadog::CI::TestImpactAnalysis::Coverage::Files) -> void
+          def initialize: (test_id: String?, test_suite_id: String?, test_session_id: String, files: Datadog::CI::TestImpactAnalysis::Coverage::Files) -> void
 
           def valid?: () -> bool
 

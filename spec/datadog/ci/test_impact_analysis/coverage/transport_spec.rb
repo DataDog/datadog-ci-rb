@@ -65,6 +65,28 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Transport do
       end
     end
 
+    context "session-level dependencies" do
+      let(:event) do
+        Datadog::CI::TestImpactAnalysis::Coverage::Event.new(
+          test_id: nil,
+          test_suite_id: nil,
+          test_session_id: "3",
+          files: files_class.new({"spec/spec_helper.rb" => true})
+        )
+      end
+
+      it "sends a session-only event through citestcov v2" do
+        transport.send_events([event])
+
+        expect(api).to have_received(:citestcov_request) do |args|
+          expect(MessagePack.unpack(args[:payload])).to eq(
+            "version" => 2,
+            "coverages" => [{"test_session_id" => 3, "files" => [{"filename" => "spec/spec_helper.rb"}]}]
+          )
+        end
+      end
+    end
+
     context "multiple events" do
       subject { transport.send_events(events) }
 

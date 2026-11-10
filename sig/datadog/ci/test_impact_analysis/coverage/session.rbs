@@ -1,0 +1,30 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class Session
+          HELPER_PATHS: Array[String]
+          LOAD_METHODS: Array[Symbol]
+
+          @root: String
+          @root_prefix: String
+          @ignored_path: String?
+          @files: Hash[String, bool]
+          @loading: Hash[Thread, Integer]
+          @failed: bool
+          @tracepoint: TracePoint?
+          @file_access: FileAccess
+
+          def initialize: (root: String, ignored_path: String?) -> void
+          def start: () -> void
+          def stop: () -> Hash[String, bool]
+
+          private
+
+          def observe: (TracePoint event) -> void
+          def record: (String path) -> void
+        end
+      end
+    end
+  end
+end
