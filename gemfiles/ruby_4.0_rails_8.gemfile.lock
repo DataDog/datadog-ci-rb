@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 7feafb8131c6a2a7e883069e4874514717451a43
+  revision: 308833dac713bd2e71486cf14b27f6bd213d96de
   branch: master
   specs:
     datadog (2.49.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.6)
-      libdatadog (~> 46.1.0.1.1)
+      libdatadog (~> 48.0.0.1.1)
       libddwaf (~> 1.30.0.1.0)
       logger
       msgpack
@@ -136,8 +136,8 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (3.1.0)
-    libdatadog (46.1.0.1.1)
-    libdatadog (46.1.0.1.1-aarch64-linux)
+    libdatadog (48.0.0.1.1)
+    libdatadog (48.0.0.1.1-aarch64-linux)
     libddwaf (1.30.0.1.0)
       ffi (~> 1.0)
     libddwaf (1.30.0.1.0-aarch64-linux)
@@ -337,8 +337,8 @@ CHECKSUMS
   io-console (0.9.5) sha256=83dd9bbf4c4680416629245b39cd4212eb5f4d9a4ea91804870c1f6b846414d5
   irb (1.19.0) sha256=55ee56acbdd6c9fe06a2e6909f46a24e5c41f45f16906bab04e8049cf46f1d27
   json (3.1.0) sha256=3ce7ccf8fde58960177a3a756c31f292a4c1e1dedee884547096a5b0604e3bd8
-  libdatadog (46.1.0.1.1) sha256=0129262ca0595292716140e330f9e68d9aa3a047804918ab15a209273adee03e
-  libdatadog (46.1.0.1.1-aarch64-linux) sha256=0fded57652e5a7edeb95ca7ce9679c1e47cf97afa2ffce09b80ec5b09663731c
+  libdatadog (48.0.0.1.1) sha256=7e1ee34cd7768ea6a20437b9e0f61bcf77f3e832bad1195dc52c694b3c1e42b1
+  libdatadog (48.0.0.1.1-aarch64-linux) sha256=af90bef273927e274a341570550318ff4c11ce47d16f2aa53d971da6e6681ba1
   libddwaf (1.30.0.1.0) sha256=331632114ef21cc2538d93335ad0b1a6f37de448b5ce9d091a690eec321308d3
   libddwaf (1.30.0.1.0-aarch64-linux) sha256=c36650249bbbcaf81f0a0715e021d3db37fb1df989390f2744f445d1032d4314
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
