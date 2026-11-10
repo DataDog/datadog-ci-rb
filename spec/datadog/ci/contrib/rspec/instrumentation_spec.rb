@@ -86,7 +86,7 @@ RSpec.describe "RSpec instrumentation" do
           end
 
           if with_shared_context
-            require_relative "some_shared_context"
+            load File.expand_path("some_shared_context.rb", __dir__)
             include_context "Shared context"
           end
 
