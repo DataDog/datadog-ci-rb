@@ -1,0 +1,53 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class FileAccess
+          self.@collectors: Array[FileAccess]
+          self.@mutex: Mutex
+          self.@installed: bool?
+          @root: String
+          @ignored_path: String?
+          @single_threaded: bool
+          @inherit_on_fork: bool
+          @filter: (^() -> bool)?
+          @files: Hash[String, bool]
+          @mutex: Mutex
+          @active: bool
+          @thread: Thread?
+          @pid: Integer?
+
+          def self.activate: (FileAccess) -> void
+          def self.deactivate: (FileAccess) -> void
+          def self.active?: () -> bool
+          def self.record: (String) -> void
+          def self.prepare_path: (untyped, bool) -> String
+          def self.record_file: (File) -> void
+          def self.warn_failure: (StandardError) -> void
+
+          def initialize: (root: String, ignored_path: String?, threading_mode: DDCov::threading_mode, ?inherit_on_fork: bool) ?{ () -> bool } -> void
+          def start: () -> void
+          def stop: () -> Hash[String, bool]
+          def record: (String, String?) -> void
+
+          # Forward Ruby's overloaded IO APIs, including platform/version-specific
+          # options and caller blocks. These arguments cannot be narrowed here.
+          module FileMethods : File
+            def initialize: (*untyped, **untyped) -> void
+            def reopen: (*untyped, **untyped) -> untyped
+          end
+
+          module IOMethods : Class
+            def read: (untyped, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+            def binread: (untyped, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+            def readlines: (untyped, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+            def sysopen: (untyped, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+            def write: (untyped, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+            def binwrite: (untyped, *untyped, **untyped) ?{ (*untyped) -> untyped } -> untyped
+            def foreach: (untyped, *untyped, **untyped) ?{ (String) -> untyped } -> untyped
+          end
+        end
+      end
+    end
+  end
+end

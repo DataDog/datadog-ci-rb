@@ -18,6 +18,7 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
+require_relative "coverage/collector"
 require_relative "coverage/transport"
 require_relative "skippable"
 require_relative "telemetry"
@@ -75,6 +76,8 @@ module Datadog
           @code_coverage_enabled = false
 
           @coverage_writer = coverage_writer
+          @coverage_collectors = {}
+          @coverage_collectors_mutex = Mutex.new
 
           @correlation_id = nil
           @skippable_tests = Set.new
@@ -395,6 +398,10 @@ module Datadog
         end
 
         def shutdown!
+          @coverage_collectors_mutex.synchronize do
+            @coverage_collectors.each_value(&:stop)
+            @coverage_collectors.clear
+          end
           @coverage_writer&.stop
         end
 
@@ -451,12 +458,14 @@ module Datadog
         end
 
         def coverage_collector
-          Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(
-            root: Git::LocalRepository.root,
-            ignored_path: @bundle_location,
-            threading_mode: code_coverage_mode,
-            use_allocation_tracing: @use_allocation_tracing
-          )
+          @coverage_collectors_mutex.synchronize do
+            @coverage_collectors[Thread.current] ||= Coverage::Collector.new(
+              root: Git::LocalRepository.root,
+              ignored_path: @bundle_location,
+              threading_mode: code_coverage_mode,
+              use_allocation_tracing: @use_allocation_tracing && !@use_single_threaded_coverage
+            )
+          end
         end
 
         def load_datadog_cov!
