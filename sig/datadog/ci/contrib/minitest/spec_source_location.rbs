@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module Contrib
+      module Minitest
+        module SpecSourceLocation
+          module ClassMethods : Class
+            def inherited: (Class & Helpers::RunnableClassMethods subclass) -> void
+          end
+
+          def self.resolve: (Array[Thread::Backtrace::Location] locations) -> String?
+        end
+      end
+    end
+  end
+end

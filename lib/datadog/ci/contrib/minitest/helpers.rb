@@ -8,6 +8,8 @@ module Datadog
       module Minitest
         module Helpers
           module RunnableClassMethods
+            attr_accessor :dd_spec_source_file
+
             # Apply these declarations to named test methods, after defining them.
             def datadog_prevent_failure_suppression(*test_names)
               declarations = (@datadog_prevent_failure_suppression_tests ||= {})
@@ -148,6 +150,10 @@ module Datadog
             else
               klass_source_location || method_source_location
             end
+          end
+
+          def self.discovery_source_file(klass, method_name)
+            klass.dd_spec_source_file || extract_runnable_source_location(klass, method_name)&.first
           end
 
           def self.skip_test_suite(test_suite)

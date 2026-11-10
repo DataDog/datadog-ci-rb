@@ -4,6 +4,7 @@ require_relative "runner"
 require_relative "reporter"
 require_relative "test"
 require_relative "runnable"
+require_relative "spec_source_location"
 
 require_relative "runnable_minitest_6"
 require_relative "parallel_executor_minitest_6"
@@ -32,6 +33,8 @@ module Datadog
 
             # tests; test suites (when executed concurrently)
             ::Minitest::Test.include(Test)
+            # Works whether minitest/spec is loaded before or after instrumentation.
+            ::Minitest::Test.singleton_class.prepend(SpecSourceLocation::ClassMethods)
             # test session finish
             ::Minitest::CompositeReporter.include(Reporter)
           end
