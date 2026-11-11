@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "discovery_execution"
+
 module SharedDiscoveryTests
   def test_contract
-    puts "EXECUTED_SHARED_CONTRACT"
+    MinitestDiscoveryFixtures::EXECUTED_TESTS << name
     assert_equal 2, 1 + 1
   end
 
@@ -17,7 +19,7 @@ end
 
 module SharedDiscoveryMethods
   def test_shared_nested
-    puts "EXECUTED_SHARED_NESTED"
+    MinitestDiscoveryFixtures::EXECUTED_TESTS << name
     assert true
   end
 end

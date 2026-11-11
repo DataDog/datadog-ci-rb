@@ -21,10 +21,12 @@ RSpec.describe "Minitest discovery source files" do
 
   before do
     Minitest::Runnable.reset
+    MinitestDiscoveryFixtures::EXECUTED_TESTS.clear
   end
 
   after do
     Minitest::Runnable.reset
+    MinitestDiscoveryFixtures::EXECUTED_TESTS.clear
   end
 
   it "discovers executable files for shared, nested, generated, anonymous and ordinary tests without changing identities" do
@@ -67,16 +69,10 @@ RSpec.describe "Minitest discovery source files" do
 
     it "runs both tests natively, together and as independently loaded files" do
       [[first_file], [second_file], [first_file, second_file]].each do |files|
-        stdout, stderr, status = Open3.capture3(
-          {"RUBYOPT" => nil, "DD_CIVISIBILITY_ENABLED" => "false"},
-          RbConfig.ruby, "-rbundler/setup", "-e",
-          'ARGV.each { |file| require File.expand_path(file) }; exit(Minitest.run(["--no-plugins"]) ? 0 : 1)',
-          *files
-        )
-
-        expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
-        expect(stdout).to include("EXECUTED_REOPENED_FIRST") if files.include?(first_file)
-        expect(stdout).to include("EXECUTED_REOPENED_SECOND") if files.include?(second_file)
+        expected_tests = []
+        expected_tests << "test_from_first_file" if files.include?(first_file)
+        expected_tests << "test_from_second_file" if files.include?(second_file)
+        run_fixture_natively(files, expected_tests)
       end
     end
 
@@ -95,6 +91,22 @@ RSpec.describe "Minitest discovery source files" do
           "suiteSourceFile" => second_file
         )
       )
+    end
+  end
+
+  context "when a spec superclass defines an inheritance hook" do
+    let(:fixture_path) { "spec/datadog/ci/contrib/minitest/helpers/inheritance_hook_test.rb" }
+
+    it "registers the subclass through the hook and runs its mixin test natively" do
+      run_fixture_natively([fixture_path], ["test_local_contract"])
+    end
+
+    it "discovers the subclass file instead of the inheritance hook's helper file" do
+      expect(discover_fixture).to contain_exactly(hash_including(
+        "name" => "test_local_contract",
+        "suite" => "InheritanceHookDiscoverySpec at #{fixture_path}",
+        "suiteSourceFile" => fixture_path
+      ))
     end
   end
 
@@ -132,6 +144,22 @@ RSpec.describe "Minitest discovery source files" do
     end
   end
 
+  def run_fixture_natively(fixture_paths, expected_tests)
+    script = <<~RUBY
+      ARGV.each { |file| require File.expand_path(file) }
+      passed = Minitest.run(["--no-plugins"])
+      executed_tests = MinitestDiscoveryFixtures::EXECUTED_TESTS
+      abort "Unexpected executed tests: \#{executed_tests.inspect}" unless executed_tests.sort == #{expected_tests.sort.inspect}
+      exit(passed ? 0 : 1)
+    RUBY
+    stdout, stderr, status = Open3.capture3(
+      {"RUBYOPT" => nil, "DD_CIVISIBILITY_ENABLED" => "false"},
+      RbConfig.ruby, "-rbundler/setup", "-e", script, *fixture_paths
+    )
+
+    expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
+  end
+
   def discover_fixture(instrument_after_definition: false, fixture_paths: [fixture_path])
     Dir.mktmpdir("minitest-discovery") do |directory|
       output_path = File.join(directory, "tests.json")
@@ -151,7 +179,9 @@ RSpec.describe "Minitest discovery source files" do
           c.ci.instrument :minitest
         end
         #{fixture_files.inspect}.each { |file| require file } unless #{instrument_after_definition}
-        exit(Minitest.run(["--no-plugins"]) ? 0 : 1)
+        passed = Minitest.run(["--no-plugins"])
+        abort "Discovery executed tests" unless MinitestDiscoveryFixtures::EXECUTED_TESTS.empty?
+        exit(passed ? 0 : 1)
       RUBY
       stdout, stderr, status = Open3.capture3(
         {"RUBYOPT" => nil},
@@ -159,7 +189,6 @@ RSpec.describe "Minitest discovery source files" do
       )
 
       expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
-      expect(stdout).not_to include("EXECUTED_SHARED_", "EXECUTED_REOPENED_")
       expect(File.exist?(output_path)).to be(true), "Missing discovery output. stdout:\n#{stdout}\nstderr:\n#{stderr}"
       File.readlines(output_path).map { |line| JSON.parse(line) }
     end

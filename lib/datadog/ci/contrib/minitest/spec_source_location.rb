@@ -29,7 +29,7 @@ module Datadog
             # creates them. Do not inherit a superclass's file: it may be a helper
             # subclassed by independent specs in several different test files.
             index = locations.rindex { |location| location.path == spec_dsl_file && location.base_label == "describe" }
-            location = index ? locations[index + 1] : locations.first
+            location = index ? locations[index + 1] : locations.find { |candidate| candidate.base_label != "inherited" }
             location&.path
           end
         end
