@@ -152,7 +152,7 @@ module Datadog
             end
           end
 
-          def self.discovery_source_file(klass, method_name)
+          def self.test_entrypoint_file(klass, method_name)
             spec_file = klass.dd_spec_source_file
             return extract_runnable_source_location(klass, method_name)&.first unless spec_file
 

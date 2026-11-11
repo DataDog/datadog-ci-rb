@@ -62,7 +62,7 @@ module Datadog
 
           def self.extract_runnable_source_location: (untyped? klass, String method_name) -> ([String, Integer] | Array[untyped])?
 
-          def self.discovery_source_file: (_RunnableClass klass, String method_name) -> String?
+          def self.test_entrypoint_file: (_RunnableClass klass, String method_name) -> String?
         end
       end
     end
