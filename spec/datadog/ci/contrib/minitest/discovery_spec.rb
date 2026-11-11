@@ -134,6 +134,12 @@ RSpec.describe "Minitest discovery source files" do
   context "during execution" do
     let(:test_discovery_enabled) { false }
 
+    it "does not capture spec entrypoint metadata" do
+      klass = Class.new(Minitest::Spec) { include SharedDiscoveryMethods }
+
+      expect(klass.dd_spec_source_file).to be_nil
+    end
+
     it "preserves shared-method source attribution" do
       Class.new(Minitest::Spec) { include SharedDiscoveryMethods }
 

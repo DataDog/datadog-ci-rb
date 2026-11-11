@@ -13,6 +13,7 @@ module Datadog
               super
 
               begin
+                return unless Datadog.send(:components).test_discovery.enabled?
                 return unless defined?(::Minitest::Spec) && ancestors.include?(::Minitest::Spec)
 
                 subclass.dd_spec_source_file = SpecSourceLocation.resolve(caller_locations)
