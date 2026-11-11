@@ -153,7 +153,15 @@ module Datadog
           end
 
           def self.discovery_source_file(klass, method_name)
-            klass.dd_spec_source_file || extract_runnable_source_location(klass, method_name)&.first
+            spec_file = klass.dd_spec_source_file
+            return extract_runnable_source_location(klass, method_name)&.first unless spec_file
+
+            method = klass.instance_method(method_name)
+            if method.owner == klass
+              method.source_location&.first || spec_file
+            else
+              spec_file
+            end
           end
 
           def self.skip_test_suite(test_suite)

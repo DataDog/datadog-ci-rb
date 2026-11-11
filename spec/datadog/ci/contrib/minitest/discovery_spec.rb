@@ -61,6 +61,43 @@ RSpec.describe "Minitest discovery source files" do
     ))
   end
 
+  context "when a named spec class is reopened in separate files" do
+    let(:first_file) { "spec/datadog/ci/contrib/minitest/helpers/reopened_first_test.rb" }
+    let(:second_file) { "spec/datadog/ci/contrib/minitest/helpers/reopened_second_test.rb" }
+
+    it "runs both tests natively, together and as independently loaded files" do
+      [[first_file], [second_file], [first_file, second_file]].each do |files|
+        stdout, stderr, status = Open3.capture3(
+          {"RUBYOPT" => nil, "DD_CIVISIBILITY_ENABLED" => "false"},
+          RbConfig.ruby, "-rbundler/setup", "-e",
+          'ARGV.each { |file| require File.expand_path(file) }; exit(Minitest.run(["--no-plugins"]) ? 0 : 1)',
+          *files
+        )
+
+        expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
+        expect(stdout).to include("EXECUTED_REOPENED_FIRST") if files.include?(first_file)
+        expect(stdout).to include("EXECUTED_REOPENED_SECOND") if files.include?(second_file)
+      end
+    end
+
+    it "discovers each test under the file that must be loaded to execute it" do
+      tests = discover_fixture(fixture_paths: [first_file, second_file])
+
+      expect(tests).to contain_exactly(
+        hash_including(
+          "name" => "test_from_first_file",
+          "suite" => "ReopenedDiscoverySpec at #{first_file}",
+          "suiteSourceFile" => first_file
+        ),
+        hash_including(
+          "name" => "test_from_second_file",
+          "suite" => "ReopenedDiscoverySpec at #{second_file}",
+          "suiteSourceFile" => second_file
+        )
+      )
+    end
+  end
+
   it "logs a real capture failure when a customer's inheritance hook freezes the subclass" do
     output = StringIO.new
     Datadog.configure { |c| c.logger.instance = Logger.new(output) }
@@ -95,15 +132,16 @@ RSpec.describe "Minitest discovery source files" do
     end
   end
 
-  def discover_fixture(instrument_after_definition: false)
+  def discover_fixture(instrument_after_definition: false, fixture_paths: [fixture_path])
     Dir.mktmpdir("minitest-discovery") do |directory|
       output_path = File.join(directory, "tests.json")
+      fixture_files = fixture_paths.map { |path| File.expand_path(path) }
       # Use a fresh Ruby process: RSpec deliberately undefines the global
       # describe DSL on Module, so real Minitest fixtures cannot run beside it.
       script = <<~RUBY
         require "minitest/spec"
         require "datadog/ci"
-        require #{File.expand_path(fixture_path).inspect} if #{instrument_after_definition}
+        #{fixture_files.inspect}.each { |file| require file } if #{instrument_after_definition}
         Datadog.configure do |c|
           c.ci.enabled = true
           c.ci.agentless_mode_enabled = true
@@ -112,7 +150,7 @@ RSpec.describe "Minitest discovery source files" do
           c.ci.test_discovery_output_path = #{output_path.inspect}
           c.ci.instrument :minitest
         end
-        require #{File.expand_path(fixture_path).inspect} unless #{instrument_after_definition}
+        #{fixture_files.inspect}.each { |file| require file } unless #{instrument_after_definition}
         exit(Minitest.run(["--no-plugins"]) ? 0 : 1)
       RUBY
       stdout, stderr, status = Open3.capture3(
@@ -121,7 +159,7 @@ RSpec.describe "Minitest discovery source files" do
       )
 
       expect(status).to be_success, "stdout:\n#{stdout}\nstderr:\n#{stderr}"
-      expect(stdout).not_to include("EXECUTED_SHARED_")
+      expect(stdout).not_to include("EXECUTED_SHARED_", "EXECUTED_REOPENED_")
       expect(File.exist?(output_path)).to be(true), "Missing discovery output. stdout:\n#{stdout}\nstderr:\n#{stderr}"
       File.readlines(output_path).map { |line| JSON.parse(line) }
     end
