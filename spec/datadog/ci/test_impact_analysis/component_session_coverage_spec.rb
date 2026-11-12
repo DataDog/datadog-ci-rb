@@ -19,6 +19,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
       itr_enabled?: true, code_coverage_enabled?: coverage_enabled, tests_skipping_enabled?: false)
   end
   let(:coverage_enabled) { true }
+  let(:test_collector) do
+    Datadog::CI::TestImpactAnalysis::Coverage::DDCov.new(
+      root: root, ignored_path: nil, threading_mode: :multi, use_allocation_tracing: false
+    )
+  end
 
   def define_fixture(name)
     path = File.join(root, "#{name}.rb")
@@ -44,10 +49,14 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
     allow(writer).to receive(:write) { |event| events << event }
     suite.set_internal_tag(Datadog::CI::Ext::Test::TAG_TEST_SESSION_ID, session.id.to_s)
     component.configure(settings, session)
+    # Each example uses a distinct temporary repository; avoid the production
+    # thread-local collector retaining a different example's root.
+    allow(component).to receive(:coverage_collector).and_return(test_collector) if coverage_enabled
   end
 
   after do
     component.shutdown!
+    test_collector.stop if coverage_enabled
     FileUtils.remove_entry(root)
   end
 

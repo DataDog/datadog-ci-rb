@@ -190,7 +190,10 @@ is not a union of their coverage.
 
 Collection starts after the runner creates/configures its session and stops before
 the first suite, context hook, or test starts. During this window it records Ruby
-method/block execution and file access. Repository and bundle-path filtering still
+method/block execution and file access through the three `contrib/file_access`
+hooks (`File#initialize`, `File.read`, and `File.binread`). These hooks are installed
+only after remote configuration enables coverage, and report through the TIA
+component's public API. Repository and bundle-path filtering still
 apply. An empty session produces no session coverage event, and finishing or
 shutting down an unfinished session disables collection. Repeated starts of the
 same session do not reset its dependencies; a new session starts fresh.

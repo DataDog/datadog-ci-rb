@@ -40,8 +40,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
   let(:configure) { component.configure(remote_configuration, test_session) }
 
-  after { component.shutdown! }
-
   before do
     allow(writer).to receive(:write)
     allow_any_instance_of(Datadog::CI::Test)
@@ -631,11 +629,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FINISHED, 1
-      it "reports the number of covered files" do
-        event = subject
-        metric = telemetry_metric(:distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES)
-        expect(metric.value).to eq(event.inspect_coverage.size)
-      end
+      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 6.0
     end
 
     context "when test is skipped" do

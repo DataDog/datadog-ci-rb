@@ -13,11 +13,11 @@ module Datadog
           @loading: Hash[Thread, Integer]
           @failed: bool
           @tracepoint: TracePoint?
-          @file_access: FileAccess
 
           def initialize: (root: String, ignored_path: String?) -> void
           def start: () -> void
           def stop: () -> Hash[String, bool]
+          def record_file_read: (String path) -> void
 
           private
 

@@ -25,6 +25,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Session do
 
   after do
     collector.stop
+    Thread.current[:session_coverage] = nil
     $LOADED_FEATURES.reject! { |path| path.start_with?(root + "/") }
     FileUtils.remove_entry(root)
   end
@@ -65,11 +66,12 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Session do
   it "collects shared fixture reads but excludes IO performed by eager-loading bodies" do
     fixture_path = write_source("fixtures/shared.json", "{}")
     unused_path = write_source("fixtures/unused.json", "{}")
-    loader = write_source("boot.rb", "File.read(#{unused_path.dump})")
+    loader = write_source("boot.rb", "Thread.current[:session_coverage].record_file_read(#{unused_path.dump})")
 
     collector.start
+    Thread.current[:session_coverage] = collector
     require loader
-    File.read(fixture_path)
+    collector.record_file_read(fixture_path)
     expect(collector.stop).to eq(fixture_path => true)
   end
 
@@ -142,7 +144,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Session do
     pid = fork do
       reader.close
       fixture.child_setup
-      File.read(child_fixture)
+      collector.record_file_read(child_fixture)
       Marshal.dump(collector.stop, writer)
       writer.close
       exit! 0
@@ -162,7 +164,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Session do
     expect(Datadog.logger).to receive(:warn).with(/Failed to collect session coverage/)
     collector.start
     expect { fixture.setup }.not_to raise_error
-    File.read(unread)
+    collector.record_file_read(unread)
     expect(collector.stop).to be_empty
   end
 end

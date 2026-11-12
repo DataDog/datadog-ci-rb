@@ -57,6 +57,13 @@ module Datadog
         def on_test_session_finished
         end
 
+        def collecting_session_coverage?
+          false
+        end
+
+        def record_file_dependency(_test, _file)
+        end
+
         def start_coverage
         end
 

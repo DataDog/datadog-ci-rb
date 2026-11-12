@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "file_access"
-
 module Datadog
   module CI
     module TestImpactAnalysis
@@ -22,8 +20,6 @@ module Datadog
             @loading = Hash.new(0)
             @tracepoint = nil
             @failed = false
-            @file_access = FileAccess.new(root: root, ignored_path: ignored_path,
-              threading_mode: :multi, inherit_on_fork: true) { !@failed && @loading[Thread.current].zero? }
           end
 
           def start
@@ -45,11 +41,9 @@ module Datadog
               Datadog.logger.warn("Failed to collect session coverage: #{e.class}: #{e.message}")
             end
             @tracepoint&.enable
-            @file_access.start
             nil
           rescue => e
             @tracepoint&.disable
-            @file_access.stop
             Datadog.logger.warn("Failed to start session coverage: #{e.class}: #{e.message}")
             nil
           end
@@ -57,10 +51,16 @@ module Datadog
           def stop
             @tracepoint&.disable
             @tracepoint = nil
-            files = @files.merge(@file_access.stop)
+            files = @files
             @loading.clear
             @files = {}
             files
+          end
+
+          def record_file_read(path)
+            return unless @tracepoint && !@failed && @loading[Thread.current].zero?
+
+            record(path)
           end
 
           private

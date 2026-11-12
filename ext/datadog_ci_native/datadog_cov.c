@@ -162,7 +162,6 @@ static VALUE dd_cov_allocate(VALUE klass) {
     dd_cov_data->seen_filenames[i] = Qnil;
   }
   dd_cov_data->threading_mode = multi;
-  dd_cov_data->th_covered = Qnil;
 
   dd_cov_data->allocation_tracing_enabled = false;
   dd_cov_data->allocation_hook_active = false;
@@ -469,15 +468,15 @@ static VALUE dd_cov_stop(VALUE self) {
 
   // stop line tracepoint
   if (dd_cov_data->threading_mode == single) {
-    // Component shutdown can run on the coordinator thread after workers exit.
-    // Remove only this collector's hook from the thread that owns it.
-    if (dd_cov_data->th_covered != Qnil) {
-      rb_thread_remove_event_hook_with_data(dd_cov_data->th_covered,
-                                           on_line_event, self);
-      dd_cov_data->th_covered = Qnil;
+    VALUE thval = rb_thread_current();
+    if (!rb_equal(thval, dd_cov_data->th_covered)) {
+      rb_raise(rb_eRuntimeError, "Coverage was not started by this thread");
     }
+
+    rb_thread_remove_event_hook(dd_cov_data->th_covered, on_line_event);
+    dd_cov_data->th_covered = Qnil;
   } else {
-    rb_remove_event_hook_with_data(on_line_event, self);
+    rb_remove_event_hook(on_line_event);
   }
 
   // Remove only this collector's hook; other concurrently active collectors

@@ -32,6 +32,10 @@ module Datadog
 
         def on_test_session_finished: () -> void
 
+        def collecting_session_coverage?: () -> bool
+
+        def record_file_dependency: (Datadog::CI::Test? test, String | File file) -> void
+
         def start_coverage: () -> void
 
         def stop_coverage: () -> Hash[String, untyped]?

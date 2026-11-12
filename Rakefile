@@ -28,6 +28,9 @@ TEST_METADATA = {
   "ddcov" => {
     "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0"
   },
+  "file_access" => {
+    "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0"
+  },
   "git" => {
     "" => "✅ 2.7 / ✅ 3.0 / ✅ 3.1 / ✅ 3.2 / ✅ 3.3 / ✅ 3.4 / ✅ 4.0"
   },
@@ -184,6 +187,7 @@ namespace :spec do
 
   # Datadog CI integrations
   %i[
+    file_access
     cucumber
     rspec
     minitest
