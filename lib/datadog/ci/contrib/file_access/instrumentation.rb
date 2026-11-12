@@ -5,53 +5,43 @@ module Datadog
     module Contrib
       module FileAccess
         module Instrumentation
-          def self.active_test
-            return if Thread.current.thread_variable_get(:dd_recording_file_dependency)
-
-            components = Datadog.send(:components, allow_initialization: false)
-            components.test_tracing.active_test if components&.test_impact_analysis&.code_coverage?
-          rescue => e
-            warn_failure(e)
+          def self.test_impact_analysis
+            Datadog.send(:components, allow_initialization: false)&.test_impact_analysis
+          rescue => error
+            # The component/logger may be inaccessible (for example in a Ractor).
+            # Use stderr here so reporting cannot re-enter the File hooks.
+            begin
+              Kernel.warn("Failed to access file dependency instrumentation: #{error}")
+            rescue
+              nil
+            end
             nil
-          end
-
-          def self.warn_failure(error)
-            Thread.current.thread_variable_set(:dd_recording_file_dependency, true)
-            Datadog.logger.warn("Failed to collect file dependency: #{error}")
-          rescue
-            nil
-          ensure
-            Thread.current.thread_variable_set(:dd_recording_file_dependency, false)
           end
 
           module InstanceMethods
             # Also covers File.open and local-file Kernel.open, before their blocks run.
-            def initialize(*args, **options)
+            def initialize(*args)
               super
-              if (test = Instrumentation.active_test)
-                Datadog.send(:components).test_impact_analysis.record_file_dependency(test, self)
-              end
+              Instrumentation.test_impact_analysis&.record_file_dependency(self)
             end
+            ruby2_keywords(:initialize)
           end
 
           module ClassMethods
             # Ruby opens these directly in C, bypassing File#initialize.
-            def read(path, *args, **options, &block)
-              if (test = Instrumentation.active_test)
-                # Coerce once, preserving the caller's conversion and IO exceptions.
-                path = ::File.path(path)
-                Datadog.send(:components).test_impact_analysis.record_file_dependency(test, path)
-              end
+            def read(path, *args)
+              component = Instrumentation.test_impact_analysis
+              path = component.prepare_file_read(path) if component
               super
             end
+            ruby2_keywords(:read)
 
-            def binread(path, *args, **options, &block)
-              if (test = Instrumentation.active_test)
-                path = ::File.path(path)
-                Datadog.send(:components).test_impact_analysis.record_file_dependency(test, path)
-              end
+            def binread(path, *args)
+              component = Instrumentation.test_impact_analysis
+              path = component.prepare_file_read(path) if component
               super
             end
+            ruby2_keywords(:binread)
           end
         end
       end

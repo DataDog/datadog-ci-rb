@@ -3,18 +3,17 @@ module Datadog
     module Contrib
       module FileAccess
         module Instrumentation
-          def self.active_test: () -> Datadog::CI::Test?
-          def self.warn_failure: (StandardError error) -> void
+          def self.test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)?
 
           module InstanceMethods : ::File
             # File construction accepts both paths and descriptors, with
-            # platform/version-specific IO options passed through unchanged.
-            def initialize: (*untyped, **untyped) -> void
+            # platform/version-specific IO options passed through ruby2_keywords.
+            def initialize: (*untyped) -> void
           end
 
           module ClassMethods : Class
-            def read: (String | _ToPath | _ToStr path, *untyped, **untyped) ?{ (*untyped) -> untyped } -> String
-            def binread: (String | _ToPath | _ToStr path, *untyped, **untyped) ?{ (*untyped) -> untyped } -> String
+            def read: (String | _ToPath | _ToStr path, *untyped) ?{ (*untyped) -> untyped } -> String
+            def binread: (String | _ToPath | _ToStr path, *untyped) ?{ (*untyped) -> untyped } -> String
           end
         end
       end

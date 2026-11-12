@@ -1,0 +1,22 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class FileDependencies
+          @root: String
+          @ignored_path: String?
+
+          def initialize: (root: String, ignored_path: String?) -> void
+          def paths_for: (String | File file) -> Array[String]
+
+          private
+
+          def native_paths: (String path, String root, String? ignored_path) -> Array[String]?
+
+          def resolve_target: (String path) -> String?
+          def included?: (String path) -> bool
+        end
+      end
+    end
+  end
+end

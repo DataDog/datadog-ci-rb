@@ -13,6 +13,8 @@ module Datadog
         @correlation_id: String?
         @skippable_tests: Set[String]
         @skippable_suites: Set[String]
+        @file_dependencies: Coverage::FileDependencies?
+        @test_tracing: (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)?
         @coverage_writer: Datadog::CI::AsyncWriter?
 
         @api: Datadog::CI::Transport::Api::Base?
@@ -26,6 +28,7 @@ module Datadog
         @test_skipping_mode: String
 
         @mutex: Thread::Mutex
+        @suite_file_dependency_targets: Hash[Thread, Datadog::CI::TestSuite]
 
         # Context coverage: stores coverage collected during before(:context)/before(:all) hooks
         @context_coverages: Hash[String, Hash[String, untyped]]
@@ -33,6 +36,7 @@ module Datadog
 
         # Currently active context ID for context coverage collection
         @current_context_id: String?
+        @current_context_thread: Thread?
         @current_context_id_mutex: Thread::Mutex
 
         attr_reader skippable_tests: Set[String]
@@ -72,7 +76,9 @@ module Datadog
 
         def code_coverage?: () -> bool
 
-        def record_file_dependency: (Datadog::CI::Test test, String | File file) -> void
+        def prepare_file_read: (String | _ToPath | _ToStr path) -> (String | _ToPath | _ToStr)
+
+        def record_file_dependency: (String | File file) -> void
 
         def start_coverage: () -> void
 
@@ -115,6 +121,12 @@ module Datadog
         def restore_state_from_datadog_test_runner: () -> bool
 
         private
+
+        def file_dependency_target: () -> (Datadog::CI::Test | Datadog::CI::TestSuite | String)?
+
+        def record_file_dependency_for: (Datadog::CI::Test | Datadog::CI::TestSuite | String target, String | File file) -> void
+
+        def warn_file_dependency_failure: (StandardError error) -> void
 
         def skippables_count: () -> Integer
 

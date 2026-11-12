@@ -18,6 +18,7 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
+require_relative "coverage/file_dependencies"
 require_relative "coverage/transport"
 require_relative "skippable"
 require_relative "telemetry"
@@ -81,6 +82,7 @@ module Datadog
           @skippable_suites = Set.new
 
           @mutex = Mutex.new
+          @suite_file_dependency_targets = {}
 
           # Context coverage: stores coverage collected during before(:context)/before(:all) hooks
           # keyed by context_id (e.g., RSpec scoped_id for example groups)
@@ -90,6 +92,7 @@ module Datadog
 
           # Currently active context ID for context coverage collection
           @current_context_id = nil
+          @current_context_thread = nil
           @current_context_id_mutex = Mutex.new
 
           Datadog.logger.debug("TestImpactAnalysis initialized with enabled: #{@enabled}")
@@ -149,45 +152,20 @@ module Datadog
           @code_coverage_enabled
         end
 
-        # Contrib reports only reads/opens made by the active test. Reuse the
-        # existing impacted-files path, including its suite aggregation.
-        def record_file_dependency(test, file)
-          return unless code_coverage?
-          return if Thread.current.thread_variable_get(:dd_recording_file_dependency)
+        # Preserve Ruby's path coercion exactly once, including customer errors.
+        # Inactive instrumentation passes the original argument through untouched.
+        def prepare_file_read(path)
+          target = file_dependency_target
+          return path unless target
 
-          begin
-            Thread.current.thread_variable_set(:dd_recording_file_dependency, true)
-            path = file.is_a?(File) ? file.path : file
-            return unless path
+          path = File.path(path)
+          record_file_dependency_for(target, path)
+          path
+        end
 
-            paths = [File.absolute_path(path)]
-            begin
-              # Resolve the original spelling: collapsing .. before following
-              # a directory symlink can point at a different file.
-              resolved = File.realpath(path)
-              paths << resolved unless resolved == paths.first
-            rescue SystemCallError
-              # Preserve the opened name for missing targets and filesystem races.
-              nil
-            end
-
-            root = File.join(Git::LocalRepository.root, "")
-            bundle_location = @bundle_location
-            ignored = File.join(bundle_location, "") if bundle_location
-            paths.select! do |dependency|
-              dependency.start_with?(root) && !(ignored && dependency.start_with?(ignored))
-            end
-
-            test.add_impacted_files(paths) unless paths.empty?
-          rescue => e
-            begin
-              Datadog.logger.warn("Failed to collect file dependency: #{e}")
-            rescue
-              nil
-            end
-          ensure
-            Thread.current.thread_variable_set(:dd_recording_file_dependency, false)
-          end
+        def record_file_dependency(file)
+          target = file_dependency_target
+          record_file_dependency_for(target, file) if target
         end
 
         # Starts coverage collection.
@@ -227,6 +205,7 @@ module Datadog
           # Store the context_id we're collecting for
           @current_context_id_mutex.synchronize do
             @current_context_id = context_id
+            @current_context_thread = Thread.current
           end
 
           coverage_collector&.start
@@ -315,6 +294,13 @@ module Datadog
         def clear_context_coverage(context_id)
           return unless context_coverage_enabled?
 
+          @current_context_id_mutex.synchronize do
+            if @current_context_id == context_id
+              @current_context_id = nil
+              @current_context_thread = nil
+            end
+          end
+
           @context_coverages_mutex.synchronize do
             @context_coverages.delete(context_id)
 
@@ -388,10 +374,17 @@ module Datadog
 
           Telemetry.code_coverage_started(test_suite)
           coverage_collector&.start
+          @mutex.synchronize { @suite_file_dependency_targets[Thread.current] = test_suite }
         end
 
         def on_test_suite_finished(test_suite, context)
           return unless enabled?
+
+          if suite_skipping_mode?
+            @mutex.synchronize do
+              @suite_file_dependency_targets.delete_if { |_, suite| suite.equal?(test_suite) }
+            end
+          end
 
           skipped_count = if suite_skipping_mode?
             test_suite.skipped_by_test_impact_analysis? ? 1 : 0
@@ -481,6 +474,64 @@ module Datadog
         end
 
         private
+
+        def file_dependency_target
+          return unless code_coverage?
+          return if Thread.current[:dd_logging_file_dependency_error]
+
+          test_tracing = @test_tracing ||= Datadog.send(:components).test_tracing
+          test = test_tracing.active_test
+          return test if test
+          if suite_skipping_mode?
+            # Suite hooks have no active test; follow the native collector's thread.
+            return @mutex.synchronize { @suite_file_dependency_targets[Thread.current] }
+          end
+          return unless @current_context_id
+
+          @current_context_id_mutex.synchronize do
+            @current_context_id if @current_context_thread == Thread.current
+          end
+        rescue => error
+          warn_file_dependency_failure(error)
+          nil
+        end
+
+        def record_file_dependency_for(target, file)
+          file_dependencies = @file_dependencies ||= Coverage::FileDependencies.new(
+            root: Git::LocalRepository.root, ignored_path: @bundle_location
+          )
+          paths = file_dependencies.paths_for(file)
+          return if paths.empty?
+
+          if target.is_a?(String)
+            # Context dependencies share the existing coverage inheritance and
+            # cleanup lifecycle, including outer/nested context merging.
+            @context_coverages_mutex.synchronize do
+              coverage = @context_coverages[target] ||= {}
+              paths.each { |path| coverage[path] = true }
+            end
+          else
+            target.add_impacted_files(paths)
+          end
+        rescue => error
+          warn_file_dependency_failure(error)
+        end
+
+        def warn_file_dependency_failure(error)
+          return if Thread.current[:dd_logging_file_dependency_error]
+
+          # A logger may open/read files while reporting a recording failure.
+          # Suppress only that recursive work. Thread#[] is fiber-local, like
+          # the active test, so other fibers/threads continue recording normally.
+          begin
+            Thread.current[:dd_logging_file_dependency_error] = true
+            Datadog.logger.warn("Failed to collect file dependency: #{error}")
+          rescue
+            nil
+          ensure
+            Thread.current[:dd_logging_file_dependency_error] = false
+          end
+        end
 
         def skippables_count
           current_skippables.count
@@ -648,6 +699,7 @@ module Datadog
           context_id = @current_context_id_mutex.synchronize do
             id = @current_context_id
             @current_context_id = nil
+            @current_context_thread = nil
             id
           end
           return if context_id.nil?
@@ -656,7 +708,7 @@ module Datadog
           return if coverage.nil? || coverage.empty?
 
           @context_coverages_mutex.synchronize do
-            @context_coverages[context_id] = coverage
+            (@context_coverages[context_id] ||= {}).merge!(coverage)
           end
 
           Datadog.logger.debug do

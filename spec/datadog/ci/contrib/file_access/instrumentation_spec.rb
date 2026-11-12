@@ -9,6 +9,9 @@ require "open3"
 RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
   include_context "CI mode activated"
 
+  # Native collectors retain repository boundaries per thread.
+  around { |example| Thread.new { example.run }.value }
+
   let(:itr_enabled) { true }
   let(:code_coverage_enabled) { true }
   let(:root) { Datadog::CI::Git::LocalRepository.root }
@@ -146,6 +149,56 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       end
     end
 
+    it "records the selected hard-link name when resolving a symlink" do
+      hardlink = File.join(directory, "hardlink.json")
+      link = File.join(directory, "alias.json")
+      File.link(path, hardlink)
+      File.symlink("hardlink.json", link)
+
+      read_in_test do |test|
+        File.read(link)
+        expect(test.lock_custom_impacted_files).to contain_exactly(link, hardlink)
+      end
+    end
+
+    it "preserves Unicode paths, including targets of ASCII symlinks" do
+      unicode = File.join(directory, "caf\u00e9.json")
+      link = File.join(directory, "unicode.json")
+      File.write(unicode, "Unicode fixture")
+      File.symlink(unicode, link)
+
+      read_in_test do |test|
+        expect(File.read(unicode)).to eq("Unicode fixture")
+        File.read(link)
+        expect(test.lock_custom_impacted_files).to match_array([unicode, File.realpath(unicode), link].uniq)
+      end
+    end
+
+    it "preserves literal tildes and normalizes redundant separators" do
+      literal = File.join(directory, "~fixture.json")
+      File.write(literal, "literal tilde")
+
+      read_in_test do |test|
+        Dir.chdir(directory) do
+          expect(File.read("~fixture.json")).to eq("literal tilde")
+          File.read("././fixture.json")
+          File.read("#{directory}//fixture.json")
+        end
+        expect(test.lock_custom_impacted_files).to contain_exactly(literal, path)
+      end
+    end
+
+    it "retains Ruby resolution when the native resolver declines a path" do
+      allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies).to receive(:native_paths).and_return(nil)
+      link = File.join(directory, "fallback.json")
+      File.symlink("fixture.json", link)
+
+      read_in_test do |test|
+        Dir.chdir(directory) { File.read("./fallback.json") }
+        expect(test.lock_custom_impacted_files).to contain_exactly(link, path)
+      end
+    end
+
     it "resolves a symlink again after it is retargeted" do
       link = File.join(directory, "alias.json")
       target = File.join(directory, "other.json")
@@ -202,6 +255,13 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       expect(Datadog.send(:components, allow_initialization: false)).to be_nil
     end
 
+    it "preserves reads when the instrumentation cannot access components" do
+      allow(Datadog).to receive(:components).and_call_original
+      allow(Datadog).to receive(:components).with(allow_initialization: false).and_raise("components unavailable")
+      expect(Kernel).to receive(:warn).with(/components unavailable/)
+      expect(File.read(path)).to eq('{"value":42}')
+    end
+
     it "preserves block return values and records the open before running the block" do
       read_in_test do |test|
         result = File.open(path) do |file|
@@ -221,6 +281,13 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       end
     end
 
+    it "forwards open keywords and blocks, and binread positional arguments" do
+      read_in_test do
+        expect(File.open(path, mode: "r", encoding: "UTF-8", &:read)).to eq('{"value":42}')
+        expect(File.binread(path, 5, 2)).to eq("value")
+      end
+    end
+
     it "preserves customer file and block exceptions" do
       read_in_test do
         expect { File.read(File.join(directory, "missing")) }.to raise_error(Errno::ENOENT)
@@ -234,6 +301,54 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
           2.times { File.read("./fixture.json") }
         end
         expect(test.lock_custom_impacted_files).to eq([path])
+      end
+    end
+
+    it "updates relative dependencies when the working directory changes in a test" do
+      other_directory = File.join(directory, "other")
+      Dir.mkdir(other_directory)
+      other_path = File.join(other_directory, "fixture.json")
+      File.write(other_path, "other contents")
+
+      read_in_test do |test|
+        Dir.chdir(directory) { File.read("fixture.json") }
+        Dir.chdir(other_directory) { File.read("fixture.json") }
+        expect(test.lock_custom_impacted_files).to contain_exactly(path, other_path)
+      end
+    end
+
+    it "updates relative dependencies when the current directory is renamed" do
+      original = File.join(directory, "original")
+      renamed = File.join(directory, "renamed")
+      Dir.mkdir(original)
+      File.write(File.join(original, "fixture.json"), "contents")
+
+      read_in_test do |test|
+        Dir.chdir(original) do
+          File.read("fixture.json")
+          File.rename(original, renamed)
+          File.read("fixture.json")
+        end
+        expect(test.lock_custom_impacted_files).to contain_exactly(
+          File.join(original, "fixture.json"), File.join(renamed, "fixture.json")
+        )
+      end
+    end
+
+    it "follows a symlink retargeted between reads in the same test" do
+      other_path = File.join(directory, "other.json")
+      link = File.join(directory, "alias.json")
+      File.write(other_path, "other contents")
+      File.symlink("fixture.json", link)
+
+      read_in_test do |test|
+        Dir.chdir(directory) do
+          File.read("alias.json")
+          File.unlink(link)
+          File.symlink("other.json", link)
+          File.read("alias.json")
+        end
+        expect(test.lock_custom_impacted_files).to contain_exactly(link, path, other_path)
       end
     end
 
@@ -263,6 +378,44 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
         allow(test).to receive(:add_impacted_files).and_raise("record failure")
         expect(Datadog.logger).to receive(:warn).with(/record failure/).and_raise("logger failure")
         expect(File.read(path)).to eq('{"value":42}')
+      end
+    end
+
+    it "does not recursively record files opened by the error logger, and resumes after logging" do
+      read_in_test do |test|
+        allow(test).to receive(:add_impacted_files).and_raise("record failure")
+        expect(Datadog.logger).to receive(:warn).once do
+          File.open(path).tap { |file| file.read }.close
+          File.read(path)
+        end
+        expect(File.read(path)).to eq('{"value":42}')
+
+        allow(test).to receive(:add_impacted_files).and_call_original
+        File.read(path)
+        expect(test.lock_custom_impacted_files).to eq([path])
+      end
+    end
+
+    [:thread, :fiber].each do |execution_context|
+      it "keeps recording in another #{execution_context} while an error is being logged" do
+        run_other_test = lambda do
+          read_in_test do |test|
+            File.read(path)
+            expect(test.lock_custom_impacted_files).to eq([path])
+          end
+        end
+
+        read_in_test do |test|
+          allow(test).to receive(:add_impacted_files).and_raise("record failure")
+          expect(Datadog.logger).to receive(:warn).once do
+            if execution_context == :thread
+              Thread.new(&run_other_test).value
+            else
+              Fiber.new(&run_other_test).resume
+            end
+          end
+          expect(File.read(path)).to eq('{"value":42}')
+        end
       end
     end
 

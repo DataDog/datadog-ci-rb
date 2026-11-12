@@ -8,7 +8,6 @@
 - Do not use `instance_variable_get` or `instance_variable_set`; add explicit APIs instead.
 - Do not change `spec/datadog/ci/release_gem_spec.rb` unless explicitly asked.
 - Do not add `CHANGELOG.md` entries for individual changes; the changelog is compiled at release time.
-- Never commit or push automatically. Git operations must be reviewed and approved by the user.
 
 ## Component boundaries
 
