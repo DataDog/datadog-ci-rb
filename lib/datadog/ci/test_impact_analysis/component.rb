@@ -195,15 +195,30 @@ module Datadog
             path = file.is_a?(File) ? file.path : file
             return unless path
 
-            path = File.absolute_path(path)
-            return unless path.start_with?(File.join(Git::LocalRepository.root, ""))
+            paths = [File.absolute_path(path)]
+            begin
+              # Resolve the original spelling: collapsing .. before following
+              # a directory symlink can point at a different file.
+              resolved = File.realpath(path)
+              paths << resolved unless resolved == paths.first
+            rescue SystemCallError
+              # Preserve the opened name for missing targets and filesystem races.
+              nil
+            end
+
+            root = File.join(Git::LocalRepository.root, "")
             bundle_location = @bundle_location
-            return if bundle_location && path.start_with?(File.join(bundle_location, ""))
+            ignored = File.join(bundle_location, "") if bundle_location
+            paths.select! do |dependency|
+              dependency.start_with?(root) && !(ignored && dependency.start_with?(ignored))
+            end
+
+            return if paths.empty?
 
             if test
-              test.add_impacted_files([path])
+              test.add_impacted_files(paths)
             else
-              @session_coverage&.record_file_read(path)
+              paths.each { |dependency| @session_coverage&.record_file_read(dependency) }
             end
           rescue => e
             begin

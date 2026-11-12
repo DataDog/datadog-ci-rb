@@ -90,6 +90,17 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       "File.read" => ->(file) { File.read(file) },
       "File.binread" => ->(file) { File.binread(file) }
     }.each do |name, operation|
+      it "records the symlink alias and target for #{name} during session setup" do
+        alias_path = File.join(directory, "alias.json")
+        File.symlink(path, alias_path)
+        test_tracing.start_test_session
+        operation.call(alias_path)
+        test_tracing.start_test_suite("suite")
+
+        shared = events.find { |event| event.test_id.nil? && event.test_suite_id.nil? }
+        expect(shared.inspect_coverage).to include(alias_path => true, path => true)
+      end
+
       it "records #{name} at session level and leaves later reads scoped to their test" do
         test_tracing.start_test_session
         expect(component).to be_collecting_session_coverage
@@ -112,7 +123,9 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
 
     it "excludes reads performed while requiring or loading unused application code" do
       loader = File.join(directory, "eager.rb")
-      File.write(loader, "File.read(#{path.dump}); File.binread(#{path.dump}); File.open(#{path.dump}, &:read)")
+      alias_path = File.join(directory, "unused-alias.json")
+      File.symlink(path, alias_path)
+      File.write(loader, "File.read(#{alias_path.dump}); File.binread(#{alias_path.dump}); File.open(#{alias_path.dump}, &:read)")
       test_tracing.start_test_session
       require loader
       load loader
@@ -121,6 +134,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       shared = events.find { |event| event.test_id.nil? && event.test_suite_id.nil? }
       expect(shared.inspect_coverage).not_to have_key(path)
       expect(shared.inspect_coverage).not_to have_key(loader)
+      expect(shared.inspect_coverage).not_to have_key(alias_path)
     ensure
       $LOADED_FEATURES.delete(loader)
     end
@@ -143,7 +157,6 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     {
       "File.open" => ->(file) { File.open(file).tap(&:close) },
       "File.new" => ->(file) { File.new(file).tap(&:close) },
-      "Kernel.open" => ->(file) { Kernel.open(file, &:read) },
       "File.read" => ->(file) { File.read(file) },
       "File.binread" => ->(file) { File.binread(file) },
       "Pathname#read" => ->(file) { Pathname.new(file).read },
@@ -157,6 +170,89 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
         read_in_test { operation.call(path) }
         payload = MessagePack.unpack(MessagePack.pack(events.last))
         expect(payload.fetch("files")).to include({"filename" => path.delete_prefix(root + "/")})
+      end
+    end
+
+    it "records local-file Kernel.open with a literal path" do
+      read_in_test do |test|
+        Dir.chdir(directory) do
+          expect(Kernel.open("fixture.json", &:read)).to eq('{"value":42}')
+        end
+        expect(test.lock_custom_impacted_files).to eq([path])
+      end
+    end
+
+    [:read, :binread, :open].each do |method|
+      it "records both the symlink and its target through File.#{method}" do
+        link = File.join(directory, "alias.json")
+        File.symlink("fixture.json", link)
+
+        read_in_test do
+          result = File.public_send(method, link)
+          result.close if result.is_a?(File)
+        end
+
+        payload = MessagePack.unpack(MessagePack.pack(events.last))
+        expect(payload.fetch("files")).to include(
+          {"filename" => link.delete_prefix(root + "/")},
+          {"filename" => path.delete_prefix(root + "/")}
+        )
+      end
+    end
+
+    it "resolves directory symlinks before parent path components" do
+      target_directory = File.join(directory, "nested")
+      FileUtils.mkdir_p(File.join(target_directory, "child"))
+      target = File.join(target_directory, "fixture.json")
+      File.write(target, "target contents")
+      File.symlink("nested/child", File.join(directory, "alias"))
+
+      read_in_test do |test|
+        expect(File.read(File.join(directory, "alias", "..", "fixture.json"))).to eq("target contents")
+        expect(test.lock_custom_impacted_files).to contain_exactly(path, target)
+      end
+    end
+
+    it "resolves a symlink again after it is retargeted" do
+      link = File.join(directory, "alias.json")
+      target = File.join(directory, "other.json")
+      File.write(target, "other contents")
+      File.symlink(path, link)
+      read_in_test { File.read(link) }
+      File.unlink(link)
+      File.symlink(target, link)
+      read_in_test { File.read(link) }
+
+      test_events = events.reject { |event| event.test_id.nil? }
+      expect(test_events.first.inspect_coverage).to include(link => true, path => true)
+      expect(test_events.last.inspect_coverage).to include(link => true, target => true)
+      expect(test_events.last.inspect_coverage).not_to have_key(path)
+    end
+
+    it "filters repository boundaries independently for aliases and targets" do
+      Dir.mktmpdir("file-access-external-") do |external|
+        target = File.join(external, "target.json")
+        File.write(target, "external contents")
+        internal_link = File.join(directory, "external.json")
+        external_link = File.join(external, "internal.json")
+        File.symlink(target, internal_link)
+        File.symlink(path, external_link)
+
+        read_in_test do |test|
+          expect(File.read(internal_link)).to eq("external contents")
+          File.read(external_link)
+          expect(test.lock_custom_impacted_files).to contain_exactly(internal_link, path)
+        end
+      end
+    end
+
+    it "preserves a dangling symlink dependency and the original IO error" do
+      link = File.join(directory, "missing.json")
+      File.symlink("missing-target.json", link)
+
+      read_in_test do |test|
+        expect { File.read(link) }.to raise_error(Errno::ENOENT)
+        expect(test.lock_custom_impacted_files).to eq([link])
       end
     end
 
@@ -246,6 +342,26 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
         read_in_test do |test|
           File.read(path)
           expect(test.lock_custom_impacted_files).to be_empty
+        end
+      end
+    end
+
+    context "with symlinks crossing a bundle boundary" do
+      let(:bundle_path) { File.join(directory, "vendor") }
+
+      it "filters the alias and target independently" do
+        FileUtils.mkdir_p(bundle_path)
+        target = File.join(bundle_path, "fixture.json")
+        File.write(target, "vendor contents")
+        internal_link = File.join(directory, "vendor.json")
+        bundled_link = File.join(bundle_path, "project.json")
+        File.symlink(target, internal_link)
+        File.symlink(path, bundled_link)
+
+        read_in_test do |test|
+          expect(File.read(internal_link)).to eq("vendor contents")
+          File.read(bundled_link)
+          expect(test.lock_custom_impacted_files).to contain_exactly(internal_link, path)
         end
       end
     end
