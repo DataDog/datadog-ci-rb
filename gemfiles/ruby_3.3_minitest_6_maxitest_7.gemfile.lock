@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 59b7191a65e65f0d9a066c988cbc271b64922f60
+  revision: 75bc2ca274ab961cbb9ed001fb1ae9520a6b030e
   branch: master
   specs:
     datadog (2.49.0.dev)
@@ -74,18 +74,26 @@ GEM
     libddwaf (1.30.0.1.0-x86_64-linux)
       ffi (~> 1.0)
     logger (1.7.0)
-    maxitest (7.1.1)
-      minitest (>= 6.0.0, < 6.1.0)
-    minitest (6.0.6)
+    maxitest (7.2.0)
+      minitest (>= 6.0.0, < 6.2.0)
+    minitest (6.1.0)
       drb (~> 2.0)
-      prism (~> 1.5)
+      prism (>= 1.5, < 3)
     msgpack (1.8.7)
     os (1.1.4)
     ostruct (0.6.3)
     pp (0.6.4)
       prettyprint
     prettyprint (0.2.1)
-    prism (1.9.0)
+    prism (2.1.0)
+    prism (2.1.0-aarch64-linux-gnu)
+    prism (2.1.0-aarch64-linux-musl)
+    prism (2.1.0-arm-linux-gnu)
+    prism (2.1.0-arm-linux-musl)
+    prism (2.1.0-arm64-darwin)
+    prism (2.1.0-x86_64-darwin)
+    prism (2.1.0-x86_64-linux-gnu)
+    prism (2.1.0-x86_64-linux-musl)
     public_suffix (7.0.5)
     rake (13.4.2)
     rake-compiler (1.3.3)
