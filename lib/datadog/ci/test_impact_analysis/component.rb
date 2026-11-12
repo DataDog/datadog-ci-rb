@@ -160,12 +160,25 @@ module Datadog
             path = file.is_a?(File) ? file.path : file
             return unless path
 
-            path = File.absolute_path(path)
-            return unless path.start_with?(File.join(Git::LocalRepository.root, ""))
-            bundle_location = @bundle_location
-            return if bundle_location && path.start_with?(File.join(bundle_location, ""))
+            paths = [File.absolute_path(path)]
+            begin
+              # Resolve the original spelling: collapsing .. before following
+              # a directory symlink can point at a different file.
+              resolved = File.realpath(path)
+              paths << resolved unless resolved == paths.first
+            rescue SystemCallError
+              # Preserve the opened name for missing targets and filesystem races.
+              nil
+            end
 
-            test.add_impacted_files([path])
+            root = File.join(Git::LocalRepository.root, "")
+            bundle_location = @bundle_location
+            ignored = File.join(bundle_location, "") if bundle_location
+            paths.select! do |dependency|
+              dependency.start_with?(root) && !(ignored && dependency.start_with?(ignored))
+            end
+
+            test.add_impacted_files(paths) unless paths.empty?
           rescue => e
             begin
               Datadog.logger.warn("Failed to collect file dependency: #{e}")
