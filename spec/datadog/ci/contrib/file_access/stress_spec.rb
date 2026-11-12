@@ -37,7 +37,8 @@ RSpec.describe "File dependency coverage under filesystem and GC stress" do
     # racing process-wide chdir. Every worker has its own active test/collector.
     Dir.chdir(directory) do
       inputs = paths + paths.map { |path| "./" + path.delete_prefix(directory + "/") }
-      Timeout.timeout(30) do
+      # Valgrind makes forced GC and concurrent filesystem calls much slower.
+      Timeout.timeout(120) do
         workers = [:open, :new, :read, :binread].map do |operation|
           Thread.new do
             2.times do |round|

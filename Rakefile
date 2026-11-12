@@ -237,7 +237,13 @@ namespace :spec do
       end
     else
       RubyMemcheck::RSpec::RakeTask.new(:ddcov_memcheck) do |t, args|
-        t.pattern = ["spec/ddcov/**/*_spec.rb", "spec/datadog/ci/source_code/**/*_spec.rb"]
+        t.pattern = [
+          "spec/ddcov/**/*_spec.rb",
+          "spec/datadog/ci/source_code/**/*_spec.rb",
+          "spec/datadog/ci/test_impact_analysis/coverage/file_dependencies_spec.rb",
+          "spec/datadog/ci/contrib/file_access/**/*_spec.rb",
+          "spec/datadog/ci/contrib/rspec/file_dependencies_spec.rb"
+        ]
         t.rspec_opts = args.to_a.join(" ")
       end
     end
