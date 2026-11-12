@@ -18,7 +18,6 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
-require_relative "coverage/collector"
 require_relative "coverage/transport"
 require_relative "skippable"
 require_relative "telemetry"
@@ -76,8 +75,6 @@ module Datadog
           @code_coverage_enabled = false
 
           @coverage_writer = coverage_writer
-          @coverage_collectors = {}
-          @coverage_collectors_mutex = Mutex.new
 
           @correlation_id = nil
           @skippable_tests = Set.new
@@ -150,6 +147,34 @@ module Datadog
 
         def code_coverage?
           @code_coverage_enabled
+        end
+
+        # Contrib reports only reads/opens made by the active test. Reuse the
+        # existing impacted-files path, including its suite aggregation.
+        def record_file_dependency(test, file)
+          return unless code_coverage?
+          return if Thread.current.thread_variable_get(:dd_recording_file_dependency)
+
+          begin
+            Thread.current.thread_variable_set(:dd_recording_file_dependency, true)
+            path = file.is_a?(File) ? file.path : file
+            return unless path
+
+            path = File.absolute_path(path)
+            return unless path.start_with?(File.join(Git::LocalRepository.root, ""))
+            bundle_location = @bundle_location
+            return if bundle_location && path.start_with?(File.join(bundle_location, ""))
+
+            test.add_impacted_files([path])
+          rescue => e
+            begin
+              Datadog.logger.warn("Failed to collect file dependency: #{e}")
+            rescue
+              nil
+            end
+          ensure
+            Thread.current.thread_variable_set(:dd_recording_file_dependency, false)
+          end
         end
 
         # Starts coverage collection.
@@ -398,10 +423,6 @@ module Datadog
         end
 
         def shutdown!
-          @coverage_collectors_mutex.synchronize do
-            @coverage_collectors.each_value(&:stop)
-            @coverage_collectors.clear
-          end
           @coverage_writer&.stop
         end
 
@@ -458,14 +479,12 @@ module Datadog
         end
 
         def coverage_collector
-          @coverage_collectors_mutex.synchronize do
-            @coverage_collectors[Thread.current] ||= Coverage::Collector.new(
-              root: Git::LocalRepository.root,
-              ignored_path: @bundle_location,
-              threading_mode: code_coverage_mode,
-              use_allocation_tracing: @use_allocation_tracing && !@use_single_threaded_coverage
-            )
-          end
+          Thread.current[:dd_coverage_collector] ||= Coverage::DDCov.new(
+            root: Git::LocalRepository.root,
+            ignored_path: @bundle_location,
+            threading_mode: code_coverage_mode,
+            use_allocation_tracing: @use_allocation_tracing
+          )
         end
 
         def load_datadog_cov!

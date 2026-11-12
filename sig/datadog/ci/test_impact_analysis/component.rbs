@@ -14,8 +14,6 @@ module Datadog
         @skippable_tests: Set[String]
         @skippable_suites: Set[String]
         @coverage_writer: Datadog::CI::AsyncWriter?
-        @coverage_collectors: Hash[Thread, Coverage::Collector]
-        @coverage_collectors_mutex: Mutex
 
         @api: Datadog::CI::Transport::Api::Base?
         @dd_env: String?
@@ -74,6 +72,8 @@ module Datadog
 
         def code_coverage?: () -> bool
 
+        def record_file_dependency: (Datadog::CI::Test test, String | File file) -> void
+
         def start_coverage: () -> void
 
         def stop_coverage: () -> Hash[String, untyped]?
@@ -118,7 +118,7 @@ module Datadog
 
         def skippables_count: () -> Integer
 
-        def coverage_collector: () -> Datadog::CI::TestImpactAnalysis::Coverage::Collector?
+        def coverage_collector: () -> Datadog::CI::TestImpactAnalysis::Coverage::DDCov?
 
         def load_datadog_cov!: () -> void
 

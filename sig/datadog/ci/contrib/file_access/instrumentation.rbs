@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Contrib
+      module FileAccess
+        module Instrumentation
+          def self.active_test: () -> Datadog::CI::Test?
+          def self.warn_failure: (StandardError error) -> void
+
+          module InstanceMethods : ::File
+            # File construction accepts both paths and descriptors, with
+            # platform/version-specific IO options passed through unchanged.
+            def initialize: (*untyped, **untyped) -> void
+          end
+
+          module ClassMethods : Class
+            def read: (String | _ToPath | _ToStr path, *untyped, **untyped) ?{ (*untyped) -> untyped } -> String
+            def binread: (String | _ToPath | _ToStr path, *untyped, **untyped) ?{ (*untyped) -> untyped } -> String
+          end
+        end
+      end
+    end
+  end
+end

@@ -28,6 +28,8 @@ module Datadog
 
         def code_coverage?: () -> bool
 
+        def record_file_dependency: (Datadog::CI::Test test, String | File file) -> void
+
         def start_coverage: () -> void
 
         def stop_coverage: () -> Hash[String, untyped]?

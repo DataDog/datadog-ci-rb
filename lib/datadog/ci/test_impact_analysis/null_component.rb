@@ -51,6 +51,9 @@ module Datadog
           false
         end
 
+        def record_file_dependency(_test, _file)
+        end
+
         def start_coverage
         end
 
