@@ -260,6 +260,9 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       allow(Datadog).to receive(:components).with(allow_initialization: false).and_raise("components unavailable")
       expect(Kernel).to receive(:warn).with(/components unavailable/)
       expect(File.read(path)).to eq('{"value":42}')
+    ensure
+      # Shared teardown needs component access while shutting down the tracer.
+      allow(Datadog).to receive(:components).with(allow_initialization: false).and_call_original
     end
 
     it "preserves block return values and records the open before running the block" do
