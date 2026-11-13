@@ -19,7 +19,7 @@ module Datadog
           # Session-start instrumentation runs before remote configuration.
           # Leave the patcher untouched until coverage has actually been enabled.
           def patchable?
-            super && Datadog.send(:components).test_impact_analysis.code_coverage?
+            super && Datadog.send(:components).test_impact_analysis.opened_files_coverage?
           end
 
           def patcher

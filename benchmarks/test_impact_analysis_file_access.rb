@@ -36,7 +36,7 @@ def run_worker(mode, tests, reads)
     config.ci.discard_traces = true
     config.ci.git_metadata_upload_enabled = false
     config.ci.itr_enabled = true
-    config.ci[:fileaccess].enabled = mode == "tracked"
+    config.ci.tia_opened_files_coverage_enabled = mode == "tracked"
     config.ci.instrument :rspec
   end
 
@@ -59,6 +59,8 @@ def run_worker(mode, tests, reads)
       -> { Kernel.open("fixture.json", &:read) },
       -> { File.read("fixture.json") },
       -> { File.binread("fixture.json") },
+      -> { File.read(Pathname.new("fixture.json")) },
+      -> { File.binread(Pathname.new("fixture.json")) },
       -> { Pathname.new("fixture.json").read },
       -> { CSV.read("fixture.json") },
       -> { YAML.load_file("fixture.json") },

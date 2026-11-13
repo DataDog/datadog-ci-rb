@@ -48,6 +48,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       Datadog.configure { |c| c.ci.enabled = true }
       Datadog::CI::Contrib::Instrumentation.instrument(:fileaccess)
       abort "File was patched" unless File.method(:read).owner == original && original == IO.singleton_class
+      abort "Pathname was patched" unless Pathname.instance_method(:to_path).owner == Pathname
     RUBY
     expect(status.success?).to be(true), output
   end
@@ -60,6 +61,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     start_session
     Datadog::CI::Contrib::Instrumentation.instrument(:fileaccess)
     expect(File.ancestors.count(Datadog::CI::Contrib::FileAccess::Instrumentation::InstanceMethods)).to eq(1)
+    expect(Pathname.ancestors.count(Datadog::CI::Contrib::FileAccess::Instrumentation::PathnameMethods)).to eq(1)
   end
 
   it "enables file coverage when debug logging returns nil" do
@@ -108,6 +110,62 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     end
   end
 
+  context "when opened files coverage is disabled" do
+    around do |example|
+      ClimateControl.modify("DD_TIA_OPENED_FILES_COVERAGE_ENABLED" => "false") { example.run }
+    end
+
+    it "does not install hooks or create a file collector, while keeping code coverage enabled" do
+      expect(patcher).not_to receive(:patch)
+      expect(Datadog::CI::TestImpactAnalysis::Coverage::OpenedFilesCollector).not_to receive(:new)
+      expect_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies).not_to receive(:paths_for)
+      start_session
+      Datadog::CI::Contrib::Instrumentation.instrument(:fileaccess)
+
+      read_in_test do
+        File.open(path) { |file| expect(file.read).to eq('{"value":42}') }
+        expect(File.read(path)).to eq('{"value":42}')
+        expect(File.binread(path)).to eq('{"value":42}')
+        expect(File.read(Pathname.new(path))).to eq('{"value":42}')
+        expect(File.binread(Pathname.new(path))).to eq('{"value":42}')
+      end
+
+      expect(component).to be_code_coverage
+      expect(component).not_to be_opened_files_coverage
+      expect(collected_files).to be_empty
+      expect(events.last.inspect_coverage).to have_key(File.expand_path(__FILE__))
+    end
+
+    it "leaves File unpatched in a fresh process" do
+      output, status = Open3.capture2e(RbConfig.ruby, "-Ilib", "-rdatadog/ci", "-e", <<~RUBY)
+        Datadog.configure do |config|
+          config.telemetry.enabled = false
+          config.diagnostics.startup_logs.enabled = false
+          config.api_key = "test-api-key"
+          config.ci.enabled = true
+          config.ci.agentless_mode_enabled = true
+          config.ci.discard_traces = true
+          config.ci.itr_enabled = true
+          config.ci.tia_static_dependencies_tracking_enabled = false
+        end
+        component = Datadog.send(:components).test_impact_analysis
+        settings = Datadog::CI::Remote::LibrarySettings.from_json(
+          "itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false
+        )
+        session = Datadog::CI::TestSession.new(Datadog::Tracing::SpanOperation.new("session"))
+        component.configure(settings, session)
+        Datadog::CI::Contrib::Instrumentation.instrument(:fileaccess)
+        abort "Code coverage was disabled" unless component.code_coverage?
+        abort "File.read was patched" unless File.method(:read).owner == IO.singleton_class
+        abort "File.binread was patched" unless File.method(:binread).owner == IO.singleton_class
+        hooks = Datadog::CI::Contrib::FileAccess::Instrumentation::InstanceMethods
+        abort "File#initialize was patched" if File.ancestors.include?(hooks)
+        abort "Pathname was patched" unless Pathname.instance_method(:to_path).owner == Pathname
+      RUBY
+      expect(status.success?).to be(true), output
+    end
+  end
+
   context "when TIA is disabled" do
     let(:itr_enabled) { false }
 
@@ -135,6 +193,9 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       "File.new" => ->(file) { File.new(file).tap(&:close) },
       "File.read" => ->(file) { File.read(file) },
       "File.binread" => ->(file) { File.binread(file) },
+      "File.read(Pathname)" => ->(file) { File.read(Pathname.new(file)) },
+      "File.binread(Pathname)" => ->(file) { File.binread(Pathname.new(file)) },
+      "File.open(Pathname)" => ->(file) { File.open(Pathname.new(file)).tap(&:close) },
       "Pathname#read" => ->(file) { Pathname.new(file).read },
       "Pathname#binread" => ->(file) { Pathname.new(file).binread },
       "CSV.read" => ->(file) { CSV.read(file, quote_char: "'") },
@@ -322,6 +383,44 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       read_in_test do
         expect(File.read(pathname, 5, 2, encoding: "UTF-8")).to eq("value")
       end
+    end
+
+    [:read, :binread].each do |method|
+      it "observes the single Pathname conversion performed by File.#{method}" do
+        pathname = Pathname.new(path)
+        expect(pathname).to receive(:to_path).once.and_call_original
+
+        read_in_test do
+          expect(File.public_send(method, pathname, 5, 2)).to eq("value")
+        end
+
+        expect(collected_files).to eq([path])
+      end
+    end
+
+    it "does not record Pathname conversions outside a file read" do
+      read_in_test do
+        expect(Pathname.new(path).to_path).to eq(path)
+        expect(File.exist?(Pathname.new(path))).to be(true)
+      end
+
+      expect(collected_files).to be_empty
+    end
+
+    it "stops observing Pathname conversions after a read fails" do
+      read_in_test do
+        missing = Pathname.new(File.join(directory, "missing.json"))
+        expect { File.read(missing) }.to raise_error(Errno::ENOENT)
+        expect(Pathname.new(path).to_path).to eq(path)
+      end
+
+      expect(collected_files).to eq([File.join(directory, "missing.json")])
+    end
+
+    it "collects Pathname reads from a child thread" do
+      read_in_test { Thread.new { File.read(Pathname.new(path)) }.value }
+
+      expect(collected_files).to eq([path])
     end
 
     [:read, :binread].each do |method|

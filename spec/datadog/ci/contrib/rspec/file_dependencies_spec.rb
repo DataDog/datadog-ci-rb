@@ -107,12 +107,12 @@ RSpec.describe "RSpec file dependencies" do
           end
           after(:context) do
             stages << :after
-            Thread.new { File.binread(paths[2]) }.value
+            Thread.new { File.binread(Pathname.new(paths[2])) }.value
           end
           2.times do |index|
             it("reads fixture #{index}") do
               stages << :test
-              Thread.new { File.read(paths[1]) }.value
+              Thread.new { File.read(Pathname.new(paths[1])) }.value
             end
           end
         end
@@ -173,13 +173,13 @@ RSpec.describe "RSpec file dependencies" do
         it("outer example") {}
 
         context "left" do
-          before(:context) { Thread.new { File.read(paths[1]) }.value }
+          before(:context) { Thread.new { File.read(Pathname.new(paths[1])) }.value }
           it("first example") {}
           it("second example") {}
         end
 
         context "right" do
-          before(:context) { Thread.new { File.binread(paths[2]) }.value }
+          before(:context) { Thread.new { File.binread(Pathname.new(paths[2])) }.value }
           it("first example") {}
           it("second example") {}
         end

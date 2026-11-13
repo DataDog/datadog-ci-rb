@@ -56,7 +56,8 @@ module Datadog
           bundle_location: nil,
           use_single_threaded_coverage: false,
           use_allocation_tracing: true,
-          static_dependencies_tracking_enabled: false
+          static_dependencies_tracking_enabled: false,
+          opened_files_coverage_enabled: true
         )
           @enabled = enabled
           @api = api
@@ -72,6 +73,7 @@ module Datadog
           @use_single_threaded_coverage = use_single_threaded_coverage
           @use_allocation_tracing = use_allocation_tracing
           @static_dependencies_tracking_enabled = static_dependencies_tracking_enabled
+          @opened_files_coverage_enabled = opened_files_coverage_enabled
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false
@@ -111,12 +113,14 @@ module Datadog
           test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, @test_skipping_mode)
 
           if @code_coverage_enabled && load_datadog_cov!
-            @opened_files_collector = Coverage::OpenedFilesCollector.new(
-              root: Git::LocalRepository.root,
-              ignored_path: @bundle_location
-            )
             populate_static_dependencies_map!
-            Contrib::Instrumentation.instrument(:fileaccess)
+            if @opened_files_coverage_enabled
+              @opened_files_collector = Coverage::OpenedFilesCollector.new(
+                root: Git::LocalRepository.root,
+                ignored_path: @bundle_location
+              )
+              Contrib::Instrumentation.instrument(:fileaccess)
+            end
           end
 
           # Load external cache or component state first, and if successful, skip fetching skippable tests
@@ -152,6 +156,10 @@ module Datadog
 
         def code_coverage?
           @code_coverage_enabled
+        end
+
+        def opened_files_coverage?
+          @opened_files_coverage_enabled && code_coverage?
         end
 
         def record_file_dependency(file)

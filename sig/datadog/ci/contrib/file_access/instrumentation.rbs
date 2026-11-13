@@ -5,6 +5,12 @@ module Datadog
         module Instrumentation
           def self.test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)?
 
+          def self.with_pathname_read: () { () -> String } -> String
+
+          module PathnameMethods : ::Pathname
+            def to_path: () -> String
+          end
+
           module InstanceMethods : ::File
             # File construction accepts both paths and descriptors, with
             # platform/version-specific IO options passed through ruby2_keywords.

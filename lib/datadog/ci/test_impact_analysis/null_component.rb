@@ -51,6 +51,10 @@ module Datadog
           false
         end
 
+        def opened_files_coverage?
+          false
+        end
+
         def record_file_dependency(_file)
         end
 
