@@ -18,7 +18,7 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
-require_relative "coverage/file_dependencies"
+require_relative "coverage/opened_files_collector"
 require_relative "coverage/transport"
 require_relative "skippable"
 require_relative "telemetry"
@@ -82,7 +82,6 @@ module Datadog
           @skippable_suites = Set.new
 
           @mutex = Mutex.new
-          @suite_file_dependency_targets = {}
 
           # Context coverage: stores coverage collected during before(:context)/before(:all) hooks
           # keyed by context_id (e.g., RSpec scoped_id for example groups)
@@ -92,7 +91,6 @@ module Datadog
 
           # Currently active context ID for context coverage collection
           @current_context_id = nil
-          @current_context_thread = nil
           @current_context_id_mutex = Mutex.new
 
           Datadog.logger.debug("TestImpactAnalysis initialized with enabled: #{@enabled}")
@@ -152,40 +150,40 @@ module Datadog
           @code_coverage_enabled
         end
 
-        # Preserve Ruby's path coercion exactly once, including customer errors.
-        # Inactive instrumentation passes the original argument through untouched.
         def prepare_file_read(path)
-          target = file_dependency_target
-          return path unless target
+          return path unless code_coverage?
 
-          path = File.path(path)
-          record_file_dependency_for(target, path)
-          path
+          collector = @opened_files_collector
+          collector ? collector.prepare_file_read(path) : path
         end
 
         def record_file_dependency(file)
-          target = file_dependency_target
-          record_file_dependency_for(target, file) if target
+          @opened_files_collector&.record(file) if code_coverage?
         end
 
         # Starts coverage collection.
-        # This is a low-level method that only starts the collector.
+        # This is a low-level method that starts both collectors.
         #
         # @return [void]
         def start_coverage
           return if !enabled? || !code_coverage?
 
           coverage_collector&.start
+          opened_files_collector.start
         end
 
         # Stops coverage collection and returns raw coverage data.
-        # This is a low-level method that only stops the collector.
+        # This is a low-level method that stops both collectors.
         #
         # @return [Hash, nil] Raw coverage data or nil
         def stop_coverage
           return if !enabled? || !code_coverage?
 
-          coverage_collector&.stop
+          coverage = coverage_collector&.stop
+          files = @opened_files_collector&.stop
+          return coverage if files.nil? || files.empty?
+
+          (coverage || {}).merge!(files)
         end
 
         # Called when a test context (e.g., RSpec example group with before(:context)) starts.
@@ -205,10 +203,9 @@ module Datadog
           # Store the context_id we're collecting for
           @current_context_id_mutex.synchronize do
             @current_context_id = context_id
-            @current_context_thread = Thread.current
           end
 
-          coverage_collector&.start
+          start_coverage
         end
 
         # Called when a test starts within a context. This method:
@@ -234,7 +231,7 @@ module Datadog
             "Starting test coverage for [#{test.name}] with context chain: #{context_ids.inspect}"
           end
 
-          coverage_collector&.start
+          start_coverage
         end
 
         # Called when a test finishes. This method:
@@ -266,7 +263,7 @@ module Datadog
           return unless code_coverage?
           Telemetry.code_coverage_finished(test)
 
-          coverage = coverage_collector&.stop
+          coverage = stop_coverage
 
           # if test was skipped, we discard coverage data
           return if test.skipped?
@@ -297,9 +294,8 @@ module Datadog
           @current_context_id_mutex.synchronize do
             if @current_context_id == context_id
               # A skipped or failed before(:context) hook may leave collection active.
-              coverage_collector&.stop
+              stop_coverage
               @current_context_id = nil
-              @current_context_thread = nil
             end
           end
 
@@ -375,18 +371,11 @@ module Datadog
           return unless code_coverage?
 
           Telemetry.code_coverage_started(test_suite)
-          coverage_collector&.start
-          @mutex.synchronize { @suite_file_dependency_targets[Thread.current] = test_suite }
+          start_coverage
         end
 
         def on_test_suite_finished(test_suite, context)
           return unless enabled?
-
-          if suite_skipping_mode?
-            @mutex.synchronize do
-              @suite_file_dependency_targets.delete_if { |_, suite| suite.equal?(test_suite) }
-            end
-          end
 
           skipped_count = if suite_skipping_mode?
             test_suite.skipped_by_test_impact_analysis? ? 1 : 0
@@ -408,7 +397,7 @@ module Datadog
 
           Telemetry.code_coverage_finished(test_suite)
 
-          coverage = coverage_collector&.stop
+          coverage = stop_coverage
 
           write_coverage_event(
             test_id: nil,
@@ -477,61 +466,12 @@ module Datadog
 
         private
 
-        def file_dependency_target
-          return unless code_coverage?
-          return if Thread.current[:dd_logging_file_dependency_error]
-
-          test_tracing = @test_tracing ||= Datadog.send(:components).test_tracing
-          test = test_tracing.active_test
-          return test if test
-          if suite_skipping_mode?
-            # Suite hooks have no active test; follow the native collector's thread.
-            return @mutex.synchronize { @suite_file_dependency_targets[Thread.current] }
-          end
-          return unless @current_context_id
-
-          @current_context_id_mutex.synchronize do
-            @current_context_id if @current_context_thread == Thread.current
-          end
-        rescue => error
-          warn_file_dependency_failure(error)
-          nil
-        end
-
-        def record_file_dependency_for(target, file)
-          file_dependencies = @file_dependencies ||= Coverage::FileDependencies.new(
-            root: Git::LocalRepository.root, ignored_path: @bundle_location
-          )
-          paths = file_dependencies.paths_for(file)
-          return if paths.empty?
-
-          if target.is_a?(String)
-            # Context dependencies share the existing coverage inheritance and
-            # cleanup lifecycle, including outer/nested context merging.
-            @context_coverages_mutex.synchronize do
-              coverage = @context_coverages[target] ||= {}
-              paths.each { |path| coverage[path] = true }
-            end
-          else
-            target.add_impacted_files(paths)
-          end
-        rescue => error
-          warn_file_dependency_failure(error)
-        end
-
-        def warn_file_dependency_failure(error)
-          return if Thread.current[:dd_logging_file_dependency_error]
-
-          # A logger may open/read files while reporting a recording failure.
-          # Suppress only that recursive work. Thread#[] is fiber-local, like
-          # the active test, so other fibers/threads continue recording normally.
-          begin
-            Thread.current[:dd_logging_file_dependency_error] = true
-            Datadog.logger.warn("Failed to collect file dependency: #{error}")
-          rescue
-            nil
-          ensure
-            Thread.current[:dd_logging_file_dependency_error] = false
+        def opened_files_collector
+          @opened_files_collector || @mutex.synchronize do
+            @opened_files_collector ||= Coverage::OpenedFilesCollector.new(
+              root: Git::LocalRepository.root,
+              ignored_path: @bundle_location
+            )
           end
         end
 
@@ -701,12 +641,11 @@ module Datadog
           context_id = @current_context_id_mutex.synchronize do
             id = @current_context_id
             @current_context_id = nil
-            @current_context_thread = nil
             id
           end
           return if context_id.nil?
 
-          coverage = coverage_collector&.stop
+          coverage = stop_coverage
           return if coverage.nil? || coverage.empty?
 
           @context_coverages_mutex.synchronize do

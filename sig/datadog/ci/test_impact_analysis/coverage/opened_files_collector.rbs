@@ -1,0 +1,27 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class OpenedFilesCollector
+          type collections = Hash[Fiber, Hash[String, bool]]
+
+          @resolver: FileDependencies
+          @collections: collections
+          @mutex: Thread::Mutex
+
+          def initialize: (root: String, ignored_path: String?) -> void
+          def start: () -> void
+          def stop: () -> Hash[String, bool]
+          def prepare_file_read: (String | _ToPath | _ToStr path) -> (String | _ToPath | _ToStr)
+          def record: (String | File file) -> void
+
+          private
+
+          def collecting?: (collections collections) -> bool
+          def record_into: (collections collections, String | File file) -> void
+          def warn_failure: (StandardError error) -> void
+        end
+      end
+    end
+  end
+end

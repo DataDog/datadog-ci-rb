@@ -37,6 +37,10 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     test_tracing.trace_test("reads fixture", "suite", &block)
   end
 
+  def collected_files
+    events.last.inspect_coverage.keys.select { |file| file.start_with?(directory + "/") }
+  end
+
   it "does not patch File when the library is required or manually instrumented before configuration" do
     output, status = Open3.capture2e(RbConfig.ruby, "-Ilib", "-rdatadog/ci", "-e", <<~RUBY)
       original = File.method(:read).owner
@@ -65,10 +69,10 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(checkout)
     start_session
 
-    read_in_test do |test|
+    read_in_test do
       expect(File.read(fixture.b)).to eq('{"value":42}')
-      expect(test.lock_custom_impacted_files).to include(fixture)
     end
+    expect(collected_files).to include(fixture)
   end
 
   context "when coverage is disabled" do
@@ -124,12 +128,12 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     end
 
     it "records local-file Kernel.open with a literal path" do
-      read_in_test do |test|
+      read_in_test do
         Dir.chdir(directory) do
           expect(Kernel.open("fixture.json", &:read)).to eq('{"value":42}')
         end
-        expect(test.lock_custom_impacted_files).to eq([path])
       end
+      expect(collected_files).to eq([path])
     end
 
     [:read, :binread, :open].each do |method|
@@ -157,10 +161,10 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       File.write(target, "target contents")
       File.symlink("nested/child", File.join(directory, "alias"))
 
-      read_in_test do |test|
+      read_in_test do
         expect(File.read(File.join(directory, "alias", "..", "fixture.json"))).to eq("target contents")
-        expect(test.lock_custom_impacted_files).to contain_exactly(path, target)
       end
+      expect(collected_files).to contain_exactly(path, target)
     end
 
     it "records the selected hard-link name when resolving a symlink" do
@@ -169,10 +173,10 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       File.link(path, hardlink)
       File.symlink("hardlink.json", link)
 
-      read_in_test do |test|
+      read_in_test do
         File.read(link)
-        expect(test.lock_custom_impacted_files).to contain_exactly(link, hardlink)
       end
+      expect(collected_files).to contain_exactly(link, hardlink)
     end
 
     it "preserves Unicode paths, including targets of ASCII symlinks" do
@@ -181,25 +185,25 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       File.write(unicode, "Unicode fixture")
       File.symlink(unicode, link)
 
-      read_in_test do |test|
+      read_in_test do
         expect(File.read(unicode)).to eq("Unicode fixture")
         File.read(link)
-        expect(test.lock_custom_impacted_files).to match_array([unicode, File.realpath(unicode), link].uniq)
       end
+      expect(collected_files).to match_array([unicode, File.realpath(unicode), link].uniq)
     end
 
     it "preserves literal tildes and normalizes redundant separators" do
       literal = File.join(directory, "~fixture.json")
       File.write(literal, "literal tilde")
 
-      read_in_test do |test|
+      read_in_test do
         Dir.chdir(directory) do
           expect(File.read("~fixture.json")).to eq("literal tilde")
           File.read("././fixture.json")
           File.read("#{directory}//fixture.json")
         end
-        expect(test.lock_custom_impacted_files).to contain_exactly(literal, path)
       end
+      expect(collected_files).to contain_exactly(literal, path)
     end
 
     it "retains Ruby resolution when the native resolver declines a path" do
@@ -207,10 +211,10 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       link = File.join(directory, "fallback.json")
       File.symlink("fixture.json", link)
 
-      read_in_test do |test|
+      read_in_test do
         Dir.chdir(directory) { File.read("./fallback.json") }
-        expect(test.lock_custom_impacted_files).to contain_exactly(link, path)
       end
+      expect(collected_files).to contain_exactly(link, path)
     end
 
     it "resolves a symlink again after it is retargeted" do
@@ -237,11 +241,11 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
         File.symlink(target, internal_link)
         File.symlink(path, external_link)
 
-        read_in_test do |test|
+        read_in_test do
           expect(File.read(internal_link)).to eq("external contents")
           File.read(external_link)
-          expect(test.lock_custom_impacted_files).to contain_exactly(internal_link, path)
         end
+        expect(collected_files).to contain_exactly(internal_link, path)
       end
     end
 
@@ -249,10 +253,10 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       link = File.join(directory, "missing.json")
       File.symlink("missing-target.json", link)
 
-      read_in_test do |test|
+      read_in_test do
         expect { File.read(link) }.to raise_error(Errno::ENOENT)
-        expect(test.lock_custom_impacted_files).to eq([link])
       end
+      expect(collected_files).to eq([link])
     end
 
     it "does no path normalization or filesystem inspection outside an active test" do
@@ -279,15 +283,15 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       allow(Datadog).to receive(:components).with(allow_initialization: false).and_call_original
     end
 
-    it "preserves block return values and records the open before running the block" do
-      read_in_test do |test|
+    it "preserves block return values and records the open" do
+      read_in_test do
         result = File.open(path) do |file|
-          expect(test.lock_custom_impacted_files).to include(path)
           expect(file.read).to eq('{"value":42}')
           :block_result
         end
         expect(result).to eq(:block_result)
       end
+      expect(collected_files).to eq([path])
     end
 
     it "preserves read arguments and coerces path-like objects only once" do
@@ -313,12 +317,12 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     end
 
     it "normalizes paths at read time and deduplicates repeated dependencies" do
-      read_in_test do |test|
+      read_in_test do
         Dir.chdir(directory) do
           2.times { File.read("./fixture.json") }
         end
-        expect(test.lock_custom_impacted_files).to eq([path])
       end
+      expect(collected_files).to eq([path])
     end
 
     it "updates relative dependencies when the working directory changes in a test" do
@@ -327,11 +331,11 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       other_path = File.join(other_directory, "fixture.json")
       File.write(other_path, "other contents")
 
-      read_in_test do |test|
+      read_in_test do
         Dir.chdir(directory) { File.read("fixture.json") }
         Dir.chdir(other_directory) { File.read("fixture.json") }
-        expect(test.lock_custom_impacted_files).to contain_exactly(path, other_path)
       end
+      expect(collected_files).to contain_exactly(path, other_path)
     end
 
     it "updates relative dependencies when the current directory is renamed" do
@@ -340,16 +344,16 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       Dir.mkdir(original)
       File.write(File.join(original, "fixture.json"), "contents")
 
-      read_in_test do |test|
+      read_in_test do
         Dir.chdir(original) do
           File.read("fixture.json")
           File.rename(original, renamed)
           File.read("fixture.json")
         end
-        expect(test.lock_custom_impacted_files).to contain_exactly(
-          File.join(original, "fixture.json"), File.join(renamed, "fixture.json")
-        )
       end
+      expect(collected_files).to contain_exactly(
+        File.join(original, "fixture.json"), File.join(renamed, "fixture.json")
+      )
     end
 
     it "follows a symlink retargeted between reads in the same test" do
@@ -358,15 +362,15 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       File.write(other_path, "other contents")
       File.symlink("fixture.json", link)
 
-      read_in_test do |test|
+      read_in_test do
         Dir.chdir(directory) do
           File.read("alias.json")
           File.unlink(link)
           File.symlink("other.json", link)
           File.read("alias.json")
         end
-        expect(test.lock_custom_impacted_files).to contain_exactly(link, path, other_path)
       end
+      expect(collected_files).to contain_exactly(link, path, other_path)
     end
 
     it "does not leak dependencies into the next test" do
@@ -376,54 +380,64 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       expect(events.last.inspect_coverage).not_to have_key(path)
     end
 
-    it "does not attribute unrelated thread reads to the active test" do
-      read_in_test do |test|
-        Thread.new { File.read(path) }.join
-        expect(test.lock_custom_impacted_files).to be_empty
+    it "collects child-thread reads during the active test" do
+      read_in_test do
+        Thread.new { File.read(path) }.value
+      end
+      expect(collected_files).to eq([path])
+    end
+
+    context "when native coverage uses single-threaded mode" do
+      let(:use_single_threaded_coverage) { true }
+
+      it "still collects file reads from other threads" do
+        read_in_test { Thread.new { File.read(path) }.value }
+        expect(collected_files).to eq([path])
       end
     end
 
     it "ignores files outside the repository" do
-      read_in_test do |test|
+      read_in_test do
         File.read(File::NULL)
-        expect(test.lock_custom_impacted_files).to be_empty
       end
+      expect(collected_files).to be_empty
     end
 
     it "logs recording failures without changing file results, even if logging raises" do
-      read_in_test do |test|
-        allow(test).to receive(:add_impacted_files).and_raise("record failure")
-        expect(Datadog.logger).to receive(:warn).with(/record failure/).and_raise("logger failure")
-        expect(File.read(path)).to eq('{"value":42}')
-      end
+      allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies)
+        .to receive(:paths_for).and_raise("record failure")
+      expect(Datadog.logger).to receive(:warn).with(/record failure/).and_raise("logger failure")
+      read_in_test { expect(File.read(path)).to eq('{"value":42}') }
     end
 
     it "does not recursively record files opened by the error logger, and resumes after logging" do
-      read_in_test do |test|
-        allow(test).to receive(:add_impacted_files).and_raise("record failure")
+      read_in_test do
+        allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies)
+          .to receive(:paths_for).and_raise("record failure")
         expect(Datadog.logger).to receive(:warn).once do
           File.open(path).tap { |file| file.read }.close
           File.read(path)
         end
         expect(File.read(path)).to eq('{"value":42}')
 
-        allow(test).to receive(:add_impacted_files).and_call_original
+        allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies)
+          .to receive(:paths_for).and_call_original
         File.read(path)
-        expect(test.lock_custom_impacted_files).to eq([path])
       end
+      expect(collected_files).to eq([path])
     end
 
     [:thread, :fiber].each do |execution_context|
       it "keeps recording in another #{execution_context} while an error is being logged" do
-        run_other_test = lambda do
-          read_in_test do |test|
-            File.read(path)
-            expect(test.lock_custom_impacted_files).to eq([path])
-          end
-        end
+        failed_path = File.join(directory, "failed.json")
+        File.write(failed_path, "contents")
+        allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies)
+          .to receive(:paths_for).and_call_original
+        allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies)
+          .to receive(:paths_for).with(failed_path).and_raise("record failure")
+        run_other_test = -> { read_in_test { File.read(path) } }
 
-        read_in_test do |test|
-          allow(test).to receive(:add_impacted_files).and_raise("record failure")
+        read_in_test do
           expect(Datadog.logger).to receive(:warn).once do
             if execution_context == :thread
               Thread.new(&run_other_test).value
@@ -431,8 +445,10 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
               Fiber.new(&run_other_test).resume
             end
           end
-          expect(File.read(path)).to eq('{"value":42}')
+          expect(File.read(failed_path)).to eq("contents")
         end
+        expect(events.size).to eq(2)
+        expect(events.map(&:inspect_coverage)).to all include(path => true)
       end
     end
 
@@ -440,10 +456,10 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       let(:bundle_path) { directory }
 
       it "ignores bundled files" do
-        read_in_test do |test|
+        read_in_test do
           File.read(path)
-          expect(test.lock_custom_impacted_files).to be_empty
         end
+        expect(collected_files).to be_empty
       end
     end
 
@@ -459,11 +475,11 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
         File.symlink(target, internal_link)
         File.symlink(path, bundled_link)
 
-        read_in_test do |test|
+        read_in_test do
           expect(File.read(internal_link)).to eq("vendor contents")
           File.read(bundled_link)
-          expect(test.lock_custom_impacted_files).to contain_exactly(internal_link, path)
         end
+        expect(collected_files).to contain_exactly(internal_link, path)
       end
     end
 

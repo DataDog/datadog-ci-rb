@@ -10,7 +10,7 @@ RSpec.describe "RSpec file dependencies" do
     reader = read_fixtures
     with_new_rspec_environment do
       RSpec.describe "Fixture readers" do
-        it("reads fixtures") { reader.call }
+        it("reads fixtures") { Thread.new { reader.call }.value }
         it("does not read fixtures") {}
       end
       options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format progress])
@@ -68,16 +68,16 @@ RSpec.describe "RSpec file dependencies" do
         RSpec.describe "Suite fixture readers" do
           before(:context) do
             stages << :before
-            File.open(paths[0]).tap { |file| file.read }.close
+            Thread.new { File.open(paths[0]).tap { |file| file.read }.close }.value
           end
           after(:context) do
             stages << :after
-            File.binread(paths[2])
+            Thread.new { File.binread(paths[2]) }.value
           end
           2.times do |index|
             it("reads fixture #{index}") do
               stages << :test
-              File.read(paths[1])
+              Thread.new { File.read(paths[1]) }.value
             end
           end
         end
@@ -134,17 +134,17 @@ RSpec.describe "RSpec file dependencies" do
     paths = fixture_paths
     with_new_rspec_environment do
       RSpec.describe "Context fixture readers" do
-        before(:context) { File.open(paths[0]).tap { |file| file.read }.close }
+        before(:context) { Thread.new { File.open(paths[0]).tap { |file| file.read }.close }.value }
         it("outer example") {}
 
         context "left" do
-          before(:context) { File.read(paths[1]) }
+          before(:context) { Thread.new { File.read(paths[1]) }.value }
           it("first example") {}
           it("second example") {}
         end
 
         context "right" do
-          before(:context) { File.binread(paths[2]) }
+          before(:context) { Thread.new { File.binread(paths[2]) }.value }
           it("first example") {}
           it("second example") {}
         end
