@@ -30,6 +30,7 @@
 - Cover behavior changes with tests. After every code change, run the relevant tests.
 - Never monkey-patch production code in tests. Do not use `prepend` on production code, reopen production classes or modules, or replace production singleton methods. Use normal interfaces instead.
 - Do not use `instance_variable_get` or `instance_variable_set` in tests. Use mocks or explicit APIs.
+- If in-memory state can show the behavior, avoid `puts` and assertions on stdout in tests.
 - Do not use focused specs such as `fit` or `fdescribe`.
 - Add a corresponding Rake task for each new contrib folder. Include every new test task in `TEST_METADATA`.
 - Before running the full test suite, stage newly created files. `release_gem_spec.rb` uses `git ls-files` to validate files.

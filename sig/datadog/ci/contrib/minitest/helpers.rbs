@@ -4,10 +4,13 @@ module Datadog
       module Minitest
         module Helpers
           module RunnableClassMethods : Class
+            @dd_spec_source_file: String?
             @datadog_prevent_failure_suppression_tests: Hash[String, UnboundMethod]?
             @datadog_no_auto_retry_tests: Hash[String, UnboundMethod]?
             @datadog_itr_unskippable_suite: bool
             @datadog_itr_unskippable_tests: Array[String]?
+
+            attr_accessor dd_spec_source_file: String?
 
             def datadog_prevent_failure_suppression: (*(String | Symbol) test_names) -> void
             def datadog_no_auto_retry: (*(String | Symbol) test_names) -> void
@@ -26,6 +29,7 @@ module Datadog
           end
 
           interface _RunnableClass
+            def dd_spec_source_file: () -> String?
             def dd_clear_automation_exclusions: ((String | Symbol) test_name) -> void
             def runnable_methods: () -> Array[String]
 
@@ -57,6 +61,8 @@ module Datadog
           def self.empty_source_location_to_nil: (([String, Integer] | Array[untyped])? source_location) -> ([String, Integer] | Array[untyped])?
 
           def self.extract_runnable_source_location: (untyped? klass, String method_name) -> ([String, Integer] | Array[untyped])?
+
+          def self.test_entrypoint_file: (_RunnableClass klass, String method_name) -> String?
         end
       end
     end

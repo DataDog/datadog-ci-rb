@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 308833dac713bd2e71486cf14b27f6bd213d96de
+  revision: 6ae908801e56c96e3670e43a6f455572bd0f273c
   branch: master
   specs:
     datadog (2.49.0.dev)
@@ -54,7 +54,7 @@ GEM
       cucumber-gherkin (> 36, < 43)
       cucumber-messages (> 31, < 35)
       cucumber-tag-expressions (> 6, < 12)
-    cucumber-cucumber-expressions (20.1.0)
+    cucumber-cucumber-expressions (20.2.0)
       bigdecimal
     cucumber-gherkin (42.0.1)
       cucumber-messages (>= 34, < 35)

@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 308833dac713bd2e71486cf14b27f6bd213d96de
+  revision: 6ae908801e56c96e3670e43a6f455572bd0f273c
   branch: master
   specs:
     datadog (2.49.0.dev)
@@ -54,7 +54,7 @@ GEM
       cucumber-gherkin (> 36, < 43)
       cucumber-messages (> 31, < 35)
       cucumber-tag-expressions (> 6, < 12)
-    cucumber-cucumber-expressions (20.1.0)
+    cucumber-cucumber-expressions (20.2.0)
       bigdecimal
     cucumber-gherkin (42.0.1)
       cucumber-messages (>= 34, < 35)
@@ -212,7 +212,7 @@ CHECKSUMS
   cucumber (12.0.1) sha256=21a2da0763280c97cdd706b2f5be3c1631fe97da5cedc8e0aea40f1b0fa34c8c
   cucumber-ci-environment (13.0.0) sha256=f1c110943e07f72124b43c50c98d96016a77141a4bd45ebee0b8c877d8c264fb
   cucumber-core (20.1.0) sha256=1a2727ae27705f45c7732b8f1f19c0cf068696cf6bac9ccee2d62b575c7cf9d5
-  cucumber-cucumber-expressions (20.1.0) sha256=6cc4b5880ba1c3991292579d0451af0f44814f5a1a13d7823317a09705eb15d4
+  cucumber-cucumber-expressions (20.2.0) sha256=a993cc2976da3442a4f902a691ef91d79a3e985805674dc0c8713425d16014c4
   cucumber-gherkin (42.0.1) sha256=427efa1996770fd91a6e860e3f2e8b644108682256f4189db494fe85f4595e2f
   cucumber-html-formatter (24.2.0) sha256=6edc50730e459f9bfea0b0dadfaf4f4066d7083094382ac0d703926414c9cce0
   cucumber-messages (34.2.1) sha256=1de715dfeaa237939b8ab008987d3fbf3118ba32a86d844fd1503396ecc5bf7e
