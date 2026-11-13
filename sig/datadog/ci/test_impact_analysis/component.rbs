@@ -14,6 +14,7 @@ module Datadog
         @skippable_tests: Set[String]
         @skippable_suites: Set[String]
         @session_coverage: Coverage::Session?
+        @pending_session_coverage: Hash[String, bool]?
         @coverage_session_id: String?
         @coverage_writer: Datadog::CI::AsyncWriter?
 
@@ -124,7 +125,7 @@ module Datadog
 
         private
 
-        def write_session_coverage: () -> void
+        def write_session_coverage: (?defer: bool) -> void
 
         def skippables_count: () -> Integer
 

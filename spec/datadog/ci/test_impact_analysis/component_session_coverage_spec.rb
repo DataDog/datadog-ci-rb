@@ -12,6 +12,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
   let(:mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::TEST }
   let(:session) { Datadog::CI::TestSession.new(Datadog::Tracing::SpanOperation.new("session")) }
   let(:suite) { Datadog::CI::TestSuite.new(Datadog::Tracing::SpanOperation.new("suite")) }
+  let(:test) { Datadog::CI::Test.new(Datadog::Tracing::SpanOperation.new("test")) }
   let(:context) { instance_double(Datadog::CI::TestTracing::Context) }
   let(:fixture) { Module.new }
   let(:settings) do
@@ -102,6 +103,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
     2.times { ready.pop }
     2.times { start << true }
     threads.each(&:join)
+    expect(events).to be_empty
+    component.on_test_started(test)
     expect(events.size).to eq(1)
     expect(events.first.inspect_coverage).to eq(setup => true)
   end
@@ -114,6 +117,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
     component.on_test_context_started("group")
     fixture.context_setup
     component.stop_coverage
+    expect(events).to be_empty
+    component.on_test_started(test)
     expect(events.one?).to be(true)
     expect(events.first.inspect_coverage).to eq(setup => true)
   end
@@ -122,8 +127,9 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
     define_fixture("setup")
     component.on_test_session_started(session)
     fixture.setup
-    component.on_test_session_finished
     component.on_test_suite_started(suite)
+    component.on_test_session_finished
+    component.on_test_started(test)
     expect(events).to be_empty
   end
 
@@ -134,6 +140,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
     component.on_test_session_started(session)
     component.on_test_suite_started(suite)
     component.on_test_suite_started(suite)
+    component.on_test_started(test)
     expect(events.size).to eq(1)
     expect(events.first.inspect_coverage).to eq(setup => true)
   end
@@ -148,6 +155,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
     component.on_test_session_started(next_session)
     fixture.later
     component.on_test_suite_started(suite)
+    component.on_test_started(test)
     expect(events.size).to eq(1)
     expect(events.first.test_session_id).to eq(next_session.id.to_s)
     expect(events.first.inspect_coverage).to eq(later => true)
@@ -178,11 +186,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
     first_file = define_fixture("first")
     component.on_test_session_started(session)
     fixture.setup
-    allow(writer).to receive(:write).and_raise("writer failed")
+    expect(writer).to receive(:write).once.ordered.and_raise("writer failed")
+    expect(writer).to receive(:write).once.ordered { |event| events << event }
     expect(Datadog.logger).to receive(:warn).with(/Failed to report session coverage/)
-    expect { component.on_test_suite_started(suite) }.not_to raise_error
-    allow(writer).to receive(:write) { |event| events << event }
-    run_test("first")
+    component.on_test_suite_started(suite)
+    expect { run_test("first") }.not_to raise_error
     expect(events.size).to eq(1)
     expect(events.first.inspect_coverage).to eq(first_file => true)
   end
@@ -208,6 +216,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component, "session dependencies
       component.on_test_session_started(session)
       fixture.setup
       component.on_test_suite_started(suite)
+      component.on_test_started(test)
       fixture.first
       component.on_test_suite_finished(suite, context)
       expect(events.size).to eq(2)

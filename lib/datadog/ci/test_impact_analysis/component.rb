@@ -77,6 +77,7 @@ module Datadog
 
           @coverage_writer = coverage_writer
           @session_coverage = nil
+          @pending_session_coverage = nil
           @coverage_session_id = nil
 
           @correlation_id = nil
@@ -173,6 +174,7 @@ module Datadog
           # No tests means no dependency event. Also releases tracing on shutdown.
           collector = @session_coverage
           @session_coverage = nil
+          @pending_session_coverage = nil
           @coverage_session_id = nil
           collector&.stop
         rescue => e
@@ -257,7 +259,7 @@ module Datadog
         # @param context_id [String] A stable identifier for the context (e.g., RSpec scoped_id)
         # @return [void]
         def on_test_context_started(context_id)
-          write_session_coverage
+          write_session_coverage(defer: true)
           return unless context_coverage_enabled?
 
           # Stop and store any existing context coverage before starting new one.
@@ -423,7 +425,7 @@ module Datadog
         end
 
         def on_test_suite_started(test_suite)
-          write_session_coverage
+          write_session_coverage(defer: true)
           return unless enabled? && suite_skipping_mode?
 
           mark_if_suite_skippable(test_suite)
@@ -527,13 +529,18 @@ module Datadog
 
         private
 
-        def write_session_coverage
+        def write_session_coverage(defer: false)
           # Other test threads must wait until tracing has stopped before they
           # start their own coverage windows.
           coverage = @mutex.synchronize do
             collector = @session_coverage
             @session_coverage = nil
-            collector&.stop
+            @pending_session_coverage = collector.stop if collector
+            next if defer
+
+            pending = @pending_session_coverage
+            @pending_session_coverage = nil
+            pending
           end
           return if coverage.nil?
 

@@ -96,6 +96,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
         test_tracing.start_test_session
         operation.call(alias_path)
         test_tracing.start_test_suite("suite")
+        read_in_test { nil }
 
         shared = events.find { |event| event.test_id.nil? && event.test_suite_id.nil? }
         expect(shared.inspect_coverage).to include(alias_path => true, path => true)
@@ -130,6 +131,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       require loader
       load loader
       test_tracing.start_test_suite("suite")
+      read_in_test { nil }
 
       shared = events.find { |event| event.test_id.nil? && event.test_suite_id.nil? }
       expect(shared.inspect_coverage).not_to have_key(path)
