@@ -32,12 +32,10 @@ RSpec.describe "RSpec file dependencies" do
         File.read(report, nil, "invalid-offset")
         abort "Expected TypeError"
       rescue TypeError
-        puts File.exist?(ARGV.fetch(0))
       end
     RUBY
     expect(status.success?).to be(true), output
-    expect(["true", "false"]).to include(output.strip)
-    generated_without_instrumentation = output.strip == "true"
+    generated_without_instrumentation = File.exist?(baseline_path)
     report_path = File.join(fixture_directory, "report.csv")
 
     with_new_rspec_environment do
