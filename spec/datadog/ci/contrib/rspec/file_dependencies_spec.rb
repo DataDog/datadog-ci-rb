@@ -20,6 +20,42 @@ RSpec.describe "RSpec file dependencies" do
 
   it_behaves_like "file dependencies from the framework runner"
 
+  it "does not leak dependencies from a group skipped in before(:context) into the next group" do
+    require_relative "fixtures/user"
+    require_relative "fixtures/order"
+
+    with_new_rspec_environment do
+      RSpec.describe "User integration" do
+        before(:context) do
+          @user = ContextCoverageHelper::User.new("John", "Doe")
+          skip "External service unavailable"
+        end
+
+        it("sends the user to the external service") { raise "Skipped example must not run" }
+      end
+
+      RSpec.describe "Orders" do
+        it "calculates the total" do
+          order = ContextCoverageHelper::Order.new
+          order.add_item(10)
+          expect(order.total).to eq(10)
+        end
+      end
+
+      options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format progress --order defined])
+      output = StringIO.new
+      expect(RSpec::Core::Runner.new(options).run(StringIO.new, output)).to eq(0)
+      expect(output.string).to include("2 examples, 0 failures, 1 pending")
+    end
+
+    test = test_spans.find { |span| span.name == "calculates the total" }
+    expect(test).to have_pass_status
+    event = file_events.find { |candidate| candidate.fetch("span_id") == test.id }
+    dependencies = event.fetch("files").map { |file| file.fetch("filename") }
+    expect(dependencies).to include("spec/datadog/ci/contrib/rspec/fixtures/order.rb")
+    expect(dependencies).not_to include("spec/datadog/ci/contrib/rspec/fixtures/user.rb")
+  end
+
   context "with suite skipping enabled" do
     let(:tia_test_skipping_mode) { Datadog::CI::Ext::Test::TIATestSkippingMode::SUITE }
     let(:tests_skipping_enabled) { true }

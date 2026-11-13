@@ -296,6 +296,8 @@ module Datadog
 
           @current_context_id_mutex.synchronize do
             if @current_context_id == context_id
+              # A skipped or failed before(:context) hook may leave collection active.
+              coverage_collector&.stop
               @current_context_id = nil
               @current_context_thread = nil
             end
