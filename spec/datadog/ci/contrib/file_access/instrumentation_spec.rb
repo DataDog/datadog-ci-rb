@@ -5,6 +5,7 @@ require "yaml"
 require "pathname"
 require "tmpdir"
 require "open3"
+require_relative "fixtures/customer_paths"
 
 RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
   include_context "CI mode activated"
@@ -101,7 +102,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
 
     it "does not invoke the patcher or record reads, even if hooks remain from an earlier session" do
       expect(patcher).not_to receive(:patch)
-      expect(component).not_to receive(:record_file_dependency)
+      expect_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies).not_to receive(:paths_for)
       start_session
       read_in_test { File.read(path) }
     end
@@ -281,7 +282,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     end
 
     it "does no path normalization or filesystem inspection outside an active test" do
-      expect(component).not_to receive(:record_file_dependency)
+      expect_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies).not_to receive(:paths_for)
       expect(File).not_to receive(:absolute_path)
       expect(File).not_to receive(:realpath)
       expect(File).not_to receive(:stat)
@@ -320,6 +321,54 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       expect(pathname).to receive(:to_path).once.and_return(path)
       read_in_test do
         expect(File.read(pathname, 5, 2, encoding: "UTF-8")).to eq("value")
+      end
+    end
+
+    [:read, :binread].each do |method|
+      it "leaves File.#{method} path conversions and errors to Ruby" do
+        pathname = double("path")
+        string_path = double("string path")
+        invalid_path = double("invalid path")
+        error = TypeError.new("customer path failure")
+        expect(pathname).to receive(:to_path).once.and_return(path)
+        expect(string_path).to receive(:to_str).once.and_return(path)
+        expect(invalid_path).to receive(:to_path).once.and_raise(error)
+
+        read_in_test do
+          expect(File.public_send(method, pathname, 5, 2)).to eq("value")
+          expect(File.public_send(method, string_path, 5, 2)).to eq("value")
+          expect { File.public_send(method, invalid_path) }.to raise_error { |raised| expect(raised).to equal(error) }
+        end
+      end
+    end
+
+    it "records a File subclass without calling its custom path method" do
+      read_in_test do
+        FileAccessFixtures::DownloadFile.open(path) do |file|
+          expect(file.read).to eq('{"value":42}')
+          expect(file.path_queries).to be_nil
+        end
+      end
+
+      expect(collected_files).to eq([path])
+    end
+
+    it "records a binary Unicode String subclass without calling its metadata methods" do
+      unicode = File.join(directory, "caf\u00e9.json")
+      File.write(unicode, "Unicode fixture")
+      pathname = FileAccessFixtures::TrackedPath.new(unicode.b)
+
+      [:read, :binread, :open].each do |method|
+        read_in_test do
+          if method == :open
+            File.open(pathname) { |file| expect(file.read).to eq("Unicode fixture") }
+          else
+            expect(File.public_send(method, pathname)).to eq("Unicode fixture")
+          end
+          expect(pathname.metadata_queries).to be_nil
+        end
+
+        expect(collected_files).to match_array([unicode, File.realpath(unicode)].uniq)
       end
     end
 

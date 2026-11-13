@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "open3"
 require_relative "../../../../support/contexts/framework_file_dependencies"
 
 RSpec.describe "RSpec file dependencies" do
@@ -19,6 +20,40 @@ RSpec.describe "RSpec file dependencies" do
   end
 
   it_behaves_like "file dependencies from the framework runner"
+
+  it "preserves Ruby's argument validation order for a lazy report export" do
+    require_relative "fixtures/lazy_report_export"
+    fixture = File.expand_path("fixtures/lazy_report_export.rb", __dir__)
+    baseline_path = File.join(fixture_directory, "baseline.csv")
+    output, status = Open3.capture2e(RbConfig.ruby, "-r", fixture, "-e", <<~RUBY, baseline_path)
+      abort "File.read is instrumented" unless File.method(:read).owner == IO.singleton_class
+      report = FileDependencyFixtures::LazyReportExport.new(ARGV.fetch(0))
+      begin
+        File.read(report, nil, "invalid-offset")
+        abort "Expected TypeError"
+      rescue TypeError
+        puts File.exist?(ARGV.fetch(0))
+      end
+    RUBY
+    expect(status.success?).to be(true), output
+    expect(["true", "false"]).to include(output.strip)
+    generated_without_instrumentation = output.strip == "true"
+    report_path = File.join(fixture_directory, "report.csv")
+
+    with_new_rspec_environment do
+      RSpec.describe "Report downloads" do
+        it "rejects an invalid offset without extra export generation" do
+          report = FileDependencyFixtures::LazyReportExport.new(report_path)
+
+          expect { File.read(report, nil, "invalid-offset") }.to raise_error(TypeError)
+          expect(File.exist?(report_path)).to eq(generated_without_instrumentation)
+        end
+      end
+      options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format progress])
+      output = StringIO.new
+      expect(RSpec::Core::Runner.new(options).run(StringIO.new, output)).to eq(0), output.string
+    end
+  end
 
   it "does not leak dependencies from a group skipped in before(:context) into the next group" do
     require_relative "fixtures/user"

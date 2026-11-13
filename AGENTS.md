@@ -3,6 +3,7 @@
 ## Guardrails
 
 - Use Ruby 2.7-compatible syntax.
+- All instrumentation of customer code MUST only observe and MUST be side effect free.
 - Instrumentation must never raise internal errors into customer test processes. Log failures at `warn` or `error` level and degrade gracefully.
 - Use exceptions for exceptional conditions, not control flow.
 - Do not use `instance_variable_get` or `instance_variable_set`; add explicit APIs instead.

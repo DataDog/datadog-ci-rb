@@ -13,7 +13,10 @@ module Datadog
           end
 
           def paths_for(file)
-            path = file.is_a?(File) ? file.path : file
+            path = case file
+            when String then file
+            when File then native_file_path(file)
+            end
             return [] unless path
 
             if respond_to?(:native_paths, true)
@@ -21,7 +24,9 @@ module Datadog
               return paths if paths
             end
 
-            path = path.dup.force_encoding("filesystem") if path.encoding == Encoding::BINARY
+            # Use a plain String so resolution cannot call customer overrides.
+            path = String.new(path)
+            path.force_encoding("filesystem") if path.encoding == Encoding::BINARY
 
             paths = [File.absolute_path(path)]
             resolved = resolve_target(path)

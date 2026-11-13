@@ -22,23 +22,25 @@ module Datadog
             # Also covers File.open and local-file Kernel.open, before their blocks run.
             def initialize(*args)
               super
+            ensure
               Instrumentation.test_impact_analysis&.record_file_dependency(self)
             end
             ruby2_keywords(:initialize)
           end
 
           module ClassMethods
-            # Ruby opens these directly in C, bypassing File#initialize.
-            def read(path, *args)
-              component = Instrumentation.test_impact_analysis
-              path = component.prepare_file_read(path) if component
+            # Ruby opens these directly in C. Observe strings without converting
+            # customer path objects or replacing any arguments passed to Ruby.
+            def read(*args)
+              path = args[0]
+              Instrumentation.test_impact_analysis&.record_file_dependency(path) if String === path
               super
             end
             ruby2_keywords(:read)
 
-            def binread(path, *args)
-              component = Instrumentation.test_impact_analysis
-              path = component.prepare_file_read(path) if component
+            def binread(*args)
+              path = args[0]
+              Instrumentation.test_impact_analysis&.record_file_dependency(path) if String === path
               super
             end
             ruby2_keywords(:binread)

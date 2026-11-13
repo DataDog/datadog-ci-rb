@@ -80,6 +80,15 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies do
       expect(resolver.send(:native_paths, "input.json", "", nil)).to be_nil
     end
 
+    it "ignores files without a stored path" do
+      expect(resolver.paths_for(File.allocate)).to be_empty
+      File.open(File.join(root, "input.json")) do |original|
+        File.open(original.fileno, autoclose: false) do |file|
+          expect(resolver.paths_for(file)).to be_empty
+        end
+      end
+    end
+
     it "keeps path arguments valid while other threads compact the heap" do
       path = File.join(root, "nested", "input.json")
       expected = [path]

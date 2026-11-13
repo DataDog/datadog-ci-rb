@@ -30,16 +30,6 @@ module Datadog
             end
           end
 
-          def prepare_file_read(path)
-            collections = @collections
-            return path unless collecting?(collections)
-
-            # Coerce once and preserve customer errors from to_path or to_str.
-            path = File.path(path)
-            record_into(collections, path)
-            path
-          end
-
           def record(file)
             collections = @collections
             record_into(collections, file) if collecting?(collections)

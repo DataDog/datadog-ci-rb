@@ -19,11 +19,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::OpenedFilesCollector d
 
   it "collects reads from an existing worker and a child thread" do
     work = Queue.new
-    worker = Thread.new { collector.prepare_file_read(work.pop) }
+    worker = Thread.new { collector.record(work.pop) }
     collector.start
     work << path
     worker.value
-    Thread.new { collector.prepare_file_read(other_path) }.value
+    Thread.new { collector.record(other_path) }.value
 
     expect(collector.stop).to eq(path => true, other_path => true)
   ensure
@@ -50,19 +50,18 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::OpenedFilesCollector d
     expect(collector.stop).to eq(path => true)
   end
 
-  it "does not resolve or coerce paths without an active collection" do
-    argument = double("path")
-    expect(argument).not_to receive(:to_path)
+  it "does not resolve paths without an active collection" do
     expect_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies).not_to receive(:paths_for)
-    expect(collector.prepare_file_read(argument)).to equal(argument)
     collector.record(path)
   end
 
-  it "preserves errors from customer path conversion" do
+  it "does not convert customer path objects during collection" do
     argument = double("path")
-    expect(argument).to receive(:to_path).and_raise(TypeError, "customer error")
+    expect(argument).not_to receive(:to_path)
+    expect(argument).not_to receive(:to_str)
     collector.start
-    expect { collector.prepare_file_read(argument) }.to raise_error(TypeError, "customer error")
+    collector.record(argument)
+    expect(collector.stop).to be_empty
   end
 
   it "records one read in every overlapping collection" do

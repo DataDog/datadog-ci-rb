@@ -154,13 +154,6 @@ module Datadog
           @code_coverage_enabled
         end
 
-        def prepare_file_read(path)
-          return path unless code_coverage?
-
-          collector = @opened_files_collector
-          collector ? collector.prepare_file_read(path) : path
-        end
-
         def record_file_dependency(file)
           @opened_files_collector&.record(file) if code_coverage?
         end

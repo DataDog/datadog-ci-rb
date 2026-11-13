@@ -11,6 +11,7 @@ module Datadog
 
           private
 
+          def native_file_path: (File file) -> String?
           def native_paths: (String path, String root, String? ignored_path) -> Array[String]?
 
           def resolve_target: (String path) -> String?

@@ -12,7 +12,6 @@ module Datadog
           def initialize: (root: String, ignored_path: String?) -> void
           def start: () -> void
           def stop: () -> Hash[String, bool]
-          def prepare_file_read: (String | _ToPath | _ToStr path) -> (String | _ToPath | _ToStr)
           def record: (String | File file) -> void
 
           private

@@ -2,6 +2,7 @@
 #include "datadog_common.h"
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "ruby/thread.h"
 #include <limits.h>
 #include <stdlib.h>
@@ -144,6 +145,14 @@ static VALUE native_paths(VALUE self, VALUE path, VALUE root, VALUE ignored) {
   return rb_ensure(collect_paths, (VALUE)&paths, free_paths, (VALUE)&paths);
 }
 
+static VALUE native_file_path(VALUE self, VALUE file) {
+  Check_Type(file, T_FILE);
+  // File#path can call customer String#initialize_dup. Read Ruby's stored path
+  // directly while holding the GVL. The resolver never modifies this string.
+  rb_io_t *io = RFILE(file)->fptr;
+  return io ? io->pathv : Qnil;
+}
+
 void Init_file_dependencies(void) {
   VALUE datadog = rb_define_module("Datadog");
   VALUE ci = rb_define_module_under(datadog, "CI");
@@ -151,4 +160,5 @@ void Init_file_dependencies(void) {
   VALUE coverage = rb_define_module_under(tia, "Coverage");
   VALUE dependencies = rb_define_class_under(coverage, "FileDependencies", rb_cObject);
   rb_define_private_method(dependencies, "native_paths", native_paths, 3);
+  rb_define_private_method(dependencies, "native_file_path", native_file_path, 1);
 }

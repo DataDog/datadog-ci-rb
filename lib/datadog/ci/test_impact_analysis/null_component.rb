@@ -51,10 +51,6 @@ module Datadog
           false
         end
 
-        def prepare_file_read(path)
-          path
-        end
-
         def record_file_dependency(_file)
         end
 

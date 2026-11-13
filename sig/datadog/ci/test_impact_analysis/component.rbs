@@ -73,8 +73,6 @@ module Datadog
 
         def code_coverage?: () -> bool
 
-        def prepare_file_read: (String | _ToPath | _ToStr path) -> (String | _ToPath | _ToStr)
-
         def record_file_dependency: (String | File file) -> void
 
         def start_coverage: () -> void

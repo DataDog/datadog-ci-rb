@@ -891,15 +891,15 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       worker_path = File.join(Datadog::CI::Git::LocalRepository.root, "Gemfile")
       component.on_test_suite_started(test_suite)
       File.open(path) { |file| component.record_file_dependency(file) }
-      File.read(component.prepare_file_read(path))
-      Thread.new { File.read(component.prepare_file_read(worker_path)) }.value
+      component.record_file_dependency(path)
+      Thread.new { component.record_file_dependency(worker_path) }.value
       event = component.on_test_suite_finished(test_suite, context)
 
       expect(event.test_id).to be_nil
       expect(event.inspect_coverage.keys).to contain_exactly("/path/to/suite_file.rb", path, worker_path)
 
       expect(test_suite).not_to receive(:add_impacted_files)
-      File.read(component.prepare_file_read(worker_path))
+      component.record_file_dependency(worker_path)
     end
 
     it "does not collect coverage around test lifecycle" do
@@ -1045,7 +1045,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       component.on_test_context_started("outer")
       File.open(paths[0]) { |file| component.record_file_dependency(file) }
       component.on_test_context_started("inner")
-      File.binread(component.prepare_file_read(paths[1]))
+      component.record_file_dependency(paths[1])
 
       2.times { expect(finish_test.call(["outer", "inner"])).to match_array(paths) }
       expect(finish_test.call(["outer"])).to eq([paths[0]])
@@ -1067,7 +1067,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
     it "collects background-thread reads during the active context" do
       component.on_test_context_started("outer")
-      Thread.new { File.binread(component.prepare_file_read(paths[1])) }.value
+      Thread.new { component.record_file_dependency(paths[1]) }.value
       File.open(paths[0]) { |file| component.record_file_dependency(file) }
 
       expect(finish_test.call(["outer"])).to match_array(paths)
@@ -1077,7 +1077,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       component.on_test_context_started("outer")
       File.open(paths[0]) { |file| component.record_file_dependency(file) }
       component.clear_context_coverage("outer")
-      File.binread(component.prepare_file_read(paths[1]))
+      component.record_file_dependency(paths[1])
 
       expect(finish_test.call(["outer"])).to be_empty
     end
