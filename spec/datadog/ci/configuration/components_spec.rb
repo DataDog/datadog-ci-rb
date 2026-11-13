@@ -48,6 +48,9 @@ RSpec.describe Datadog::CI::Configuration::Components do
           unless tia_static_dependencies_tracking_enabled.nil?
             settings.ci.tia_static_dependencies_tracking_enabled = tia_static_dependencies_tracking_enabled
           end
+          unless tia_opened_files_coverage_enabled.nil?
+            settings.ci.tia_opened_files_coverage_enabled = tia_opened_files_coverage_enabled
+          end
           settings.ci.itr_code_coverage_use_single_threaded_mode = itr_code_coverage_use_single_threaded_mode
           settings.ci.itr_test_impact_analysis_use_allocation_tracing = itr_test_impact_analysis_use_allocation_tracing
           settings.ci.discard_traces = discard_traces
@@ -136,6 +139,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
         let(:itr_enabled) { false }
         let(:tia_test_skipping_mode) { "test" }
         let(:tia_static_dependencies_tracking_enabled) { nil }
+        let(:tia_opened_files_coverage_enabled) { nil }
         let(:tracing_enabled) { true }
         let(:ruby_version) { RUBY_VERSION }
         let(:itr_code_coverage_use_single_threaded_mode) { false }
@@ -219,6 +223,27 @@ RSpec.describe Datadog::CI::Configuration::Components do
               it "passes the configured value to test impact analysis" do
                 expect(Datadog::CI::TestImpactAnalysis::Component).to have_received(:new).with(
                   hash_including(static_dependencies_tracking_enabled: false)
+                )
+              end
+            end
+          end
+
+          context "when opened files coverage is enabled by default" do
+            let(:agentless_enabled) { true }
+            let(:api_key) { "api_key" }
+
+            it "passes the default value to test impact analysis" do
+              expect(Datadog::CI::TestImpactAnalysis::Component).to have_received(:new).with(
+                hash_including(opened_files_coverage_enabled: true)
+              )
+            end
+
+            context "when the setting is explicitly disabled" do
+              let(:tia_opened_files_coverage_enabled) { false }
+
+              it "passes the configured value to test impact analysis" do
+                expect(Datadog::CI::TestImpactAnalysis::Component).to have_received(:new).with(
+                  hash_including(opened_files_coverage_enabled: false)
                 )
               end
             end

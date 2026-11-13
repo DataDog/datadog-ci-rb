@@ -8,6 +8,7 @@ require_relative "../ext/test"
 require_relative "../ext/telemetry"
 
 require_relative "../async_writer"
+require_relative "../contrib/instrumentation"
 require_relative "../git/local_repository"
 
 require_relative "../source_code/static_dependencies"
@@ -18,6 +19,7 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
+require_relative "coverage/opened_files_collector"
 require_relative "coverage/transport"
 require_relative "skippable"
 require_relative "telemetry"
@@ -54,7 +56,8 @@ module Datadog
           bundle_location: nil,
           use_single_threaded_coverage: false,
           use_allocation_tracing: true,
-          static_dependencies_tracking_enabled: false
+          static_dependencies_tracking_enabled: false,
+          opened_files_coverage_enabled: true
         )
           @enabled = enabled
           @api = api
@@ -70,6 +73,7 @@ module Datadog
           @use_single_threaded_coverage = use_single_threaded_coverage
           @use_allocation_tracing = use_allocation_tracing
           @static_dependencies_tracking_enabled = static_dependencies_tracking_enabled
+          @opened_files_coverage_enabled = opened_files_coverage_enabled
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false
@@ -108,10 +112,15 @@ module Datadog
           test_session.set_internal_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
           test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, @test_skipping_mode)
 
-          if @code_coverage_enabled
-            load_datadog_cov!
-
+          if @code_coverage_enabled && load_datadog_cov!
             populate_static_dependencies_map!
+            if @opened_files_coverage_enabled
+              @opened_files_collector = Coverage::OpenedFilesCollector.new(
+                root: Git::LocalRepository.root,
+                ignored_path: @bundle_location
+              )
+              Contrib::Instrumentation.instrument(:fileaccess)
+            end
           end
 
           # Load external cache or component state first, and if successful, skip fetching skippable tests
@@ -149,24 +158,37 @@ module Datadog
           @code_coverage_enabled
         end
 
+        def opened_files_coverage?
+          @opened_files_coverage_enabled && code_coverage?
+        end
+
+        def record_file_dependency(file)
+          @opened_files_collector&.record(file) if code_coverage?
+        end
+
         # Starts coverage collection.
-        # This is a low-level method that only starts the collector.
+        # This is a low-level method that starts both collectors.
         #
         # @return [void]
         def start_coverage
           return if !enabled? || !code_coverage?
 
           coverage_collector&.start
+          @opened_files_collector&.start
         end
 
         # Stops coverage collection and returns raw coverage data.
-        # This is a low-level method that only stops the collector.
+        # This is a low-level method that stops both collectors.
         #
         # @return [Hash, nil] Raw coverage data or nil
         def stop_coverage
           return if !enabled? || !code_coverage?
 
-          coverage_collector&.stop
+          coverage = coverage_collector&.stop
+          files = @opened_files_collector&.stop
+          return coverage if files.nil? || files.empty?
+
+          (coverage || {}).merge!(files)
         end
 
         # Called when a test context (e.g., RSpec example group with before(:context)) starts.
@@ -188,7 +210,7 @@ module Datadog
             @current_context_id = context_id
           end
 
-          coverage_collector&.start
+          start_coverage
         end
 
         # Called when a test starts within a context. This method:
@@ -214,7 +236,7 @@ module Datadog
             "Starting test coverage for [#{test.name}] with context chain: #{context_ids.inspect}"
           end
 
-          coverage_collector&.start
+          start_coverage
         end
 
         # Called when a test finishes. This method:
@@ -246,7 +268,7 @@ module Datadog
           return unless code_coverage?
           Telemetry.code_coverage_finished(test)
 
-          coverage = coverage_collector&.stop
+          coverage = stop_coverage
 
           # if test was skipped, we discard coverage data
           return if test.skipped?
@@ -273,6 +295,14 @@ module Datadog
         # @return [void]
         def clear_context_coverage(context_id)
           return unless context_coverage_enabled?
+
+          @current_context_id_mutex.synchronize do
+            if @current_context_id == context_id
+              # A skipped or failed before(:context) hook may leave collection active.
+              stop_coverage
+              @current_context_id = nil
+            end
+          end
 
           @context_coverages_mutex.synchronize do
             @context_coverages.delete(context_id)
@@ -346,7 +376,7 @@ module Datadog
           return unless code_coverage?
 
           Telemetry.code_coverage_started(test_suite)
-          coverage_collector&.start
+          start_coverage
         end
 
         def on_test_suite_finished(test_suite, context)
@@ -372,7 +402,7 @@ module Datadog
 
           Telemetry.code_coverage_finished(test_suite)
 
-          coverage = coverage_collector&.stop
+          coverage = stop_coverage
 
           write_coverage_event(
             test_id: nil,
@@ -463,6 +493,7 @@ module Datadog
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
           Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
+          true
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
           Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")
@@ -611,11 +642,11 @@ module Datadog
           end
           return if context_id.nil?
 
-          coverage = coverage_collector&.stop
+          coverage = stop_coverage
           return if coverage.nil? || coverage.empty?
 
           @context_coverages_mutex.synchronize do
-            @context_coverages[context_id] = coverage
+            (@context_coverages[context_id] ||= {}).merge!(coverage)
           end
 
           Datadog.logger.debug do
