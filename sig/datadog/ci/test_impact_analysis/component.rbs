@@ -119,13 +119,11 @@ module Datadog
 
         private
 
-        def opened_files_collector: () -> Coverage::OpenedFilesCollector
-
         def skippables_count: () -> Integer
 
         def coverage_collector: () -> Datadog::CI::TestImpactAnalysis::Coverage::DDCov?
 
-        def load_datadog_cov!: () -> void
+        def load_datadog_cov!: () -> bool
 
         def populate_static_dependencies_map!: () -> void
 

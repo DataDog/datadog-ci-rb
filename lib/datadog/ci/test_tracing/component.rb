@@ -303,10 +303,6 @@ module Datadog
           # Signal Remote::Component to configure the library.
           # Note that it will call this component back (unfortunate circular dependency).
           remote.configure(test_session)
-
-          if test_impact_analysis.code_coverage?
-            Contrib::Instrumentation.instrument(:fileaccess)
-          end
         end
 
         # intentionally empty

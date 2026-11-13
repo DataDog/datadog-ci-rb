@@ -8,6 +8,7 @@ require_relative "../ext/test"
 require_relative "../ext/telemetry"
 
 require_relative "../async_writer"
+require_relative "../contrib/instrumentation"
 require_relative "../git/local_repository"
 
 require_relative "../source_code/static_dependencies"
@@ -109,10 +110,13 @@ module Datadog
           test_session.set_internal_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
           test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, @test_skipping_mode)
 
-          if @code_coverage_enabled
-            load_datadog_cov!
-
+          if @code_coverage_enabled && load_datadog_cov!
+            @opened_files_collector = Coverage::OpenedFilesCollector.new(
+              root: Git::LocalRepository.root,
+              ignored_path: @bundle_location
+            )
             populate_static_dependencies_map!
+            Contrib::Instrumentation.instrument(:fileaccess)
           end
 
           # Load external cache or component state first, and if successful, skip fetching skippable tests
@@ -169,7 +173,7 @@ module Datadog
           return if !enabled? || !code_coverage?
 
           coverage_collector&.start
-          opened_files_collector.start
+          @opened_files_collector&.start
         end
 
         # Stops coverage collection and returns raw coverage data.
@@ -466,15 +470,6 @@ module Datadog
 
         private
 
-        def opened_files_collector
-          @opened_files_collector || @mutex.synchronize do
-            @opened_files_collector ||= Coverage::OpenedFilesCollector.new(
-              root: Git::LocalRepository.root,
-              ignored_path: @bundle_location
-            )
-          end
-        end
-
         def skippables_count
           current_skippables.count
         end
@@ -497,6 +492,7 @@ module Datadog
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
           Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
+          true
         rescue LoadError => e
           Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
           Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")

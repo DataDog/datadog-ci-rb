@@ -61,6 +61,27 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     expect(File.ancestors.count(Datadog::CI::Contrib::FileAccess::Instrumentation::InstanceMethods)).to eq(1)
   end
 
+  it "enables file coverage when debug logging returns nil" do
+    allow(Datadog.logger).to receive(:debug).and_return(nil)
+    expect(patcher).to receive(:patch).and_call_original
+    start_session
+    read_in_test { File.read(path) }
+
+    expect(collected_files).to eq([path])
+  end
+
+  it "does not install file hooks when the native extension cannot load" do
+    allow(component).to receive(:require)
+      .with("datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}").and_raise(LoadError, "extension unavailable")
+    expect(patcher).not_to receive(:patch)
+    expect(Datadog.logger).to receive(:error).with(/extension unavailable/)
+    start_session
+
+    expect(component).not_to be_code_coverage
+    read_in_test { expect(File.read(path)).to eq('{"value":42}') }
+    expect(events).to be_empty
+  end
+
   it "records a binary-encoded file path inside a Unicode checkout" do
     checkout = File.join(directory, "caf\u00e9")
     FileUtils.mkdir_p(checkout)

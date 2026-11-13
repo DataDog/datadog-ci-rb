@@ -725,7 +725,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
             enabled: true,
             static_dependencies_tracking_enabled: true
           )
-          allow(static_component).to receive(:load_datadog_cov!)
+          allow(static_component).to receive(:load_datadog_cov!).and_return(true)
           allow(static_component).to receive(:coverage_collector).and_return(collector)
           allow(Datadog::CI::SourceCode::StaticDependencies).to receive(:populate!)
           expect(Datadog::CI::SourceCode::StaticDependencies)
@@ -869,7 +869,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
 
     before do
-      allow(component).to receive(:load_datadog_cov!)
+      allow(component).to receive(:load_datadog_cov!).and_return(true)
       configure
       allow(component).to receive(:coverage_collector).and_return(collector)
     end
@@ -978,7 +978,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
 
     before do
-      allow(component).to receive(:load_datadog_cov!)
+      allow(component).to receive(:load_datadog_cov!).and_return(true)
       allow(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:new).and_return(skippable)
       configure
       allow(component).to receive(:coverage_collector).and_return(collector)
