@@ -63,11 +63,11 @@ module Datadog
 
         def extract_tags(env)
           # Extract metadata from CI provider environment variables
-          tags = Environment::Extractor.new(env).tags
+          ci_provider_tags = Environment::Extractor.new(env).tags
 
           # If user defined metadata is defined, overwrite
           user_provided_tags = Environment::Extractor.new(env, provider_klass: Providers::UserDefinedTags).tags
-          tags.merge!(user_provided_tags)
+          tags = ci_provider_tags.merge(user_provided_tags)
 
           # NOTE: we need to provide head commit sha as part of the environment if it was discovered from provider.
           #
@@ -85,14 +85,16 @@ module Datadog
             env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
           end
 
-          # Fill out tags from local git as fallback
-          local_git_tags = Environment::Extractor.new(env, provider_klass: Providers::LocalGit).tags
+          # Prefer local Git tags over CI metadata, keeping explicit user overrides highest.
+          local_git = Providers::LocalGit.new(env, preferred_tag: ci_provider_tags[Git::TAG_TAG])
+          local_git_tags = Environment::Extractor.new(env, provider: local_git).tags
           local_git_tags.each do |key, value|
-            tags[key] ||= value
+            tags[key] = value if key.start_with?("git.") || !tags.key?(key)
           end
+          tags.merge!(user_provided_tags)
 
           # send some telemetry for the cases where git commit sha is overriden
-          discrepancy_checker = ConfigurationDiscrepancyChecker.new(tags, local_git_tags, user_provided_tags)
+          discrepancy_checker = ConfigurationDiscrepancyChecker.new(ci_provider_tags, local_git_tags, user_provided_tags)
           discrepancy_checker.check_for_discrepancies
 
           ensure_post_conditions(tags)

@@ -34,7 +34,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
               context "with git information" do
                 include_context "with git fixture", "gitdir_with_commit"
 
-                it "matches CI tags, with git fallback information" do
+                it "prefers local Git tags while preserving CI metadata and user overrides" do
                   is_expected
                     .to eq(
                       {
@@ -49,7 +49,13 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                         "git.commit.message" => "First commit with ❤️",
                         "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
                         "git.repository_url" => "https://datadoghq.com/git/test.git"
-                      }.merge(fixture_tags)
+                      }.merge(fixture_tags) do |key, local_value, provider_value|
+                        if key.start_with?("git.") && !env.key?("DD_#{key.upcase.tr(".", "_")}")
+                          local_value
+                        else
+                          provider_value
+                        end
+                      end
                     )
                 end
               end
@@ -61,6 +67,83 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                   is_expected.to eq(fixture_tags)
                 end
               end
+            end
+          end
+        end
+      end
+    end
+
+    context "with conflicting CI and local Git metadata" do
+      include_context "with git fixture", "gitdir_with_commit"
+      include_context "Telemetry spy"
+
+      let(:env) do
+        {
+          "GITHUB_SHA" => "a" * 40,
+          "GITHUB_SERVER_URL" => "https://github.com",
+          "GITHUB_REPOSITORY" => "provider/repository",
+          "GITHUB_REF" => "refs/tags/provider-tag",
+          "GITHUB_WORKSPACE" => "/ci/workspace"
+        }
+      end
+
+      it "retains provider-only tags and reports the original SHA discrepancy" do
+        expect(extracted_tags).to include(
+          "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
+          "git.tag" => "provider-tag",
+          "ci.workspace_path" => "/ci/workspace"
+        )
+        discrepancy = telemetry_metric(:inc, Datadog::CI::Ext::Telemetry::METRIC_GIT_COMMIT_SHA_DISCREPANCY)
+        expect(discrepancy.tags).to eq(
+          type: "commit_discrepancy", expected_provider: "git_client", discrepant_provider: "ci_provider"
+        )
+      end
+
+      context "with a detached checkout" do
+        let(:env) { super().merge("GITHUB_REF" => "refs/heads/provider-branch") }
+
+        before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_branch).and_return("HEAD") }
+
+        it "retains the provider branch" do
+          expect(extracted_tags["git.branch"]).to eq("provider-branch")
+        end
+
+        context "without a provider branch" do
+          let(:env) { super().reject { |key, _| key == "GITHUB_REF" } }
+
+          it "omits the branch" do
+            expect(extracted_tags).not_to have_key("git.branch")
+          end
+        end
+      end
+
+      context "with a local tag" do
+        before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return("local-tag") }
+
+        it "prefers the local tag" do
+          expect(extracted_tags["git.tag"]).to eq("local-tag")
+        end
+
+        context "with a user override" do
+          let(:env) { super().merge("DD_GIT_TAG" => "user-tag") }
+
+          it "prefers the user tag" do
+            expect(extracted_tags["git.tag"]).to eq("user-tag")
+          end
+        end
+
+        context "with multiple local tags" do
+          before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return("local-tag\nprovider-tag") }
+
+          it "preserves the provider's selection when it names a local tag" do
+            expect(extracted_tags["git.tag"]).to eq("provider-tag")
+          end
+
+          context "with an explicit user override" do
+            let(:env) { super().merge("DD_GIT_TAG" => "user-tag") }
+
+            it "retains the user override" do
+              expect(extracted_tags["git.tag"]).to eq("user-tag")
             end
           end
         end
