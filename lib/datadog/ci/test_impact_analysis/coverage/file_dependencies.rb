@@ -21,6 +21,8 @@ module Datadog
               return paths if paths
             end
 
+            path = path.dup.force_encoding("filesystem") if path.encoding == Encoding::BINARY
+
             paths = [File.absolute_path(path)]
             resolved = resolve_target(path)
             paths << resolved if resolved && resolved != paths.first

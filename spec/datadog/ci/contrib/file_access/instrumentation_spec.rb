@@ -57,6 +57,20 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     expect(File.ancestors.count(Datadog::CI::Contrib::FileAccess::Instrumentation::InstanceMethods)).to eq(1)
   end
 
+  it "records a binary-encoded file path inside a Unicode checkout" do
+    checkout = File.join(directory, "caf\u00e9")
+    FileUtils.mkdir_p(checkout)
+    fixture = File.join(checkout, "fixture.json")
+    File.write(fixture, '{"value":42}')
+    allow(Datadog::CI::Git::LocalRepository).to receive(:root).and_return(checkout)
+    start_session
+
+    read_in_test do |test|
+      expect(File.read(fixture.b)).to eq('{"value":42}')
+      expect(test.lock_custom_impacted_files).to include(fixture)
+    end
+  end
+
   context "when coverage is disabled" do
     let(:code_coverage_enabled) { false }
 
