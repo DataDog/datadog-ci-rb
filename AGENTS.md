@@ -4,37 +4,37 @@
 
 - Use Ruby 2.7-compatible syntax.
 - All instrumentation of customer code MUST only observe and MUST be side effect free.
-- Instrumentation must never raise internal errors into customer test processes. Log failures at `warn` or `error` level and degrade gracefully.
+- Instrumentation must never raise internal errors into customer test processes. Log failures at `warn` or `error` level. Let customer tests continue.
 - Use exceptions for exceptional conditions, not control flow.
-- Do not use `instance_variable_get` or `instance_variable_set`; add explicit APIs instead.
+- Do not use `instance_variable_get` or `instance_variable_set`. Add explicit APIs instead.
 - Do not change `spec/datadog/ci/release_gem_spec.rb` unless explicitly asked.
-- Do not add `CHANGELOG.md` entries for individual changes; the changelog is compiled at release time.
+- Do not add `CHANGELOG.md` entries for individual changes. The release process compiles the changelog.
 
 ## Component boundaries
 
-- Components may collaborate through the public methods exposed by their `Component` or `NullComponent` classes.
+- Components can work together through the public methods of their `Component` or `NullComponent` classes.
 - Code outside a component must not reference other constants defined inside that component's directory.
-- MUST not access `ENV` directly.
-- All settings MUST be defined in `lib/datadog/ci/configuration/settings.rb` and injected into every component through `lib/datadog/ci/configuration/components.rb`.
-- Run `bundle exec rake archspec` after changes and fix every architecture violation. Do not suppress or baseline violations unless explicitly approved.
+- You MUST NOT access `ENV` directly.
+- You MUST define all settings in `lib/datadog/ci/configuration/settings.rb`. You MUST inject them into every component through `lib/datadog/ci/configuration/components.rb`.
+- After changes, run `bundle exec rake archspec`. Fix every architecture violation. Without explicit approval, do not suppress or baseline violations.
 
 ## Types
 
-- Add or update RBS definitions for Ruby changes. `lib/datadog/ci/configuration/settings.rb` is the exception; its options are intentionally not represented in RBS.
+- Add or update RBS definitions for Ruby changes. The options in `lib/datadog/ci/configuration/settings.rb` intentionally have no RBS definitions.
 - Avoid `untyped` unless a precise type is not feasible.
 - Write optional types as `Type?`, not `(nil | Type)`.
-- Run `bundle exec rake steep:check` after code or RBS changes and fix all errors.
+- After code or RBS changes, run `bundle exec rake steep:check`. Fix all errors.
 
 ## Tests
 
-- Cover behavior changes with tests and run the relevant tests after every code change.
-- Never monkey-patch production code in tests, including with `prepend`, reopened production classes or modules, or replaced singleton methods. Exercise normal interfaces instead.
-- Do not use `instance_variable_get` or `instance_variable_set` in tests; use mocks or explicit APIs.
+- Cover behavior changes with tests. After every code change, run the relevant tests.
+- Never monkey-patch production code in tests. Do not use `prepend` on production code, reopen production classes or modules, or replace production singleton methods. Use normal interfaces instead.
+- Do not use `instance_variable_get` or `instance_variable_set` in tests. Use mocks or explicit APIs.
 - Do not use focused specs such as `fit` or `fdescribe`.
-- A new contrib folder must have a corresponding Rake task, and every new test task must be included in `TEST_METADATA`.
-- Stage newly created files before running the full test suite; `release_gem_spec.rb` validates files through `git ls-files`.
+- Add a corresponding Rake task for each new contrib folder. Include every new test task in `TEST_METADATA`.
+- Before running the full test suite, stage newly created files. `release_gem_spec.rb` uses `git ls-files` to validate files.
 
 ## Required validation
 
-- Run `bundle exec standardrb` and fix all offenses before handing off changes.
+- Before handing off changes, run `bundle exec standardrb`. Fix all offenses.
 - Run the architecture, type, and relevant test checks required above.
