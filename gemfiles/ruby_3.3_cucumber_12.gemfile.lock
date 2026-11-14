@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 6ae908801e56c96e3670e43a6f455572bd0f273c
+  revision: d3d3223bf56b4bf6581ce0ecbbb863249e35121a
   branch: master
   specs:
-    datadog (2.49.0.dev)
+    datadog (2.50.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.6)
       libdatadog (~> 48.0.0.1.1)
@@ -58,12 +58,12 @@ GEM
       bigdecimal
     cucumber-gherkin (42.0.1)
       cucumber-messages (>= 34, < 35)
-    cucumber-html-formatter (24.2.0)
-      cucumber-messages (> 23, < 35)
+    cucumber-html-formatter (24.3.0)
+      cucumber-messages (> 23, < 36)
     cucumber-messages (34.2.1)
-    cucumber-query (16.2.0)
+    cucumber-query (16.3.0)
       cucumber-messages (>= 34.1, < 36)
-    cucumber-tag-expressions (11.0.1)
+    cucumber-tag-expressions (11.1.0)
     datadog-ruby_core_source (3.5.6)
     debug (1.11.1)
       irb (~> 1.10)
