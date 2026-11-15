@@ -13,6 +13,7 @@ module Datadog
         @correlation_id: String?
         @skippable_tests: Set[String]
         @skippable_suites: Set[String]
+        @opened_files_collector: Coverage::OpenedFilesCollector?
         @coverage_writer: Datadog::CI::AsyncWriter?
 
         @api: Datadog::CI::Transport::Api::Base?
@@ -23,6 +24,7 @@ module Datadog
         @use_single_threaded_coverage: bool
         @use_allocation_tracing: bool
         @static_dependencies_tracking_enabled: bool
+        @opened_files_coverage_enabled: bool
         @test_skipping_mode: String
 
         @mutex: Thread::Mutex
@@ -53,10 +55,11 @@ module Datadog
           ?bundle_location: String?,
           ?use_single_threaded_coverage: bool,
           ?use_allocation_tracing: bool,
-          ?static_dependencies_tracking_enabled: bool
+          ?static_dependencies_tracking_enabled: bool,
+          ?opened_files_coverage_enabled: bool
         ) -> Component
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool, ?opened_files_coverage_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 
@@ -71,6 +74,10 @@ module Datadog
         def suite_skipping_mode?: () -> bool
 
         def code_coverage?: () -> bool
+
+        def opened_files_coverage?: () -> bool
+
+        def record_file_dependency: (String | File file) -> void
 
         def start_coverage: () -> void
 
@@ -118,7 +125,7 @@ module Datadog
 
         def coverage_collector: () -> Datadog::CI::TestImpactAnalysis::Coverage::DDCov?
 
-        def load_datadog_cov!: () -> void
+        def load_datadog_cov!: () -> bool
 
         def populate_static_dependencies_map!: () -> void
 

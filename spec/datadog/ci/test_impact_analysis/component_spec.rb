@@ -6,6 +6,10 @@ require_relative "../../../../lib/datadog/ci/test_optimization_cache/component"
 RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
   include_context "Telemetry spy"
 
+  # Native collectors retain repository boundaries per thread. Other specs
+  # exercise different roots, so each example needs its own collector.
+  around { |example| Thread.new { example.run }.value }
+
   subject(:component) do
     described_class.new(
       api: api,
@@ -629,7 +633,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       end
 
       it_behaves_like "emits telemetry metric", :inc, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FINISHED, 1
-      it_behaves_like "emits telemetry metric", :distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES, 6.0
+      it "reports the number of collected files" do
+        event = subject
+        metric = telemetry_metric(:distribution, Datadog::CI::Ext::Telemetry::METRIC_CODE_COVERAGE_FILES)
+        expect(metric.value).to eq(event.inspect_coverage.size)
+      end
     end
 
     context "when test is skipped" do
@@ -717,7 +725,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
             enabled: true,
             static_dependencies_tracking_enabled: true
           )
-          allow(static_component).to receive(:load_datadog_cov!)
+          allow(static_component).to receive(:load_datadog_cov!).and_return(true)
           allow(static_component).to receive(:coverage_collector).and_return(collector)
           allow(Datadog::CI::SourceCode::StaticDependencies).to receive(:populate!)
           expect(Datadog::CI::SourceCode::StaticDependencies)
@@ -819,7 +827,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           dd_env: "dd_env",
           coverage_writer: writer,
           enabled: true,
-          use_single_threaded_coverage: true
+          use_single_threaded_coverage: true,
+          use_allocation_tracing: false
         )
       end
 
@@ -860,7 +869,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
 
     before do
-      allow(component).to receive(:load_datadog_cov!)
+      allow(component).to receive(:load_datadog_cov!).and_return(true)
       configure
       allow(component).to receive(:coverage_collector).and_return(collector)
     end
@@ -875,6 +884,22 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
       expect(event.test_suite_id).to eq(test_suite.id.to_s)
       expect(event.test_session_id).to eq("3")
       expect(writer).to have_received(:write).with(event)
+    end
+
+    it "collects files from all threads until the suite finishes" do
+      path = File.join(Datadog::CI::Git::LocalRepository.root, "README.md")
+      worker_path = File.join(Datadog::CI::Git::LocalRepository.root, "Gemfile")
+      component.on_test_suite_started(test_suite)
+      File.open(path) { |file| component.record_file_dependency(file) }
+      component.record_file_dependency(path)
+      Thread.new { component.record_file_dependency(worker_path) }.value
+      event = component.on_test_suite_finished(test_suite, context)
+
+      expect(event.test_id).to be_nil
+      expect(event.inspect_coverage.keys).to contain_exactly("/path/to/suite_file.rb", path, worker_path)
+
+      expect(test_suite).not_to receive(:add_impacted_files)
+      component.record_file_dependency(worker_path)
     end
 
     it "does not collect coverage around test lifecycle" do
@@ -953,7 +978,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
 
     before do
-      allow(component).to receive(:load_datadog_cov!)
+      allow(component).to receive(:load_datadog_cov!).and_return(true)
       allow(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:new).and_return(skippable)
       configure
       allow(component).to receive(:coverage_collector).and_return(collector)
@@ -993,6 +1018,71 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
   end
 
+  describe "file dependencies from test contexts" do
+    let(:tests_skipping_enabled) { false }
+    let(:collector) { instance_double(Datadog::CI::TestImpactAnalysis::Coverage::DDCov, start: nil) }
+    let(:context) { instance_double(Datadog::CI::TestTracing::Context, incr_tests_skipped_by_tia_count: nil) }
+    let(:paths) { %w[README.md Gemfile].map { |name| File.join(Datadog::CI::Git::LocalRepository.root, name) } }
+    let(:finish_test) do
+      lambda do |context_ids|
+        test = Datadog::CI::Test.new(Datadog::Tracing::SpanOperation.new("test"))
+        allow(test).to receive(:test_suite_id).and_return(2)
+        allow(test).to receive(:test_session_id).and_return(3)
+        test.context_ids = context_ids
+        component.on_test_started(test)
+        event = component.on_test_finished(test, context)
+        event ? event.inspect_coverage.keys & paths : []
+      end
+    end
+
+    before do
+      configure
+      allow(component).to receive(:coverage_collector).and_return(collector)
+      allow(collector).to receive(:stop) { {} }
+    end
+
+    it "preserves outer and nested file dependencies for every matching test" do
+      component.on_test_context_started("outer")
+      File.open(paths[0]) { |file| component.record_file_dependency(file) }
+      component.on_test_context_started("inner")
+      component.record_file_dependency(paths[1])
+
+      2.times { expect(finish_test.call(["outer", "inner"])).to match_array(paths) }
+      expect(finish_test.call(["outer"])).to eq([paths[0]])
+      expect(finish_test.call([])).to be_empty
+
+      component.clear_context_coverage("inner")
+      expect(finish_test.call(["outer", "inner"])).to eq([paths[0]])
+      component.clear_context_coverage("outer")
+      expect(finish_test.call(["outer"])).to be_empty
+    end
+
+    it "retains file dependencies when the native collector returns no coverage" do
+      allow(collector).to receive(:stop).and_return(nil)
+      component.on_test_context_started("outer")
+      File.open(paths[0]) { |file| component.record_file_dependency(file) }
+
+      expect(finish_test.call(["outer"])).to eq([paths[0]])
+    end
+
+    it "collects background-thread reads during the active context" do
+      component.on_test_context_started("outer")
+      Thread.new { component.record_file_dependency(paths[1]) }.value
+      File.open(paths[0]) { |file| component.record_file_dependency(file) }
+
+      expect(finish_test.call(["outer"])).to match_array(paths)
+    end
+
+    it "stops recording when a context is cleared before any test starts" do
+      component.on_test_context_started("outer")
+      File.open(paths[0]) { |file| component.record_file_dependency(file) }
+      component.clear_context_coverage("outer")
+      component.record_file_dependency(paths[1])
+
+      expect(finish_test.call(["outer"])).to be_empty
+    end
+  end
+
   describe "#on_test_context_started" do
     let(:context_id) { "1:1" }
     let(:tests_skipping_enabled) { false }
@@ -1016,7 +1106,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           dd_env: "dd_env",
           coverage_writer: writer,
           enabled: true,
-          use_single_threaded_coverage: true
+          use_single_threaded_coverage: true,
+          use_allocation_tracing: false
         )
       end
 
@@ -1126,7 +1217,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           dd_env: "dd_env",
           coverage_writer: writer,
           enabled: true,
-          use_single_threaded_coverage: true
+          use_single_threaded_coverage: true,
+          use_allocation_tracing: false
         )
       end
 
@@ -1194,7 +1286,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
           dd_env: "dd_env",
           coverage_writer: writer,
           enabled: true,
-          use_single_threaded_coverage: true
+          use_single_threaded_coverage: true,
+          use_allocation_tracing: false
         )
       end
 

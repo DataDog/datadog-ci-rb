@@ -268,6 +268,12 @@ module Datadog
                 o.default true
               end
 
+              option :tia_opened_files_coverage_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_TIA_OPENED_FILES_COVERAGE_ENABLED
+                o.default true
+              end
+
               option :code_coverage_report_upload_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_CODE_COVERAGE_REPORT_UPLOAD_ENABLED

@@ -5,6 +5,12 @@ require_relative "../../../../lib/datadog/ci/test_impact_analysis/null_component
 RSpec.describe Datadog::CI::TestImpactAnalysis::NullComponent do
   subject(:test_impact_analysis) { described_class.new }
 
+  describe "#opened_files_coverage?" do
+    subject { test_impact_analysis.opened_files_coverage? }
+
+    it { is_expected.to be(false) }
+  end
+
   describe "#test_skipping_mode?" do
     subject { test_impact_analysis.test_skipping_mode? }
 

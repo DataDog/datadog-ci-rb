@@ -1,0 +1,14 @@
+module Datadog
+  module CI
+    module Contrib
+      module FileAccess
+        class Integration < Contrib::Integration
+          def available?: () -> bool
+          def late_instrument?: () -> bool
+          def patchable?: () -> bool
+          def patcher: () -> singleton(Patcher)
+        end
+      end
+    end
+  end
+end
