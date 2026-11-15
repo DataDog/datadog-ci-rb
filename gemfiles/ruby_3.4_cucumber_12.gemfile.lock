@@ -1,9 +1,9 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 6ae908801e56c96e3670e43a6f455572bd0f273c
+  revision: d3d3223bf56b4bf6581ce0ecbbb863249e35121a
   branch: master
   specs:
-    datadog (2.49.0.dev)
+    datadog (2.50.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.6)
       libdatadog (~> 48.0.0.1.1)
@@ -58,12 +58,12 @@ GEM
       bigdecimal
     cucumber-gherkin (42.0.1)
       cucumber-messages (>= 34, < 35)
-    cucumber-html-formatter (24.2.0)
-      cucumber-messages (> 23, < 35)
+    cucumber-html-formatter (24.3.0)
+      cucumber-messages (> 23, < 36)
     cucumber-messages (34.2.1)
-    cucumber-query (16.2.0)
+    cucumber-query (16.3.0)
       cucumber-messages (>= 34.1, < 36)
-    cucumber-tag-expressions (11.0.1)
+    cucumber-tag-expressions (11.1.0)
     datadog-ruby_core_source (3.5.6)
     debug (1.11.1)
       irb (~> 1.10)
@@ -214,11 +214,11 @@ CHECKSUMS
   cucumber-core (20.1.0) sha256=1a2727ae27705f45c7732b8f1f19c0cf068696cf6bac9ccee2d62b575c7cf9d5
   cucumber-cucumber-expressions (20.2.0) sha256=a993cc2976da3442a4f902a691ef91d79a3e985805674dc0c8713425d16014c4
   cucumber-gherkin (42.0.1) sha256=427efa1996770fd91a6e860e3f2e8b644108682256f4189db494fe85f4595e2f
-  cucumber-html-formatter (24.2.0) sha256=6edc50730e459f9bfea0b0dadfaf4f4066d7083094382ac0d703926414c9cce0
+  cucumber-html-formatter (24.3.0) sha256=e4d458fe839816b58b704f0e76464b98e2629407f8171c7407f79cdd54cf3825
   cucumber-messages (34.2.1) sha256=1de715dfeaa237939b8ab008987d3fbf3118ba32a86d844fd1503396ecc5bf7e
-  cucumber-query (16.2.0) sha256=27813b49913fb6d90bf851853604ecd3fb5c6ea8638d24bd5ceb9e192d8142d9
-  cucumber-tag-expressions (11.0.1) sha256=ead62a1c6bb613de1f5469975a9dd11ba2ced7322a6c8837cdde9db33dcbeac5
-  datadog (2.49.0.dev)
+  cucumber-query (16.3.0) sha256=f5baef619b64f3e2f0ead40c32ab9815aba24a5a09c5a63480c33b8dc02f0cbb
+  cucumber-tag-expressions (11.1.0) sha256=b6f556a24545d705f7e32020c9e9dc5b792f010d8cc72e086f1d29367936de83
+  datadog (2.50.0.dev)
   datadog-ci (1.43.0)
   datadog-ruby_core_source (3.5.6) sha256=07d8909b9314af709da80966cf7e160da19ca1c396a8f45d175615f675a89569
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
