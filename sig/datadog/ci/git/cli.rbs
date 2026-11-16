@@ -15,6 +15,7 @@ module Datadog
         SHORT_TIMEOUT: Integer
 
         self.@safe_directory: String
+        self.@working_directory: String
 
         def self.exec_git_command: (Array[String] cmd, ?stdin: String?, ?timeout: Integer) -> String?
 

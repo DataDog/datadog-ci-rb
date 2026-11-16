@@ -3,6 +3,7 @@
 require_relative "../contrib/instrumentation"
 require_relative "../ext/settings"
 require_relative "../ext/test"
+require_relative "../ext/git"
 require_relative "../ext/test_optimization_cache"
 require_relative "../utils/bundle"
 require_relative "../utils/configuration"
@@ -100,6 +101,24 @@ module Datadog
                 o.setter do |mode|
                   Utils::Configuration.normalize_tia_test_skipping_mode(mode)
                 end
+              end
+
+              option :git_pull_request_base_branch do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Git::ENV_PULL_REQUEST_BASE_BRANCH
+                o.setter { |value| value unless value.nil? || value.strip.empty? }
+              end
+
+              option :git_pull_request_base_branch_sha do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Git::ENV_PULL_REQUEST_BASE_BRANCH_SHA
+                o.setter { |value| value unless value.nil? || value.strip.empty? }
+              end
+
+              option :git_commit_head_sha do |o|
+                o.type :string, nilable: true
+                o.env CI::Ext::Git::ENV_COMMIT_HEAD_SHA
+                o.setter { |value| value unless value.nil? || value.strip.empty? }
               end
 
               option :git_metadata_upload_enabled do |o|

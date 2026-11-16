@@ -24,6 +24,7 @@ module Datadog
         TAG_PROVIDER_NAME = "ci.provider.name"
         TAG_STAGE_NAME = "ci.stage.name"
         TAG_WORKSPACE_PATH = "ci.workspace_path"
+        TAG_GIT_MERGE_COMMIT_SHA = "ci.git.merge_commit_sha"
         TAG_NODE_LABELS = "ci.node.labels"
         TAG_NODE_NAME = "ci.node.name"
         TAG_CI_ENV_VARS = "_dd.ci.env_vars"
@@ -69,27 +70,43 @@ module Datadog
           user_provided_tags = Environment::Extractor.new(env, provider_klass: Providers::UserDefinedTags).tags
           tags = ci_provider_tags.merge(user_provided_tags)
 
-          # NOTE: we need to provide head commit sha as part of the environment if it was discovered from provider.
-          #
-          # This info will be later used by LocalGit provider to extract commit message and user info for head commit.
-          # It is useful for CI providers that run jobs on artificial merge commits instead of a head commit of a
-          # feature branch.
-          #
-          # NOTE 2: when we discover that head commit sha exists it means that we are running on an artificial merge
-          # commit created by CI provider. Most likely we also operate on a shallow clone of a repo - in this case
-          # we need to unshallow at least the parent of the current merge commit to be able to extract information
-          # from the real original commit.
-          if tags[Git::TAG_COMMIT_HEAD_SHA]
-            CI::Git::LocalRepository.fetch_head_commit_sha(tags[Git::TAG_COMMIT_HEAD_SHA]) if CI::Git::LocalRepository.git_shallow_clone?
+          checkout_root = CI::Git::LocalRepository.git_root
+          workspace_path = ci_provider_tags[TAG_WORKSPACE_PATH]
+          custom_checkout = checkout_root && workspace_path &&
+            canonical_path(checkout_root) != canonical_path(workspace_path)
 
-            env[ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA] = tags[Git::TAG_COMMIT_HEAD_SHA]
+          # Workflow PR revisions can belong to a different repository than the checkout.
+          head_commit_sha = user_provided_tags[Git::TAG_COMMIT_HEAD_SHA] ||
+            (ci_provider_tags[Git::TAG_COMMIT_HEAD_SHA] unless custom_checkout)
+          if head_commit_sha && CI::Git::LocalRepository.git_shallow_clone?
+            CI::Git::LocalRepository.fetch_head_commit_sha(head_commit_sha)
           end
 
-          # Prefer local Git tags over CI metadata, keeping explicit user overrides highest.
-          local_git = Providers::LocalGit.new(env, preferred_tag: ci_provider_tags[Git::TAG_TAG])
-          local_git_tags = Environment::Extractor.new(env, provider: local_git).tags
-          local_git_tags.each do |key, value|
-            tags[key] = value if key.start_with?("git.") || !tags.key?(key)
+          local_env = env.to_h.merge(ENV_SPECIAL_KEY_FOR_GIT_COMMIT_HEAD_SHA => head_commit_sha)
+          local_git_tags = Environment::Extractor.new(local_env, provider_klass: Providers::LocalGit).tags
+          local_git_tags[Git::TAG_CHECKOUT_ROOT] = checkout_root if checkout_root
+          local_git_tags[Git::TAG_CHECKOUT_IS_CUSTOM] = "true" if custom_checkout
+          if local_git_tags[Git::TAG_COMMIT_SHA]
+            tags.delete_if do |key, _|
+              key.start_with?("git.") && !key.start_with?("git.commit.head.", "git.pull_request.")
+            end
+            matched_revision = [ci_provider_tags[Git::TAG_COMMIT_SHA], ci_provider_tags[TAG_GIT_MERGE_COMMIT_SHA]]
+              .include?(local_git_tags[Git::TAG_COMMIT_SHA])
+            if checkout_root && workspace_path && !custom_checkout && !local_git_tags[Git::TAG_BRANCH] && matched_revision
+              # CI supplies canonical identity for a matching detached checkout using a transport mirror.
+              [Git::TAG_BRANCH, Git::TAG_TAG, Git::TAG_REPOSITORY_URL].each do |key|
+                tags[key] = ci_provider_tags[key] if ci_provider_tags[key]
+              end
+            end
+          end
+          local_git_tags.each { |key, value| tags[key] ||= value }
+          user_sha = user_provided_tags[Git::TAG_COMMIT_SHA]
+          collected_sha = local_git_tags[Git::TAG_COMMIT_SHA] || ci_provider_tags[Git::TAG_COMMIT_SHA]
+          if user_sha && user_sha != collected_sha
+            tags.delete_if do |key, _|
+              key == Git::TAG_TAG ||
+                (key.start_with?("git.commit.") && key != Git::TAG_COMMIT_SHA && !key.start_with?("git.commit.head."))
+            end
           end
           tags.merge!(user_provided_tags)
 
@@ -103,6 +120,14 @@ module Datadog
         end
 
         private_class_method :extract_tags
+
+        def canonical_path(path)
+          File.realpath(path)
+        rescue SystemCallError, ArgumentError
+          File.absolute_path(path)
+        end
+
+        private_class_method :canonical_path
 
         def ensure_post_conditions(tags)
           validate_repository_url(tags[Git::TAG_REPOSITORY_URL])

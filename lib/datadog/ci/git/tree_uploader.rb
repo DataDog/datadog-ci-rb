@@ -22,7 +22,7 @@ module Datadog
           @force_unshallow = force_unshallow
         end
 
-        def call(repository_url)
+        def call(repository_url, commit_sha: nil)
           if api.nil?
             Datadog.logger.debug("API is not configured, aborting git upload")
             return
@@ -40,7 +40,7 @@ module Datadog
 
           Datadog.logger.debug { "Uploading git tree for repository #{repository_url}" }
 
-          latest_commits = LocalRepository.git_commits
+          latest_commits = LocalRepository.git_commits(commit_sha)
           head_commit = latest_commits&.first
           if head_commit.nil?
             Datadog.logger.debug("Got empty latest commits list, aborting git upload")
@@ -63,13 +63,13 @@ module Datadog
             end
 
             # quite often we deal with shallow clones in CI environment
-            if LocalRepository.git_shallow_clone? && LocalRepository.git_unshallow
+            if LocalRepository.git_shallow_clone? && LocalRepository.git_unshallow(commit_sha)
               Datadog.logger.debug("Detected shallow clone and unshallowed the repository, repeating commits search")
 
               # re-run the search with the updated commit list after unshallowing
               known_commits, new_commits = fetch_known_commits_and_split(
                 repository_url,
-                LocalRepository.git_commits
+                LocalRepository.git_commits(commit_sha)
               )
             end
           rescue SearchCommits::ApiError => e

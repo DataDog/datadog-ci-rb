@@ -68,6 +68,12 @@ module Datadog
               env["SYSTEM_PULLREQUEST_SOURCECOMMITID"] || env["BUILD_SOURCEVERSION"]
             end
 
+            def git_merge_commit_sha
+              if env["BUILD_REASON"] == "PullRequest" && env["BUILD_SOURCEBRANCH"].to_s.match?(%r{\Arefs/pull/\d+/merge\z})
+                env["BUILD_SOURCEVERSION"]
+              end
+            end
+
             def git_branch_or_tag
               env["SYSTEM_PULLREQUEST_SOURCEBRANCH"] || env["BUILD_SOURCEBRANCH"] || env["BUILD_SOURCEBRANCHNAME"]
             end

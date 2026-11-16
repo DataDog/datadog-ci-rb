@@ -3,32 +3,24 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::LocalGit do
   let(:environment_variables) { {} }
 
   describe "#git_tag" do
-    subject(:tag) { described_class.new(env, preferred_tag: preferred_tag).git_tag }
+    subject(:tag) { described_class.new(env).git_tag }
 
-    let(:preferred_tag) { "v1.2.3" }
-
-    before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return(local_tags) }
+    before do
+      allow(Datadog::CI::Git::LocalRepository).to receive(:git_branch).and_return("HEAD")
+      allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return(local_tags)
+    end
 
     {
       nil => nil,
       "" => nil,
       "v1.2.3" => "v1.2.3",
-      "latest\nv1.2.3" => "v1.2.3",
-      "v2.0.0\nlatest" => "latest"
+      "latest\nv1.2.3" => nil,
+      "v2.0.0\nlatest" => nil
     }.each do |output, expected|
       context "with local tags #{output.inspect}" do
         let(:local_tags) { output }
 
         it { is_expected.to eq(expected) }
-      end
-    end
-
-    context "without a preferred tag" do
-      let(:preferred_tag) { nil }
-      let(:local_tags) { "v1.2.3\nlatest" }
-
-      it "selects the first tag alphabetically" do
-        is_expected.to eq("latest")
       end
     end
   end
@@ -79,7 +71,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment::Providers::LocalGit do
       is_expected.to eq("andrey.marchenko@datadoghq.com")
     end
 
-    context "when git show -s returns nothing" do
+    context "when the metadata command returns nothing" do
       before do
         allow(Datadog::CI::Utils::Command).to receive(:exec_command).and_return(["", double(success?: true)])
       end

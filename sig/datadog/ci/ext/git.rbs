@@ -4,6 +4,10 @@ module Datadog
       module Git
         SHA_LENGTH: 40
 
+        TAG_CHECKOUT_ROOT: "git.checkout.root"
+
+        TAG_CHECKOUT_IS_CUSTOM: "git.checkout.is_custom"
+
         TAG_BRANCH: "git.branch"
 
         TAG_REPOSITORY_URL: "git.repository_url"

@@ -37,8 +37,9 @@ module Datadog
         def self.exec_git_command(cmd, stdin: nil, timeout: SHORT_TIMEOUT)
           # @type var out: String
           # @type var status: Process::Status?
+          directory = safe_directory
           out, status = Utils::Command.exec_command(
-            ["git", "-c", "safe.directory=#{safe_directory}"] + cmd,
+            ["git", "-C", @working_directory || Dir.pwd, "-c", "safe.directory=#{directory}"] + cmd,
             stdin_data: stdin,
             timeout: timeout
           )
@@ -70,7 +71,8 @@ module Datadog
         def self.safe_directory
           return @safe_directory if defined?(@safe_directory)
 
-          @safe_directory = find_git_directory(Dir.pwd)
+          @working_directory = Dir.pwd
+          @safe_directory = find_git_directory(@working_directory)
           Datadog.logger.debug { "Git safe.directory configured to: #{@safe_directory}" }
           @safe_directory
         end

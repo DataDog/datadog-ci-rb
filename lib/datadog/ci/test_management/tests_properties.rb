@@ -78,8 +78,9 @@ module Datadog
           end
         end
 
-        def initialize(api: nil)
+        def initialize(api: nil, git_commit_head_sha: nil)
           @api = api
+          @git_commit_head_sha = git_commit_head_sha
         end
 
         def fetch(test_session)
@@ -125,14 +126,15 @@ module Datadog
         private
 
         def payload(test_session)
+          use_checkout = test_session.get_tag(Ext::Git::TAG_CHECKOUT_IS_CUSTOM) == "true" && !@git_commit_head_sha
           {
             "data" => {
               "id" => Datadog::Core::Environment::Identity.id,
               "type" => Ext::Transport::DD_API_TEST_MANAGEMENT_TESTS_TYPE,
               "attributes" => {
                 "repository_url" => test_session.git_repository_url,
-                "commit_message" => test_session.original_git_commit_message,
-                "sha" => test_session.original_git_commit_sha,
+                "commit_message" => use_checkout ? test_session.git_commit_message : test_session.original_git_commit_message,
+                "sha" => use_checkout ? test_session.git_commit_sha : test_session.original_git_commit_sha,
                 "branch" => test_session.git_branch
               }
             }

@@ -7,8 +7,11 @@ module Datadog
   module CI
     module ImpactedTestsDetection
       class Component
-        def initialize(enabled:)
+        def initialize(enabled:, base_branch: nil, base_commit_sha: nil, target_commit_sha: nil)
           @enabled = enabled
+          @base_branch = base_branch
+          @base_commit_sha = base_commit_sha
+          @target_commit_sha = target_commit_sha
           @git_diff = Git::Diff.new
         end
 
@@ -20,14 +23,22 @@ module Datadog
           # we must unshallow the repository before trying to find base_commit_sha or executing `git diff` command
           git_tree_upload_worker.wait_until_done
 
-          base_commit_sha = test_session.base_commit_sha || Git::LocalRepository.base_commit_sha
+          custom_checkout = test_session.get_tag(Ext::Git::TAG_CHECKOUT_IS_CUSTOM) == "true"
+          base_commit_sha = if custom_checkout
+            @base_commit_sha || Git::LocalRepository.base_commit_sha(base_branch: @base_branch)
+          else
+            test_session.base_commit_sha || Git::LocalRepository.base_commit_sha
+          end
           if base_commit_sha.nil?
             Datadog.logger.debug { "Impacted tests detection disabled: base commit not found" }
             @enabled = false
             return
           end
 
-          git_diff = Git::LocalRepository.get_changes_since(base_commit_sha)
+          target_commit = @target_commit_sha ||
+            (test_session.get_tag(Ext::Git::TAG_COMMIT_HEAD_SHA) unless custom_checkout) ||
+            test_session.git_commit_sha || "HEAD"
+          git_diff = Git::LocalRepository.get_changes_since(base_commit_sha, target_commit: target_commit)
           if git_diff.empty?
             Datadog.logger.debug { "Impacted tests detection disabled: could not get changed files" }
             @enabled = false

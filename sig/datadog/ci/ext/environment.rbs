@@ -25,6 +25,8 @@ module Datadog
 
         TAG_WORKSPACE_PATH: String
 
+        TAG_GIT_MERGE_COMMIT_SHA: String
+
         TAG_NODE_LABELS: String
 
         TAG_NODE_NAME: String
@@ -59,13 +61,13 @@ module Datadog
 
         @tags: Hash[String, String]?
 
-        # Git tag precedence: explicit DD_GIT_* overrides, local Git, CI provider.
-        # A detached local HEAD falls back to the provider branch.
         def self?.tags: (untyped env) -> Hash[String, String]
 
         def self?.reset!: () -> nil
 
         def self?.extract_tags: (untyped env) -> Hash[String, String]
+
+        def self?.canonical_path: (String path) -> String
 
         def self?.ensure_post_conditions: (Hash[String, String] tags) -> void
 

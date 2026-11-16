@@ -63,6 +63,19 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
       end
     end
 
+    it "uses the selected canonical commit in search, pack contents and upload identity" do
+      selected = "a" * 40
+      expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).with(selected.upcase).and_return([selected])
+      expect(search_commits).to receive(:call).with(repository_url, [selected]).and_return([])
+      allow(Datadog::CI::Git::LocalRepository).to receive(:git_shallow_clone?).and_return(false)
+      upload = double("upload", call: nil)
+      expect(Datadog::CI::Git::UploadPackfile).to receive(:new).with(api: api, head_commit_sha: selected,
+        repository_url: repository_url).and_return(upload)
+      expect(Datadog::CI::Git::Packfiles).to receive(:generate).with(included_commits: [selected], excluded_commits: []).and_yield("selected.pack")
+      expect(upload).to receive(:call).with(filepath: "selected.pack")
+      tree_uploader.call(repository_url, commit_sha: selected.upcase)
+    end
+
     context "when API is configured" do
       before do
         expect(Datadog::CI::Git::LocalRepository).to receive(:git_commits).and_return(latest_commits)

@@ -1,9 +1,12 @@
 module Datadog::CI::ImpactedTestsDetection
   class Component
     @enabled: bool
+    @base_branch: String?
+    @base_commit_sha: String?
+    @target_commit_sha: String?
     @git_diff: Datadog::CI::Git::Diff
 
-    def initialize: (enabled: bool) -> void
+    def initialize: (enabled: bool, ?base_branch: String?, ?base_commit_sha: String?, ?target_commit_sha: String?) -> void
     def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
     def enabled?: () -> bool
     def modified?: (Datadog::CI::Test test_span) -> bool

@@ -164,7 +164,8 @@ module Datadog
 
           @test_management = TestManagement::Component.build(
             enabled: settings.ci.test_management_enabled,
-            api: test_visibility_api
+            api: test_visibility_api,
+            git_commit_head_sha: settings.ci.git_commit_head_sha
           )
 
           # @type ivar @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component
@@ -181,7 +182,12 @@ module Datadog
 
           @agentless_logs_submission = build_agentless_logs_component(settings, test_visibility_api)
 
-          @impacted_tests_detection = ImpactedTestsDetection::Component.new(enabled: settings.ci.impacted_tests_detection_enabled)
+          @impacted_tests_detection = ImpactedTestsDetection::Component.new(
+            enabled: settings.ci.impacted_tests_detection_enabled,
+            base_branch: settings.ci.git_pull_request_base_branch,
+            base_commit_sha: settings.ci.git_pull_request_base_branch_sha,
+            target_commit_sha: settings.ci.git_commit_head_sha
+          )
 
           @code_coverage = build_code_coverage(settings, test_visibility_api)
         end
@@ -270,8 +276,8 @@ module Datadog
         def build_git_upload_worker(settings, api)
           if settings.ci.git_metadata_upload_enabled
             git_tree_uploader = Git::TreeUploader.new(api: api, force_unshallow: settings.ci.impacted_tests_detection_enabled)
-            Worker.new do |repository_url|
-              git_tree_uploader.call(repository_url)
+            Worker.new do |repository_url, commit_sha|
+              git_tree_uploader.call(repository_url, commit_sha: commit_sha)
             end
           else
             DummyWorker.new

@@ -77,6 +77,10 @@ module Datadog
               env["GITHUB_SHA"]
             end
 
+            def git_merge_commit_sha
+              env["GITHUB_SHA"] if env["GITHUB_REF"].to_s.match?(%r{\Arefs/pull/\d+/merge\z})
+            end
+
             def git_branch_or_tag
               ref = env["GITHUB_HEAD_REF"]
               ref = env["GITHUB_REF"] if ref.nil? || ref.empty?

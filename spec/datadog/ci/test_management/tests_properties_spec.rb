@@ -77,6 +77,33 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
       end
     end
 
+    context "with a custom checkout and outer workflow PR metadata" do
+      before do
+        tracer_span.set_tags("git.checkout.is_custom" => "true", "git.commit.head.sha" => "workflow-head",
+          "git.commit.head.message" => "workflow message")
+      end
+
+      it "uses the checkout SHA and message" do
+        subject
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+            "sha" => "test_sha", "commit_message" => "Test commit message"
+          )
+        end
+      end
+
+      it "honors an explicit PR head override" do
+        client = described_class.new(api: api, git_commit_head_sha: "user-head")
+        tracer_span.set_tags("git.commit.head.sha" => "user-head", "git.commit.head.message" => "user message")
+        client.fetch(test_session)
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+            "sha" => "user-head", "commit_message" => "user message"
+          )
+        end
+      end
+    end
+
     context "parsing response" do
       subject(:response) { client.fetch(test_session) }
 

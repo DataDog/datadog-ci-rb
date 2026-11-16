@@ -94,7 +94,7 @@ module Datadog
           res = nil
 
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            res = CLI.exec_git_command(["ls-remote", "--get-url"])
+            res = CLI.exec_git_command(["remote", "get-url", get_remote_name])
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_REPOSITORY, duration_ms)
@@ -144,7 +144,7 @@ module Datadog
         end
 
         def self.git_commit_message(commit_sha = nil)
-          CLI.exec_git_command(["log", "-n", "1", "--format=%B", commit_sha].compact)
+          CLI.exec_git_command(["log", "--no-walk=unsorted", "--no-show-signature", "--format=%B", commit_sha || "HEAD", "--"])
         rescue => e
           log_failure(e, "git commit message")
           nil
@@ -152,7 +152,7 @@ module Datadog
 
         def self.git_commit_users(commit_sha = nil)
           # Get committer and author information in one command.
-          output = CLI.exec_git_command(["show", "-s", "--format=%an\t%ae\t%at\t%cn\t%ce\t%ct", commit_sha].compact)
+          output = CLI.exec_git_command(["log", "--no-walk=unsorted", "--no-show-signature", "--format=%an%x00%ae%x00%at%x00%cn%x00%ce%x00%ct", commit_sha || "HEAD", "--"])
           unless output
             Datadog.logger.debug(
               "Unable to read git commit users: git command output is nil"
@@ -162,7 +162,7 @@ module Datadog
           end
 
           author_name, author_email, author_timestamp,
-            committer_name, committer_email, committer_timestamp = output.split("\t").each(&:strip!)
+            committer_name, committer_email, committer_timestamp = output.split("\0").each(&:strip!)
 
           author = User.new(author_name, author_email, author_timestamp)
           committer = User.new(committer_name, committer_email, committer_timestamp)
@@ -175,22 +175,28 @@ module Datadog
           [nil_user, nil_user]
         end
 
-        # returns maximum of 1000 latest commits in the last month
-        def self.git_commits
-          Telemetry.git_command(Ext::Telemetry::Command::GET_LOCAL_COMMITS)
+        # Keep the selected commit even when it is outside the recent history window.
+        def self.git_commits(commit_sha = nil)
+          commit_sha = commit_sha&.downcase
+          return [] if commit_sha && !Utils::Git.valid_commit_sha?(commit_sha)
 
+          Telemetry.git_command(Ext::Telemetry::Command::GET_LOCAL_COMMITS)
           # @type var output: String?
           output = nil
-
           duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-            output = CLI.exec_git_command(["log", "--format=%H", "-n", "1000", "--since=\"1 month ago\""], timeout: CLI::LONG_TIMEOUT)
+            cmd = ["log", "--format=%H", "-n", "1000", "--since=\"1 month ago\""]
+            cmd.concat([commit_sha, "--"]) if commit_sha
+            output = CLI.exec_git_command(cmd, timeout: CLI::LONG_TIMEOUT)
           end
-
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_LOCAL_COMMITS, duration_ms)
 
-          return [] if output.nil?
-
-          output.split("\n")
+          commits = output.to_s.split("\n")
+          if commit_sha && !commits.include?(commit_sha)
+            selected = CLI.exec_git_command(["rev-parse", "--verify", "#{commit_sha}^{commit}"])
+            return [] unless selected&.strip == commit_sha
+          end
+          commits = [commit_sha] + (commits - [commit_sha]) if commit_sha
+          commits.first(1000)
         rescue => e
           log_failure(e, "git commits")
           Telemetry.track_error(e, Ext::Telemetry::Command::GET_LOCAL_COMMITS)
@@ -211,10 +217,20 @@ module Datadog
               "--objects",
               "--no-object-names",
               "--filter=blob:none",
-              "--since=\"1 month ago\""
+              "--since=\"1 month ago\"",
+              "--max-count=1000"
             ] + excluded_commits_list + included_commits_list
 
             res = CLI.exec_git_command(cmd, timeout: CLI::LONG_TIMEOUT)
+            objects = res.to_s.split("\n")
+            selected = included_commits_list.first
+            if selected && !objects.include?(selected) && !excluded_commits.include?(selected)
+              selected_objects = CLI.exec_git_command(
+                ["rev-list", "--objects", "--no-object-names", "--filter=blob:none", "--max-count=1"] +
+                  excluded_commits_list + [selected], timeout: CLI::LONG_TIMEOUT
+              )
+              res = (objects + selected_objects.to_s.split("\n")).uniq.join("\n") + "\n"
+            end
           end
 
           Telemetry.git_command_ms(Ext::Telemetry::Command::GET_OBJECTS, duration_ms)
@@ -268,13 +284,13 @@ module Datadog
           false
         end
 
-        def self.git_unshallow
+        def self.git_unshallow(commit_sha = nil)
           Telemetry.git_command(Ext::Telemetry::Command::UNSHALLOW)
           # @type var res: String?
           res = nil
 
-          default_remote = CLI.exec_git_command(["config", "--default", "origin", "--get", "clone.defaultRemoteName"])&.strip
-          head_commit = git_commit_sha
+          default_remote = get_remote_name
+          head_commit = commit_sha || git_commit_sha
           upstream_branch = get_upstream_branch
 
           # Build array of remotes to try, filtering out nil values
@@ -345,7 +361,7 @@ module Datadog
 
         # Returns a Diff object with relative file paths for files that were changed since the given base_commit.
         # If base_commit is nil, returns nil. On error, returns nil.
-        def self.get_changes_since(base_commit)
+        def self.get_changes_since(base_commit, target_commit: "HEAD")
           return Diff.new if base_commit.nil?
 
           Datadog.logger.debug { "calculating git diff from base_commit: #{base_commit}" }
@@ -358,7 +374,7 @@ module Datadog
             # @type var output: String?
             output = nil
             duration_ms = Core::Utils::Time.measure(:float_millisecond) do
-              output = CLI.exec_git_command(["diff", "-U0", "--word-diff=porcelain", base_commit, "HEAD"], timeout: CLI::LONG_TIMEOUT)
+              output = CLI.exec_git_command(["diff", "-U0", "--word-diff=porcelain", base_commit, target_commit], timeout: CLI::LONG_TIMEOUT)
             end
             Telemetry.git_command_ms(Ext::Telemetry::Command::DIFF, duration_ms)
 
@@ -395,16 +411,26 @@ module Datadog
         end
 
         def self.get_remote_name
-          upstream = LocalRepository.get_upstream_branch
+          remotes = CLI.exec_git_command(["remote"]).to_s.split("\n")
+          return remotes.first || "origin" if remotes.size <= 1
 
-          if upstream
-            upstream.split("/").first
-          else
-            # Fallback to first remote if no upstream is set
-            first_remote_value = CLI.exec_git_command(["remote"])&.split("\n")&.first
-            Datadog.logger.debug { "First remote value: '#{first_remote_value}'" }
-            first_remote_value || "origin"
+          configuration = CLI.exec_git_command(["config", "--local", "--includes", "--null", "--list"]).to_s
+            .split("\0").to_h do |entry|
+              key, _, value = entry.partition("\n")
+              [key, value]
+            end
+          branch = git_branch
+          branch_remote = if branch && branch != "HEAD"
+            CLI.exec_git_command(["config", "--default", "", "--get", "branch.#{branch}.remote"])
           end
+          default_remote = configuration["clone.defaultremotename"]
+          tracking_remotes = configuration.filter_map do |key, value|
+            value if key.match?(/\Abranch\..*\.remote\z/) && remotes.include?(value)
+          end.uniq
+          [branch_remote, default_remote, (tracking_remotes.first if tracking_remotes.one?), "origin"].each do |remote|
+            return remote if remote && remote != "." && remotes.include?(remote)
+          end
+          remotes.first || "origin"
         end
 
         def self.filter_invalid_commits(commits)

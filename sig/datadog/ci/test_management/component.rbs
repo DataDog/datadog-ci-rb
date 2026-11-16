@@ -16,7 +16,7 @@ module Datadog
 
         attr_reader tests_properties: Hash[String, Hash[String, bool]]
 
-        def self.build: (enabled: bool, api: Datadog::CI::Transport::Api::Base?) -> Component
+        def self.build: (enabled: bool, api: Datadog::CI::Transport::Api::Base?, ?git_commit_head_sha: String?) -> Component
 
         def initialize: (enabled: bool, tests_properties_client: Datadog::CI::TestManagement::TestsProperties) -> void
 

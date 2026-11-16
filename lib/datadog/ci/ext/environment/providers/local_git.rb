@@ -10,11 +10,6 @@ module Datadog
         module Providers
           # Adapts local Git information into individual metadata values.
           class LocalGit < Base
-            def initialize(env, preferred_tag: nil)
-              super(env)
-              @preferred_tag = preferred_tag
-            end
-
             def git_repository_url
               CI::Git::LocalRepository.git_repository_url
             end
@@ -24,13 +19,17 @@ module Datadog
             end
 
             def git_branch
+              return @git_branch if defined?(@git_branch)
+
               branch = CI::Git::LocalRepository.git_branch
-              branch unless branch == "HEAD"
+              @git_branch = (branch unless branch == "HEAD")
             end
 
             def git_tag
+              return nil if git_branch
+
               tags = CI::Git::LocalRepository.git_tag.to_s.split("\n")
-              tags.include?(@preferred_tag) ? @preferred_tag : tags.min
+              tags.first if tags.one?
             end
 
             def git_commit_message

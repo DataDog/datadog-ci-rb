@@ -22,8 +22,8 @@ module Datadog
 
         attr_reader :enabled, :tests_properties
 
-        def self.build(enabled:, api:)
-          new(enabled: enabled, tests_properties_client: TestsProperties.new(api: api))
+        def self.build(enabled:, api:, git_commit_head_sha: nil)
+          new(enabled: enabled, tests_properties_client: TestsProperties.new(api: api, git_commit_head_sha: git_commit_head_sha))
         end
 
         def initialize(enabled:, tests_properties_client:)

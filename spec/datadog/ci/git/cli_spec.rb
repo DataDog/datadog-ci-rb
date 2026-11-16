@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::Git::CLI do
 
     # Helper to build the expected git command with safe.directory
     def git_command_with_safe_dir(cmd, safe_directory: described_class.safe_directory)
-      ["git", "-c", "safe.directory=#{safe_directory}"] + cmd
+      ["git", "-C", Dir.pwd, "-c", "safe.directory=#{safe_directory}"] + cmd
     end
 
     context "when command succeeds" do

@@ -7,7 +7,7 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
 
   let(:initial_enabled) { true }
   let(:library_settings) { double("library_settings", impacted_tests_enabled?: impacted_tests_enabled) }
-  let(:test_session) { double("test_session", base_commit_sha: base_commit_sha) }
+  let(:test_session) { double("test_session", base_commit_sha: base_commit_sha, get_tag: nil, git_commit_sha: "checkout-sha") }
   let(:base_commit_sha) { "abc123" }
   let(:impacted_tests_enabled) { true }
   let(:changed_files_set) { Set.new(["file1.rb:2:5", "file2.rb:4:6"]) }
@@ -32,6 +32,44 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
         component.configure(library_settings, test_session)
         expect(component.enabled?).to be false
         expect(git_worker).not_to have_received(:wait_until_done)
+      end
+    end
+
+    it "uses an explicit head revision in an ordinary checkout" do
+      component = described_class.new(enabled: true, target_commit_sha: "user-head")
+      expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with(base_commit_sha, target_commit: "user-head")
+      component.configure(library_settings, test_session)
+    end
+
+    it "uses the PR head revision in an ordinary merge checkout" do
+      allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Git::TAG_COMMIT_HEAD_SHA).and_return("pr-head")
+      expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with(base_commit_sha, target_commit: "pr-head")
+      component.configure(library_settings, test_session)
+    end
+
+    context "with a custom checkout" do
+      let(:test_session) { double("test_session", get_tag: "true", git_commit_sha: "checkout-sha") }
+
+      it "infers the base from the checkout instead of reading workflow revisions" do
+        expect(Datadog::CI::Git::LocalRepository).to receive(:base_commit_sha).with(base_branch: nil).and_return("local-base")
+        expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("local-base", target_commit: "checkout-sha")
+        component.configure(library_settings, test_session)
+        expect(component.enabled?).to be true
+      end
+
+      it "honors explicit base and head revisions" do
+        component = described_class.new(enabled: true, base_commit_sha: "user-base", target_commit_sha: "user-head")
+        expect(Datadog::CI::Git::LocalRepository).not_to receive(:base_commit_sha)
+        expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("user-base", target_commit: "user-head")
+        component.configure(library_settings, test_session)
+        expect(component.enabled?).to be true
+      end
+
+      it "honors an explicit base branch when inferring the base commit" do
+        component = described_class.new(enabled: true, base_branch: "release")
+        expect(Datadog::CI::Git::LocalRepository).to receive(:base_commit_sha).with(base_branch: "release").and_return("release-base")
+        expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("release-base", target_commit: "checkout-sha")
+        component.configure(library_settings, test_session)
       end
     end
 

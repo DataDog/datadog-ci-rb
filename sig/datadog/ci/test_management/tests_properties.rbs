@@ -3,6 +3,7 @@ module Datadog
     module TestManagement
       class TestsProperties
         @api: Datadog::CI::Transport::Api::Base?
+        @git_commit_head_sha: String?
 
         class Response
           @http_response: Datadog::CI::Transport::Adapters::Net::Response?
@@ -24,7 +25,7 @@ module Datadog
           def payload: () -> Hash[String, untyped]
         end
 
-        def initialize: (?api: Datadog::CI::Transport::Api::Base?) -> void
+        def initialize: (?api: Datadog::CI::Transport::Api::Base?, ?git_commit_head_sha: String?) -> void
 
         def fetch: (Datadog::CI::TestSession test_session) -> Hash[String, Hash[String, bool]]
 

@@ -10,6 +10,8 @@ module Datadog
         TAG_BRANCH = "git.branch"
         TAG_REPOSITORY_URL = "git.repository_url"
         TAG_TAG = "git.tag"
+        TAG_CHECKOUT_ROOT = "git.checkout.root"
+        TAG_CHECKOUT_IS_CUSTOM = "git.checkout.is_custom"
 
         TAG_COMMIT_AUTHOR_DATE = "git.commit.author.date"
         TAG_COMMIT_AUTHOR_EMAIL = "git.commit.author.email"
