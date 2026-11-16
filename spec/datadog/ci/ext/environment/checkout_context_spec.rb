@@ -147,8 +147,50 @@ RSpec.describe "Git checkout metadata" do
       "BUILD_SOURCEBRANCH" => "refs/pull/12/merge", "BUILD_SOURCEVERSION" => merge.upcase,
       "SYSTEM_PULLREQUEST_SOURCECOMMITID" => @head, "SYSTEM_PULLREQUEST_SOURCEBRANCH" => "refs/heads/feature",
       "BUILD_SOURCESDIRECTORY" => @workspace, "BUILD_REPOSITORY_URI" => "https://example.com/project.git")
-    expect(metadata).to include("git.commit.sha" => merge, "ci.git.merge_commit_sha" => merge,
+    expect(metadata).to include("git.commit.sha" => merge, "ci.git.merge_commit_sha" => merge, "git.commit.head.sha" => @head,
       "git.branch" => "feature", "git.repository_url" => "https://example.com/project.git")
+  end
+
+  it "detects a modified test after target-branch insertions shift its checkout lines" do
+    commit = lambda do |content, parents|
+      blob = git("hash-object", "-w", "--stdin", input: content)
+      tree = git("mktree", input: "100644 blob #{blob}\tshifted_spec.rb\n")
+      data = "tree #{tree}\n" + parents.map { |parent| "parent #{parent}\n" }.join +
+        "author Fixture <fixture@example.com> 1700000000 +0000\ncommitter Fixture <fixture@example.com> 1700000000 +0000\n\nFixture\n"
+      git("hash-object", "-t", "commit", "-w", "--stdin", input: data)
+    end
+    base_source = "# test fixture\ndef test_changed\n  assert_equal 1, value\nend\n"
+    head_source = base_source.sub("assert_equal 1", "assert_equal 2")
+    prefix = "# target branch insertion\n" * 30
+    base = commit.call(base_source, [])
+    head = commit.call(head_source, [base])
+    target = commit.call(prefix + base_source, [base])
+    merge = commit.call(prefix + head_source, [head, target])
+    git("checkout", "--detach", merge)
+    metadata = Datadog::CI::Ext::Environment.tags("GITLAB_CI" => "true", "CI_COMMIT_SHA" => merge,
+      "CI_MERGE_REQUEST_IID" => "12", "CI_MERGE_REQUEST_EVENT_TYPE" => "merged_result",
+      "CI_MERGE_REQUEST_SOURCE_BRANCH_SHA" => head, "CI_MERGE_REQUEST_DIFF_BASE_SHA" => base,
+      "CI_PROJECT_DIR" => @workspace, "CI_REPOSITORY_URL" => "https://example.com/project.git")
+    tracer_span = Datadog::Tracing::SpanOperation.new("session")
+    tracer_span.set_tags(metadata)
+    session = Datadog::CI::TestSession.new(tracer_span)
+    expect(session.git_commit_sha).to eq(merge)
+    expect(session.base_commit_sha).to eq(base)
+    expect(session.get_tag("git.commit.head.sha")).to eq(head)
+    lines = File.readlines(File.join(@workspace, "shifted_spec.rb"))
+    start_line = lines.index { |line| line.start_with?("def test_changed") } + 1
+    expect(start_line).to eq(32)
+    old_diff = Datadog::CI::Git::LocalRepository.get_changes_since(base, target_commit: head)
+    expect(old_diff.lines_changed?("shifted_spec.rb", start_line: start_line, end_line: lines.size)).to be(false)
+    checkout_diff = Datadog::CI::Git::LocalRepository.get_changes_since(base, target_commit: merge)
+    expect(checkout_diff.lines_changed?("shifted_spec.rb", start_line: start_line, end_line: lines.size)).to be(true)
+    worker = spy("git_worker")
+    allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(worker)
+    component = Datadog::CI::ImpactedTestsDetection::Component.new(enabled: true)
+    component.configure(double("library_settings", impacted_tests_enabled?: true), session)
+    expect(component.enabled?).to be(true)
+    test_span = instance_double(Datadog::CI::Test, source_file: "shifted_spec.rb", start_line: start_line, end_line: lines.size)
+    expect(component.modified?(test_span)).to be(true)
   end
 
   it "keeps Git commands in their initial checkout when the process changes directory" do

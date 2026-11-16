@@ -78,6 +78,22 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
       end
     end
 
+    {
+      "Azure" => {"TF_BUILD" => "true", "BUILD_REASON" => "PullRequest", "BUILD_SOURCEBRANCH" => "refs/pull/12/merge",
+                  "BUILD_SOURCEVERSION" => "a" * 40, "SYSTEM_PULLREQUEST_SOURCECOMMITID" => "b" * 40},
+      "AppVeyor" => {"APPVEYOR" => "true", "APPVEYOR_REPO_PROVIDER" => "github", "APPVEYOR_REPO_COMMIT" => "a" * 40,
+                     "APPVEYOR_PULL_REQUEST_NUMBER" => "12", "APPVEYOR_PULL_REQUEST_HEAD_COMMIT" => "b" * 40}
+    }.each do |provider, env|
+      it "retains the PR head for #{provider} test-management requests from a merge checkout" do
+        provider_tags = Datadog::CI::Ext::Environment::Extractor.new(env).tags
+        tracer_span.set_tags(provider_tags.merge("git.commit.sha" => "a" * 40))
+        subject
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]["sha"]).to eq("b" * 40)
+        end
+      end
+    end
+
     context "with an unrelated workflow head in the same workspace" do
       before do
         tracer_span.set_tags("git.commit.head.sha" => "workflow-head", "git.commit.head.message" => "workflow message",

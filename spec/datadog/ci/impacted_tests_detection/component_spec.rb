@@ -41,6 +41,33 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       component.configure(library_settings, test_session)
     end
 
+    [nil, "ci-base"].each do |ci_base|
+      it "honors a configured base SHA in an ordinary checkout with CI base #{ci_base.inspect}" do
+        component = described_class.new(enabled: true, base_commit_sha: "user-base")
+        allow(test_session).to receive(:base_commit_sha).and_return(ci_base)
+        expect(Datadog::CI::Git::LocalRepository).not_to receive(:base_commit_sha)
+        expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("user-base", target_commit: "checkout-sha")
+        component.configure(library_settings, test_session)
+      end
+
+      ["release", "refs/heads/release", "origin/release"].each do |base_branch|
+        it "honors configured base #{base_branch.inspect} in an ordinary checkout with CI base #{ci_base.inspect}" do
+          component = described_class.new(enabled: true, base_branch: base_branch)
+          allow(test_session).to receive(:base_commit_sha).and_return(ci_base)
+          expect(Datadog::CI::Git::LocalRepository).to receive(:base_commit_sha).with(base_branch: "release").and_return("release-base")
+          expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("release-base", target_commit: "checkout-sha")
+          component.configure(library_settings, test_session)
+        end
+      end
+    end
+
+    it "prefers a configured base SHA when a base branch is also configured" do
+      component = described_class.new(enabled: true, base_commit_sha: "user-base", base_branch: "release")
+      expect(Datadog::CI::Git::LocalRepository).not_to receive(:base_commit_sha)
+      expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("user-base", target_commit: "checkout-sha")
+      component.configure(library_settings, test_session)
+    end
+
     it "canonicalizes configured base and target commit SHAs" do
       component = described_class.new(enabled: true, base_commit_sha: "CD" * 20, target_commit_sha: "AB" * 20)
       allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Git::TAG_CHECKOUT_IS_CUSTOM).and_return("true")
@@ -48,10 +75,10 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       component.configure(library_settings, test_session)
     end
 
-    it "uses the PR head revision in an ordinary merge checkout" do
+    it "uses checkout coordinates in an ordinary merge checkout" do
       allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Environment::TAG_GIT_MERGE_COMMIT_SHA).and_return("checkout-sha")
       allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Git::TAG_COMMIT_HEAD_SHA).and_return("pr-head")
-      expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with(base_commit_sha, target_commit: "pr-head")
+      expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with(base_commit_sha, target_commit: "checkout-sha")
       component.configure(library_settings, test_session)
     end
 

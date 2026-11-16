@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "base"
+require_relative "../../../utils/git"
 
 module Datadog
   module CI
@@ -52,6 +53,15 @@ module Datadog
               return nil unless github_repo_provider?
 
               env["APPVEYOR_REPO_COMMIT"]
+            end
+
+            def git_merge_commit_sha
+              head_sha = git_commit_head_sha
+              commit_sha = git_commit_sha
+              if pr_number.to_s.match?(/\A\d+\z/) && head_sha && commit_sha &&
+                  Utils::Git.valid_commit_sha?(head_sha.downcase) && head_sha.downcase != commit_sha.downcase
+                commit_sha
+              end
             end
 
             def git_branch

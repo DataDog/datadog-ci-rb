@@ -10,7 +10,7 @@ module Datadog
       class Component
         def initialize(enabled:, base_branch: nil, base_commit_sha: nil, target_commit_sha: nil)
           @enabled = enabled
-          @base_branch = base_branch
+          @base_branch = Utils::Git.normalize_ref(base_branch)
           @base_commit_sha = Utils::Git.normalize_commit_sha(base_commit_sha)
           @target_commit_sha = Utils::Git.normalize_commit_sha(target_commit_sha)
           @git_diff = Git::Diff.new
@@ -29,7 +29,7 @@ module Datadog
           merge_sha = test_session.get_tag(Ext::Environment::TAG_GIT_MERGE_COMMIT_SHA)
           unrelated_checkout = test_session.get_tag(Ext::Git::TAG_CHECKOUT_IS_CUSTOM) == "true" ||
             (checkout_sha && head_sha && checkout_sha != head_sha && checkout_sha != merge_sha)
-          base_commit_sha = if unrelated_checkout
+          base_commit_sha = if unrelated_checkout || @base_commit_sha || @base_branch
             @base_commit_sha || Git::LocalRepository.base_commit_sha(base_branch: @base_branch)
           else
             test_session.base_commit_sha || Git::LocalRepository.base_commit_sha
@@ -40,8 +40,7 @@ module Datadog
             return
           end
 
-          target_commit = @target_commit_sha ||
-            (head_sha unless unrelated_checkout) || checkout_sha || "HEAD"
+          target_commit = @target_commit_sha || checkout_sha || "HEAD"
           git_diff = Git::LocalRepository.get_changes_since(base_commit_sha, target_commit: target_commit)
           if git_diff.empty?
             Datadog.logger.debug { "Impacted tests detection disabled: could not get changed files" }
