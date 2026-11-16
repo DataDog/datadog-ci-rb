@@ -4,6 +4,8 @@ module Datadog
       module Git
         def self.valid_commit_sha?: (String? sha) -> bool
 
+        def self.normalize_commit_sha: (String? sha) -> String?
+
         def self.normalize_ref: (String? name) -> String?
 
         def self.is_git_tag?: (String? ref) -> bool

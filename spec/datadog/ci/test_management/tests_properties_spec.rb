@@ -52,6 +52,7 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
             "git.repository_url" => "repository_url",
             "git.commit.message" => "Test commit message",
             "git.commit.sha" => "test_sha",
+            "ci.git.merge_commit_sha" => "test_sha",
             "git.commit.head.message" => "Original test commit message",
             "git.commit.head.sha" => "original_test_sha",
             "git.branch" => "feature-branch"
@@ -74,6 +75,48 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
           expect(attributes["sha"]).to eq("original_test_sha")
           expect(attributes["branch"]).to eq("feature-branch")
         end
+      end
+    end
+
+    context "with an unrelated workflow head in the same workspace" do
+      before do
+        tracer_span.set_tags("git.commit.head.sha" => "workflow-head", "git.commit.head.message" => "workflow message",
+          "ci.git.merge_commit_sha" => "workflow-merge")
+      end
+
+      it "uses the tested SHA and its message" do
+        subject
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+            "sha" => "test_sha", "commit_message" => "Test commit message"
+          )
+        end
+      end
+    end
+
+    [false, true].each do |custom_checkout|
+      it "honors a configuration-only head SHA with custom checkout #{custom_checkout}" do
+        client = described_class.new(api: api, git_commit_head_sha: "user-head")
+        tracer_span.set_tags("git.commit.head.sha" => "workflow-head", "git.commit.head.message" => "workflow message")
+        tracer_span.set_tag("git.checkout.is_custom", "true") if custom_checkout
+        client.fetch(test_session)
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+            "sha" => "user-head", "commit_message" => nil
+          )
+        end
+        expect(test_session.get_tag("git.commit.head.sha")).to eq("workflow-head")
+      end
+    end
+
+    it "canonicalizes a configured SHA before pairing it with known head metadata" do
+      client = described_class.new(api: api, git_commit_head_sha: "AB" * 20)
+      tracer_span.set_tags("git.commit.head.sha" => "ab" * 20, "git.commit.head.message" => "known head message")
+      client.fetch(test_session)
+      expect(api).to have_received(:api_request) do |args|
+        expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+          "sha" => "ab" * 20, "commit_message" => "known head message"
+        )
       end
     end
 

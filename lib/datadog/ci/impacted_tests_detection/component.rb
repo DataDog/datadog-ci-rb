@@ -2,6 +2,7 @@
 
 require_relative "../ext/test"
 require_relative "../git/local_repository"
+require_relative "../utils/git"
 
 module Datadog
   module CI
@@ -10,8 +11,8 @@ module Datadog
         def initialize(enabled:, base_branch: nil, base_commit_sha: nil, target_commit_sha: nil)
           @enabled = enabled
           @base_branch = base_branch
-          @base_commit_sha = base_commit_sha
-          @target_commit_sha = target_commit_sha
+          @base_commit_sha = Utils::Git.normalize_commit_sha(base_commit_sha)
+          @target_commit_sha = Utils::Git.normalize_commit_sha(target_commit_sha)
           @git_diff = Git::Diff.new
         end
 
@@ -23,8 +24,12 @@ module Datadog
           # we must unshallow the repository before trying to find base_commit_sha or executing `git diff` command
           git_tree_upload_worker.wait_until_done
 
-          custom_checkout = test_session.get_tag(Ext::Git::TAG_CHECKOUT_IS_CUSTOM) == "true"
-          base_commit_sha = if custom_checkout
+          checkout_sha = test_session.git_commit_sha
+          head_sha = test_session.get_tag(Ext::Git::TAG_COMMIT_HEAD_SHA)
+          merge_sha = test_session.get_tag(Ext::Environment::TAG_GIT_MERGE_COMMIT_SHA)
+          unrelated_checkout = test_session.get_tag(Ext::Git::TAG_CHECKOUT_IS_CUSTOM) == "true" ||
+            (checkout_sha && head_sha && checkout_sha != head_sha && checkout_sha != merge_sha)
+          base_commit_sha = if unrelated_checkout
             @base_commit_sha || Git::LocalRepository.base_commit_sha(base_branch: @base_branch)
           else
             test_session.base_commit_sha || Git::LocalRepository.base_commit_sha
@@ -36,8 +41,7 @@ module Datadog
           end
 
           target_commit = @target_commit_sha ||
-            (test_session.get_tag(Ext::Git::TAG_COMMIT_HEAD_SHA) unless custom_checkout) ||
-            test_session.git_commit_sha || "HEAD"
+            (head_sha unless unrelated_checkout) || checkout_sha || "HEAD"
           git_diff = Git::LocalRepository.get_changes_since(base_commit_sha, target_commit: target_commit)
           if git_diff.empty?
             Datadog.logger.debug { "Impacted tests detection disabled: could not get changed files" }

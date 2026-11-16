@@ -39,6 +39,14 @@ RSpec.describe ::Datadog::CI::Utils::Git do
     end
   end
 
+  describe ".normalize_commit_sha" do
+    {nil => nil, "AB" * 20 => "ab" * 20, "aB" * 32 => "ab" * 32, "Feature/Selected" => "Feature/Selected"}.each do |input, expected|
+      it "normalizes #{input.inspect} without changing case-sensitive refs" do
+        expect(described_class.normalize_commit_sha(input)).to eq(expected)
+      end
+    end
+  end
+
   describe ".normalize_ref" do
     subject { described_class.normalize_ref(ref) }
 

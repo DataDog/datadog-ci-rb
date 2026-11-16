@@ -2,6 +2,7 @@
 
 require "spec_helper"
 require "fileutils"
+require "json"
 require "open3"
 require "tmpdir"
 
@@ -46,6 +47,9 @@ RSpec.describe "Git checkout metadata" do
 
   scenarios = [
     {name: "matching GitHub checkout"},
+    {name: "detached GitHub PR head", pr_head: true},
+    {name: "unrelated detached GitHub PR revision", pr_head: true, mismatch: true},
+    {name: "nested detached GitHub PR head", pr_head: true, nested: true},
     {name: "matching GitLab mirror", gitlab: true},
     {name: "workspace symlink", symlink: true},
     {name: "different revision", mismatch: true},
@@ -87,6 +91,13 @@ RSpec.describe "Git checkout metadata" do
          "GITHUB_WORKSPACE" => workspace, "GITHUB_SERVER_URL" => "https://example.com", "GITHUB_REPOSITORY" => "project/repository"}
       end
       canonical_url = scenario[:gitlab] ? "https://example.com/project.git" : "https://example.com/project/repository.git"
+      if scenario[:pr_head]
+        event_path = File.join(File.dirname(@workspace), "event.json")
+        head_sha = scenario[:mismatch] ? "b" * 40 : @head
+        File.write(event_path, {"pull_request" => {"head" => {"sha" => head_sha}}}.to_json)
+        env.merge!("GITHUB_SHA" => "a" * 40, "GITHUB_REF" => "refs/pull/12/merge",
+          "GITHUB_HEAD_REF" => "ci-branch", "GITHUB_BASE_REF" => "main", "GITHUB_EVENT_PATH" => event_path)
+      end
       if scenario[:overrides]
         env["DD_GIT_BRANCH"] = "user-branch"
         env["DD_GIT_REPOSITORY_URL"] = "https://example.com/user.git"

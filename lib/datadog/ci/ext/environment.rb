@@ -90,8 +90,8 @@ module Datadog
             tags.delete_if do |key, _|
               key.start_with?("git.") && !key.start_with?("git.commit.head.", "git.pull_request.")
             end
-            matched_revision = [ci_provider_tags[Git::TAG_COMMIT_SHA], ci_provider_tags[TAG_GIT_MERGE_COMMIT_SHA]]
-              .include?(local_git_tags[Git::TAG_COMMIT_SHA])
+            matched_revision = [ci_provider_tags[Git::TAG_COMMIT_SHA], ci_provider_tags[TAG_GIT_MERGE_COMMIT_SHA],
+              ci_provider_tags[Git::TAG_COMMIT_HEAD_SHA]].include?(local_git_tags[Git::TAG_COMMIT_SHA])
             if checkout_root && workspace_path && !custom_checkout && !local_git_tags[Git::TAG_BRANCH] && matched_revision
               # CI supplies canonical identity for a matching detached checkout using a transport mirror.
               [Git::TAG_BRANCH, Git::TAG_TAG, Git::TAG_REPOSITORY_URL].each do |key|

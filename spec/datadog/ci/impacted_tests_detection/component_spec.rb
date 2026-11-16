@@ -41,9 +41,41 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
       component.configure(library_settings, test_session)
     end
 
+    it "canonicalizes configured base and target commit SHAs" do
+      component = described_class.new(enabled: true, base_commit_sha: "CD" * 20, target_commit_sha: "AB" * 20)
+      allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Git::TAG_CHECKOUT_IS_CUSTOM).and_return("true")
+      expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("cd" * 20, target_commit: "ab" * 20)
+      component.configure(library_settings, test_session)
+    end
+
     it "uses the PR head revision in an ordinary merge checkout" do
+      allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Environment::TAG_GIT_MERGE_COMMIT_SHA).and_return("checkout-sha")
       allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Git::TAG_COMMIT_HEAD_SHA).and_return("pr-head")
       expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with(base_commit_sha, target_commit: "pr-head")
+      component.configure(library_settings, test_session)
+    end
+
+    [nil, "other-merge"].each do |merge_sha|
+      it "diffs the tested revision and infers its base when the workflow merge is #{merge_sha.inspect}" do
+        allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Git::TAG_COMMIT_HEAD_SHA).and_return("workflow-head")
+        allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Environment::TAG_GIT_MERGE_COMMIT_SHA).and_return(merge_sha)
+        expect(Datadog::CI::Git::LocalRepository).to receive(:base_commit_sha).with(base_branch: nil).and_return("local-base")
+        expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("local-base", target_commit: "checkout-sha")
+        component.configure(library_settings, test_session)
+      end
+    end
+
+    it "retains PR base metadata when the tested revision is the PR head" do
+      allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Git::TAG_COMMIT_HEAD_SHA).and_return("checkout-sha")
+      expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with(base_commit_sha, target_commit: "checkout-sha")
+      component.configure(library_settings, test_session)
+    end
+
+    it "honors configured revisions when the workflow head is unrelated" do
+      component = described_class.new(enabled: true, base_commit_sha: "user-base", target_commit_sha: "user-head")
+      allow(test_session).to receive(:get_tag).with(Datadog::CI::Ext::Git::TAG_COMMIT_HEAD_SHA).and_return("workflow-head")
+      expect(Datadog::CI::Git::LocalRepository).not_to receive(:base_commit_sha)
+      expect(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).with("user-base", target_commit: "user-head")
       component.configure(library_settings, test_session)
     end
 

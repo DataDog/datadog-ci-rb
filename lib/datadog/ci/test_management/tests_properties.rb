@@ -6,6 +6,7 @@ require_relative "../ext/telemetry"
 require_relative "../ext/test"
 require_relative "../ext/transport"
 require_relative "../transport/telemetry"
+require_relative "../utils/git"
 require_relative "../utils/parsing"
 require_relative "../utils/telemetry"
 require_relative "../utils/test_run"
@@ -80,7 +81,7 @@ module Datadog
 
         def initialize(api: nil, git_commit_head_sha: nil)
           @api = api
-          @git_commit_head_sha = git_commit_head_sha
+          @git_commit_head_sha = Utils::Git.normalize_commit_sha(git_commit_head_sha)
         end
 
         def fetch(test_session)
@@ -126,15 +127,24 @@ module Datadog
         private
 
         def payload(test_session)
-          use_checkout = test_session.get_tag(Ext::Git::TAG_CHECKOUT_IS_CUSTOM) == "true" && !@git_commit_head_sha
+          checkout_sha = test_session.git_commit_sha
+          head_sha = test_session.get_tag(Ext::Git::TAG_COMMIT_HEAD_SHA)
+          merge_sha = test_session.get_tag(Ext::Environment::TAG_GIT_MERGE_COMMIT_SHA)
+          unrelated_checkout = test_session.get_tag(Ext::Git::TAG_CHECKOUT_IS_CUSTOM) == "true" ||
+            (checkout_sha && head_sha && checkout_sha != head_sha && checkout_sha != merge_sha)
+          commit_sha = @git_commit_head_sha || (unrelated_checkout ? checkout_sha : test_session.original_git_commit_sha)
+          commit_message = (test_session.git_commit_message if commit_sha == checkout_sha)
+          if commit_sha == head_sha
+            commit_message = test_session.get_tag(Ext::Git::TAG_COMMIT_HEAD_MESSAGE) || commit_message
+          end
           {
             "data" => {
               "id" => Datadog::Core::Environment::Identity.id,
               "type" => Ext::Transport::DD_API_TEST_MANAGEMENT_TESTS_TYPE,
               "attributes" => {
                 "repository_url" => test_session.git_repository_url,
-                "commit_message" => use_checkout ? test_session.git_commit_message : test_session.original_git_commit_message,
-                "sha" => use_checkout ? test_session.git_commit_sha : test_session.original_git_commit_sha,
+                "commit_message" => commit_message,
+                "sha" => commit_sha,
                 "branch" => test_session.git_branch
               }
             }
