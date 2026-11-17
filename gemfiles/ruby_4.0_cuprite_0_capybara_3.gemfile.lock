@@ -1,12 +1,12 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: d3d3223bf56b4bf6581ce0ecbbb863249e35121a
+  revision: 974cce33af4f4dbc8b0e028295d0cc71db9f3e7a
   branch: master
   specs:
     datadog (2.50.0.dev)
       cgi
       datadog-ruby_core_source (~> 3.5, >= 3.5.6)
-      libdatadog (~> 48.0.0.1.1)
+      libdatadog (~> 49.0.0.1.1)
       libddwaf (~> 1.30.0.1.0)
       logger
       msgpack
@@ -95,8 +95,8 @@ GEM
       prism (>= 1.3.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    libdatadog (48.0.0.1.1)
-    libdatadog (48.0.0.1.1-aarch64-linux)
+    libdatadog (49.0.0.1.1)
+    libdatadog (49.0.0.1.1-aarch64-linux)
     libddwaf (1.30.0.1.0)
       ffi (~> 1.0)
     libddwaf (1.30.0.1.0-aarch64-linux)
@@ -137,7 +137,7 @@ GEM
       prism (>= 1.6.0)
       rbs (>= 4.0.0)
       tsort
-    regexp_parser (2.13.1)
+    regexp_parser (2.13.2)
     reline (0.7.0)
       io-console (~> 0.5)
     rexml (3.4.4)
@@ -168,10 +168,10 @@ GEM
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
-    websocket-driver (0.8.2)
+    websocket-driver (0.9.0)
       base64
-      websocket-extensions (>= 0.1.0)
-    websocket-extensions (0.1.5)
+      websocket-extensions (>= 0.2.0)
+    websocket-extensions (0.2.0)
     xpath (3.2.0)
       nokogiri (~> 1.8)
     yard (0.9.45)
@@ -234,8 +234,8 @@ CHECKSUMS
   hashdiff (1.2.2) sha256=e2e287452b42f18d2a8d82dd48c435e214a81dbadccf49344b956842a3b9127f
   io-console (0.9.5) sha256=83dd9bbf4c4680416629245b39cd4212eb5f4d9a4ea91804870c1f6b846414d5
   irb (1.19.0) sha256=55ee56acbdd6c9fe06a2e6909f46a24e5c41f45f16906bab04e8049cf46f1d27
-  libdatadog (48.0.0.1.1) sha256=7e1ee34cd7768ea6a20437b9e0f61bcf77f3e832bad1195dc52c694b3c1e42b1
-  libdatadog (48.0.0.1.1-aarch64-linux) sha256=af90bef273927e274a341570550318ff4c11ce47d16f2aa53d971da6e6681ba1
+  libdatadog (49.0.0.1.1) sha256=491a1e1c32d1bad75ec6d8971926f44b42cea6ad59139f8006c58483f41e9b01
+  libdatadog (49.0.0.1.1-aarch64-linux) sha256=de4f2d18989d83e1e3db49597239d09fc234362394032ef81b57afad6be1677f
   libddwaf (1.30.0.1.0) sha256=331632114ef21cc2538d93335ad0b1a6f37de448b5ce9d091a690eec321308d3
   libddwaf (1.30.0.1.0-aarch64-linux) sha256=c36650249bbbcaf81f0a0715e021d3db37fb1df989390f2744f445d1032d4314
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
@@ -261,7 +261,7 @@ CHECKSUMS
   rake-compiler (1.3.3) sha256=8ed1a2cebd91ef02f2fd8285f85009d5b066ba219a1c03c5739c428ee84ceff9
   rbs (4.2.0) sha256=51f7b886dcc05bc09e10b901daa6a81829f6adc03101d6ca9ea4aac6103e0674
   rdoc (8.1.0) sha256=befc37880a5cfd36dcb176c748b5fd5ee39dd3536a75e81824e4972ce230f60a
-  regexp_parser (2.13.1) sha256=5aedb6b7c35688f51e86eef17a15374dfd287c83f4ca644b2c5f3ec50a33b44b
+  regexp_parser (2.13.2) sha256=798475411fe146a45752ce1478793bf2392d73dd157acc2eb4c4e3e519912b85
   reline (0.7.0) sha256=5b012d8e55dbf9d450f12bde2cf7d15ff546ae80b3f8f3b30e570d431815583d
   rexml (3.4.4) sha256=19e0a2c3425dfbf2d4fc1189747bdb2f849b6c5e74180401b15734bc97b5d142
   rspec (3.13.2) sha256=206284a08ad798e61f86d7ca3e376718d52c0bc944626b2349266f239f820587
@@ -276,8 +276,8 @@ CHECKSUMS
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
   webmock (3.34.0) sha256=72eed29dc8c00148d592acaedaaa6b869e2e397de57dfc8602b84aa834f46b33
-  websocket-driver (0.8.2) sha256=97c556b019bf3410b4961002ac501621e9322d3f8a7bc02161a09301cc4c4146
-  websocket-extensions (0.1.5) sha256=1c6ba63092cda343eb53fc657110c71c754c56484aad42578495227d717a8241
+  websocket-driver (0.9.0) sha256=4dfcc6ac0ea1b6771daf5fb54cbbca131e4d5922ea0a65ba2da980370dadbe9f
+  websocket-extensions (0.2.0) sha256=6fb0d0f687aa8adc8eafa5ce68db36dfd6a8ebf232515040ce27c33c1291e589
   xpath (3.2.0) sha256=6dfda79d91bb3b949b947ecc5919f042ef2f399b904013eb3ef6d20dd3a4082e
   yard (0.9.45) sha256=52e211493f7cb8a3ebf7e104a25a1e73937a3103092545d34cb88fafebb3dc51
 
