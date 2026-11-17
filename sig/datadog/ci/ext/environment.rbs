@@ -67,6 +67,16 @@ module Datadog
 
         def self?.extract_tags: (untyped env) -> Hash[String, String]
 
+        def self?.extract_local_git_tags: (Hash[String, String?] env, Hash[String, String] ci_provider_tags, Hash[String, String] user_provided_tags) -> Hash[String, String]
+
+        def self?.custom_checkout?: (String? checkout_root, String? workspace_path) -> bool
+
+        def self?.apply_local_git_tags!: (Hash[String, String] tags, Hash[String, String] ci_provider_tags, Hash[String, String] local_git_tags) -> void
+
+        def self?.matching_detached_checkout?: (Hash[String, String] ci_provider_tags, Hash[String, String] local_git_tags) -> bool
+
+        def self?.apply_user_provided_tags!: (Hash[String, String] tags, Hash[String, String] user_provided_tags, collected_sha: String?) -> void
+
         def self?.canonical_path: (String path) -> String
 
         def self?.ensure_post_conditions: (Hash[String, String] tags) -> void
