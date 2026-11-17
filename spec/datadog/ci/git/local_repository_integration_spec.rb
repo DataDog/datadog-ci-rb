@@ -473,7 +473,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
       context "successful from the first try" do
         before do
-          # We now make more calls: config, rev-parse HEAD, rev-parse upstream, and fetch
+          # Remote discovery, HEAD, upstream, fetch, and the final history read stay bounded.
           expect(Datadog::CI::Utils::Command).to receive(:exec_command).and_call_original.at_most(5).times
         end
 

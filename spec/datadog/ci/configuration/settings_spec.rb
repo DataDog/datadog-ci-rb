@@ -478,6 +478,29 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      {
+        git_pull_request_base_branch: "DD_GIT_PULL_REQUEST_BASE_BRANCH",
+        git_pull_request_base_branch_sha: "DD_GIT_PULL_REQUEST_BASE_BRANCH_SHA",
+        git_commit_head_sha: "DD_GIT_COMMIT_HEAD_SHA"
+      }.each do |setting, variable|
+        describe "##{setting}" do
+          [nil, "", "   "].each do |value|
+            context "with #{variable}=#{value.inspect}" do
+              around { |example| ClimateControl.modify(variable => value) { example.run } }
+
+              it "treats the override as absent" do
+                expect(settings.ci.public_send(setting)).to be_nil
+              end
+            end
+          end
+
+          it "retains a supplied value" do
+            settings.ci.public_send("#{setting}=", "selected-value")
+            expect(settings.ci.public_send(setting)).to eq("selected-value")
+          end
+        end
+      end
+
       describe "#git_metadata_upload_enabled" do
         subject(:git_metadata_upload_enabled) { settings.ci.git_metadata_upload_enabled }
 

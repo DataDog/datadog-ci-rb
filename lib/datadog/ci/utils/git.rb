@@ -13,6 +13,13 @@ module Datadog
           sha.match?(/\A[0-9a-f]{40}\Z/) || sha.match?(/\A[0-9a-f]{64}\Z/)
         end
 
+        def self.normalize_commit_sha(sha)
+          return nil if sha.nil?
+
+          normalized = sha.downcase
+          valid_commit_sha?(normalized) ? normalized : sha
+        end
+
         def self.normalize_ref(ref)
           return nil if ref.nil?
 

@@ -70,6 +70,12 @@ module Datadog
               env["CI_COMMIT_SHA"]
             end
 
+            def git_merge_commit_sha
+              if env["CI_MERGE_REQUEST_IID"] && %w[merged_result merge_train].include?(env["CI_MERGE_REQUEST_EVENT_TYPE"])
+                env["CI_COMMIT_SHA"]
+              end
+            end
+
             def git_branch
               env["CI_COMMIT_REF_NAME"]
             end

@@ -30,27 +30,52 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
               # Modify HOME so that '~' expansion matches CI home directory.
               let(:environment_variables) { super().merge("HOME" => env["HOME"]) }
               let(:env) { env }
+              let(:expected_provider_tags) do
+                fixture_tags.dup.tap do |tags|
+                  tags.keys.grep(/(?:commit\.(?:head\.)?sha|base_branch(?:_head)?_sha)$/).each do |key|
+                    value = tags[key]
+                    tags[key] = value.downcase if Datadog::CI::Utils::Git.valid_commit_sha?(value.downcase)
+                  end
+                  merge_sha = if env["GITHUB_REF"].to_s.match?(%r{\Arefs/pull/\d+/merge\z})
+                    env["GITHUB_SHA"]
+                  elsif env["CI_MERGE_REQUEST_IID"] && %w[merged_result merge_train].include?(env["CI_MERGE_REQUEST_EVENT_TYPE"])
+                    env["CI_COMMIT_SHA"]
+                  elsif env["BUILD_REASON"] == "PullRequest" && env["BUILD_SOURCEBRANCH"].to_s.match?(%r{\Arefs/pull/\d+/merge\z})
+                    env["BUILD_SOURCEVERSION"]
+                  elsif env["TRAVIS_EVENT_TYPE"] == "pull_request" && env["TRAVIS_PULL_REQUEST"].to_s.match?(/\A\d+\z/)
+                    env["TRAVIS_COMMIT"]
+                  end
+                  tags["ci.git.merge_commit_sha"] = merge_sha.downcase if Datadog::CI::Utils::Git.valid_commit_sha?(merge_sha&.downcase)
+                end
+              end
 
               context "with git information" do
                 include_context "with git fixture", "gitdir_with_commit"
 
-                it "matches CI tags, with git fallback information" do
-                  is_expected
-                    .to eq(
-                      {
-                        "ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git",
-                        "git.branch" => "master",
-                        "git.commit.author.date" => "2011-02-16T13:00:00+00:00",
-                        "git.commit.author.email" => "bot@friendly.test",
-                        "git.commit.author.name" => "Friendly bot",
-                        "git.commit.committer.date" => "2023-10-02T13:52:56+00:00",
-                        "git.commit.committer.email" => "andrey.marchenko@datadoghq.com",
-                        "git.commit.committer.name" => "Andrey Marchenko",
-                        "git.commit.message" => "First commit with ❤️",
-                        "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
-                        "git.repository_url" => "https://datadoghq.com/git/test.git"
-                      }.merge(fixture_tags)
-                    )
+                it "prefers local Git tags while preserving CI metadata and user overrides" do
+                  expected = {
+                    "ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git",
+                    "git.checkout.root" => "#{Dir.pwd}/spec/support/fixtures/git",
+                    "git.branch" => "master",
+                    "git.commit.author.date" => "2011-02-16T13:00:00+00:00",
+                    "git.commit.author.email" => "bot@friendly.test",
+                    "git.commit.author.name" => "Friendly bot",
+                    "git.commit.committer.date" => "2023-10-02T13:52:56+00:00",
+                    "git.commit.committer.email" => "andrey.marchenko@datadoghq.com",
+                    "git.commit.committer.name" => "Andrey Marchenko",
+                    "git.commit.message" => "First commit with ❤️",
+                    "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
+                    "git.repository_url" => "https://datadoghq.com/git/test.git"
+                  }
+                  expected["git.checkout.is_custom"] = "true" if expected_provider_tags["ci.workspace_path"]
+                  expected_provider_tags.each do |key, value|
+                    if !key.start_with?("git.") || key.start_with?("git.commit.head.", "git.pull_request.") ||
+                        env.key?("DD_#{key.upcase.tr(".", "_")}") ||
+                        (key == "git.tag" && Datadog::CI::Utils::Git.is_git_tag?(env["DD_GIT_BRANCH"]))
+                      expected[key] = value
+                    end
+                  end
+                  is_expected.to eq(expected)
                 end
               end
 
@@ -58,9 +83,89 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                 include_context "without git installed"
 
                 it "matches only CI tags" do
-                  is_expected.to eq(fixture_tags)
+                  is_expected.to eq(expected_provider_tags)
                 end
               end
+            end
+          end
+        end
+      end
+    end
+
+    context "with conflicting CI and local Git metadata" do
+      include_context "with git fixture", "gitdir_with_commit"
+      include_context "Telemetry spy"
+
+      let(:env) do
+        {
+          "GITHUB_SHA" => "a" * 40,
+          "GITHUB_SERVER_URL" => "https://github.com",
+          "GITHUB_REPOSITORY" => "provider/repository",
+          "GITHUB_REF" => "refs/tags/provider-tag",
+          "GITHUB_WORKSPACE" => "/ci/workspace"
+        }
+      end
+
+      it "omits unrelated provider Git fields and reports the original SHA discrepancy" do
+        expect(extracted_tags).to include(
+          "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
+          "ci.workspace_path" => "/ci/workspace"
+        )
+        expect(extracted_tags).not_to have_key("git.tag")
+        discrepancy = telemetry_metric(:inc, Datadog::CI::Ext::Telemetry::METRIC_GIT_COMMIT_SHA_DISCREPANCY)
+        expect(discrepancy.tags).to eq(
+          type: "commit_discrepancy", expected_provider: "git_client", discrepant_provider: "ci_provider"
+        )
+      end
+
+      context "with a detached checkout" do
+        let(:env) { super().merge("GITHUB_REF" => "refs/heads/provider-branch") }
+
+        before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_branch).and_return("HEAD") }
+
+        it "omits the unrelated provider branch" do
+          expect(extracted_tags).not_to have_key("git.branch")
+        end
+
+        context "without a provider branch" do
+          let(:env) { super().reject { |key, _| key == "GITHUB_REF" } }
+
+          it "omits the branch" do
+            expect(extracted_tags).not_to have_key("git.branch")
+          end
+        end
+      end
+
+      context "with a local tag" do
+        before do
+          allow(Datadog::CI::Git::LocalRepository).to receive(:git_branch).and_return("HEAD")
+          allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return("local-tag")
+        end
+
+        it "prefers the local tag" do
+          expect(extracted_tags["git.tag"]).to eq("local-tag")
+        end
+
+        context "with a user override" do
+          let(:env) { super().merge("DD_GIT_TAG" => "user-tag") }
+
+          it "prefers the user tag" do
+            expect(extracted_tags["git.tag"]).to eq("user-tag")
+          end
+        end
+
+        context "with multiple local tags" do
+          before { allow(Datadog::CI::Git::LocalRepository).to receive(:git_tag).and_return("local-tag\nprovider-tag") }
+
+          it "omits ambiguous local tags from an unrelated workflow" do
+            expect(extracted_tags).not_to have_key("git.tag")
+          end
+
+          context "with an explicit user override" do
+            let(:env) { super().merge("DD_GIT_TAG" => "user-tag") }
+
+            it "retains the user override" do
+              expect(extracted_tags["git.tag"]).to eq("user-tag")
             end
           end
         end
@@ -71,7 +176,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
       context "with a newly created git repository" do
         include_context "with git fixture", "gitdir_empty"
         it "matches tags" do
-          is_expected.to eq("ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git")
+          is_expected.to eq("ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git",
+            "git.checkout.root" => "#{Dir.pwd}/spec/support/fixtures/git")
         end
       end
 
@@ -80,6 +186,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
         it "matches tags" do
           is_expected.to eq(
             "ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git",
+            "git.checkout.root" => "#{Dir.pwd}/spec/support/fixtures/git",
             "git.branch" => "master",
             "git.commit.author.date" => "2011-02-16T13:00:00+00:00",
             "git.commit.author.email" => "bot@friendly.test",
@@ -139,6 +246,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
             is_expected.to eq(
               {
                 "ci.workspace_path" => "#{Dir.pwd}/spec/support/fixtures/git",
+                "git.checkout.root" => "#{Dir.pwd}/spec/support/fixtures/git",
                 "git.branch" => env["DD_GIT_BRANCH"],
                 "git.tag" => env["DD_GIT_TAG"],
                 "git.commit.author.date" => env["DD_GIT_COMMIT_AUTHOR_DATE"],
@@ -148,7 +256,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                 "git.commit.committer.email" => env["DD_GIT_COMMIT_COMMITTER_EMAIL"],
                 "git.commit.committer.name" => env["DD_GIT_COMMIT_COMMITTER_NAME"],
                 "git.commit.message" => env["DD_GIT_COMMIT_MESSAGE"],
-                "git.commit.sha" => env["DD_GIT_COMMIT_SHA"],
+                "git.commit.sha" => env["DD_GIT_COMMIT_SHA"].downcase,
                 "git.repository_url" => env["DD_GIT_REPOSITORY_URL"],
                 "git.pull_request.base_branch" => env["DD_GIT_PULL_REQUEST_BASE_BRANCH"],
                 "git.pull_request.base_branch_sha" => env["DD_GIT_PULL_REQUEST_BASE_BRANCH_SHA"],
@@ -270,7 +378,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
             it "logs an error" do
               is_expected.to eq(
                 {
-                  "git.commit.sha" => env["DD_GIT_COMMIT_SHA"],
+                  "git.commit.sha" => env["DD_GIT_COMMIT_SHA"].downcase,
                   "git.repository_url" => env["DD_GIT_REPOSITORY_URL"]
                 }
               )
@@ -292,7 +400,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
             it "logs an error" do
               is_expected.to eq(
                 {
-                  "git.commit.sha" => env["DD_GIT_COMMIT_SHA"],
+                  "git.commit.sha" => env["DD_GIT_COMMIT_SHA"].downcase,
                   "git.repository_url" => env["DD_GIT_REPOSITORY_URL"]
                 }
               )

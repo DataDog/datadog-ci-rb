@@ -291,7 +291,7 @@ module Datadog
           Contrib::Instrumentation.remove_auto_instrumentation_from_rubyopt
 
           # signal git tree upload worker to start uploading git metadata
-          git_tree_upload_worker.perform(test_session.git_repository_url)
+          git_tree_upload_worker.perform(test_session.git_repository_url, test_session.git_commit_sha)
 
           # finds and instruments additional test libraries that we support (ex: selenium-webdriver)
           Contrib::Instrumentation.instrument_on_session_start

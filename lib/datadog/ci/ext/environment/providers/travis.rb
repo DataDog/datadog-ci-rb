@@ -50,6 +50,10 @@ module Datadog
               env["TRAVIS_COMMIT"]
             end
 
+            def git_merge_commit_sha
+              env["TRAVIS_COMMIT"] if pull_request? && env["TRAVIS_PULL_REQUEST"].to_s.match?(/\A\d+\z/)
+            end
+
             def git_branch
               env["TRAVIS_PULL_REQUEST_BRANCH"] || env["TRAVIS_BRANCH"]
             end

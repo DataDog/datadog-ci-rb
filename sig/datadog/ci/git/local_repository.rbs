@@ -22,13 +22,14 @@ module Datadog
 
         def self.git_branch: () -> String?
 
+        # Newline-separated tag names pointing at HEAD, without column formatting.
         def self.git_tag: () -> String?
 
         def self.git_commit_message: (?String? commit_sha) -> String?
 
         def self.git_commit_users: (?String? commit_sha) -> Array[Datadog::CI::Git::User]
 
-        def self.git_commits: () -> Array[String]
+        def self.git_commits: (?String? commit_sha) -> Array[String]
 
         def self.git_commits_rev_list: (included_commits: Enumerable[String], excluded_commits: Enumerable[String]) -> String?
 
@@ -36,9 +37,9 @@ module Datadog
 
         def self.git_shallow_clone?: () -> bool
 
-        def self.git_unshallow: () -> String?
+        def self.git_unshallow: (?String? commit_sha) -> String?
 
-        def self.get_changes_since: (String? base_commit) -> Datadog::CI::Git::Diff
+        def self.get_changes_since: (String? base_commit, ?target_commit: String) -> Datadog::CI::Git::Diff
 
         def self.base_commit_sha: (?base_branch: String?) -> String?
 

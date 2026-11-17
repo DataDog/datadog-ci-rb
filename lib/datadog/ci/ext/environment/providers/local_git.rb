@@ -8,7 +8,7 @@ module Datadog
     module Ext
       module Environment
         module Providers
-          # As a fallback we try to fetch git information from the local git repository
+          # Adapts local Git information into individual metadata values.
           class LocalGit < Base
             def git_repository_url
               CI::Git::LocalRepository.git_repository_url
@@ -19,11 +19,17 @@ module Datadog
             end
 
             def git_branch
-              CI::Git::LocalRepository.git_branch
+              return @git_branch if defined?(@git_branch)
+
+              branch = CI::Git::LocalRepository.git_branch
+              @git_branch = (branch unless branch == "HEAD")
             end
 
             def git_tag
-              CI::Git::LocalRepository.git_tag
+              return nil if git_branch
+
+              tags = CI::Git::LocalRepository.git_tag.to_s.split("\n")
+              tags.first if tags.one?
             end
 
             def git_commit_message

@@ -172,6 +172,9 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           "CI_JOB_ID" => "456",
           "CI_PROJECT_URL" => "https://gitlab.example/project",
           "CI_MERGE_REQUEST_IID" => "42",
+          "CI_PROJECT_DIR" => "/ci/workspace",
+          "CI_COMMIT_SHA" => "b" * 40,
+          "CI_MERGE_REQUEST_EVENT_TYPE" => "merged_result",
           "DD_GIT_BRANCH" => "main",
           "DD_GIT_COMMIT_MESSAGE" => "m" * 5001,
           "DD_GIT_COMMIT_HEAD_SHA" => "a" * 40,
@@ -200,6 +203,10 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           shared_metadata = payload["metadata"]["test_levels"]
           expect(shared_metadata).to include(
             "ci.job.name" => "tests",
+            "ci.workspace_path" => "/ci/workspace",
+            "git.checkout.root" => Datadog::CI::Git::LocalRepository.root,
+            "git.checkout.is_custom" => "true",
+            "ci.git.merge_commit_sha" => "b" * 40,
             "ci.pipeline.id" => "123",
             "git.branch" => "main",
             "git.commit.message" => "m" * 5000,

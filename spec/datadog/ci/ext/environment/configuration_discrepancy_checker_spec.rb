@@ -73,8 +73,8 @@ RSpec.describe Datadog::CI::Ext::Environment::ConfigurationDiscrepancyChecker do
         expect(discrepancy_metric.value).to eq(1)
         expect(discrepancy_metric.tags).to eq({
           type: "commit_discrepancy",
-          expected_provider: "ci_provider",
-          discrepant_provider: "git_client"
+          expected_provider: "git_client",
+          discrepant_provider: "ci_provider"
         })
       end
 
@@ -144,8 +144,8 @@ RSpec.describe Datadog::CI::Ext::Environment::ConfigurationDiscrepancyChecker do
         expect(discrepancy_metric).not_to be_nil
         expect(discrepancy_metric.tags).to eq({
           type: "repository_discrepancy",
-          expected_provider: "ci_provider",
-          discrepant_provider: "git_client"
+          expected_provider: "git_client",
+          discrepant_provider: "ci_provider"
         })
       end
     end
@@ -356,8 +356,8 @@ RSpec.describe Datadog::CI::Ext::Environment::ConfigurationDiscrepancyChecker do
           expect(discrepancy_metric).not_to be_nil
           expect(discrepancy_metric.tags).to eq({
             type: "commit_discrepancy",
-            expected_provider: "ci_provider",
-            discrepant_provider: "git_client"
+            expected_provider: "git_client",
+            discrepant_provider: "ci_provider"
           })
         end
       end

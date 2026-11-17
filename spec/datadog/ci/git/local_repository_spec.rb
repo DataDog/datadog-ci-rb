@@ -1,3 +1,6 @@
+require "fileutils"
+require "tmpdir"
+
 require_relative "../../../../lib/datadog/ci/git/local_repository"
 
 RSpec.describe ::Datadog::CI::Git::LocalRepository do
@@ -416,6 +419,19 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       end
 
       it { is_expected.to eq("first-tag") }
+
+      it "keeps multiple tags separated by newlines when column formatting is configured" do
+        Dir.mktmpdir do |directory|
+          FileUtils.cp_r("#{FIXTURE_DIR}/git/gitdir_with_tag", "#{directory}/.git")
+          ClimateControl.modify(
+            "GIT_DIR" => "#{directory}/.git", "GIT_WORK_TREE" => directory,
+            "GIT_CONFIG_COUNT" => "1", "GIT_CONFIG_KEY_0" => "column.tag", "GIT_CONFIG_VALUE_0" => "always"
+          ) do
+            Datadog::CI::Git::CLI.exec_git_command(["update-ref", "refs/tags/latest", "HEAD"])
+            expect(described_class.git_tag).to eq("first-tag\nlatest")
+          end
+        end
+      end
     end
   end
 

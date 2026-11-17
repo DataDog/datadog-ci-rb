@@ -14,9 +14,9 @@ module Datadog
         # Extractor is responsible for detecting where pipeline is being executed based on environment vars
         # and return the specific extractor that is able to return environment- and git-specific tags
         class Extractor
-          def initialize(env, provider_klass: nil)
+          def initialize(env, provider_klass: nil, provider: nil)
             @env = env
-            @provider = provider_klass ? provider_klass.new(env) : Providers.for_environment(env)
+            @provider = provider || (provider_klass ? provider_klass.new(env) : Providers.for_environment(env))
           end
 
           def tags
@@ -34,6 +34,7 @@ module Datadog
               Environment::TAG_PROVIDER_NAME => @provider.provider_name,
               Environment::TAG_STAGE_NAME => @provider.stage_name,
               Environment::TAG_WORKSPACE_PATH => @provider.workspace_path,
+              Environment::TAG_GIT_MERGE_COMMIT_SHA => @provider.git_merge_commit_sha,
               Environment::TAG_NODE_LABELS => @provider.node_labels,
               Environment::TAG_NODE_NAME => @provider.node_name,
               Environment::TAG_CI_ENV_VARS => @provider.ci_env_vars,
@@ -89,6 +90,15 @@ module Datadog
           private
 
           def normalize_git!
+            [Git::TAG_COMMIT_SHA, Git::TAG_COMMIT_HEAD_SHA, Git::TAG_PULL_REQUEST_BASE_BRANCH_SHA,
+              Git::TAG_PULL_REQUEST_BASE_BRANCH_HEAD_SHA, Environment::TAG_GIT_MERGE_COMMIT_SHA].each do |key|
+              sha = @tags[key]
+              @tags[key] = sha.downcase if sha && Utils::Git.valid_commit_sha?(sha.downcase)
+            end
+            unless Utils::Git.valid_commit_sha?(@tags[Environment::TAG_GIT_MERGE_COMMIT_SHA])
+              @tags.delete(Environment::TAG_GIT_MERGE_COMMIT_SHA)
+            end
+
             branch_ref = @tags[Git::TAG_BRANCH]
             if Utils::Git.is_git_tag?(branch_ref)
               @tags[Git::TAG_TAG] = branch_ref

@@ -52,6 +52,7 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
             "git.repository_url" => "repository_url",
             "git.commit.message" => "Test commit message",
             "git.commit.sha" => "test_sha",
+            "ci.git.merge_commit_sha" => "test_sha",
             "git.commit.head.message" => "Original test commit message",
             "git.commit.head.sha" => "original_test_sha",
             "git.branch" => "feature-branch"
@@ -73,6 +74,91 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
           expect(attributes["commit_message"]).to eq("Original test commit message")
           expect(attributes["sha"]).to eq("original_test_sha")
           expect(attributes["branch"]).to eq("feature-branch")
+        end
+      end
+    end
+
+    {
+      "Azure" => {"TF_BUILD" => "true", "BUILD_REASON" => "PullRequest", "BUILD_SOURCEBRANCH" => "refs/pull/12/merge",
+                  "BUILD_SOURCEVERSION" => "a" * 40, "SYSTEM_PULLREQUEST_SOURCECOMMITID" => "b" * 40},
+      "AppVeyor" => {"APPVEYOR" => "true", "APPVEYOR_REPO_PROVIDER" => "github", "APPVEYOR_REPO_COMMIT" => "a" * 40,
+                     "APPVEYOR_PULL_REQUEST_NUMBER" => "12", "APPVEYOR_PULL_REQUEST_HEAD_COMMIT" => "b" * 40}
+    }.each do |provider, env|
+      it "retains the PR head for #{provider} test-management requests from a merge checkout" do
+        provider_tags = Datadog::CI::Ext::Environment::Extractor.new(env).tags
+        tracer_span.set_tags(provider_tags.merge("git.commit.sha" => "a" * 40))
+        subject
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]["sha"]).to eq("b" * 40)
+        end
+      end
+    end
+
+    context "with an unrelated workflow head in the same workspace" do
+      before do
+        tracer_span.set_tags("git.commit.head.sha" => "workflow-head", "git.commit.head.message" => "workflow message",
+          "ci.git.merge_commit_sha" => "workflow-merge")
+      end
+
+      it "uses the tested SHA and its message" do
+        subject
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+            "sha" => "test_sha", "commit_message" => "Test commit message"
+          )
+        end
+      end
+    end
+
+    [false, true].each do |custom_checkout|
+      it "honors a configuration-only head SHA with custom checkout #{custom_checkout}" do
+        client = described_class.new(api: api, git_commit_head_sha: "user-head")
+        tracer_span.set_tags("git.commit.head.sha" => "workflow-head", "git.commit.head.message" => "workflow message")
+        tracer_span.set_tag("git.checkout.is_custom", "true") if custom_checkout
+        client.fetch(test_session)
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+            "sha" => "user-head", "commit_message" => nil
+          )
+        end
+        expect(test_session.get_tag("git.commit.head.sha")).to eq("workflow-head")
+      end
+    end
+
+    it "canonicalizes a configured SHA before pairing it with known head metadata" do
+      client = described_class.new(api: api, git_commit_head_sha: "AB" * 20)
+      tracer_span.set_tags("git.commit.head.sha" => "ab" * 20, "git.commit.head.message" => "known head message")
+      client.fetch(test_session)
+      expect(api).to have_received(:api_request) do |args|
+        expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+          "sha" => "ab" * 20, "commit_message" => "known head message"
+        )
+      end
+    end
+
+    context "with a custom checkout and outer workflow PR metadata" do
+      before do
+        tracer_span.set_tags("git.checkout.is_custom" => "true", "git.commit.head.sha" => "workflow-head",
+          "git.commit.head.message" => "workflow message")
+      end
+
+      it "uses the checkout SHA and message" do
+        subject
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+            "sha" => "test_sha", "commit_message" => "Test commit message"
+          )
+        end
+      end
+
+      it "honors an explicit PR head override" do
+        client = described_class.new(api: api, git_commit_head_sha: "user-head")
+        tracer_span.set_tags("git.commit.head.sha" => "user-head", "git.commit.head.message" => "user message")
+        client.fetch(test_session)
+        expect(api).to have_received(:api_request) do |args|
+          expect(JSON.parse(args[:payload])["data"]["attributes"]).to include(
+            "sha" => "user-head", "commit_message" => "user message"
+          )
         end
       end
     end

@@ -7,6 +7,7 @@ module Datadog
             private
 
             @head_commit_sha_from_env: String?
+            @git_branch: String?
             @author: Datadog::CI::Git::User?
             @committer: Datadog::CI::Git::User?
             @head_author: Datadog::CI::Git::User?

@@ -104,6 +104,9 @@ module Datadog
             def git_commit_sha
             end
 
+            def git_merge_commit_sha
+            end
+
             def git_pull_request_base_branch
             end
 
