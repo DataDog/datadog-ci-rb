@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 974cce33af4f4dbc8b0e028295d0cc71db9f3e7a
+  revision: 03326ce14f8ba07c900f0845964d19e70980bb1b
   branch: master
   specs:
     datadog (2.50.0.dev)
@@ -135,7 +135,7 @@ GEM
       prism (>= 1.6.0)
       rbs (>= 4.0.0)
       tsort
-    regexp_parser (2.13.2)
+    regexp_parser (2.13.4)
     reline (0.7.0)
       io-console (~> 0.5)
     rexml (3.4.4)
