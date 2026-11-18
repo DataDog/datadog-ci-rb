@@ -15,7 +15,7 @@ module Datadog
 
         FILE_STORAGE_KEY = "remote_component_state"
 
-        def self.build(api:, dd_env:, test_skipping_mode:, config_tags:, test_discovery_enabled:)
+        def self.build(api:, dd_env:, test_skipping_mode:, config_tags:, test_discovery_enabled:, local_coverage_enabled: false)
           library_settings_client = LibrarySettingsClient.new(
             api: api,
             dd_env: dd_env,
@@ -25,13 +25,15 @@ module Datadog
 
           new(
             library_settings_client: library_settings_client,
-            test_discovery_enabled: test_discovery_enabled
+            test_discovery_enabled: test_discovery_enabled,
+            local_coverage_enabled: local_coverage_enabled
           )
         end
 
-        def initialize(library_settings_client:, test_discovery_enabled: false)
+        def initialize(library_settings_client:, test_discovery_enabled: false, local_coverage_enabled: false)
           @library_settings_client = library_settings_client
           @test_discovery_enabled = test_discovery_enabled
+          @local_coverage_enabled = local_coverage_enabled
         end
 
         # called on test session start, uses test session info to send configuration request to the backend
@@ -88,7 +90,7 @@ module Datadog
 
         def fetch_library_configuration(test_session)
           # In test discovery mode, skip backend fetching and use default settings (everything is disabled)
-          return @library_configuration = LibrarySettings.from_http_response(nil) if @test_discovery_enabled
+          return @library_configuration = LibrarySettings.from_http_response(nil) if @test_discovery_enabled || @local_coverage_enabled
 
           # skip backend request if library configuration was loaded from external cache or stored on disk
           library_configuration_loaded = load_component_state

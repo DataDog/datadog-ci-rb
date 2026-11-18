@@ -1,0 +1,23 @@
+module Datadog::CI::TestImpactAnalysis::Coverage
+  class LocalStore
+    @path: String
+    @scope: Hash[String, String]
+    @git: LocalGit
+    @pid: Integer
+    @mutex: Thread::Mutex
+    @records: Hash[LocalMap::identity, Set[String]]
+    @collecting: bool
+    @map: LocalMap?
+    @base_commit: String?
+
+    def initialize: (path: String, root: String, repository: String?, framework: String?, ?variant: String?, ?git: LocalGit) -> void
+    def collecting?: () -> bool
+    def skippable?: (Datadog::CI::Test test) -> bool
+    def skippable_identity?: (String? suite, String? name, String? parameters) -> bool
+    def record: (Datadog::CI::Test test, Files files) -> void
+    def finish: () -> void
+    private
+    def repository_id: (String? repository) -> String
+    def warn_failure: (StandardError error) -> void
+  end
+end

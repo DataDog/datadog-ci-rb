@@ -1402,6 +1402,23 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      %w[tia_local_coverage_file tia_local_coverage_variant].each do |setting|
+        describe setting do
+          it "defaults to nil" do
+            expect(settings.ci.public_send(setting)).to be_nil
+          end
+
+          it "reads the environment and treats blank values as unset" do
+            variable = "DD_CIVISIBILITY_#{setting.upcase}"
+            ClimateControl.modify(variable => "example") do
+              expect(settings.ci.public_send(setting)).to eq("example")
+            end
+            settings.ci.public_send("#{setting}=", " ")
+            expect(settings.ci.public_send(setting)).to be_nil
+          end
+        end
+      end
+
       describe "#tia_opened_files_coverage_enabled" do
         subject(:opened_files_coverage_enabled) { settings.ci.tia_opened_files_coverage_enabled }
 

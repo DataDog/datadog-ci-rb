@@ -51,6 +51,20 @@ RSpec.describe Datadog::CI::Remote::Component do
       instance_double(Datadog::CI::Remote::LibrarySettings, require_git?: require_git)
     end
 
+    context "with local coverage enabled" do
+      subject(:component) { described_class.new(library_settings_client: library_settings_client, local_coverage_enabled: true) }
+
+      it "configures components without requesting backend settings" do
+        expect(library_settings_client).not_to receive(:fetch)
+        expect(component).not_to receive(:load_component_state)
+        configurable_components.each do |configurable|
+          expect(configurable).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings), test_session)
+        end
+        expect(code_coverage).to receive(:configure).with(instance_of(Datadog::CI::Remote::LibrarySettings))
+        component.configure(test_session)
+      end
+    end
+
     context "git upload is not required" do
       let(:require_git) { false }
 

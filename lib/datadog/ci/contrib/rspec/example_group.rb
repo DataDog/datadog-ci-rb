@@ -81,7 +81,12 @@ module Datadog
 
                 # Skip by Test Impact Analysis: test is skippable and not marked as unskippable
                 tia_skipped = !example.datadog_unskippable? &&
-                  test_impact_analysis_component&.skippable?(datadog_test_id)
+                  test_impact_analysis_component&.skippable?(
+                    datadog_test_id,
+                    suite: example.datadog_test_suite_name,
+                    name: example.datadog_test_name,
+                    parameters: example.datadog_test_parameters
+                  )
 
                 # Skip by Test Management: test is disabled
                 test_management_disabled = !example.datadog_prevent_failure_suppression? &&

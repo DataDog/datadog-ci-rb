@@ -89,7 +89,8 @@ module Datadog
           # Builds test visibility API layer in agentless or EvP proxy mode
           test_visibility_api = build_test_visibility_api(settings)
           # bail out early if api is misconfigured
-          return unless settings.ci.enabled && test_visibility_api
+          return unless settings.ci.enabled
+          return if test_visibility_api.nil? && settings.ci.tia_local_coverage_file.nil?
 
           # Configure datadog gem for test visibility mode
           configure_telemetry(settings)
@@ -136,7 +137,7 @@ module Datadog
           trace_writer_options[:buffer_size] = 10_000
           tracing_transport = TestTracing::Component.build_transport(
             api: test_visibility_api,
-            discard_traces: settings.ci.discard_traces,
+            discard_traces: settings.ci.discard_traces || !settings.ci.tia_local_coverage_file.nil?,
             dd_env: settings.env
           )
           trace_writer_options[:transport] = tracing_transport if tracing_transport
@@ -149,7 +150,8 @@ module Datadog
             dd_env: settings.env,
             test_skipping_mode: settings.ci.tia_test_skipping_mode,
             config_tags: custom_configuration(settings),
-            test_discovery_enabled: settings.ci.test_discovery_enabled
+            test_discovery_enabled: settings.ci.test_discovery_enabled,
+            local_coverage_enabled: !settings.ci.tia_local_coverage_file.nil?
           )
           @test_retries = TestRetries::Component.new(
             retry_failed_tests_enabled: settings.ci.retry_failed_tests_enabled,
@@ -228,11 +230,15 @@ module Datadog
             use_single_threaded_coverage: settings.ci.itr_code_coverage_use_single_threaded_mode,
             use_allocation_tracing: settings.ci.itr_test_impact_analysis_use_allocation_tracing,
             static_dependencies_tracking_enabled: settings.ci.tia_static_dependencies_tracking_enabled,
-            opened_files_coverage_enabled: settings.ci.tia_opened_files_coverage_enabled
+            opened_files_coverage_enabled: settings.ci.tia_opened_files_coverage_enabled,
+            local_coverage_file: settings.ci.tia_local_coverage_file,
+            local_coverage_variant: settings.ci.tia_local_coverage_variant
           )
         end
 
         def build_test_visibility_api(settings)
+          return if settings.ci.tia_local_coverage_file
+
           if settings.ci.agentless_mode_enabled
             check_dd_site(settings)
 
@@ -274,7 +280,7 @@ module Datadog
         end
 
         def build_git_upload_worker(settings, api)
-          if settings.ci.git_metadata_upload_enabled
+          if settings.ci.git_metadata_upload_enabled && !settings.ci.tia_local_coverage_file
             git_tree_uploader = Git::TreeUploader.new(api: api, force_unshallow: settings.ci.impacted_tests_detection_enabled)
             Worker.new do |repository_url, commit_sha|
               git_tree_uploader.call(repository_url, commit_sha: commit_sha)
@@ -329,6 +335,11 @@ module Datadog
         end
 
         def configure_telemetry(settings)
+          if settings.ci.tia_local_coverage_file
+            settings.telemetry.enabled = false
+            return
+          end
+
           # in development environment Datadog's telemetry is disabled by default
           # for test visibility we want to enable it by default unless explicitly disabled
           # NOTE: before agentless mode is released, we only enable telemetry when running with Datadog Agent

@@ -19,6 +19,7 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
+require_relative "coverage/local_store"
 require_relative "coverage/opened_files_collector"
 require_relative "coverage/transport"
 require_relative "skippable"
@@ -38,12 +39,12 @@ module Datadog
         attr_reader :correlation_id, :skippable_tests, :skippable_suites, :enabled, :test_skipping_enabled,
           :code_coverage_enabled, :test_skipping_mode
 
-        def self.build(api:, discard_traces:, dd_env:, **options)
-          coverage_writer = unless api.nil? || discard_traces
+        def self.build(api:, discard_traces:, dd_env:, local_coverage_file: nil, **options)
+          coverage_writer = unless api.nil? || discard_traces || local_coverage_file
             AsyncWriter.new(transport: Coverage::Transport.new(api: api))
           end
 
-          new(api: api, coverage_writer: coverage_writer, dd_env: dd_env, **options)
+          new(api: api, coverage_writer: coverage_writer, dd_env: dd_env, local_coverage_file: local_coverage_file, **options)
         end
 
         def initialize(
@@ -57,7 +58,9 @@ module Datadog
           use_single_threaded_coverage: false,
           use_allocation_tracing: true,
           static_dependencies_tracking_enabled: false,
-          opened_files_coverage_enabled: true
+          opened_files_coverage_enabled: true,
+          local_coverage_file: nil,
+          local_coverage_variant: nil
         )
           @enabled = enabled
           @api = api
@@ -74,6 +77,9 @@ module Datadog
           @use_allocation_tracing = use_allocation_tracing
           @static_dependencies_tracking_enabled = static_dependencies_tracking_enabled
           @opened_files_coverage_enabled = opened_files_coverage_enabled
+          @local_coverage_file = local_coverage_file
+          @local_coverage_variant = local_coverage_variant
+          @local_coverage = nil
 
           @test_skipping_enabled = false
           @code_coverage_enabled = false
@@ -104,9 +110,13 @@ module Datadog
 
           Datadog.logger.debug("Configuring TestImpactAnalysis with remote configuration: #{remote_configuration}")
 
-          @enabled = remote_configuration.itr_enabled?
-          @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
-          @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled?
+          if @local_coverage_file
+            configure_local_coverage(test_session)
+          else
+            @enabled = remote_configuration.itr_enabled?
+            @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
+            @code_coverage_enabled = @enabled && remote_configuration.code_coverage_enabled?
+          end
 
           test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_ENABLED, @test_skipping_enabled)
           test_session.set_internal_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
@@ -124,7 +134,7 @@ module Datadog
           end
 
           # Load external cache or component state first, and if successful, skip fetching skippable tests
-          if skipping_tests? || skipping_suites?
+          if !@local_coverage_file && (skipping_tests? || skipping_suites?)
             return if load_component_state
 
             fetch_skippables(test_session)
@@ -175,6 +185,9 @@ module Datadog
 
           coverage_collector&.start
           @opened_files_collector&.start
+        rescue => error
+          raise unless @local_coverage_file
+          disable_local_coverage(error)
         end
 
         # Stops coverage collection and returns raw coverage data.
@@ -189,6 +202,10 @@ module Datadog
           return coverage if files.nil? || files.empty?
 
           (coverage || {}).merge!(files)
+        rescue => error
+          raise unless @local_coverage_file
+          disable_local_coverage(error)
+          nil
         end
 
         # Called when a test context (e.g., RSpec example group with before(:context)) starts.
@@ -278,6 +295,11 @@ module Datadog
           context_ids = test.context_ids || []
           merge_context_coverages_into_test(coverage, context_ids)
 
+          if @local_coverage_file
+            record_local_coverage(test, coverage)
+            return
+          end
+
           write_coverage_event(
             test_id: test.id.to_s,
             test_suite_id: test.test_suite_id.to_s,
@@ -319,8 +341,12 @@ module Datadog
           enabled? && code_coverage? && !suite_skipping_mode? && !@use_single_threaded_coverage
         end
 
-        def skippable?(datadog_test_id)
+        def skippable?(datadog_test_id, suite: nil, name: nil, parameters: nil)
           return false if !enabled? || !skipping_tests?
+
+          if @local_coverage_file
+            return @local_coverage&.skippable_identity?(suite, name, parameters) || false
+          end
 
           @mutex.synchronize { @skippable_tests.include?(datadog_test_id) }
         end
@@ -334,7 +360,7 @@ module Datadog
         def mark_if_skippable(test)
           return if !enabled? || !skipping_tests?
 
-          if skippable?(test.datadog_test_id) && !test.should_retry_attempt_to_fix?
+          if skippable?(test.datadog_test_id, suite: test.test_suite_name, name: test.name, parameters: test.parameters) && !test.should_retry_attempt_to_fix?
             test.set_internal_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
             Datadog.logger.debug { "Marked test as skippable: #{test.datadog_test_id}" }
@@ -417,6 +443,8 @@ module Datadog
         def write_test_session_tags(test_session, skipped_tests_count)
           return if !enabled?
 
+          @local_coverage&.finish
+
           Datadog.logger.debug { "Finished optimised session with test skipping enabled: #{@test_skipping_enabled}" }
           Datadog.logger.debug { "#{skipped_tests_count} tests were skipped" }
 
@@ -470,6 +498,50 @@ module Datadog
         end
 
         private
+
+        def configure_local_coverage(test_session)
+          path = @local_coverage_file
+          return unless path
+          @local_coverage = nil
+          @test_skipping_enabled = false
+          @code_coverage_enabled = false
+          if suite_skipping_mode? || test_session.distributed
+            Datadog.logger.warn("Local TIA supports test-level selection in one process")
+            return
+          end
+          local_coverage = Coverage::LocalStore.new(
+            path: path,
+            root: Git::LocalRepository.root,
+            repository: test_session.git_repository_url,
+            framework: test_session.get_tag(Ext::Test::TAG_FRAMEWORK),
+            variant: @local_coverage_variant
+          )
+          @local_coverage = local_coverage
+          @code_coverage_enabled = local_coverage.collecting?
+          @test_skipping_enabled = !@code_coverage_enabled
+        rescue => error
+          disable_local_coverage(error)
+        end
+
+        def record_local_coverage(test, coverage)
+          local_coverage = @local_coverage
+          return unless local_coverage && test.passed?
+          source = test.source_file
+          ensure_test_source_covered(source, coverage) if source
+          enrich_coverage_with_static_dependencies(coverage)
+          local_coverage.record(test, Coverage::Files.new(coverage, test.lock_custom_impacted_files))
+        rescue => error
+          disable_local_coverage(error)
+        end
+
+        def disable_local_coverage(error)
+          @local_coverage = nil
+          @code_coverage_enabled = false
+          @test_skipping_enabled = false
+          Datadog.logger.warn("Local TIA disabled for this run: #{error.class}: #{error.message}")
+        rescue
+          nil
+        end
 
         def skippables_count
           current_skippables.count

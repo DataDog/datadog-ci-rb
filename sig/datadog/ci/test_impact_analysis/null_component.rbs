@@ -52,7 +52,7 @@ module Datadog
 
         def mark_if_skippable: (Datadog::CI::Test test) -> void
 
-        def skippable?: (String datadog_test_id) -> bool
+        def skippable?: (String datadog_test_id, ?suite: String?, ?name: String?, ?parameters: String?) -> bool
 
         def skippable_suite?: (String test_suite_name) -> bool
 

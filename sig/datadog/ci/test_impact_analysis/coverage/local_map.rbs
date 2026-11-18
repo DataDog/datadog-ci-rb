@@ -1,0 +1,20 @@
+module Datadog::CI::TestImpactAnalysis::Coverage
+  class LocalMap
+    type json = nil | bool | String | Integer | Float | Array[json] | Hash[String, json]
+    type identity = [String, String, json]
+    type record = { "suite" => String, "name" => String, "parameters" => json, "files" => Array[String] }
+    type document = { "version" => Integer, "scope" => Hash[String, String], "base_commit" => String, "tests" => Array[record] }
+
+    @indexes: Hash[identity, Integer]
+    @files: Hash[String, Array[Integer]]
+    @must_run: Array[bool]?
+    attr_reader base_commit: String
+
+    def self.identity: (String? suite, String? name, String? parameters) -> identity?
+    def initialize: (document, scope: Hash[String, String]) -> void
+    def select: (Array[String] changed_files) -> void
+    def skippable?: (identity) -> bool
+    private
+    def validate_record: (record) -> void
+  end
+end

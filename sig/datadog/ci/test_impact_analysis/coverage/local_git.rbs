@@ -1,0 +1,10 @@
+module Datadog::CI::TestImpactAnalysis::Coverage
+  class LocalGit
+    @root: String
+    def initialize: (String root) -> void
+    def head: () -> String
+    def changed_files: (String base_commit) -> Array[String]
+    private
+    def command: (*String arguments) -> String
+  end
+end

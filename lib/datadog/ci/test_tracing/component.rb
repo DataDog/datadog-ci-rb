@@ -41,7 +41,7 @@ module Datadog
         end
 
         def self.build_transport(api:, discard_traces:, dd_env:)
-          return NullTransport.new if discard_traces
+          return NullTransport.new if discard_traces || api.nil?
 
           Transport.new(api: api, dd_env: dd_env)
         end

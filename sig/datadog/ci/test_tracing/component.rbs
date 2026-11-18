@@ -36,7 +36,7 @@ module Datadog
         attr_reader trace_setup_teardown_enabled: bool
 
         def self.build: (
-          api: Datadog::CI::Transport::Api::Base,
+          api: Datadog::CI::Transport::Api::Base?,
           dd_env: String?,
           config_tags: Hash[String, String],
           ?codeowners: Datadog::CI::Codeowners::Matcher,
@@ -46,7 +46,7 @@ module Datadog
           ?trace_setup_teardown_enabled: bool
         ) -> Component
 
-        def self.build_transport: (api: Datadog::CI::Transport::Api::Base, discard_traces: bool, dd_env: String?) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
+        def self.build_transport: (api: Datadog::CI::Transport::Api::Base?, discard_traces: bool, dd_env: String?) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
 
         def shared_tags: () -> Hash[String, String]
 

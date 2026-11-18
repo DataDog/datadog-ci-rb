@@ -92,7 +92,7 @@ module Datadog
         def mark_if_skippable(_test)
         end
 
-        def skippable?(_datadog_test_id)
+        def skippable?(_datadog_test_id, suite: nil, name: nil, parameters: nil)
           false
         end
 

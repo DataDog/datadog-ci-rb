@@ -14,6 +14,9 @@ module Datadog
         @skippable_tests: Set[String]
         @skippable_suites: Set[String]
         @opened_files_collector: Coverage::OpenedFilesCollector?
+        @local_coverage_file: String?
+        @local_coverage_variant: String?
+        @local_coverage: Coverage::LocalStore?
         @coverage_writer: Datadog::CI::AsyncWriter?
 
         @api: Datadog::CI::Transport::Api::Base?
@@ -56,10 +59,12 @@ module Datadog
           ?use_single_threaded_coverage: bool,
           ?use_allocation_tracing: bool,
           ?static_dependencies_tracking_enabled: bool,
-          ?opened_files_coverage_enabled: bool
+          ?opened_files_coverage_enabled: bool,
+          ?local_coverage_file: String?,
+          ?local_coverage_variant: String?
         ) -> Component
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool, ?opened_files_coverage_enabled: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool, ?opened_files_coverage_enabled: bool, ?local_coverage_file: String?, ?local_coverage_variant: String?) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 
@@ -98,7 +103,7 @@ module Datadog
 
         def context_coverage_enabled?: () -> bool
 
-        def skippable?: (String datadog_test_id) -> bool
+        def skippable?: (String datadog_test_id, ?suite: String?, ?name: String?, ?parameters: String?) -> bool
 
         def mark_if_skippable: (Datadog::CI::Test test) -> void
 
@@ -120,6 +125,10 @@ module Datadog
         def restore_state_from_datadog_test_runner: () -> bool
 
         private
+
+        def configure_local_coverage: (Datadog::CI::TestSession) -> void
+        def record_local_coverage: (Datadog::CI::Test, Hash[String, untyped]) -> void
+        def disable_local_coverage: (StandardError) -> void
 
         def skippables_count: () -> Integer
 

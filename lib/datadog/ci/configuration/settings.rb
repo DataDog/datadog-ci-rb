@@ -94,6 +94,18 @@ module Datadog
                 o.default true
               end
 
+              option :tia_local_coverage_file do |o|
+                o.type :string, nilable: true
+                o.env "DD_CIVISIBILITY_TIA_LOCAL_COVERAGE_FILE"
+                o.setter { |value| value unless value.nil? || value.strip.empty? }
+              end
+
+              option :tia_local_coverage_variant do |o|
+                o.type :string, nilable: true
+                o.env "DD_CIVISIBILITY_TIA_LOCAL_COVERAGE_VARIANT"
+                o.setter { |value| value unless value.nil? || value.strip.empty? }
+              end
+
               option :tia_test_skipping_mode do |o|
                 o.type :string
                 o.env CI::Ext::Settings::ENV_TIA_TEST_SKIPPING_MODE

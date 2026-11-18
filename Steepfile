@@ -16,6 +16,7 @@ target :lib do
   library "zlib"
   library "securerandom"
   library "tmpdir"
+  library "tempfile"
   library "fileutils"
   library "socket"
   library "optparse"
