@@ -30,24 +30,6 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
               # Modify HOME so that '~' expansion matches CI home directory.
               let(:environment_variables) { super().merge("HOME" => env["HOME"]) }
               let(:env) { env }
-              let(:expected_provider_tags) do
-                fixture_tags.dup.tap do |tags|
-                  tags.keys.grep(/(?:commit\.(?:head\.)?sha|base_branch(?:_head)?_sha)$/).each do |key|
-                    value = tags[key]
-                    tags[key] = value.downcase if Datadog::CI::Utils::Git.valid_commit_sha?(value.downcase)
-                  end
-                  merge_sha = if env["GITHUB_REF"].to_s.match?(%r{\Arefs/pull/\d+/merge\z})
-                    env["GITHUB_SHA"]
-                  elsif env["CI_MERGE_REQUEST_IID"] && %w[merged_result merge_train].include?(env["CI_MERGE_REQUEST_EVENT_TYPE"])
-                    env["CI_COMMIT_SHA"]
-                  elsif env["BUILD_REASON"] == "PullRequest" && env["BUILD_SOURCEBRANCH"].to_s.match?(%r{\Arefs/pull/\d+/merge\z})
-                    env["BUILD_SOURCEVERSION"]
-                  elsif env["TRAVIS_EVENT_TYPE"] == "pull_request" && env["TRAVIS_PULL_REQUEST"].to_s.match?(/\A\d+\z/)
-                    env["TRAVIS_COMMIT"]
-                  end
-                  tags["ci.git.merge_commit_sha"] = merge_sha.downcase if Datadog::CI::Utils::Git.valid_commit_sha?(merge_sha&.downcase)
-                end
-              end
 
               context "with git information" do
                 include_context "with git fixture", "gitdir_with_commit"
@@ -67,8 +49,8 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                     "git.commit.sha" => "c7f893648f656339f62fb7b4d8a6ecdf7d063835",
                     "git.repository_url" => "https://datadoghq.com/git/test.git"
                   }
-                  expected["git.checkout.is_custom"] = "true" if expected_provider_tags["ci.workspace_path"]
-                  expected_provider_tags.each do |key, value|
+                  expected["git.checkout.is_custom"] = "true" if fixture_tags["ci.workspace_path"]
+                  fixture_tags.each do |key, value|
                     if !key.start_with?("git.") || key.start_with?("git.commit.head.", "git.pull_request.") ||
                         env.key?("DD_#{key.upcase.tr(".", "_")}") ||
                         (key == "git.tag" && Datadog::CI::Utils::Git.is_git_tag?(env["DD_GIT_BRANCH"]))
@@ -83,7 +65,7 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                 include_context "without git installed"
 
                 it "matches only CI tags" do
-                  is_expected.to eq(expected_provider_tags)
+                  is_expected.to eq(fixture_tags)
                 end
               end
             end
