@@ -32,6 +32,9 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
               let(:env) { env }
               let(:expected_provider_tags) do
                 fixture_tags.dup.tap do |tags|
+                  if env["SYSTEM_PULLREQUEST_SOURCECOMMITID"]
+                    tags["git.commit.head.sha"] ||= env["SYSTEM_PULLREQUEST_SOURCECOMMITID"]
+                  end
                   tags.keys.grep(/(?:commit\.(?:head\.)?sha|base_branch(?:_head)?_sha)$/).each do |key|
                     value = tags[key]
                     tags[key] = value.downcase if Datadog::CI::Utils::Git.valid_commit_sha?(value.downcase)
@@ -42,6 +45,10 @@ RSpec.describe ::Datadog::CI::Ext::Environment do
                     env["CI_COMMIT_SHA"]
                   elsif env["BUILD_REASON"] == "PullRequest" && env["BUILD_SOURCEBRANCH"].to_s.match?(%r{\Arefs/pull/\d+/merge\z})
                     env["BUILD_SOURCEVERSION"]
+                  elsif env["APPVEYOR_REPO_PROVIDER"] == "github" && env["APPVEYOR_PULL_REQUEST_NUMBER"].to_s.match?(/\A\d+\z/) &&
+                      Datadog::CI::Utils::Git.valid_commit_sha?(env["APPVEYOR_PULL_REQUEST_HEAD_COMMIT"]&.downcase) &&
+                      env["APPVEYOR_PULL_REQUEST_HEAD_COMMIT"].downcase != env["APPVEYOR_REPO_COMMIT"]&.downcase
+                    env["APPVEYOR_REPO_COMMIT"]
                   elsif env["TRAVIS_EVENT_TYPE"] == "pull_request" && env["TRAVIS_PULL_REQUEST"].to_s.match?(/\A\d+\z/)
                     env["TRAVIS_COMMIT"]
                   end
