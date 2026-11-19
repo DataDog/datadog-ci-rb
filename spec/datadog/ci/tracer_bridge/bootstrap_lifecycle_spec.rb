@@ -13,6 +13,47 @@ RSpec.describe "CI initialization from application tracing" do
     end
   end
 
+  it "does not import legacy configuration for disabled application tracing" do
+    Datadog.configuration.ci.enabled = false
+    allow(Datadog::CI::Configuration::Extensions).to receive(:import_configuration!).and_call_original
+
+    3.times { Datadog::Tracing.trace("application work") {} }
+
+    expect(Datadog::CI::Configuration::Extensions).not_to have_received(:import_configuration!)
+    expect(Datadog::CI.components(allow_initialization: false)).to be_nil
+    expect(application_writer).to have_received(:write).exactly(3).times
+  end
+
+  it "does not resolve a lazy enabled default recursively when its warning logger traces" do
+    logger = Logger.new(File::NULL)
+    Datadog.configuration.logger.instance = logger
+    warnings = 0
+    allow(logger).to receive(:warn) do
+      warnings += 1
+      Datadog::Tracing.trace("logger request") {} if warnings == 1
+    end
+
+    ClimateControl.modify("DD_CIVISIBILITY_ENABLED" => nil, "DD_TRACE_CI_ENABLED" => "false") do
+      Datadog::CI.configuration.ci.reset!
+      Datadog::Tracing.trace("application work") {}
+    end
+
+    expect(warnings).to eq(1)
+    expect(Datadog::CI.components(allow_initialization: false)).to be_nil
+    expect(application_writer).to have_received(:write).twice
+  end
+
+  it "does not import legacy configuration again after application tracing initializes CI" do
+    Datadog::Tracing.trace("boot") {}
+    original = Datadog::CI.components
+    allow(Datadog::CI::Configuration::Extensions).to receive(:import_configuration!).and_call_original
+
+    3.times { Datadog::Tracing.trace("application work") {} }
+
+    expect(Datadog::CI::Configuration::Extensions).not_to have_received(:import_configuration!)
+    expect(Datadog::CI.components).to equal(original)
+  end
+
   it "does not initialize CI recursively when construction observes an application trace" do
     builds = 0
     allow(Datadog::CI::Configuration::Components).to receive(:new).and_wrap_original do |method, *args|

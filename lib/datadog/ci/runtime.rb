@@ -41,12 +41,14 @@ module Datadog
       end
 
       def prepare_application_tracing!
+        return if @components
+
         @mutex.synchronize do
           return if @components || @preparing_application_tracing || @building_components
 
           begin
             @preparing_application_tracing = true
-            return unless configuration.ci.enabled
+            return unless @configuration.ci.enabled
 
             @components = build_components
             @bootstrap_components = true
