@@ -140,6 +140,7 @@ RSpec.describe "Minitest instrumentation with Shopify's ci-queue runner" do
         c.ci.instrument :minitest
       end
 
+      Datadog::CI.components
       abort "expected Test Optimization to be disabled" if Datadog.configuration.ci.enabled
 
       wrapper_calls = 0
