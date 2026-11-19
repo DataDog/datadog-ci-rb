@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "spec_helper"
+require "timeout"
 require "datadog/ci/async_writer"
 
 RSpec.describe Datadog::CI::AsyncWriter do
@@ -13,12 +14,22 @@ RSpec.describe Datadog::CI::AsyncWriter do
   after { writer.stop }
 
   it "sends queued events at shutdown exactly once" do
-    expect(transport).to receive(:send_events).with(["one", "two"]).once
+    sent = []
+    allow(transport).to receive(:send_events) { |events| sent.concat(events) }
     expect(writer.write("one")).to be(true)
     expect(writer.write("two")).to be(true)
     writer.stop
     writer.stop
+    expect(sent).to eq(["one", "two"])
     expect(writer).not_to be_running
+  end
+
+  it "sends the first event without waiting for the flush interval" do
+    sent = Queue.new
+    expect(transport).to receive(:send_events).with(["event"]).once { sent << true }
+    writer.write("event")
+    expect(Timeout.timeout(5) { sent.pop }).to be(true)
+    expect(writer).to be_running
   end
 
   it "starts the worker when the first event arrives" do
@@ -61,9 +72,10 @@ RSpec.describe Datadog::CI::AsyncWriter do
     it "delivers events without an explicit flush" do
       sent = Queue.new
       allow(transport).to receive(:send_events) { |events| sent << events }
-      writer.write("event")
-      expect(try_wait_until { !sent.empty? }).to be(true)
-      expect(sent.pop).to eq(["event"])
+      writer.write("first")
+      expect(Timeout.timeout(5) { sent.pop }).to eq(["first"])
+      writer.write("next")
+      expect(Timeout.timeout(5) { sent.pop }).to eq(["next"])
     end
   end
 
@@ -71,24 +83,38 @@ RSpec.describe Datadog::CI::AsyncWriter do
     let(:options) { {buffer_size: 1, interval: 60.0} }
 
     it "drops excess events and keeps the accepted event" do
+      sent = Queue.new
+      release_send = Queue.new
+      allow(transport).to receive(:send_events) do |events|
+        sent << events
+        release_send.pop if events == ["in flight"]
+        []
+      end
+      writer.write("in flight")
+      expect(Timeout.timeout(5) { sent.pop }).to eq(["in flight"])
       expect(Datadog::CI.logger).to receive(:warn).with(/buffer is full/)
       expect(writer.write("accepted")).to be(true)
       expect(writer.write("excess")).to be(false)
-      expect(transport).to receive(:send_events).with(["accepted"])
+      release_send << true
       writer.flush
+      expect(Timeout.timeout(5) { sent.pop }).to eq(["accepted"])
+      expect(sent).to be_empty
+    ensure
+      release_send << true
     end
   end
 
   it "delivers child events after a fork without resending parent events" do
     skip "Fork is unavailable" unless Process.respond_to?(:fork)
 
+    expect(transport).to receive(:send_events).with(["parent"]).once
     writer.write("parent")
+    writer.flush
     expect_in_fork do
       expect(transport).to receive(:send_events).with(["child"]).once
       writer.write("child")
       writer.stop
     end
-    expect(transport).to receive(:send_events).with(["parent"]).once
     writer.stop
   end
 end

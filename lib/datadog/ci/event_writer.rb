@@ -99,6 +99,7 @@ module Datadog
 
       def start_worker
         worker = Thread.new do
+          flush
           loop do
             stopped = @mutex.synchronize do
               @condition.wait(@mutex, @flush_interval) unless @stopped || @buffer.size >= 100
