@@ -32,8 +32,8 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         SimpleCov.coverage_dir(coverage_path)
         File.write(coverage_file, coverage_data)
 
-        allow(Datadog.configuration).to receive(:ci).and_return(double(:ci, :[] => simplecov_config))
-        allow(Datadog).to receive(:send).with(:components).and_return(components)
+        allow(Datadog::CI.configuration).to receive(:ci).and_return(double(:ci, :[] => simplecov_config))
+        allow(Datadog::CI).to receive(:components).and_return(components)
       end
 
       around do |example|

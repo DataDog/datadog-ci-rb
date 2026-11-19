@@ -3,6 +3,7 @@
 require "spec_helper"
 require "timeout"
 require "datadog/ci/event_writer"
+require "datadog/ci/event_tracer"
 
 RSpec.describe Datadog::CI::EventWriter do
   let(:transport) { double(:transport, send_traces: []) }
@@ -34,6 +35,39 @@ RSpec.describe Datadog::CI::EventWriter do
     expect(logger).to receive(:warn).with(/connection closed/)
     writer.write(trace)
     expect { writer.flush }.not_to raise_error
+  end
+
+  context "when the logger raises" do
+    before { allow(logger).to receive(:warn).and_raise(IOError, "logger closed") }
+
+    it "drops events from a full buffer without raising" do
+      empty_writer = described_class.new(transport: transport, logger: logger, buffer_size: 0)
+      expect(empty_writer.write(trace)).to be(false)
+    ensure
+      empty_writer&.shutdown!
+    end
+
+    it "finishes event spans when the event buffer is full" do
+      2.times { writer.write(trace) }
+      tracer = Datadog::CI::EventTracer.new(writer: writer)
+      span = tracer.trace("test")
+      expect { span.finish }.not_to raise_error
+      expect(span.finished?).to be(true)
+      expect(tracer.active_span).to be_nil
+    end
+
+    it "preserves test exceptions when the event buffer is full" do
+      2.times { writer.write(trace) }
+      tracer = Datadog::CI::EventTracer.new(writer: writer)
+      expect { tracer.trace("test") { raise "test failed" } }.to raise_error(RuntimeError, "test failed")
+      expect(tracer.active_span).to be_nil
+    end
+
+    it "handles transport failures without raising" do
+      allow(transport).to receive(:send_traces).and_raise(IOError, "connection closed")
+      writer.write(trace)
+      expect { writer.flush }.not_to raise_error
+    end
   end
 
   it "does not resend the parent buffer from a forked worker" do

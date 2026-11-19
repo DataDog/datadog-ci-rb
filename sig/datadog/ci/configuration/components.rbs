@@ -63,6 +63,7 @@ module Datadog
         def timecop?: () -> bool
 
         private
+        def event_tags: (Hash[String | Symbol, Object?] tags, String? env, String? version) -> Hash[String | Symbol, Object?]
         def shutdown_component: (String) { () -> void } -> void
       end
     end

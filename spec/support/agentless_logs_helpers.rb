@@ -5,41 +5,30 @@ module AgentlessLogsHelpers
     @agentless_logs ||= fetch_agentless_logs
   end
 
-  # Retrieves all traces in the current tracer instance.
-  # This method does not cache its results.
   def fetch_agentless_logs
-    agentless_logs_component.instance_variable_get(:@agentless_logs) || []
+    @recorded_agentless_logs&.fetch(agentless_logs_component, []) || []
   end
 
-  # Remove all traces from the current tracer instance and
-  # busts cache of +#spans+ and +#span+.
   def clear_agentless_logs!
-    agentless_logs_component.instance_variable_set(:@agentless_logs, [])
-
+    @recorded_agentless_logs&.each_value(&:clear)
     @agentless_logs = nil
   end
 
   def setup_agentless_logs_writer!
-    # DEV `*_any_instance_of` has concurrency issues when tests run in parallel.
-    # DEV Single object `allow` and `expect` work as intended with parallelism.
+    @recorded_agentless_logs = {}
     allow(Datadog::CI::Logs::Component).to receive(:new).and_wrap_original do |method, **args, &block|
       instance = method.call(**args, &block)
-
+      events = []
+      @recorded_agentless_logs[instance] = events
       write_lock = Mutex.new
       allow(instance).to receive(:write) do |event|
-        instance.instance_exec do
-          write_lock.synchronize do
-            @agentless_logs ||= []
-            @agentless_logs << event
-          end
-        end
+        write_lock.synchronize { events << event }
       end
-
       instance
     end
   end
 
   def agentless_logs_component
-    Datadog.send(:components).agentless_logs_submission
+    Datadog::CI.components.agentless_logs_submission
   end
 end

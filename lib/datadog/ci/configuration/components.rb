@@ -64,7 +64,7 @@ module Datadog
               logger: CI.logger
             ),
             service: settings.service,
-            tags: settings.tags
+            tags: event_tags(settings.tags, settings.env, settings.version)
           )
 
           # Activate CI mode if enabled
@@ -94,7 +94,7 @@ module Datadog
           # bail out early if api is misconfigured
           return unless settings.ci.enabled && test_visibility_api
 
-          # Configure datadog gem for test visibility mode
+          # Configure CI telemetry
           configure_telemetry(settings)
 
           # timecop configuration
@@ -129,7 +129,7 @@ module Datadog
             flush_interval: writer_options.fetch(:flush_interval, writer_options.fetch(:interval, 1.0)),
             shutdown_timeout: writer_options.fetch(:shutdown_timeout, 60)
           )
-          @tracer = EventTracer.new(writer: writer, service: settings.service, tags: settings.tags)
+          @tracer = EventTracer.new(writer: writer, service: settings.service, tags: event_tags(settings.tags, settings.env, settings.version))
           @tracer_bridge = TracerBridge::Component.new(writer: writer, logger: CI.logger)
 
           @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
@@ -387,6 +387,13 @@ module Datadog
         end
 
         private
+
+        def event_tags(tags, env, version)
+          tags.dup.tap do |result|
+            result["env"] = env unless env.nil?
+            result["version"] = version unless version.nil?
+          end
+        end
 
         def shutdown_component(name)
           yield

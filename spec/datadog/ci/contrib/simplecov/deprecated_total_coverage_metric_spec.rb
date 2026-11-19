@@ -11,7 +11,7 @@ RSpec.describe Datadog::CI::TestTracing::DeprecatedTotalCoverageMetric do
     let(:simplecov_config) { {enabled: true} }
 
     before do
-      allow(Datadog.configuration).to receive(:ci).and_return(double(:ci, :[] => simplecov_config))
+      allow(Datadog::CI.configuration).to receive(:ci).and_return(double(:ci, :[] => simplecov_config))
     end
 
     context "when SimpleCov is not loaded" do

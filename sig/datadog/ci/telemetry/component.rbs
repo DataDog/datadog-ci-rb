@@ -63,6 +63,7 @@ module Datadog
         def shutdown!: () -> void
 
         private
+        def warn_safely: (String message) -> void
         def record: (String namespace, String name, (Integer | Float) value, metric_tags tags, bool common, String type) -> void
         def serialize_metric: (Metric metric) -> Hash[Symbol, json_value]
         def emit: (String request_type, Hash[Symbol, json_value] payload) -> void

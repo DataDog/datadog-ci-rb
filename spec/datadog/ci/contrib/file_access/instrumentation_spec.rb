@@ -351,19 +351,19 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     end
 
     it "does not initialize Datadog components from hooks left after a reset" do
-      Datadog.send(:reset!)
+      Datadog::CI.reset!
       expect(File.read(path)).to eq('{"value":42}')
-      expect(Datadog.send(:components, allow_initialization: false)).to be_nil
+      expect(Datadog::CI.components(allow_initialization: false)).to be_nil
     end
 
     it "preserves reads when the instrumentation cannot access components" do
-      allow(Datadog).to receive(:components).and_call_original
-      allow(Datadog).to receive(:components).with(allow_initialization: false).and_raise("components unavailable")
+      allow(Datadog::CI).to receive(:components).and_call_original
+      allow(Datadog::CI).to receive(:components).with(allow_initialization: false).and_raise("components unavailable")
       expect(Kernel).to receive(:warn).with(/components unavailable/)
       expect(File.read(path)).to eq('{"value":42}')
     ensure
-      # Shared teardown needs component access while shutting down the tracer.
-      allow(Datadog).to receive(:components).with(allow_initialization: false).and_call_original
+      # Shared teardown needs component access while shutting down CI.
+      allow(Datadog::CI).to receive(:components).with(allow_initialization: false).and_call_original
     end
 
     it "preserves block return values and records the open" do

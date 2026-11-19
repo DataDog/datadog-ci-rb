@@ -15,8 +15,8 @@ PATH
   remote: ..
   specs:
     datadog-ci (1.43.0)
-      datadog (~> 2.4)
       drb
+      logger
       msgpack
 
 GEM

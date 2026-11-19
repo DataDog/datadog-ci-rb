@@ -2,6 +2,8 @@ module Datadog
   module CI
     module Utils
       module Container
+        UUID_PATTERN: String
+        CONTAINER_ID: Regexp
         def self.container_id: () -> String?
       end
     end

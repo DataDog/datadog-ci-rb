@@ -13,7 +13,7 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ResultExtractor do
       let(:simplecov_enabled) { true }
 
       before do
-        allow(Datadog.configuration).to receive(:ci).and_return(double(:ci, :[] => simplecov_config))
+        allow(Datadog::CI.configuration).to receive(:ci).and_return(double(:ci, :[] => simplecov_config))
       end
 
       context "when instrumentation is disabled" do

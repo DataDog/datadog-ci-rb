@@ -89,6 +89,58 @@ RSpec.describe Datadog::CI::Runtime do
     session.finish
   end
 
+  it "adds legacy environment and version to CI events before session startup" do
+    Datadog.configuration.tags = {"env" => "tag-env", "version" => "tag-version", "custom" => "value"}
+    Datadog.configuration.env = "legacy-env"
+    Datadog.configuration.version = "legacy-version"
+    session = Datadog::CI.start_test_session
+    test = Datadog::CI.start_test("example", "suite")
+
+    [session, test].each do |event|
+      expect(event.get_tag("env")).to eq("legacy-env")
+      expect(event.get_tag("version")).to eq("legacy-version")
+      expect(event.get_tag("custom")).to eq("value")
+    end
+    expect(Datadog::CI.configuration.tags).to include("env" => "tag-env", "version" => "tag-version")
+    test.finish
+    session.finish
+  end
+
+  it "adds native environment and version to CI events before session startup" do
+    Datadog::CI.configure do |settings|
+      settings.env = "ci-env"
+      settings.version = "ci-version"
+      settings.tags = {"env" => "tag-env", "version" => "tag-version"}
+    end
+    Datadog.configure do |settings|
+      settings.env = "application-env"
+      settings.version = "application-version"
+    end
+    session = Datadog::CI.start_test_session
+    test = Datadog::CI.start_test("example", "suite")
+
+    [session, test].each do |event|
+      expect(event.get_tag("env")).to eq("ci-env")
+      expect(event.get_tag("version")).to eq("ci-version")
+    end
+    expect(Datadog::CI.configuration.tags).to eq("env" => "tag-env", "version" => "tag-version")
+    test.finish
+    session.finish
+  end
+
+  it "retains environment and version tags when dedicated settings are absent" do
+    Datadog::CI.configure do |settings|
+      settings.env = nil
+      settings.version = nil
+      settings.tags = {"env" => "tag-env", "version" => "tag-version"}
+    end
+    session = Datadog::CI.start_test_session
+
+    expect(session.get_tag("env")).to eq("tag-env")
+    expect(session.get_tag("version")).to eq("tag-version")
+    session.finish
+  end
+
   it "rebuilds inactive CI components after legacy configuration changes" do
     previous = Datadog::CI.components
     Datadog.configure { |settings| settings.service = "next-service" }

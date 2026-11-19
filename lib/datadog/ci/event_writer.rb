@@ -20,7 +20,7 @@ module Datadog
         @mutex.synchronize do
           return false if @stopped
           if @buffer.size >= @buffer_size
-            @logger.warn("Test Optimization event buffer is full. Dropping a trace.")
+            warn_safely("Test Optimization event buffer is full. Dropping a trace.")
             return false
           end
           @buffer << trace
@@ -29,7 +29,7 @@ module Datadog
         end
         true
       rescue => error
-        @logger.warn("Failed to buffer Test Optimization events: #{error}")
+        warn_safely("Failed to buffer Test Optimization events: #{error}")
         false
       end
 
@@ -45,7 +45,7 @@ module Datadog
         end
         nil
       rescue => error
-        @logger.warn("Failed to send Test Optimization events: #{error}")
+        warn_safely("Failed to send Test Optimization events: #{error}")
         nil
       end
 
@@ -58,7 +58,7 @@ module Datadog
         end
         if worker
           worker.join(@shutdown_timeout)
-          @logger.warn("Test Optimization event shutdown timed out.") if worker.alive?
+          warn_safely("Test Optimization event shutdown timed out.") if worker.alive?
         else
           flush
         end
@@ -81,6 +81,12 @@ module Datadog
 
       private
 
+      def warn_safely(message)
+        @logger.warn(message)
+      rescue
+        nil
+      end
+
       def reset_process_state
         @pid = Process.pid
         @mutex = Mutex.new
@@ -102,7 +108,7 @@ module Datadog
             break if stopped
           end
         rescue => error
-          @logger.warn("Test Optimization event worker failed: #{error}")
+          warn_safely("Test Optimization event worker failed: #{error}")
         end
         worker.name = "datadog-ci-events" if worker.respond_to?(:name=)
         @worker = worker

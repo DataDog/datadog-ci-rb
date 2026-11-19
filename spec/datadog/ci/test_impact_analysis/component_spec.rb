@@ -240,7 +240,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     context "when in a client process" do
       before do
         allow(Datadog::CI.components).to receive(:test_tracing).and_return(
-          instance_double(Datadog::CI::TestTracing::Component, client_process?: true)
+          instance_double(Datadog::CI::TestTracing::Component, client_process?: true, configuration_locked?: true)
         )
         allow(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:new)
       end

@@ -200,18 +200,18 @@ RSpec.describe "Minitest instrumentation" do
           end
 
           define_method(:setup) do
-            active_span_names << Datadog::Tracing.active_span.name
+            active_span_names << Datadog::CI.components.tracer.active_span.name
           end
 
           define_method(:test_foo) do
-            active_span_names << Datadog::Tracing.active_span.name
+            active_span_names << Datadog::CI.components.tracer.active_span.name
             Datadog::Tracing.trace("get_time") do
               Time.now
             end
           end
 
           define_method(:teardown) do
-            active_span_names << Datadog::Tracing.active_span.name
+            active_span_names << Datadog::CI.components.tracer.active_span.name
           end
         end
 
@@ -221,7 +221,7 @@ RSpec.describe "Minitest instrumentation" do
         expect(spans).to have(4).items
         expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
         expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
-        expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+        expect(traces.map(&:origin)).to all eq(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
       end
     end
 

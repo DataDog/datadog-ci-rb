@@ -170,7 +170,7 @@ RSpec.describe "Cucumber instrumentation" do
       step_span = spans.find { |s| s.resource == "datadog" }
       expect(step_span.name).to eq("datadog")
 
-      expect(spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+      expect(traces).to all have_attributes(origin: Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
     end
 
     it "marks undefined cucumber scenario according to Cucumber's result" do

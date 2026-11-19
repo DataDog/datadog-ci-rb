@@ -73,7 +73,7 @@ module Datadog
           end
           nil
         rescue => error
-          @logger.warn("Failed to send Test Optimization telemetry: #{error}")
+          warn_safely("Failed to send Test Optimization telemetry: #{error}")
           nil
         end
 
@@ -99,7 +99,7 @@ module Datadog
           end
           if worker
             worker.join(@shutdown_timeout)
-            @logger.warn("Test Optimization telemetry shutdown timed out.") if worker.alive?
+            warn_safely("Test Optimization telemetry shutdown timed out.") if worker.alive?
           else
             flush
           end
@@ -107,6 +107,12 @@ module Datadog
         end
 
         private
+
+        def warn_safely(message)
+          @logger.warn(message)
+        rescue
+          nil
+        end
 
         def record(namespace, name, value, tags, common, type)
           return unless @enabled
@@ -123,7 +129,7 @@ module Datadog
             needs_space = metric.nil? || type == "distributions"
             if needs_space && @buffered_values >= @buffer_size
               unless @buffer_warning
-                @logger.warn("Test Optimization telemetry buffer is full. Dropping a metric sample.")
+                warn_safely("Test Optimization telemetry buffer is full. Dropping a metric sample.")
                 @buffer_warning = true
               end
               return
@@ -144,7 +150,7 @@ module Datadog
           end
           nil
         rescue => error
-          @logger.warn("Failed to record Test Optimization telemetry: #{error}")
+          warn_safely("Failed to record Test Optimization telemetry: #{error}")
           nil
         end
 
@@ -180,7 +186,7 @@ module Datadog
           api_key = @api_key
           headers["DD-API-KEY"] = api_key if api_key
           response = @client.call(path: @path, payload: JSON.generate(body), headers: headers, verb: "post")
-          @logger.warn("Test Optimization telemetry request failed with HTTP #{response.code}.") unless response.ok?
+          warn_safely("Test Optimization telemetry request failed with HTTP #{response.code}.") unless response.ok?
           nil
         end
 
@@ -214,7 +220,7 @@ module Datadog
             end
             @send_mutex.synchronize { emit("app-closing", {}) } if @enabled && @started_event
           rescue => error
-            @logger.warn("Test Optimization telemetry worker failed: #{error}")
+            warn_safely("Test Optimization telemetry worker failed: #{error}")
           end
           worker.name = "datadog-ci-telemetry" if worker.respond_to?(:name=)
           @worker = worker

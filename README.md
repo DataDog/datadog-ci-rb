@@ -28,7 +28,7 @@ Learn more on our [official website](https://docs.datadoghq.com/tests/) and chec
 
 `datadog-ci` runs without the `datadog` tracing gem. It owns its configuration,
 test events, coverage, retries, and transport. Tracer resets and shutdown do not
-reset the CI session.
+reset the CI session. Use `Datadog::CI.shutdown!` to flush and stop CI delivery.
 
 To collect spans from tracing integrations, add both gems to your Gemfile:
 
@@ -38,8 +38,9 @@ gem "datadog"
 ```
 
 The compatibility bridge loads automatically when `datadog` is available.
-Integration spans associated with tests go to the `citestcycle` intake with their
-test context. Other traces use the tracer's configured writer.
+During CI sessions, integration spans go to the `citestcycle` intake with their
+test context. Routing continues after the session ends to capture delayed spans.
+Before the session or after CI shutdown, traces use the tracer's configured writer.
 
 Existing configuration through `Datadog.configure` or `Datadog.configuration`
 is supported before the test session starts:
@@ -59,6 +60,10 @@ through this API take precedence over imported tracer configuration. Configure
 the library before the test session starts. Without the `datadog` gem, the legacy
 configuration API supports CI configuration. Tracing integrations require the
 `datadog` gem.
+
+Use `Datadog::CI.active_test` to access the current test. CI events no longer
+appear as `Datadog::Tracing.active_span`. That API continues to return application
+spans created by the tracer.
 
 ## Upgrade from ddtrace v1.x
 

@@ -174,7 +174,6 @@ module Datadog
         def validate_repository_url(repo_url)
           return if !repo_url.nil? && !repo_url.empty?
 
-          Datadog::CI.logger.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
           Utils::InternalLogging.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
         end
 
@@ -191,7 +190,6 @@ module Datadog
             " Expected SHA to be a valid HEX number, got #{git_sha}."
           end
 
-          Datadog::CI.logger.error(message)
           Utils::InternalLogging.error(message)
         end
       end

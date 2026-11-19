@@ -10,8 +10,8 @@ module Datadog
       attr_reader writer: _EventWriter
 
       def initialize: (writer: _EventWriter, ?service: String?, ?tags: Hash[String | Symbol, Object?]) -> void
-      def trace: [R] (String name, ?service: String?, ?type: String?, ?resource: String?, ?new_trace: bool, ?tags: Hash[String | Symbol, Object?]) { (EventSpan, EventTrace?) -> R } -> R
-               | (String name, ?service: String?, ?type: String?, ?resource: String?, ?new_trace: bool, ?tags: Hash[String | Symbol, Object?]) -> EventSpan
+      def trace: [R] ((String | Symbol) name, ?service: String?, ?type: String?, ?resource: String?, ?new_trace: bool, ?tags: Hash[String | Symbol, Object?]) { (EventSpan, EventTrace?) -> R } -> R
+               | ((String | Symbol) name, ?service: String?, ?type: String?, ?resource: String?, ?new_trace: bool, ?tags: Hash[String | Symbol, Object?]) -> EventSpan
       def active_span: () -> EventSpan?
       def active_trace: () -> EventTrace?
       def shutdown!: () -> void

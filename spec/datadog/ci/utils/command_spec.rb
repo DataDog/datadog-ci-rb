@@ -134,7 +134,7 @@ RSpec.describe Datadog::CI::Utils::Command do
     context "when command closes its output before exiting" do
       subject(:result) do
         described_class.exec_command(
-          [RbConfig.ruby, "-e", "STDOUT.reopen(File::NULL); STDERR.reopen(File::NULL); sleep 0.1"],
+          ["/bin/sh", "-c", "exec >/dev/null 2>&1; sleep 0.1"],
           timeout: 1
         )
       end

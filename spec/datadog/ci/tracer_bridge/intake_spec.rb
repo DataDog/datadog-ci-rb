@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "webmock/rspec"
+require "socket"
 require "datadog/ci/test_tracing/transport"
 
 RSpec.describe "Application spans in Test Optimization intake" do
@@ -80,5 +81,39 @@ RSpec.describe "Application spans in Test Optimization intake" do
     expect(application_trace.id).to eq(trace_id)
     expect(application_trace.spans.first.meta).to eq(original_tags)
     expect(application_writer).not_to have_received(:write)
+  end
+
+  it "does not trace internal intake HTTP requests during an active test" do
+    server = TCPServer.new("127.0.0.1", 0)
+    received = Queue.new
+    listener = Thread.new do
+      connection = server.accept
+      headers = []
+      while (line = connection.gets) && line != "\r\n"
+        headers << line
+      end
+      received << headers
+      connection.write("HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}")
+    ensure
+      connection&.close
+    end
+    session = Datadog::CI.start_test_session
+    test = Datadog::CI.start_test("intake", "suite")
+    client = Datadog::CI::Transport::HTTP.new(host: "127.0.0.1", port: server.addr[1], ssl: false, timeout: 2)
+
+    response = client.request(path: "/info", payload: "", headers: {}, verb: "get", retries: 0)
+
+    expect(response).to be_ok
+    expect(listener.join(3)).to eq(listener)
+    expect(received.pop.join.downcase).to include("dd-internal-untraced-request: 1")
+    test.passed!
+    test.finish
+    session.finish
+    expect(traces.flat_map(&:spans).map(&:name)).not_to include("http.request")
+    expect(application_writer).not_to have_received(:write)
+  ensure
+    server&.close
+    listener&.kill if listener&.alive?
+    listener&.join
   end
 end

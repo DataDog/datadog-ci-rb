@@ -282,15 +282,15 @@ RSpec.describe "RSpec instrumentation" do
         with_new_rspec_environment do
           RSpec.describe "some test" do
             before do
-              active_span_names << Datadog::Tracing.active_span.name
+              active_span_names << Datadog::CI.components.tracer.active_span.name
             end
 
             after do
-              active_span_names << Datadog::Tracing.active_span.name
+              active_span_names << Datadog::CI.components.tracer.active_span.name
             end
 
             it "foo" do
-              active_span_names << Datadog::Tracing.active_span.name
+              active_span_names << Datadog::CI.components.tracer.active_span.name
               Datadog::Tracing.trace("get_time") do
                 Time.now
               end
@@ -302,7 +302,7 @@ RSpec.describe "RSpec instrumentation" do
         expect(test_spans).to have(1).items
         expect(custom_spans.map(&:name)).to contain_exactly("before", "get_time", "after")
         expect(custom_spans).to all satisfy { |step_span| step_span.parent_id == first_test_span.id }
-        expect(custom_spans).to all have_origin(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
+        expect(traces.map(&:origin)).to all eq(Datadog::CI::Ext::Test::CONTEXT_ORIGIN)
       end
     end
 
@@ -326,7 +326,7 @@ RSpec.describe "RSpec instrumentation" do
       with_new_rspec_environment do
         RSpec.describe "some test" do
           it "replaces the global test tracing component" do
-            allow(Datadog.send(:components)).to receive(:test_tracing).and_return(Object.new)
+            allow(Datadog::CI.components).to receive(:test_tracing).and_return(Object.new)
           end
         end.run
       end
@@ -351,18 +351,20 @@ RSpec.describe "RSpec instrumentation" do
       expect(spans).to be_empty
     end
 
-    it "does not trace lifecycle steps when Datadog CI is disabled" do
-      allow(Datadog.configuration.ci).to receive(:enabled).and_return(false)
+    context "when Datadog CI is disabled before the session" do
+      let(:ci_enabled) { false }
 
-      result = with_new_rspec_environment do
-        RSpec.describe "some test" do
-          after { raise "failure" }
-          it("fails in after") {}
-        end.run
+      it "does not trace lifecycle steps" do
+        result = with_new_rspec_environment do
+          RSpec.describe "some test" do
+            after { raise "failure" }
+            it("fails in after") {}
+          end.run
+        end
+
+        expect(result).to be(false)
+        expect(spans).to be_empty
       end
-
-      expect(result).to be(false)
-      expect(spans).to be_empty
     end
 
     context "catches failures" do
@@ -2301,10 +2303,10 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     it "preserves quarantine and remote-disabled retries across setup and cleanup reconfiguration" do
-      original = Datadog.send(:components)
+      original = Datadog::CI.components
       result = rspec_session_run(with_failed_test: true, with_reconfiguration: true)
 
-      expect(Datadog.send(:components)).to equal(original)
+      expect(Datadog::CI.components).to equal(original)
       expect(test_spans).to have(2).items
       test_spans.each do |test_span|
         expect(test_span).to have_test_tag(:test_session_id, test_session_span.id.to_s)

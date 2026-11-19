@@ -40,6 +40,7 @@ module Datadog
       def stopped?: () -> bool
 
       private
+      def warn_safely: (String message) -> void
       def reset_process_state: () -> void
       def start_worker: () -> void
     end

@@ -123,6 +123,35 @@ RSpec.describe Datadog::CI::Telemetry::Component do
     expect { telemetry.flush }.not_to raise_error
   end
 
+  context "when the logger raises" do
+    before { allow(logger).to receive(:warn).and_raise(IOError, "logger closed") }
+
+    context "when the buffer is full" do
+      let(:buffer_size) { 0 }
+
+      it "drops metric samples without raising" do
+        expect { telemetry.inc("civisibility", "events", 1) }.not_to raise_error
+        expect { telemetry.distribution("civisibility", "duration", 1.5) }.not_to raise_error
+        telemetry.flush
+        expect(requests).to be_empty
+      end
+    end
+
+    it "handles transport failures without raising" do
+      allow(client).to receive(:call).and_raise(IOError, "connection closed")
+      telemetry.inc("civisibility", "events", 1)
+      expect { telemetry.flush }.not_to raise_error
+    end
+
+    it "continues metric uploads after an HTTP error" do
+      allow(response).to receive(:ok?).and_return(false)
+      allow(response).to receive(:code).and_return(500)
+      telemetry.inc("civisibility", "events", 1)
+      expect { telemetry.flush }.not_to raise_error
+      expect(requests.map { |request| request[:body]["request_type"] }).to eq(%w[app-started generate-metrics])
+    end
+  end
+
   it "flushes and closes once at shutdown" do
     telemetry.inc("civisibility", "events", 1)
     2.times { telemetry.shutdown! }

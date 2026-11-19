@@ -10,7 +10,7 @@ RSpec.describe Datadog::CI::Remote::Component do
   let(:git_tree_upload_worker) { instance_double(Datadog::CI::Worker) }
   let(:test_impact_analysis) { instance_double(Datadog::CI::TestImpactAnalysis::Component) }
   let(:test_retries) { instance_double(Datadog::CI::TestRetries::Component) }
-  let(:test_tracing) { instance_double(Datadog::CI::TestTracing::Component) }
+  let(:test_tracing) { instance_double(Datadog::CI::TestTracing::Component, configuration_locked?: false) }
   let(:test_management) { instance_double(Datadog::CI::TestManagement::Component) }
   let(:impacted_tests_detection) { instance_double(Datadog::CI::ImpactedTestsDetection::Component) }
   let(:code_coverage) { instance_double(Datadog::CI::CodeCoverage::Component) }

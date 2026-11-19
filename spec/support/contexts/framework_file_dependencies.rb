@@ -26,7 +26,7 @@ RSpec.shared_context "framework file dependencies" do
 
   before do
     fixture_paths.each { |path| File.write(path, "fixture content") }
-    allow(Datadog.send(:components).test_impact_analysis).to receive(:write) do |event|
+    allow(Datadog::CI.components.test_impact_analysis).to receive(:write) do |event|
       file_events << MessagePack.unpack(MessagePack.pack(event))
     end
   end
