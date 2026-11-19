@@ -2,22 +2,24 @@
 
 require "securerandom"
 require_relative "utils/time"
+require_relative "utils/encoding"
 
 module Datadog
   module CI
     # An event owns its metadata and lifetime independently of the application tracer.
     class EventSpan
       attr_reader :id, :trace_id, :parent_id, :start_time, :end_time, :duration, :meta, :metrics
-      attr_accessor :name, :resource, :service, :type, :status
+      attr_reader :name, :resource, :service, :type
+      attr_accessor :status
 
       def initialize(name, trace_id:, parent_id: 0, service: nil, type: nil, resource: nil, tags: {}, &on_finish)
         @id = SecureRandom.random_number((1 << 63) - 1) + 1
         @trace_id = trace_id
         @parent_id = parent_id
-        @name = name
-        @resource = resource || name
-        @service = service
-        @type = type
+        self.name = name
+        self.resource = resource || name
+        self.service = service
+        self.type = type
         @status = 0
         @meta = {}
         @metrics = {}
@@ -28,6 +30,22 @@ module Datadog
         @on_finish = on_finish
         @finish_mutex = Mutex.new
         set_tags(tags)
+      end
+
+      def name=(value)
+        @name = Utils.utf8_encode(value)
+      end
+
+      def resource=(value)
+        @resource = value.nil? ? nil : Utils.utf8_encode(value)
+      end
+
+      def service=(value)
+        @service = value.nil? ? nil : Utils.utf8_encode(value)
+      end
+
+      def type=(value)
+        @type = value.nil? ? nil : Utils.utf8_encode(value)
       end
 
       def set_tag(key, value)

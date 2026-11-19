@@ -29,13 +29,17 @@ module Datadog
       attr_reader duration: Float?
       attr_reader meta: Hash[String, String]
       attr_reader metrics: Hash[String, Numeric]
-      attr_accessor name: String
-      attr_accessor resource: String
-      attr_accessor service: String?
-      attr_accessor type: String?
+      attr_reader name: String
+      attr_reader resource: String?
+      attr_reader service: String?
+      attr_reader type: String?
+      def name=: (Object?) -> String
+      def resource=: (Object?) -> String?
+      def service=: (Object?) -> String?
+      def type=: (Object?) -> String?
       attr_accessor status: Integer
 
-      def initialize: (String name, trace_id: Integer, ?parent_id: Integer, ?service: String?, ?type: String?, ?resource: String?, ?tags: Hash[String | Symbol, Object?]) ?{ (EventSpan) -> void } -> void
+      def initialize: (Object? name, trace_id: Integer, ?parent_id: Integer, ?service: Object?, ?type: Object?, ?resource: Object?, ?tags: Hash[String | Symbol, Object?]) ?{ (EventSpan) -> void } -> void
       def set_tag: (String | Symbol key, Object? value) -> void
       def set_tags: (Hash[String | Symbol, Object?]) -> void
       def get_tag: (String key) -> (String | Numeric)?

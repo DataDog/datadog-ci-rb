@@ -21,6 +21,31 @@ RSpec.describe "Independent CI event serialization" do
     expect(event["content"]["meta"]).to include("_dd.origin" => "ciapp-test", "http.method" => "GET")
   end
 
+  it "normalizes framework symbols and encodings before serializing events" do
+    span = Datadog::CI::EventSpan.new(:test_method, trace_id: 42, service: :tests, type: :test)
+    expect(span.name).to eq("test_method")
+    expect(span.resource).to eq("test_method")
+    expect(span.service).to eq("tests")
+    expect(span.type).to eq("test")
+
+    span.name = :renamed
+    span.resource = :resource
+    span.service = "café".encode(Encoding::ISO_8859_1)
+    span.type = :http
+    expect(span.name).to eq("renamed")
+    expect(span.resource).to eq("resource")
+    expect(span.service).to eq("café")
+    expect(span.service.encoding).to eq(Encoding::UTF_8)
+    expect(span.type).to eq("http")
+
+    span.service = nil
+    span.type = nil
+    span.resource = nil
+    expect(span.service).to be_nil
+    expect(span.type).to be_nil
+    expect(span.resource).to be_nil
+  end
+
   it "rejects unfinished events without raising" do
     span = Datadog::CI::EventSpan.new("unfinished", trace_id: 42, service: "tests")
     trace = Datadog::CI::EventTrace.new(42, [span], runtime_id: "runtime")
