@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: 03326ce14f8ba07c900f0845964d19e70980bb1b
+  revision: 5a614efa60e8aa6d10aaf5b4c7d20fd15bc7f4b8
   branch: master
   specs:
     datadog (2.50.0.dev)
@@ -226,7 +226,7 @@ GEM
     tsort (0.2.0)
     tzinfo (1.2.11)
       thread_safe (~> 0.1)
-    webmock (3.34.0)
+    webmock (3.35.0)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
