@@ -425,7 +425,15 @@ module Datadog
             target = public_send(name)
             origin = source.public_send(name)
             target.class.options.each_key do |key|
-              target.import_option_if_unset(key, origin.public_send(key)) if origin.respond_to?(key)
+              next unless origin.respond_to?(key)
+
+              value = if name == :telemetry && key == :enabled &&
+                  origin.respond_to?(:using_default?) && origin.using_default?(key)
+                target.class.options.fetch(key).resolve(target)
+              else
+                origin.public_send(key)
+              end
+              target.import_option_if_unset(key, value)
             end
           end
           self
