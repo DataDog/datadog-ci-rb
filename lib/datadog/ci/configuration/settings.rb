@@ -392,7 +392,7 @@ module Datadog
             o.type :bool
             o.default false
           }
-          option(:shutdown_timeout_seconds) { |o| o.default 5.0 }
+          option(:shutdown_timeout_seconds) { |o| o.default 60.0 }
           option(:agentless_url_override) { |o| o.env "DD_TELEMETRY_AGENTLESS_URL" }
           option(:aggregation_interval) { |o|
             o.type :float
@@ -427,7 +427,7 @@ module Datadog
             target.class.options.each_key do |key|
               next unless origin.respond_to?(key)
 
-              value = if name == :telemetry && key == :enabled &&
+              value = if name == :telemetry && [:enabled, :shutdown_timeout_seconds].include?(key) &&
                   origin.respond_to?(:using_default?) && origin.using_default?(key)
                 target.class.options.fetch(key).resolve(target)
               else

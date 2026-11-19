@@ -71,6 +71,48 @@ RSpec.describe "Legacy telemetry configuration" do
     expect(settings.telemetry.enabled).to be(true)
   end
 
+  it "keeps the independent shutdown budget when the tracer uses its default" do
+    expect(legacy.telemetry.shutdown_timeout_seconds).to eq(1.0)
+    expect(legacy.telemetry.using_default?(:shutdown_timeout_seconds)).to be(true)
+    settings.import_legacy!(legacy)
+
+    expect(settings.telemetry.shutdown_timeout_seconds).to eq(60.0)
+    expect(legacy.telemetry.shutdown_timeout_seconds).to eq(1.0)
+  end
+
+  it "honors an explicit legacy shutdown budget equal to the tracer default" do
+    legacy.telemetry.shutdown_timeout_seconds = 1.0
+    expect(legacy.telemetry.using_default?(:shutdown_timeout_seconds)).to be(false)
+    settings.import_legacy!(legacy)
+
+    expect(settings.telemetry.shutdown_timeout_seconds).to eq(1.0)
+  end
+
+  it "honors a custom legacy shutdown budget" do
+    legacy.telemetry.shutdown_timeout_seconds = 0.25
+    settings.import_legacy!(legacy)
+
+    expect(settings.telemetry.shutdown_timeout_seconds).to eq(0.25)
+  end
+
+  it "preserves an explicit native shutdown budget before a legacy value" do
+    settings.telemetry.shutdown_timeout_seconds = 0.5
+    legacy.telemetry.shutdown_timeout_seconds = 0.25
+    settings.import_legacy!(legacy)
+
+    expect(settings.telemetry.shutdown_timeout_seconds).to eq(0.5)
+  end
+
+  it "returns to the independent shutdown budget when the legacy option is reset" do
+    legacy.telemetry.shutdown_timeout_seconds = 0.25
+    settings.import_legacy!(legacy)
+    expect(settings.telemetry.shutdown_timeout_seconds).to eq(0.25)
+    legacy.telemetry.reset_option(:shutdown_timeout_seconds)
+    settings.import_legacy!(legacy)
+
+    expect(settings.telemetry.shutdown_timeout_seconds).to eq(60.0)
+  end
+
   it "sends CI telemetry in a real development process without enabling tracer telemetry" do
     output, status = Open3.capture2e(
       {"DD_INSTRUMENTATION_TELEMETRY_ENABLED" => nil}, RbConfig.ruby, "-Ilib", "-e", <<~RUBY

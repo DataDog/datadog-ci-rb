@@ -15,7 +15,7 @@ module Datadog
         def initialize(
           client:, logger:, application:, host:, runtime_id_provider:, agentless:,
           api_key: nil, enabled: true, aggregation_interval: 10.0,
-          buffer_size: 10_000, shutdown_timeout: 5.0, debug: false
+          buffer_size: 10_000, shutdown_timeout: 60.0, debug: false
         )
           @client = client
           @logger = logger
