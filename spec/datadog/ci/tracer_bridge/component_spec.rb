@@ -53,17 +53,18 @@ RSpec.describe Datadog::CI::TracerBridge::Component do
 
     expect(tracer.active_trace).to equal(original)
     outer.finish
-    expect(application_writer).to have_received(:write).once
+    expect(ci_writer).to have_received(:write).twice
+    expect(application_writer).not_to have_received(:write)
   end
 
-  it "delegates non-CI traces after the test finishes" do
+  it "captures application traces after the test finishes" do
     bridge.on_test_started(test)
     trace_application
     bridge.on_test_finished(test)
     trace_application("application.work")
 
-    expect(ci_writer).to have_received(:write).once
-    expect(application_writer).to have_received(:write).once
+    expect(ci_writer).to have_received(:write).twice
+    expect(application_writer).not_to have_received(:write)
   end
 
   it "does not stop the independent CI writer when the tracer shuts down" do

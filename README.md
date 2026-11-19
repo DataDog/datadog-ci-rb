@@ -38,9 +38,12 @@ gem "datadog"
 ```
 
 The compatibility bridge loads automatically when `datadog` is available.
-During CI sessions, integration spans go to the `citestcycle` intake with their
+When CI is enabled, integration spans go to the `citestcycle` intake. This includes
+application boot spans before the test session. Spans inside tests retain their
 test context. Routing continues after the session ends to capture delayed spans.
-Before the session or after CI shutdown, traces use the tracer's configured writer.
+
+After CI shutdown, traces use the tracer's configured writer. Configuration
+changes made during boot take effect when the test session starts.
 
 Existing configuration through `Datadog.configure` or `Datadog.configuration`
 is supported before the test session starts:

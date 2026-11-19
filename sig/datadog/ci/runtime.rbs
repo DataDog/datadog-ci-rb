@@ -5,18 +5,25 @@ module Datadog
       @mutex: Monitor
       @default_logger: Logger
       @importing_configuration: bool?
+      @preparing_application_tracing: bool?
+      @building_components: bool?
+      @bootstrap_components: bool?
 
       attr_reader configuration: untyped
       def initialize: (?configuration: untyped) -> void
       def logger: () -> Logger
       def components: (?allow_initialization: true) -> Configuration::Components
                     | (allow_initialization: false) -> Configuration::Components?
+      def prepare_application_tracing!: () -> void
+      def prepare_test_session: (TestTracing::Component current) -> (TestTracing::Component | TestTracing::NullComponent)
       def configure: () { (untyped) -> void } -> untyped
       def configuration_changed!: () -> void
       def shutdown!: () -> void
       def reset!: () -> void
 
       private
+      def build_components: () -> Configuration::Components
+      def warn_safely: (String action, StandardError error) -> void
       def configuration_locked?: () -> bool
     end
   end

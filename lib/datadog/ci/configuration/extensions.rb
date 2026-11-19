@@ -24,6 +24,11 @@ module Datadog
         end
 
         module TracerAccess
+          def trace(*args, **kwargs, &block)
+            CI.prepare_application_tracing!
+            super
+          end
+
           private
 
           def tracer

@@ -15,6 +15,7 @@ module Datadog
         end
 
         module TracerAccess
+          def trace: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
           private
           def tracer: () -> untyped
         end

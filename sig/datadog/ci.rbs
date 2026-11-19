@@ -31,6 +31,8 @@ module Datadog
     def self.configuration: () -> untyped
     def self.logger: () -> Logger
     def self.configure: () { (untyped) -> void } -> untyped
+    def self.prepare_application_tracing!: () -> void
+    def self.prepare_test_session: (TestTracing::Component current) -> (TestTracing::Component | TestTracing::NullComponent)
     def self.configuration_changed!: () -> void
     def self.shutdown!: () -> void
     def self.reset!: () -> void

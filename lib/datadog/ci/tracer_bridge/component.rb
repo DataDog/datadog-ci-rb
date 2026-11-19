@@ -58,14 +58,12 @@ module Datadog
           @logger = logger
           @enabled = enabled
           @session = nil
-          @session_started = false
         end
 
         def on_session_started(session)
           return unless @enabled
 
           @session = session
-          @session_started = true
         end
 
         def on_session_finished(session)
@@ -106,13 +104,13 @@ module Datadog
         def observe(tracer)
           return unless @enabled
 
+          wrap_writer(tracer)
           scope = active_scope
           unless scope
             restore_session_scope
             return
           end
 
-          wrap_writer(tracer)
           context = tracer.provider.context
           saved = scope.contexts.find { |candidate| candidate.context.equal?(context) }
           if saved
@@ -139,7 +137,6 @@ module Datadog
 
         def write(trace)
           return false unless @enabled
-          return false unless @session_started || trace.origin == ORIGIN
 
           @writer.write(trace)
           true
@@ -151,7 +148,6 @@ module Datadog
         def shutdown!
           @enabled = false
           @session = nil
-          @session_started = false
           restore_session_scope
           current = scopes
           current.reverse_each { |scope| restore_scope(scope) if scope.owner.equal?(self) }

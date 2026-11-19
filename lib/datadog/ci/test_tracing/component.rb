@@ -102,6 +102,14 @@ module Datadog
         end
 
         def start_test_session(service: nil, tags: {}, estimated_total_tests_count: 0, distributed: nil, local_test_suites_mode: true)
+          prepared = CI.prepare_test_session(self)
+          unless prepared.equal?(self)
+            return prepared.start_test_session(
+              service: service, tags: tags, estimated_total_tests_count: estimated_total_tests_count,
+              distributed: distributed, local_test_suites_mode: local_test_suites_mode
+            )
+          end
+
           # Forks inherit this flag; fresh workers acquire it when joining the distributed session.
           @configuration_locked = true
           @local_test_suites_mode = local_test_suites_mode

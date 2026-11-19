@@ -78,6 +78,9 @@ RSpec.describe "Application spans in Test Optimization intake" do
 
     expect(event["content"]["trace_id"]).to eq(42)
     expect(event["content"]["meta"]["_dd.p.tid"]).to eq("123456789abcdef0")
+    expect(event["content"]["meta"]["_dd.origin"]).to eq("")
+    expect(application_trace.origin).to be_nil
+    expect(original_tags).not_to have_key("_dd.origin")
     expect(application_trace.id).to eq(trace_id)
     expect(application_trace.spans.first.meta).to eq(original_tags)
     expect(application_writer).not_to have_received(:write)

@@ -34,7 +34,7 @@ module Datadog
               @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
             )
 
-            @meta["_dd.origin"] = @trace.origin if @trace.origin
+            @meta["_dd.origin"] = @trace.origin.to_s
             high_order_trace_id = @trace.id >> 64
             @meta["_dd.p.tid"] = format("%016x", high_order_trace_id) if high_order_trace_id != 0
 

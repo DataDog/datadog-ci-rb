@@ -416,6 +416,14 @@ module Datadog
         runtime.configure(&block)
       end
 
+      def prepare_application_tracing!
+        runtime.prepare_application_tracing!
+      end
+
+      def prepare_test_session(current)
+        runtime.prepare_test_session(current)
+      end
+
       def configuration_changed!
         runtime.configuration_changed!
       end
