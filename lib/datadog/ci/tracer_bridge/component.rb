@@ -9,7 +9,8 @@ module Datadog
         def self.activate_telemetry_compatibility!
           if defined?(::Datadog::Core::Transport::HTTP::Adapters::Net)
             ::Datadog::Core::Transport::HTTP::Adapters::Net.prepend(TelemetryAdapter)
-          elsif defined?(::Datadog::Core::Telemetry::Http::Adapters::Net)
+          end
+          if defined?(::Datadog::Core::Telemetry::Http::Adapters::Net)
             ::Datadog::Core::Telemetry::Http::Adapters::Net.prepend(TelemetryAdapter)
           end
         end

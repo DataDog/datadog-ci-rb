@@ -8,6 +8,9 @@ module Datadog
   module CI
     # An event owns its metadata and lifetime independently of the application tracer.
     class EventSpan
+      NUMERIC_TAG_RANGE = (-(1 << 53)..(1 << 53)).freeze
+      STRING_TAGS = %w[_dd.origin version http.status_code _dd.hostname].freeze
+
       attr_reader :id, :trace_id, :parent_id, :start_time, :end_time, :duration, :meta, :metrics
       attr_reader :name, :resource, :service, :type
       attr_accessor :status
@@ -49,13 +52,17 @@ module Datadog
       end
 
       def set_tag(key, value)
-        key = key.to_s
-        if value.is_a?(Numeric)
+        key = Utils.utf8_encode(key)
+        if value.is_a?(Numeric) && !STRING_TAGS.include?(key) &&
+            !(value.is_a?(Integer) && !NUMERIC_TAG_RANGE.cover?(value))
           set_metric(key, value)
-        elsif !value.nil?
+        else
+          encoded = Utils.utf8_encode(value)
           @metrics.delete(key)
-          @meta[key] = value.to_s
+          @meta[key] = encoded
         end
+      rescue => error
+        warn_metadata_failure("tag", error)
       end
 
       def set_tags(tags)
@@ -72,11 +79,14 @@ module Datadog
       end
 
       def set_metric(key, value)
-        return unless value.is_a?(Numeric)
-        return if value.respond_to?(:finite?) && !value.finite?
+        number = Float(value, exception: false)
+        return unless number&.finite?
 
-        @meta.delete(key.to_s)
-        @metrics[key.to_s] = value
+        key = Utils.utf8_encode(key)
+        @meta.delete(key)
+        @metrics[key] = number
+      rescue => error
+        warn_metadata_failure("metric", error)
       end
 
       def get_metric(key)
@@ -111,6 +121,14 @@ module Datadog
         end
         callback&.call(self)
         self
+      end
+
+      private
+
+      def warn_metadata_failure(kind, error)
+        CI.logger.warn("Failed to set CI event #{kind}: #{error.class}: #{error.message}")
+      rescue
+        nil
       end
     end
   end

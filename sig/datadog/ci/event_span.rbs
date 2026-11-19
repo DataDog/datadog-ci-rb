@@ -17,6 +17,9 @@ module Datadog
     end
 
     class EventSpan
+      NUMERIC_TAG_RANGE: Range[Integer]
+      STRING_TAGS: Array[String]
+
       @started_at: Float
       @on_finish: (^(EventSpan) -> void)?
       @finish_mutex: Mutex
@@ -49,6 +52,10 @@ module Datadog
       def set_error: (Exception? error) -> void
       def finished?: () -> bool
       def finish: (?Time? end_time) -> EventSpan
+
+      private
+
+      def warn_metadata_failure: (String kind, Exception error) -> void
     end
   end
 end

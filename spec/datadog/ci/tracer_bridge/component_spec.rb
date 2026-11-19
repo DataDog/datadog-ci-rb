@@ -9,7 +9,7 @@ RSpec.describe Datadog::CI::TracerBridge::Component do
   let(:application_writer) { instance_double(Datadog::Tracing::Writer, write: nil, stop: nil) }
   let(:ci_writer) { instance_double(Datadog::Tracing::Writer, write: nil, stop: nil) }
   let(:logger) { Logger.new(File::NULL) }
-  let(:tracer) { Datadog::Tracing::Tracer.new(writer: application_writer, logger: logger) }
+  let(:tracer) { Datadog::Tracing::Tracer.new(writer: application_writer) }
   let(:parent_class) { Struct.new(:id, :trace_id) }
   let(:test) { parent_class.new(101, 202) }
   let(:session) { parent_class.new(303, 404) }
@@ -78,7 +78,7 @@ RSpec.describe Datadog::CI::TracerBridge::Component do
   it "attaches a replacement tracer during the same test" do
     bridge.on_test_started(test)
     trace_application
-    replacement = Datadog::Tracing::Tracer.new(writer: application_writer, logger: logger)
+    replacement = Datadog::Tracing::Tracer.new(writer: application_writer)
     bridge.observe(replacement)
     replacement.trace("replacement.request") {}
 

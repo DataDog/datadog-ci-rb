@@ -8,6 +8,7 @@ RSpec.describe "Optional tracer telemetry with WebMock" do
       output, status = Open3.capture2e(RbConfig.ruby, "-Ilib", "-e", <<~RUBY)
         require "socket"
         require "json"
+        require "timeout"
         #{'require "webmock"' if webmock_first}
         require "datadog/ci"
         require "webmock"
@@ -44,8 +45,7 @@ RSpec.describe "Optional tracer telemetry with WebMock" do
             c.telemetry.metrics_aggregation_interval_seconds = 0.01
             c.telemetry.shutdown_timeout_seconds = 2
           end
-          telemetry = Datadog.send(:components).telemetry
-          abort "Telemetry flush failed" unless telemetry.flush(timeout: 3)
+          first_request = Timeout.timeout(5) { requests.pop }
           abort "CI runtime started before the session" if Datadog::CI.components(allow_initialization: false)
           settings = Datadog.configuration.telemetry
           abort "Telemetry settings changed" unless settings.enabled && settings.agentless_enabled == #{agentless} && settings.heartbeat_interval_seconds == 123
@@ -59,7 +59,7 @@ RSpec.describe "Optional tracer telemetry with WebMock" do
           abort "Customer stub failed" unless Net::HTTP.get(URI("http://example.test/customer")) == "stubbed"
 
           Datadog.shutdown!
-          collected = []
+          collected = [first_request]
           collected << requests.pop until requests.empty?
           abort "No telemetry was delivered" if collected.empty?
           abort "Telemetry used the wrong intake" unless collected.all? { |path, _| path.include?(#{(agentless ? "/api/v2/apmtelemetry" : "/telemetry/proxy/api/v2/apmtelemetry").inspect}) }

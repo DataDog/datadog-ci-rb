@@ -100,7 +100,7 @@ RSpec.describe "Standalone CI runtime" do
   end
 
   def child_environment
-    ENV.keys.grep(/\ADD_/).each_with_object({}) { |name, values| values[name] = nil }.merge(
+    Datadog::CI::Configuration.environment.keys.grep(/\ADD_/).each_with_object({}) { |name, values| values[name] = nil }.merge(
       "DD_GIT_REPOSITORY_URL" => "https://example.test/standalone.git",
       "DD_GIT_COMMIT_SHA" => "a" * 40,
       "DD_INSTRUMENTATION_TELEMETRY_ENABLED" => "false"
