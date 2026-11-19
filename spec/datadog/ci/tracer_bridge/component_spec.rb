@@ -157,6 +157,33 @@ RSpec.describe Datadog::CI::TracerBridge::Component do
     expect(application_writer).not_to have_received(:write)
   end
 
+  it "contains forwarding failures when a custom logger also fails" do
+    allow(ci_writer).to receive(:write).and_raise(IOError, "closed")
+    allow(logger).to receive(:warn).and_raise(IOError, "logger closed")
+    bridge.on_test_started(test)
+    trace = Datadog::Tracing::TraceSegment.new([], origin: "ciapp-test")
+
+    expect(bridge.write(trace)).to be(true)
+    expect(logger).to have_received(:warn)
+  end
+
+  it "contains context failures when a custom logger also fails" do
+    allow(tracer).to receive(:provider).and_raise(IOError, "context unavailable")
+    allow(logger).to receive(:warn).and_raise(IOError, "logger closed")
+    bridge.on_test_started(test)
+
+    expect { bridge.observe(tracer) }.not_to raise_error
+    expect(logger).to have_received(:warn)
+  end
+
+  it "preserves exceptions from customer code" do
+    bridge.on_test_started(test)
+    bridge.observe(tracer)
+    error = RuntimeError.new("customer failure")
+
+    expect { tracer.trace("customer") { raise error } }.to raise_error { |raised| expect(raised).to equal(error) }
+  end
+
   it "does not wrap a tracer more than once" do
     bridge.on_test_started(test)
     bridge.observe(tracer)

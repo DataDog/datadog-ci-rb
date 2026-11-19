@@ -5,6 +5,27 @@ module Datadog
     module TracerBridge
       # Routes application spans without sharing the tracer lifecycle with CI.
       class Component
+        # Keep tracer telemetry outside WebMock without changing its configuration.
+        def self.activate_telemetry_compatibility!
+          if defined?(::Datadog::Core::Transport::HTTP::Adapters::Net)
+            ::Datadog::Core::Transport::HTTP::Adapters::Net.prepend(TelemetryAdapter)
+          elsif defined?(::Datadog::Core::Telemetry::Http::Adapters::Net)
+            ::Datadog::Core::Telemetry::Http::Adapters::Net.prepend(TelemetryAdapter)
+          end
+        end
+
+        module TelemetryAdapter
+          def open(&block)
+            return super unless defined?(::WebMock::HttpLibAdapters::NetHttpAdapter::OriginalNetHTTP)
+
+            connection = ::WebMock::HttpLibAdapters::NetHttpAdapter::OriginalNetHTTP.new(@hostname, @port, nil)
+            connection.use_ssl = @ssl
+            connection.open_timeout = connection.read_timeout = @timeout
+            connection.start(&block)
+          end
+        end
+        private_constant :TelemetryAdapter
+
         CONTEXT_KEY = :datadog_ci_tracer_bridge_scopes
         SESSION_CONTEXT_KEY = :datadog_ci_tracer_bridge_session_scope
         ORIGIN = "ciapp-test"
@@ -185,6 +206,8 @@ module Datadog
 
         def warn_failure(action, error)
           @logger.warn("Failed to #{action}: #{error.class}: #{error.message}")
+        rescue
+          nil
         end
 
         # The original writer owns its workers. CI owns its separate writer.

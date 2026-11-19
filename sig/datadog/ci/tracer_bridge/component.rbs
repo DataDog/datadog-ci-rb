@@ -2,6 +2,17 @@ module Datadog
   module CI
     module TracerBridge
       class Component
+        def self.activate_telemetry_compatibility!: () -> void
+
+        module TelemetryAdapter : ::Datadog::Core::Transport::HTTP::Adapters::Net
+          @hostname: String
+          @port: Integer?
+          @ssl: bool
+          @timeout: Float | Integer
+
+          def open: () { (Net::HTTP) -> Net::HTTPResponse } -> Net::HTTPResponse
+        end
+
         CONTEXT_KEY: Symbol
         SESSION_CONTEXT_KEY: Symbol
         ORIGIN: String

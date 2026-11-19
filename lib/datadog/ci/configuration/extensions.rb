@@ -41,6 +41,7 @@ module Datadog
             return false
           end
 
+          TracerBridge::Component.activate_telemetry_compatibility!
           ::Datadog::Core::Configuration::Settings.prepend(LegacySettings)
           ::Datadog.singleton_class.prepend(Reconfiguration)
           if defined?(::Datadog::Tracing) && ::Datadog::Tracing.respond_to?(:trace)
