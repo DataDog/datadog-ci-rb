@@ -18,15 +18,15 @@ module Datadog
             candidates = build_candidate_list(remote_name)
 
             if candidates.nil? || candidates.empty?
-              Datadog.logger.debug { "No candidate branches found." }
+              Datadog::CI.logger.debug { "No candidate branches found." }
               return nil
             end
 
             metrics = compute_branch_metrics(candidates, source_branch)
-            Datadog.logger.debug { "Branch metrics: '#{metrics}'" }
+            Datadog::CI.logger.debug { "Branch metrics: '#{metrics}'" }
 
             best_branch_sha = find_best_branch(metrics, remote_name)
-            Datadog.logger.debug { "Best branch SHA: '#{best_branch_sha}'" }
+            Datadog::CI.logger.debug { "Best branch SHA: '#{best_branch_sha}'" }
 
             best_branch_sha
           end
@@ -51,7 +51,7 @@ module Datadog
               default_ref = CLI.exec_git_command(["symbolic-ref", "--quiet", "--short", "refs/remotes/#{remote_name}/HEAD"])
               default_branch = remove_remote_prefix(default_ref, remote_name) unless default_ref.nil?
             rescue
-              Datadog.logger.debug { "Could not get symbolic-ref, trying to find a fallback (main, master)..." }
+              Datadog::CI.logger.debug { "Could not get symbolic-ref, trying to find a fallback (main, master)..." }
             end
 
             default_branch = find_fallback_default_branch(remote_name) if default_branch.nil?
@@ -61,7 +61,7 @@ module Datadog
           def find_fallback_default_branch(remote_name)
             ["main", "master"].each do |fallback|
               CLI.exec_git_command(["show-ref", "--verify", "--quiet", "refs/remotes/#{remote_name}/#{fallback}"])
-              Datadog.logger.debug { "Found fallback default branch '#{fallback}'" }
+              Datadog::CI.logger.debug { "Found fallback default branch '#{fallback}'" }
               return fallback
             rescue
               next
@@ -73,11 +73,11 @@ module Datadog
             # we cannot assume that local branches are the same as remote branches
             # so we need to go over remote branches only
             candidates = CLI.exec_git_command(["for-each-ref", "--format=%(refname:short)", "refs/remotes/#{remote_name}"])&.lines&.map(&:strip)
-            Datadog.logger.debug { "Available branches: '#{candidates}'" }
+            Datadog::CI.logger.debug { "Available branches: '#{candidates}'" }
             candidates&.select! do |candidate_branch|
               main_like_branch?(candidate_branch, remote_name)
             end
-            Datadog.logger.debug { "Candidate branches: '#{candidates}'" }
+            Datadog::CI.logger.debug { "Candidate branches: '#{candidates}'" }
             candidates
           end
 
@@ -101,7 +101,7 @@ module Datadog
               )
 
               if metric.up_to_date?
-                Datadog.logger.debug { "Branch '#{cand}' is up to date with '#{source_branch}'" }
+                Datadog::CI.logger.debug { "Branch '#{cand}' is up to date with '#{source_branch}'" }
                 next
               end
 
@@ -117,7 +117,7 @@ module Datadog
             return metrics.first.base_sha if metrics.size == 1
 
             default_branch = detect_default_branch(remote_name)
-            Datadog.logger.debug { "Default branch: '#{default_branch}'" }
+            Datadog::CI.logger.debug { "Default branch: '#{default_branch}'" }
 
             best_metric = metrics.min_by do |metric|
               [

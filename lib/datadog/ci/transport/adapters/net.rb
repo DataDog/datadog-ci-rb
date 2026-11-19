@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "datadog/core/transport/response"
-require "datadog/core/transport/ext"
 
 require_relative "net_http_client"
 require_relative "../gzip"
@@ -48,13 +46,18 @@ module Datadog
           def call(path:, payload:, headers:, verb:)
             headers ||= {}
             # skip tracing for internal DD requests
-            headers[Core::Transport::Ext::HTTP::HEADER_DD_INTERNAL_UNTRACED_REQUEST] = "1"
+            headers["x-datadog-internal-untraced-request"] = "1"
 
             if respond_to?(verb)
               send(verb, path: path, payload: payload, headers: headers)
             else
               raise "Unknown HTTP method [#{verb}]"
             end
+          end
+
+          def get(path:, payload:, headers:)
+            request = ::Net::HTTP::Get.new(path, headers)
+            Response.new(open { |http| http.request(request) })
           end
 
           def post(path:, payload:, headers:)
@@ -71,7 +74,6 @@ module Datadog
           end
 
           class Response
-            include Datadog::Core::Transport::Response
 
             attr_reader :http_response
             # Stats for telemetry
@@ -86,7 +88,7 @@ module Datadog
               return http_response.body unless gzipped_content?
               return http_response.body unless gzipped_body?(http_response.body)
 
-              Datadog.logger.debug("Decompressing gzipped response payload")
+              Datadog::CI.logger.debug("Decompressing gzipped response payload")
               @decompressed_payload = Gzip.decompress(http_response.body)
             end
 
@@ -107,6 +109,10 @@ module Datadog
               return false if http_code.nil?
 
               http_code.between?(200, 299)
+            end
+
+            def internal_error?
+              false
             end
 
             def unsupported?

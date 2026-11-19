@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "datadog/core/environment/identity"
-require "datadog/core/telemetry/logging"
-require "datadog/core/utils/only_once"
+require "datadog/ci/utils/identity"
+require "datadog/ci/utils/internal_logging"
+require "datadog/ci/utils/only_once"
 
 require_relative "serializers/factories/test_suite_level"
 require_relative "serializers/meta_truncation"
@@ -70,13 +70,13 @@ module Datadog
             if serializer.event_type == "span"
               # events of type span are often skipped because of missing resource field
               # (because they are misconfigured in tests context)
-              Datadog.logger.debug(message)
+              Datadog::CI.logger.debug(message)
             else
-              Datadog.logger.warn(message)
+              Datadog::CI.logger.warn(message)
               CI::Transport::Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
 
               # for CI events log all events to internal telemetry
-              Core::Telemetry::Logger.error(message)
+              Utils::InternalLogging.error(message)
             end
 
             nil
@@ -84,7 +84,7 @@ module Datadog
         end
 
         def encoder
-          Datadog::Core::Encoding::MsgpackEncoder
+          Datadog::CI::Utils::Encoding::MsgpackEncoder
         end
 
         def write_payload_header(packer)
@@ -106,10 +106,10 @@ module Datadog
           end
 
           packer.write("runtime-id")
-          packer.write(Serializers::MetaTruncation.truncate_value(Datadog::Core::Environment::Identity.id))
+          packer.write(Serializers::MetaTruncation.truncate_value(Datadog::CI::Utils::Identity.id))
 
           packer.write("language")
-          packer.write(Serializers::MetaTruncation.truncate_value(Datadog::Core::Environment::Identity.lang))
+          packer.write(Serializers::MetaTruncation.truncate_value(Datadog::CI::Utils::Identity.lang))
 
           packer.write("library_version")
           packer.write(Serializers::MetaTruncation.truncate_value(Datadog::CI::VERSION::STRING))

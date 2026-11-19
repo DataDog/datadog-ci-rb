@@ -235,7 +235,7 @@ module Datadog
             end
 
             def datadog_tracing_enabled?
-              Datadog.configuration.ci.enabled &&
+              Datadog::CI.configuration.ci.enabled &&
                 datadog_configuration[:enabled] &&
                 (!::RSpec.configuration.dry_run? || datadog_configuration[:dry_run_enabled])
             end
@@ -401,7 +401,7 @@ module Datadog
               @datadog_context_ids = context_ids
               @datadog_top_level_example_group = top_level
 
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "RSpec: Built context chain for the test: #{context_ids.inspect}"
               end
             end
@@ -419,15 +419,15 @@ module Datadog
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:rspec]
+              Datadog::CI.configuration.ci[:rspec]
             end
 
             def test_tracing_component
-              @datadog_test_tracing_component || Datadog.send(:components).test_tracing
+              @datadog_test_tracing_component || Datadog::CI.components.test_tracing
             end
 
             def test_retries_component
-              Datadog.send(:components).test_retries
+              Datadog::CI.components.test_retries
             end
 
             def ci_queue?

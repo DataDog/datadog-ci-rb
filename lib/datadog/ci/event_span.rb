@@ -1,0 +1,100 @@
+# frozen_string_literal: true
+
+require "securerandom"
+
+module Datadog
+  module CI
+    # An event owns its metadata and lifetime independently of the application tracer.
+    class EventSpan
+      WALL_CLOCK = ::Time.method(:now)
+      MONOTONIC_CLOCK = ::Process.method(:clock_gettime)
+
+      attr_reader :id, :trace_id, :parent_id, :start_time, :end_time, :duration, :meta, :metrics
+      attr_accessor :name, :resource, :service, :type, :status
+
+      def initialize(name, trace_id:, parent_id: 0, service: nil, type: nil, resource: nil, tags: {}, &on_finish)
+        @id = SecureRandom.random_number((1 << 63) - 1) + 1
+        @trace_id = trace_id
+        @parent_id = parent_id
+        @name = name
+        @resource = resource || name
+        @service = service
+        @type = type
+        @status = 0
+        @meta = {}
+        @metrics = {}
+        @start_time = WALL_CLOCK.call.utc
+        @started_at = MONOTONIC_CLOCK.call(Process::CLOCK_MONOTONIC)
+        @end_time = nil
+        @duration = nil
+        @on_finish = on_finish
+        @finish_mutex = Mutex.new
+        set_tags(tags)
+      end
+
+      def set_tag(key, value)
+        key = key.to_s
+        if value.is_a?(Numeric)
+          set_metric(key, value)
+        elsif !value.nil?
+          @metrics.delete(key)
+          @meta[key] = value.to_s
+        end
+      end
+
+      def set_tags(tags)
+        tags.each { |key, value| set_tag(key, value) }
+      end
+
+      def get_tag(key)
+        @meta[key] || @metrics[key]
+      end
+
+      def clear_tag(key)
+        @meta.delete(key)
+        @metrics.delete(key)
+      end
+
+      def set_metric(key, value)
+        return unless value.is_a?(Numeric)
+        return if value.respond_to?(:finite?) && !value.finite?
+
+        @meta.delete(key.to_s)
+        @metrics[key.to_s] = value
+      end
+
+      def get_metric(key)
+        @metrics[key]
+      end
+
+      def set_error(error)
+        return if error.nil?
+
+        @status = 1
+        set_tag("error.type", error.class.name)
+        set_tag("error.message", error.message)
+        set_tag("error.stack", error.backtrace.join("\n")) if error.backtrace
+      end
+
+      def finished?
+        !@end_time.nil?
+      end
+
+      def finish(end_time = nil)
+        callback = @finish_mutex.synchronize do
+          next if finished?
+
+          @end_time = end_time || WALL_CLOCK.call.utc
+          @duration = if end_time
+            [end_time - @start_time, 0.0].max
+          else
+            [MONOTONIC_CLOCK.call(Process::CLOCK_MONOTONIC) - @started_at, 0.0].max
+          end
+          @on_finish
+        end
+        callback&.call(self)
+        self
+      end
+    end
+  end
+end

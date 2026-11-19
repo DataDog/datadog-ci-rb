@@ -28,11 +28,11 @@ module Datadog
           end
 
           def datadog_logs_component
-            Datadog.send(:components).agentless_logs_submission
+            Datadog::CI.components.agentless_logs_submission
           end
 
           def datadog_configuration
-            Datadog.configuration.ci[:activesupport]
+            Datadog::CI.configuration.ci[:activesupport]
           end
         end
       end

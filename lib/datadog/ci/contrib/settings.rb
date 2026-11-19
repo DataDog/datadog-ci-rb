@@ -1,4 +1,4 @@
-require "datadog/core/configuration/base"
+require "datadog/ci/configuration/base"
 
 module Datadog
   module CI
@@ -6,7 +6,7 @@ module Datadog
       # Common settings for all integrations
       # @public_api
       class Settings
-        include Core::Configuration::Base
+        include Datadog::CI::Configuration::Base
 
         option :enabled, default: true
         option :service_name

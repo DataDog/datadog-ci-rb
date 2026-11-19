@@ -3,10 +3,6 @@ module Datadog
     module Configuration
       module Reconfiguration : Datadog::Core::Configuration
         def configure: () ?{ (Datadog::Core::Configuration::Settings) -> void } -> Datadog::Core::Configuration::Settings
-
-        private
-
-        def warn_about_ci_reconfiguration: () -> void
       end
     end
   end

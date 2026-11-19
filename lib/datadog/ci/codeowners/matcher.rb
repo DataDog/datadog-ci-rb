@@ -16,16 +16,16 @@ module Datadog
           # treat all file paths that we check as absolute from the repository root
           file_path = "/#{file_path}" unless file_path.start_with?("/")
 
-          Datadog.logger.debug { "Matching file path #{file_path} to CODEOWNERS rules" }
+          Datadog::CI.logger.debug { "Matching file path #{file_path} to CODEOWNERS rules" }
 
           @rules.each do |rule|
             if rule.match?(file_path)
-              Datadog.logger.debug { "Matched rule [#{rule.pattern}] with owners #{rule.owners}" }
+              Datadog::CI.logger.debug { "Matched rule [#{rule.pattern}] with owners #{rule.owners}" }
               return rule.owners
             end
           end
 
-          Datadog.logger.debug { "CODEOWNERS rule not matched" }
+          Datadog::CI.logger.debug { "CODEOWNERS rule not matched" }
           nil
         end
 
@@ -33,7 +33,7 @@ module Datadog
 
         def parse(codeowners_file_path)
           unless File.exist?(codeowners_file_path)
-            Datadog.logger.debug { "CODEOWNERS file not found at #{codeowners_file_path}" }
+            Datadog::CI.logger.debug { "CODEOWNERS file not found at #{codeowners_file_path}" }
             return []
           end
 
@@ -68,7 +68,7 @@ module Datadog
 
           result
         rescue => e
-          Datadog.logger.warn(
+          Datadog::CI.logger.warn(
             "Failed to parse codeowners file at #{codeowners_file_path}: " \
               "#{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
           )

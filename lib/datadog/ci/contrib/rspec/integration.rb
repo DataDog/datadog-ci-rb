@@ -40,7 +40,7 @@ module Datadog
           end
 
           def test_discovery_component
-            components = Datadog.send(:components)
+            components = Datadog::CI.components
             return nil unless components.respond_to?(:test_discovery)
             components.test_discovery
           end

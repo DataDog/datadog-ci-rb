@@ -44,7 +44,7 @@ module Datadog
             @json = JSON.parse(resp.payload).dig(*Ext::Transport::DD_API_SETTINGS_RESPONSE_DIG_KEYS) ||
               default_payload
           rescue JSON::ParserError => e
-            Datadog.logger.error("Failed to parse settings response payload: #{e}. Payload was: #{resp.payload}")
+            Datadog::CI.logger.error("Failed to parse settings response payload: #{e}. Payload was: #{resp.payload}")
 
             Transport::Telemetry.api_requests_errors(
               Ext::Telemetry::METRIC_GIT_REQUESTS_SETTINGS_ERRORS,

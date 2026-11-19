@@ -1,0 +1,95 @@
+module Datadog
+  module CI
+    module TracerBridge
+      class Component
+        CONTEXT_KEY: Symbol
+        SESSION_CONTEXT_KEY: Symbol
+        ORIGIN: String
+
+        interface _Parent
+          def equal?: (untyped other) -> bool
+          def id: () -> Integer
+          def trace_id: () -> Integer
+        end
+
+        interface _Writer
+          def is_a?: (Module klass) -> bool
+          def respond_to?: (Symbol name, ?bool include_private) -> bool
+          def public_send: (Symbol name, *untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+          def write: (Datadog::Tracing::TraceSegment) -> void
+          def stop: () -> void
+        end
+
+        interface _Context
+          def equal?: (untyped other) -> bool
+          def active_trace: () -> Datadog::Tracing::TraceOperation?
+          def activate!: (Datadog::Tracing::TraceOperation?) -> void
+        end
+
+        interface _Provider
+          def context: () -> _Context
+        end
+
+        interface _Tracer
+          def writer: () -> _Writer
+          def writer=: (_Writer) -> _Writer
+          def provider: () -> _Provider
+          def continue_trace!: (Datadog::Tracing::TraceDigest) -> Datadog::Tracing::TraceOperation
+        end
+
+        interface _Logger
+          def warn: (String) -> void
+        end
+
+        @writer: _Writer
+        @logger: _Logger
+        @enabled: bool
+        @session: _Parent?
+
+        def initialize: (writer: _Writer, logger: _Logger, ?enabled: bool) -> void
+        def on_session_started: (_Parent session) -> void
+        def on_session_finished: (_Parent session) -> void
+        def on_test_started: (_Parent test) -> void
+        def on_test_finished: (_Parent test) -> void
+        def on_span_started: (_Parent span) -> void
+        def on_span_finished: (_Parent span) -> void
+        def observe: (_Tracer tracer) -> void
+        def write: (Datadog::Tracing::TraceSegment trace) -> bool
+        def shutdown!: () -> void
+
+        private
+
+        def scopes: () -> Array[Scope]
+        def active_scope: () -> Scope?
+        def wrap_writer: (_Tracer tracer) -> void
+        def restore_session_scope: () -> void
+        def restore_scope: (Scope scope) -> void
+        def warn_failure: (String action, StandardError error) -> void
+
+        class Scope
+          attr_reader owner: Component
+          attr_reader span: _Parent
+          attr_reader contexts: Array[SavedContext]
+          def initialize: (Component owner, _Parent span, Array[SavedContext] contexts) -> void
+        end
+
+        class SavedContext
+          attr_reader context: _Context
+          attr_reader previous_trace: Datadog::Tracing::TraceOperation?
+          attr_accessor trace: Datadog::Tracing::TraceOperation
+          def initialize: (_Context context, Datadog::Tracing::TraceOperation? previous_trace, Datadog::Tracing::TraceOperation trace) -> void
+        end
+
+        class Writer
+          attr_reader delegate: _Writer
+          attr_reader bridge: Component
+          def initialize: (_Writer delegate, Component bridge) -> void
+          def write: (Datadog::Tracing::TraceSegment trace) -> void
+          def stop: () -> void
+          def method_missing: (Symbol name, *untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
+          def respond_to_missing?: (Symbol name, ?bool include_private) -> bool
+        end
+      end
+    end
+  end
+end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/core/environment/platform"
+require "datadog/ci/utils/identity"
 
 require_relative "../async_writer"
 require_relative "transport"
@@ -45,11 +45,11 @@ module Datadog
           event[:ddsource] ||= "ruby"
           event[:ddtags] ||= "datadog.product:citest"
           event[:service] ||= test_session&.service
-          event[:hostname] ||= Datadog::Core::Environment::Platform.hostname
+          event[:hostname] ||= Datadog::CI::Utils::Platform.hostname
         end
 
         def test_tracing
-          ::Datadog.send(:components).test_tracing
+          ::Datadog::CI.components.test_tracing
         end
       end
     end

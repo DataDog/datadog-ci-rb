@@ -35,7 +35,7 @@ module Datadog
           end
 
           def build_driver(test_span)
-            Datadog.logger.debug { "#{test_span.name} is attempt_to_fix, will be retried" }
+            Datadog::CI.logger.debug { "#{test_span.name} is attempt_to_fix, will be retried" }
 
             Driver::RetryFlakyFixed.new(test_span, max_attempts: max_attempts)
           end

@@ -29,7 +29,7 @@ module Datadog
             @attempts += 1
             @failed_once = true if test_span&.failed?
 
-            Datadog.logger.debug { "Retry Attempts [#{@attempts} / #{@max_attempts}], Failed: [#{@failed_once}]" }
+            Datadog::CI.logger.debug { "Retry Attempts [#{@attempts} / #{@max_attempts}], Failed: [#{@failed_once}]" }
           end
 
           def retry_reason

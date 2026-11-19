@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require "datadog/tracing"
-require "datadog/tracing/contrib/component"
-require "datadog/tracing/trace_digest"
-
 require_relative "store/process"
 require_relative "store/fiber_local"
 require_relative "telemetry"
@@ -14,6 +10,7 @@ require_relative "../ext/metadata"
 require_relative "../ext/test"
 
 require_relative "../utils/configuration"
+require_relative "../utils/encoding"
 require_relative "../utils/test_run"
 
 require_relative "../span"
@@ -27,12 +24,13 @@ module Datadog
     module TestTracing
       # Manages current in-memory context for test visibility (such as active test session, suite, test, etc.).
       # Its responsibility includes building domain models for test visibility as well.
-      # Internally it uses Datadog::Tracing module to create spans.
+      # Events use a CI-owned tracer with an independent lifecycle.
       class Context
         attr_reader :tests_skipped_by_tia_count
 
-        def initialize(test_tracing_component:, runtime_tags_overrides: {})
+        def initialize(test_tracing_component:, tracer:, runtime_tags_overrides: {})
           @test_tracing_component = test_tracing_component
+          @tracer = tracer
           @runtime_tags_overrides = runtime_tags_overrides
 
           @fiber_local_context = Store::FiberLocal.new
@@ -55,7 +53,7 @@ module Datadog
         def start_test_session(service: nil, tags: {})
           @process_context.fetch_or_activate_test_session do
             @mutex.synchronize { @any_tests_started = false }
-            tracer_span = start_datadog_tracer_span(
+            tracer_span = start_event_span(
               "test.session", build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SESSION)
             )
             set_session_context(tags, tracer_span)
@@ -74,7 +72,7 @@ module Datadog
             set_inherited_globals(tags)
             set_session_context(tags)
 
-            tracer_span = start_datadog_tracer_span(
+            tracer_span = start_event_span(
               test_module_name, build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_MODULE)
             )
             set_module_context(tags, tracer_span)
@@ -93,7 +91,7 @@ module Datadog
             set_session_context(tags)
             set_module_context(tags)
 
-            tracer_span = start_datadog_tracer_span(
+            tracer_span = start_event_span(
               test_suite_name, build_tracing_span_options(service, Ext::AppTypes::TYPE_TEST_SUITE)
             )
             set_suite_context(tags, test_suite: tracer_span)
@@ -119,12 +117,12 @@ module Datadog
             service,
             Ext::AppTypes::TYPE_TEST,
             # :resource is needed for the agent APM protocol to work correctly (for older agent versions)
-            # :continue_from is required to start a new trace for each test
-            {resource: test_name, continue_from: Datadog::Tracing::TraceDigest.new}
+            # Each test starts an independent trace.
+            {resource: test_name, new_trace: true}
           )
 
           if block
-            start_datadog_tracer_span(test_name, span_options) do |tracer_span|
+            start_event_span(test_name, span_options) do |tracer_span|
               test = build_test(tracer_span, tags)
 
               @fiber_local_context.activate_test(test) do
@@ -132,7 +130,7 @@ module Datadog
               end
             end
           else
-            tracer_span = start_datadog_tracer_span(test_name, span_options)
+            tracer_span = start_event_span(test_name, span_options)
             test = build_test(tracer_span, tags)
             @fiber_local_context.activate_test(test)
             test
@@ -147,18 +145,26 @@ module Datadog
           )
 
           if block
-            start_datadog_tracer_span(span_name, span_options) do |tracer_span|
-              block.call(build_span(tracer_span, tags))
+            start_event_span(span_name, span_options) do |tracer_span|
+              span = build_span(tracer_span, tags)
+              tracer_bridge.on_span_started(span)
+              begin
+                block.call(span)
+              ensure
+                tracer_bridge.on_span_finished(span)
+              end
             end
           else
-            tracer_span = start_datadog_tracer_span(span_name, span_options)
+            tracer_span = start_event_span(span_name, span_options)
 
-            build_span(tracer_span, tags)
+            span = build_span(tracer_span, tags)
+            tracer_bridge.on_span_started(span)
+            span
           end
         end
 
         def active_span
-          tracer_span = Datadog::Tracing.active_span
+          tracer_span = @tracer.active_span
           Span.new(tracer_span) if tracer_span
         end
 
@@ -216,6 +222,10 @@ module Datadog
 
         private
 
+        def tracer_bridge
+          CI.components.tracer_bridge
+        end
+
         # BUILDING DOMAIN MODELS
         def build_test_session(tracer_span, tags)
           test_session = TestSession.new(tracer_span)
@@ -251,7 +261,7 @@ module Datadog
         def build_shared_tags
           environment_tags = @shared_tags || Ext::Environment.tags(ENV)
             .slice(*Ext::Metadata::SHARED_ENVIRONMENT_TAGS)
-            .transform_values { |value| Core::Utils.utf8_encode(value).dup.freeze }
+            .transform_values { |value| Utils.utf8_encode(value).dup.freeze }
           tags = environment_tags.merge(Ext::Test::LibraryCapabilities::CAPABILITY_VERSIONS)
           tags[Ext::Test::TAG_USER_PROVIDED_TEST_SERVICE] = Utils::Configuration.service_name_provided_by_user?.to_s.freeze
           session_name = @test_tracing_component.logical_test_session_name
@@ -299,26 +309,12 @@ module Datadog
           tags[Ext::Test::TAG_SUITE] = test_suite.name
         end
 
-        # INTERACTIONS WITH TRACING
-        def start_datadog_tracer_span(span_name, span_options, &block)
+        def start_event_span(span_name, span_options, &block)
           if block
-            Datadog::Tracing.trace(span_name, **span_options) do |tracer_span, trace|
-              set_trace_origin(trace)
-
-              yield tracer_span
-            end
+            @tracer.trace(span_name, **span_options) { |span, _trace| yield span }
           else
-            tracer_span = Datadog::Tracing.trace(span_name, **span_options)
-            trace = Datadog::Tracing.active_trace
-            set_trace_origin(trace)
-
-            tracer_span
+            @tracer.trace(span_name, **span_options)
           end
-        end
-
-        # Sets trace's origin to ciapp-test because tracing requires so
-        def set_trace_origin(trace)
-          trace&.origin = Ext::Test::CONTEXT_ORIGIN
         end
 
         def build_tracing_span_options(service, type, other_options = {})

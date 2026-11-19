@@ -23,18 +23,18 @@ module Datadog
 
               return result unless datadog_configuration[:enabled]
 
-              Datadog.logger.debug("[Cuprite] Navigation to #{url}")
+              Datadog::CI.logger.debug("[Cuprite] Navigation to #{url}")
 
               # on session reset Capybara navigates to about:blank
               return result if url == "about:blank"
 
               active_test = Datadog::CI.active_test
-              Datadog.logger.debug("[Cuprite] Active test: #{active_test}")
+              Datadog::CI.logger.debug("[Cuprite] Active test: #{active_test}")
 
               return result unless active_test
 
               # Set the test's trace id as a cookie in browser session
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "[Cuprite] Setting cookie #{CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID} to #{active_test.trace_id}"
               end
               set_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID, active_test.trace_id.to_s)
@@ -52,7 +52,7 @@ module Datadog
             end
 
             def reset!
-              Datadog.logger.debug("[Cuprite] Driver reset! event")
+              Datadog::CI.logger.debug("[Cuprite] Driver reset! event")
 
               datadog_end_rum_session
 
@@ -60,7 +60,7 @@ module Datadog
             end
 
             def quit
-              Datadog.logger.debug("[Cuprite] Driver quit event")
+              Datadog::CI.logger.debug("[Cuprite] Driver quit event")
 
               datadog_end_rum_session
 
@@ -74,7 +74,7 @@ module Datadog
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:cuprite]
+              Datadog::CI.configuration.ci[:cuprite]
             end
 
             def datadog_end_rum_session
@@ -83,7 +83,7 @@ module Datadog
               executor = ScriptExecutor.new(browser)
               Utils::RUM.stop_rum_session(executor, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
-              Datadog.logger.debug("[Cuprite] Deleting Datadog cookie")
+              Datadog::CI.logger.debug("[Cuprite] Deleting Datadog cookie")
               remove_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)
             end
           end

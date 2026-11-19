@@ -93,7 +93,7 @@ module Datadog
         end
 
         def self.agentless_logs_component
-          Datadog.send(:components).agentless_logs_submission
+          Datadog::CI.components.agentless_logs_submission
         end
       end
     end

@@ -6,8 +6,6 @@ require_relative "ci/utils/telemetry"
 require_relative "ci/ext/app_types"
 require_relative "ci/ext/telemetry"
 
-require "datadog"
-require "datadog/core"
 
 module Datadog
   # Datadog Test Optimization public API.
@@ -403,11 +401,39 @@ module Datadog
         test_tracing.active_test
       end
 
-      private
-
-      def components
-        Datadog.send(:components)
+      def runtime
+        @runtime ||= Runtime.new
       end
+
+      def configuration
+        runtime.configuration
+      end
+
+      def logger
+        runtime.logger
+      end
+
+      def configure(&block)
+        runtime.configure(&block)
+      end
+
+      def configuration_changed!
+        runtime.configuration_changed!
+      end
+
+      def components(allow_initialization: true)
+        runtime.components(allow_initialization: allow_initialization)
+      end
+
+      def shutdown!
+        runtime.shutdown!
+      end
+
+      def reset!
+        runtime.reset!
+      end
+
+      private
 
       def test_tracing
         components.test_tracing
@@ -427,6 +453,10 @@ module Datadog
     end
   end
 end
+
+require_relative "ci/configuration/settings"
+require_relative "ci/configuration/components"
+require_relative "ci/runtime"
 
 # Integrations
 
@@ -451,4 +481,11 @@ require_relative "ci/contrib/semantic_logger/integration"
 
 # Configuration extensions
 require_relative "ci/configuration/extensions"
+begin
+  require "datadog"
+rescue LoadError => error
+  raise unless error.path == "datadog"
+end
 Datadog::CI::Configuration::Extensions.activate!
+
+at_exit { Datadog::CI.shutdown! }

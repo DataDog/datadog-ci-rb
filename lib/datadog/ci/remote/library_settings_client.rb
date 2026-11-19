@@ -2,7 +2,7 @@
 
 require "json"
 
-require "datadog/core/environment/identity"
+require "datadog/ci/utils/identity"
 
 require_relative "library_settings"
 
@@ -29,7 +29,7 @@ module Datadog
           return LibrarySettings.from_http_response(nil) unless api
 
           request_payload = payload(test_session)
-          Datadog.logger.debug("Fetching library settings with request: #{request_payload}")
+          Datadog::CI.logger.debug("Fetching library settings with request: #{request_payload}")
 
           http_response = api.api_request(
             path: Ext::Transport::DD_API_SETTINGS_PATH,
@@ -80,7 +80,7 @@ module Datadog
         def payload(test_session)
           {
             "data" => {
-              "id" => Datadog::Core::Environment::Identity.id,
+              "id" => Datadog::CI::Utils::Identity.id,
               "type" => Ext::Transport::DD_API_SETTINGS_TYPE,
               "attributes" => {
                 "service" => test_session.service,

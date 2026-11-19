@@ -2,8 +2,8 @@
 
 require "msgpack"
 
-require "datadog/core/encoding"
-require "datadog/core/chunker"
+require "datadog/ci/utils/encoding"
+require "datadog/ci/utils/chunker"
 
 require_relative "telemetry"
 
@@ -24,14 +24,14 @@ module Datadog
         def send_events(events)
           return [] if events.nil? || events.empty?
 
-          Datadog.logger.debug { "[#{self.class.name}] Sending #{events.count} events..." }
+          Datadog::CI.logger.debug { "[#{self.class.name}] Sending #{events.count} events..." }
 
           encoded_events = []
           # @type var serialization_duration_ms: Float
-          serialization_duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          serialization_duration_ms = Utils::Time.measure(:float_millisecond) do
             encoded_events = encode_events(events)
             if encoded_events.empty?
-              Datadog.logger.debug { "[#{self.class.name}] Empty encoded events list, skipping send" }
+              Datadog::CI.logger.debug { "[#{self.class.name}] Empty encoded events list, skipping send" }
               return []
             end
           end
@@ -41,9 +41,9 @@ module Datadog
 
           responses = []
 
-          Datadog::Core::Chunker.chunk_by_size(encoded_events, max_payload_size).map do |chunk|
+          Datadog::CI::Utils::Chunker.chunk_by_size(encoded_events, max_payload_size).map do |chunk|
             encoded_payload = pack_events(chunk)
-            Datadog.logger.debug do
+            Datadog::CI.logger.debug do
               "[#{self.class.name}] Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
             end
             Telemetry.endpoint_payload_events_count(chunk.count, endpoint: telemetry_endpoint_tag)
@@ -81,7 +81,7 @@ module Datadog
         end
 
         def encoder
-          Datadog::Core::Encoding::MsgpackEncoder
+          Datadog::CI::Utils::Encoding::MsgpackEncoder
         end
 
         def pack_events(encoded_events)
@@ -97,11 +97,11 @@ module Datadog
           return false unless encoded_event.size > max_payload_size
 
           # This single event is too large, we can't flush it
-          Datadog.logger.warn(
+          Datadog::CI.logger.warn(
             "[#{self.class.name}] Dropping test visibility event for endpoint [#{telemetry_endpoint_tag}]. " \
             "Payload too large: '#{event.inspect}'"
           )
-          Datadog.logger.warn(encoded_event)
+          Datadog::CI.logger.warn(encoded_event)
 
           Telemetry.endpoint_payload_dropped(1, endpoint: telemetry_endpoint_tag)
 

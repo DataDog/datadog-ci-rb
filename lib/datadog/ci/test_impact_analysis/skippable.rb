@@ -76,7 +76,7 @@ module Datadog
             begin
               @json = JSON.parse(resp.payload)
             rescue JSON::ParserError => e
-              Datadog.logger.error("Failed to parse skippable tests response payload: #{e}. Payload was: #{resp.payload}")
+              Datadog::CI.logger.error("Failed to parse skippable tests response payload: #{e}. Payload was: #{resp.payload}")
               @json = {}
             end
           end
@@ -94,7 +94,7 @@ module Datadog
           return Response.from_http_response(nil) unless api
 
           request_payload = payload(test_session)
-          Datadog.logger.debug("Fetching skippable #{@test_skipping_mode}s with request: #{request_payload}")
+          Datadog::CI.logger.debug("Fetching skippable #{@test_skipping_mode}s with request: #{request_payload}")
 
           http_response = api.api_request(
             path: Ext::Transport::DD_API_SKIPPABLE_TESTS_PATH,

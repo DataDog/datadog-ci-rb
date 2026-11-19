@@ -1,0 +1,10 @@
+module Datadog
+  module CI
+    module Configuration
+      module Fallback
+        def configuration: () -> untyped
+        def configure: () ?{ (untyped settings) -> void } -> untyped
+      end
+    end
+  end
+end

@@ -20,14 +20,14 @@ module Datadog
             def reset!
               return super unless datadog_configuration[:enabled]
 
-              Datadog.logger.debug("[Selenium] Capybara session reset event")
+              Datadog::CI.logger.debug("[Selenium] Capybara session reset event")
 
               Utils::RUM.stop_rum_session(@browser, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
-              Datadog.logger.debug("[Selenium] RUM session stopped, deleting cookie")
+              Datadog::CI.logger.debug("[Selenium] RUM session stopped, deleting cookie")
               @browser.manage.delete_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)
             rescue ::Selenium::WebDriver::Error::WebDriverError => e
-              Datadog.logger.debug("[Selenium] Error while resetting Capybara session: #{e.message}")
+              Datadog::CI.logger.debug("[Selenium] Error while resetting Capybara session: #{e.message}")
             ensure
               super
             end
@@ -35,7 +35,7 @@ module Datadog
             private
 
             def datadog_configuration
-              Datadog.configuration.ci[:selenium]
+              Datadog::CI.configuration.ci[:selenium]
             end
           end
         end

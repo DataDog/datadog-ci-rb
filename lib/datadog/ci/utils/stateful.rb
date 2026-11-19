@@ -12,7 +12,7 @@ module Datadog
           state = serialize_state
 
           res = Utils::FileStorage.store(storage_key, state)
-          Datadog.logger.debug { "Stored component state (key=#{storage_key}): #{res}" }
+          Datadog::CI.logger.debug { "Stored component state (key=#{storage_key}): #{res}" }
 
           res
         end
@@ -20,21 +20,21 @@ module Datadog
         # Load component state
         def load_component_state
           if test_optimization_cache.cache_available?
-            Datadog.logger.debug { "Test Optimization cache found" }
+            Datadog::CI.logger.debug { "Test Optimization cache found" }
             return true if restore_state_from_datadog_test_runner
           end
 
-          test_tracing_component = Datadog.send(:components).test_tracing
+          test_tracing_component = Datadog::CI.components.test_tracing
           return false unless test_tracing_component.client_process?
 
           state = Utils::FileStorage.retrieve(storage_key)
           unless state
-            Datadog.logger.debug { "No component state found in file storage (key=#{storage_key})" }
+            Datadog::CI.logger.debug { "No component state found in file storage (key=#{storage_key})" }
             return false
           end
 
           restore_state(state)
-          Datadog.logger.debug { "Loaded component state from file storage (key=#{storage_key})" }
+          Datadog::CI.logger.debug { "Loaded component state from file storage (key=#{storage_key})" }
 
           true
         end
@@ -73,7 +73,7 @@ module Datadog
         end
 
         def test_optimization_cache
-          Datadog.send(:components).test_optimization_cache
+          Datadog::CI.components.test_optimization_cache
         end
       end
     end

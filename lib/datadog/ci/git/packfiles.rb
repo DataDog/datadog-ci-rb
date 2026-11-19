@@ -35,7 +35,7 @@ module Datadog
               )
 
               if prefix.nil?
-                Datadog.logger.debug("Packfiles generation failed twice, aborting")
+                Datadog::CI.logger.debug("Packfiles generation failed twice, aborting")
                 break
               end
 
@@ -44,7 +44,7 @@ module Datadog
 
             packfiles = Dir.entries(tmpdir) - %w[. ..]
             if packfiles.empty?
-              Datadog.logger.debug("Empty packfiles list, aborting process")
+              Datadog::CI.logger.debug("Empty packfiles list, aborting process")
               break
             end
 
@@ -58,7 +58,7 @@ module Datadog
             end
           end
         rescue => e
-          Datadog.logger.debug("Packfiles could not be generated, error: #{e}")
+          Datadog::CI.logger.debug("Packfiles could not be generated, error: #{e}")
         ensure
           if current_process_tmp_folder && File.exist?(current_process_tmp_folder)
             FileUtils.remove_entry(current_process_tmp_folder)

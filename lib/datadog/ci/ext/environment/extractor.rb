@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/core/utils/url"
+require "datadog/ci/utils/url"
 
 require_relative "../git"
 require_relative "../../utils/git"
@@ -108,7 +108,7 @@ module Datadog
             @tags[Git::TAG_TAG] = Utils::Git.normalize_ref(@tags[Git::TAG_TAG])
             @tags[Git::TAG_BRANCH] = Utils::Git.normalize_ref(@tags[Git::TAG_BRANCH])
             @tags[Git::TAG_PULL_REQUEST_BASE_BRANCH] = Utils::Git.normalize_ref(@tags[Git::TAG_PULL_REQUEST_BASE_BRANCH])
-            @tags[Git::TAG_REPOSITORY_URL] = Datadog::Core::Utils::Url.filter_basic_auth(
+            @tags[Git::TAG_REPOSITORY_URL] = Datadog::CI::Utils::Url.filter_basic_auth(
               @tags[Git::TAG_REPOSITORY_URL]
             )
           end

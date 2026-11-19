@@ -3,7 +3,7 @@
 require "delegate"
 require "socket"
 
-require "datadog/core/utils/time"
+require "datadog/ci/utils/time"
 
 require_relative "gzip"
 require_relative "adapters/net"
@@ -61,7 +61,7 @@ module Datadog
         )
           response = nil
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             if compress
               headers[Ext::Transport::HEADER_CONTENT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
               payload = Gzip.compress(payload)
@@ -71,14 +71,14 @@ module Datadog
               headers[Ext::Transport::HEADER_ACCEPT_ENCODING] = Ext::Transport::CONTENT_ENCODING_GZIP
             end
 
-            Datadog.logger.debug do
+            Datadog::CI.logger.debug do
               "Sending #{verb} request: host=#{host}; port=#{port}; uds_path=#{uds_path}; ssl_enabled=#{ssl}; " \
                 "compression_enabled=#{compress}; path=#{path}; payload_size=#{payload.size}"
             end
 
             response = perform_http_call(path: path, payload: payload, headers: headers, verb: verb, retries: retries, backoff: backoff)
 
-            Datadog.logger.debug do
+            Datadog::CI.logger.debug do
               "Received server response: #{response.inspect}"
             end
           end
@@ -91,7 +91,7 @@ module Datadog
           response.duration_ms = duration_ms
 
           if response.server_error?
-            Datadog.logger.warn("Failed to send request to #{path} with server error #{response.code}")
+            Datadog::CI.logger.warn("Failed to send request to #{path} with server error #{response.code}")
           end
 
           response
@@ -99,7 +99,7 @@ module Datadog
 
         private
 
-        def perform_http_call(path:, payload:, headers:, verb:, retries: MAX_RETRIES, backoff: INITIAL_BACKOFF, retry_start_time: Core::Utils::Time.get_time)
+        def perform_http_call(path:, payload:, headers:, verb:, retries: MAX_RETRIES, backoff: INITIAL_BACKOFF, retry_start_time: Utils::Time.get_time)
           response = nil
 
           begin
@@ -111,31 +111,31 @@ module Datadog
             if response.code == 429
               backoff = (response.header(Ext::Transport::HEADER_RATELIMIT_RESET) || 1).to_i
 
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "Received rate limit response, retrying in #{backoff} seconds from X-RateLimit-Reset header"
               end
             elsif response.server_error?
-              Datadog.logger.debug { "Received server error response, retrying in #{backoff} seconds" }
+              Datadog::CI.logger.debug { "Received server error response, retrying in #{backoff} seconds" }
             else
               return response
             end
           rescue *NON_RETRIABLE_ERRORS => e
-            Datadog.logger.debug { "Failed to send request with non-retriable error #{e} (#{e.message})" }
+            Datadog::CI.logger.debug { "Failed to send request with non-retriable error #{e} (#{e.message})" }
             return ErrorResponse.new(e)
           rescue *RETRIABLE_ERRORS => e
-            Datadog.logger.debug { "Failed to send request with retriable error #{e} (#{e.message})" }
+            Datadog::CI.logger.debug { "Failed to send request with retriable error #{e} (#{e.message})" }
             response = ErrorResponse.new(e)
           rescue => e
             # Any other error, such as a refused connection (Errno::ECONNREFUSED) or a
             # TLS failure, would otherwise reach the customer's test process.
-            Datadog.logger.warn("Failed to send request to #{path} with unexpected error #{e.class} (#{e.message})")
+            Datadog::CI.logger.warn("Failed to send request to #{path} with unexpected error #{e.class} (#{e.message})")
             return ErrorResponse.new(e)
           end
 
           # Check if we've exceeded the maximum retry time
-          elapsed_time_seconds = Core::Utils::Time.get_time - retry_start_time
+          elapsed_time_seconds = Utils::Time.get_time - retry_start_time
           if elapsed_time_seconds >= MAX_RETRY_TIME
-            Datadog.logger.debug(
+            Datadog::CI.logger.debug(
               "Failed to send request to #{path} after #{elapsed_time_seconds.round(2)} seconds (exceeded MAX_RETRY_TIME of #{MAX_RETRY_TIME}s)"
             )
             return response
@@ -154,7 +154,7 @@ module Datadog
               retry_start_time: retry_start_time
             )
           else
-            Datadog.logger.debug(
+            Datadog::CI.logger.debug(
               "Failed to send request to #{path} after #{MAX_RETRIES - retries} retries (current backoff value #{backoff})"
             )
 

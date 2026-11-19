@@ -15,7 +15,7 @@ module Datadog
 
           def patch
             unless datadog_logs_component.enabled
-              Datadog.logger.debug("Datadog logs submission is disabled, skipping semantic_logger patching")
+              Datadog::CI.logger.debug("Datadog logs submission is disabled, skipping semantic_logger patching")
               return
             end
 
@@ -23,7 +23,7 @@ module Datadog
           end
 
           def datadog_logs_component
-            Datadog.send(:components).agentless_logs_submission
+            Datadog::CI.components.agentless_logs_submission
           end
         end
       end

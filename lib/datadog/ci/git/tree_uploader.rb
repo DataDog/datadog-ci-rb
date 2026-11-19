@@ -24,26 +24,26 @@ module Datadog
 
         def call(repository_url, commit_sha: nil)
           if api.nil?
-            Datadog.logger.debug("API is not configured, aborting git upload")
+            Datadog::CI.logger.debug("API is not configured, aborting git upload")
             return
           end
 
           if test_tracing_component.client_process?
-            Datadog.logger.debug("Test tracing component is running in client process, aborting git upload")
+            Datadog::CI.logger.debug("Test tracing component is running in client process, aborting git upload")
             return
           end
 
           if test_optimization_cache.cache_available?
-            Datadog.logger.debug("Test Optimization cache found, git upload already done, skipping git upload")
+            Datadog::CI.logger.debug("Test Optimization cache found, git upload already done, skipping git upload")
             return
           end
 
-          Datadog.logger.debug { "Uploading git tree for repository #{repository_url}" }
+          Datadog::CI.logger.debug { "Uploading git tree for repository #{repository_url}" }
 
           latest_commits = LocalRepository.git_commits(commit_sha)
           head_commit = latest_commits&.first
           if head_commit.nil?
-            Datadog.logger.debug("Got empty latest commits list, aborting git upload")
+            Datadog::CI.logger.debug("Got empty latest commits list, aborting git upload")
             return
           end
 
@@ -58,13 +58,13 @@ module Datadog
             # Sometimes we need to unshallow anyway: for impacted tests detection feature for example we need
             # to calculate git diffs locally. In this case we skip the optimization and always unshallow.
             if new_commits.empty? && !@force_unshallow
-              Datadog.logger.debug("No new commits to upload")
+              Datadog::CI.logger.debug("No new commits to upload")
               return
             end
 
             # quite often we deal with shallow clones in CI environment
             if LocalRepository.git_shallow_clone? && LocalRepository.git_unshallow(commit_sha)
-              Datadog.logger.debug("Detected shallow clone and unshallowed the repository, repeating commits search")
+              Datadog::CI.logger.debug("Detected shallow clone and unshallowed the repository, repeating commits search")
 
               # re-run the search with the updated commit list after unshallowing
               known_commits, new_commits = fetch_known_commits_and_split(
@@ -73,11 +73,11 @@ module Datadog
               )
             end
           rescue SearchCommits::ApiError => e
-            Datadog.logger.debug("SearchCommits failed with #{e}, aborting git upload")
+            Datadog::CI.logger.debug("SearchCommits failed with #{e}, aborting git upload")
             return
           end
 
-          Datadog.logger.debug { "Uploading packfiles for commits: #{new_commits}" }
+          Datadog::CI.logger.debug { "Uploading packfiles for commits: #{new_commits}" }
           uploader = UploadPackfile.new(
             api: api,
             head_commit_sha: head_commit,
@@ -88,13 +88,13 @@ module Datadog
             packfiles_count += 1
             uploader.call(filepath: filepath)
           rescue UploadPackfile::ApiError => e
-            Datadog.logger.debug("Packfile upload failed with #{e}")
+            Datadog::CI.logger.debug("Packfile upload failed with #{e}")
             break
           end
 
           Utils::Telemetry.distribution(Ext::Telemetry::METRIC_GIT_REQUESTS_OBJECT_PACK_FILES, packfiles_count.to_f)
         ensure
-          Datadog.logger.debug("Git tree upload finished")
+          Datadog::CI.logger.debug("Git tree upload finished")
         end
 
         private
@@ -102,7 +102,7 @@ module Datadog
         # Split the latest commits list into known and new commits
         # based on the backend response provided by /search_commits endpoint
         def fetch_known_commits_and_split(repository_url, latest_commits)
-          Datadog.logger.debug { "Checking the latest commits list with backend: #{latest_commits}" }
+          Datadog::CI.logger.debug { "Checking the latest commits list with backend: #{latest_commits}" }
           backend_commits = SearchCommits.new(api: api).call(repository_url, latest_commits)
           latest_commits.partition do |commit|
             backend_commits.include?(commit)
@@ -110,11 +110,11 @@ module Datadog
         end
 
         def test_tracing_component
-          Datadog.send(:components).test_tracing
+          Datadog::CI.components.test_tracing
         end
 
         def test_optimization_cache
-          Datadog.send(:components).test_optimization_cache
+          Datadog::CI.components.test_optimization_cache
         end
       end
     end

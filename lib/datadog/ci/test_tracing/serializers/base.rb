@@ -34,6 +34,10 @@ module Datadog
               @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
             )
 
+            @meta["_dd.origin"] = @trace.origin if @trace.origin
+            high_order_trace_id = @trace.id >> 64
+            @meta["_dd.p.tid"] = format("%016x", high_order_trace_id) if high_order_trace_id != 0
+
             @errors = {}
             @validated = false
           end
@@ -94,7 +98,7 @@ module Datadog
           end
 
           def trace_id
-            @trace.id
+            @trace.id & ((1 << 64) - 1)
           end
 
           def span_id

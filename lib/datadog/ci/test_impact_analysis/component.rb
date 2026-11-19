@@ -2,7 +2,7 @@
 
 require "pp"
 
-require "datadog/core/telemetry/logging"
+require "datadog/ci/utils/internal_logging"
 
 require_relative "../ext/test"
 require_relative "../ext/telemetry"
@@ -96,13 +96,13 @@ module Datadog
           @current_context_id = nil
           @current_context_id_mutex = Mutex.new
 
-          Datadog.logger.debug("TestImpactAnalysis initialized with enabled: #{@enabled}")
+          Datadog::CI.logger.debug("TestImpactAnalysis initialized with enabled: #{@enabled}")
         end
 
         def configure(remote_configuration, test_session)
           return unless enabled?
 
-          Datadog.logger.debug("Configuring TestImpactAnalysis with remote configuration: #{remote_configuration}")
+          Datadog::CI.logger.debug("Configuring TestImpactAnalysis with remote configuration: #{remote_configuration}")
 
           @enabled = remote_configuration.itr_enabled?
           @test_skipping_enabled = @enabled && remote_configuration.tests_skipping_enabled?
@@ -131,7 +131,7 @@ module Datadog
             store_component_state if test_session.distributed
           end
 
-          Datadog.logger.debug("Configured TestImpactAnalysis with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
+          Datadog::CI.logger.debug("Configured TestImpactAnalysis with enabled: #{@enabled}, skipping_tests: #{@test_skipping_enabled}, code_coverage: #{@code_coverage_enabled}")
         end
 
         def enabled?
@@ -203,7 +203,7 @@ module Datadog
           # This ensures that outer context coverage is preserved when nested contexts start.
           stop_context_coverage_and_store
 
-          Datadog.logger.debug { "Starting context coverage collection for context [#{context_id}]" }
+          Datadog::CI.logger.debug { "Starting context coverage collection for context [#{context_id}]" }
 
           # Store the context_id we're collecting for
           @current_context_id_mutex.synchronize do
@@ -232,7 +232,7 @@ module Datadog
 
           context_ids = test.context_ids || []
 
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "Starting test coverage for [#{test.name}] with context chain: #{context_ids.inspect}"
           end
 
@@ -307,7 +307,7 @@ module Datadog
           @context_coverages_mutex.synchronize do
             @context_coverages.delete(context_id)
 
-            Datadog.logger.debug { "Cleared context coverage for [#{context_id}]" }
+            Datadog::CI.logger.debug { "Cleared context coverage for [#{context_id}]" }
           end
         end
 
@@ -337,9 +337,9 @@ module Datadog
           if skippable?(test.datadog_test_id) && !test.should_retry_attempt_to_fix?
             test.set_internal_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
 
-            Datadog.logger.debug { "Marked test as skippable: #{test.datadog_test_id}" }
+            Datadog::CI.logger.debug { "Marked test as skippable: #{test.datadog_test_id}" }
           else
-            Datadog.logger.debug { "Test is not skippable: #{test.datadog_test_id}" }
+            Datadog::CI.logger.debug { "Test is not skippable: #{test.datadog_test_id}" }
           end
         end
 
@@ -350,7 +350,7 @@ module Datadog
           Utils::Telemetry.itr_unskippable if unskippable
 
           unless skippable_suite?(test_suite.name)
-            Datadog.logger.debug { "Test suite is not skippable: #{test_suite.name}" }
+            Datadog::CI.logger.debug { "Test suite is not skippable: #{test_suite.name}" }
             return
           end
 
@@ -358,14 +358,14 @@ module Datadog
             Utils::Telemetry.itr_forced_run
             test_suite.set_internal_tag(Ext::Test::TAG_ITR_FORCED_RUN, "true")
 
-            Datadog.logger.debug { "Forced run of skippable test suite: #{test_suite.name}" }
+            Datadog::CI.logger.debug { "Forced run of skippable test suite: #{test_suite.name}" }
             return
           end
 
           test_suite.set_internal_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR, "true")
           test_suite.skipped!(reason: Ext::Test::SkipReason::TEST_IMPACT_ANALYSIS)
 
-          Datadog.logger.debug { "Marked test suite as skippable: #{test_suite.name}" }
+          Datadog::CI.logger.debug { "Marked test suite as skippable: #{test_suite.name}" }
         end
 
         def on_test_suite_started(test_suite)
@@ -417,8 +417,8 @@ module Datadog
         def write_test_session_tags(test_session, skipped_tests_count)
           return if !enabled?
 
-          Datadog.logger.debug { "Finished optimised session with test skipping enabled: #{@test_skipping_enabled}" }
-          Datadog.logger.debug { "#{skipped_tests_count} tests were skipped" }
+          Datadog::CI.logger.debug { "Finished optimised session with test skipping enabled: #{@test_skipping_enabled}" }
+          Datadog::CI.logger.debug { "#{skipped_tests_count} tests were skipped" }
 
           test_session.set_internal_tag(Ext::Test::TAG_ITR_TESTS_SKIPPED, skipped_tests_count.positive?.to_s)
           test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT, skipped_tests_count)
@@ -450,21 +450,21 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring skippables from Test Optimization cache" }
+          Datadog::CI.logger.debug { "Restoring skippables from Test Optimization cache" }
 
           skippables_data = load_cached_skippable_tests
           if skippables_data.nil?
-            Datadog.logger.debug { "Restoring skippables failed, will request again" }
+            Datadog::CI.logger.debug { "Restoring skippables failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored skippables from Test Optimization: #{skippables_data}" }
+          Datadog::CI.logger.debug { "Restored skippables from Test Optimization: #{skippables_data}" }
 
           skippable_response = Skippable::Response.from_json(skippables_data)
           apply_skippable_response(skippable_response)
 
-          Datadog.logger.debug { "Found [#{skippables_count}] skippable #{@test_skipping_mode}s from context" }
-          Datadog.logger.debug { "ITR correlation ID from context: #{@correlation_id}" }
+          Datadog::CI.logger.debug { "Found [#{skippables_count}] skippable #{@test_skipping_mode}s from context" }
+          Datadog::CI.logger.debug { "ITR correlation ID from context: #{@correlation_id}" }
 
           true
         end
@@ -492,11 +492,11 @@ module Datadog
         def load_datadog_cov!
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
-          Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
+          Datadog::CI.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
           true
         rescue LoadError => e
-          Datadog.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
-          Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")
+          Datadog::CI.logger.error("Failed to load coverage collector: #{e}. Code coverage will not be collected.")
+          Utils::InternalLogging.report(e, description: "Failed to load coverage collector")
 
           @code_coverage_enabled = false
         end
@@ -556,7 +556,7 @@ module Datadog
             files: files
           )
 
-          Datadog.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }
+          Datadog::CI.logger.debug { "Writing coverage event \n #{coverage_event.pretty_inspect}" }
 
           write(coverage_event)
 
@@ -587,9 +587,9 @@ module Datadog
 
           apply_skippable_response(skippable_response)
 
-          Datadog.logger.debug { "Fetched skippable #{@test_skipping_mode}s: \n #{current_skippables}" }
-          Datadog.logger.debug { "Found #{skippables_count} skippable #{@test_skipping_mode}s." }
-          Datadog.logger.debug { "ITR correlation ID: #{@correlation_id}" }
+          Datadog::CI.logger.debug { "Fetched skippable #{@test_skipping_mode}s: \n #{current_skippables}" }
+          Datadog::CI.logger.debug { "Found #{skippables_count} skippable #{@test_skipping_mode}s." }
+          Datadog::CI.logger.debug { "ITR correlation ID: #{@correlation_id}" }
 
           Utils::Telemetry.inc(skippable_response_metric, skippables_count)
         end
@@ -627,7 +627,7 @@ module Datadog
         end
 
         def git_tree_upload_worker
-          Datadog.send(:components).git_tree_upload_worker
+          Datadog::CI.components.git_tree_upload_worker
         end
 
         # Stops any in-progress context coverage collection and stores it.
@@ -649,7 +649,7 @@ module Datadog
             (@context_coverages[context_id] ||= {}).merge!(coverage)
           end
 
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "Stored context coverage for [#{context_id}] with #{coverage.size} files"
           end
         end
@@ -671,7 +671,7 @@ module Datadog
             end
           end
 
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "Merged context coverage for contexts: #{context_ids.inspect} into test coverage"
           end
         end

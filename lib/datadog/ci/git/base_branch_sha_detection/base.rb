@@ -24,7 +24,7 @@ module Datadog
           def merge_base_sha(branch, source_branch)
             CLI.exec_git_command(["merge-base", branch, source_branch], timeout: CLI::LONG_TIMEOUT)&.strip
           rescue CLI::GitCommandExecutionError => e
-            Datadog.logger.debug { "Merge base calculation failed for branches '#{branch}' and '#{source_branch}': #{e}" }
+            Datadog::CI.logger.debug { "Merge base calculation failed for branches '#{branch}' and '#{source_branch}': #{e}" }
             nil
           end
 
@@ -34,21 +34,21 @@ module Datadog
 
             # Check if branch already fetched from remote
             CLI.exec_git_command(["show-ref", "--verify", "--quiet", "refs/remotes/#{remote_name}/#{short_branch_name}"])
-            Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' already fetched from remote, skipping" }
+            Datadog::CI.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' already fetched from remote, skipping" }
           rescue CLI::GitCommandExecutionError => e
-            Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' doesn't exist locally, checking remote..." }
+            Datadog::CI.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' doesn't exist locally, checking remote..." }
 
             begin
               remote_heads = CLI.exec_git_command(["ls-remote", "--heads", remote_name, short_branch_name])
               if remote_heads.nil? || remote_heads.empty?
-                Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' doesn't exist in remote" }
+                Datadog::CI.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' doesn't exist in remote" }
                 return
               end
 
-              Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' exists in remote, fetching" }
+              Datadog::CI.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' exists in remote, fetching" }
               CLI.exec_git_command(["fetch", "--depth", "1", remote_name, short_branch_name], timeout: CLI::LONG_TIMEOUT)
             rescue CLI::GitCommandExecutionError => e
-              Datadog.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' couldn't be fetched from remote: #{e}" }
+              Datadog::CI.logger.debug { "Branch '#{remote_name}/#{short_branch_name}' couldn't be fetched from remote: #{e}" }
             end
           end
 

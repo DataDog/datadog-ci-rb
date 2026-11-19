@@ -42,7 +42,7 @@ module Datadog
 
           @manifest_versions[manifest_path] = File.read(manifest_path).delete_prefix("\uFEFF").strip
         rescue => e
-          Datadog.logger.debug { "Failed to read Test Optimization cache manifest #{manifest_path}: #{e.message}" }
+          Datadog::CI.logger.debug { "Failed to read Test Optimization cache manifest #{manifest_path}: #{e.message}" }
           @manifest_versions[manifest_path] = nil
         end
 
@@ -85,7 +85,7 @@ module Datadog
 
           nil
         rescue => e
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "Failed to resolve Test Optimization cache manifest from #{runfiles_manifest}: #{e.message}"
           end
           nil

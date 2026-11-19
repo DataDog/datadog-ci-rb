@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "datadog/core/configuration/agent_settings_resolver"
-require "datadog/core/remote/transport/http"
+require "uri"
+require "json"
 
 require_relative "agentless"
 require_relative "evp_proxy"
@@ -44,15 +44,18 @@ module Datadog
           end
 
           def self.build_evp_proxy_api(settings)
-            agent_settings = Datadog::Core::Configuration::AgentSettingsResolver.call(settings)
-            response = Datadog::Core::Remote::Transport::HTTP.root(
-              agent_settings: agent_settings,
-              logger: Datadog.logger
-            ).send_info
+            agent_settings = resolve_agent_settings(settings)
+            response = Transport::HTTP.new(
+              host: agent_settings.hostname,
+              port: agent_settings.port,
+              ssl: agent_settings.ssl,
+              timeout: agent_settings.timeout_seconds,
+              uds_path: agent_settings.uds_path
+            ).request(path: "/info", payload: nil, headers: {}, verb: "get")
 
-            return [nil, false] if response.internal_error?
+            return [nil, false] if response.error
 
-            endpoints = response.endpoints
+            endpoints = JSON.parse(response.payload).fetch("endpoints", []) if response.ok?
             evp_proxy_path_prefix = if response.ok? && endpoints.is_a?(Array)
               Ext::Transport::EVP_PROXY_PATH_PREFIXES.find { |path_prefix| endpoints.include?(path_prefix) }
             end
@@ -60,6 +63,27 @@ module Datadog
             return [nil, true] if evp_proxy_path_prefix.nil?
 
             [EvpProxy.new(agent_settings: agent_settings, path_prefix: evp_proxy_path_prefix), true]
+          rescue JSON::ParserError, URI::InvalidURIError => error
+            CI.logger.warn("Failed to read Datadog Agent configuration: #{error}")
+            [nil, false]
+          end
+
+          AgentSettings = Struct.new(:hostname, :port, :ssl, :timeout_seconds, :uds_path, keyword_init: true)
+
+          def self.resolve_agent_settings(settings)
+            agent = settings.agent
+            url = agent.url && URI.parse(agent.url)
+            socket = agent.uds_path || (url.path if url && url.scheme == "unix")
+            if !url && !agent.host && !agent.port && !socket && File.socket?("/var/run/datadog/apm.socket")
+              socket = "/var/run/datadog/apm.socket"
+            end
+            AgentSettings.new(
+              hostname: agent.host || (url.host if url) || "127.0.0.1",
+              port: agent.port || (url.port if url.respond_to?(:port)) || 8126,
+              ssl: agent.use_ssl || (url && url.scheme == "https") || false,
+              timeout_seconds: agent.timeout_seconds,
+              uds_path: socket
+            )
           end
         end
       end

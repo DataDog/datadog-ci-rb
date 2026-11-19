@@ -8,13 +8,13 @@ module Datadog
       module Json
         def self.read_file(file_path)
           unless File.exist?(file_path)
-            Datadog.logger.debug { "JSON file not found: #{file_path}" }
+            Datadog::CI.logger.debug { "JSON file not found: #{file_path}" }
             return nil
           end
 
           JSON.parse(File.read(file_path))
         rescue JSON::ParserError, SystemCallError => e
-          Datadog.logger.debug { "Failed to load JSON file #{file_path}: #{e.message}" }
+          Datadog::CI.logger.debug { "Failed to load JSON file #{file_path}: #{e.message}" }
           nil
         end
       end

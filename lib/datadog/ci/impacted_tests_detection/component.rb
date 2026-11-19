@@ -35,7 +35,7 @@ module Datadog
             test_session.base_commit_sha || Git::LocalRepository.base_commit_sha
           end
           if base_commit_sha.nil?
-            Datadog.logger.debug { "Impacted tests detection disabled: base commit not found" }
+            Datadog::CI.logger.debug { "Impacted tests detection disabled: base commit not found" }
             @enabled = false
             return
           end
@@ -43,15 +43,15 @@ module Datadog
           target_commit = @target_commit_sha || checkout_sha || "HEAD"
           git_diff = Git::LocalRepository.get_changes_since(base_commit_sha, target_commit: target_commit)
           if git_diff.empty?
-            Datadog.logger.debug { "Impacted tests detection disabled: could not get changed files" }
+            Datadog::CI.logger.debug { "Impacted tests detection disabled: could not get changed files" }
             @enabled = false
             return
           end
 
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "Impacted tests detection: found #{git_diff.size} changed files"
           end
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "Impacted tests detection: changed files: #{git_diff.inspect}"
           end
 
@@ -74,7 +74,7 @@ module Datadog
           source_file = source_file[1..] if source_file.start_with?("/")
 
           result = @git_diff.lines_changed?(source_file, start_line: test_span.start_line, end_line: test_span.end_line)
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "Impacted tests detection: test #{test_span.name} with source file #{source_file} is modified: #{result}"
           end
           result
@@ -83,7 +83,7 @@ module Datadog
         def tag_modified_test(test_span)
           return unless modified?(test_span)
 
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "Impacted tests detection: test #{test_span.name} with source file #{test_span.source_file} is modified"
           end
 
@@ -93,7 +93,7 @@ module Datadog
         private
 
         def git_tree_upload_worker
-          Datadog.send(:components).git_tree_upload_worker
+          Datadog::CI.components.git_tree_upload_worker
         end
       end
     end

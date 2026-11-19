@@ -33,7 +33,7 @@ module Datadog
             return false unless @enabled
 
             if @retried_count >= @total_limit
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "Retry failed tests limit reached: [#{@retried_count}] out of [#{@total_limit}]"
               end
               @enabled = false
@@ -48,7 +48,7 @@ module Datadog
           end
 
           def build_driver(test_span)
-            Datadog.logger.debug { "#{test_span.name} failed, will be retried" }
+            Datadog::CI.logger.debug { "#{test_span.name} failed, will be retried" }
 
             @retried_count += 1
 

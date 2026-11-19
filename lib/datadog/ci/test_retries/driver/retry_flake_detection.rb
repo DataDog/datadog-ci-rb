@@ -34,7 +34,7 @@ module Datadog
             @passed_once = true if test_span&.passed?
             @failed_once = true if test_span&.failed?
 
-            Datadog.logger.debug { "Retry Attempts [#{@attempts} / #{@max_attempts}], Passed: [#{@passed_once}], Failed: [#{@failed_once}]" }
+            Datadog::CI.logger.debug { "Retry Attempts [#{@attempts} / #{@max_attempts}], Passed: [#{@passed_once}], Failed: [#{@failed_once}]" }
           end
 
           def record_duration(duration)
@@ -47,7 +47,7 @@ module Datadog
               @test_span.set_internal_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_SLOW)
             end
 
-            Datadog.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
+            Datadog::CI.logger.debug { "Recorded test duration of [#{duration}], new Max Attempts value is [#{@max_attempts}]" }
           end
 
           def retry_reason

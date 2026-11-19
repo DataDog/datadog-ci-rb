@@ -93,6 +93,7 @@ RSpec.configure do |config|
   # +expect(Datadog).to receive(:shutdown!).once+
   config.before do
     # Dispose of components as well as settings, including any unfinished CI lifecycle.
+    Datadog::CI.reset!
     Datadog.send(:reset!)
   end
 end

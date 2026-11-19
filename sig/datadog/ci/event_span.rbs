@@ -1,0 +1,53 @@
+module Datadog
+  module CI
+    interface _EventSpan
+      def id: () -> Integer
+      def trace_id: () -> Integer
+      def parent_id: () -> Integer
+      def name: () -> String
+      def resource: () -> String?
+      def service: () -> String?
+      def type: () -> String?
+      def status: () -> Integer
+      def start_time: () -> Time
+      def duration: () -> Float?
+      def meta: () -> Hash[String, String]
+      def metrics: () -> Hash[String, Numeric]
+      def get_tag: (String) -> (String | Numeric)?
+    end
+
+    class EventSpan
+      WALL_CLOCK: Method
+      MONOTONIC_CLOCK: Method
+
+      @started_at: Float
+      @on_finish: (^(EventSpan) -> void)?
+      @finish_mutex: Mutex
+
+      attr_reader id: Integer
+      attr_reader trace_id: Integer
+      attr_reader parent_id: Integer
+      attr_reader start_time: Time
+      attr_reader end_time: Time?
+      attr_reader duration: Float?
+      attr_reader meta: Hash[String, String]
+      attr_reader metrics: Hash[String, Numeric]
+      attr_accessor name: String
+      attr_accessor resource: String
+      attr_accessor service: String?
+      attr_accessor type: String?
+      attr_accessor status: Integer
+
+      def initialize: (String name, trace_id: Integer, ?parent_id: Integer, ?service: String?, ?type: String?, ?resource: String?, ?tags: Hash[String | Symbol, Object?]) ?{ (EventSpan) -> void } -> void
+      def set_tag: (String | Symbol key, Object? value) -> void
+      def set_tags: (Hash[String | Symbol, Object?]) -> void
+      def get_tag: (String key) -> (String | Numeric)?
+      def clear_tag: (String key) -> void
+      def set_metric: (String | Symbol key, Object? value) -> void
+      def get_metric: (String key) -> Numeric?
+      def set_error: (Exception? error) -> void
+      def finished?: () -> bool
+      def finish: (?Time? end_time) -> EventSpan
+    end
+  end
+end

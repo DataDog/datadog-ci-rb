@@ -3,7 +3,7 @@
 require "drb"
 require "rbconfig"
 
-require "datadog/core/utils/forking"
+require_relative "../utils/forking"
 
 require_relative "context"
 require_relative "known_tests"
@@ -27,7 +27,7 @@ module Datadog
     module TestTracing
       # Core functionality of the library: tracing tests' execution
       class Component
-        include Core::Utils::Forking
+        include Utils::Forking
         include Datadog::CI::Utils::Stateful
 
         FILE_STORAGE_KEY = "test_tracing_component_state"
@@ -48,13 +48,15 @@ module Datadog
 
         def initialize(
           known_tests_client:,
+          tracer:,
           codeowners: Codeowners::Parser.new(Git::LocalRepository.root).parse,
           logical_test_session_name: nil,
           runtime_tags_overrides: {},
           context_service_uri: nil,
           trace_setup_teardown_enabled: false
         )
-          @context = Context.new(test_tracing_component: self, runtime_tags_overrides: runtime_tags_overrides)
+          @tracer = tracer
+          @context = Context.new(test_tracing_component: self, tracer: tracer, runtime_tags_overrides: runtime_tags_overrides)
 
           @codeowners = codeowners
           @logical_test_session_name = logical_test_session_name
@@ -64,6 +66,7 @@ module Datadog
           # "Known tests" feature fetches a list of all tests known to Datadog for this repository
           # and uses this list to determine if a test is new or not. New tests are marked with "test.is_new" tag.
           @known_tests_enabled = false
+          update_fork_pid!
           @known_tests_client = known_tests_client
           @known_tests = Set.new
 
@@ -144,9 +147,11 @@ module Datadog
             @context.trace_test(test_name, test_suite, service: service, tags: tags) do |test|
               test.apply_automation_exclusions(prevent_failure_suppression: prevent_failure_suppression, no_auto_retry: no_auto_retry)
               on_test_started(test)
-              res = block.call(test)
-              on_test_finished(test)
-              res
+              begin
+                block.call(test)
+              ensure
+                on_test_finished(test)
+              end
             end
           else
             test = @context.trace_test(test_name, test_suite, service: service, tags: tags)
@@ -186,7 +191,7 @@ module Datadog
         def active_test_session
           maybe_remote_context.active_test_session
         rescue => e
-          Datadog.logger.error("Failed to get active test session: #{e.class}: #{e.message}")
+          CI.logger.error("Failed to get active test session: #{e.class}: #{e.message}")
           nil
         end
 
@@ -247,7 +252,8 @@ module Datadog
         end
 
         def shutdown!
-          # noop, there is no thread owned by test visibility component
+          @tracer.writer.flush
+          @context_service&.stop_service
         end
 
         def client_process?
@@ -259,24 +265,24 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring known tests from Test Optimization cache" }
+          CI.logger.debug { "Restoring known tests from Test Optimization cache" }
 
           known_tests_data = load_cached_known_tests
           if known_tests_data.nil?
-            Datadog.logger.debug { "Restoring known tests failed, will request again" }
+            CI.logger.debug { "Restoring known tests failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored known tests from Test Optimization: #{known_tests_data}" }
+          CI.logger.debug { "Restored known tests from Test Optimization: #{known_tests_data}" }
 
           @known_tests = KnownTests::Response.from_json(known_tests_data).tests
           @known_tests_enabled = !@known_tests.empty?
 
           unless @known_tests_enabled
-            Datadog.logger.debug("Empty set of known tests from the Test Optimization cache file")
+            CI.logger.debug("Empty set of known tests from the Test Optimization cache file")
           end
 
-          Datadog.logger.debug { "Found [#{@known_tests.size}] known tests from context" }
+          CI.logger.debug { "Found [#{@known_tests.size}] known tests from context" }
 
           true
         end
@@ -299,6 +305,8 @@ module Datadog
           # sets logical test session name if none provided by the user
           override_logical_test_session_name!(test_session) if logical_test_session_name.nil?
           @context.finalize_shared_tags
+
+          tracer_bridge.on_session_started(test_session)
 
           # Signal Remote::Component to configure the library.
           # Note that it will call this component back (unfortunate circular dependency).
@@ -339,6 +347,7 @@ module Datadog
           test_impact_analysis.on_test_started(test)
 
           test_retries.record_test_started(test)
+          tracer_bridge.on_test_started(test)
         end
 
         def on_test_session_finished(test_session)
@@ -347,6 +356,8 @@ module Datadog
           DeprecatedTotalCoverageMetric.extract_lines_pct(test_session)
 
           Telemetry.event_finished(test_session)
+        ensure
+          tracer_bridge.on_session_finished(test_session)
         end
 
         def on_test_module_finished(test_module)
@@ -367,6 +378,8 @@ module Datadog
 
           test_retries.record_test_finished(test)
           Telemetry.event_finished(test)
+        ensure
+          tracer_bridge.on_test_finished(test)
         end
 
         # HELPERS
@@ -396,7 +409,7 @@ module Datadog
           end_line = source_end.to_i
 
           if end_line < start_line
-            Datadog.logger.debug do
+            CI.logger.debug do
               "Invalid source location for test [#{test.name}]: " \
               "end line (#{end_line}) is before the start line (#{start_line}). " \
               "Removing #{Ext::Test::TAG_SOURCE_END} tag."
@@ -408,13 +421,13 @@ module Datadog
         def fix_test_suite!(test)
           test_suite = maybe_remote_context.single_active_test_suite
           unless test_suite
-            Datadog.logger.debug do
+            CI.logger.debug do
               "Trying to fix test suite for test [#{test.name}] but no single test suite is running."
             end
             return
           end
 
-          Datadog.logger.debug do
+          CI.logger.debug do
             "For test [#{test.name}]: expected test suite [#{test.test_suite_name}] to be running, " \
             "but it was not found. Fixing it by assigning test suite [#{test_suite.name}] to the test."
           end
@@ -425,21 +438,21 @@ module Datadog
 
         def validate_test_suite_level_visibility_correctness(test)
           if test.test_suite_id.nil?
-            Datadog.logger.debug do
+            CI.logger.debug do
               "Test [#{test.name}] does not have a test suite associated with it. " \
               "Expected test suite [#{test.test_suite_name}] to be running."
             end
           end
 
           if test.test_module_id.nil?
-            Datadog.logger.debug do
+            CI.logger.debug do
               "Test [#{test.name}] does not have a test module associated with it. " \
               "Make sure that there is a test module running within a session."
             end
           end
 
           if test.test_session_id.nil?
-            Datadog.logger.debug do
+            CI.logger.debug do
               "Test [#{test.name}] does not have a test session associated with it. " \
               "Make sure that there is a test session running."
             end
@@ -464,7 +477,7 @@ module Datadog
           result = !@known_tests.include?(test_id)
 
           if result
-            Datadog.logger.debug do
+            CI.logger.debug do
               "#{test_id} is not found in the known tests set, it is a new test"
             end
           end
@@ -481,11 +494,11 @@ module Datadog
             # this adds unfortunate knowledge on EFD from Testvisibility, rethink this
             test_session&.set_internal_tag(Ext::Test::TAG_EARLY_FLAKE_ABORT_REASON, Ext::Test::EARLY_FLAKE_FAULTY)
 
-            Datadog.logger.warn("Empty set of tests known to Datadog")
+            CI.logger.warn("Empty set of tests known to Datadog")
           end
 
           # report how many known tests were found
-          Datadog.logger.debug do
+          CI.logger.debug do
             "Found [#{@known_tests.size}] known tests"
           end
           Utils::Telemetry.distribution(
@@ -500,32 +513,36 @@ module Datadog
           test_span.set_internal_tag(Ext::Test::TAG_IS_NEW, "true")
         end
 
+        def tracer_bridge
+          CI.components.tracer_bridge
+        end
+
         def test_impact_analysis
-          Datadog.send(:components).test_impact_analysis
+          CI.components.test_impact_analysis
         end
 
         def test_retries
-          Datadog.send(:components).test_retries
+          CI.components.test_retries
         end
 
         def git_tree_upload_worker
-          Datadog.send(:components).git_tree_upload_worker
+          CI.components.git_tree_upload_worker
         end
 
         def remote
-          Datadog.send(:components).ci_remote
+          CI.components.ci_remote
         end
 
         def test_management
-          Datadog.send(:components).test_management
+          CI.components.test_management
         end
 
         def impacted_tests_detection
-          Datadog.send(:components).impacted_tests_detection
+          CI.components.impacted_tests_detection
         end
 
         def test_discovery
-          Datadog.send(:components).test_discovery
+          CI.components.test_discovery
         end
 
         # DISTRIBUTED RUBY CONTEXT

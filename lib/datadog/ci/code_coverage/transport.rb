@@ -21,7 +21,7 @@ module Datadog
         def send_coverage_report(event:, coverage_report:)
           return nil if api.nil?
 
-          Datadog.logger.debug { "[#{self.class.name}] Sending coverage report..." }
+          Datadog::CI.logger.debug { "[#{self.class.name}] Sending coverage report..." }
 
           compressed_coverage_report = CI::Transport::Gzip.compress(coverage_report)
           event_json = event.to_json
@@ -55,7 +55,7 @@ module Datadog
               status_code: response.code
             )
 
-            Datadog.logger.warn { "[#{self.class.name}] Failed to send coverage report: #{response.inspect}" }
+            Datadog::CI.logger.warn { "[#{self.class.name}] Failed to send coverage report: #{response.inspect}" }
           end
 
           response

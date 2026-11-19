@@ -93,14 +93,14 @@ module Datadog
             @api_key_error_logged = true
 
             if api_key.nil? || api_key.strip.empty?
-              Datadog.logger.error do
+              Datadog::CI.logger.error do
                 "DATADOG CONFIGURATION - TEST OPTIMIZATION - ATTENTION - " \
                 "Datadog API rejected the request because DD_API_KEY is not set. " \
                 "Please set DD_API_KEY environment variable to a valid Datadog API key. " \
                 "Server response: #{response.payload}"
               end
             else
-              Datadog.logger.error do
+              Datadog::CI.logger.error do
                 "DATADOG CONFIGURATION - TEST OPTIMIZATION - ATTENTION - " \
                 "Datadog API rejected the request because the configured DD_API_KEY is invalid. " \
                 "Please verify that DD_API_KEY environment variable is set to a valid Datadog API key " \

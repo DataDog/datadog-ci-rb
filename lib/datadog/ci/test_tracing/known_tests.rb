@@ -2,7 +2,7 @@
 
 require "json"
 
-require "datadog/core/utils/time"
+require "datadog/ci/utils/time"
 
 require_relative "../ext/telemetry"
 require_relative "../ext/transport"
@@ -74,7 +74,7 @@ module Datadog
             begin
               @json = JSON.parse(resp.payload)
             rescue JSON::ParserError => e
-              Datadog.logger.error("Failed to parse unique known tests response payload: #{e}. Payload was: #{resp.payload}")
+              Datadog::CI.logger.error("Failed to parse unique known tests response payload: #{e}. Payload was: #{resp.payload}")
               @json = {}
             end
           end
@@ -102,10 +102,10 @@ module Datadog
           page_state = nil
           page_number = 1
 
-          fetch_start_time = Core::Utils::Time.get_time(:float_millisecond)
+          fetch_start_time = Utils::Time.get_time(:float_millisecond)
 
           loop do
-            Datadog.logger.debug { "Fetching known tests page ##{page_number}#{" with cursor" if page_state}" }
+            Datadog::CI.logger.debug { "Fetching known tests page ##{page_number}#{" with cursor" if page_state}" }
 
             response = fetch_page(api, test_session, page_state: page_state)
 
@@ -114,7 +114,7 @@ module Datadog
               # with the hidden _dd.ci.library_configuration_error.known_tests tag
               test_session.set_internal_tag(Ext::Test::LibraryConfigurationError::TAG_KNOWN_TESTS, "true")
 
-              Datadog.logger.debug(
+              Datadog::CI.logger.debug(
                 "Failed to fetch known tests page ##{page_number}, bailing out of known tests fetch. " \
                 "Early flake detection will not work."
               )
@@ -127,10 +127,10 @@ module Datadog
 
             page_tests = response.tests
             result.merge(page_tests)
-            Datadog.logger.debug { "Received #{page_tests.size} known tests from page ##{page_number} (total so far: #{result.size})" }
+            Datadog::CI.logger.debug { "Received #{page_tests.size} known tests from page ##{page_number} (total so far: #{result.size})" }
 
             unless response.has_next?
-              Datadog.logger.debug { "Stopping known tests fetch: no more pages after page ##{page_number}" }
+              Datadog::CI.logger.debug { "Stopping known tests fetch: no more pages after page ##{page_number}" }
               break
             end
 
@@ -138,10 +138,10 @@ module Datadog
             page_number += 1
           end
 
-          fetch_duration_ms = Core::Utils::Time.get_time(:float_millisecond) - fetch_start_time
+          fetch_duration_ms = Utils::Time.get_time(:float_millisecond) - fetch_start_time
           # @type var fetch_duration_ms: Float
 
-          Datadog.logger.debug { "Finished fetching known tests: #{result.size} tests total from #{page_number} page(s)" }
+          Datadog::CI.logger.debug { "Finished fetching known tests: #{result.size} tests total from #{page_number} page(s)" }
 
           # Emit pagination aggregate metrics
           Utils::Telemetry.distribution(Ext::Telemetry::METRIC_KNOWN_TESTS_PAGES_FETCHED, page_number.to_f)
@@ -155,7 +155,7 @@ module Datadog
 
         def fetch_page(api, test_session, page_state: nil)
           request_payload = payload(test_session, page_state: page_state)
-          Datadog.logger.debug { "Known tests request payload: #{request_payload}" }
+          Datadog::CI.logger.debug { "Known tests request payload: #{request_payload}" }
 
           http_response = api.api_request(
             path: Ext::Transport::DD_API_UNIQUE_TESTS_PATH,
@@ -191,7 +191,7 @@ module Datadog
 
           {
             "data" => {
-              "id" => Datadog::Core::Environment::Identity.id,
+              "id" => Datadog::CI::Utils::Identity.id,
               "type" => Ext::Transport::DD_API_UNIQUE_TESTS_TYPE,
               "attributes" => {
                 "repository_url" => test_session.git_repository_url,

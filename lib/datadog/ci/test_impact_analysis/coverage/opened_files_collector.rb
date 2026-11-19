@@ -60,7 +60,7 @@ module Datadog
           def warn_failure(error)
             # Suppress file reads by the logger in this fiber, even if logging fails.
             Thread.current[:dd_logging_file_dependency_error] = true
-            Datadog.logger.warn("Failed to collect file dependency: #{error}")
+            Datadog::CI.logger.warn("Failed to collect file dependency: #{error}")
           rescue
             nil
           ensure

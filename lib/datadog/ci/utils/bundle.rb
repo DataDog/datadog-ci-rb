@@ -12,7 +12,7 @@ module Datadog
           bundle_path = Bundler.bundle_path.to_s
           bundle_path if bundle_path&.start_with?(Datadog::CI::Git::LocalRepository.root)
         rescue => e
-          Datadog.logger.warn("Failed to find bundled gems location: #{e}")
+          Datadog::CI.logger.warn("Failed to find bundled gems location: #{e}")
 
           Ext::Environment::POSSIBLE_BUNDLE_LOCATIONS.each do |location|
             path = File.join(Datadog::CI::Git::LocalRepository.root, location)
@@ -28,7 +28,7 @@ module Datadog
             begin
               Gem.loaded_specs.key?("rswag-specs")
             rescue => e
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "Bundle: Unable to detect rswag-specs: #{e.class} #{e.message}"
               end
               false

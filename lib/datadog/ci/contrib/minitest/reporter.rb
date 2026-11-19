@@ -45,11 +45,11 @@ module Datadog
             private
 
             def test_tracing_component
-              Datadog.send(:components).test_tracing
+              Datadog::CI.components.test_tracing
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:minitest]
+              Datadog::CI.configuration.ci[:minitest]
             end
           end
         end

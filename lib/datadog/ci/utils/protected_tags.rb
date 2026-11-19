@@ -18,7 +18,7 @@ module Datadog
 
             @reported[id] = true
           end
-          Datadog.logger.error("Ignoring #{operation} for SDK-owned tag #{key}; use the supported configuration or instrumentation API") if report
+          Datadog::CI.logger.error("Ignoring #{operation} for SDK-owned tag #{key}; use the supported configuration or instrumentation API") if report
           true
         end
       end

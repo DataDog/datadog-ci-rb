@@ -19,7 +19,7 @@ module Datadog
               result = super
 
               if result.fetch(:dd, {}).fetch(:trace_id, nil).nil?
-                Datadog.logger.debug { "Discarding uncorrelated log event: #{result.inspect}" }
+                Datadog::CI.logger.debug { "Discarding uncorrelated log event: #{result.inspect}" }
                 return result
               end
               datadog_logs_component.write(result)
@@ -27,11 +27,11 @@ module Datadog
             end
 
             def datadog_logs_component
-              Datadog.send(:components).agentless_logs_submission
+              Datadog::CI.components.agentless_logs_submission
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:lograge]
+              Datadog::CI.configuration.ci[:lograge]
             end
           end
         end

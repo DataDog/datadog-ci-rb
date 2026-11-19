@@ -1,0 +1,15 @@
+module Datadog
+  module CI
+    module Telemetry
+      class NullComponent
+        def enabled?: () -> false
+        alias enabled enabled?
+        def inc: (String namespace, String metric_name, (Integer | Float) value, ?tags: metric_tags, ?common: bool) -> void
+        def distribution: (String namespace, String metric_name, (Integer | Float) value, ?tags: metric_tags, ?common: bool) -> void
+        def flush: () -> void
+        def disable!: () -> void
+        def shutdown!: () -> void
+      end
+    end
+  end
+end

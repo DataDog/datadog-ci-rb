@@ -58,11 +58,11 @@ module Datadog
           test_properties = @tests_properties[datadog_test_id]
 
           if test_properties.nil?
-            Datadog.logger.debug { "Test properties not found for test: #{datadog_test_id}" }
+            Datadog::CI.logger.debug { "Test properties not found for test: #{datadog_test_id}" }
             return
           end
 
-          Datadog.logger.debug { "Test properties for test #{datadog_test_id} are: [#{test_properties}]" }
+          Datadog::CI.logger.debug { "Test properties for test #{datadog_test_id} are: [#{test_properties}]" }
 
           test_span.set_internal_tag(Ext::Test::TAG_IS_QUARANTINED, "true") if test_properties["quarantined"]
           test_span.set_internal_tag(Ext::Test::TAG_IS_TEST_DISABLED, "true") if test_properties["disabled"]
@@ -88,20 +88,20 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring test management tests from Test Optimization cache" }
+          Datadog::CI.logger.debug { "Restoring test management tests from Test Optimization cache" }
 
           test_management_data = load_cached_test_management
           if test_management_data.nil?
-            Datadog.logger.debug { "Restoring test management tests failed, will request again" }
+            Datadog::CI.logger.debug { "Restoring test management tests failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored test management tests from Test Optimization: #{test_management_data}" }
+          Datadog::CI.logger.debug { "Restored test management tests from Test Optimization: #{test_management_data}" }
 
           tests_properties_response = TestsProperties::Response.from_json(test_management_data)
           @tests_properties = tests_properties_response.tests
 
-          Datadog.logger.debug { "Found [#{@tests_properties.size}] test management tests from context" }
+          Datadog::CI.logger.debug { "Found [#{@tests_properties.size}] test management tests from context" }
 
           true
         end

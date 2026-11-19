@@ -1,0 +1,22 @@
+module Datadog
+  module CI
+    class Runtime
+      @components: Configuration::Components?
+      @mutex: Monitor
+      @default_logger: Logger
+
+      attr_reader configuration: Configuration::RuntimeSettings
+      def initialize: (?configuration: Configuration::RuntimeSettings) -> void
+      def logger: () -> Logger
+      def components: (?allow_initialization: true) -> Configuration::Components
+                    | (allow_initialization: false) -> Configuration::Components?
+      def configure: () { (Configuration::RuntimeSettings) -> void } -> Configuration::RuntimeSettings
+      def configuration_changed!: () -> void
+      def shutdown!: () -> void
+      def reset!: () -> void
+
+      private
+      def configuration_locked?: () -> bool
+    end
+  end
+end

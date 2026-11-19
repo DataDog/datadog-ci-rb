@@ -24,7 +24,7 @@ module Datadog
             return false unless @enabled
 
             if @retried_count >= @total_limit
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "Retry new tests limit reached: [#{@retried_count}] out of [#{@total_limit}]"
               end
               @enabled = false
@@ -47,7 +47,7 @@ module Datadog
           end
 
           def build_driver(test_span)
-            Datadog.logger.debug do
+            Datadog::CI.logger.debug do
               "#{test_span.name} is new, will be retried"
             end
             @retried_count += 1
@@ -63,7 +63,7 @@ module Datadog
 
           def set_max_attempts_thresholds(library_settings)
             @max_attempts_thresholds = library_settings.slow_test_retries
-            Datadog.logger.debug do
+            Datadog::CI.logger.debug do
               "Slow test retries thresholds: #{@max_attempts_thresholds.entries}"
             end
           end
@@ -72,14 +72,14 @@ module Datadog
             percentage_limit = library_settings.faulty_session_threshold
             tests_count = test_session.estimated_total_tests_count.to_i
             if tests_count.zero?
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "Total tests count is zero, using default value for the total number of tests: [#{DEFAULT_TOTAL_TESTS_COUNT}]"
               end
 
               tests_count = DEFAULT_TOTAL_TESTS_COUNT
             end
             @total_limit = (tests_count * percentage_limit / 100.0).ceil
-            Datadog.logger.debug do
+            Datadog::CI.logger.debug do
               "Retry new tests total limit is [#{@total_limit}] (#{percentage_limit}% of #{tests_count})"
             end
           end

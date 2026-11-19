@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/core/utils/only_once"
+require "datadog/ci/utils/only_once"
 
 module Datadog
   module CI
@@ -40,7 +40,7 @@ module Datadog
           # Processes patching errors. This default implementation logs the error and reports relevant metrics.
           # @param e [Exception]
           def on_patch_error(e)
-            Datadog.logger.error("Failed to apply #{patch_name} patch. Cause: #{e} Location: #{Array(e.backtrace).first}")
+            Datadog::CI.logger.error("Failed to apply #{patch_name} patch. Cause: #{e} Location: #{Array(e.backtrace).first}")
 
             @patch_error_result = {
               type: e.class.name,
@@ -53,7 +53,7 @@ module Datadog
 
           def patch_only_once
             # NOTE: This is not thread-safe
-            @patch_only_once ||= Datadog::Core::Utils::OnlyOnce.new
+            @patch_only_once ||= Datadog::CI::Utils::OnlyOnce.new
           end
         end
       end

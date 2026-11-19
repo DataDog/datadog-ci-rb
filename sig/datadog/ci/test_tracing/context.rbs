@@ -4,6 +4,7 @@ module Datadog
       class Context
         @any_tests_started: bool
         @mutex: Mutex
+        @tracer: Datadog::CI::EventTracer
 
         @fiber_local_context: Datadog::CI::TestTracing::Store::FiberLocal
         @process_context: Datadog::CI::TestTracing::Store::Process
@@ -19,7 +20,7 @@ module Datadog
 
         def shared_tags: () -> Hash[String, String]
 
-        def initialize: (test_tracing_component: Datadog::CI::TestTracing::Component, ?runtime_tags_overrides: Hash[String, String]) -> void
+        def initialize: (test_tracing_component: Datadog::CI::TestTracing::Component, tracer: Datadog::CI::EventTracer, ?runtime_tags_overrides: Hash[String, String]) -> void
 
         def trace_test: (String span_name, Datadog::CI::TestSuite? test_suite, ?service: String?, ?tags: Hash[untyped, untyped]) ?{ (Datadog::CI::Test span) -> untyped } -> untyped
 
@@ -61,17 +62,17 @@ module Datadog
 
         private
 
-        def build_test: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
+        def tracer_bridge: () -> (Datadog::CI::TracerBridge::Component | Datadog::CI::TracerBridge::NullComponent)
 
-        def build_test_session: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSession
+        def build_test: (Datadog::CI::EventSpan tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Test
 
-        def build_test_module: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestModule
+        def build_test_session: (Datadog::CI::EventSpan tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSession
 
-        def build_test_suite: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSuite
+        def build_test_module: (Datadog::CI::EventSpan tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestModule
 
-        def build_span: (Datadog::Tracing::SpanOperation tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
+        def build_test_suite: (Datadog::CI::EventSpan tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::TestSuite
 
-        def set_trace_origin: (Datadog::Tracing::TraceOperation trace) -> void
+        def build_span: (Datadog::CI::EventSpan tracer_span, Hash[untyped, untyped] tags) -> Datadog::CI::Span
 
         def build_shared_tags: () -> Hash[String, String]
 
@@ -79,13 +80,13 @@ module Datadog
 
         def set_inherited_globals: (Hash[untyped, untyped] tags) -> void
 
-        def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::Tracing::SpanOperation? test_session) -> void
+        def set_session_context: (Hash[untyped, untyped] tags, ?Datadog::CI::TestSession | Datadog::CI::EventSpan? test_session) -> void
 
-        def set_suite_context: (Hash[untyped, untyped] tags, ?test_suite: Datadog::Tracing::SpanOperation? | Datadog::CI::TestSuite?) -> void
+        def set_suite_context: (Hash[untyped, untyped] tags, ?test_suite: Datadog::CI::EventSpan? | Datadog::CI::TestSuite?) -> void
 
-        def set_module_context: (Hash[untyped, untyped] tags, ?(Datadog::CI::TestModule | Datadog::Tracing::SpanOperation)? test_module) -> void
+        def set_module_context: (Hash[untyped, untyped] tags, ?(Datadog::CI::TestModule | Datadog::CI::EventSpan)? test_module) -> void
 
-        def start_datadog_tracer_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
+        def start_event_span: (String span_name, Hash[untyped, untyped] span_options) ?{ (untyped) -> untyped } -> untyped
 
         def build_tracing_span_options: (String? service_name, String type, ?Hash[Symbol, untyped] other_options) -> Hash[Symbol, untyped]
 

@@ -2,7 +2,28 @@ module Datadog
   module CI
     module Configuration
       module Extensions
-        def self.activate!: () -> untyped
+        interface _LegacyImport
+          def import_legacy!: (Datadog::Core::Configuration::Settings source) -> void
+        end
+
+        module LegacySettings
+          def ci: () -> untyped
+        end
+
+        module LazyConfiguration
+          def configuration: () -> untyped
+        end
+
+        module TracerAccess
+          private
+          def tracer: () -> untyped
+        end
+
+        self.@tracer_active: bool?
+
+        def self.activate!: () -> bool
+        def self.tracer_active?: () -> bool
+        def self.import_configuration!: (_LegacyImport settings) -> void
       end
     end
   end

@@ -503,7 +503,7 @@ module Datadog
           private_class_method :trim
 
           def self.warn_anonymous_example_name_error(error)
-            Datadog.logger.warn { "Unable to compute RSpec anonymous example name: #{error.class}: #{error.message}" }
+            Datadog::CI.logger.warn { "Unable to compute RSpec anonymous example name: #{error.class}: #{error.message}" }
 
             nil
           end

@@ -81,22 +81,16 @@ RSpec.shared_context "CI mode activated" do
   let(:test_discovery_enabled) { false }
   let(:test_discovery_output_path) { nil }
 
-  let(:test_tracing) { Datadog.send(:components).test_tracing }
+  let(:test_tracing) { Datadog::CI.components.test_tracing }
 
   before do
     setup_test_coverage_writer!
     setup_agentless_logs_writer!
 
-    allow_any_instance_of(Datadog::Core::Remote::Transport::Negotiation::Transport).to(
-      receive(:send_info).and_return(
-        double(
-          :agent_info_response,
-          internal_error?: false,
-          ok?: true,
-          endpoints: ["/evp_proxy/v4/"]
-        )
-      )
-    )
+    allow(Datadog::CI::Transport::Api::Builder).to receive(:build_evp_proxy_api) do |settings|
+      connection = Datadog::CI::Transport::Api::Builder.resolve_agent_settings(settings)
+      [Datadog::CI::Transport::Api::EvpProxy.new(agent_settings: connection), true]
+    end
 
     allow(Datadog::CI::Utils::TestRun).to receive(:command).and_return(test_command)
 
@@ -212,13 +206,12 @@ RSpec.shared_context "CI mode activated" do
   end
 
   after do
-    ::Datadog::Tracing.shutdown!
+    Datadog::CI.shutdown!
 
     Datadog::CI.send(:test_impact_analysis)&.shutdown!
     Datadog::CI.send(:test_tracing)&.shutdown!
 
-    # Test isolation uses the tracer's internal reset API. Customer reconfiguration
-    # is intentionally ignored while an unfinished test session is protected.
+    Datadog::CI.reset!
     Datadog.send(:reset!)
     # Session startup caches environment tags independently of the tracer components.
     Datadog::CI::Ext::Environment.reset!

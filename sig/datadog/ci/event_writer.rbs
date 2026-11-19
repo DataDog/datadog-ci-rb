@@ -1,0 +1,47 @@
+module Datadog
+  module CI
+    interface _EventTransport
+      def send_traces: (Array[_EventTrace] traces) -> void
+    end
+
+    interface _EventLogger
+      def warn: (String message) -> void
+    end
+
+    interface _EventWriter
+      def write: (_EventTrace trace) -> bool
+      def flush: () -> void
+      def shutdown!: () -> void
+    end
+
+    class EventWriter
+      @transport: _EventTransport
+      @logger: _EventLogger
+      @buffer_size: Integer
+      @flush_interval: Float
+      @shutdown_timeout: Numeric
+      @pid: Integer
+      @mutex: Mutex
+      @send_mutex: Mutex
+      @condition: ConditionVariable
+      @buffer: Array[_EventTrace]
+      @worker: Thread?
+      @stopped: bool
+
+      attr_reader transport: _EventTransport
+
+      def initialize: (transport: _EventTransport, logger: _EventLogger, ?buffer_size: Integer, ?flush_interval: Float, ?shutdown_timeout: Numeric) -> void
+      def write: (_EventTrace trace) -> bool
+      def flush: () -> void
+      def shutdown!: () -> void
+      alias stop shutdown!
+      def running?: () -> bool
+      def started?: () -> bool
+      def stopped?: () -> bool
+
+      private
+      def reset_process_state: () -> void
+      def start_worker: () -> void
+    end
+  end
+end

@@ -2,7 +2,7 @@
 
 require "json"
 
-require "datadog/core/chunker"
+require "datadog/ci/utils/chunker"
 
 module Datadog
   module CI
@@ -21,7 +21,7 @@ module Datadog
         def send_events(events)
           return [] if events.nil? || events.empty?
 
-          Datadog.logger.debug { "[#{self.class.name}] Sending #{events.count} events..." }
+          Datadog::CI.logger.debug { "[#{self.class.name}] Sending #{events.count} events..." }
 
           encoded_events = events.filter_map do |event|
             encoded_event = event.to_json
@@ -33,9 +33,9 @@ module Datadog
           end
 
           responses = []
-          Datadog::Core::Chunker.chunk_by_size(encoded_events, max_payload_size).map do |chunk|
+          Datadog::CI::Utils::Chunker.chunk_by_size(encoded_events, max_payload_size).map do |chunk|
             encoded_payload = pack_events(chunk)
-            Datadog.logger.debug do
+            Datadog::CI.logger.debug do
               "[#{self.class.name}] Send chunk of #{chunk.count} events; payload size #{encoded_payload.size}"
             end
 
@@ -57,7 +57,7 @@ module Datadog
           return false unless encoded_event.size > max_payload_size
 
           # This single event is too large, we can't flush it
-          Datadog.logger.debug(
+          Datadog::CI.logger.debug(
             "[#{self.class.name}] Dropping event for logs intake. Payload too large: '#{event.inspect}'"
           )
 

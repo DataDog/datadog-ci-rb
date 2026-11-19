@@ -368,7 +368,7 @@ module Datadog
 
       # @internal
       def peek_duration
-        end_time = Core::Utils::Time.now.utc
+        end_time = Utils::Time.now.utc
         start_time = tracer_span.start_time
 
         return 0.0 if start_time.nil? || end_time.nil?

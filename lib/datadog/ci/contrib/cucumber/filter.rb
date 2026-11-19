@@ -31,7 +31,7 @@ module Datadog
           end
 
           def test_retries_component
-            @test_retries_component ||= Datadog.send(:components).test_retries
+            @test_retries_component ||= Datadog::CI.components.test_retries
           end
         end
       end

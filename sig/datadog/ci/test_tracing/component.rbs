@@ -9,6 +9,7 @@ module Datadog
 
         @codeowners: Datadog::CI::Codeowners::Matcher
         @context: Datadog::CI::TestTracing::Context
+        @tracer: Datadog::CI::EventTracer
         @context_client: Datadog::CI::TestTracing::Context
 
         @context_service: untyped
@@ -39,6 +40,7 @@ module Datadog
           api: Datadog::CI::Transport::Api::Base,
           dd_env: String?,
           config_tags: Hash[String, String],
+          tracer: Datadog::CI::EventTracer,
           ?codeowners: Datadog::CI::Codeowners::Matcher,
           ?logical_test_session_name: String?,
           ?runtime_tags_overrides: Hash[String, String],
@@ -50,7 +52,7 @@ module Datadog
 
         def shared_tags: () -> Hash[String, String]
 
-        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?, ?trace_setup_teardown_enabled: bool) -> void
+        def initialize: (known_tests_client: Datadog::CI::TestTracing::KnownTests, tracer: Datadog::CI::EventTracer, ?codeowners: Datadog::CI::Codeowners::Matcher, ?logical_test_session_name: String?, ?runtime_tags_overrides: Hash[String, String], ?context_service_uri: String?, ?trace_setup_teardown_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings library_settings, Datadog::CI::TestSession test_session) -> void
 
@@ -137,6 +139,8 @@ module Datadog
         def fetch_known_tests: (Datadog::CI::TestSession) -> void
 
         def new_test?: (Datadog::CI::Test test_span) -> bool
+
+        def tracer_bridge: () -> (Datadog::CI::TracerBridge::Component | Datadog::CI::TracerBridge::NullComponent)
 
         def test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
 

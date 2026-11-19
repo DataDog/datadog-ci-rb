@@ -5,11 +5,11 @@ module Datadog
 
       EMPTY_TAGS: Hash[String, String]
 
-      @tracer_span: Datadog::Tracing::SpanOperation
+      @tracer_span: Datadog::CI::EventSpan
 
-      attr_reader tracer_span: Datadog::Tracing::SpanOperation
+      attr_reader tracer_span: Datadog::CI::EventSpan
 
-      def initialize: (Datadog::Tracing::SpanOperation tracer_span) -> void
+      def initialize: (Datadog::CI::EventSpan tracer_span) -> void
 
       def id: () -> Integer
 

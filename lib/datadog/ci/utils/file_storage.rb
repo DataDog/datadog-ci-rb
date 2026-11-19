@@ -30,7 +30,7 @@ module Datadog
 
           true
         rescue => e
-          Datadog.logger.error("Failed to store data for key '#{key}': #{e.class}")
+          Datadog::CI.logger.error("Failed to store data for key '#{key}': #{e.class}")
           false
         ensure
           FileUtils.rm_f(temporary_path) if temporary_path
@@ -42,7 +42,7 @@ module Datadog
 
           Marshal.load(File.binread(file_path))
         rescue => e
-          Datadog.logger.error("Failed to retrieve data for key '#{key}': #{e.class}")
+          Datadog::CI.logger.error("Failed to retrieve data for key '#{key}': #{e.class}")
           nil
         end
 
@@ -53,7 +53,7 @@ module Datadog
           FileUtils.rm_rf(directory)
           true
         rescue => e
-          Datadog.logger.error("Failed to cleanup storage directory: #{e.class}")
+          Datadog::CI.logger.error("Failed to cleanup storage directory: #{e.class}")
           false
         end
         private_class_method :cleanup

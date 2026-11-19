@@ -27,9 +27,17 @@ module Datadog
 
     def self.active_span: () -> Datadog::CI::Span?
 
-    private
+    def self.runtime: () -> Datadog::CI::Runtime
+    def self.configuration: () -> Datadog::CI::Configuration::RuntimeSettings
+    def self.logger: () -> Logger
+    def self.configure: () { (Datadog::CI::Configuration::RuntimeSettings) -> void } -> Datadog::CI::Configuration::RuntimeSettings
+    def self.configuration_changed!: () -> void
+    def self.shutdown!: () -> void
+    def self.reset!: () -> void
+    def self.components: (?allow_initialization: true) -> Datadog::CI::Configuration::Components
+                       | (allow_initialization: false) -> Datadog::CI::Configuration::Components?
 
-    def self.components: () -> Datadog::CI::Configuration::Components
+    private
 
     def self.test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 

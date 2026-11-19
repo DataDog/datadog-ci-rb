@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/core/utils/only_once"
+require "datadog/ci/utils/only_once"
 
 module Datadog
   module CI
@@ -24,11 +24,11 @@ module Datadog
         # On every file load it checks if any of the integrations are patchable now.
         # Only the integrations that are available in the environment are checked.
         def self.auto_instrument
-          Datadog.logger.debug("Auto instrumenting all integrations...")
+          Datadog::CI.logger.debug("Auto instrumenting all integrations...")
 
           auto_instrumented_integrations = fetch_auto_instrumented_integrations
           if auto_instrumented_integrations.empty?
-            Datadog.logger.warn(
+            Datadog::CI.logger.warn(
               "Auto instrumentation was requested, but no available integrations were found. " \
               "Tests will be run without Datadog instrumentation."
             )
@@ -49,17 +49,17 @@ module Datadog
                 next unless integration.loaded?
 
                 auto_configure_datadog
-                unless Datadog.configuration.ci.enabled
+                unless Datadog::CI.configuration.ci.enabled
                   tp.disable
                   break
                 end
 
-                Datadog.logger.debug("#{integration.class} is loaded")
+                Datadog::CI.logger.debug("#{integration.class} is loaded")
                 patch_integration(integration)
               end
 
               if all_patched
-                Datadog.logger.debug("All expected integrations are patched, disabling the script_compiled tracepoint")
+                Datadog::CI.logger.debug("All expected integrations are patched, disabling the script_compiled tracepoint")
 
                 tp.disable
               end
@@ -89,13 +89,13 @@ module Datadog
         # This method does not automatically instrument test frameworks (ex: RSpec, Cucumber, etc), it requires
         # test framework to be already instrumented.
         def self.instrument_on_session_start
-          Datadog.logger.debug("Instrumenting all late instrumented integrations...")
+          Datadog::CI.logger.debug("Instrumenting all late instrumented integrations...")
 
           @registry.each do |name, integration|
             next unless integration.late_instrument?
             next unless integration.enabled
 
-            Datadog.logger.debug "#{name} is allowed to be late instrumented"
+            Datadog::CI.logger.debug "#{name} is allowed to be late instrumented"
 
             patch_integration(integration)
           end
@@ -118,7 +118,7 @@ module Datadog
           patch_results = integration.patch
 
           if patch_results[:ok]
-            Datadog.logger.debug("#{integration.class} is patched")
+            Datadog::CI.logger.debug("#{integration.class} is patched")
 
             return unless with_dependencies
 
@@ -127,14 +127,14 @@ module Datadog
               .map { |name| fetch_integration(name) }
               .filter { |integration| integration.patchable? }
 
-            Datadog.logger.debug("Found dependent integrations for #{integration.class}: #{dependants}")
+            Datadog::CI.logger.debug("Found dependent integrations for #{integration.class}: #{dependants}")
 
             dependants.each do |dependent_integration|
               patch_integration(dependent_integration, with_dependencies: true)
             end
 
           else
-            Datadog.logger.debug("Attention: #{integration.class} is not patched (#{patch_results})")
+            Datadog::CI.logger.debug("Attention: #{integration.class} is not patched (#{patch_results})")
           end
         end
 
@@ -146,7 +146,7 @@ module Datadog
             # late instrumented integrations will be patched when the test session starts
             next if integration.late_instrument?
 
-            Datadog.logger.debug("#{name} should be auto instrumented")
+            Datadog::CI.logger.debug("#{name} should be auto instrumented")
             integration
           end
         end
@@ -167,17 +167,16 @@ module Datadog
 
         def self.auto_configure_datadog
           configure_once.run do
-            Datadog.logger.debug("Applying Datadog configuration in CI mode...")
-            Datadog.configure do |c|
+            Datadog::CI.logger.debug("Applying Datadog configuration in CI mode...")
+            Datadog::CI.configure do |c|
               c.ci.enabled = true
-              c.tracing.enabled = true
             end
           end
         end
 
         # This is not thread safe, it is synchronized by the caller in the tracepoint
         def self.configure_once
-          @configure_once ||= Datadog::Core::Utils::OnlyOnce.new
+          @configure_once ||= Datadog::CI::Utils::OnlyOnce.new
         end
       end
     end

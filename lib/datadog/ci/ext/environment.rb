@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/core/telemetry/logging"
+require "datadog/ci/utils/internal_logging"
 
 require_relative "git"
 require_relative "environment/configuration_discrepancy_checker"
@@ -174,8 +174,8 @@ module Datadog
         def validate_repository_url(repo_url)
           return if !repo_url.nil? && !repo_url.empty?
 
-          Datadog.logger.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
-          Core::Telemetry::Logger.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
+          Datadog::CI.logger.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
+          Utils::InternalLogging.error("DD_GIT_REPOSITORY_URL is not set or empty; no repo URL was automatically extracted")
         end
 
         def validate_git_sha(git_sha)
@@ -191,8 +191,8 @@ module Datadog
             " Expected SHA to be a valid HEX number, got #{git_sha}."
           end
 
-          Datadog.logger.error(message)
-          Core::Telemetry::Logger.error(message)
+          Datadog::CI.logger.error(message)
+          Utils::InternalLogging.error(message)
         end
       end
     end

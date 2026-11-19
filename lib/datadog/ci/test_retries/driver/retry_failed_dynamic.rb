@@ -34,7 +34,7 @@ module Datadog
             @attempts += 1
             @passed_once = true if test_span&.passed?
 
-            Datadog.logger.debug { "Dynamic ATR Attempts [#{@attempts} / #{@max_attempts}], Passed: [#{@passed_once}]" }
+            Datadog::CI.logger.debug { "Dynamic ATR Attempts [#{@attempts} / #{@max_attempts}], Passed: [#{@passed_once}]" }
           end
 
           # Classify the test once based on the initial-attempt duration.
@@ -51,7 +51,7 @@ module Datadog
             end
             @duration_recorded = true
 
-            Datadog.logger.debug { "Dynamic ATR: duration [#{duration}s], max attempts [#{@max_attempts}]" }
+            Datadog::CI.logger.debug { "Dynamic ATR: duration [#{duration}s], max attempts [#{@max_attempts}]" }
           end
 
           def retry_reason

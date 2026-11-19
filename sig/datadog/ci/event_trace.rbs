@@ -1,0 +1,18 @@
+module Datadog
+  module CI
+    interface _EventTrace
+      def id: () -> Integer
+      def spans: () -> Array[_EventSpan]
+      def runtime_id: () -> String?
+      def origin: () -> String?
+    end
+
+    class EventTrace
+      attr_reader id: Integer
+      attr_reader spans: Array[_EventSpan]
+      attr_reader runtime_id: String
+      attr_accessor origin: String
+      def initialize: (Integer id, Array[_EventSpan] spans, runtime_id: String, ?origin: String) -> void
+    end
+  end
+end

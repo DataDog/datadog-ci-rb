@@ -171,7 +171,7 @@ module Datadog
         end
 
         def test_tracing
-          Datadog.send(:components).test_tracing
+          Datadog::CI.components.test_tracing
         end
 
         def current_retry_driver

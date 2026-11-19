@@ -3,7 +3,7 @@ module Datadog
     class ConcurrentSpan < Span
       @mutex: Monitor
 
-      def initialize: (Datadog::Tracing::SpanOperation tracer_span) -> void
+      def initialize: (Datadog::CI::EventSpan tracer_span) -> void
       def passed!: () -> void
       def failed!: (?exception: untyped?) -> void
       def skipped!: (?exception: untyped?, ?reason: String?) -> void

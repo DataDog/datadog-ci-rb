@@ -204,7 +204,7 @@ module Datadog
               scenario_source.row.cells.map(&:value)
             ).to_h
           rescue => e
-            Datadog.logger.warn do
+            Datadog::CI.logger.warn do
               "Unable to extract parameters from test case #{test_case.name}: " \
                 "#{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
             end
@@ -229,11 +229,11 @@ module Datadog
           end
 
           def datadog_configuration
-            Datadog.configuration.ci[:cucumber]
+            Datadog::CI.configuration.ci[:cucumber]
           end
 
           def test_tracing_component
-            Datadog.send(:components).test_tracing
+            Datadog::CI.components.test_tracing
           end
 
           def test_suite_source_file_tags(test_case)

@@ -8,17 +8,17 @@ module Datadog
     module Utils
       module Configuration
         def self.fetch_service_name(default)
-          Datadog.configuration.service_without_fallback || CI::Git::LocalRepository.repository_name || default
+          Datadog::CI.configuration.service_without_fallback || CI::Git::LocalRepository.repository_name || default
         end
 
         def self.service_name_provided_by_user?
-          !!Datadog.configuration.service_without_fallback
+          !!Datadog::CI.configuration.service_without_fallback
         end
 
         def self.normalize_tia_test_skipping_mode(mode)
           return mode if Ext::Test::TIATestSkippingMode::ALL.include?(mode)
 
-          Datadog.logger.warn(
+          Datadog::CI.logger.warn(
             "Invalid Test Impact Analysis skipping mode #{mode.inspect}. " \
             "Falling back to #{Ext::Test::TIATestSkippingMode::TEST.inspect}."
           )

@@ -31,7 +31,7 @@ module Datadog
             private
 
             def datadog_configuration
-              Datadog.configuration.ci[:minitest]
+              Datadog::CI.configuration.ci[:minitest]
             end
           end
         end

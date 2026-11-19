@@ -72,16 +72,16 @@ module Datadog
                 "0.0.0"
               end
             rescue => e
-              Datadog.logger.debug("Error extracting RSpec version: #{e.class.name} - #{e.message}")
+              Datadog::CI.logger.debug("Error extracting RSpec version: #{e.class.name} - #{e.message}")
               "0.0.0"
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:paralleltests]
+              Datadog::CI.configuration.ci[:paralleltests]
             end
 
             def test_tracing_component
-              Datadog.send(:components).test_tracing
+              Datadog::CI.components.test_tracing
             end
           end
         end

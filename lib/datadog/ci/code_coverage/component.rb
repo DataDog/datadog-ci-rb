@@ -31,7 +31,7 @@ module Datadog
         def configure(library_configuration)
           @enabled &&= library_configuration.coverage_report_upload_enabled?
 
-          Datadog.logger.debug do
+          Datadog::CI.logger.debug do
             "[#{self.class.name}] Configured with enabled=#{@enabled}"
           end
         end
@@ -40,7 +40,7 @@ module Datadog
           return unless @enabled
           return if serialized_report.nil?
 
-          Datadog.logger.debug { "[#{self.class.name}] Uploading coverage report..." }
+          Datadog::CI.logger.debug { "[#{self.class.name}] Uploading coverage report..." }
 
           event = build_event(format)
 
@@ -71,7 +71,7 @@ module Datadog
           return if flags.empty?
 
           if flags.length > MAX_REPORT_FLAGS
-            Datadog.logger.warn(
+            Datadog::CI.logger.warn(
               "#{Ext::Settings::ENV_CODE_COVERAGE_FLAGS} contains #{flags.length} flags, " \
               "but only #{MAX_REPORT_FLAGS} are allowed; omitting report flags"
             )

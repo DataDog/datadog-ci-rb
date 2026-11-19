@@ -71,15 +71,15 @@ module Datadog
         end
 
         def restore_state_from_datadog_test_runner
-          Datadog.logger.debug { "Restoring library configuration from Test Optimization cache" }
+          Datadog::CI.logger.debug { "Restoring library configuration from Test Optimization cache" }
 
           settings = load_cached_settings
           if settings.nil?
-            Datadog.logger.debug { "Restoring library configuration failed, will request again" }
+            Datadog::CI.logger.debug { "Restoring library configuration failed, will request again" }
             return false
           end
 
-          Datadog.logger.debug { "Restored library configuration from Test Optimization: #{settings}" }
+          Datadog::CI.logger.debug { "Restored library configuration from Test Optimization: #{settings}" }
           @library_configuration = LibrarySettings.from_json(settings)
           true
         end
@@ -99,14 +99,14 @@ module Datadog
           # sometimes we can skip code coverage for default branch if there are no changes in the repository
           # backend needs git metadata uploaded for this test session to check if we can skip code coverage
           if @library_configuration.require_git?
-            Datadog.logger.debug { "Library configuration endpoint requires git upload to be finished, waiting..." }
+            Datadog::CI.logger.debug { "Library configuration endpoint requires git upload to be finished, waiting..." }
             git_tree_upload_worker.wait_until_done
 
-            Datadog.logger.debug { "Requesting library configuration again..." }
+            Datadog::CI.logger.debug { "Requesting library configuration again..." }
             @library_configuration = @library_settings_client.fetch(test_session)
 
             if @library_configuration.require_git?
-              Datadog.logger.debug { "git metadata upload did not complete in time when configuring library" }
+              Datadog::CI.logger.debug { "git metadata upload did not complete in time when configuring library" }
             end
           end
 
@@ -117,31 +117,31 @@ module Datadog
         end
 
         def test_management
-          Datadog.send(:components).test_management
+          Datadog::CI.components.test_management
         end
 
         def test_tracing
-          Datadog.send(:components).test_tracing
+          Datadog::CI.components.test_tracing
         end
 
         def test_impact_analysis
-          Datadog.send(:components).test_impact_analysis
+          Datadog::CI.components.test_impact_analysis
         end
 
         def test_retries
-          Datadog.send(:components).test_retries
+          Datadog::CI.components.test_retries
         end
 
         def impacted_tests_detection
-          Datadog.send(:components).impacted_tests_detection
+          Datadog::CI.components.impacted_tests_detection
         end
 
         def git_tree_upload_worker
-          Datadog.send(:components).git_tree_upload_worker
+          Datadog::CI.components.git_tree_upload_worker
         end
 
         def code_coverage
-          Datadog.send(:components).code_coverage
+          Datadog::CI.components.code_coverage
         end
       end
     end

@@ -59,7 +59,7 @@ module Datadog
             def _dd_cleanup
               yield
             rescue => error
-              Datadog.logger.warn("Knapsack cleanup failed: #{error.class}: #{error.message}")
+              Datadog::CI.logger.warn("Knapsack cleanup failed: #{error.class}: #{error.message}")
             end
 
             def datadog_integration
@@ -67,11 +67,11 @@ module Datadog
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:rspec]
+              Datadog::CI.configuration.ci[:rspec]
             end
 
             def test_tracing_component
-              Datadog.send(:components).test_tracing
+              Datadog::CI.components.test_tracing
             end
           end
         end

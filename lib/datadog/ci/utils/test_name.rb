@@ -101,7 +101,7 @@ module Datadog
         private_class_method :hash_literal?
 
         def self.warn_normalization_error(error)
-          Datadog.logger.warn { "Unable to normalize test name: #{error.class}: #{error.message}" }
+          Datadog::CI.logger.warn { "Unable to normalize test name: #{error.class}: #{error.message}" }
 
           nil
         end

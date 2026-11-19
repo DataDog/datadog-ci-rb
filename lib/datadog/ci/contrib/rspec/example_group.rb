@@ -109,19 +109,19 @@ module Datadog
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:rspec]
+              Datadog::CI.configuration.ci[:rspec]
             end
 
             def test_tracing_component
-              Datadog.send(:components).test_tracing
+              Datadog::CI.components.test_tracing
             end
 
             def test_impact_analysis_component
-              Datadog.send(:components).test_impact_analysis
+              Datadog::CI.components.test_impact_analysis
             end
 
             def test_management_component
-              Datadog.send(:components).test_management
+              Datadog::CI.components.test_management
             end
           end
         end

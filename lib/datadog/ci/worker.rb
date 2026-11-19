@@ -1,23 +1,48 @@
 # frozen_string_literal: true
 
-require "datadog/core/worker"
-require "datadog/core/workers/async"
-
-# general purpose async worker for CI
-# executes given task once in separate thread
 module Datadog
   module CI
-    class Worker < Datadog::Core::Worker
-      include Datadog::Core::Workers::Async::Thread
-
+    # Runs one background operation per process.
+    class Worker
       DEFAULT_SHUTDOWN_TIMEOUT = 60
 
+      def initialize(&operation)
+        @operation = operation
+        @pid = Process.pid
+        @mutex = Mutex.new
+        @thread = nil
+      end
+
+      def perform(*arguments)
+        if @pid != Process.pid
+          @pid = Process.pid
+          @mutex = Mutex.new
+          @thread = nil
+        end
+        @mutex.synchronize do
+          return if @thread
+          @thread = Thread.new do
+            @operation.call(*arguments)
+          rescue => error
+            CI.logger.warn("Test Optimization worker failed: #{error}")
+          end
+        end
+      end
+
       def stop(timeout = DEFAULT_SHUTDOWN_TIMEOUT)
-        join(timeout)
+        wait_until_done(timeout)
       end
 
       def wait_until_done(timeout = nil)
-        join(timeout)
+        @thread&.join(timeout) unless @thread == Thread.current
+      end
+
+      def started?
+        !@thread.nil?
+      end
+
+      def running?
+        !!@thread&.alive?
       end
 
       def done?

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "datadog/core"
 
 require_relative "../ext"
 require_relative "../../settings"

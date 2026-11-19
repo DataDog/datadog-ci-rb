@@ -28,7 +28,7 @@ module Datadog
         end
 
         def self.telemetry
-          Datadog.send(:components).telemetry
+          Datadog::CI.components.telemetry
         end
 
         def self.itr_test_tags

@@ -8,15 +8,15 @@ module Datadog
     module Git
       module BaseBranchShaDetector
         def self.base_branch_sha(base_branch)
-          Datadog.logger.debug { "Base branch: '#{base_branch}'" }
+          Datadog::CI.logger.debug { "Base branch: '#{base_branch}'" }
 
           remote_name = LocalRepository.get_remote_name
-          Datadog.logger.debug { "Remote name: '#{remote_name}'" }
+          Datadog::CI.logger.debug { "Remote name: '#{remote_name}'" }
 
           source_branch = get_source_branch
           return nil if source_branch.nil?
 
-          Datadog.logger.debug { "Source branch: '#{source_branch}'" }
+          Datadog::CI.logger.debug { "Source branch: '#{source_branch}'" }
 
           strategy = if base_branch.nil?
             BaseBranchShaDetection::Guesser.new(remote_name, source_branch)
@@ -30,7 +30,7 @@ module Datadog
         def self.get_source_branch
           source_branch = CLI.exec_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
           if source_branch.nil?
-            Datadog.logger.debug { "Could not get current branch" }
+            Datadog::CI.logger.debug { "Could not get current branch" }
             return nil
           end
 

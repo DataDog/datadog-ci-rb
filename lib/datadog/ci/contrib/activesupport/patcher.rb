@@ -15,12 +15,12 @@ module Datadog
 
           def patch
             unless datadog_logs_component.enabled
-              Datadog.logger.debug("Datadog logs submission is disabled, skipping activesupport patching")
+              Datadog::CI.logger.debug("Datadog logs submission is disabled, skipping activesupport patching")
               return
             end
 
             unless ::Rails.logger.formatter.is_a?(::ActiveSupport::TaggedLogging::Formatter)
-              Datadog.logger.debug {
+              Datadog::CI.logger.debug {
                 "Rails logger formatter is not an instance of ActiveSupport::TaggedLogging::Formatter, skipping activesupport patching. " \
                 "Formatter: #{::Rails.logger.formatter.class}"
               }
@@ -41,7 +41,7 @@ module Datadog
           end
 
           def datadog_logs_component
-            Datadog.send(:components).agentless_logs_submission
+            Datadog::CI.components.agentless_logs_submission
           end
         end
       end

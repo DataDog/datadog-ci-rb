@@ -71,7 +71,7 @@ module Datadog
             begin
               @json = JSON.parse(resp.payload)
             rescue JSON::ParserError => e
-              Datadog.logger.error(
+              Datadog::CI.logger.error(
                 "Failed to parse test management tests response payload: #{e}. Payload was: #{resp.payload}"
               )
               @json = {}
@@ -89,7 +89,7 @@ module Datadog
           return {} unless api
 
           request_payload = payload(test_session)
-          Datadog.logger.debug("Fetching test management tests with request: #{request_payload}")
+          Datadog::CI.logger.debug("Fetching test management tests with request: #{request_payload}")
 
           http_response = api.api_request(
             path: Ext::Transport::DD_API_TEST_MANAGEMENT_TESTS_PATH,
@@ -139,7 +139,7 @@ module Datadog
           end
           {
             "data" => {
-              "id" => Datadog::Core::Environment::Identity.id,
+              "id" => Datadog::CI::Utils::Identity.id,
               "type" => Ext::Transport::DD_API_TEST_MANAGEMENT_TESTS_TYPE,
               "attributes" => {
                 "repository_url" => test_session.git_repository_url,

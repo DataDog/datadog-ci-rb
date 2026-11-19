@@ -21,7 +21,7 @@ module Datadog
 
           parsed = JSON.parse(value.to_s)
           unless parsed.is_a?(Hash)
-            Datadog.logger.warn("Invalid runtime tag overrides configuration: expected JSON object")
+            Datadog::CI.logger.warn("Invalid runtime tag overrides configuration: expected JSON object")
             return {}
           end
 
@@ -35,7 +35,7 @@ module Datadog
             tags[key] = normalized_value
           end
         rescue JSON::ParserError => e
-          Datadog.logger.warn("Invalid runtime tag overrides configuration: #{e.message}")
+          Datadog::CI.logger.warn("Invalid runtime tag overrides configuration: #{e.message}")
           {}
         end
       end

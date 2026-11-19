@@ -36,15 +36,15 @@ module Datadog
             private
 
             def datadog_configuration
-              Datadog.configuration.ci[:minitest]
+              Datadog::CI.configuration.ci[:minitest]
             end
 
             def _dd_test_tracing_component
-              Datadog.send(:components).test_tracing
+              Datadog::CI.components.test_tracing
             end
 
             def _dd_test_retries_component
-              Datadog.send(:components).test_retries
+              Datadog::CI.components.test_retries
             end
           end
         end

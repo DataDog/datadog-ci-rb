@@ -1,0 +1,76 @@
+module Datadog
+  module CI
+    module Telemetry
+      type json_value = String | Numeric | bool | nil | Array[json_value] | Hash[String | Symbol, json_value]
+      type metric_tags = Hash[String | Symbol, String | Numeric | bool | nil] | Array[String]
+
+      interface _Client
+        def call: (path: String, payload: String, headers: Hash[String, String], verb: String) -> Datadog::CI::Transport::Adapters::Net::Response
+      end
+
+      class Component
+        CLOCK: Method
+        AGENTLESS_PATH: String
+        AGENT_PATH: String
+
+        class Metric < Struct[Object?]
+          attr_accessor namespace: String
+          attr_accessor name: String
+          attr_accessor type: String
+          attr_accessor tags: Array[String]
+          attr_accessor common: bool
+          attr_accessor timestamp: Integer
+          attr_accessor values: Array[Integer | Float]
+          def self.new: (String, String, String, Array[String], bool, Integer, Array[Integer | Float]) -> Metric
+        end
+
+        @client: _Client
+        @logger: Logger
+        @application: Hash[String | Symbol, String?]
+        @host: Hash[String | Symbol, String?]
+        @runtime_id_provider: ^() -> String
+        @path: String
+        @api_key: String?
+        @enabled: bool
+        @aggregation_interval: Integer | Float
+        @buffer_size: Integer
+        @shutdown_timeout: Numeric
+        @debug: bool
+        @pid: Integer
+        @mutex: Mutex
+        @send_mutex: Mutex
+        @condition: ConditionVariable
+        @metrics: Hash[Array[Object], Metric]
+        @buffered_values: Integer
+        @buffer_warning: bool
+        @sequence: Integer
+        @started_event: bool
+        @stopped: bool
+        @worker: Thread?
+
+        def initialize: (
+          client: _Client, logger: Logger,
+          application: Hash[String | Symbol, String?], host: Hash[String | Symbol, String?],
+          runtime_id_provider: ^() -> String, agentless: bool,
+          ?api_key: String?, ?enabled: bool, ?aggregation_interval: Integer | Float,
+          ?buffer_size: Integer, ?shutdown_timeout: Numeric, ?debug: bool
+        ) -> void
+        def enabled?: () -> bool
+        alias enabled enabled?
+        def inc: (String namespace, String metric_name, (Integer | Float) value, ?tags: metric_tags, ?common: bool) -> void
+        def distribution: (String namespace, String metric_name, (Integer | Float) value, ?tags: metric_tags, ?common: bool) -> void
+        def flush: () -> void
+        def disable!: () -> void
+        def shutdown!: () -> void
+
+        private
+        def record: (String namespace, String name, (Integer | Float) value, metric_tags tags, bool common, String type) -> void
+        def serialize_metric: (Metric metric) -> Hash[Symbol, json_value]
+        def emit: (String request_type, Hash[Symbol, json_value] payload) -> void
+        def timestamp: () -> Integer
+        def reset_process_state: () -> void
+        def start_worker: () -> void
+      end
+    end
+  end
+end

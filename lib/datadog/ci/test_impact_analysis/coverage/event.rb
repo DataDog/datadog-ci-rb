@@ -34,7 +34,7 @@ module Datadog
               value = (key == :files) ? @files : send(key)
               next unless value.nil?
 
-              Datadog.logger.warn("citestcov event is invalid: [#{key}] is nil. Event: #{self}")
+              Datadog::CI.logger.warn("citestcov event is invalid: [#{key}] is nil. Event: #{self}")
               valid = false
             end
 

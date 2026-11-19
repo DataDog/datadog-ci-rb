@@ -2,8 +2,8 @@
 
 require "json"
 
-require "datadog/core/telemetry/logging"
-require "datadog/core/utils/url"
+require "datadog/ci/utils/internal_logging"
+require "datadog/ci/utils/url"
 
 require_relative "base"
 
@@ -108,8 +108,8 @@ module Datadog
 
               event_json.dig("pull_request", "base", "sha")
             rescue => e
-              Datadog.logger.error("Failed to extract pull request base branch head SHA from GitHub Actions: #{e}")
-              Core::Telemetry::Logger.report(e, description: "Failed to extract pull request base branch head SHA from GitHub Actions")
+              Datadog::CI.logger.error("Failed to extract pull request base branch head SHA from GitHub Actions: #{e}")
+              Utils::InternalLogging.report(e, description: "Failed to extract pull request base branch head SHA from GitHub Actions")
               nil
             end
 
@@ -121,8 +121,8 @@ module Datadog
 
               event_json.dig("pull_request", "head", "sha")
             rescue => e
-              Datadog.logger.error("Failed to extract commit head SHA from GitHub Actions: #{e}")
-              Core::Telemetry::Logger.report(e, description: "Failed to extract commit head SHA from GitHub Actions")
+              Datadog::CI.logger.error("Failed to extract commit head SHA from GitHub Actions: #{e}")
+              Utils::InternalLogging.report(e, description: "Failed to extract commit head SHA from GitHub Actions")
               nil
             end
 
@@ -132,8 +132,8 @@ module Datadog
 
               event_json["number"]
             rescue => e
-              Datadog.logger.error("Failed to extract PR number from GitHub Actions: #{e}")
-              Core::Telemetry::Logger.report(e, description: "Failed to extract PR number from GitHub Actions")
+              Datadog::CI.logger.error("Failed to extract PR number from GitHub Actions: #{e}")
+              Utils::InternalLogging.report(e, description: "Failed to extract PR number from GitHub Actions")
               nil
             end
 
@@ -147,15 +147,15 @@ module Datadog
 
               @github_event_json = JSON.parse(File.read(event_path))
             rescue => e
-              Datadog.logger.error("Failed to parse GitHub event JSON: #{e}")
-              Core::Telemetry::Logger.report(e, description: "Failed to parse GitHub event JSON")
+              Datadog::CI.logger.error("Failed to parse GitHub event JSON: #{e}")
+              Utils::InternalLogging.report(e, description: "Failed to parse GitHub event JSON")
               @github_event_json = nil
             end
 
             def github_server_url
               return @github_server_url if defined?(@github_server_url)
 
-              @github_server_url ||= Datadog::Core::Utils::Url.filter_basic_auth(env["GITHUB_SERVER_URL"])
+              @github_server_url ||= Datadog::CI::Utils::Url.filter_basic_auth(env["GITHUB_SERVER_URL"])
             end
 
             # Returns numeric job ID from environment variable or runner diagnostics.
@@ -183,7 +183,7 @@ module Datadog
 
               nil
             rescue => e
-              Datadog.logger.debug("Failed to extract numeric job ID from GitHub Actions runner diagnostics: #{e}")
+              Datadog::CI.logger.debug("Failed to extract numeric job ID from GitHub Actions runner diagnostics: #{e}")
               nil
             end
 
@@ -205,7 +205,7 @@ module Datadog
               matches = content.scan(CHECK_RUN_ID_REGEX).flatten
               matches.last
             rescue => e
-              Datadog.logger.debug("Failed to parse Worker log file #{file_path}: #{e}")
+              Datadog::CI.logger.debug("Failed to parse Worker log file #{file_path}: #{e}")
               nil
             end
           end

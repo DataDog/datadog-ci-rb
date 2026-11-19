@@ -1,0 +1,17 @@
+module Datadog
+  module CI
+    module TracerBridge
+      class NullComponent
+        def on_session_started: (Component::_Parent session) -> void
+        def on_session_finished: (Component::_Parent session) -> void
+        def on_test_started: (Component::_Parent test) -> void
+        def on_test_finished: (Component::_Parent test) -> void
+        def on_span_started: (Component::_Parent span) -> void
+        def on_span_finished: (Component::_Parent span) -> void
+        def observe: (Component::_Tracer tracer) -> void
+        def write: (Datadog::Tracing::TraceSegment trace) -> false
+        def shutdown!: () -> void
+      end
+    end
+  end
+end

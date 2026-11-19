@@ -4,7 +4,7 @@ module Datadog
       module Serializers
         module Factories
           module TestSuiteLevel
-            def self?.serializer: (Datadog::Tracing::TraceSegment trace, Datadog::Tracing::Span span, ?options: Hash[Symbol, untyped]) -> Datadog::CI::TestTracing::Serializers::Base
+            def self?.serializer: (Datadog::CI::_EventTrace trace, Datadog::CI::_EventSpan span, ?options: Hash[Symbol, untyped]) -> Datadog::CI::TestTracing::Serializers::Base
           end
         end
       end

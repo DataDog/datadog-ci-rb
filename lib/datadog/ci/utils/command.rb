@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "open3"
-require "datadog/core/utils/time"
+require "datadog/ci/utils/time"
 
 module Datadog
   module CI
@@ -30,13 +30,13 @@ module Datadog
           timeout_reached = false
 
           begin
-            start = Core::Utils::Time.get_time
+            start = Utils::Time.get_time
 
             _, stderrout, thread = popen_with_stdin(command, stdin_data: stdin_data)
             pid = thread[:pid]
 
             # wait for output and read from stdout/stderr
-            while (Core::Utils::Time.get_time - start) < timeout
+            while (Utils::Time.get_time - start) < timeout
               # wait for data to appear in stderrout channel
               # maximum wait time 100ms
               Kernel.select([stderrout], [], [], 0.1)
@@ -50,7 +50,7 @@ module Datadog
               end
             end
 
-            remaining_time = timeout.to_f - (Core::Utils::Time.get_time - start)
+            remaining_time = timeout.to_f - (Utils::Time.get_time - start)
             thread.join(remaining_time) if thread.alive? && remaining_time.positive?
 
             if thread.alive?

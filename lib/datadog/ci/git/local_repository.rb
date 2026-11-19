@@ -93,7 +93,7 @@ module Datadog
           # @type var res: String?
           res = nil
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             res = CLI.exec_git_command(["remote", "get-url", get_remote_name])
           end
 
@@ -124,7 +124,7 @@ module Datadog
           # @type var res: String?
           res = nil
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             res = CLI.exec_git_command(["rev-parse", "--abbrev-ref", "HEAD"])
           end
 
@@ -154,7 +154,7 @@ module Datadog
           # Get committer and author information in one command.
           output = CLI.exec_git_command(["log", "--no-walk=unsorted", "--no-show-signature", "--format=%an%x00%ae%x00%at%x00%cn%x00%ce%x00%ct", commit_sha || "HEAD", "--"])
           unless output
-            Datadog.logger.debug(
+            Datadog::CI.logger.debug(
               "Unable to read git commit users: git command output is nil"
             )
             nil_user = NilUser.new
@@ -183,7 +183,7 @@ module Datadog
           Telemetry.git_command(Ext::Telemetry::Command::GET_LOCAL_COMMITS)
           # @type var output: String?
           output = nil
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             cmd = ["log", "--format=%H", "-n", "1000", "--since=\"1 month ago\""]
             cmd.concat([commit_sha, "--"]) if commit_sha
             output = CLI.exec_git_command(cmd, timeout: CLI::LONG_TIMEOUT)
@@ -211,7 +211,7 @@ module Datadog
           # @type var res: String?
           res = nil
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             cmd = [
               "rev-list",
               "--objects",
@@ -252,7 +252,7 @@ module Datadog
 
           Telemetry.git_command(Ext::Telemetry::Command::PACK_OBJECTS)
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             CLI.exec_git_command(
               ["pack-objects", "--compression=9", "--max-pack-size=3m", "#{path}/#{basename}"],
               stdin: commit_tree,
@@ -272,7 +272,7 @@ module Datadog
           Telemetry.git_command(Ext::Telemetry::Command::CHECK_SHALLOW)
           res = false
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             res = CLI.exec_git_command(["rev-parse", "--is-shallow-repository"]) == "true"
           end
           Telemetry.git_command_ms(Ext::Telemetry::Command::CHECK_SHALLOW, duration_ms)
@@ -299,7 +299,7 @@ module Datadog
           unshallow_remotes << upstream_branch if upstream_branch
           unshallow_remotes << nil # Ensure the loop runs at least once, even if no valid remotes are available. This acts as a fallback mechanism.
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             unshallow_remotes.each do |remote|
               unshallowing_errored = false
 
@@ -338,7 +338,7 @@ module Datadog
           # @type var res: String?
           res = nil
 
-          duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Utils::Time.measure(:float_millisecond) do
             cmd = [
               "fetch",
               "--update-shallow",
@@ -364,7 +364,7 @@ module Datadog
         def self.get_changes_since(base_commit, target_commit: "HEAD")
           return Diff.new if base_commit.nil?
 
-          Datadog.logger.debug { "calculating git diff from base_commit: #{base_commit}" }
+          Datadog::CI.logger.debug { "calculating git diff from base_commit: #{base_commit}" }
 
           Telemetry.git_command(Ext::Telemetry::Command::DIFF)
 
@@ -373,12 +373,12 @@ module Datadog
 
             # @type var output: String?
             output = nil
-            duration_ms = Core::Utils::Time.measure(:float_millisecond) do
+            duration_ms = Utils::Time.measure(:float_millisecond) do
               output = CLI.exec_git_command(["diff", "-U0", "--word-diff=porcelain", base_commit, target_commit], timeout: CLI::LONG_TIMEOUT)
             end
             Telemetry.git_command_ms(Ext::Telemetry::Command::DIFF, duration_ms)
 
-            Datadog.logger.debug { "git diff output: #{output}" }
+            Datadog::CI.logger.debug { "git diff output: #{output}" }
 
             return Diff.new if output.nil?
 
@@ -406,7 +406,7 @@ module Datadog
         def self.get_upstream_branch
           CLI.exec_git_command(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])
         rescue => e
-          Datadog.logger.debug { "Error getting upstream: #{e}" }
+          Datadog::CI.logger.debug { "Error getting upstream: #{e}" }
           nil
         end
 
@@ -438,7 +438,7 @@ module Datadog
         end
 
         def self.log_failure(e, action)
-          Datadog.logger.debug(
+          Datadog::CI.logger.debug(
             "Unable to perform #{action}: #{e.class.name} #{e.message} at #{Array(e.backtrace).first}"
           )
         end

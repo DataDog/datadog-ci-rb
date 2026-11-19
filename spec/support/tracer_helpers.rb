@@ -133,7 +133,7 @@ module TracerHelpers
 
   # Returns the current tracer instance
   def tracer
-    Datadog::Tracing.send(:tracer)
+    Datadog::CI.components.tracer
   end
 
   # Returns traces and caches it (similar to +let(:traces)+).
@@ -178,7 +178,7 @@ module TracerHelpers
   # Retrieves all traces in the current tracer instance.
   # This method does not cache its results.
   def fetch_traces(tracer = self.tracer)
-    tracer.instance_variable_get(:@traces) || []
+    @recorded_ci_traces || []
   end
 
   # Retrieves and sorts all spans in the current tracer instance.
@@ -216,7 +216,7 @@ module TracerHelpers
   # Remove all traces from the current tracer instance and
   # busts cache of +#spans+ and +#span+.
   def clear_traces!
-    tracer.instance_variable_set(:@traces, [])
+    @recorded_ci_traces&.clear
 
     @traces = nil
     @trace = nil
@@ -225,25 +225,16 @@ module TracerHelpers
   end
 
   RSpec.configure do |config|
-    # Capture spans from the global tracer
+    # Capture CI output through its writer interface.
     config.before do
-      # DEV `*_any_instance_of` has concurrency issues when tests run in parallel.
-      # DEV Single object `allow` and `expect` work as intended with parallelism.
-      allow(Datadog::Tracing::Tracer).to receive(:new).and_wrap_original do |method, **args, &block|
-        instance = method.call(**args, &block)
-
-        # The mutex must be eagerly initialized to prevent race conditions on lazy initialization
-        write_lock = Mutex.new
-        allow(instance).to receive(:write) do |trace|
-          instance.instance_exec do
-            write_lock.synchronize do
-              @traces ||= []
-              @traces << trace
-            end
+      recorded = @recorded_ci_traces = []
+      write_lock = Mutex.new
+      allow(Datadog::CI::EventWriter).to receive(:new).and_wrap_original do |method, **args|
+        method.call(**args).tap do |writer|
+          allow(writer).to receive(:write) do |trace|
+            write_lock.synchronize { recorded << trace }
           end
         end
-
-        instance
       end
     end
 
@@ -255,7 +246,7 @@ module TracerHelpers
     # with mock assertions.
     config.around do |example|
       example.run.tap do
-        Datadog::Tracing.shutdown!
+        Datadog::CI.shutdown!
       end
     end
   end
@@ -263,6 +254,6 @@ module TracerHelpers
   # Useful for integration testing.
   def use_real_tracer!
     @use_real_tracer = true
-    allow(Datadog::Tracing::Tracer).to receive(:new).and_call_original
+    allow(Datadog::CI::EventWriter).to receive(:new).and_call_original
   end
 end

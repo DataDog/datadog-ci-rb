@@ -18,7 +18,7 @@ module Datadog
         def lines_changed?(file_path, start_line: nil, end_line: nil)
           changed_lines = @changed_files[file_path]
           unless changed_lines
-            Datadog.logger.debug { "No changes found for file: #{file_path}" }
+            Datadog::CI.logger.debug { "No changes found for file: #{file_path}" }
             return false
           end
 
@@ -61,7 +61,7 @@ module Datadog
                 changed_files[current_file] ||= ChangedLines.new
               end
 
-              Datadog.logger.debug { "matched changed_file: #{changed_file} from git diff line: #{line}" }
+              Datadog::CI.logger.debug { "matched changed_file: #{changed_file} from git diff line: #{line}" }
 
               next
             end
@@ -78,7 +78,7 @@ module Datadog
 
               changed_files[current_file].add_interval(start_line, end_line)
 
-              Datadog.logger.debug { "Added interval [#{start_line}, #{end_line}] for file: #{current_file}" }
+              Datadog::CI.logger.debug { "Added interval [#{start_line}, #{end_line}] for file: #{current_file}" }
             end
           end
 

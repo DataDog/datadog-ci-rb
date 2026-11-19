@@ -37,7 +37,7 @@ module Datadog
 
               @_dd_run_in_progress = true
               begin
-                return super unless Datadog.configuration.ci.enabled
+                return super unless Datadog::CI.configuration.ci.enabled
                 return super unless datadog_configuration[:enabled]
 
                 test_suite = start_datadog_test_suite_if_parallel
@@ -110,7 +110,7 @@ module Datadog
             private
 
             def run_without_datadog_reentry
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "Datadog Minitest instrumentation re-entered for #{self.class}##{name}; running pre-Datadog Minitest run without starting another test span"
               end
 
@@ -228,11 +228,11 @@ module Datadog
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:minitest]
+              Datadog::CI.configuration.ci[:minitest]
             end
 
             def _dd_test_tracing_component
-              Datadog.send(:components).test_tracing
+              Datadog::CI.components.test_tracing
             end
           end
 

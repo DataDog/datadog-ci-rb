@@ -14,7 +14,7 @@ module Datadog
           module ClassMethods
             def __dd_peek_result
               unless datadog_configuration[:enabled]
-                Datadog.logger.debug("SimpleCov instrumentation is disabled")
+                Datadog::CI.logger.debug("SimpleCov instrumentation is disabled")
                 return nil
               end
 
@@ -26,7 +26,7 @@ module Datadog
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:simplecov]
+              Datadog::CI.configuration.ci[:simplecov]
             end
 
             private

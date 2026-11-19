@@ -60,13 +60,13 @@ module Datadog
               reader = reader_class.new(test_optimization_path)
               return reader if reader.available?
 
-              Datadog.logger.debug do
+              Datadog::CI.logger.debug do
                 "Test Optimization cache settings file not found under #{test_optimization_path}"
               end
               return Readers::Missing.new
             end
 
-            Datadog.logger.debug do
+            Datadog::CI.logger.debug do
               "Unsupported Test Optimization cache manifest version #{version.inspect} at #{manifest_path}"
             end
             return Readers::Missing.new

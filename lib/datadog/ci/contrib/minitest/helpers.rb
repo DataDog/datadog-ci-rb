@@ -53,7 +53,7 @@ module Datadog
 
             def dd_automation_exclusion_declaration(test_name)
               unless method_defined?(test_name) || private_method_defined?(test_name)
-                Datadog.logger.warn("Ignoring Datadog automation exclusion for undefined test method #{self}##{test_name}; define the method before declaring exclusions")
+                Datadog::CI.logger.warn("Ignoring Datadog automation exclusion for undefined test method #{self}##{test_name}; define the method before declaring exclusions")
                 return nil
               end
 
@@ -112,7 +112,7 @@ module Datadog
               test_suite_tags[CI::Ext::Test::TAG_ITR_UNSKIPPABLE] = "true"
             end
 
-            test_tracing_component = Datadog.send(:components).test_tracing
+            test_tracing_component = Datadog::CI.components.test_tracing
             test_suite = test_tracing_component.start_test_suite(
               test_suite_name,
               tags: test_suite_tags

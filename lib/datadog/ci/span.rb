@@ -2,7 +2,7 @@
 
 require "drb"
 
-require "datadog/core/environment/platform"
+require "datadog/ci/utils/identity"
 
 require_relative "ext/test"
 require_relative "ext/app_types"
@@ -22,9 +22,9 @@ module Datadog
       ENVIRONMENT_RUNTIME_TAGS = {
         Ext::Test::TAG_OS_ARCHITECTURE => ::RbConfig::CONFIG["host_cpu"],
         Ext::Test::TAG_OS_PLATFORM => ::RbConfig::CONFIG["host_os"],
-        Ext::Test::TAG_OS_VERSION => Core::Environment::Platform.kernel_release,
-        Ext::Test::TAG_RUNTIME_NAME => Core::Environment::Ext::LANG_ENGINE,
-        Ext::Test::TAG_RUNTIME_VERSION => Core::Environment::Ext::ENGINE_VERSION
+        Ext::Test::TAG_OS_VERSION => Utils::Platform.kernel_release,
+        Ext::Test::TAG_RUNTIME_NAME => RUBY_ENGINE,
+        Ext::Test::TAG_RUNTIME_VERSION => RUBY_ENGINE_VERSION
       }.freeze
 
       EMPTY_TAGS = {}.freeze
@@ -176,6 +176,7 @@ module Datadog
       # Finishes the span.
       # @return [void]
       def finish
+        CI.components.tracer_bridge.on_span_finished(self) unless Ext::AppTypes::CI_SPAN_TYPES.include?(type)
         tracer_span.finish
       end
 
@@ -305,7 +306,7 @@ module Datadog
 
       # provides access to the test tracing component for CI models to deactivate themselves
       def test_tracing
-        Datadog.send(:components).test_tracing
+        Datadog::CI.components.test_tracing
       end
     end
   end

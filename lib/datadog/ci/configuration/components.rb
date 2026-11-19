@@ -1,8 +1,13 @@
 # frozen_string_literal: true
 
-require "datadog/core/telemetry/ext"
-
-require_relative "tracing_compatibility"
+require_relative "settings"
+require_relative "../event_tracer"
+require_relative "../event_writer"
+require_relative "../telemetry/component"
+require_relative "../telemetry/null_component"
+require_relative "../tracer_bridge/component"
+require_relative "../tracer_bridge/null_component"
+require_relative "../utils/identity"
 require_relative "../ext/settings"
 require_relative "../code_coverage/component"
 require_relative "../code_coverage/null_component"
@@ -24,7 +29,6 @@ require_relative "../test_discovery/component"
 require_relative "../test_discovery/null_component"
 require_relative "../test_tracing/component"
 require_relative "../test_tracing/null_component"
-require_relative "../transport/adapters/telemetry_webmock_safe_adapter"
 require_relative "../transport/api/builder"
 require_relative "../utils/parsing"
 require_relative "../utils/runtime_tags_overrides"
@@ -34,11 +38,11 @@ require_relative "../worker"
 module Datadog
   module CI
     module Configuration
-      # Adds CI behavior to Datadog trace components
-      module Components
+      # Builds and owns the CI runtime independently of tracer components.
+      class Components
         attr_reader :test_tracing, :test_impact_analysis, :git_tree_upload_worker, :ci_remote, :test_retries,
           :test_management, :agentless_logs_submission, :impacted_tests_detection, :test_discovery, :code_coverage,
-          :test_optimization_cache
+          :test_optimization_cache, :tracer, :tracer_bridge, :telemetry
 
         def initialize(settings)
           @test_impact_analysis = TestImpactAnalysis::NullComponent.new
@@ -52,15 +56,27 @@ module Datadog
           @code_coverage = CodeCoverage::NullComponent.new
           @test_optimization_cache = TestOptimizationCache::NullComponent.new
 
+          @telemetry = Telemetry::NullComponent.new
+          @tracer_bridge = TracerBridge::NullComponent.new
+          @tracer = EventTracer.new(
+            writer: EventWriter.new(
+              transport: TestTracing::Component.build_transport(api: nil, discard_traces: true, dd_env: settings.env),
+              logger: CI.logger
+            ),
+            service: settings.service,
+            tags: settings.tags
+          )
+
           # Activate CI mode if enabled
           if settings.ci.enabled
             activate_ci!(settings)
           end
 
-          super
         end
 
         def shutdown!(replacement = nil)
+          return if @shutdown
+          @shutdown = true
           @test_optimization_cache&.shutdown!
           @test_tracing&.shutdown!
           @test_impact_analysis&.shutdown!
@@ -68,24 +84,12 @@ module Datadog
           @test_discovery&.shutdown!
           @code_coverage&.shutdown!
           @git_tree_upload_worker&.stop
-        ensure
-          super
+          @tracer_bridge.shutdown!
+          @tracer.shutdown!
+          @telemetry.shutdown!
         end
 
         def activate_ci!(settings)
-          # Symbol Database upload is not supported in CI mode. Older datadog versions do not expose this setting.
-          settings.symbol_database.enabled = false if settings.respond_to?(:symbol_database)
-
-          unless settings.tracing.enabled
-            Datadog.logger.error(
-              "Test Optimization requires tracing to be enabled. Disabling Test Optimization. " \
-              "NOTE: if you didn't disable tracing intentionally, add `c.tracing.enabled = true` to " \
-              "your Datadog.configure block."
-            )
-            settings.ci.enabled = false
-            return
-          end
-
           # Builds test visibility API layer in agentless or EvP proxy mode
           test_visibility_api = build_test_visibility_api(settings)
           # bail out early if api is misconfigured
@@ -93,12 +97,6 @@ module Datadog
 
           # Configure datadog gem for test visibility mode
           configure_telemetry(settings)
-
-          # Test visibility uses its own remote settings
-          settings.remote.enabled = false
-
-          # startup logs are useless for test visibility and create noise
-          settings.diagnostics.startup_logs.enabled = false
 
           # timecop configuration
           configure_time_providers(settings)
@@ -119,29 +117,23 @@ module Datadog
             test_srcdir: settings.ci.test_optimization_cache_test_srcdir
           )
 
-          # Configure Datadog::Tracing module
-
-          # No need not use 128-bit trace ids for test visibility,
-          # they are used for OTEL compatibility in Datadog tracer
-          settings.tracing.trace_id_128_bit_generation_enabled = false
-
-          # Activate underlying tracing test mode with async worker
-          settings.tracing.test_mode.enabled = true
-          settings.tracing.test_mode.async = true
-          settings.tracing.test_mode.trace_flush =
-            settings.ci.trace_flush || TracingCompatibility::Flush::Partial.new
-
-          trace_writer_options = settings.ci.writer_options
-          trace_writer_options[:shutdown_timeout] = 60
-          trace_writer_options[:buffer_size] = 10_000
           tracing_transport = TestTracing::Component.build_transport(
             api: test_visibility_api,
             discard_traces: settings.ci.discard_traces,
             dd_env: settings.env
           )
-          trace_writer_options[:transport] = tracing_transport if tracing_transport
-
-          settings.tracing.test_mode.writer_options = trace_writer_options
+          writer_options = settings.ci.writer_options
+          writer = EventWriter.new(
+            transport: tracing_transport,
+            logger: CI.logger,
+            buffer_size: writer_options.fetch(:buffer_size, 10_000),
+            flush_interval: writer_options.fetch(:flush_interval, writer_options.fetch(:interval, 1.0)),
+            shutdown_timeout: writer_options.fetch(:shutdown_timeout, 60)
+          )
+          @tracer = EventTracer.new(writer: writer, service: settings.service, tags: settings.tags)
+          if defined?(::Datadog::Tracing)
+            @tracer_bridge = TracerBridge::Component.new(writer: writer, logger: CI.logger)
+          end
 
           @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
           @ci_remote = Remote::Component.build(
@@ -171,6 +163,7 @@ module Datadog
           # @type ivar @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component
           @test_impact_analysis = build_test_impact_analysis(settings, test_visibility_api)
           @test_tracing = TestTracing::Component.build(
+            tracer: @tracer,
             api: test_visibility_api,
             dd_env: settings.env,
             config_tags: custom_configuration(settings),
@@ -195,7 +188,7 @@ module Datadog
         def build_test_impact_analysis(settings, test_visibility_api)
           if settings.ci.itr_code_coverage_use_single_threaded_mode &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
-            Datadog.logger.warn(
+            Datadog::CI.logger.warn(
               "Test Impact Analysis: Single threaded coverage mode is incompatible with allocation tracing. " \
               "Allocation tracing will be disabled. It means that test impact analysis will not be able to detect " \
               "instantiations of objects in your code, which is important for ActiveRecord models. " \
@@ -208,7 +201,7 @@ module Datadog
           if RUBY_VERSION.start_with?("3.2.") &&
               Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2.3") &&
               settings.ci.itr_test_impact_analysis_use_allocation_tracing
-            Datadog.logger.warn(
+            Datadog::CI.logger.warn(
               "Test Impact Analysis: Allocation tracing is not supported in Ruby versions 3.2.0, 3.2.1 and 3.2.2 and will be forcibly " \
               "disabled. This is due to a VM bug that can lead to crashes (https://bugs.ruby-lang.org/issues/19482). " \
               "Please update your Ruby version or add your app/model folder to the list of tracked files." \
@@ -236,11 +229,11 @@ module Datadog
           if settings.ci.agentless_mode_enabled
             check_dd_site(settings)
 
-            Datadog.logger.debug("Test Optimization configured to use agentless transport")
+            Datadog::CI.logger.debug("Test Optimization configured to use agentless transport")
 
             api = Transport::Api::Builder.build_agentless_api(settings)
             if api.nil?
-              Datadog.logger.error do
+              Datadog::CI.logger.error do
                 "DATADOG CONFIGURATION - TEST OPTIMIZATION - ATTENTION - " \
                 "Agentless mode was enabled but DD_API_KEY is not set: Test Optimization is disabled. " \
                 "Please make sure to set valid api key in DD_API_KEY environment variable"
@@ -250,17 +243,17 @@ module Datadog
               settings.ci.enabled = false
             end
           else
-            Datadog.logger.debug("Test Optimization configured to use agent transport via EVP proxy")
+            Datadog::CI.logger.debug("Test Optimization configured to use agent transport via EVP proxy")
 
             api, agent_available = Transport::Api::Builder.build_evp_proxy_api(settings)
             if api.nil?
               if agent_available
-                Datadog.logger.error(
+                Datadog::CI.logger.error(
                   "Test Optimization cannot use the configured Datadog Agent because it does not support EVP proxy. " \
                   "Disabling Test Optimization. Please upgrade the Datadog Agent."
                 )
               else
-                Datadog.logger.error(
+                Datadog::CI.logger.error(
                   "Test Optimization cannot connect to the Datadog Agent. " \
                   "Disabling Test Optimization. Please ensure the Agent is running and configured to accept traces."
                 )
@@ -295,7 +288,7 @@ module Datadog
 
         def build_agentless_logs_component(settings, api)
           if settings.ci.agentless_logs_submission_enabled && !settings.ci.agentless_mode_enabled
-            Datadog.logger.warn(
+            Datadog::CI.logger.warn(
               "Agentless logs submission is enabled but agentless mode is not enabled. " \
               "Logs will not be submitted. " \
               "Please make sure to set DD_CIVISIBILITY_AGENTLESS_ENABLED to true if you want to submit logs in agentless mode. " \
@@ -321,7 +314,7 @@ module Datadog
           return if settings.site.nil?
           return if Ext::Settings::DD_SITE_ALLOWLIST.include?(settings.site)
 
-          Datadog.logger.warn do
+          Datadog::CI.logger.warn do
             "TEST OPTIMIZATION CONFIGURATION " \
             "Agentless mode was enabled but DD_SITE is not set to one of the following: #{Ext::Settings::DD_SITE_ALLOWLIST.join(", ")}. " \
             "Please make sure to set valid site in DD_SITE environment variable"
@@ -329,33 +322,44 @@ module Datadog
         end
 
         def configure_telemetry(settings)
-          # in development environment Datadog's telemetry is disabled by default
-          # for test visibility we want to enable it by default unless explicitly disabled
-          # NOTE: before agentless mode is released, we only enable telemetry when running with Datadog Agent
-          env_telemetry_enabled = ENV[Core::Telemetry::Ext::ENV_ENABLED]
-          settings.telemetry.enabled = env_telemetry_enabled.nil? || Utils::Parsing.convert_to_bool(env_telemetry_enabled)
-
           return unless settings.telemetry.enabled
 
-          settings.telemetry.agentless_enabled = true if settings.ci.agentless_mode_enabled
-          settings.telemetry.shutdown_timeout_seconds = 60.0
-
-          begin
-            require "datadog/core/transport/http/adapters/net"
-
-            # patch gem's core transport layer to use Net::HTTP instead of WebMock's Net::HTTP
-            Core::Transport::HTTP::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
-          rescue LoadError, StandardError => e
-            Datadog.logger.warn("Failed to patch Datadog gem's telemetry layer: #{e}")
+          agentless = settings.ci.agentless_mode_enabled || settings.telemetry.agentless_enabled
+          if agentless
+            url = URI.parse(settings.telemetry.agentless_url_override ||
+              "https://instrumentation-telemetry-intake.#{settings.site || Ext::Transport::DEFAULT_DD_SITE}")
+            client = Transport::Adapters::Net.new(
+              hostname: url.host, port: url.port, ssl: url.scheme == "https", timeout_seconds: 5.0
+            )
+          else
+            agent = Transport::Api::Builder.resolve_agent_settings(settings)
+            client = Transport::Adapters::Net.new(
+              hostname: agent.hostname, port: agent.port, ssl: agent.ssl,
+              timeout_seconds: agent.timeout_seconds, uds_path: agent.uds_path
+            )
           end
-
-          # for compatibility with old telemetry transport
-          begin
-            require "datadog/core/telemetry/http/adapters/net"
-            Core::Telemetry::Http::Adapters::Net.include(CI::Transport::Adapters::TelemetryWebmockSafeAdapter)
-          rescue LoadError, StandardError => e
-            Datadog.logger.debug("The old telemetry transport layer is not available: #{e}")
-          end
+          @telemetry = Telemetry::Component.new(
+            client: client,
+            logger: CI.logger,
+            application: {
+              "service_name" => settings.service || "ruby",
+              "env" => settings.env,
+              "service_version" => settings.version,
+              "language_name" => "ruby",
+              "language_version" => RUBY_VERSION,
+              "runtime_name" => RUBY_ENGINE,
+              "runtime_version" => RUBY_ENGINE_VERSION,
+              "tracer_version" => CI::VERSION::STRING
+            },
+            host: {"hostname" => Utils::Platform.hostname, "os" => RbConfig::CONFIG["host_os"], "architecture" => RbConfig::CONFIG["host_cpu"]},
+            runtime_id_provider: -> { Utils::Identity.id },
+            agentless: agentless,
+            api_key: settings.api_key,
+            aggregation_interval: settings.telemetry.aggregation_interval,
+            buffer_size: settings.telemetry.buffer_size,
+            shutdown_timeout: settings.telemetry.shutdown_timeout_seconds,
+            debug: settings.diagnostics.debug
+          )
         end
 
         # When timecop is present:

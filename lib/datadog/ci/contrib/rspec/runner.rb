@@ -70,15 +70,15 @@ module Datadog
             end
 
             def datadog_configuration
-              Datadog.configuration.ci[:rspec]
+              Datadog::CI.configuration.ci[:rspec]
             end
 
             def test_tracing_component
-              Datadog.send(:components).test_tracing
+              Datadog::CI.components.test_tracing
             end
 
             def test_discovery_component
-              Datadog.send(:components).test_discovery
+              Datadog::CI.components.test_discovery
             end
 
             def discover_tests(component)

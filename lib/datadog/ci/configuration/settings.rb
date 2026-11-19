@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "logger"
+
+require_relative "base"
 require_relative "../contrib/instrumentation"
 require_relative "../ext/settings"
 require_relative "../ext/test"
@@ -12,7 +15,11 @@ require_relative "../utils/parsing"
 module Datadog
   module CI
     module Configuration
-      # Adds CI behavior to ddtrace settings
+      def self.environment
+        ::ENV
+      end
+
+      # Defines the settings shared by manual and automatic instrumentation.
       module Settings
         def self.extended(base)
           base = base.singleton_class unless base.is_a?(Class)
@@ -26,9 +33,9 @@ module Datadog
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_ENABLED
                 o.default do
-                  env_value = ENV[CI::Ext::Settings::ENV_MODE_ENABLED]
-                  if env_value && !ENV[CI::Ext::Settings::ENV_ENABLED]
-                    Datadog::Core.log_deprecation do
+                  env_value = environment[CI::Ext::Settings::ENV_MODE_ENABLED]
+                  if env_value && !environment[CI::Ext::Settings::ENV_ENABLED]
+                    Datadog::CI.logger.warn do
                       "#{CI::Ext::Settings::ENV_MODE_ENABLED} environment variable is deprecated, " \
                         "use #{CI::Ext::Settings::ENV_ENABLED} instead."
                     end
@@ -61,7 +68,7 @@ module Datadog
                 o.default false
                 o.after_set do |value|
                   if value
-                    Datadog::Core.log_deprecation do
+                    Datadog::CI.logger.warn do
                       "The force_test_level_visibility setting has no effect because test-level visibility is no longer supported."
                     end
                   end
@@ -74,7 +81,7 @@ module Datadog
                 o.default false
                 o.after_set do |value|
                   if value
-                    Datadog::Core.log_deprecation do
+                    Datadog::CI.logger.warn do
                       "The experimental_test_suite_level_visibility_enabled setting has no effect and will be removed in 2.0. " \
                         "Test suite level visibility is always enabled."
                     end
@@ -193,7 +200,7 @@ module Datadog
                     if buckets.length == 5 && buckets.all? { |value| value&.between?(1, 20) }
                       buckets
                     else
-                      Datadog.logger.warn(
+                      Datadog::CI.logger.warn(
                         "Invalid #{CI::Ext::Settings::ENV_DYNAMIC_ATR_BUCKETS} value '#{values.join(",")}'; " \
                           "expected five comma-separated integers in [1, 20]"
                       )
@@ -327,6 +334,83 @@ module Datadog
               end
             end
           end
+        end
+      end
+
+      class RuntimeSettings
+        include Base
+        extend Settings
+
+        option(:service) { |o| o.env "DD_SERVICE" }
+        option(:env) { |o| o.env "DD_ENV" }
+        option(:version) { |o| o.env "DD_VERSION" }
+        option(:api_key) { |o| o.env "DD_API_KEY" }
+        option(:site) { |o| o.env "DD_SITE" }
+        option(:tags) do |o|
+          o.default do
+            environment.fetch("DD_TAGS", "").split(/[ ,]+/).each_with_object({}) do |entry, tags|
+              key, value = entry.split(":", 2)
+              tags[key] = value if key && value
+            end
+          end
+        end
+        option(:time_now_provider) { |o| o.default { -> { ::Time.now } } }
+        option(:get_time_provider) { |o| o.default { ->(unit = :float_second) { ::Process.clock_gettime(::Process::CLOCK_MONOTONIC, unit) } } }
+
+        settings :logger do
+          option :instance
+          option :level, default: ::Logger::WARN
+        end
+
+        settings :diagnostics do
+          option(:debug) { |o| o.type :bool; o.env "DD_TRACE_DEBUG"; o.default false }
+        end
+
+        settings :agent do
+          option(:host) { |o| o.env "DD_AGENT_HOST" }
+          option(:port) { |o| o.type :int; o.env "DD_TRACE_AGENT_PORT" }
+          option(:use_ssl) { |o| o.type :bool; o.default false }
+          option(:timeout_seconds) { |o| o.type :float; o.env "DD_TRACE_AGENT_TIMEOUT_SECONDS"; o.default 30.0 }
+          option :uds_path
+          option(:url) { |o| o.env "DD_TRACE_AGENT_URL" }
+        end
+
+        settings :telemetry do
+          option(:enabled) { |o| o.type :bool; o.env "DD_INSTRUMENTATION_TELEMETRY_ENABLED"; o.default true }
+          option(:agentless_enabled) { |o| o.type :bool; o.default false }
+          option(:shutdown_timeout_seconds) { |o| o.default 5.0 }
+          option(:agentless_url_override) { |o| o.env "DD_TELEMETRY_AGENTLESS_URL" }
+          option(:aggregation_interval) { |o| o.type :float; o.env "DD_TELEMETRY_HEARTBEAT_INTERVAL"; o.default 10.0 }
+          option(:buffer_size) { |o| o.default 10_000 }
+        end
+
+        def initialize(**options)
+          super
+          parsed_tags = tags
+          [:service, :env, :version].each do |name|
+            import_option_if_unset(name, parsed_tags[name.to_s]) if get_option(name).nil? && parsed_tags.key?(name.to_s)
+          end
+        end
+
+        def service_without_fallback
+          service
+        end
+
+        def import_legacy!(source)
+          [:service, :env, :version, :site, :api_key, :tags, :time_now_provider, :get_time_provider].each do |name|
+            next unless source.respond_to?(name)
+            value = name == :service && source.respond_to?(:service_without_fallback) ? source.service_without_fallback : source.public_send(name)
+            import_option_if_unset(name, value.is_a?(Hash) ? value.dup : value)
+          end
+          [:logger, :diagnostics, :agent, :telemetry].each do |name|
+            next unless source.respond_to?(name)
+            target = public_send(name)
+            origin = source.public_send(name)
+            target.class.options.each_key do |key|
+              target.import_option_if_unset(key, origin.public_send(key)) if origin.respond_to?(key)
+            end
+          end
+          self
         end
       end
     end

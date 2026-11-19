@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "datadog/core/environment/container"
+require "datadog/ci/utils/container"
 
 require_relative "base"
 require_relative "../../ext/transport"
@@ -76,7 +76,7 @@ module Datadog
           def container_id
             return @container_id if defined?(@container_id)
 
-            @container_id = Datadog::Core::Environment::Container.container_id
+            @container_id = Datadog::CI::Utils::Container.container_id
           end
 
           def default_headers
