@@ -126,6 +126,18 @@ RSpec.describe "Standalone CI runtime" do
     RUBY
   end
 
+  it "formats Git timestamps without the tracer or application dependencies" do
+    output, status = run_child(
+      {},
+      ["-I", File.join(repository_root, "lib"), "-rdatadog/ci/git/user", "-e",
+        'puts Datadog::CI::Git::User.new("name", "email", "0").date'],
+      repository_root
+    )
+
+    expect(status.success?).to be(true), output
+    expect(output.strip).to eq("1970-01-01T00:00:00+00:00")
+  end
+
   it "runs RSpec sessions, retries, TIA, and available native coverage without the tracer gem" do
     Dir.mktmpdir("standalone-ci") do |directory|
       gemfile = File.join(directory, "Gemfile")
