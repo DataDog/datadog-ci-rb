@@ -90,7 +90,8 @@ RSpec.describe "SDK-owned metadata" do
   it "does not give unrelated application spans CI defaults" do
     test = Datadog::CI.start_test("example", "suite")
     Datadog::Tracing.trace("http.request", type: "http") do
-      expect(Datadog::CI.active_span.get_tag("git.branch")).to be_nil
+      expect(Datadog::CI.active_span).to be_nil
+      expect(Datadog::Tracing.active_span.get_tag("git.branch")).to be_nil
     end
     test.finish
   end

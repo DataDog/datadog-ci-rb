@@ -27,8 +27,9 @@ module Datadog
       end
 
       def logger
-        @default_logger.level = @configuration.diagnostics.debug ? Logger::DEBUG : @configuration.logger.level
-        @configuration.logger.instance || @default_logger
+        settings = configuration
+        @default_logger.level = settings.diagnostics.debug ? Logger::DEBUG : settings.logger.level
+        settings.logger.instance || @default_logger
       end
 
       def components(allow_initialization: true)

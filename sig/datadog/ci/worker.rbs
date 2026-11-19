@@ -1,18 +1,19 @@
 module Datadog
   module CI
-    class Worker < Datadog::Core::Worker
-      include Datadog::Core::Workers::Async::Thread
-      include Datadog::Core::Workers::Async::Thread::PrependedMethods
-
+    class Worker
+      @operation: ^(*untyped) -> untyped
+      @pid: Integer
+      @mutex: Mutex
+      @thread: Thread?
       DEFAULT_SHUTDOWN_TIMEOUT: 60
-
-      def stop: (?Integer timeout) -> void
-
-      def wait_until_done: (?Integer? timeout) -> void
-
+      def initialize: () { (*untyped) -> untyped } -> void
+      def perform: (*untyped) -> Thread?
+      def stop: (?Numeric) -> Thread?
+      def wait_until_done: (?Numeric?) -> Thread?
+      def started?: () -> bool
+      def running?: () -> bool
       def done?: () -> bool
     end
-
     class DummyWorker < Worker
       def initialize: () -> void
     end

@@ -87,7 +87,7 @@ module Datadog
       # Returns the current status of the span.
       # @return [String, nil] the status of the span ("pass", "fail", "skip"), or nil if not set
       def status
-        tracer_span.get_tag(Ext::Test::TAG_STATUS)
+        tracer_span.get_tag(Ext::Test::TAG_STATUS)&.to_s
       end
 
       # Sets the status of the span to "pass".
@@ -249,31 +249,31 @@ module Datadog
       # Returns the OS architecture extracted from the environment.
       # @return [String] OS arch.
       def os_architecture
-        tracer_span.get_tag(Ext::Test::TAG_OS_ARCHITECTURE)
+        tracer_span.get_tag(Ext::Test::TAG_OS_ARCHITECTURE)&.to_s
       end
 
       # Returns the OS platform extracted from the environment.
       # @return [String] OS platform.
       def os_platform
-        tracer_span.get_tag(Ext::Test::TAG_OS_PLATFORM)
+        tracer_span.get_tag(Ext::Test::TAG_OS_PLATFORM)&.to_s
       end
 
       # Returns the OS version extracted from the environment.
       # @return [String] OS version.
       def os_version
-        tracer_span.get_tag(Ext::Test::TAG_OS_VERSION)
+        tracer_span.get_tag(Ext::Test::TAG_OS_VERSION)&.to_s
       end
 
       # Returns the runtime name extracted from the environment.
       # @return [String] runtime name.
       def runtime_name
-        tracer_span.get_tag(Ext::Test::TAG_RUNTIME_NAME)
+        tracer_span.get_tag(Ext::Test::TAG_RUNTIME_NAME)&.to_s
       end
 
       # Returns the runtime version extracted from the environment.
       # @return [String] runtime version.
       def runtime_version
-        tracer_span.get_tag(Ext::Test::TAG_RUNTIME_VERSION)
+        tracer_span.get_tag(Ext::Test::TAG_RUNTIME_VERSION)&.to_s
       end
 
       # Source file path where the test or test suite defined (relative to git repository root).

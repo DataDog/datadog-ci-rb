@@ -17,7 +17,7 @@ module Datadog
 
       def name: () -> String
 
-      def service: () -> String
+      def service: () -> String?
 
       def undefined?: () -> bool
 
@@ -54,7 +54,7 @@ module Datadog
 
       def finish: () -> void
 
-      def type: () -> String
+      def type: () -> String?
 
       def set_environment_runtime_tags: () -> void
 
@@ -94,7 +94,7 @@ module Datadog
 
       def shared_tags: () -> Hash[String, String]
 
-      def test_tracing: () -> Datadog::CI::TestTracing::Component
+      def test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
     end
   end
 end

@@ -51,7 +51,7 @@ module Datadog
               ssl: agent_settings.ssl,
               timeout: agent_settings.timeout_seconds,
               uds_path: agent_settings.uds_path
-            ).request(path: "/info", payload: nil, headers: {}, verb: "get")
+            ).request(path: "/info", payload: "", headers: {}, verb: "get")
 
             return [nil, false] if response.error
 
@@ -72,18 +72,57 @@ module Datadog
 
           def self.resolve_agent_settings(settings)
             agent = settings.agent
-            url = agent.url && URI.parse(agent.url)
-            socket = agent.uds_path || (url.path if url && url.scheme == "unix")
-            if !url && !agent.host && !agent.port && !socket && File.socket?("/var/run/datadog/apm.socket")
+            url = parse_agent_url(agent.url)
+            http_url = url if url.is_a?(URI::HTTP)
+            host = agent.host || http_url&.hostname || agent.host_from_environment
+            port = parse_agent_integer(agent.port, "agent.port") || http_url&.port ||
+              parse_agent_integer(agent.port_from_environment, "DD_TRACE_AGENT_PORT")
+            socket = agent.uds_path
+            socket ||= url.to_s.sub(/\Aunix:(?:\/\/)?/, "") if url && url.scheme == "unix"
+            if !host && !port && !socket && File.socket?("/var/run/datadog/apm.socket")
               socket = "/var/run/datadog/apm.socket"
             end
+            ssl = agent.use_ssl.nil? ? url&.scheme == "https" : agent.use_ssl
+            timeout = parse_agent_timeout(agent.timeout_seconds, "agent.timeout_seconds") ||
+              parse_agent_timeout(agent.timeout_from_environment, "DD_TRACE_AGENT_TIMEOUT_SECONDS") || 30
             AgentSettings.new(
-              hostname: agent.host || (url.host if url) || "127.0.0.1",
-              port: agent.port || (url.port if url.respond_to?(:port)) || 8126,
-              ssl: agent.use_ssl || (url && url.scheme == "https") || false,
-              timeout_seconds: agent.timeout_seconds,
+              hostname: host || "127.0.0.1",
+              port: port || 8126,
+              ssl: socket ? false : ssl,
+              timeout_seconds: timeout,
               uds_path: socket
             )
+          end
+
+          def self.parse_agent_url(value)
+            return if value.nil?
+
+            url = URI.parse(value)
+            return url if ["http", "https", "unix"].include?(url.scheme)
+
+            CI.logger.warn("Ignoring Datadog Agent URL with unsupported scheme: #{url.scheme}")
+            nil
+          rescue URI::InvalidURIError => error
+            CI.logger.warn("Ignoring invalid Datadog Agent URL: #{error}")
+            nil
+          end
+
+          def self.parse_agent_timeout(value, name)
+            return if value.nil?
+
+            parsed = Float(value, exception: false)
+            return parsed if parsed&.finite? && parsed >= 0
+
+            CI.logger.warn("Ignoring invalid Datadog Agent setting #{name}: #{value.inspect}")
+            nil
+          end
+
+          def self.parse_agent_integer(value, name)
+            return if value.nil?
+
+            parsed = Integer(value, exception: false)
+            CI.logger.warn("Ignoring invalid Datadog Agent setting #{name}: #{value.inspect}") if parsed.nil?
+            parsed
           end
         end
       end

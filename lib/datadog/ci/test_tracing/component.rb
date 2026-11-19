@@ -35,13 +35,13 @@ module Datadog
         attr_reader :logical_test_session_name, :known_tests, :known_tests_enabled, :context_service_uri,
           :local_test_suites_mode, :trace_setup_teardown_enabled
 
-        def self.build(api:, dd_env:, config_tags:, **options)
+        def self.build(api:, dd_env:, config_tags:, tracer:, **options)
           known_tests_client = KnownTests.new(api: api, dd_env: dd_env, config_tags: config_tags)
-          new(known_tests_client: known_tests_client, **options)
+          new(known_tests_client: known_tests_client, tracer: tracer, **options)
         end
 
         def self.build_transport(api:, discard_traces:, dd_env:)
-          return NullTransport.new if discard_traces
+          return NullTransport.new if discard_traces || api.nil?
 
           Transport.new(api: api, dd_env: dd_env)
         end

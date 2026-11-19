@@ -24,12 +24,12 @@ RSpec.describe Datadog::CI::Utils::Bundle do
     context "when an exception is raised" do
       before do
         allow(Bundler).to receive(:bundle_path).and_raise(StandardError.new("Failed to find bundle path"))
-        allow(Datadog.logger).to receive(:warn)
+        allow(Datadog::CI.logger).to receive(:warn)
         allow(File).to receive(:directory?).and_return(false)
       end
 
       it "logs a warning and tries other possible bundle locations" do
-        expect(Datadog.logger).to receive(:warn).with(/Failed to find bundled gems location/)
+        expect(Datadog::CI.logger).to receive(:warn).with(/Failed to find bundled gems location/)
 
         expect(Datadog::CI::Utils::Bundle.location).to be_nil
       end

@@ -1,9 +1,9 @@
 require "json"
 
 RSpec.describe ::Datadog::CI::Ext::Environment do
-  let(:logger) { instance_double(Datadog::Core::Logger) }
+  let(:logger) { instance_double(Logger) }
   before do
-    allow(Datadog).to receive(:logger).and_return(logger)
+    allow(Datadog::CI).to receive(:logger).and_return(logger)
     allow(logger).to receive(:debug)
     allow(logger).to receive(:error)
   end

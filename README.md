@@ -24,6 +24,42 @@ Learn more on our [official website](https://docs.datadoghq.com/tests/) and chec
 - [Test visibility setup](https://docs.datadoghq.com/tests/setup/ruby/?tab=cloudciprovideragentless)
 - [Test impact analysis setup](https://docs.datadoghq.com/tests/test_impact_analysis/setup/ruby/?tab=cloudciprovideragentless) (test visibility setup is required before setting up test impact analysis)
 
+## Independent CI runtime
+
+`datadog-ci` runs without the `datadog` tracing gem. It owns its configuration,
+test events, coverage, retries, and transport. Tracer resets and shutdown do not
+reset the CI session.
+
+To collect spans from tracing integrations, add both gems to your Gemfile:
+
+```ruby
+gem "datadog-ci"
+gem "datadog"
+```
+
+The compatibility bridge loads automatically when `datadog` is available.
+Integration spans associated with tests go to the `citestcycle` intake with their
+test context. Other traces use the tracer's configured writer.
+
+Existing configuration through `Datadog.configure` or `Datadog.configuration`
+is supported before the test session starts:
+
+```ruby
+require "datadog/ci"
+
+Datadog.configure do |c|
+  c.service = "my-tests"
+  c.ci.enabled = true
+  c.ci.instrument :rspec
+end
+```
+
+You can also configure CI through `Datadog::CI.configure`. Values explicitly set
+through this API take precedence over imported tracer configuration. Configure
+the library before the test session starts. Without the `datadog` gem, the legacy
+configuration API supports CI configuration. Tracing integrations require the
+`datadog` gem.
+
 ## Upgrade from ddtrace v1.x
 
 If you used [test visibility for Ruby](https://docs.datadoghq.com/tests/setup/ruby/) with [ddtrace](https://github.com/datadog/dd-trace-rb) gem, check out our [upgrade guide](/docs/UpgradeGuide.md).

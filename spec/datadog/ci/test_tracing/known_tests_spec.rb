@@ -174,7 +174,7 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
           end
 
           before do
-            expect(Datadog.logger).to receive(:error).with(/Failed to parse unique known tests response payload/)
+            expect(Datadog::CI.logger).to receive(:error).with(/Failed to parse unique known tests response payload/)
           end
 
           it "parses the response" do
@@ -317,8 +317,8 @@ RSpec.describe Datadog::CI::TestTracing::KnownTests do
           it_behaves_like "emits telemetry metric", :distribution, "known_tests.total_request_ms"
 
           it "emits aggregate pagination metrics with correct values" do
-            allow(Datadog::Core::Utils::Time).to receive(:get_time).and_call_original
-            allow(Datadog::Core::Utils::Time)
+            allow(Datadog::CI::Utils::Time).to receive(:get_time).and_call_original
+            allow(Datadog::CI::Utils::Time)
               .to receive(:get_time)
               .with(:float_millisecond)
               .and_return(100.0, 125.0)

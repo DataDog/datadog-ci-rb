@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 require "json"
+require_relative "../utils/time"
 
 module Datadog
   module CI
     module Telemetry
       # Aggregates CI telemetry without sharing the application tracer's runtime.
       class Component
-        CLOCK = ::Process.method(:clock_gettime)
         AGENTLESS_PATH = "/api/v2/apmtelemetry"
         AGENT_PATH = "/telemetry/proxy/api/v2/apmtelemetry"
         Metric = Struct.new(:namespace, :name, :type, :tags, :common, :timestamp, :values)
@@ -185,7 +185,7 @@ module Datadog
         end
 
         def timestamp
-          CLOCK.call(Process::CLOCK_REALTIME).to_i
+          Utils::Time.now.to_i
         end
 
         def reset_process_state

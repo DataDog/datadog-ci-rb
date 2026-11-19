@@ -19,7 +19,7 @@ RSpec.describe "Test automation exclusion policy" do
 
   def run_test(prevent_failure_suppression: false, no_auto_retry: false)
     attempts = 0
-    Datadog.send(:components).test_retries.with_retries do
+    Datadog::CI.components.test_retries.with_retries do
       test_tracing.trace_test("test", "suite", prevent_failure_suppression: prevent_failure_suppression, no_auto_retry: no_auto_retry) do |test|
         attempts += 1
         test.should_skip? ? test.skipped!(reason: test.datadog_skip_reason) : test.failed!(exception: RuntimeError.new("failure"))
@@ -72,7 +72,7 @@ RSpec.describe "Test automation exclusion policy" do
     end
 
     it "preserves externally scheduled retries and their classification" do
-      Datadog.send(:components).test_retries.with_retries do
+      Datadog::CI.components.test_retries.with_retries do
         test_tracing.trace_test("test", "suite", no_auto_retry: true) { |test| test.failed!(exception: RuntimeError.new("first attempt")) }
         test_tracing.trace_test("test", "suite", no_auto_retry: true) { |test| test.passed! }
       end

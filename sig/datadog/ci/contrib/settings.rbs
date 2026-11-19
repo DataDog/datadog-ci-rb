@@ -4,11 +4,8 @@ module Datadog
       class Settings
         type option_value = bool | Integer | String | nil
 
-        include Core::Configuration::Base
-        extend Datadog::Core::Configuration::Options::ClassMethods
-        include Datadog::Core::Configuration::Options::InstanceMethods
-
-        extend Datadog::Core::Configuration::Base::ClassMethods
+        include Datadog::CI::Configuration::Base
+        extend Datadog::CI::Configuration::Base::ClassMethods
 
         def configure: (?::Hash[Symbol, untyped] options) ?{ (Datadog::CI::Contrib::Settings) -> Datadog::CI::Contrib::Settings } -> Datadog::CI::Contrib::Settings?
 

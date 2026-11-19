@@ -72,14 +72,14 @@ module Datadog
           end
 
           # we read command's output as binary so now we need to set an appropriate encoding for the result
-          encoding = Encoding.default_external
+          encoding = ::Encoding.default_external
 
-          # Sometimes Encoding.default_external is somehow set to US-ASCII which breaks
+          # Sometimes ::Encoding.default_external is somehow set to US-ASCII which breaks
           # commit messages with UTF-8 characters like emojis
           # We force output's encoding to be UTF-8 in this case
           # This is safe to do as UTF-8 is compatible with US-ASCII
-          if Encoding.default_external == Encoding::US_ASCII
-            encoding = Encoding::UTF_8
+          if ::Encoding.default_external == ::Encoding::US_ASCII
+            encoding = ::Encoding::UTF_8
           end
 
           output.force_encoding(encoding)

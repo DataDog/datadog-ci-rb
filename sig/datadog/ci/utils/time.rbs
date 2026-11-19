@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Utils
+      module Time
+        WALL_CLOCK: Method
+        MONOTONIC_CLOCK: Method
+        def self.now: () -> ::Time
+        def self.get_time: (?Symbol) -> Float
+        def self.measure: (?Symbol) { () -> untyped } -> Float
+      end
+    end
+  end
+end

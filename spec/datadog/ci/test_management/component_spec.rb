@@ -51,7 +51,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
 
       # it tags test_session with test management enabled tag
       before do
-        allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
+        allow(Datadog::CI.components).to receive(:test_optimization_cache) do
           Datadog::CI::TestOptimizationCache::Component.new(
             manifest_file: nil,
             runfiles_dir: nil,
@@ -105,7 +105,7 @@ RSpec.describe Datadog::CI::TestManagement::Component do
 
       context "when in a client process" do
         before do
-          allow(Datadog.send(:components)).to receive(:test_tracing).and_return(
+          allow(Datadog::CI.components).to receive(:test_tracing).and_return(
             instance_double(Datadog::CI::TestTracing::Component, client_process?: true)
           )
           allow(Datadog::CI::TestManagement::TestsProperties).to receive(:new)

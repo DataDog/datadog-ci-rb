@@ -6,7 +6,7 @@ module Datadog
       module FileAccess
         module Instrumentation
           def self.test_impact_analysis
-            Datadog.send(:components, allow_initialization: false)&.test_impact_analysis
+            Datadog::CI.components(allow_initialization: false)&.test_impact_analysis
           rescue => error
             # The component/logger may be inaccessible (for example in a Ractor).
             # Use stderr here so reporting cannot re-enter the File hooks.

@@ -57,7 +57,7 @@ module Datadog
 
           def datadog_configuration: () -> Datadog::CI::Contrib::Cucumber::Configuration::Settings
 
-          def test_tracing_component: () -> Datadog::CI::TestTracing::Component
+          def test_tracing_component: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 
           def test_suite_source_file_tags: (untyped test_case) -> Hash[String, String]
 

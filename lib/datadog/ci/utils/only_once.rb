@@ -17,6 +17,10 @@ module Datadog
           end
         end
 
+        def ran?
+          @mutex.synchronize { @ran }
+        end
+
         def reset!
           @mutex.synchronize { @ran = false }
         end

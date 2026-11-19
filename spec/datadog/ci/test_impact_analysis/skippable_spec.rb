@@ -188,7 +188,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Skippable do
           end
 
           before do
-            expect(Datadog.logger).to receive(:error).with(/Failed to parse skippable tests response payload/)
+            expect(Datadog::CI.logger).to receive(:error).with(/Failed to parse skippable tests response payload/)
           end
 
           it "parses the response" do

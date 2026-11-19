@@ -23,7 +23,7 @@ module Datadog
         def encode_events: (Array[Datadog::CI::_EventTrace] traces) -> ::Array[String]
         def encode_span: (Datadog::CI::_EventTrace trace, Datadog::CI::_EventSpan span) -> String?
         def test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
-        def test_tracing: () -> Datadog::CI::TestTracing::Component?
+        def test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
       end
     end
   end

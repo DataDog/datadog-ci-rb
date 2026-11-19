@@ -28,9 +28,9 @@ module Datadog
     def self.active_span: () -> Datadog::CI::Span?
 
     def self.runtime: () -> Datadog::CI::Runtime
-    def self.configuration: () -> Datadog::CI::Configuration::RuntimeSettings
+    def self.configuration: () -> untyped
     def self.logger: () -> Logger
-    def self.configure: () { (Datadog::CI::Configuration::RuntimeSettings) -> void } -> Datadog::CI::Configuration::RuntimeSettings
+    def self.configure: () { (untyped) -> void } -> untyped
     def self.configuration_changed!: () -> void
     def self.shutdown!: () -> void
     def self.reset!: () -> void

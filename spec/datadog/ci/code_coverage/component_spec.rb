@@ -176,7 +176,7 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
           let(:coverage_flags) { flags.join(",") }
 
           before do
-            allow(Datadog.logger).to receive(:warn)
+            allow(Datadog::CI.logger).to receive(:warn)
           end
 
           it "warns once, omits the flags, and uploads the report" do
@@ -185,7 +185,7 @@ RSpec.describe Datadog::CI::CodeCoverage::Component do
             end
 
             expect(responses).to eq([http_response, http_response])
-            expect(Datadog.logger).to have_received(:warn).once.with(
+            expect(Datadog::CI.logger).to have_received(:warn).once.with(
               "DD_CODE_COVERAGE_FLAGS contains 33 flags, but only 32 are allowed; omitting report flags"
             )
             expect(transport).to have_received(:send_coverage_report).twice do |args|

@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
   let(:directory) { Dir.mktmpdir("file-access-", root) }
   let(:path) { File.join(directory, "fixture.json") }
   let(:events) { [] }
-  let(:component) { Datadog.send(:components).test_impact_analysis }
+  let(:component) { Datadog::CI.components.test_impact_analysis }
   let(:patcher) { Datadog::CI::Contrib::FileAccess::Patcher }
 
   before do
@@ -65,7 +65,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
   end
 
   it "enables file coverage when debug logging returns nil" do
-    allow(Datadog.logger).to receive(:debug).and_return(nil)
+    allow(Datadog::CI.logger).to receive(:debug).and_return(nil)
     expect(patcher).to receive(:patch).and_call_original
     start_session
     read_in_test { File.read(path) }
@@ -77,7 +77,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     allow(component).to receive(:require)
       .with("datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}").and_raise(LoadError, "extension unavailable")
     expect(patcher).not_to receive(:patch)
-    expect(Datadog.logger).to receive(:error).with(/extension unavailable/)
+    expect(Datadog::CI.logger).to receive(:error).with(/extension unavailable/)
     start_session
 
     expect(component).not_to be_code_coverage
@@ -148,7 +148,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
           config.ci.itr_enabled = true
           config.ci.tia_static_dependencies_tracking_enabled = false
         end
-        component = Datadog.send(:components).test_impact_analysis
+        component = Datadog::CI.components.test_impact_analysis
         settings = Datadog::CI::Remote::LibrarySettings.from_json(
           "itr_enabled" => true, "code_coverage" => true, "tests_skipping" => false
         )
@@ -575,7 +575,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
     it "logs recording failures without changing file results, even if logging raises" do
       allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies)
         .to receive(:paths_for).and_raise("record failure")
-      expect(Datadog.logger).to receive(:warn).with(/record failure/).and_raise("logger failure")
+      expect(Datadog::CI.logger).to receive(:warn).with(/record failure/).and_raise("logger failure")
       read_in_test { expect(File.read(path)).to eq('{"value":42}') }
     end
 
@@ -583,7 +583,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
       read_in_test do
         allow_any_instance_of(Datadog::CI::TestImpactAnalysis::Coverage::FileDependencies)
           .to receive(:paths_for).and_raise("record failure")
-        expect(Datadog.logger).to receive(:warn).once do
+        expect(Datadog::CI.logger).to receive(:warn).once do
           File.open(path).tap { |file| file.read }.close
           File.read(path)
         end
@@ -607,7 +607,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
         run_other_test = -> { read_in_test { File.read(path) } }
 
         read_in_test do
-          expect(Datadog.logger).to receive(:warn).once do
+          expect(Datadog::CI.logger).to receive(:warn).once do
             if execution_context == :thread
               Thread.new(&run_other_test).value
             else

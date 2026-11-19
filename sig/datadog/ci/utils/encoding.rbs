@@ -1,0 +1,16 @@
+module Datadog
+  module CI
+    module Utils
+      module Encoding
+        module MsgpackEncoder
+          def self.encode: (untyped) -> String
+        end
+      end
+      def self.utf8_encode: (untyped) -> String
+    end
+  end
+end
+
+module MessagePack
+  def self.pack: (untyped) -> String
+end

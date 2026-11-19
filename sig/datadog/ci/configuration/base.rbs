@@ -1,0 +1,73 @@
+module Datadog
+  module CI
+    module Configuration
+      interface _Environment
+        def []: (String) -> String?
+        def fetch: (String, String) -> String
+      end
+      def self.environment: () -> _Environment
+
+      module Base : Object
+        @environment: _Environment
+        @values: Hash[Symbol, untyped]
+        @explicit_options: Hash[Symbol, bool]
+        @implicit_snapshots: Hash[Symbol, untyped]
+        def self.included: (untyped) -> void
+        def class: () -> (Class & ClassMethods)
+        def instance_exec: [R] (*untyped, **untyped) { (?) [self: self] -> R } -> R
+        attr_reader environment: _Environment
+        def initialize: (?environment: _Environment) -> void
+        def get_option: (Symbol) -> untyped
+        def set_option: (Symbol, untyped, ?explicit: bool) -> untyped
+        def configure: (?Hash[Symbol, untyped]) ?{ (self) -> void } -> self
+        def explicit?: (Symbol) -> bool
+        def import_option_if_unset: (Symbol, untyped) -> untyped
+        def reset!: () -> self
+        def options: () -> Hash[Symbol, Option]
+        def inspect: () -> String
+        def to_h: () -> Hash[Symbol, untyped]
+
+        private
+        def remember_implicit_value: (Symbol, untyped) -> void
+        def copy_value: (untyped, ?Hash[Integer, untyped]) -> untyped
+
+        class Option
+          @environment_names: Array[String]
+          @kind: Symbol?
+          @default_value: untyped
+          @default_block: (^() [self: Base] -> untyped)?
+          @setter_block: (^(untyped) [self: Base] -> untyped)?
+          @after_set_block: (^(untyped) [self: Base] -> untyped)?
+          attr_reader environment_names: Array[String]
+          attr_reader kind: Symbol?
+          attr_reader default_value: untyped
+          attr_reader default_block: (^() [self: Base] -> untyped)?
+          attr_reader setter_block: (^(untyped) [self: Base] -> untyped)?
+          attr_reader after_set_block: (^(untyped) [self: Base] -> untyped)?
+          def initialize: (?default: untyped, **untyped) -> void
+          def type: (Symbol, **untyped) -> void
+          def env: (*String) -> void
+          def default: (?untyped) ?{ () [self: Base] -> untyped } -> void
+          def setter: () { (untyped) [self: Base] -> untyped } -> void
+          def after_set: () { (untyped) [self: Base] -> untyped } -> void
+          def resolve: (Base) -> untyped
+          def cast: (String) -> untyped
+        end
+        module ClassMethods : Class
+          @options: Hash[Symbol, Option]?
+          def options: () -> Hash[Symbol, Option]
+          def option: (Symbol, **untyped) ?{ (Option) -> void } -> void
+          def settings: (Symbol) { (Class) [self: Class] -> void } -> void
+        end
+      end
+
+      class RuntimeSettings
+        include Base
+        extend Base::ClassMethods
+        def initialize: (?environment: _Environment) -> void
+        def import_legacy!: (untyped) -> self
+        def service_without_fallback: () -> String?
+      end
+    end
+  end
+end

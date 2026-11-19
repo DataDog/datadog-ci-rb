@@ -112,6 +112,32 @@ RSpec.describe Datadog::CI::TracerBridge::Component do
     expect(ci_writer).to have_received(:write).with(have_attributes(spans: [have_attributes(parent_id: test.id)]))
   end
 
+  it "routes explicitly continued spans that finish after their CI session" do
+    bridge.on_session_started(session)
+    bridge.observe(tracer)
+    digest = Datadog::Tracing::TraceDigest.new(trace_id: 707, span_id: 808)
+    application_span = tracer.trace("delayed.request", continue_from: digest)
+    bridge.on_session_finished(session)
+    application_span.finish
+
+    expect(ci_writer).to have_received(:write).once do |trace|
+      expect(trace.id).to eq(707)
+      expect(trace.origin).to be_nil
+    end
+    expect(application_writer).not_to have_received(:write)
+  end
+
+  it "restores application delivery when the CI runtime shuts down" do
+    bridge.on_session_started(session)
+    trace_application
+    bridge.on_session_finished(session)
+    bridge.shutdown!
+    trace_application("application.work")
+
+    expect(ci_writer).to have_received(:write).once
+    expect(application_writer).to have_received(:write).once
+  end
+
   it "does not wrap the writer when disabled" do
     disabled = described_class.new(writer: ci_writer, logger: logger, enabled: false)
     disabled.on_test_started(test)

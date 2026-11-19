@@ -54,6 +54,7 @@ module Datadog
             when :bool then value.to_s.downcase == "true" || value.to_s == "1"
             when :int then Integer(value, exception: false) || default_value
             when :float then Float(value, exception: false) || default_value
+            when :array then value.to_s.split(",").map(&:strip)
             else value
             end
           end
@@ -61,18 +62,24 @@ module Datadog
 
         module ClassMethods
           def options
-            parent = respond_to?(:superclass) ? superclass : nil
+            parent = _ = superclass
             inherited = parent.respond_to?(:options) ? parent.options : {}
             inherited.merge(@options || {})
           end
 
           def option(name, **options, &block)
             definition = Option.new(**options)
-            block.call(definition) if block
-            @options ||= {}
-            @options[name] = definition
-            define_method(name) { get_option(name) }
-            define_method("#{name}=") { |value| set_option(name, value) }
+            block&.call(definition)
+            definitions = (@options ||= {})
+            definitions[name] = definition
+            define_method(name) do
+              # @type self: Base
+              get_option(name)
+            end
+            define_method("#{name}=") do |value|
+              # @type self: Base
+              set_option(name, value)
+            end
           end
 
           def settings(name, &block)
@@ -80,7 +87,12 @@ module Datadog
               include Base
             end
             settings_class.class_eval(&block)
-            option(name) { |definition| definition.default { settings_class.new(environment: environment) } }
+            option(name) do |definition|
+              definition.default do
+                # @type self: Base
+                settings_class.new(environment: environment)
+              end
+            end
           end
         end
 
@@ -90,14 +102,18 @@ module Datadog
           @environment = environment
           @values = {}
           @explicit_options = {}
+          @implicit_snapshots = {}
         end
 
         def get_option(name)
           return @values[name] if @values.key?(name)
           definition = self.class.options.fetch(name)
-          value = definition.resolve(self)
+          value = copy_value(definition.resolve(self))
           value = instance_exec(value, &definition.setter_block) if definition.setter_block
           @values[name] = value
+          instance_exec(value, &definition.after_set_block) if definition.after_set_block
+          remember_implicit_value(name, value)
+          value
         end
 
         def set_option(name, value, explicit: true)
@@ -106,21 +122,49 @@ module Datadog
           @values[name] = value
           @explicit_options[name] = true if explicit
           instance_exec(value, &definition.after_set_block) if definition.after_set_block
+          remember_implicit_value(name, value)
           value
         end
 
+        def configure(options = {})
+          options.each do |name, value|
+            current = get_option(name)
+            if current.is_a?(Base) && value.is_a?(Hash)
+              current.configure(value)
+            else
+              set_option(name, value)
+            end
+          end
+          yield self if block_given?
+          self
+        end
+
         def explicit?(name)
-          @explicit_options.key?(name)
+          return true if @explicit_options.key?(name)
+          return false unless @implicit_snapshots.key?(name)
+          return false if @values[name] == @implicit_snapshots[name]
+
+          @implicit_snapshots.delete(name)
+          @explicit_options[name] = true
         end
 
         def import_option_if_unset(name, value)
-          set_option(name, value, explicit: false) unless explicit?(name)
+          set_option(name, copy_value(value), explicit: false) unless explicit?(name)
         end
 
         def reset!
           @values.clear
           @explicit_options.clear
+          @implicit_snapshots.clear
           self
+        end
+
+        def options
+          self.class.options
+        end
+
+        def inspect
+          "#<#{self.class.name || self.class.superclass&.name}>"
         end
 
         def to_h
@@ -128,6 +172,31 @@ module Datadog
             value = get_option(name)
             values[name] = value.is_a?(Base) ? value.to_h : value
           end
+        end
+
+        private
+
+        def remember_implicit_value(name, value)
+          @implicit_snapshots.delete(name)
+          return if @explicit_options.key?(name)
+          return unless value.is_a?(Hash) || value.is_a?(Array) || value.is_a?(String)
+
+          # Compare copies so that native edits take precedence over later imports.
+          @implicit_snapshots[name] = copy_value(value)
+        end
+
+        def copy_value(value, copies = {})
+          return value unless value.is_a?(Hash) || value.is_a?(Array) || value.is_a?(String)
+          return copies[value.object_id] if copies.key?(value.object_id)
+
+          copy = value.dup
+          copies[value.object_id] = copy
+          if copy.is_a?(Hash)
+            copy.each { |key, item| copy[key] = copy_value(item, copies) }
+          elsif copy.is_a?(Array)
+            copy.map! { |item| copy_value(item, copies) }
+          end
+          copy
         end
       end
     end

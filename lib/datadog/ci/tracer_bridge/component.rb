@@ -36,15 +36,20 @@ module Datadog
           @logger = logger
           @enabled = enabled
           @session = nil
+          @session_started = false
         end
 
         def on_session_started(session)
-          @session = session if @enabled
+          return unless @enabled
+
+          @session = session
+          @session_started = true
         end
 
         def on_session_finished(session)
           return unless @session.equal?(session)
 
+          # Keep routing delayed spans until the owning CI runtime shuts down.
           @session = nil
           restore_session_scope
         end
@@ -112,7 +117,7 @@ module Datadog
 
         def write(trace)
           return false unless @enabled
-          return false unless @session || trace.origin == ORIGIN
+          return false unless @session_started || trace.origin == ORIGIN
 
           @writer.write(trace)
           true
@@ -124,6 +129,7 @@ module Datadog
         def shutdown!
           @enabled = false
           @session = nil
+          @session_started = false
           restore_session_scope
           current = scopes
           current.reverse_each { |scope| restore_scope(scope) if scope.owner.equal?(self) }

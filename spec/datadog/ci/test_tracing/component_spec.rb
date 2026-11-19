@@ -7,7 +7,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
   include_context "Telemetry spy"
 
   before do
-    allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
+    allow(Datadog::CI.components).to receive(:test_optimization_cache) do
       Datadog::CI::TestOptimizationCache::Component.new(
         manifest_file: nil,
         runfiles_dir: nil,
@@ -91,6 +91,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           session = test_tracing.start_test_session
           worker = described_class.new(
             known_tests_client: instance_double(Datadog::CI::TestTracing::KnownTests),
+            tracer: Datadog::CI.components.tracer,
             context_service_uri: test_tracing.context_service_uri
           )
           expect(worker.configuration_locked?).to be(false)
@@ -141,6 +142,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
         it "records tests from a worker in the shared session" do
           worker = described_class.new(
             known_tests_client: instance_double(Datadog::CI::TestTracing::KnownTests),
+            tracer: Datadog::CI.components.tracer,
             context_service_uri: test_tracing.context_service_uri
           )
           worker.start_test_session
@@ -866,26 +868,27 @@ RSpec.describe Datadog::CI::TestTracing::Component do
             session = parent.start_test_session
             worker = described_class.new(
               known_tests_client: instance_double(Datadog::CI::TestTracing::KnownTests),
+              tracer: Datadog::CI.components.tracer,
               context_service_uri: parent.context_service_uri
             )
-            retries = Datadog.send(:components).test_retries
+            retries = Datadog::CI.components.test_retries
             retries.reset_retries!
             parent.trace_test("test", "suite") { |test| test.failed! }
-            allow(Datadog.send(:components)).to receive(:test_tracing).and_return(worker)
+            allow(Datadog::CI.components).to receive(:test_tracing).and_return(worker)
 
             expect(worker.active_test_session).to be(session)
             expect(retries.should_retry?).to be(true)
 
             DRb.fetch_server(parent.context_service_uri).stop_service
-            allow(Datadog.logger).to receive(:error)
+            allow(Datadog::CI.logger).to receive(:error)
 
             expect(worker.active_test_session).to be_nil
             expect(retries.should_retry?).to be(false)
-            expect(Datadog.logger).to have_received(:error).with(
+            expect(Datadog::CI.logger).to have_received(:error).with(
               a_string_starting_with("Failed to get active test session: DRb::DRbConnError:")
             ).twice
           ensure
-            allow(Datadog.send(:components)).to receive(:test_tracing).and_return(parent)
+            allow(Datadog::CI.components).to receive(:test_tracing).and_return(parent)
             retries&.reset_retries!
             session&.finish
             DRb.fetch_server(parent.context_service_uri)&.stop_service
@@ -1156,7 +1159,8 @@ RSpec.describe Datadog::CI::TestTracing::Component do
   describe "#configure" do
     let(:test_tracing) do
       described_class.new(
-        known_tests_client: known_tests_client
+        known_tests_client: known_tests_client,
+        tracer: Datadog::CI.components.tracer
       )
     end
 
@@ -1238,7 +1242,7 @@ RSpec.describe Datadog::CI::TestTracing::Component do
 
       context "when in a client process" do
         before do
-          allow(Datadog.send(:components)).to receive(:test_tracing).and_return(test_tracing)
+          allow(Datadog::CI.components).to receive(:test_tracing).and_return(test_tracing)
           allow(test_tracing).to receive(:client_process?).and_return(true)
         end
 

@@ -21,9 +21,9 @@ module Datadog
 
           private
 
-          def patch_only_once: () -> Datadog::Core::Utils::OnlyOnce
+          def patch_only_once: () -> Datadog::CI::Utils::OnlyOnce
 
-          @patch_only_once: Datadog::Core::Utils::OnlyOnce
+          @patch_only_once: Datadog::CI::Utils::OnlyOnce
         end
       end
     end

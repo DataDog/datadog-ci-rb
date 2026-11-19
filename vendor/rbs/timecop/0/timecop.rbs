@@ -3,7 +3,7 @@ class Time
 end
 
 module Process
-  def self.clock_gettime_without_mock: (untyped clock, untyped unit) -> Numeric
+  def self.clock_gettime_without_mock: (untyped clock, untyped unit) -> (Integer | Float)
 end
 
 class Timecop

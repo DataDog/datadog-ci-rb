@@ -312,7 +312,7 @@ RSpec.describe Datadog::CI::TestManagement::TestsProperties do
           end
 
           before do
-            expect(Datadog.logger).to receive(:error).with(/Failed to parse test management tests response payload/)
+            expect(Datadog::CI.logger).to receive(:error).with(/Failed to parse test management tests response payload/)
           end
 
           it "parses the response" do

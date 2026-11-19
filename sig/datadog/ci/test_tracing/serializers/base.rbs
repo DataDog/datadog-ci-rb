@@ -20,7 +20,7 @@ module Datadog
 
           @content_fields_count: Integer
           @start: Integer
-          @duration: Integer
+          @duration: Integer?
 
           @test_tracing: Datadog::CI::TestTracing::Component
 
@@ -70,7 +70,7 @@ module Datadog
 
           def start: () -> Integer
 
-          def duration: () -> Integer
+          def duration: () -> Integer?
 
           def metrics: () -> Hash[String, Numeric]
 
@@ -92,13 +92,13 @@ module Datadog
 
           def write_field: (untyped packer, String field_name, ?String? method) -> untyped
           def time_nano: (Time time) -> Integer
-          def duration_nano: (Float? duration) -> Integer
+          def duration_nano: (Float? duration) -> Integer?
 
           def to_integer: ((String | Numeric)? value) -> Integer?
 
           def content_fields_count: () -> Integer
 
-          def test_tracing: () -> Datadog::CI::TestTracing::Component
+          def test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
         end
       end
     end

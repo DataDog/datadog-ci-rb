@@ -7,7 +7,7 @@ module Datadog
 
           @port: Integer?
 
-          @timeout: Integer
+          @timeout: (Integer | Float)
 
           @ssl: bool
 
@@ -17,19 +17,21 @@ module Datadog
 
           attr_reader port: Integer?
 
-          attr_reader timeout: Integer
+          attr_reader timeout: (Integer | Float)
 
           attr_reader ssl: bool
 
           attr_reader uds_path: String?
 
-          def initialize: (hostname: String?, port: Integer?, ssl: bool, timeout_seconds: Integer, ?uds_path: String?) -> void
+          def initialize: (hostname: String?, port: Integer?, ssl: bool, timeout_seconds: (Integer | Float), ?uds_path: String?) -> void
 
           def open: () { (Net::HTTP http) -> ::Net::HTTPResponse } -> ::Net::HTTPResponse
 
-          def call: (path: String, payload: String, headers: Hash[String, String], verb: String) -> Response
+          def call: (path: String, payload: String?, headers: Hash[String, String], verb: String) -> Response
 
-          def post: (path: String, payload: String, headers: Hash[String, String]) -> Response
+          def get: (path: String, payload: String?, headers: Hash[String, String]) -> Response
+
+          def post: (path: String, payload: String?, headers: Hash[String, String]) -> Response
 
           class Response
             @http_response: ::Net::HTTPResponse
@@ -55,6 +57,8 @@ module Datadog
             def code: () -> Integer?
 
             def ok?: () -> bool
+
+            def internal_error?: () -> bool
 
             def unsupported?: () -> bool
 

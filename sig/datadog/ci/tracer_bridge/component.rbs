@@ -45,6 +45,7 @@ module Datadog
         @logger: _Logger
         @enabled: bool
         @session: _Parent?
+        @session_started: bool
 
         def initialize: (writer: _Writer, logger: _Logger, ?enabled: bool) -> void
         def on_session_started: (_Parent session) -> void

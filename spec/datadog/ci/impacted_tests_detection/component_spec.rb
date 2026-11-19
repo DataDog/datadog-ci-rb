@@ -19,9 +19,9 @@ RSpec.describe Datadog::CI::ImpactedTestsDetection::Component do
     allow(Datadog::CI::Git::LocalRepository).to receive(:get_changes_since).and_return(
       Datadog::CI::Git::Diff.parse_diff_output(generate_git_diff_output(changed_files_set))
     )
-    allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
+    allow(Datadog::CI.components).to receive(:git_tree_upload_worker).and_return(git_worker)
 
-    allow(Datadog.logger).to receive(:warn)
+    allow(Datadog::CI.logger).to receive(:warn)
   end
 
   describe "#configure" do

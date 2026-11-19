@@ -14,7 +14,7 @@ module Datadog
             @pid = Process.pid
             @id = SecureRandom.uuid
           end
-          @id
+          @id ||= SecureRandom.uuid
         end
 
         def self.lang
@@ -45,7 +45,7 @@ module Datadog
 
         def self.kernel_release
           Etc.uname[:release]
-        rescue StandardError
+        rescue
           RbConfig::CONFIG["host_os"]
         end
       end

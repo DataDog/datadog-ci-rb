@@ -995,7 +995,7 @@ RSpec.describe Datadog::CI::Test do
 
     let(:test_name) { "peek duration spec" }
     let(:test_suite_name) { "peek duration suite" }
-    let(:peek_duration_test_tracing) { Datadog.send(:components).test_tracing }
+    let(:peek_duration_test_tracing) { Datadog::CI.components.test_tracing }
 
     before do
       # Remove the test_tracing stub for these tests since we need the real component
@@ -1009,7 +1009,7 @@ RSpec.describe Datadog::CI::Test do
         next if test.tracer_span.finished?
         test.finish
       end
-      allow(Datadog::Core::Utils::Time).to receive(:now).and_call_original
+      allow(Datadog::CI::Utils::Time).to receive(:now).and_call_original
     end
 
     def start_peek_duration_test
@@ -1020,7 +1020,7 @@ RSpec.describe Datadog::CI::Test do
     end
 
     def stub_time_now(*values)
-      allow(Datadog::Core::Utils::Time).to receive(:now).and_return(*values)
+      allow(Datadog::CI::Utils::Time).to receive(:now).and_return(*values)
     end
 
     context "while the test is running" do
@@ -1081,7 +1081,7 @@ RSpec.describe Datadog::CI::Test, "retry history" do
   end
 
   def record_execution(tags, passed:)
-    Datadog.send(:components).test_retries.reset_retries!
+    Datadog::CI.components.test_retries.reset_retries!
     test = test_tracing.trace_test("same name", "suite", tags: tags.dup)
     passed ? test.passed! : test.failed!
     test.finish

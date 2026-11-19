@@ -235,7 +235,7 @@ module Datadog
 
           # in nanoseconds
           def duration_nano(duration)
-            (duration * 1e9).to_i
+            (duration * 1e9).to_i unless duration.nil?
           end
 
           def to_s
@@ -243,7 +243,7 @@ module Datadog
           end
 
           def to_integer(value)
-            value&.to_i
+            value.to_i if value.is_a?(String) || value.is_a?(Integer) || value.is_a?(Float)
           end
 
           def test_tracing

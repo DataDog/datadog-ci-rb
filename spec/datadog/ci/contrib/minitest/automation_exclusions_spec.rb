@@ -61,7 +61,7 @@ RSpec.describe "Minitest test automation exclusions" do
       def test_example
       end
     end
-    expect(Datadog.logger).to receive(:warn).with(include("undefined test method", "test_missing")).twice
+    expect(Datadog::CI.logger).to receive(:warn).with(include("undefined test method", "test_missing")).twice
 
     klass.datadog_no_auto_retry :test_missing, :test_example
     klass.datadog_prevent_failure_suppression :test_missing, :test_example
@@ -75,7 +75,7 @@ RSpec.describe "Minitest test automation exclusions" do
 
   it "returns false for queries about undefined methods" do
     klass = Class.new(Minitest::Test)
-    expect(Datadog.logger).to receive(:warn).with(include("undefined test method", "test_missing")).twice
+    expect(Datadog::CI.logger).to receive(:warn).with(include("undefined test method", "test_missing")).twice
     expect(klass.dd_test_no_auto_retry?("test_missing")).to be(false)
     expect(klass.dd_test_prevent_failure_suppression?("test_missing")).to be(false)
   end

@@ -10,7 +10,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
   subject(:tree_uploader) { described_class.new(api: api, force_unshallow: force_unshallow) }
 
   before do
-    allow(Datadog.logger).to receive(:debug)
+    allow(Datadog::CI.logger).to receive(:debug)
   end
 
   describe "#call" do
@@ -35,7 +35,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
       let(:api) { nil }
 
       it "logs a debug message and aborts the git upload" do
-        expect(Datadog.logger).to receive(:debug).with("API is not configured, aborting git upload")
+        expect(Datadog::CI.logger).to receive(:debug).with("API is not configured, aborting git upload")
 
         subject
       end
@@ -45,7 +45,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
       let(:test_tracing_component) { double("test_tracing_component", client_process?: true) }
 
       it "logs a debug message and aborts the git upload" do
-        expect(Datadog.logger).to receive(:debug).with("Test tracing component is running in client process, aborting git upload")
+        expect(Datadog::CI.logger).to receive(:debug).with("Test tracing component is running in client process, aborting git upload")
         expect(Datadog::CI::Git::LocalRepository).not_to receive(:git_commits)
 
         subject
@@ -56,7 +56,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
       let(:test_optimization_cache) { double("test_optimization_cache", cache_available?: true) }
 
       it "logs a debug message and aborts the git upload" do
-        expect(Datadog.logger).to receive(:debug).with("Test Optimization cache found, git upload already done, skipping git upload")
+        expect(Datadog::CI.logger).to receive(:debug).with("Test Optimization cache found, git upload already done, skipping git upload")
         expect(Datadog::CI::Git::LocalRepository).not_to receive(:git_commits)
 
         subject
@@ -85,7 +85,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
         let(:latest_commits) { [] }
 
         it "logs a debug message and aborts the git upload" do
-          expect(Datadog.logger).to receive(:debug).with("Got empty latest commits list, aborting git upload")
+          expect(Datadog::CI.logger).to receive(:debug).with("Got empty latest commits list, aborting git upload")
 
           subject
         end
@@ -97,7 +97,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
         end
 
         it "logs a debug message and aborts the git upload" do
-          expect(Datadog.logger).to receive(:debug).with("SearchCommits failed with test error, aborting git upload")
+          expect(Datadog::CI.logger).to receive(:debug).with("SearchCommits failed with test error, aborting git upload")
 
           subject
         end
@@ -107,7 +107,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
         let(:backend_commits) { latest_commits }
 
         it "logs a debug message and aborts the git upload" do
-          expect(Datadog.logger).to receive(:debug).with("No new commits to upload")
+          expect(Datadog::CI.logger).to receive(:debug).with("No new commits to upload")
 
           subject
         end
@@ -191,7 +191,7 @@ RSpec.describe Datadog::CI::Git::TreeUploader do
             end
 
             it "logs a debug message and aborts the git upload" do
-              expect(Datadog.logger).to receive(:debug).with("Packfile upload failed with test error")
+              expect(Datadog::CI.logger).to receive(:debug).with("Packfile upload failed with test error")
 
               subject
             end

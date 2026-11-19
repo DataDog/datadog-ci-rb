@@ -71,22 +71,21 @@ module Datadog
           if settings.ci.enabled
             activate_ci!(settings)
           end
-
         end
 
         def shutdown!(replacement = nil)
           return if @shutdown
           @shutdown = true
-          @test_optimization_cache&.shutdown!
-          @test_tracing&.shutdown!
-          @test_impact_analysis&.shutdown!
-          @agentless_logs_submission&.shutdown!
-          @test_discovery&.shutdown!
-          @code_coverage&.shutdown!
-          @git_tree_upload_worker&.stop
-          @tracer_bridge.shutdown!
-          @tracer.shutdown!
-          @telemetry.shutdown!
+          shutdown_component("test cache") { @test_optimization_cache&.shutdown! }
+          shutdown_component("test tracing") { @test_tracing&.shutdown! }
+          shutdown_component("test impact analysis") { @test_impact_analysis&.shutdown! }
+          shutdown_component("logs") { @agentless_logs_submission&.shutdown! }
+          shutdown_component("test discovery") { @test_discovery&.shutdown! }
+          shutdown_component("code coverage") { @code_coverage&.shutdown! }
+          shutdown_component("Git upload worker") { @git_tree_upload_worker&.stop }
+          shutdown_component("tracer bridge") { @tracer_bridge.shutdown! }
+          shutdown_component("event writer") { @tracer.shutdown! }
+          shutdown_component("telemetry") { @telemetry.shutdown! }
         end
 
         def activate_ci!(settings)
@@ -131,9 +130,7 @@ module Datadog
             shutdown_timeout: writer_options.fetch(:shutdown_timeout, 60)
           )
           @tracer = EventTracer.new(writer: writer, service: settings.service, tags: settings.tags)
-          if defined?(::Datadog::Tracing)
-            @tracer_bridge = TracerBridge::Component.new(writer: writer, logger: CI.logger)
-          end
+          @tracer_bridge = TracerBridge::Component.new(writer: writer, logger: CI.logger)
 
           @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
           @ci_remote = Remote::Component.build(
@@ -387,6 +384,14 @@ module Datadog
 
         def timecop?
           Gem.loaded_specs.key?("timecop") || !!defined?(Timecop)
+        end
+
+        private
+
+        def shutdown_component(name)
+          yield
+        rescue => error
+          CI.logger.warn("Failed to shut down Test Optimization #{name}: #{error.class}: #{error.message}")
         end
       end
     end

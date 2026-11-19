@@ -185,7 +185,7 @@ RSpec.describe "Git checkout metadata" do
     checkout_diff = Datadog::CI::Git::LocalRepository.get_changes_since(base, target_commit: merge)
     expect(checkout_diff.lines_changed?("shifted_spec.rb", start_line: start_line, end_line: lines.size)).to be(true)
     worker = spy("git_worker")
-    allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(worker)
+    allow(Datadog::CI.components).to receive(:git_tree_upload_worker).and_return(worker)
     component = Datadog::CI::ImpactedTestsDetection::Component.new(enabled: true)
     component.configure(double("library_settings", impacted_tests_enabled?: true), session)
     expect(component.enabled?).to be(true)

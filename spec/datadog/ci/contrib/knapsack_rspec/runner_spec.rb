@@ -64,7 +64,7 @@ RSpec.describe Datadog::CI::Contrib::Knapsack::Runner do
                 end
               end
             end
-            expect(Datadog.logger).to receive(:warn).with(/Knapsack.*RuntimeError: cleanup failed/)
+            expect(Datadog::CI.logger).to receive(:warn).with(/Knapsack.*RuntimeError: cleanup failed/)
 
             if run_error
               expect { runner.knapsack__run_specs }.to raise_error { |error| expect(error).to equal(run_error) }

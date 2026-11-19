@@ -31,6 +31,7 @@ module Datadog
           resource: resource,
           tags: @tags.merge(tags)
         ) { |finished| finish_span(finished, context) }
+        span.set_metric("_dd.top_level", 1) if !parent || parent.service != span.service
         context << span
         return span unless block_given?
 

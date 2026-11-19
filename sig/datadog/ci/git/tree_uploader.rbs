@@ -14,7 +14,7 @@ module Datadog
         private
 
         def fetch_known_commits_and_split: (String repository_url, Array[String] latest_commits) -> [Array[String], Array[String]]
-        def test_tracing_component: () -> Datadog::CI::TestTracing::Component
+        def test_tracing_component: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
         def test_optimization_cache: () -> (Datadog::CI::TestOptimizationCache::Component | Datadog::CI::TestOptimizationCache::NullComponent)
       end
     end

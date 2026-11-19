@@ -1,0 +1,14 @@
+module Datadog
+  module CI
+    module Utils
+      class OnlyOnce
+        @mutex: Mutex
+        @ran: bool
+        def initialize: () -> void
+        def run: () { () -> untyped } -> untyped
+        def ran?: () -> bool
+        def reset!: () -> bool
+      end
+    end
+  end
+end

@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-
 require_relative "net_http_client"
 require_relative "../gzip"
 require_relative "../../ext/telemetry"
@@ -46,7 +45,7 @@ module Datadog
           def call(path:, payload:, headers:, verb:)
             headers ||= {}
             # skip tracing for internal DD requests
-            headers["x-datadog-internal-untraced-request"] = "1"
+            headers["DD-Internal-Untraced-Request"] = "1"
 
             if respond_to?(verb)
               send(verb, path: path, payload: payload, headers: headers)
@@ -74,7 +73,6 @@ module Datadog
           end
 
           class Response
-
             attr_reader :http_response
             # Stats for telemetry
             attr_accessor :duration_ms, :request_compressed, :request_size

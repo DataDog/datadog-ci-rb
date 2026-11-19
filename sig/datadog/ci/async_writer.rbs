@@ -1,44 +1,32 @@
 module Datadog
   module CI
-    class AsyncWriter
-      include Datadog::Core::Workers::Async::Thread
-      include Datadog::Core::Workers::Polling
-      include Datadog::Core::Workers::Queue
-      include Datadog::Core::Workers::IntervalLoop
+    interface _AsyncEventTransport[in Event]
+      def send_events: (Array[Event] events) -> void
+    end
 
-      @transport: untyped
+    class AsyncWriter[Event]
+      class EventTransport[Event]
+        @transport: _AsyncEventTransport[Event]
+        def initialize: (_AsyncEventTransport[Event] transport) -> void
+        def send_traces: (Array[Event] events) -> void
+      end
 
-      @buffer_size: Integer
-
-      @shutdown_timeout: Integer
-
-      @stopped: bool
-
-      attr_reader transport: untyped
+      @transport: _AsyncEventTransport[Event]
+      @writer: EventWriter[Event]
+      attr_reader transport: _AsyncEventTransport[Event]
 
       DEFAULT_BUFFER_MAX_SIZE: 10000
-
       DEFAULT_SHUTDOWN_TIMEOUT: 60
+      DEFAULT_INTERVAL: Float
 
-      DEFAULT_INTERVAL: 3
-
-      def initialize: (transport: untyped, ?options: ::Hash[untyped, untyped]) -> void
-
-      def write: (untyped event) -> untyped
-
-      def perform: (*untyped events) -> nil
-
-      def stop: (?bool force_stop, ?Integer timeout) -> untyped
-
-      def enqueue: (untyped event) -> untyped
-
-      def dequeue: () -> ::Array[untyped]
-
+      def initialize: (transport: _AsyncEventTransport[Event], ?options: { ?buffer_size: Integer, ?interval: Float, ?shutdown_timeout: Numeric }) -> void
+      def write: (Event event) -> bool
+      def perform: (*Event events) -> nil
+      def stop: (?bool force_stop, ?Numeric timeout) -> void
+      def flush: () -> void
+      def started?: () -> bool
+      def running?: () -> bool
       def async?: () -> true
-
-      def after_fork: () -> untyped
-
-      def buffer_klass: () -> untyped
     end
   end
 end

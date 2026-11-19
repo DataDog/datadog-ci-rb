@@ -2,14 +2,8 @@ module Datadog
   module CI
     module Configuration
       module Settings
-        extend Datadog::Core::Configuration::Options::ClassMethods
-        include Datadog::Core::Configuration::Options::InstanceMethods
-
-        extend Datadog::Core::Configuration::Base::ClassMethods
-
-        def self.extended: (untyped base) -> untyped
-
-        def self.add_settings!: (untyped base) -> untyped
+        def self.extended: (untyped) -> void
+        def self.add_settings!: (untyped) -> void
       end
     end
   end

@@ -1,0 +1,10 @@
+module Datadog
+  module CI
+    module Utils
+      module InternalLogging
+        def self.error: (String) -> void
+        def self.report: (Exception, ?description: String?, **untyped) -> void
+      end
+    end
+  end
+end

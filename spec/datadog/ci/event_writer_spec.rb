@@ -10,6 +10,8 @@ RSpec.describe Datadog::CI::EventWriter do
   let(:writer) { described_class.new(transport: transport, logger: logger, flush_interval: 60, buffer_size: 2) }
   let(:trace) { double(:trace) }
 
+  before { use_real_tracer! }
+
   after { writer.shutdown! }
 
   it "flushes queued events once at shutdown" do

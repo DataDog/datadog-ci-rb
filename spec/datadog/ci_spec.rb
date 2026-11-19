@@ -281,7 +281,7 @@ RSpec.describe Datadog::CI do
       end
 
       it "doesn't record spans via Datadog::CI interface" do
-        expect(spans).to have(1).item # http span only
+        expect(spans).to be_empty
       end
     end
 

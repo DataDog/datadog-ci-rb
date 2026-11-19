@@ -163,7 +163,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     before do
-      Datadog.send(:components).test_tracing.start_test_session
+      Datadog::CI.components.test_tracing.start_test_session
     end
 
     it "creates span for example" do
@@ -1417,8 +1417,8 @@ RSpec.describe "RSpec instrumentation" do
         with_new_rspec_environment do
           # Enable debug logging INSIDE the rspec environment to ensure it's active
           # when the test examples run
-          original_level = Datadog.logger.level
-          Datadog.logger.level = Logger::DEBUG
+          original_level = Datadog::CI.logger.level
+          Datadog::CI.logger.level = Logger::DEBUG
 
           RSpec.describe "DebugLoggingTest" do
             context "nested context" do
@@ -1433,7 +1433,7 @@ RSpec.describe "RSpec instrumentation" do
           stderr = StringIO.new
           ::RSpec::Core::Runner.new(options).run(stderr, stdout)
 
-          Datadog.logger.level = original_level
+          Datadog::CI.logger.level = original_level
         end
       end.not_to raise_error
 
@@ -2980,7 +2980,7 @@ RSpec.describe "RSpec instrumentation" do
       end
 
       before do
-        Datadog.send(:components).test_tracing.start_test_session
+        Datadog::CI.components.test_tracing.start_test_session
       end
 
       it "falls back to a stable generic name for a bare anonymous example" do
@@ -3334,7 +3334,7 @@ RSpec.describe "RSpec instrumentation" do
     end
 
     before do
-      Datadog.send(:components).test_tracing.start_test_session
+      Datadog::CI.components.test_tracing.start_test_session
     end
 
     it "normalizes loaded schema inspections in runtime example names" do

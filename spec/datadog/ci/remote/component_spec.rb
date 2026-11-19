@@ -26,14 +26,14 @@ RSpec.describe Datadog::CI::Remote::Component do
   end
 
   before do
-    allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_tree_upload_worker)
-    allow(Datadog.send(:components)).to receive(:test_impact_analysis).and_return(test_impact_analysis)
-    allow(Datadog.send(:components)).to receive(:test_retries).and_return(test_retries)
-    allow(Datadog.send(:components)).to receive(:test_tracing).and_return(test_tracing)
-    allow(Datadog.send(:components)).to receive(:test_management).and_return(test_management)
-    allow(Datadog.send(:components)).to receive(:impacted_tests_detection).and_return(impacted_tests_detection)
-    allow(Datadog.send(:components)).to receive(:code_coverage).and_return(code_coverage)
-    allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
+    allow(Datadog::CI.components).to receive(:git_tree_upload_worker).and_return(git_tree_upload_worker)
+    allow(Datadog::CI.components).to receive(:test_impact_analysis).and_return(test_impact_analysis)
+    allow(Datadog::CI.components).to receive(:test_retries).and_return(test_retries)
+    allow(Datadog::CI.components).to receive(:test_tracing).and_return(test_tracing)
+    allow(Datadog::CI.components).to receive(:test_management).and_return(test_management)
+    allow(Datadog::CI.components).to receive(:impacted_tests_detection).and_return(impacted_tests_detection)
+    allow(Datadog::CI.components).to receive(:code_coverage).and_return(code_coverage)
+    allow(Datadog::CI.components).to receive(:test_optimization_cache) do
       Datadog::CI::TestOptimizationCache::Component.new(
         manifest_file: nil,
         runfiles_dir: nil,

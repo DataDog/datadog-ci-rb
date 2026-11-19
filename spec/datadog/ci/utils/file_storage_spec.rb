@@ -28,7 +28,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
   end
 
   before do
-    allow(Datadog.logger).to receive(:error).and_call_original
+    allow(Datadog::CI.logger).to receive(:error).and_call_original
   end
 
   describe ".store" do
@@ -92,7 +92,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs an error message" do
-        expect(Datadog.logger).to receive(:error).with("Failed to store data for key 'test_key': IOError").once
+        expect(Datadog::CI.logger).to receive(:error).with("Failed to store data for key 'test_key': IOError").once
         described_class.store(test_key, test_value)
       end
     end
@@ -108,7 +108,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs an error message" do
-        expect(Datadog.logger).to receive(:error).with("Failed to store data for key 'test_key': TypeError").once
+        expect(Datadog::CI.logger).to receive(:error).with("Failed to store data for key 'test_key': TypeError").once
         described_class.store(test_key, test_value)
       end
     end
@@ -127,7 +127,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs the missing namespace" do
-        expect(Datadog.logger).to receive(:error)
+        expect(Datadog::CI.logger).to receive(:error)
           .with("Failed to store data for key 'test_key': Datadog::CI::Utils::FileStorage::MissingNamespaceError")
 
         described_class.store(test_key, test_value)
@@ -208,7 +208,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs an error message" do
-        expect(Datadog.logger).to receive(:error).with("Failed to retrieve data for key 'test_key': IOError").once
+        expect(Datadog::CI.logger).to receive(:error).with("Failed to retrieve data for key 'test_key': IOError").once
         described_class.retrieve(test_key)
       end
     end
@@ -225,7 +225,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs an error message" do
-        expect(Datadog.logger).to receive(:error).with("Failed to retrieve data for key 'test_key': TypeError").once
+        expect(Datadog::CI.logger).to receive(:error).with("Failed to retrieve data for key 'test_key': TypeError").once
         described_class.retrieve(test_key)
       end
     end
@@ -240,7 +240,7 @@ RSpec.describe Datadog::CI::Utils::FileStorage do
       end
 
       it "logs the missing namespace" do
-        expect(Datadog.logger).to receive(:error)
+        expect(Datadog::CI.logger).to receive(:error)
           .with("Failed to retrieve data for key 'test_key': Datadog::CI::Utils::FileStorage::MissingNamespaceError")
 
         described_class.retrieve(test_key)

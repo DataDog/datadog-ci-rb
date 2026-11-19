@@ -1,0 +1,20 @@
+module Datadog
+  module CI
+    module Utils
+      module Identity
+        self.@pid: Integer?
+        self.@id: String?
+        def self.id: () -> String
+        def self.lang: () -> String
+        def self.lang_engine: () -> String
+        def self.lang_version: () -> String
+        def self.lang_interpreter: () -> String
+        def self.gem_datadog_version: () -> String
+      end
+      module Platform
+        def self.hostname: () -> String
+        def self.kernel_release: () -> String
+      end
+    end
+  end
+end

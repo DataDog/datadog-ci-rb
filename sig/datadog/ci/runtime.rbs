@@ -4,13 +4,14 @@ module Datadog
       @components: Configuration::Components?
       @mutex: Monitor
       @default_logger: Logger
+      @importing_configuration: bool?
 
-      attr_reader configuration: Configuration::RuntimeSettings
-      def initialize: (?configuration: Configuration::RuntimeSettings) -> void
+      attr_reader configuration: untyped
+      def initialize: (?configuration: untyped) -> void
       def logger: () -> Logger
       def components: (?allow_initialization: true) -> Configuration::Components
                     | (allow_initialization: false) -> Configuration::Components?
-      def configure: () { (Configuration::RuntimeSettings) -> void } -> Configuration::RuntimeSettings
+      def configure: () { (untyped) -> void } -> untyped
       def configuration_changed!: () -> void
       def shutdown!: () -> void
       def reset!: () -> void

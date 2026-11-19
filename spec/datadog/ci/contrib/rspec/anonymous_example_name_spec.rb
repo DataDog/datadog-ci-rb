@@ -172,7 +172,7 @@ RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
         allow(RubyVM::InstructionSequence).to receive(:of).with(target).and_return(iseq)
       end
 
-      expect(Datadog.logger).not_to receive(:warn)
+      expect(Datadog::CI.logger).not_to receive(:warn)
       targets.each do |target, _iseq|
         expect(described_class.call(target)).to be_nil
       end
@@ -199,7 +199,7 @@ RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
         allow(RubyVM::InstructionSequence).to receive(:of).with(target).and_return(iseq)
       end
 
-      expect(Datadog.logger).to receive(:warn).exactly(targets.length).times.and_yield
+      expect(Datadog::CI.logger).to receive(:warn).exactly(targets.length).times.and_yield
       targets.each do |target, _iseq|
         expect(described_class.call(target)).to be_nil
       end
@@ -211,7 +211,7 @@ RSpec.describe Datadog::CI::Contrib::RSpec::AnonymousExampleName do
       allow(described_class).to receive(:supported?).and_return(true)
       allow(RubyVM::InstructionSequence).to receive(:of).with(target).and_raise(StandardError, "boom")
 
-      expect(Datadog.logger).to receive(:warn).and_yield
+      expect(Datadog::CI.logger).to receive(:warn).and_yield
       expect(described_class.call(target)).to be_nil
     end
   end

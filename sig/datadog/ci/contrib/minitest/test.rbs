@@ -57,7 +57,7 @@ module Datadog
 
             def datadog_configuration: () -> Datadog::CI::Contrib::Minitest::Configuration::Settings
 
-            def _dd_test_tracing_component: () -> Datadog::CI::TestTracing::Component
+            def _dd_test_tracing_component: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 
             def finish_with_result: (Datadog::CI::Span? span, String result_code) -> void
           end

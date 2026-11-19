@@ -6,7 +6,6 @@ require_relative "ci/utils/telemetry"
 require_relative "ci/ext/app_types"
 require_relative "ci/ext/telemetry"
 
-
 module Datadog
   # Datadog Test Optimization public API.
   #
@@ -422,7 +421,7 @@ module Datadog
       end
 
       def components(allow_initialization: true)
-        runtime.components(allow_initialization: allow_initialization)
+        allow_initialization ? runtime.components : runtime.components(allow_initialization: false)
       end
 
       def shutdown!

@@ -6,8 +6,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
   end
 
   let(:agent_settings) do
-    Datadog::Core::Configuration::AgentSettings.new(
-      adapter: :net_http,
+    Datadog::CI::Transport::Api::Builder::AgentSettings.new(
       ssl: false,
       hostname: "localhost",
       port: 5555,
@@ -57,7 +56,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
 
     describe "#citestcycle_request" do
       before do
-        expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+        expect(Datadog::CI::Utils::Container).to receive(:container_id).and_return(container_id)
       end
 
       context "with path starting from / character" do
@@ -117,7 +116,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
 
     describe "#api_request" do
       before do
-        expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+        expect(Datadog::CI::Utils::Container).to receive(:container_id).and_return(container_id)
       end
 
       context "with path starting from / character" do
@@ -164,7 +163,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
 
     describe "#citestcov_request" do
       before do
-        expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+        expect(Datadog::CI::Utils::Container).to receive(:container_id).and_return(container_id)
         expect(SecureRandom).to receive(:uuid).and_return("42")
       end
 
@@ -206,7 +205,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
 
     describe "#cicovreprt_request" do
       before do
-        expect(Datadog::Core::Environment::Container).to receive(:container_id).and_return(container_id)
+        expect(Datadog::CI::Utils::Container).to receive(:container_id).and_return(container_id)
         expect(SecureRandom).to receive(:uuid).and_return("abc123")
       end
 
@@ -322,8 +321,7 @@ RSpec.describe Datadog::CI::Transport::Api::EvpProxy do
   context "with an agent on a Unix domain socket" do
     let(:path_prefix) { Datadog::CI::Ext::Transport::EVP_PROXY_V4_PATH_PREFIX }
     let(:agent_settings) do
-      Datadog::Core::Configuration::AgentSettings.new(
-        adapter: :unix,
+      Datadog::CI::Transport::Api::Builder::AgentSettings.new(
         ssl: false,
         hostname: nil,
         port: nil,

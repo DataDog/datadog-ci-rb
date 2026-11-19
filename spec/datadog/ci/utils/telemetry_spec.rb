@@ -5,7 +5,7 @@ require_relative "../../../../lib/datadog/ci/utils/telemetry"
 RSpec.describe Datadog::CI::Utils::Telemetry do
   let(:telemetry) { double(:telemetry) }
 
-  before { allow(Datadog).to receive_message_chain(:components, :telemetry).and_return(telemetry) }
+  before { allow(Datadog::CI).to receive_message_chain(:components, :telemetry).and_return(telemetry) }
 
   describe ".inc" do
     subject(:inc) { described_class.inc(metric_name, count, tags) }

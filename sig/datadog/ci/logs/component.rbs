@@ -4,11 +4,11 @@ module Datadog
       class Component
         attr_reader enabled: bool
 
-        @writer: Datadog::CI::AsyncWriter?
+        @writer: Datadog::CI::AsyncWriter[Hash[Symbol | String, untyped]]?
 
         def self.build: (enabled: bool, api: Datadog::CI::Transport::Api::Base?, discard_traces: bool) -> Component
 
-        def initialize: (enabled: bool, writer: Datadog::CI::AsyncWriter?) -> void
+        def initialize: (enabled: bool, writer: Datadog::CI::AsyncWriter[Hash[Symbol | String, untyped]]?) -> void
 
         def write: (Hash[Symbol | String, untyped] event) -> void
 
@@ -18,7 +18,7 @@ module Datadog
 
         def add_common_tags!: (Hash[Symbol | String, untyped] event) -> void
 
-        def test_tracing: () -> Datadog::CI::TestTracing::Component
+        def test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
       end
     end
   end

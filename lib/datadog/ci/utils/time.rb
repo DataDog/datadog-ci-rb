@@ -15,9 +15,9 @@ module Datadog
 
         def self.get_time(unit = :float_second)
           if ::Process.respond_to?(:clock_gettime_without_mock)
-            ::Process.clock_gettime_without_mock(::Process::CLOCK_MONOTONIC, unit)
+            ::Process.clock_gettime_without_mock(::Process::CLOCK_MONOTONIC, unit).to_f
           else
-            MONOTONIC_CLOCK.call(::Process::CLOCK_MONOTONIC, unit)
+            MONOTONIC_CLOCK.call(::Process::CLOCK_MONOTONIC, unit).to_f
           end
         end
 

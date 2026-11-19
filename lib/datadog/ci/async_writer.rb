@@ -7,7 +7,7 @@ module Datadog
     class AsyncWriter
       DEFAULT_BUFFER_MAX_SIZE = 10_000
       DEFAULT_SHUTDOWN_TIMEOUT = 60
-      DEFAULT_INTERVAL = 3
+      DEFAULT_INTERVAL = 3.0
 
       class EventTransport
         def initialize(transport)

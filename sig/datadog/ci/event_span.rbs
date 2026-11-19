@@ -17,9 +17,6 @@ module Datadog
     end
 
     class EventSpan
-      WALL_CLOCK: Method
-      MONOTONIC_CLOCK: Method
-
       @started_at: Float
       @on_finish: (^(EventSpan) -> void)?
       @finish_mutex: Mutex

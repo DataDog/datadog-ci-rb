@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Utils
+      module Url
+        def self.filter_basic_auth: (String?) -> String?
+      end
+    end
+  end
+end

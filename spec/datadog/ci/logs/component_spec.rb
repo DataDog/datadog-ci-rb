@@ -14,8 +14,8 @@ RSpec.describe Datadog::CI::Logs::Component do
   let(:event) { {level: "INFO", message: "test message"} }
 
   before do
-    allow(Datadog::Core::Environment::Platform).to receive(:hostname).and_return("test-hostname")
-    allow(Datadog).to receive(:send).with(:components).and_return(components)
+    allow(Datadog::CI::Utils::Platform).to receive(:hostname).and_return("test-hostname")
+    allow(Datadog::CI).to receive(:components).and_return(components)
   end
 
   describe "#initialize" do

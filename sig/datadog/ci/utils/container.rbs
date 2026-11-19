@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Utils
+      module Container
+        def self.container_id: () -> String?
+      end
+    end
+  end
+end

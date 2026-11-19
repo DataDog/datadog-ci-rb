@@ -100,13 +100,13 @@ RSpec.describe Datadog::CI::Contrib::Simplecov::ReportUploader do
         end
 
         it "logs the error and continues" do
-          expect(Datadog.logger).to receive(:warn).with("Failed to upload coverage report: upload failed")
+          expect(Datadog::CI.logger).to receive(:warn).with("Failed to upload coverage report: upload failed")
 
           expect { base_class.process_result(:result) }.not_to raise_error
         end
 
         it "returns the original result" do
-          allow(Datadog.logger).to receive(:warn)
+          allow(Datadog::CI.logger).to receive(:warn)
 
           expect(base_class.process_result(:result)).to eq(0)
         end

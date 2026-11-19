@@ -78,7 +78,7 @@ RSpec.describe ::Datadog::CI::Utils::Configuration do
       let(:mode) { "invalid" }
 
       it "logs a warning and returns test mode" do
-        expect(Datadog.logger).to receive(:warn).with(/Invalid Test Impact Analysis skipping mode/)
+        expect(Datadog::CI.logger).to receive(:warn).with(/Invalid Test Impact Analysis skipping mode/)
 
         expect(normalize_tia_test_skipping_mode).to eq("test")
       end

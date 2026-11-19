@@ -243,7 +243,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
         context "when succeeds after retries" do
           before do
-            expect(Datadog.logger).not_to receive(:warn)
+            expect(Datadog::CI.logger).not_to receive(:warn)
             expect(adapter).to receive(:call).and_return(response_503).exactly(described_class::MAX_RETRIES).times
             expect(adapter).to receive(:call).and_return(http_response)
           end
@@ -261,7 +261,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
           end
 
           it "returns failed response" do
-            expect(Datadog.logger).to receive(:warn).with("Failed to send request to #{path} with server error 503").once
+            expect(Datadog::CI.logger).to receive(:warn).with("Failed to send request to #{path} with server error 503").once
 
             is_expected.to be_a_kind_of(Datadog::CI::Transport::Adapters::Net::Response)
 
@@ -272,12 +272,12 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
         context "when the retry time limit is exceeded" do
           before do
-            allow(Datadog::Core::Utils::Time).to receive(:get_time).and_return(0, 0, 51)
+            allow(Datadog::CI::Utils::Time).to receive(:get_time).and_return(0, 0, 51)
             expect(adapter).to receive(:call).and_return(response_503).once
           end
 
           it "logs the final server error once" do
-            expect(Datadog.logger).to receive(:warn).with("Failed to send request to #{path} with server error 503").once
+            expect(Datadog::CI.logger).to receive(:warn).with("Failed to send request to #{path} with server error 503").once
 
             expect(response).to eq(response_503)
           end
@@ -339,7 +339,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
         shared_examples "unexpected error behavior" do |error_class|
           it "returns ErrorResponse without retries instead of raising" do
             expect(adapter).to receive(:call).and_raise(error_class).once
-            expect(Datadog.logger).to receive(:warn).with(/unexpected error #{error_class}/)
+            expect(Datadog::CI.logger).to receive(:warn).with(/unexpected error #{error_class}/)
 
             expect(response).to be_a(described_class::ErrorResponse)
             expect(response.error).to be_kind_of(error_class)
@@ -408,7 +408,7 @@ RSpec.describe Datadog::CI::Transport::HTTP do
 
         before do
           # Mock time to simulate long retry duration - start time and check time
-          allow(Datadog::Core::Utils::Time).to receive(:get_time).and_return(0, 0, 51) # start=0s, first call=0s, check=51s
+          allow(Datadog::CI::Utils::Time).to receive(:get_time).and_return(0, 0, 51) # start=0s, first call=0s, check=51s
 
           expect(adapter).to receive(:call).and_raise(Errno::ECONNRESET).once
         end
@@ -431,14 +431,14 @@ RSpec.describe Datadog::CI::Transport::HTTP do
     after { reserved.close }
 
     it "returns ErrorResponse with the refused connection instead of raising" do
-      allow(Datadog.logger).to receive(:warn)
+      allow(Datadog::CI.logger).to receive(:warn)
 
       response = transport.request(path: "/api/v2/citestcycle", payload: "{}", headers: {})
 
       expect(response).to be_a(described_class::ErrorResponse)
       expect(response.error).to be_kind_of(Errno::ECONNREFUSED)
       expect(response.unexpected_error?).to be true
-      expect(Datadog.logger).to have_received(:warn).with(/unexpected error Errno::ECONNREFUSED/)
+      expect(Datadog::CI.logger).to have_received(:warn).with(/unexpected error Errno::ECONNREFUSED/)
     end
   end
 end

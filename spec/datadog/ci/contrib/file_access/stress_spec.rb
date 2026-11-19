@@ -20,7 +20,7 @@ RSpec.describe "File dependency coverage under filesystem and GC stress" do
 
   it "opens unusual valid paths concurrently and preserves every serialized dependency" do
     paths = FileDependencyStress.build(directory)
-    component = Datadog.send(:components).test_impact_analysis
+    component = Datadog::CI.components.test_impact_analysis
     allow(component).to receive(:write) { |event| events << MessagePack.unpack(MessagePack.pack(event)) }
     test_tracing.start_test_session
     test_tracing.start_test_suite("file stress")

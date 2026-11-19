@@ -39,6 +39,18 @@ RSpec.describe Datadog::CI::EventTracer do
     expect(traces.map(&:origin).uniq).to eq(["ciapp-test"])
   end
 
+  it "marks root events and service boundaries as top level" do
+    tracer.trace("root") do |root|
+      expect(root.get_metric("_dd.top_level")).to eq(1)
+      tracer.trace("child") do |child|
+        expect(child.get_metric("_dd.top_level")).to be_nil
+      end
+      tracer.trace("service", service: "other") do |other|
+        expect(other.get_metric("_dd.top_level")).to eq(1)
+      end
+    end
+  end
+
   it "starts each test in an independent trace" do
     tracer.trace("suite") do |suite|
       tracer.trace("test", new_trace: true) do |test|
@@ -74,7 +86,7 @@ RSpec.describe Datadog::CI::EventTracer do
     span.set_tag("count", 3)
     span.set_tag("flag", false)
     span.set_metric("invalid", Float::NAN)
-    expect(span.metrics).to eq("count" => 3)
+    expect(span.metrics).to eq("_dd.top_level" => 1, "count" => 3)
     expect(span.meta).to include("flag" => "false", "custom" => "value")
     span.set_tag("count", "three")
     expect(span.get_metric("count")).to be_nil

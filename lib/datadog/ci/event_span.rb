@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
 require "securerandom"
+require_relative "utils/time"
 
 module Datadog
   module CI
     # An event owns its metadata and lifetime independently of the application tracer.
     class EventSpan
-      WALL_CLOCK = ::Time.method(:now)
-      MONOTONIC_CLOCK = ::Process.method(:clock_gettime)
-
       attr_reader :id, :trace_id, :parent_id, :start_time, :end_time, :duration, :meta, :metrics
       attr_accessor :name, :resource, :service, :type, :status
 
@@ -23,8 +21,8 @@ module Datadog
         @status = 0
         @meta = {}
         @metrics = {}
-        @start_time = WALL_CLOCK.call.utc
-        @started_at = MONOTONIC_CLOCK.call(Process::CLOCK_MONOTONIC)
+        @start_time = Utils::Time.now.utc
+        @started_at = Utils::Time.get_time
         @end_time = nil
         @duration = nil
         @on_finish = on_finish
@@ -73,7 +71,8 @@ module Datadog
         @status = 1
         set_tag("error.type", error.class.name)
         set_tag("error.message", error.message)
-        set_tag("error.stack", error.backtrace.join("\n")) if error.backtrace
+        backtrace = error.backtrace
+        set_tag("error.stack", backtrace.join("\n")) if backtrace
       end
 
       def finished?
@@ -84,11 +83,11 @@ module Datadog
         callback = @finish_mutex.synchronize do
           next if finished?
 
-          @end_time = end_time || WALL_CLOCK.call.utc
+          @end_time = end_time || Utils::Time.now.utc
           @duration = if end_time
             [end_time - @start_time, 0.0].max
           else
-            [MONOTONIC_CLOCK.call(Process::CLOCK_MONOTONIC) - @started_at, 0.0].max
+            [Utils::Time.get_time - @started_at, 0.0].max
           end
           @on_finish
         end

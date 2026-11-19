@@ -45,7 +45,7 @@ Gem::Specification.new do |spec|
 
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "datadog", "~> 2.4"
+  spec.add_dependency "logger"
   spec.add_dependency "msgpack"
   spec.add_dependency "drb"
 

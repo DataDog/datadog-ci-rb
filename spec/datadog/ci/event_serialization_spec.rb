@@ -13,12 +13,20 @@ RSpec.describe "Independent CI event serialization" do
     trace = Datadog::CI::EventTrace.new(42, [span], runtime_id: "runtime")
     serializer = Datadog::CI::TestTracing::Serializers::Span.new(trace, span)
     expect(serializer.valid?).to be(true)
-    packer = MessagePack::Packer.new
-    serializer.to_msgpack(packer)
-    event = MessagePack.unpack(packer.to_s)
+    encoded = Datadog::CI::Utils::Encoding::MsgpackEncoder.encode(serializer)
+    expect(encoded).to be_a(String)
+    event = MessagePack.unpack(encoded)
     expect(event["type"]).to eq("span")
     expect(event["content"]).to include("trace_id" => 42, "parent_id" => 21, "name" => "http.request")
     expect(event["content"]["meta"]).to include("_dd.origin" => "ciapp-test", "http.method" => "GET")
+  end
+
+  it "rejects unfinished events without raising" do
+    span = Datadog::CI::EventSpan.new("unfinished", trace_id: 42, service: "tests")
+    trace = Datadog::CI::EventTrace.new(42, [span], runtime_id: "runtime")
+    serializer = Datadog::CI::TestTracing::Serializers::Span.new(trace, span)
+    expect(serializer.valid?).to be(false)
+    expect(serializer.validation_errors).to have_key("duration")
   end
 
   it "normalizes external trace IDs without changing application metadata" do

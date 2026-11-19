@@ -291,7 +291,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
 
     let(:component) do
-      Datadog.send(:components).test_retries
+      Datadog::CI.components.test_retries
     end
 
     let(:tracer_span) do
@@ -331,7 +331,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
         runs_count += 1
 
         # run callbacks manually
-        Datadog.send(:components).test_tracing.send(:on_test_finished, test_span)
+        Datadog::CI.components.test_tracing.send(:on_test_finished, test_span)
       end
 
       runs_count
@@ -396,7 +396,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     end
 
     before do
-      allow(Datadog.send(:components)).to receive(:test_tracing).and_return(test_tracing)
+      allow(Datadog::CI.components).to receive(:test_tracing).and_return(test_tracing)
       allow(component).to receive(:build_driver).and_return(retry_driver)
       component.record_test_finished(test_span)
     end
@@ -419,7 +419,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
 
     it "checks the current tracing component after replacement" do
       replacement = instance_double(Datadog::CI::TestTracing::Component, active_test_session: nil)
-      allow(Datadog.send(:components)).to receive(:test_tracing).and_return(replacement)
+      allow(Datadog::CI.components).to receive(:test_tracing).and_return(replacement)
       expect(retry_driver).not_to receive(:should_retry?)
 
       expect(component.should_retry?).to be false
@@ -434,7 +434,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       let(:known_tests) { Set.new(["suite.test."]) }
     end
 
-    let(:component) { Datadog.send(:components).test_retries }
+    let(:component) { Datadog::CI.components.test_retries }
 
     {
       "ATR" => [true, {}],
@@ -474,7 +474,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       let(:attempt_to_fix_retries_count) { remote_count }
     end
 
-    let(:component) { Datadog.send(:components).test_retries }
+    let(:component) { Datadog::CI.components.test_retries }
 
     {
       "remote count without an override" => [nil, 2, 3],
@@ -523,7 +523,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
       let(:slow_test_retries_payload) { {"1s" => 3} }
     end
 
-    let(:component) { Datadog.send(:components).test_retries }
+    let(:component) { Datadog::CI.components.test_retries }
     let(:efd_enabled) { false }
     let(:outcomes) { [false, false, false] }
     let(:tags) { {} }
@@ -710,7 +710,7 @@ RSpec.describe Datadog::CI::TestRetries::Component do
     let(:test_failed) { false }
 
     before do
-      allow(Datadog.send(:components).test_tracing).to receive(:active_test_session).and_return(test_session)
+      allow(Datadog::CI.components.test_tracing).to receive(:active_test_session).and_return(test_session)
     end
 
     context "when test is run only once (no retries)" do

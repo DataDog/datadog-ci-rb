@@ -18,7 +18,7 @@ module Datadog
 
             def datadog_configuration: () -> Datadog::CI::Contrib::RSpec::Configuration::Settings
 
-            def test_tracing_component: () -> Datadog::CI::TestTracing::Component
+            def test_tracing_component: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
           end
         end
       end

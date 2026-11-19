@@ -363,24 +363,42 @@ module Datadog
         end
 
         settings :diagnostics do
-          option(:debug) { |o| o.type :bool; o.env "DD_TRACE_DEBUG"; o.default false }
+          option(:debug) { |o|
+            o.type :bool
+            o.env "DD_TRACE_DEBUG"
+            o.default false
+          }
         end
 
         settings :agent do
-          option(:host) { |o| o.env "DD_AGENT_HOST" }
-          option(:port) { |o| o.type :int; o.env "DD_TRACE_AGENT_PORT" }
-          option(:use_ssl) { |o| o.type :bool; o.default false }
-          option(:timeout_seconds) { |o| o.type :float; o.env "DD_TRACE_AGENT_TIMEOUT_SECONDS"; o.default 30.0 }
+          option :host
+          option :port
+          option :use_ssl
+          option :timeout_seconds
           option :uds_path
           option(:url) { |o| o.env "DD_TRACE_AGENT_URL" }
+          option(:host_from_environment) { |o| o.env "DD_AGENT_HOST" }
+          option(:port_from_environment) { |o| o.env "DD_TRACE_AGENT_PORT" }
+          option(:timeout_from_environment) { |o| o.env "DD_TRACE_AGENT_TIMEOUT_SECONDS" }
         end
 
         settings :telemetry do
-          option(:enabled) { |o| o.type :bool; o.env "DD_INSTRUMENTATION_TELEMETRY_ENABLED"; o.default true }
-          option(:agentless_enabled) { |o| o.type :bool; o.default false }
+          option(:enabled) { |o|
+            o.type :bool
+            o.env "DD_INSTRUMENTATION_TELEMETRY_ENABLED"
+            o.default true
+          }
+          option(:agentless_enabled) { |o|
+            o.type :bool
+            o.default false
+          }
           option(:shutdown_timeout_seconds) { |o| o.default 5.0 }
           option(:agentless_url_override) { |o| o.env "DD_TELEMETRY_AGENTLESS_URL" }
-          option(:aggregation_interval) { |o| o.type :float; o.env "DD_TELEMETRY_HEARTBEAT_INTERVAL"; o.default 10.0 }
+          option(:aggregation_interval) { |o|
+            o.type :float
+            o.env "DD_TELEMETRY_HEARTBEAT_INTERVAL"
+            o.default 10.0
+          }
           option(:buffer_size) { |o| o.default 10_000 }
         end
 
@@ -399,7 +417,7 @@ module Datadog
         def import_legacy!(source)
           [:service, :env, :version, :site, :api_key, :tags, :time_now_provider, :get_time_provider].each do |name|
             next unless source.respond_to?(name)
-            value = name == :service && source.respond_to?(:service_without_fallback) ? source.service_without_fallback : source.public_send(name)
+            value = (name == :service && source.respond_to?(:service_without_fallback)) ? source.service_without_fallback : source.public_send(name)
             import_option_if_unset(name, value.is_a?(Hash) ? value.dup : value)
           end
           [:logger, :diagnostics, :agent, :telemetry].each do |name|

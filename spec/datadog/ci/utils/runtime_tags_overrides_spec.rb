@@ -56,7 +56,7 @@ RSpec.describe Datadog::CI::Utils::RuntimeTagsOverrides do
       let(:value) { "{invalid json}" }
 
       it "logs a warning and returns empty tags" do
-        expect(Datadog.logger).to receive(:warn).with(/Invalid runtime tag overrides configuration/)
+        expect(Datadog::CI.logger).to receive(:warn).with(/Invalid runtime tag overrides configuration/)
 
         expect(runtime_tags_overrides).to eq({})
       end
@@ -66,7 +66,7 @@ RSpec.describe Datadog::CI::Utils::RuntimeTagsOverrides do
       let(:value) { ["os.version"].to_json }
 
       it "logs a warning and returns empty tags" do
-        expect(Datadog.logger).to receive(:warn).with("Invalid runtime tag overrides configuration: expected JSON object")
+        expect(Datadog::CI.logger).to receive(:warn).with("Invalid runtime tag overrides configuration: expected JSON object")
 
         expect(runtime_tags_overrides).to eq({})
       end

@@ -1,0 +1,13 @@
+module Datadog
+  module CI
+    module Utils
+      module Forking
+        @fork_pid: Integer?
+        def after_fork!: () { () -> untyped } -> bool
+        def forked?: () -> bool
+        def update_fork_pid!: () -> Integer
+        def fork_pid: () -> Integer
+      end
+    end
+  end
+end

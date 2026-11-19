@@ -223,7 +223,7 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
 
           # This should complete quickly without timing out
           result = nil
-          duration_ms = Datadog::Core::Utils::Time.measure(:float_millisecond) do
+          duration_ms = Datadog::CI::Utils::Time.measure(:float_millisecond) do
             result = described_class.get_changes_since("base_commit_sha")
           end
 

@@ -31,7 +31,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
     context "when test_suite_id is nil" do
       let(:test_suite_id) { nil }
       before do
-        expect(Datadog.logger).to receive(:warn).with(/citestcov event is invalid: \[test_suite_id\] is nil. Event: .*/)
+        expect(Datadog::CI.logger).to receive(:warn).with(/citestcov event is invalid: \[test_suite_id\] is nil. Event: .*/)
       end
 
       it { is_expected.not_to be_valid }
@@ -40,7 +40,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
     context "when test_session_id is nil" do
       let(:test_session_id) { nil }
       before do
-        expect(Datadog.logger).to receive(:warn).with(/citestcov event is invalid: \[test_session_id\] is nil. Event: .*/)
+        expect(Datadog::CI.logger).to receive(:warn).with(/citestcov event is invalid: \[test_session_id\] is nil. Event: .*/)
       end
 
       it { is_expected.not_to be_valid }
@@ -49,7 +49,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Event do
     context "when files are nil" do
       let(:files) { nil }
       before do
-        expect(Datadog.logger).to receive(:warn).with(/citestcov event is invalid: \[files\] is nil. Event: .*/)
+        expect(Datadog::CI.logger).to receive(:warn).with(/citestcov event is invalid: \[files\] is nil. Event: .*/)
       end
 
       it { is_expected.not_to be_valid }

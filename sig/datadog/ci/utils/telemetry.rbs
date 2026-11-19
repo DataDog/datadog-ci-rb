@@ -2,9 +2,9 @@ module Datadog
   module CI
     module Utils
       module Telemetry
-        def self.inc: (String metric_name, Integer count, ?Datadog::Core::Telemetry::Metric::tags_input tags) -> void
+        def self.inc: (String metric_name, Integer count, ?Datadog::CI::Telemetry::metric_tags tags) -> void
 
-        def self.distribution: (String metric_name, Float value, ?Datadog::Core::Telemetry::Metric::tags_input tags) -> void
+        def self.distribution: (String metric_name, Float value, ?Datadog::CI::Telemetry::metric_tags tags) -> void
 
         def self.itr_forced_run: () -> void
 
@@ -12,7 +12,7 @@ module Datadog
 
         def self.record_dynamic_atr_retries: (has_custom_buckets: bool) -> void
 
-        def self.telemetry: () -> Datadog::Core::Telemetry::Component
+        def self.telemetry: () -> (Datadog::CI::Telemetry::Component | Datadog::CI::Telemetry::NullComponent)
 
         private
 

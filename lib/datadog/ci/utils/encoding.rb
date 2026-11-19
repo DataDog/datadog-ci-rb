@@ -8,7 +8,7 @@ module Datadog
       module Encoding
         module MsgpackEncoder
           def self.encode(value)
-            value.to_msgpack
+            MessagePack.pack(value)
           end
         end
       end

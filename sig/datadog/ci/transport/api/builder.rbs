@@ -3,20 +3,21 @@ module Datadog
     module Transport
       module Api
         module Builder
-          interface _CISettings
-            def agentless_url: () -> String?
+          class AgentSettings < Struct[untyped]
+            attr_accessor hostname: String
+            attr_accessor port: Integer
+            attr_accessor ssl: bool
+            attr_accessor timeout_seconds: (Integer | Float)
+            attr_accessor uds_path: String?
+            def self.new: (hostname: String, port: Integer, ssl: bool, timeout_seconds: (Integer | Float), uds_path: String?) -> AgentSettings
+            def initialize: (hostname: String, port: Integer, ssl: bool, timeout_seconds: (Integer | Float), uds_path: String?) -> void
           end
-
-          interface _SettingsExtras
-            def api_key: () -> String
-
-            def site: () -> String?
-
-            def ci: () -> _CISettings
-          end
-
-          def self.build_agentless_api: ((::Datadog::Core::Configuration::Settings & _SettingsExtras) settings) -> Datadog::CI::Transport::Api::Agentless?
-          def self.build_evp_proxy_api: ((::Datadog::Core::Configuration::Settings & _SettingsExtras) settings) -> [Datadog::CI::Transport::Api::EvpProxy?, bool]
+          def self.build_agentless_api: (untyped) -> Agentless?
+          def self.build_evp_proxy_api: (untyped) -> [EvpProxy?, bool]
+          def self.resolve_agent_settings: (untyped) -> AgentSettings
+          def self.parse_agent_url: (String?) -> URI::Generic?
+          def self.parse_agent_timeout: (untyped, String) -> Float?
+          def self.parse_agent_integer: (untyped, String) -> Integer?
         end
       end
     end

@@ -92,7 +92,7 @@ module Datadog
       end
 
       def start_worker
-        @worker = Thread.new do
+        worker = Thread.new do
           loop do
             stopped = @mutex.synchronize do
               @condition.wait(@mutex, @flush_interval) unless @stopped || @buffer.size >= 100
@@ -104,7 +104,8 @@ module Datadog
         rescue => error
           @logger.warn("Test Optimization event worker failed: #{error}")
         end
-        @worker.name = "datadog-ci-events" if @worker.respond_to?(:name=)
+        worker.name = "datadog-ci-events" if worker.respond_to?(:name=)
+        @worker = worker
       end
     end
   end

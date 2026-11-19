@@ -10,6 +10,8 @@ target :lib do
   library "pathname"
   library "json"
   library "logger"
+  library "monitor"
+  library "etc"
   library "date"
   library "minitest"
   library "net-http"

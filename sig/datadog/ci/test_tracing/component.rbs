@@ -2,7 +2,7 @@ module Datadog
   module CI
     module TestTracing
       class Component
-        include Datadog::Core::Utils::Forking
+        include Datadog::CI::Utils::Forking
         include Datadog::CI::Utils::Stateful
 
         FILE_STORAGE_KEY: String
@@ -48,7 +48,8 @@ module Datadog
           ?trace_setup_teardown_enabled: bool
         ) -> Component
 
-        def self.build_transport: (api: Datadog::CI::Transport::Api::Base, discard_traces: bool, dd_env: String?) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
+        def self.build_transport: (api: Datadog::CI::Transport::Api::Base?, discard_traces: true, dd_env: String?) -> Datadog::CI::TestTracing::NullTransport
+                               | (api: Datadog::CI::Transport::Api::Base, discard_traces: bool, dd_env: String?) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
 
         def shared_tags: () -> Hash[String, String]
 
@@ -150,7 +151,7 @@ module Datadog
 
         def remote: () -> (Datadog::CI::Remote::Component | Datadog::CI::Remote::NullComponent)
 
-        def test_management: () -> Datadog::CI::TestManagement::Component
+        def test_management: () -> (Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent)
 
         def start_drb_service: () -> void
 

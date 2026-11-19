@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
   end
 
   before do
-    allow(Datadog.logger).to receive(:warn)
+    allow(Datadog::CI.logger).to receive(:warn)
 
     # this is needed to configure all the components correctly
     Datadog::CI.start_test_session
@@ -336,7 +336,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
 
           before do
             http_spans.each do |http_span|
-              http_span.start_time = Time.at(0)
+              allow(http_span).to receive(:start_time).and_return(Time.at(0))
             end
           end
 
@@ -353,7 +353,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           let(:test_span) { first_test_span }
 
           before do
-            test_span.start_time = Time.at(0)
+            allow(test_span).to receive(:start_time).and_return(Time.at(0))
           end
 
           it "filters out invalid events" do
@@ -370,11 +370,11 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
           it "logs warning that events were filtered out" do
             subject
 
-            expect(Datadog.logger).to have_received(:warn).with(/must be greater than or equal to 946684800000000000/).once
+            expect(Datadog::CI.logger).to have_received(:warn).with(/must be greater than or equal to 946684800000000000/).once
           end
 
           it "sends telemetry log once" do
-            expect(Datadog::Core::Telemetry::Logger).to receive(:error).once
+            expect(Datadog::CI::Utils::InternalLogging).to receive(:error).once
 
             subject
           end
@@ -397,7 +397,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
         before do
           # Stub both the encoder and payload packing to return predictable sizes
           # This completely eliminates environment-specific variations
-          allow(Datadog::Core::Encoding::MsgpackEncoder).to receive(:encode) do |encoder, serializer|
+          allow(Datadog::CI::Utils::Encoding::MsgpackEncoder).to receive(:encode) do |serializer|
             "0123456789" # 10 bytes
           end
 
@@ -440,7 +440,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
       before do
         produce_test_trace
 
-        span.start_time = Time.at(0)
+        allow(span).to receive(:start_time).and_return(Time.at(0))
       end
 
       it "does not send anything" do
@@ -450,7 +450,7 @@ RSpec.describe Datadog::CI::TestTracing::Transport do
       end
 
       it "sends telemetry logs" do
-        expect(Datadog::Core::Telemetry::Logger).to receive(:error).once
+        expect(Datadog::CI::Utils::InternalLogging).to receive(:error).once
 
         subject
       end

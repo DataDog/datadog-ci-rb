@@ -1,7 +1,15 @@
 module Datadog
   module CI
     module Configuration
-      module Components : Datadog::Core::Configuration::Components
+      class Components
+        @shutdown: bool?
+        @tracer: Datadog::CI::EventTracer
+        @tracer_bridge: Datadog::CI::TracerBridge::Component | Datadog::CI::TracerBridge::NullComponent
+        @telemetry: Datadog::CI::Telemetry::Component | Datadog::CI::Telemetry::NullComponent
+        attr_reader tracer: Datadog::CI::EventTracer
+        attr_reader tracer_bridge: Datadog::CI::TracerBridge::Component | Datadog::CI::TracerBridge::NullComponent
+        attr_reader telemetry: Datadog::CI::Telemetry::Component | Datadog::CI::Telemetry::NullComponent
+        def shutdown!: (?untyped) -> void
         @test_tracing: Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent
         @test_impact_analysis: Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent
         @git_tree_upload_worker: Datadog::CI::Worker
@@ -37,17 +45,10 @@ module Datadog
 
         def check_dd_site: (untyped settings) -> void
 
-        def build_tracing_transport: (untyped settings, Datadog::CI::Transport::Api::Base api) -> (Datadog::CI::TestTracing::Transport | Datadog::CI::TestTracing::NullTransport)
-
-        def build_coverage_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 
         def build_git_upload_worker: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Worker
 
-        def build_library_settings_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Remote::LibrarySettingsClient
 
-        def build_known_tests_client: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::TestTracing::KnownTests
-
-        def build_logs_writer: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::AsyncWriter?
 
         def build_agentless_logs_component: (untyped settings, Datadog::CI::Transport::Api::Base? api) -> Datadog::CI::Logs::Component
 
@@ -60,17 +61,9 @@ module Datadog
         def configure_time_providers: (untyped settings) -> void
 
         def timecop?: () -> bool
-      end
-    end
-  end
-end
 
-module Datadog
-  module Core
-    module Configuration
-      class Components
-        # Components initialized before CI loads have no test tracing component.
-        attr_reader test_tracing: (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)?
+        private
+        def shutdown_component: (String) { () -> void } -> void
       end
     end
   end

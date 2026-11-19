@@ -99,7 +99,7 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
 
           data = JSON.parse(args[:payload])["data"]
 
-          expect(data["id"]).to eq(Datadog::Core::Environment::Identity.id)
+          expect(data["id"]).to eq(Datadog::CI::Utils::Identity.id)
           expect(data["type"]).to eq(Datadog::CI::Ext::Transport::DD_API_SETTINGS_TYPE)
 
           attributes = data["attributes"]
@@ -273,7 +273,7 @@ RSpec.describe Datadog::CI::Remote::LibrarySettingsClient do
           end
 
           before do
-            expect(Datadog.logger).to receive(:error).with(/Failed to parse settings response payload/)
+            expect(Datadog::CI.logger).to receive(:error).with(/Failed to parse settings response payload/)
           end
 
           it "returns default response" do

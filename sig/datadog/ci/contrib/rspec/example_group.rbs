@@ -24,11 +24,11 @@ module Datadog
 
             def datadog_configuration: () -> Datadog::CI::Contrib::RSpec::Configuration::Settings
 
-            def test_tracing_component: () -> Datadog::CI::TestTracing::Component?
+            def test_tracing_component: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 
             def test_impact_analysis_component: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
 
-            def test_management_component: () -> Datadog::CI::TestManagement::Component?
+            def test_management_component: () -> (Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent)
           end
         end
       end

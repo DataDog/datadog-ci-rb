@@ -11,7 +11,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Transport do
   end
 
   before do
-    allow(Datadog.logger).to receive(:warn)
+    allow(Datadog::CI.logger).to receive(:warn)
   end
 
   let(:max_payload_size) { 5 * 1024 * 1024 }
@@ -131,7 +131,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::Transport do
         it "logs warning that events were filtered out" do
           subject
 
-          expect(Datadog.logger).to have_received(:warn).with(
+          expect(Datadog::CI.logger).to have_received(:warn).with(
             /\[test_suite_id\] is nil/
           )
         end

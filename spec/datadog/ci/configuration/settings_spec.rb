@@ -42,17 +42,8 @@ module Fake
 end
 
 RSpec.describe Datadog::CI::Configuration::Settings do
-  context "when used to extend Datadog::Core::Configuration::Settings" do
-    subject(:settings) do
-      # When 'datadog/ci' is required, it automatically extends Settings.
-      if described_class >= Datadog::Core::Configuration::Settings
-        Datadog::Core::Configuration::Settings.new
-      else
-        Datadog::Core::Configuration::Settings.new.tap do |settings|
-          settings.extend(described_class)
-        end
-      end
-    end
+  context "with independent runtime settings" do
+    subject(:settings) { Datadog::CI::Configuration::RuntimeSettings.new }
 
     describe "#ci" do
       describe "#enabled" do
@@ -109,7 +100,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:enable) { "true" }
 
             it "returns true and logs deprecation warning" do
-              expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+              expect(Datadog::CI.logger).to receive(:warn).and_call_original
 
               is_expected.to be true
             end
@@ -119,7 +110,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:enable) { "1" }
 
             it "returns true and logs deprecation warning" do
-              expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+              expect(Datadog::CI.logger).to receive(:warn).and_call_original
 
               is_expected.to be true
             end
@@ -129,7 +120,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:enable) { "false" }
 
             it "returns false and logs deprecation warning" do
-              expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+              expect(Datadog::CI.logger).to receive(:warn).and_call_original
 
               is_expected.to be false
             end
@@ -151,7 +142,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:old_env_value) { "false" }
 
             it "uses the new env var value and does not log deprecation" do
-              expect(Datadog::Core).not_to receive(:log_deprecation)
+              expect(Datadog::CI.logger).not_to receive(:warn)
 
               is_expected.to be true
             end
@@ -303,7 +294,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:force_test_level_visibility_value) { "true" }
 
             it "retains the legacy value and logs a deprecation warning" do
-              expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+              expect(Datadog::CI.logger).to receive(:warn).and_call_original
 
               is_expected.to be true
             end
@@ -319,7 +310,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
       describe "#force_test_level_visibility=" do
         it "retains the legacy value and logs a deprecation warning" do
-          expect(Datadog::Core).to receive(:log_deprecation).and_call_original
+          expect(Datadog::CI.logger).to receive(:warn).and_call_original
 
           expect { settings.ci.force_test_level_visibility = true }
             .to change { settings.ci.force_test_level_visibility }
@@ -448,7 +439,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
             let(:mode) { "invalid" }
 
             it "falls back to test mode and logs once" do
-              logger = Datadog.logger
+              logger = Datadog::CI.logger
               allow(logger).to receive(:warn)
 
               expect(settings.ci.tia_test_skipping_mode).to eq("test")
@@ -468,7 +459,7 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
 
         it "falls back to test mode and logs once when value is invalid" do
-          logger = Datadog.logger
+          logger = Datadog::CI.logger
           allow(logger).to receive(:warn)
 
           settings.ci.tia_test_skipping_mode = "invalid"

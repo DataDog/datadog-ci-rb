@@ -4,8 +4,17 @@ RSpec.describe Datadog::CI::Configuration::Base do
   let(:settings_class) do
     Class.new do
       include Datadog::CI::Configuration::Base
-      option(:enabled) { |o| o.type :bool; o.env "ENABLED"; o.default false }
-      option(:attempts) { |o| o.type :int; o.env "ATTEMPTS"; o.default 3 }
+
+      option(:enabled) { |o|
+        o.type :bool
+        o.env "ENABLED"
+        o.default false
+      }
+      option(:attempts) { |o|
+        o.type :int
+        o.env "ATTEMPTS"
+        o.default 3
+      }
       option(:tags) { |o| o.default({}) }
     end
   end

@@ -9,7 +9,6 @@ module Datadog
       end
 
       class Component
-        CLOCK: Method
         AGENTLESS_PATH: String
         AGENT_PATH: String
 

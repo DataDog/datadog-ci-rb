@@ -3,7 +3,7 @@ module Datadog
     module Configuration
       module Fallback
         def configuration: () -> untyped
-        def configure: () ?{ (untyped settings) -> void } -> untyped
+        def configure: () { (untyped settings) -> void } -> untyped
       end
     end
   end

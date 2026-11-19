@@ -27,11 +27,11 @@ module Datadog
 
         def fetch_library_configuration: (Datadog::CI::TestSession test_session) -> void
 
-        def test_management: () -> Datadog::CI::TestManagement::Component
+        def test_management: () -> (Datadog::CI::TestManagement::Component | Datadog::CI::TestManagement::NullComponent)
 
-        def test_tracing: () -> Datadog::CI::TestTracing::Component
+        def test_tracing: () -> (Datadog::CI::TestTracing::Component | Datadog::CI::TestTracing::NullComponent)
 
-        def test_impact_analysis: () -> Datadog::CI::TestImpactAnalysis::Component
+        def test_impact_analysis: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
 
         def test_retries: () -> Datadog::CI::TestRetries::Component
 

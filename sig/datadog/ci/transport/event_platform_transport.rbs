@@ -20,7 +20,7 @@ module Datadog
 
         def send_payload: (String payload) -> ::Datadog::CI::Transport::Adapters::Net::Response
 
-        def encoder: () -> singleton(Datadog::Core::Encoding::MsgpackEncoder)
+        def encoder: () -> singleton(Datadog::CI::Utils::Encoding::MsgpackEncoder)
 
         def encode_events: (Array[untyped] events) -> ::Array[String]
 

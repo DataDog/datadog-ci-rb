@@ -52,8 +52,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     allow_any_instance_of(Datadog::CI::TestSuite)
       .to receive(:test_impact_analysis)
       .and_return(component)
-    allow(Datadog.send(:components)).to receive(:git_tree_upload_worker).and_return(git_worker)
-    allow(Datadog.send(:components)).to receive(:test_optimization_cache) do
+    allow(Datadog::CI.components).to receive(:git_tree_upload_worker).and_return(git_worker)
+    allow(Datadog::CI.components).to receive(:test_optimization_cache) do
       Datadog::CI::TestOptimizationCache::Component.new(
         manifest_file: nil,
         runfiles_dir: nil,
@@ -239,7 +239,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
 
     context "when in a client process" do
       before do
-        allow(Datadog.send(:components)).to receive(:test_tracing).and_return(
+        allow(Datadog::CI.components).to receive(:test_tracing).and_return(
           instance_double(Datadog::CI::TestTracing::Component, client_process?: true)
         )
         allow(Datadog::CI::TestImpactAnalysis::Skippable).to receive(:new)

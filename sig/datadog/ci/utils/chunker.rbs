@@ -1,0 +1,9 @@
+module Datadog
+  module CI
+    module Utils
+      module Chunker
+        def self.chunk_by_size: (Array[String], Numeric) -> Array[Array[String]]
+      end
+    end
+  end
+end

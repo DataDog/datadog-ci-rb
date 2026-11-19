@@ -359,7 +359,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
           let(:api_key) { "some-invalid-key" }
 
           it "logs an error stating the configured DD_API_KEY is invalid" do
-            expect(Datadog.logger).to receive(:error) do |&block|
+            expect(Datadog::CI.logger).to receive(:error) do |&block|
               message = block.call
               expect(message).to include("DD_API_KEY is invalid")
               expect(message).to include(api_key_error_payload)
@@ -373,7 +373,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
           let(:api_key) { "  " }
 
           it "logs an error stating DD_API_KEY is not set" do
-            expect(Datadog.logger).to receive(:error) do |&block|
+            expect(Datadog::CI.logger).to receive(:error) do |&block|
               expect(block.call).to include("DD_API_KEY is not set")
             end
 
@@ -395,7 +395,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         end
 
         it "logs an error stating the configured DD_API_KEY is invalid" do
-          expect(Datadog.logger).to receive(:error) do |&block|
+          expect(Datadog::CI.logger).to receive(:error) do |&block|
             expect(block.call).to include("DD_API_KEY is invalid")
           end
 
@@ -411,7 +411,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         end
 
         it "does not log an API key error" do
-          expect(Datadog.logger).not_to receive(:error)
+          expect(Datadog::CI.logger).not_to receive(:error)
 
           subject.citestcycle_request(path: "path", payload: "payload")
         end
@@ -425,7 +425,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         end
 
         it "does not log an API key error" do
-          expect(Datadog.logger).not_to receive(:error)
+          expect(Datadog::CI.logger).not_to receive(:error)
 
           subject.citestcycle_request(path: "path", payload: "payload")
         end
@@ -442,7 +442,7 @@ RSpec.describe Datadog::CI::Transport::Api::Agentless do
         end
 
         it "only logs the API key error once for the whole agentless API" do
-          expect(Datadog.logger).to receive(:error).once
+          expect(Datadog::CI.logger).to receive(:error).once
 
           subject.citestcycle_request(path: "path", payload: "payload")
           subject.api_request(path: "path", payload: "payload")

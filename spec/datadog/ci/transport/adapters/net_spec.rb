@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
     let(:http_connection) { instance_double(::Net::HTTP) }
 
     before do
-      allow(::Net::HTTP).to receive(:new)
+      allow(Datadog::CI::Transport::Adapters::NetHttpClient.original_net_http).to receive(:new)
         .with(
           adapter.hostname,
           adapter.port
@@ -93,10 +93,10 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
         end
       end
 
-      context ":get" do
-        let(:verb) { :get }
+      context ":delete" do
+        let(:verb) { :delete }
 
-        it { expect { call }.to raise_error("Unknown HTTP method [get]") }
+        it { expect { call }.to raise_error("Unknown HTTP method [delete]") }
       end
     end
 
