@@ -55,12 +55,12 @@ module Datadog
           end
 
           def get(path:, payload:, headers:)
-            request = ::Net::HTTP::Get.new(path, headers)
+            request = NetHttpClient.get_request(path, headers)
             Response.new(open { |http| http.request(request) })
           end
 
           def post(path:, payload:, headers:)
-            post = ::Net::HTTP::Post.new(path, headers)
+            post = NetHttpClient.post_request(path, headers)
             post.body = payload
 
             # Connect and send the request

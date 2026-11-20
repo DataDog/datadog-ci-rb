@@ -7,13 +7,32 @@ module Datadog
       class Component
         # Keep tracer telemetry outside WebMock without changing its configuration.
         def self.activate_telemetry_compatibility!
-          if defined?(::Datadog::Core::Transport::HTTP::Adapters::Net)
-            ::Datadog::Core::Transport::HTTP::Adapters::Net.prepend(TelemetryAdapter)
+          if defined?(::Datadog::Core::Telemetry::Transport::HTTP)
+            ::Datadog::Core::Telemetry::Transport::HTTP.singleton_class.prepend(TelemetryTransport)
           end
           if defined?(::Datadog::Core::Telemetry::Http::Adapters::Net)
             ::Datadog::Core::Telemetry::Http::Adapters::Net.prepend(TelemetryAdapter)
           end
         end
+
+        module TelemetryTransport
+          def agentless_telemetry(agent_settings:, logger:, api_key: nil, headers: nil)
+            super do |builder|
+              yield(builder) if block_given?
+              adapter = builder.default_adapter
+              adapter.extend(TelemetryAdapter) if adapter.instance_of?(::Datadog::Core::Transport::HTTP::Adapters::Net)
+            end
+          end
+
+          def agent_telemetry(agent_settings:, logger:, headers: nil)
+            super do |builder|
+              yield(builder) if block_given?
+              adapter = builder.default_adapter
+              adapter.extend(TelemetryAdapter) if adapter.instance_of?(::Datadog::Core::Transport::HTTP::Adapters::Net)
+            end
+          end
+        end
+        private_constant :TelemetryTransport
 
         module TelemetryAdapter
           def open(&block)

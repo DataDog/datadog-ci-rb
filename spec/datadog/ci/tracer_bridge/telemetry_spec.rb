@@ -58,6 +58,28 @@ RSpec.describe "Optional tracer telemetry with WebMock" do
           WebMock.stub_request(:get, "http://example.test/customer").to_return(body: "stubbed")
           abort "Customer stub failed" unless Net::HTTP.get(URI("http://example.test/customer")) == "stubbed"
 
+          adapter_settings = Struct.new(:hostname, :port, :timeout_seconds, :ssl).new("example.test", 80, 1, false)
+          adapter = Datadog::Core::Transport::HTTP::Adapters::Net.new(adapter_settings)
+          request = Struct.new(:path, :query, :headers).new("/customer", nil, {})
+          abort "Core HTTP bypassed its stub" unless adapter.get(request).payload == "stubbed"
+          WebMock.stub_request(:get, "http://example.test/v0.7/config").to_return(body: "config")
+          request.path = "/v0.7/config"
+          abort "Remote configuration bypassed its stub" unless adapter.get(request).payload == "config"
+
+          class CustomTelemetryAdapter < Datadog::Core::Transport::HTTP::Adapters::Net
+            def open
+              :custom_connection
+            end
+          end
+          settings = Datadog::Core::Configuration::AgentSettings.new(adapter: :net_http)
+          custom = CustomTelemetryAdapter.new(adapter_settings)
+          [:agent_telemetry, :agentless_telemetry].each do |factory|
+            Datadog::Core::Telemetry::Transport::HTTP.public_send(factory, agent_settings: settings, logger: Datadog.logger) do |builder|
+              builder.adapter(custom)
+            end
+            abort "Custom adapter was overridden" unless custom.open == :custom_connection
+          end
+
           Datadog.shutdown!
           collected = [first_request]
           collected << requests.pop until requests.empty?

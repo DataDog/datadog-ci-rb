@@ -3,6 +3,12 @@ module Datadog
     module Transport
       module Adapters
         module NetHttpClient
+          GET_CONSTRUCTOR: Method
+          POST_CONSTRUCTOR: Method
+
+          def self.get_request: (String path, Hash[String, String] headers) -> Net::HTTP::Get
+          def self.post_request: (String path, Hash[String, String] headers) -> Net::HTTP::Post
+
           def self.original_net_http: () -> singleton(Net::HTTP)
 
           def self.unix_socket_net_http: (String uds_path) -> Net::HTTP

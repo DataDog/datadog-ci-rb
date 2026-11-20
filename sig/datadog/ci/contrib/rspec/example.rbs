@@ -22,6 +22,8 @@ module Datadog
             @datadog_source_start: Integer?
             @datadog_source_location_from_parent: bool
 
+            def skip_with_exception: (untyped reporter, Exception exception) -> untyped
+
             def run: (untyped example_group_instance, untyped reporter) -> untyped
 
             def datadog_test_id: () -> String

@@ -1,0 +1,17 @@
+module Datadog
+  module Core
+    module Telemetry
+      module Transport
+        module Telemetry
+          class Transport
+          end
+        end
+
+        module HTTP
+          def self.agentless_telemetry: (agent_settings: Core::Configuration::AgentSettings, logger: Logger, ?api_key: String?, ?headers: Hash[String, String]?) ?{ (Core::Transport::HTTP::Builder) -> void } -> Telemetry::Transport
+          def self.agent_telemetry: (agent_settings: Core::Configuration::AgentSettings, logger: Logger, ?headers: Hash[String, String]?) ?{ (Core::Transport::HTTP::Builder) -> void } -> Telemetry::Transport
+        end
+      end
+    end
+  end
+end

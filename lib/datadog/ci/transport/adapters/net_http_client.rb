@@ -9,6 +9,18 @@ module Datadog
     module Transport
       module Adapters
         module NetHttpClient
+          GET_CONSTRUCTOR = ::Net::HTTP::Get.method(:new)
+          POST_CONSTRUCTOR = ::Net::HTTP::Post.method(:new)
+          private_constant :GET_CONSTRUCTOR, :POST_CONSTRUCTOR
+
+          def self.get_request(path, headers)
+            GET_CONSTRUCTOR.call(path, headers)
+          end
+
+          def self.post_request(path, headers)
+            POST_CONSTRUCTOR.call(path, headers)
+          end
+
           def self.original_net_http
             return ::Net::HTTP unless defined?(WebMock::HttpLibAdapters::NetHttpAdapter::OriginalNetHTTP)
 

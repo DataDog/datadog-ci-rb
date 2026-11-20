@@ -33,6 +33,22 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
     end
   end
 
+  describe "customer request constructor mocks" do
+    include_context "HTTP connection stub"
+
+    {"get" => Net::HTTP::Get, "post" => Net::HTTP::Post}.each do |verb, request_class|
+      it "sends #{verb} requests without calling the mocked constructor" do
+        allow(request_class).to receive(:new).and_raise("Customer constructor mock")
+        response = double("response")
+        expect(http_connection).to receive(:request).with(an_instance_of(request_class)).and_return(response)
+
+        result = adapter.call(path: "/tests", payload: "{}", headers: {}, verb: verb)
+
+        expect(result.http_response).to equal(response)
+      end
+    end
+  end
+
   describe "#initialize" do
     context "given a :timeout option" do
       let(:timeout) { double("timeout") }
@@ -74,8 +90,8 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
         let(:post) { instance_double(Net::HTTP::Post) }
 
         it "makes a POST and produces a response" do
-          expect(Net::HTTP::Post)
-            .to receive(:new)
+          expect(Datadog::CI::Transport::Adapters::NetHttpClient)
+            .to receive(:post_request)
             .with(path, expected_headers)
             .and_return(post)
 

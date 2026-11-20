@@ -4,6 +4,11 @@ module Datadog
       class Component
         def self.activate_telemetry_compatibility!: () -> void
 
+        module TelemetryTransport
+          def agentless_telemetry: (agent_settings: Datadog::Core::Configuration::AgentSettings, logger: Logger, ?api_key: String?, ?headers: Hash[String, String]?) ?{ (Datadog::Core::Transport::HTTP::Builder) -> void } -> Datadog::Core::Telemetry::Transport::Telemetry::Transport
+          def agent_telemetry: (agent_settings: Datadog::Core::Configuration::AgentSettings, logger: Logger, ?headers: Hash[String, String]?) ?{ (Datadog::Core::Transport::HTTP::Builder) -> void } -> Datadog::Core::Telemetry::Transport::Telemetry::Transport
+        end
+
         module TelemetryAdapter : ::Datadog::Core::Transport::HTTP::Adapters::Net
           @hostname: String
           @port: Integer?

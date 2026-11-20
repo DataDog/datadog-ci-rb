@@ -447,6 +447,35 @@ RSpec.describe "RSpec instrumentation" do
     context "supports skipped examples" do
       let(:trace_setup_teardown_enabled) { true }
 
+      it "reports nested examples skipped in before(:context) without running their bodies" do
+        with_new_rspec_environment do
+          current_example = RSpec.current_example
+          RSpec.current_example = nil
+          RSpec.describe "skipped context" do
+            before(:context) { skip "External service unavailable" }
+
+            it("first") { raise "Skipped example ran" }
+            context "nested" do
+              it("second") { raise "Skipped example ran" }
+            end
+          end
+          options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format progress])
+          output = StringIO.new
+          expect(RSpec::Core::Runner.new(options).run(StringIO.new, output)).to eq(0), output.string
+        ensure
+          RSpec.current_example = current_example
+        end
+
+        expect(test_spans.map(&:name)).to contain_exactly("first", "nested second")
+        test_spans.each do |span|
+          expect(span).to have_skip_status
+          expect(span).to have_test_tag(:skip_reason, "External service unavailable")
+          expect(span).not_to have_error
+          expect(span.get_tag("test.is_retry")).to be_nil
+          expect(span.get_tag("test.retry_reason")).to be_nil
+        end
+      end
+
       it "with skip: true" do
         with_new_rspec_environment do
           RSpec.describe "some skipped test" do

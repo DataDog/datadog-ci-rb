@@ -83,6 +83,29 @@ module Datadog
               @datadog_test_tracing_component = nil
             end
 
+            def skip_with_exception(reporter, exception)
+              return super unless datadog_tracing_enabled?
+
+              retries = test_retries_component
+              retries.reset_retries!
+              test_tracing_component.trace_test(
+                datadog_test_name,
+                datadog_test_suite_name,
+                tags: build_test_tags,
+                prevent_failure_suppression: datadog_prevent_failure_suppression?,
+                no_auto_retry: datadog_no_auto_retry?,
+                service: datadog_configuration[:service_name]
+              ) do |test_span|
+                test_span&.context_ids = datadog_context_ids
+                super.tap do
+                  handle_test_result(test_span, nil)
+                  update_formatter_metadata(test_span)
+                end
+              end
+            ensure
+              retries&.reset_retries!
+            end
+
             def finish(reporter)
               # By default finish test but do not report it to RSpec::Core::Reporter
               # it is going to be reported once after retries are done.
