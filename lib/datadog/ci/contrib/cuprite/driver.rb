@@ -84,7 +84,7 @@ module Datadog
               Utils::RUM.stop_rum_session(executor, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
               Datadog.logger.debug("[Cuprite] Deleting Datadog cookie")
-              browser.cookies.remove(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)
+              browser.cookies.remove(name: CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)
             end
           end
         end
