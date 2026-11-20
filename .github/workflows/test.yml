@@ -129,15 +129,16 @@ jobs:
         run: echo "DD_GIT_COMMIT_SHA=$DD_GIT_COMMIT_SHA" >> "$GITHUB_ENV"
       - run: echo "$DD_GIT_COMMIT_SHA"
 
-      - name: Get Datadog credentials via dd-sts
-        id: dd-sts
-        uses: DataDog/dd-sts-action@639d841c72f15e4e77747bd726ef8105ce971da2
+      - name: Get Datadog credentials via datadog-wif
+        id: dd-wif
+        uses: DataDog/datadog-workload-identity-federation-github-action/intake@c9456387851248e0a5452f99085b16ad14fc3acb # v1.0.0
         with:
-          policy: public-datadog-datadog-ci-rb
+          org_uuid: 8dee7c38-00cb-11ea-a77b-8b5a08d3b091 # Datadog HQ (org 2)
+          site: datadoghq.com
 
       - name: Upload junit reports to Datadog
         env:
-          DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
+          DD_API_KEY: ${{ steps.dd-wif.outputs.api_key }}
         run: |
           for reports in tmp/rspec/*/; do
             runtime=$(basename "$reports")
@@ -149,7 +150,7 @@ jobs:
 
       - name: Upload simplecov reports to Datadog
         env:
-          DD_API_KEY: ${{ steps.dd-sts.outputs.api_key }}
+          DD_API_KEY: ${{ steps.dd-wif.outputs.api_key }}
         run: datadog-ci coverage upload --verbose tmp/coverage/
 
   complete:
