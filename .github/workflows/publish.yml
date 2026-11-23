@@ -26,7 +26,7 @@ jobs:
         uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: '3.4'
-      - run: bundle install
-      - uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
+          bundler-cache: true
+      - uses: rubygems/release-gem@5c53f5308233b7c0f47411f0471b3faae6fa57b2 # v1.4.2
         with:
           token: ${{ steps.octo-sts.outputs.token }}
