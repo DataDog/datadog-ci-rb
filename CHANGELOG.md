@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [1.44.0] - 2026-11-23
+
+### Added
+
+* Track non-code file dependencies for TIA ([#685][])
+
+### Fixed
+
+* Use tested checkout identity for Git metadata and uploads ([#683][])
+* Fix Cuprite cookie APIs and preserve the current host ([#704][])
+* Fix Minitest spec discovery for shared test methods ([#687][])
+
 ## [1.43.0] - 2026-11-09
 
 ### Added
@@ -766,7 +778,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.43.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.44.0...main
+[1.44.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.43.0...v1.44.0
 [1.43.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.42.0...v1.43.0
 [1.42.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.41.0...v1.42.0
 [1.41.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.40.0...v1.41.0
@@ -1084,3 +1097,7 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#673]: https://github.com/DataDog/datadog-ci-rb/issues/673
 [#678]: https://github.com/DataDog/datadog-ci-rb/issues/678
 [#679]: https://github.com/DataDog/datadog-ci-rb/issues/679
+[#683]: https://github.com/DataDog/datadog-ci-rb/issues/683
+[#685]: https://github.com/DataDog/datadog-ci-rb/issues/685
+[#687]: https://github.com/DataDog/datadog-ci-rb/issues/687
+[#704]: https://github.com/DataDog/datadog-ci-rb/issues/704
