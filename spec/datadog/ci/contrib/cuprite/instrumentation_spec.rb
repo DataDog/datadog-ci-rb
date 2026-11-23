@@ -1,3 +1,5 @@
+require "fileutils"
+require "securerandom"
 require "cucumber"
 require "capybara/cuprite"
 
@@ -12,12 +14,14 @@ RSpec.describe "Browser tests with cuprite" do
     let(:integration_name) { :cucumber }
   end
 
-  let(:cookies_spy) { spy("cookies") }
+  let(:reset_url) { nil }
+  let(:current_url) { "http://www.example.com" }
+  let(:cookies_spy) { instance_spy(Ferrum::Cookies) }
   let(:browser) do
     instance_double(
       Capybara::Cuprite::Browser,
       :cookies => cookies_spy,
-      :current_url => "http://www.example.com",
+      :current_url => current_url,
       :options => instance_double(Ferrum::Browser::Options, browser_name: "mockbrowser"),
       :version => instance_double(Ferrum::Browser::VersionInfo, product: "mockversion"),
       :raise_on_unhandled_modal= => nil,
@@ -36,6 +40,11 @@ RSpec.describe "Browser tests with cuprite" do
 
   let(:kernel) { double(:kernel) }
 
+  let(:steps_file_definition_path) { "spec/datadog/ci/contrib/cuprite/features/step_definitions/steps.rb" }
+  let(:steps_file_for_run_path) do
+    "spec/datadog/ci/contrib/cuprite/features/step_definitions/steps_#{SecureRandom.hex(8)}.rb"
+  end
+
   # Cucumber runtime setup
   let(:existing_runtime) { Cucumber::Runtime.new(runtime_options) }
   let(:runtime_options) { {} }
@@ -44,7 +53,7 @@ RSpec.describe "Browser tests with cuprite" do
   let(:args) do
     [
       "-r",
-      "spec/datadog/ci/contrib/cuprite/features/step_definitions/steps.rb",
+      steps_file_for_run_path,
       features_path
     ]
   end
@@ -59,6 +68,8 @@ RSpec.describe "Browser tests with cuprite" do
   let(:visited_urls) { [] }
 
   before do
+    FileUtils.cp(steps_file_definition_path, steps_file_for_run_path)
+
     expect(Capybara::Cuprite::Browser).to receive(:new).and_return(browser)
     allow(browser).to receive(:evaluate_func) do |script|
       executed_scripts << script
@@ -67,9 +78,18 @@ RSpec.describe "Browser tests with cuprite" do
     allow(browser).to receive(:visit) do |url|
       visited_urls << url
     end
+    if reset_url
+      allow(browser).to receive(:reset) do
+        allow(browser).to receive(:current_url).and_return(reset_url)
+      end
+    end
     allow(browser).to receive(:base_url=)
     allow(browser).to receive(:goto) do |url|
       visited_urls << url
+    end
+
+    if Capybara::Cuprite.respond_to?(:deprecation_warning)
+      expect(Capybara::Cuprite).not_to receive(:deprecation_warning)
     end
 
     expect(kernel).to receive(:exit).with(expected_test_run_code)
@@ -78,7 +98,11 @@ RSpec.describe "Browser tests with cuprite" do
     end
   end
 
-  it "recognize the test as browser test and adds additional tags" do
+  after do
+    FileUtils.rm(steps_file_for_run_path)
+  end
+
+  it "reports the browser test and its tags" do
     expect(visited_urls).to eq(["http://www.example.com"])
     expect(executed_scripts).to eq(
       [
@@ -96,7 +120,7 @@ RSpec.describe "Browser tests with cuprite" do
     )
     expect(cookies_spy).to have_received(:remove).with(
       {name: "datadog-ci-visibility-test-execution-id", domain: "www.example.com"}
-    )
+    ).twice
 
     expect(first_test_span).to have_test_tag(:type, "browser")
     expect(first_test_span).to have_test_tag(:browser_driver, "cuprite")
@@ -108,5 +132,30 @@ RSpec.describe "Browser tests with cuprite" do
     expect(first_test_span).to have_test_tag(:browser_version, "mockversion")
 
     expect(first_test_span).to have_test_tag(:is_rum_active, "true")
+  end
+
+  context "when navigation redirects to another host" do
+    let(:current_url) { "https://redirected.example.com/landing" }
+
+    it "sets and removes the cookie on the current host" do
+      expect(visited_urls).to eq(["http://www.example.com"])
+      expect(cookies_spy).to have_received(:set).with(
+        name: "datadog-ci-visibility-test-execution-id",
+        value: first_test_span.trace_id.to_s,
+        domain: "redirected.example.com"
+      )
+      expect(cookies_spy).to have_received(:remove).with(
+        name: "datadog-ci-visibility-test-execution-id", domain: "redirected.example.com"
+      ).twice
+    end
+  end
+
+  context "when reset clears the current URL" do
+    let(:reset_url) { "about:blank" }
+
+    it "quits without removing a cookie from a blank page" do
+      expect(cookies_spy).to have_received(:remove).once
+      expect(browser).to have_received(:quit)
+    end
   end
 end

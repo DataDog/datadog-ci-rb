@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "uri"
+
 require_relative "script_executor"
 require_relative "../patcher"
 
@@ -37,7 +39,11 @@ module Datadog
               Datadog.logger.debug do
                 "[Cuprite] Setting cookie #{CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID} to #{active_test.trace_id}"
               end
-              set_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID, active_test.trace_id.to_s)
+              browser.cookies.set(
+                name: CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID,
+                value: active_test.trace_id.to_s,
+                domain: URI.parse(browser.current_url).host
+              )
 
               # set the test type to browser
               active_test.set_internal_tag(CI::Ext::Test::TAG_TYPE, CI::Ext::Test::Type::BROWSER)
@@ -83,8 +89,11 @@ module Datadog
               executor = ScriptExecutor.new(browser)
               Utils::RUM.stop_rum_session(executor, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
+              domain = URI.parse(browser.current_url).host
+              return unless domain
+
               Datadog.logger.debug("[Cuprite] Deleting Datadog cookie")
-              remove_cookie(CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID)
+              browser.cookies.remove(name: CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID, domain: domain)
             end
           end
         end
