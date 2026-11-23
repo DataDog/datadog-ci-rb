@@ -13,6 +13,16 @@ class Ferrum::Browser
   def options: () -> Ferrum::Browser::Options
 
   def evaluate_func: (String script) -> String
+
+  def current_url: () -> String
+
+  def cookies: () -> Ferrum::Cookies
+end
+
+class Ferrum::Cookies
+  def set: (Hash[Symbol, String?] options) -> bool
+
+  def remove: (name: String, ?domain: String?) -> bool
 end
 
 class Ferrum::Browser::Options
@@ -29,10 +39,6 @@ module Capybara::Cuprite::Driver
   def reset!: () -> void
 
   def quit: () -> void
-
-  def set_cookie: (String name, String value, ?Hash[Symbol, untyped] options) -> void
-
-  def remove_cookie: (String name, ?Hash[Symbol, untyped] options) -> void
 
   def execute_script: (String script, ?untyped args) -> untyped
 

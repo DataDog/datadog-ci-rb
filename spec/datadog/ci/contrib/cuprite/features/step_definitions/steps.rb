@@ -2,6 +2,8 @@ require "capybara"
 require "capybara/cucumber"
 require "capybara/cuprite"
 
+World(Capybara::DSL)
+
 Capybara.register_driver(:cuprite) do |app|
   Capybara::Cuprite::Driver.new(app, window_size: [1200, 800])
 end
