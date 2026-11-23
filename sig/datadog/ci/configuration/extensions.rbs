@@ -14,10 +14,12 @@ module Datadog
           def configuration: () -> untyped
         end
 
-        module TracerAccess
-          def trace: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
-          private
+        interface _TracerAccess
           def tracer: () -> untyped
+        end
+
+        module TracerAccess : _TracerAccess
+          def trace: (*untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
         end
 
         self.@tracer_active: bool?

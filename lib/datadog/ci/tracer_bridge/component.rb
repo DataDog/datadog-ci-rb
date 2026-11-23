@@ -132,6 +132,7 @@ module Datadog
 
           context = tracer.provider.context
           saved = scope.contexts.find { |candidate| candidate.context.equal?(context) }
+          return if !saved && context.active_trace
           if saved
             return if context.active_trace.equal?(saved.trace) && !saved.trace.finished?
             return if context.active_trace && !context.active_trace.equal?(saved.previous_trace)

@@ -26,16 +26,10 @@ module Datadog
         module TracerAccess
           def trace(*args, **kwargs, &block)
             CI.prepare_application_tracing!
-            super
-          end
-
-          private
-
-          def tracer
-            current = super
+            current = tracer
             components = CI.components(allow_initialization: false)
             components&.tracer_bridge&.observe(current) if current
-            current
+            super
           end
         end
 

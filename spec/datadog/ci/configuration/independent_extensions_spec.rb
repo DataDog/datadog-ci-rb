@@ -71,10 +71,68 @@ RSpec.describe Datadog::CI::Configuration::Extensions do
   end
 
   it "does not initialize CI when the application asks for its tracer" do
-    allow(Datadog::CI).to receive(:components).with(allow_initialization: false).and_return(nil)
+    expect(Datadog::CI).not_to receive(:components)
 
-    expect { Datadog::Tracing.active_trace }.not_to raise_error
-    expect(Datadog::CI).to have_received(:components).with(allow_initialization: false)
+    expect(Datadog::Tracing.active_trace).to be_nil
+  end
+
+  it "does not attach CI context when inspecting the active application trace" do
+    bridge.on_test_started(Struct.new(:id, :trace_id).new(101, 202))
+    tracer = Datadog.send(:components).tracer
+    expect(tracer).to receive(:active_trace).once.and_return(nil)
+    expect(tracer).not_to receive(:continue_trace!)
+
+    expect(Datadog::Tracing.active_trace).to be_nil
+  end
+
+  it "preserves explicit trace continuation arguments and its block" do
+    bridge.on_test_started(Struct.new(:id, :trace_id).new(101, 202))
+    tracer = Datadog.send(:components).tracer
+    digest = Datadog::Tracing::TraceDigest.new(trace_id: 303, span_id: 404)
+    block = proc {}
+    expect(tracer).to receive(:continue_trace!).with(digest) do |&received|
+      expect(received).to equal(block)
+      :continued
+    end
+
+    expect(Datadog::Tracing.continue_trace!(digest, &block)).to eq(:continued)
+  end
+
+  it "does not initialize a global trace while a separate tracer samples its spans" do
+    bridge.on_test_started(Struct.new(:id, :trace_id).new(101, 202))
+    tracer = Datadog::Tracing::Tracer.new(writer: application_writer)
+    expect(Datadog::Profiling).to receive(:enabled?).once.and_return(false)
+
+    2.times { tracer.trace("application.request") {} }
+
+    expect(application_writer).to have_received(:write).twice
+    expect(Datadog::Tracing.active_trace).to be_nil
+  end
+
+  it "preserves the caller context when tracing inside explicit continuation" do
+    bridge.on_test_started(Struct.new(:id, :trace_id).new(101, 202))
+    digest = Datadog::Tracing::TraceDigest.new(trace_id: 303, span_id: 404)
+
+    Datadog::Tracing.continue_trace!(digest) do
+      Datadog::Tracing.trace("application.request") do |span, trace|
+        expect(trace.id).to eq(303)
+        expect(span.parent_id).to eq(404)
+      end
+    end
+
+    expect(ci_writer).to have_received(:write).once do |trace|
+      expect(trace.id).to eq(303)
+      expect(trace.spans.first.parent_id).to eq(404)
+    end
+  end
+
+  it "preserves baggage set before the first application span" do
+    bridge.on_test_started(Struct.new(:id, :trace_id).new(101, 202))
+    Datadog::Tracing.baggage["user.id"] = "123"
+
+    Datadog::Tracing.trace("application.request") do |_span, trace|
+      expect(trace.to_digest.baggage).to eq("user.id" => "123")
+    end
   end
 
   it "automatically routes a real HTTP integration span to the independent writer" do

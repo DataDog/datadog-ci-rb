@@ -44,16 +44,20 @@ RSpec.describe Datadog::CI::TracerBridge::Component do
     end
   end
 
-  it "restores application context after the test" do
+  it "preserves an existing application context during and after the test" do
     outer = tracer.trace("outer")
     original = tracer.active_trace
     bridge.on_test_started(test)
     trace_application
+    expect(tracer.active_trace).to equal(original)
     bridge.on_test_finished(test)
 
     expect(tracer.active_trace).to equal(original)
     outer.finish
-    expect(ci_writer).to have_received(:write).twice
+    expect(ci_writer).to have_received(:write).once do |trace|
+      expect(trace.id).to eq(original.id)
+      expect(trace.spans.map(&:name)).to eq(["http.request", "outer"])
+    end
     expect(application_writer).not_to have_received(:write)
   end
 
