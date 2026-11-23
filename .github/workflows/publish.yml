@@ -8,70 +8,25 @@ on:
 jobs:
   release:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
     environment: release
     permissions:
-      contents: read
+      # This controls whether the job can request an OIDC token from
+      # GitHub's identity provider (token.actions.githubusercontent.com).
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: DataDog/dd-octo-sts-action@c85802a58e202b7e764b5441e4378c76043c8108 # v1.0.5
+        id: octo-sts
+        with:
+          scope: DataDog/datadog-ci-rb
+          policy: self.publish
       - name: Set up Ruby
         uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
         with:
           ruby-version: '3.4'
-          bundler: '4.1.0'
-      - run: bundle install
-      - name: Build gem
-        id: build
-        run: |
-          bundle exec rake build
-          gem_file="pkg/datadog-ci-${GITHUB_REF_NAME#v}.gem"
-          test -f "$gem_file"
-          echo "gem-file=$gem_file" >> "$GITHUB_OUTPUT"
-      - name: Install signing dependencies
-        env:
-          BUNDLE_GEMFILE: .github/release.gemfile
-          BUNDLE_FROZEN: 'true'
-        run: bundle install
-      - name: Sign and verify gem
-        env:
-          BUNDLE_GEMFILE: .github/release.gemfile
-          GEM_FILE: ${{ steps.build.outputs.gem-file }}
-          CERTIFICATE_IDENTITY: https://github.com/${{ github.workflow_ref }}
-        run: |
-          bundle exec sigstore-cli sign "$GEM_FILE" --bundle "$GEM_FILE.sigstore.json"
-          bundle exec sigstore-cli verify "$GEM_FILE" \
-            --bundle "$GEM_FILE.sigstore.json" \
-            --certificate-identity "$CERTIFICATE_IDENTITY" \
-            --certificate-oidc-issuer https://token.actions.githubusercontent.com
-      - name: Configure trusted publishing
-        uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
-      - name: Publish gem with attestation
-        env:
-          GEM_FILE: ${{ steps.build.outputs.gem-file }}
-        run: |
-          gem push --host https://rubygems.org \
-            --attestation "$GEM_FILE.sigstore.json" "$GEM_FILE"
-      - name: Verify published gem and attestation
-        env:
-          BUNDLE_GEMFILE: .github/release.gemfile
-          GEM_FILE: ${{ steps.build.outputs.gem-file }}
-          CERTIFICATE_IDENTITY: https://github.com/${{ github.workflow_ref }}
-        run: |
-          gem_name="$(basename "$GEM_FILE" .gem)"
-          curl --fail --silent --show-error --retry 10 --retry-delay 5 \
-            --retry-all-errors --connect-timeout 5 --max-time 15 \
-            --output "$GEM_FILE.published" "https://rubygems.org/gems/$gem_name.gem"
-          cmp "$GEM_FILE" "$GEM_FILE.published"
-          curl --fail --silent --show-error --retry 10 --retry-delay 5 \
-            --retry-all-errors --connect-timeout 5 --max-time 15 \
-            --output "$GEM_FILE.attestations.json" \
-            "https://rubygems.org/api/v1/attestations/$gem_name.json"
-          jq -e 'length > 0' "$GEM_FILE.attestations.json"
-          jq '.[0]' "$GEM_FILE.attestations.json" > "$GEM_FILE.published.sigstore.json"
-          bundle exec sigstore-cli verify "$GEM_FILE.published" \
-            --bundle "$GEM_FILE.published.sigstore.json" \
-            --certificate-identity "$CERTIFICATE_IDENTITY" \
-            --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          bundler-cache: true
+      - uses: rubygems/release-gem@5c53f5308233b7c0f47411f0471b3faae6fa57b2 # v1.4.2
+        with:
+          token: ${{ steps.octo-sts.outputs.token }}
