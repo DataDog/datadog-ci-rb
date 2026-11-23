@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "sigstore-cli", "0.2.3"
+# Protobug passes parser options that JSON 3 rejects.
+gem "json", "~> 2.21.2"
