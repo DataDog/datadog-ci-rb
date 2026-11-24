@@ -22,7 +22,7 @@
 
 - New Datadog environment variables must start with `DD_CIVISIBILITY_`, `DD_TEST_`, or `DD_TESTOPTIMIZATION_`.
 - Define each variable as a complete string literal so that the linter can read its name.
-- Keep existing shared and legacy names in `scripts/lint_env.rb`. Do not add exceptions for new variables.
+- Keep existing shared and legacy names in `tasks/lint_env.rb`. Do not add exceptions for new variables.
 - After changes, run `bundle exec rake lint:env`.
 
 ## Types

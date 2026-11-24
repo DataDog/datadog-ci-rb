@@ -2,7 +2,7 @@
 
 require "tmpdir"
 
-require_relative "../../../../scripts/lint_env"
+require_relative "../../../../tasks/lint_env"
 
 RSpec.describe EnvironmentVariablePrefixes do
   describe ".violations" do
