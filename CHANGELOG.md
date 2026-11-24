@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [1.44.1] - 2026-11-24
+
+### Changed
+
+* Enforce allowed prefixes for new environment variables ([#708][])
+* Use DD_TEST_OPTIMIZATION_ for opened files coverage ([#709][])
+
 ## [1.44.0] - 2026-11-23
 
 ### Added
@@ -778,7 +785,8 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 
 - Ruby versions < 2.7 no longer supported ([#8][])
 
-[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.44.0...main
+[Unreleased]: https://github.com/DataDog/datadog-ci-rb/compare/v1.44.1...main
+[1.44.1]: https://github.com/DataDog/datadog-ci-rb/compare/v1.44.0...v1.44.1
 [1.44.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.43.0...v1.44.0
 [1.43.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.42.0...v1.43.0
 [1.42.0]: https://github.com/DataDog/datadog-ci-rb/compare/v1.41.0...v1.42.0
@@ -1101,3 +1109,5 @@ Currently test suite level visibility is not used by our instrumentation: it wil
 [#685]: https://github.com/DataDog/datadog-ci-rb/issues/685
 [#687]: https://github.com/DataDog/datadog-ci-rb/issues/687
 [#704]: https://github.com/DataDog/datadog-ci-rb/issues/704
+[#708]: https://github.com/DataDog/datadog-ci-rb/issues/708
+[#709]: https://github.com/DataDog/datadog-ci-rb/issues/709
