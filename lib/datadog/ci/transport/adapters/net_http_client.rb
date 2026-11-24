@@ -27,12 +27,19 @@ module Datadog
             WebMock::HttpLibAdapters::NetHttpAdapter::OriginalNetHTTP
           end
 
+          CONNECTION_CONSTRUCTOR = original_net_http.method(:new)
+          private_constant :CONNECTION_CONSTRUCTOR
+
+          def self.net_http(hostname, port)
+            CONNECTION_CONSTRUCTOR.call(hostname, port)
+          end
+
           # A Net::HTTP connection to an agent on a Unix domain socket. Like the
           # TCP connections, it is built on original_net_http so that WebMock
           # leaves it alone; the host and port only go in the Host header.
           def self.unix_socket_net_http(uds_path)
             # @type var http: Net::HTTP & UnixSocketConnection
-            http = _ = original_net_http.new("localhost", 80).extend(UnixSocketConnection)
+            http = _ = net_http("localhost", 80).extend(UnixSocketConnection)
             http.uds_path = uds_path
             http
           end

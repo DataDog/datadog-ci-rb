@@ -19,7 +19,7 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
     let(:http_connection) { instance_double(::Net::HTTP) }
 
     before do
-      allow(Datadog::CI::Transport::Adapters::NetHttpClient.original_net_http).to receive(:new)
+      allow(Datadog::CI::Transport::Adapters::NetHttpClient).to receive(:net_http)
         .with(
           adapter.hostname,
           adapter.port
@@ -47,6 +47,16 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
         expect(result.http_response).to equal(response)
       end
     end
+  end
+
+  it "builds a Unix socket connection despite application connection mocks" do
+    client = Datadog::CI::Transport::Adapters::NetHttpClient
+    allow(client.original_net_http).to receive(:new).and_raise("Application connection constructor mock")
+
+    connection = client.unix_socket_net_http("/tmp/agent.socket")
+
+    expect(connection.address).to eq("localhost")
+    expect(connection.uds_path).to eq("/tmp/agent.socket")
   end
 
   describe "#initialize" do

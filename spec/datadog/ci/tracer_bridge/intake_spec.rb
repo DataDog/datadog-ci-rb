@@ -91,7 +91,7 @@ RSpec.describe "Application spans in Test Optimization intake" do
     expect(application_writer).not_to have_received(:write)
   end
 
-  it "does not trace internal intake HTTP requests during an active test" do
+  it "delivers untraced intake requests despite application connection mocks" do
     server = TCPServer.new("127.0.0.1", 0)
     received = Queue.new
     listener = Thread.new do
@@ -109,6 +109,9 @@ RSpec.describe "Application spans in Test Optimization intake" do
     test = Datadog::CI.start_test("intake", "suite")
     client = Datadog::CI::Transport::HTTP.new(host: "127.0.0.1", port: server.addr[1], ssl: false, timeout: 2)
 
+    allow(Datadog::CI::Transport::Adapters::NetHttpClient.original_net_http)
+      .to receive(:new).and_raise("Application connection constructor mock")
+
     response = client.request(path: "/info", payload: "", headers: {}, verb: "get", retries: 0)
 
     expect(response).to be_ok
@@ -120,8 +123,8 @@ RSpec.describe "Application spans in Test Optimization intake" do
     expect(traces.flat_map(&:spans).map(&:name)).not_to include("http.request")
     expect(application_writer).not_to have_received(:write)
   ensure
-    server&.close
     listener&.kill if listener&.alive?
     listener&.join
+    server&.close
   end
 end
