@@ -14,7 +14,7 @@ GIT
 PATH
   remote: ..
   specs:
-    datadog-ci (1.44.0)
+    datadog-ci (1.44.1)
       datadog (~> 2.4)
       drb
       msgpack
@@ -219,7 +219,7 @@ CHECKSUMS
   cucumber-query (16.4.0) sha256=fe71ab0b45c4149dd35508a5c68e3d1bd7c37b4b7e1e65399f26e261ac443628
   cucumber-tag-expressions (11.2.0) sha256=b010de26fed82662a311e95b8bc97d621902594e4f42df827a9892bcf186b0ae
   datadog (2.50.0.dev)
-  datadog-ci (1.44.0)
+  datadog-ci (1.44.1)
   datadog-ruby_core_source (3.5.6) sha256=07d8909b9314af709da80966cf7e160da19ca1c396a8f45d175615f675a89569
   debug (1.11.1) sha256=2e0b0ac6119f2207a6f8ac7d4a73ca8eb4e440f64da0a3136c30343146e952b6
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
