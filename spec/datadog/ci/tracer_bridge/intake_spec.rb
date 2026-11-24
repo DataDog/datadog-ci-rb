@@ -7,7 +7,12 @@ require "datadog/ci/test_tracing/transport"
 RSpec.describe "Application spans in Test Optimization intake" do
   include_context "CI mode activated"
 
-  let(:application_writer) { instance_double(Datadog::Tracing::Writer, write: nil, stop: nil) }
+  let(:application_writer) do
+    writer = Datadog::Tracing::Writer.new(transport: double(:application_transport))
+    allow(writer).to receive(:write)
+    allow(writer).to receive(:stop)
+    writer
+  end
   let(:api) { spy(:api) }
   let(:transport) { Datadog::CI::TestTracing::Transport.new(api: api, dd_env: "ci") }
 

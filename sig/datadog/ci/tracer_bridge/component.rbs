@@ -30,6 +30,7 @@ module Datadog
 
         interface _Writer
           def is_a?: (Module klass) -> bool
+          def instance_of?: (Module klass) -> bool
           def respond_to?: (Symbol name, ?bool include_private) -> bool
           def public_send: (Symbol name, *untyped args, **untyped kwargs) ?{ (*untyped) -> untyped } -> untyped
           def write: (Datadog::Tracing::TraceSegment) -> void
@@ -78,6 +79,7 @@ module Datadog
         def scopes: () -> Array[Scope]
         def active_scope: () -> Scope?
         def wrap_writer: (_Tracer tracer) -> void
+        def standard_writer?: (_Writer writer) -> bool
         def restore_session_scope: () -> void
         def restore_scope: (Scope scope) -> void
         def warn_failure: (String action, StandardError error) -> void

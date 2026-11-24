@@ -3,7 +3,12 @@
 RSpec.describe "CI initialization from application tracing" do
   include_context "CI mode activated"
 
-  let(:application_writer) { instance_double(Datadog::Tracing::Writer, write: nil, stop: nil) }
+  let(:application_writer) do
+    writer = Datadog::Tracing::Writer.new(transport: double(:application_transport))
+    allow(writer).to receive(:write)
+    allow(writer).to receive(:stop)
+    writer
+  end
 
   before do
     Datadog.configure do |settings|

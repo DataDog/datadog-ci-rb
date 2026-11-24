@@ -199,7 +199,16 @@ module Datadog
           return if original.is_a?(Writer) && original.bridge.equal?(self)
 
           original = original.delegate while original.is_a?(Writer)
+          return unless standard_writer?(original)
+
           tracer.writer = Writer.new(original, self)
+        end
+
+        def standard_writer?(writer)
+          return true if writer.instance_of?(::Datadog::Tracing::Writer)
+          return false unless defined?(::Datadog::Tracing::SyncWriter)
+
+          writer.instance_of?(::Datadog::Tracing::SyncWriter)
         end
 
         def restore_session_scope

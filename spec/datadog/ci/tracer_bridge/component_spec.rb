@@ -2,11 +2,17 @@
 
 require "datadog"
 require "datadog/tracing/tracer"
+require "datadog/tracing/sync_writer"
 require "datadog/ci/tracer_bridge/component"
 require "datadog/ci/tracer_bridge/null_component"
 
 RSpec.describe Datadog::CI::TracerBridge::Component do
-  let(:application_writer) { instance_double(Datadog::Tracing::Writer, write: nil, stop: nil) }
+  let(:application_writer) do
+    writer = Datadog::Tracing::Writer.new(transport: double(:application_transport))
+    allow(writer).to receive(:write)
+    allow(writer).to receive(:stop)
+    writer
+  end
   let(:ci_writer) { instance_double(Datadog::Tracing::Writer, write: nil, stop: nil) }
   let(:logger) { Logger.new(File::NULL) }
   let(:tracer) { Datadog::Tracing::Tracer.new(writer: application_writer) }
@@ -141,6 +147,101 @@ RSpec.describe Datadog::CI::TracerBridge::Component do
 
     expect(ci_writer).to have_received(:write).once
     expect(application_writer).to have_received(:write).once
+  end
+
+  context "with the synchronous built-in writer" do
+    let(:application_writer) do
+      writer = Datadog::Tracing::SyncWriter.new(transport: double(:application_transport))
+      allow(writer).to receive(:write)
+      allow(writer).to receive(:stop)
+      writer
+    end
+
+    it "routes application spans through CI without duplicate delivery" do
+      bridge.on_test_started(test)
+      trace_application
+
+      expect(ci_writer).to have_received(:write).once
+      expect(application_writer).not_to have_received(:write)
+    end
+  end
+
+  context "with a custom writer" do
+    let(:custom_writer_class) do
+      Class.new do
+        attr_reader :traces
+
+        def initialize
+          @traces = []
+        end
+
+        def write(trace)
+          @traces << trace
+        end
+
+        def stop
+        end
+      end
+    end
+    let(:application_writer) { custom_writer_class.new }
+
+    it "preserves the writer and delivers completed application spans to it" do
+      bridge.on_test_started(test)
+      trace_application
+
+      expect(tracer.writer).to equal(application_writer)
+      expect(application_writer.traces.size).to eq(1)
+      expect(application_writer.traces.first.spans.map(&:name)).to eq(["http.request"])
+      expect(application_writer.traces.first.spans.first.parent_id).to eq(test.id)
+      expect(ci_writer).not_to have_received(:write)
+    end
+
+    it "preserves a custom writer installed after a built-in writer" do
+      standard_writer = Datadog::Tracing::Writer.new(transport: double(:application_transport))
+      allow(standard_writer).to receive(:write)
+      tracer.writer = standard_writer
+      bridge.on_test_started(test)
+      trace_application("standard.request")
+      tracer.writer = application_writer
+      trace_application("custom.request")
+
+      expect(tracer.writer).to equal(application_writer)
+      expect(application_writer.traces.size).to eq(1)
+      expect(application_writer.traces.first.spans.map(&:name)).to eq(["custom.request"])
+      expect(standard_writer).not_to have_received(:write)
+      expect(ci_writer).to have_received(:write).once
+    end
+
+    context "with a subclass of the built-in writer" do
+      let(:custom_writer_class) do
+        Class.new(Datadog::Tracing::Writer) do
+          attr_reader :traces
+
+          def initialize
+            @traces = []
+          end
+
+          def write(trace)
+            @traces << trace
+          end
+
+          def stop
+          end
+        end
+      end
+
+      it "preserves the subclass write behavior" do
+        bridge.on_test_started(test)
+        trace_application
+        bridge.on_test_finished(test)
+
+        expect(tracer.writer).to equal(application_writer)
+        expect(application_writer.traces.size).to eq(1)
+        expect(application_writer.traces.first.spans.map(&:name)).to eq(["http.request"])
+        expect(tracer.active_trace).to be_nil
+        expect(ci_writer).not_to have_received(:write)
+      end
+    end
   end
 
   it "does not wrap the writer when disabled" do
