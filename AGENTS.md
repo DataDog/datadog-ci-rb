@@ -18,6 +18,13 @@
 - You MUST define all settings in `lib/datadog/ci/configuration/settings.rb`. You MUST inject them into every component through `lib/datadog/ci/configuration/components.rb`.
 - After changes, run `bundle exec rake archspec`. Fix every architecture violation. Without explicit approval, do not suppress or baseline violations.
 
+## Environment variables
+
+- New Datadog environment variables must start with `DD_CIVISIBILITY_`, `DD_TEST_`, or `DD_TESTOPTIMIZATION_`.
+- Define each variable as a complete string literal so that the linter can read its name.
+- Keep existing shared and legacy names in `tasks/lint_env.rb`. Do not add exceptions for new variables.
+- After changes, run `bundle exec rake lint:env`.
+
 ## Types
 
 - Add or update RBS definitions for Ruby changes. The options in `lib/datadog/ci/configuration/settings.rb` intentionally have no RBS definitions.

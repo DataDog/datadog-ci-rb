@@ -1,0 +1,7 @@
+module EnvironmentVariablePrefixes
+  ALLOWED_PREFIXES: Array[String]
+  EXISTING_NAMES: Array[String]
+
+  def self.violations: (String source) -> Array[String]
+  def self.check_files: (Array[String] paths) -> Array[String]
+end

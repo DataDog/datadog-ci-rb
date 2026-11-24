@@ -1407,9 +1407,9 @@ RSpec.describe Datadog::CI::Configuration::Settings do
 
         it { is_expected.to be true }
 
-        context "when DD_TIA_OPENED_FILES_COVERAGE_ENABLED is set" do
+        context "when DD_TESTOPTIMIZATION_TIA_OPENED_FILES_COVERAGE_ENABLED is set" do
           around do |example|
-            ClimateControl.modify("DD_TIA_OPENED_FILES_COVERAGE_ENABLED" => enable) { example.run }
+            ClimateControl.modify("DD_TESTOPTIMIZATION_TIA_OPENED_FILES_COVERAGE_ENABLED" => enable) { example.run }
           end
 
           context "when unset" do
