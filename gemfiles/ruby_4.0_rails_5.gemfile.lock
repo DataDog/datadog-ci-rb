@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: c6d000f1b6485b9517b26021093a632f1a98720a
+  revision: 404e8ee6cdb4b871c854b0e8a6b4dcfd52702708
   branch: master
   specs:
     datadog (2.50.0.dev)
@@ -63,7 +63,7 @@ GEM
       i18n (>= 0.7, < 2)
       minitest (~> 5.1)
       tzinfo (~> 1.1)
-    addressable (2.9.2)
+    addressable (2.10.0)
       public_suffix (>= 2.0.2, < 8.0)
     appraisal (2.5.0)
       bundler
@@ -225,7 +225,7 @@ GEM
     tsort (0.2.0)
     tzinfo (1.2.11)
       thread_safe (~> 0.1)
-    webmock (3.38.0)
+    webmock (3.40.0)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
@@ -270,7 +270,7 @@ CHECKSUMS
   activerecord (5.2.8.1) sha256=0a288fe88b1032aa688dd9192f4ec3ac3315efc7e09fdce9b4c510bc1bc7684a
   activestorage (5.2.8.1) sha256=0a653aa439a68150664fdc326e21cdae888a9a92741f960e6c23ecc1776b7462
   activesupport (5.2.8.1) sha256=f0498c616e1b243c7b56d67920c389f959c186ad7031569e80335b42e1d22564
-  addressable (2.9.2) sha256=9117c7e7d6ee07230e75ce41fb9401ae55354dc654fcd0e862ba41d539e9a610
+  addressable (2.10.0) sha256=5e13b9c001adf01dd65ad6e0d2a91d2bc07885c0ff2b83f48cbcd95e08d9de62
   appraisal (2.5.0) sha256=36989221be127913b0dba8d114da2001e6b2dceea7bd4951200eaba764eed3ce
   arel (9.0.0) sha256=60da926cea65e70817cc5a3b292c37af556b88d542276ec6332e983c2be567ca
   base64 (0.3.0) sha256=27337aeabad6ffae05c265c450490628ef3ebd4b67be58257393227588f5a97b
@@ -354,7 +354,7 @@ CHECKSUMS
   timeout (0.6.1) sha256=78f57368a7e7bbadec56971f78a3f5ecbcfb59b7fcbb0a3ed6ddc08a5094accb
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
   tzinfo (1.2.11) sha256=6501f6a12175ca0243118b83f7c7c2b7978aaec7a0980550a124d007ad6361b6
-  webmock (3.38.0) sha256=8fa3f656ee73c88fb85f1b136eb5467443cfa1424bfe2b44a538e224c5fbfde7
+  webmock (3.40.0) sha256=6d88e99c220e911dc4451f1a3e7077c40c205df3583e162a10d5f1f29f5a9790
   websocket-driver (0.9.0) sha256=4dfcc6ac0ea1b6771daf5fb54cbbca131e4d5922ea0a65ba2da980370dadbe9f
   websocket-extensions (0.2.0) sha256=6fb0d0f687aa8adc8eafa5ce68db36dfd6a8ebf232515040ce27c33c1291e589
   yard (0.9.45) sha256=52e211493f7cb8a3ebf7e104a25a1e73937a3103092545d34cb88fafebb3dc51

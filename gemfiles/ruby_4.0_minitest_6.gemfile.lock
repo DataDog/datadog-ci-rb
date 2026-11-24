@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: c6d000f1b6485b9517b26021093a632f1a98720a
+  revision: 404e8ee6cdb4b871c854b0e8a6b4dcfd52702708
   branch: master
   specs:
     datadog (2.50.0.dev)
@@ -22,7 +22,7 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.9.2)
+    addressable (2.10.0)
       public_suffix (>= 2.0.2, < 8.0)
     appraisal (2.5.0)
       bundler
@@ -104,7 +104,7 @@ GEM
     simplecov (1.3.2)
     thor (1.5.0)
     tsort (0.2.0)
-    webmock (3.38.0)
+    webmock (3.40.0)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
@@ -133,7 +133,7 @@ DEPENDENCIES
   yard
 
 CHECKSUMS
-  addressable (2.9.2) sha256=9117c7e7d6ee07230e75ce41fb9401ae55354dc654fcd0e862ba41d539e9a610
+  addressable (2.10.0) sha256=5e13b9c001adf01dd65ad6e0d2a91d2bc07885c0ff2b83f48cbcd95e08d9de62
   appraisal (2.5.0) sha256=36989221be127913b0dba8d114da2001e6b2dceea7bd4951200eaba764eed3ce
   bigdecimal (4.1.3) sha256=61ebe1e5e559bdc3cc6f2c0ee7f427321fc838f59611c294356eb04d6e21cf66
   bundler (4.0.19) sha256=b48056e4c77fb3853cc47775b5447ede44aaa4f53c32f168014ab4fe86587d47
@@ -182,7 +182,7 @@ CHECKSUMS
   simplecov (1.3.2) sha256=2a22ec1759f1b8db60881a2e038758956fc69ef93ed669be0bde0678de6d0e85
   thor (1.5.0) sha256=e3a9e55fe857e44859ce104a84675ab6e8cd59c650a49106a05f55f136425e73
   tsort (0.2.0) sha256=9650a793f6859a43b6641671278f79cfead60ac714148aabe4e3f0060480089f
-  webmock (3.38.0) sha256=8fa3f656ee73c88fb85f1b136eb5467443cfa1424bfe2b44a538e224c5fbfde7
+  webmock (3.40.0) sha256=6d88e99c220e911dc4451f1a3e7077c40c205df3583e162a10d5f1f29f5a9790
   yard (0.9.45) sha256=52e211493f7cb8a3ebf7e104a25a1e73937a3103092545d34cb88fafebb3dc51
 
 BUNDLED WITH
