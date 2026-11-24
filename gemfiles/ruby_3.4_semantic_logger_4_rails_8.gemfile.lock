@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/DataDog/dd-trace-rb.git
-  revision: c6d000f1b6485b9517b26021093a632f1a98720a
+  revision: 404e8ee6cdb4b871c854b0e8a6b4dcfd52702708
   branch: master
   specs:
     datadog (2.50.0.dev)
@@ -96,7 +96,7 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
-    addressable (2.9.2)
+    addressable (2.10.0)
       public_suffix (>= 2.0.2, < 8.0)
     appraisal (2.5.0)
       bundler
@@ -296,7 +296,7 @@ GEM
       concurrent-ruby (~> 1.0)
     uri (1.1.2)
     useragent (0.16.11)
-    webmock (3.38.0)
+    webmock (3.40.0)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
