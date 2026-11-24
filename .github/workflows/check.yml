@@ -17,6 +17,8 @@ jobs:
       - name: Install dependencies
         run: bundle install
       - run: bundle exec standardrb
+      - name: Check environment variable prefixes
+        run: bundle exec rake lint:env
       - name: Check architecture boundaries
         run: bundle exec rake archspec
 

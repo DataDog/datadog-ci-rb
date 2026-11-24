@@ -112,7 +112,7 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
 
   context "when opened files coverage is disabled" do
     around do |example|
-      ClimateControl.modify("DD_TIA_OPENED_FILES_COVERAGE_ENABLED" => "false") { example.run }
+      ClimateControl.modify("DD_TESTOPTIMIZATION_TIA_OPENED_FILES_COVERAGE_ENABLED" => "false") { example.run }
     end
 
     it "does not install hooks or create a file collector, while keeping code coverage enabled" do
