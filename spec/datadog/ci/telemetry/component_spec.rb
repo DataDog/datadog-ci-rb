@@ -49,6 +49,17 @@ RSpec.describe Datadog::CI::Telemetry::Component do
     expect(requests.last[:headers]).to include("DD-API-KEY" => "test-key", "DD-Telemetry-Request-Type" => "generate-metrics")
   end
 
+  it "retains buffered metrics during application PID mocks" do
+    telemetry.inc("civisibility", "events", 2)
+    allow(Process).to receive(:pid).and_return(Process.pid + 1)
+    telemetry.inc("civisibility", "events", 3)
+    telemetry.flush
+
+    metric = metric_payloads.flat_map { |payload| payload["payload"]["series"] }
+      .find { |series| series["metric"] == "events" }
+    expect(metric["points"].first.last).to eq(5)
+  end
+
   it "retains individual distribution values" do
     telemetry.distribution("civisibility", "duration", 1.5, tags: ["framework:rspec"])
     telemetry.distribution("civisibility", "duration", 2.5, tags: ["framework:rspec"])

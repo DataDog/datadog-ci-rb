@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "utils/identity"
+
 module Datadog
   module CI
     # Runs one background operation per process.
@@ -8,14 +10,14 @@ module Datadog
 
       def initialize(&operation)
         @operation = operation
-        @pid = Process.pid
+        @pid = Utils::Identity.pid
         @mutex = Mutex.new
         @thread = nil
       end
 
       def perform(*arguments)
-        if @pid != Process.pid
-          @pid = Process.pid
+        if @pid != Utils::Identity.pid
+          @pid = Utils::Identity.pid
           @mutex = Mutex.new
           @thread = nil
         end

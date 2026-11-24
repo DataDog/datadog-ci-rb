@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "identity"
+
 module Datadog
   module CI
     module Utils
@@ -13,15 +15,15 @@ module Datadog
         end
 
         def forked?
-          Process.pid != fork_pid
+          Utils::Identity.pid != fork_pid
         end
 
         def update_fork_pid!
-          @fork_pid = Process.pid
+          @fork_pid = Utils::Identity.pid
         end
 
         def fork_pid
-          @fork_pid ||= Process.pid
+          @fork_pid ||= Utils::Identity.pid
         end
       end
     end

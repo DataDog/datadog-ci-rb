@@ -2,6 +2,8 @@ module Datadog
   module CI
     module Utils
       module Identity
+        PROCESS_ID: Method
+        def self.pid: () -> Integer
         self.@pid: Integer?
         self.@id: String?
         def self.id: () -> String

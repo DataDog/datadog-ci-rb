@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../utils/identity"
+
 require "json"
 require_relative "../utils/time"
 
@@ -49,7 +51,7 @@ module Datadog
         def flush
           return unless @enabled
 
-          reset_process_state if @pid != Process.pid
+          reset_process_state if @pid != Utils::Identity.pid
           @send_mutex.synchronize do
             metrics = @mutex.synchronize do
               pending = @metrics.values
@@ -78,7 +80,7 @@ module Datadog
         end
 
         def disable!
-          reset_process_state if @pid != Process.pid
+          reset_process_state if @pid != Utils::Identity.pid
           @mutex.synchronize do
             @enabled = false
             @metrics.clear
@@ -89,7 +91,7 @@ module Datadog
         end
 
         def shutdown!
-          reset_process_state if @pid != Process.pid
+          reset_process_state if @pid != Utils::Identity.pid
           worker = @mutex.synchronize do
             return if @stopped
 
@@ -119,7 +121,7 @@ module Datadog
           return unless value.is_a?(Integer) || value.is_a?(Float)
           return if value.is_a?(Float) && !value.finite?
 
-          reset_process_state if @pid != Process.pid
+          reset_process_state if @pid != Utils::Identity.pid
           normalized_tags = tags.is_a?(Array) ? tags.sort : tags.map { |key, item| "#{key}:#{item}" }.sort
           key = [namespace, name, type, normalized_tags, common]
           @mutex.synchronize do
@@ -195,7 +197,7 @@ module Datadog
         end
 
         def reset_process_state
-          @pid = Process.pid
+          @pid = Utils::Identity.pid
           @mutex = Mutex.new
           @send_mutex = Mutex.new
           @condition = ConditionVariable.new

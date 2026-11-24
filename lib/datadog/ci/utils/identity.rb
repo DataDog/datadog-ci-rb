@@ -9,9 +9,17 @@ module Datadog
   module CI
     module Utils
       module Identity
+        PROCESS_ID = ::Process.method(:pid)
+        private_constant :PROCESS_ID
+
+        def self.pid
+          PROCESS_ID.call
+        end
+
         def self.id
-          if @pid != Process.pid
-            @pid = Process.pid
+          process_id = pid
+          if @pid != process_id
+            @pid = process_id
             @id = SecureRandom.uuid
           end
           @id ||= SecureRandom.uuid

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "utils/identity"
+
 module Datadog
   module CI
     # Buffers completed CI events and sends them outside the test thread.
@@ -16,7 +18,7 @@ module Datadog
       end
 
       def write(trace)
-        reset_process_state if @pid != Process.pid
+        reset_process_state if @pid != Utils::Identity.pid
         @mutex.synchronize do
           return false if @stopped
           if @buffer.size >= @buffer_size
@@ -34,7 +36,7 @@ module Datadog
       end
 
       def flush
-        reset_process_state if @pid != Process.pid
+        reset_process_state if @pid != Utils::Identity.pid
         @send_mutex.synchronize do
           events = @mutex.synchronize do
             pending = @buffer
@@ -50,7 +52,7 @@ module Datadog
       end
 
       def shutdown!
-        reset_process_state if @pid != Process.pid
+        reset_process_state if @pid != Utils::Identity.pid
         worker = @mutex.synchronize do
           @stopped = true
           @condition.broadcast
@@ -88,7 +90,7 @@ module Datadog
       end
 
       def reset_process_state
-        @pid = Process.pid
+        @pid = Utils::Identity.pid
         @mutex = Mutex.new
         @send_mutex = Mutex.new
         @condition = ConditionVariable.new
