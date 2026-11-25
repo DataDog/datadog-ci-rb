@@ -1,0 +1,35 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        # Implemented in ext/datadog_ci_native/line_coverage.c. Only supported? and
+        # yjit_supported? exist when the extension was built without line coverage.
+        module LineCollector
+          type bitmaps = Hash[String, String]
+
+          CONTEXT_KEY: Symbol
+
+          def self.supported?: () -> bool
+
+          def self.yjit_supported?: () -> bool
+
+          def self.start: (String root, Array[String] ignored_paths) -> bool
+
+          def self.stop: () -> bool
+
+          def self.open_context: (?bool fixture) -> Integer?
+
+          def self.close_context: (Integer serial) -> bool
+
+          def self.coverage: (Integer serial, Array[Integer] fixture_serials) -> bitmaps
+
+          def self.release: (Integer serial) -> bool
+
+          def self.shared: () -> Hash[String, bitmaps]
+
+          def self.stats: () -> Hash[Symbol, untyped]
+        end
+      end
+    end
+  end
+end

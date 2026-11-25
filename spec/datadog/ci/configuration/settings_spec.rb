@@ -1439,6 +1439,43 @@ RSpec.describe Datadog::CI::Configuration::Settings do
         end
       end
 
+      describe "#tia_line_coverage_enabled" do
+        subject(:line_coverage_enabled) { settings.ci.tia_line_coverage_enabled }
+
+        it { is_expected.to be false }
+
+        context "when DD_TEST_OPTIMIZATION_TIA_LINE_COVERAGE_ENABLED is set" do
+          around do |example|
+            ClimateControl.modify("DD_TEST_OPTIMIZATION_TIA_LINE_COVERAGE_ENABLED" => enable) { example.run }
+          end
+
+          context "when unset" do
+            let(:enable) { nil }
+
+            it { is_expected.to be false }
+          end
+
+          context "when true" do
+            let(:enable) { "true" }
+
+            it { is_expected.to be true }
+          end
+
+          context "when false" do
+            let(:enable) { "false" }
+
+            it { is_expected.to be false }
+          end
+        end
+      end
+
+      describe "#tia_line_coverage_enabled=" do
+        it "updates the line coverage setting" do
+          expect { settings.ci.tia_line_coverage_enabled = true }
+            .to change { settings.ci.tia_line_coverage_enabled }.from(false).to(true)
+        end
+      end
+
       describe "#code_coverage_report_upload_enabled" do
         subject(:code_coverage_report_upload_enabled) { settings.ci.code_coverage_report_upload_enabled }
 
