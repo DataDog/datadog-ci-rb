@@ -7,7 +7,9 @@ module Datadog
         begin
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
-          LAST_LINE_AVAILABLE = true
+          # False when the process loaded the extension before datadog-ci and removed the
+          # module that holds the native method.
+          LAST_LINE_AVAILABLE = respond_to?(:_native_last_line_from_iseq)
         rescue LoadError
           LAST_LINE_AVAILABLE = false
         end

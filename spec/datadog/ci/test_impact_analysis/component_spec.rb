@@ -487,6 +487,27 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
     end
   end
 
+  describe "loading the coverage collector" do
+    # As in a covered child process whose bootstrap loaded the extension before datadog-ci.
+    context "when the extension is loaded but its coverage collector is not in datadog-ci's namespace" do
+      let(:tests_skipping_enabled) { false }
+
+      before do
+        require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+        hide_const("Datadog::CI::TestImpactAnalysis::Coverage::DDCov")
+        allow(Datadog.logger).to receive(:warn)
+      end
+
+      it "turns off the code coverage that the remote configuration enables, instead of failing the tests" do
+        configure
+
+        expect(component.code_coverage?).to be(false)
+        expect(Datadog.logger).to have_received(:warn).with(/loaded before datadog-ci/).once
+        expect { component.start_coverage }.not_to raise_error
+      end
+    end
+  end
+
   describe "#start_coverage and #stop_coverage (low-level)" do
     before do
       configure

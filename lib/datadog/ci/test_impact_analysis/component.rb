@@ -579,6 +579,17 @@ module Datadog
         def load_datadog_cov!
           require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
 
+          # A process can load the extension before datadog-ci and remove the constants it
+          # defined, as the bootstrap of a covered child process does.
+          unless defined?(Coverage::DDCov) && Coverage::DDCov.method_defined?(:start)
+            Datadog.logger.warn(
+              "Datadog code coverage collector was loaded before datadog-ci and is not available. " \
+              "Code coverage will not be collected."
+            )
+            @code_coverage_enabled = false
+            return false
+          end
+
           Datadog.logger.debug("Loaded Datadog code coverage collector, using coverage mode: #{code_coverage_mode}")
           true
         rescue LoadError => e

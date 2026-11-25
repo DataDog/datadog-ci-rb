@@ -329,6 +329,29 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       expect(coverage.keys).to all(satisfy { |file| !file.include?("fixtures/child_processes/") })
     end
 
+    # The bootstrap removes the Datadog constants that loading the native extension created,
+    # so datadog-ci, loaded later, finds the extension loaded but not its classes.
+    it "covers a child that loads datadog-ci by code, whose own test session runs without coverage" do
+      rspec = Gem.bin_path("rspec-core", "rspec")
+      output = nil
+      status = nil
+      coverage = in_test do
+        output = IO.popen([ruby, rspec, fixture("nested_session")], err: [:child, :out], &:read)
+        status = $?
+      end
+
+      expect(status).to be_success, output
+      expect(output).to include("1 example, 0 failures")
+      expect(coverage).to have_key(relative("nested_session"))
+    end
+
+    it "leaves the source code features unavailable, not broken, in a child that loads them by code" do
+      output = nil
+      in_test { output = unbundled { IO.popen([ruby, "-I", File.join(root, "lib"), fixture("source_code")], &:read) } }
+
+      expect(output).to eq("[nil, []]")
+    end
+
     it "leaves the Datadog constant to the child" do
       stdout = nil
       coverage = in_test do
