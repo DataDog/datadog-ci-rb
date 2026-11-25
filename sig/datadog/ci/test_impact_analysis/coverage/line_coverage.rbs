@@ -23,7 +23,13 @@ module Datadog
           @fixtures: Hash[String, Context]
           @open_fixture_id: String?
 
+          self.@running_with: [String, Array[String]]?
+
+          self.@first_root: String?
+
           def self.supported?: () -> bool
+
+          def self.ignored_paths: (String? bundle_location) -> Array[String]
 
           def self.start: (root: String, ignored_paths: Array[String]) -> LineCoverage?
 

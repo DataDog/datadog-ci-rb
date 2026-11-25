@@ -35,6 +35,8 @@ module Datadog
             return
           end
 
+          TestImpactAnalysis::Component.start_line_coverage_before_configure(Datadog.configuration)
+
           # note that `Kernel.require` might be called from a different thread, so
           # there is a possibility of concurrent execution of this tracepoint
           mutex = Mutex.new

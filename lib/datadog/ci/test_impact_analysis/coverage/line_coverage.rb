@@ -40,7 +40,19 @@ module Datadog
             !defined?(RubyVM::YJIT) || LineCollector.yjit_supported?
           end
 
+          # The paths the collector ignores besides the ones it always ignores, such as
+          # vendor and hidden directories.
+          def self.ignored_paths(bundle_location)
+            return [] unless bundle_location && File.directory?(bundle_location)
+
+            [File.join(File.realpath(bundle_location), "")]
+          end
+
           # Returns nil when the collector cannot run in this process.
+          #
+          # The collector can start before Datadog is configured, and a later start with
+          # the same root and ignored paths takes it over. It keeps the files it knows by
+          # repository-relative path, so it never runs again for another root.
           def self.start(root:, ignored_paths:)
             unless supported?
               Datadog.logger.warn(
@@ -49,8 +61,29 @@ module Datadog
               return nil
             end
 
+            running_with = @running_with
+            if running_with && running_with != [root, ignored_paths]
+              Datadog.logger.warn(
+                "Per-test line coverage is running with repository root #{running_with[0]} and ignored paths " \
+                "#{running_with[1]}, not #{root} and #{ignored_paths}: falling back to file-level coverage"
+              )
+              stop_collector
+              return nil
+            end
+
+            first_root = @first_root
+            if first_root && first_root != root
+              Datadog.logger.warn(
+                "Per-test line coverage first ran with repository root #{first_root}, not #{root}: " \
+                "falling back to file-level coverage"
+              )
+              return nil
+            end
+
             return nil unless LineCollector.start(root, ignored_paths)
 
+            @first_root = root
+            @running_with = [root, ignored_paths]
             new
           rescue => e
             Datadog.logger.warn("Failed to start per-test line coverage: #{e.class}: #{e.message}")
@@ -59,6 +92,7 @@ module Datadog
 
           # Stops the collector if this process loaded and started it.
           def self.stop_collector
+            @running_with = nil
             return unless defined?(LineCollector) && LineCollector.supported?
 
             LineCollector.stop
@@ -159,9 +193,7 @@ module Datadog
           end
 
           def stop
-            LineCollector.stop
-          rescue => e
-            log_error("stop", e)
+            LineCoverage.stop_collector
           end
 
           private

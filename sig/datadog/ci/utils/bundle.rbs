@@ -4,7 +4,7 @@ module Datadog
       module Bundle
         self.@rswag_present: bool
 
-        def self.location: () -> String?
+        def self.location: (?String root) -> String?
         def self.rswag_present?: () -> bool
       end
     end
