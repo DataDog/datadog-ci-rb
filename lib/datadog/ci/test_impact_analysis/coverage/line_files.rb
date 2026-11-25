@@ -19,7 +19,8 @@ module Datadog
           def initialize(bitmaps, custom_impacted_files = Files::EMPTY_FILES)
             @bitmaps = bitmaps
             @custom_impacted_files = custom_impacted_files.filter_map do |file|
-              relative_file = File.absolute_path?(file) ? Git::LocalRepository.relative_to_root(file) : file
+              absolute = Git::LocalRepository::REAL_FILE.absolute_path?(file)
+              relative_file = absolute ? Git::LocalRepository.relative_to_root(file) : file
               relative_file unless relative_file.empty? || bitmaps.key?(relative_file)
             end
           end
