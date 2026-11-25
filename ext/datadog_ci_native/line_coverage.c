@@ -26,8 +26,9 @@
  * on traps. Sites at branch targets are shared: Ruby keeps them traced, so the hook runs
  * on every execution there and returns early unless the site is armed.
  *
- * Initialiser code (a file's top level and class or module bodies) records into the
- * file's initialiser lines once per process and is never re-armed.
+ * Initialiser code (a file's top level and the class and module bodies nested in it
+ * through class and module bodies only) records into the file's initialiser lines once
+ * per process and is never re-armed.
  *
  * Code compiled by YJIT never runs trace instructions, so it would ignore re-armed
  * sites. From the first context on, while YJIT is on, every pc where YJIT can enter a
@@ -507,21 +508,71 @@ static long classify_path(VALUE path) {
   return file;
 }
 
-/* `<top (required)>`, `<main>`, `<class:...>`, `<module:...>`, `singleton class`: the
- * frame labels the accuracy reference treats as initialiser code. */
-static bool initialiser_label_p(VALUE label) {
-  if (!RB_TYPE_P(label, T_STRING)) return false;
-  const char *text = RSTRING_PTR(label);
-  long length = RSTRING_LEN(label);
-  if ((length == 16 && memcmp(text, "<top (required)>", 16) == 0) || (length == 6 && memcmp(text, "<main>", 6) == 0) ||
-      (length == 15 && memcmp(text, "singleton class", 15) == 0)) {
-    return true;
+/* Initialiser code is a file's top-level iseq and the class and module bodies nested in
+ * it through class and module bodies only. Rescue and ensure clauses, which Ruby compiles
+ * into iseqs of their own, belong to the code around them. A class body inside a method,
+ * a block or an eval string is ordinary code. Nesting comes from the iseq that holds a
+ * child in an operand or its catch table: singleton class bodies have no parent_iseq. */
+static bool initialiser_root_p(const rb_iseq_t *iseq) {
+  const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+  return body && (body->type == ISEQ_TYPE_TOP || body->type == ISEQ_TYPE_MAIN);
+}
+
+static bool initialiser_child_p(const rb_iseq_t *child, bool holder_initialiser) {
+  const struct rb_iseq_constant_body *body = ISEQ_BODY(child);
+  return holder_initialiser && body &&
+         (body->type == ISEQ_TYPE_CLASS || body->type == ISEQ_TYPE_RESCUE || body->type == ISEQ_TYPE_ENSURE);
+}
+
+/* Iseqs waiting to be armed, each with whether it is initialiser code. */
+typedef struct {
+  const rb_iseq_t *iseq;
+  bool initialiser;
+} pending_iseq_t;
+
+typedef struct {
+  pending_iseq_t *items;
+  size_t count;
+  size_t capacity;
+} pending_iseqs_t;
+
+static void push_pending(pending_iseqs_t *pending, const rb_iseq_t *iseq, bool initialiser) {
+  if (!grow((void **)&pending->items, &pending->capacity, pending->count + 1, sizeof(pending_iseq_t))) return;
+  pending->items[pending->count].iseq = iseq;
+  pending->items[pending->count].initialiser = initialiser;
+  pending->count++;
+}
+
+/* Calls `callback` with every iseq that `iseq` holds in its catch table or an operand.
+ * `original` is its instructions as instruction numbers. */
+static void each_child(const rb_iseq_t *iseq, const VALUE *original, void (*callback)(const rb_iseq_t *, void *),
+                       void *data) {
+  const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+  if (body->catch_table) {
+    for (unsigned int i = 0; i < body->catch_table->size; i++) {
+      const struct iseq_catch_table_entry *entry = UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
+      if (entry->iseq) callback(entry->iseq, data);
+    }
   }
-  const char *rest = NULL;
-  if (length >= 8 && memcmp(text, "<class:", 7) == 0) rest = text + 7;
-  if (length >= 9 && memcmp(text, "<module:", 8) == 0) rest = text + 8;
-  if (!rest || text[length - 1] != '>') return false;
-  return memchr(rest, '>', (size_t)(text + length - 1 - rest)) == NULL;
+  for (unsigned int pos = 0; pos < body->iseq_size;) {
+    VALUE insn = original[pos];
+    const char *types = &rb_vm_insn_op_base[rb_vm_insn_op_offset[insn]];
+    for (int j = 0; types[j]; j++) {
+      const rb_iseq_t *child = (const rb_iseq_t *)original[pos + j + 1];
+      if (types[j] == OPERAND_TYPE_ISEQ && child) callback(child, data);
+    }
+    pos += rb_vm_insn_len_info[insn];
+  }
+}
+
+typedef struct {
+  pending_iseqs_t *pending;
+  bool holder_initialiser;
+} child_push_t;
+
+static void push_child(const rb_iseq_t *child, void *data) {
+  child_push_t *push = (child_push_t *)data;
+  push_pending(push->pending, child, initialiser_child_p(child, push->holder_initialiser));
 }
 
 /* ---- the trap event --------------------------------------------------------- */
@@ -638,9 +689,8 @@ static void mark_entry_points(const struct rb_iseq_constant_body *body, const VA
 }
 
 /* Finds the sites of `iseq`, registers them, and arms them. Pushes the child iseqs onto
- * `children` when given. */
-static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***children, size_t *child_count,
-                     size_t *child_capacity) {
+ * `nested` when given. */
+static void arm_iseq(const rb_iseq_t *iseq, long file, bool initialiser, pending_iseqs_t *nested) {
   struct rb_iseq_constant_body *body = (struct rb_iseq_constant_body *)ISEQ_BODY(iseq);
   st.stats.iseqs_scanned++;
   if (!body || body->iseq_size == 0 || !ISEQ_EXECUTABLE_P(iseq)) return;
@@ -648,28 +698,9 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***childr
   bool had_original = ISEQ_ORIGINAL_ISEQ(iseq) != NULL;
   VALUE *original = rb_iseq_original_iseq(iseq);
 
-  if (children) {
-    if (body->catch_table) {
-      for (unsigned int i = 0; i < body->catch_table->size; i++) {
-        const struct iseq_catch_table_entry *entry = UNALIGNED_MEMBER_PTR(body->catch_table, entries[i]);
-        if (entry->iseq && grow((void **)children, child_capacity, *child_count + 1, sizeof(rb_iseq_t *))) {
-          (*children)[(*child_count)++] = entry->iseq;
-        }
-      }
-    }
-    for (unsigned int pos = 0; pos < body->iseq_size;) {
-      VALUE insn = original[pos];
-      const char *types = &rb_vm_insn_op_base[rb_vm_insn_op_offset[insn]];
-      for (int j = 0; types[j]; j++) {
-        if (types[j] == OPERAND_TYPE_ISEQ) {
-          const rb_iseq_t *child = (const rb_iseq_t *)original[pos + j + 1];
-          if (child && grow((void **)children, child_capacity, *child_count + 1, sizeof(rb_iseq_t *))) {
-            (*children)[(*child_count)++] = child;
-          }
-        }
-      }
-      pos += rb_vm_insn_len_info[insn];
-    }
+  if (nested) {
+    child_push_t push = {nested, initialiser};
+    each_child(iseq, original, push_child, &push);
   }
 
   if (file < 0 || map_get(iseq) >= 0) goto done;
@@ -682,7 +713,7 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***childr
     st.stats.iseqs_skipped++;
     goto done;
   }
-  uint8_t base_flags = SITE_ARMED | (initialiser_label_p(rb_iseq_label(iseq)) ? SITE_INIT : 0);
+  uint8_t base_flags = SITE_ARMED | (initialiser ? SITE_INIT : 0);
 
   unsigned int size = body->iseq_size;
   int *lines = malloc(entry_count * sizeof(int));
@@ -801,18 +832,16 @@ done:
 
 /* Arms an iseq and everything nested in it. */
 static void arm_tree(const rb_iseq_t *top) {
-  const rb_iseq_t **stack = NULL;
-  size_t count = 0, capacity = 0;
-  if (!grow((void **)&stack, &capacity, 1, sizeof(rb_iseq_t *))) return;
-  stack[count++] = top;
-  while (count > 0) {
-    const rb_iseq_t *iseq = stack[--count];
-    if (map_get(iseq) >= 0) continue;
-    long file = classify_path(rb_iseq_path(iseq));
+  pending_iseqs_t pending = {0};
+  push_pending(&pending, top, initialiser_root_p(top));
+  while (pending.count > 0) {
+    pending_iseq_t next = pending.items[--pending.count];
+    if (map_get(next.iseq) >= 0) continue;
+    long file = classify_path(rb_iseq_path(next.iseq));
     if (file < 0) continue; /* nested code shares its parent's file */
-    arm_iseq(iseq, file, &stack, &count, &capacity);
+    arm_iseq(next.iseq, file, next.initialiser, &pending);
   }
-  free(stack);
+  free(pending.items);
 }
 
 /* ---- the hook ------------------------------------------------------------- */
@@ -1155,15 +1184,31 @@ static double now_seconds(void) {
   return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
 }
 
+static void add_to_set(const rb_iseq_t *child, void *set) { st_insert((st_table *)set, (st_data_t)child, 1); }
+
+/* Arms repository code loaded before the start from its outermost live iseqs, so that
+ * each nested iseq knows whether it is initialiser code. An iseq whose holder was
+ * collected can only run again if it is a method or a block, which are never
+ * initialiser code. */
 static void arm_loaded_code(void) {
   iseq_list_t list = {0};
   rb_objspace_each_objects(collect_iseqs, &list);
+  st_table *nested = st_init_numtable();
+  size_t repository_count = 0;
   for (size_t i = 0; i < list.count; i++) {
     const rb_iseq_t *iseq = list.items[i];
-    if (map_get(iseq) >= 0) continue;
-    long file = classify_path(rb_iseq_path(iseq));
-    if (file >= 0) arm_iseq(iseq, file, NULL, NULL, NULL);
+    if (classify_path(rb_iseq_path(iseq)) < 0) continue;
+    list.items[repository_count++] = iseq;
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    if (!body || body->iseq_size == 0 || !ISEQ_EXECUTABLE_P(iseq)) continue;
+    bool had_original = ISEQ_ORIGINAL_ISEQ(iseq) != NULL;
+    each_child(iseq, rb_iseq_original_iseq(iseq), add_to_set, nested);
+    if (!had_original) ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
   }
+  for (size_t i = 0; i < repository_count; i++) {
+    if (!st_is_member(nested, (st_data_t)list.items[i])) arm_tree(list.items[i]);
+  }
+  st_free_table(nested);
   free(list.items);
 }
 
