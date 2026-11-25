@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "timeout"
+
 require_relative "../../../../lib/datadog/ci/test_tracing/component"
 require_relative "../../../../lib/datadog/ci/test_optimization_cache/component"
 
@@ -1004,8 +1006,9 @@ RSpec.describe Datadog::CI::TestTracing::Component do
               end
             end
             writer.close
-            identities = Marshal.load(reader)
-            _, child_status = Process.wait2(pid)
+            identities, child_status = Timeout.timeout(5) do
+              [Marshal.load(reader), Process.wait2(pid).last]
+            end
             expect(child_status).to be_success
             expect(identities).to eq([session.id, test_module.id, suite.id])
             expect(test_tracing.active_test_suite("suite")).to be(suite)
@@ -1014,7 +1017,19 @@ RSpec.describe Datadog::CI::TestTracing::Component do
           ensure
             reader&.close
             writer&.close
-            Process.waitpid(pid) if pid && !child_status
+            if pid && !child_status
+              begin
+                Process.kill("KILL", pid)
+              rescue Errno::ESRCH
+                nil
+              ensure
+                begin
+                  Process.waitpid(pid)
+                rescue Errno::ECHILD
+                  nil
+                end
+              end
+            end
             test_module&.finish
             session&.finish
           end
