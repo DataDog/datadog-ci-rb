@@ -18,6 +18,12 @@ module Datadog
         # that forked and writes the same record at exit, with the lines it ran outside
         # contexts since the fork.
         #
+        # Bundler keeps the RUBYOPT of the process that first loaded it in
+        # ENV_BUNDLER_ORIGINAL_RUBYOPT, and a process that runs a command with Bundler's
+        # original or unbundled environment restores RUBYOPT from it, as puma does when it
+        # restarts or prunes the bundle. When the child's environment has that entry, the
+        # bootstrap is appended there too, so that such commands stay covered.
+        #
         # Collection starts when a test session collects line coverage
         # (LineCoverage#collect_child_processes). A child started without a context gets
         # the unowned prefix. A spawn that clears the environment (unsetenv_others) or
@@ -27,6 +33,9 @@ module Datadog
         class ChildProcesses
           ENV_CONTEXT = "DD_TEST_OPTIMIZATION_TIA_LINE_COVERAGE_CHILD"
           ENV_RUBYOPT = "RUBYOPT"
+          ENV_BUNDLER_ORIGINAL_RUBYOPT = "BUNDLER_ORIG_RUBYOPT"
+          # What Bundler keeps in ENV_BUNDLER_ORIGINAL_RUBYOPT when RUBYOPT was not set.
+          BUNDLER_UNSET = "BUNDLER_ENVIRONMENT_PRESERVER_INTENTIONALLY_NIL"
           BOOTSTRAP = File.expand_path("child_bootstrap.rb", File.dirname(__FILE__))
           CONFIG_FILE = "config"
           RECORD_SUFFIX = ".lines"
@@ -195,18 +204,17 @@ module Datadog
           def environment(caller_environment)
             return nil if caller_environment&.key?(ENV_CONTEXT)
 
-            rubyopt = if caller_environment&.key?(ENV_RUBYOPT)
-              caller_environment[ENV_RUBYOPT]
-            else
-              ENV[ENV_RUBYOPT]
-            end
+            rubyopt = child_value(caller_environment, ENV_RUBYOPT)
             return nil if caller_environment&.key?(ENV_RUBYOPT) && rubyopt.nil?
 
             prefix = record_spawn(self.class.context)
-            {
+            entries = {
               ENV_CONTEXT => prefix,
-              ENV_RUBYOPT => [rubyopt, @require_option].compact.reject(&:empty?).join(" ")
+              ENV_RUBYOPT => with_bootstrap(rubyopt)
             }
+            bundler_rubyopt = bundler_original_rubyopt(child_value(caller_environment, ENV_BUNDLER_ORIGINAL_RUBYOPT))
+            entries[ENV_BUNDLER_ORIGINAL_RUBYOPT] = bundler_rubyopt if bundler_rubyopt
+            entries
           end
 
           def record_spawn(serial)
@@ -257,6 +265,28 @@ module Datadog
           end
 
           private
+
+          # The value the child gets: the caller's entry, or the inherited one.
+          def child_value(caller_environment, name)
+            if caller_environment&.key?(name)
+              caller_environment[name]
+            else
+              ENV[name]
+            end
+          end
+
+          def with_bootstrap(rubyopt)
+            [rubyopt, @require_option].compact.reject(&:empty?).join(" ")
+          end
+
+          # The saved RUBYOPT with the bootstrap, or nil when Bundler saved none. Bundler
+          # 2.5 and later also save and restore an empty RUBYOPT.
+          def bundler_original_rubyopt(saved)
+            return nil if saved.nil?
+            return @require_option if saved == BUNDLER_UNSET
+
+            with_bootstrap(saved)
+          end
 
           def prefix_for(serial)
             serial.nil? ? UNOWNED : "c#{serial}"

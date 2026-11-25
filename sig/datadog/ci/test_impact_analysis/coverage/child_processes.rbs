@@ -7,6 +7,10 @@ module Datadog
 
           ENV_RUBYOPT: String
 
+          ENV_BUNDLER_ORIGINAL_RUBYOPT: String
+
+          BUNDLER_UNSET: String
+
           BOOTSTRAP: String
 
           CONFIG_FILE: String
@@ -74,6 +78,12 @@ module Datadog
           def remove_directory: () -> void
 
           private
+
+          def child_value: (Hash[untyped, untyped]? caller_environment, String name) -> String?
+
+          def with_bootstrap: (String? rubyopt) -> String
+
+          def bundler_original_rubyopt: (String? saved) -> String?
 
           def prefix_for: (Integer? serial) -> String
 

@@ -15,6 +15,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
   let(:ruby) { RbConfig.ruby }
   let(:leaf_lines) { [1, 2, 3, 4] }
   let(:line_coverage) { line_coverage_class.start(root: root, ignored_paths: []) }
+  let(:bootstrap_option) { "-r#{described_class::BOOTSTRAP}" }
 
   before do
     require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
@@ -187,8 +188,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
   end
 
   describe "the environment of a child" do
-    let(:bootstrap_option) { "-r#{described_class::BOOTSTRAP}" }
-
     it "names the test's records and appends the bootstrap to the caller's RUBYOPT" do
       output = nil
       in_test { output = unbundled { IO.popen({"RUBYOPT" => "-W0"}, [ruby, fixture("environment")], &:read) } }
@@ -233,6 +232,102 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
 
       expect(eval(output)).to eq([nil, "-W0"]) # rubocop:disable Security/Eval
       expect(child_processes).to be_nil
+    end
+  end
+
+  describe "the RUBYOPT that Bundler saved, in the environment of a child" do
+    let(:print_saved_rubyopt) { [ruby, "-e", "print ENV['BUNDLER_ORIG_RUBYOPT'].inspect"] }
+
+    def saved_rubyopt_in_child(caller_environment)
+      output = nil
+      in_test { output = unbundled { IO.popen(caller_environment, print_saved_rubyopt, &:read) } }
+      output
+    end
+
+    it "gets the bootstrap appended" do
+      expect(saved_rubyopt_in_child({"BUNDLER_ORIG_RUBYOPT" => "-W0"})).to eq("-W0 #{bootstrap_option}".inspect)
+    end
+
+    it "gets the bootstrap when Bundler saved that RUBYOPT was not set" do
+      saved = saved_rubyopt_in_child({"BUNDLER_ORIG_RUBYOPT" => described_class::BUNDLER_UNSET})
+
+      expect(saved).to eq(bootstrap_option.inspect)
+    end
+
+    it "gets the bootstrap when it is empty" do
+      expect(saved_rubyopt_in_child({"BUNDLER_ORIG_RUBYOPT" => ""})).to eq(bootstrap_option.inspect)
+    end
+
+    it "gets the bootstrap appended when the child inherits it" do
+      output = nil
+      in_test do
+        output = unbundled do
+          ENV["BUNDLER_ORIG_RUBYOPT"] = "-W0"
+          IO.popen(print_saved_rubyopt, &:read)
+        end
+      end
+
+      expect(output).to eq("-W0 #{bootstrap_option}".inspect)
+    end
+
+    it "is not added when Bundler saved none" do
+      expect(saved_rubyopt_in_child({})).to eq("nil")
+    end
+
+    it "stays unset when the caller unsets it" do
+      expect(saved_rubyopt_in_child({"BUNDLER_ORIG_RUBYOPT" => nil})).to eq("nil")
+    end
+  end
+
+  # As puma does when it restarts or prunes the bundle.
+  describe "a program that a child runs with Bundler's original environment" do
+    def run_with_original_environment(*program)
+      stdout, stderr, status = unbundled do
+        Open3.capture3({"BUNDLER_ORIG_RUBYOPT" => "-W0"}, ruby, fixture("unbundled_exec"), *program)
+      end
+      [stdout, stderr, status.success?]
+    end
+
+    it "is covered, but the lines that the child runs before it executes the program are lost" do
+      coverage = in_test do
+        unbundled do
+          system(
+            {"BUNDLER_ORIG_RUBYOPT" => described_class::BUNDLER_UNSET},
+            ruby, fixture("unbundled_exec"), ruby, fixture("leaf")
+          )
+        end
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+      # A process that executes another program never runs its exit handlers.
+      expect(coverage).not_to have_key(relative("unbundled_exec"))
+    end
+
+    it "runs uncovered and unchanged in another Ruby" do
+      result = nil
+      coverage = in_test do
+        File.write(File.join(child_processes.directory, "config"), "ruby 0.0.0 0 0 other\n/nonexistent.so\n#{root}")
+        result = run_with_original_environment(ruby, "-e", "print ENV['RUBYOPT']")
+        run_with_original_environment(ruby, fixture("leaf"))
+      end
+
+      expect(result).to eq(["-W0 #{bootstrap_option}", "", true])
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+
+    it "runs uncovered and unchanged when the collector does not load" do
+      result = nil
+      coverage = in_test do
+        File.write(
+          File.join(child_processes.directory, "config"),
+          [described_class.identity, "/nonexistent/datadog_ci_native.so", root].join("\n")
+        )
+        result = run_with_original_environment(ruby, "-e", "print ENV['RUBYOPT']")
+        run_with_original_environment(ruby, fixture("leaf"))
+      end
+
+      expect(result).to eq(["-W0 #{bootstrap_option}", "", true])
+      expect(coverage).not_to have_key(relative("leaf"))
     end
   end
 
