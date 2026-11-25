@@ -10,6 +10,8 @@ module Datadog
 
             private
 
+            def all_examples_skipped?: (Integer first_example) -> bool
+
             def datadog_integration: () -> Datadog::CI::Contrib::Integration
 
             def datadog_configuration: () -> Datadog::CI::Contrib::RSpec::Configuration::Settings

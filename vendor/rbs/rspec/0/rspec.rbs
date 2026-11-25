@@ -39,6 +39,8 @@ class RSpec::Core::ConfigurationOptions
 end
 
 class RSpec::Core::Runner
+  attr_reader configuration: RSpec::Core::Configuration
+
   def initialize: (RSpec::Core::ConfigurationOptions configuration) -> void
 
   def run: (untyped stdout, untyped stderr) -> Integer
@@ -59,7 +61,12 @@ end
 class RSpec::Core::NullReporter
 end
 
+class RSpec::Core::Reporter
+  attr_reader examples: Array[RSpec::Core::Example]
+end
+
 class RSpec::Core::Configuration
+  def reporter: () -> RSpec::Core::Reporter
   def dry_run?: () -> bool
 end
 

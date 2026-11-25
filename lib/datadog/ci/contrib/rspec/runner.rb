@@ -40,6 +40,7 @@ module Datadog
 
               test_module = test_tracing_component.start_test_module(Ext::FRAMEWORK)
 
+              first_example = configuration.reporter.examples.length
               result = super
               return result unless test_module && test_session
               # distributed test session must end in the parent process (for RSpec it would be parallel_tests CLI)
@@ -53,6 +54,9 @@ module Datadog
                 test_session.skipped!(reason: "No tests were executed")
                 test_module.set_internal_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
                 test_session.set_internal_tag(CI::Ext::Test::TAG_SESSION_EMPTY_REASON, "zero_tests")
+              elsif all_examples_skipped?(first_example)
+                test_module.skipped!(reason: "All tests were skipped")
+                test_session.skipped!(reason: "All tests were skipped")
               else
                 test_module.passed!
                 test_session.passed!
@@ -64,6 +68,13 @@ module Datadog
             end
 
             private
+
+            def all_examples_skipped?(first_example)
+              examples = configuration.reporter.examples
+              examples.length > first_example && (first_example...examples.length).all? do |index|
+                examples[index].execution_result.status == :pending
+              end
+            end
 
             def datadog_integration
               CI::Contrib::Instrumentation.fetch_integration(:rspec)

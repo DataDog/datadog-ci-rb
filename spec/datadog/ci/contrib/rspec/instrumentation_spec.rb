@@ -1581,6 +1581,10 @@ RSpec.describe "RSpec instrumentation" do
         expect(test_spans).to all have_skip_status
         expect(test_spans).to all have_test_tag(:itr_skipped_by_itr, "true")
         expect(first_test_suite_span).to have_skip_status
+        [test_module_span, test_session_span].each do |span|
+          expect(span).to have_skip_status
+          expect(span).not_to have_test_tag("test.session.empty_reason")
+        end
       end
 
       it "sends test session level tags" do
@@ -2312,7 +2316,9 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_suite_spans).to have(1).item
       expect(test_suite_spans.first).to have_skip_status
 
-      expect(test_session_span).to have_pass_status
+      expect(test_session_span).to have_skip_status
+      expect(test_module_span).to have_skip_status
+      expect(test_session_span).not_to have_test_tag("test.session.empty_reason")
       expect(test_session_span).to have_test_tag(:early_flake_enabled, "true")
     end
   end
@@ -2456,6 +2462,10 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_spans).to all have_skip_status
       expect(test_spans).to all have_test_tag(:is_test_disabled)
       expect(first_test_suite_span).to have_skip_status
+      [test_module_span, test_session_span].each do |span|
+        expect(span).to have_skip_status
+        expect(span).not_to have_test_tag("test.session.empty_reason")
+      end
     end
 
     it "does not run context hooks" do
@@ -3445,7 +3455,7 @@ RSpec.describe "RSpec instrumentation" do
       expect(test_spans).to have(1).item
       expect(first_test_span).to have_skip_status
       [test_session_span, test_module_span].each do |span|
-        expect(span).to have_pass_status
+        expect(span).to have_skip_status
         expect(span).not_to have_test_tag("test.session.empty_reason")
       end
     end
@@ -3473,6 +3483,76 @@ RSpec.describe "RSpec instrumentation" do
           expect(span).not_to have_test_tag(:skip_reason)
           expect(span).not_to have_test_tag("test.session.empty_reason")
         end
+      end
+    end
+  end
+
+  context "when all selected examples are skipped" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+    end
+
+    [false, true].each do |skip_in_hook|
+      it "reports skipped parents for #{skip_in_hook ? "runtime" : "metadata"} skips" do
+        exit_code = with_new_rspec_environment do
+          RSpec.describe "Skipped examples", skip: !skip_in_hook do
+            before { skip "unsupported runtime" } if skip_in_hook
+
+            it("first") { raise "must not execute" }
+            it("second") { raise "must not execute" }
+          end
+          options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+          RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+        end
+
+        expect(exit_code).to eq(0)
+        expect(test_spans).to have(2).items
+        expect(test_spans).to all(have_skip_status)
+        [test_suite_spans.first, test_module_span, test_session_span].each do |span|
+          expect(span).to have_skip_status
+          expect(span).not_to have_test_tag("test.session.empty_reason")
+        end
+      end
+    end
+
+    it "does not reuse passed examples from a previous reporter run" do
+      exit_codes = with_new_rspec_environment do
+        passed_group = RSpec.describe "Earlier run" do
+          it("passed") { expect(true).to be(true) }
+        end
+        skipped_group = RSpec.describe "Later run", skip: true do
+          it("skipped") { raise "must not execute" }
+        end
+        RSpec.configuration.output_stream = StringIO.new
+        options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        runner = RSpec::Core::Runner.new(options)
+        [runner.run_specs([passed_group]), runner.run_specs([skipped_group])]
+      end
+
+      expect(exit_codes).to eq([0, 0])
+      sessions = spans.select { |span| span.type == "test_session_end" }
+      modules = spans.select { |span| span.type == "test_module_end" }
+      [sessions, modules].each do |parents|
+        expect(parents.map { |span| span.get_tag("test.status") }).to eq(["pass", "skip"])
+        expect(parents).to all(satisfy { |span| span.get_tag("test.session.empty_reason").nil? })
+      end
+    end
+
+    it "keeps a mixed session passed when one example executes" do
+      exit_code = with_new_rspec_environment do
+        RSpec.describe "Mixed examples" do
+          it("skipped", skip: true) { raise "must not execute" }
+          it("passed") { expect(true).to be(true) }
+        end
+        options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation])
+        RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+      end
+
+      expect(exit_code).to eq(0)
+      expect(test_spans.map { |span| span.get_tag("test.status") }).to contain_exactly("skip", "pass")
+      [test_module_span, test_session_span].each do |span|
+        expect(span).to have_pass_status
+        expect(span).not_to have_test_tag("test.session.empty_reason")
       end
     end
   end
