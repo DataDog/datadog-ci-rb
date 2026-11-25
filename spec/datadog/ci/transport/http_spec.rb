@@ -11,17 +11,58 @@ RSpec.describe Datadog::CI::Transport::HTTP do
   let(:ssl) { true }
   let(:options) { {} }
 
+  it "delivers requests while an example mocks the Ruby engine" do
+    listener = TCPServer.new("127.0.0.1", 0)
+    received = Queue.new
+    server = Thread.new do
+      connection = listener.accept
+      request_line = connection.gets
+      headers = {}
+      while (line = connection.gets) && line != "\r\n"
+        name, value = line.split(":", 2)
+        headers[name.downcase] = value.strip
+      end
+      received << [request_line, connection.read(headers.fetch("content-length").to_i)]
+      connection.write("HTTP/1.1 202 Accepted\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}")
+    ensure
+      connection&.close
+    end
+    transport = described_class.new(host: "127.0.0.1", port: listener.addr[1], ssl: false, timeout: 1)
+    stub_const("RUBY_ENGINE", "jruby")
+
+    response = transport.request(path: "/probe", payload: "probe", headers: {})
+
+    expect(response).to be_ok
+    expect(received.pop).to eq(["POST /probe HTTP/1.1\r\n", "probe"])
+  ensure
+    server&.kill
+    server&.join
+    listener&.close
+  end
+
+  it "returns a request error for an invalid proxy without bypassing it" do
+    ClimateControl.modify("http_proxy" => "http://invalid proxy", "HTTP_PROXY" => nil) do
+      transport = described_class.new(host: "198.51.100.1", port: 80, ssl: false)
+      expect(Datadog::CI::Transport::Adapters::NetHttpClient).not_to receive(:net_http)
+
+      response = transport.request(path: "/probe", payload: "probe", headers: {})
+
+      expect(response).not_to be_ok
+      expect(response.error).to be_a(URI::InvalidURIError)
+    end
+  end
+
   shared_context "HTTP adapter stub" do
     let(:adapter) { instance_double(::Datadog::CI::Transport::Adapters::Net) }
 
     before do
       allow(::Datadog::CI::Transport::Adapters::Net).to receive(:new)
         .with(
-          hostname: transport.host,
-          port: transport.port,
-          timeout_seconds: transport.timeout,
-          ssl: transport.ssl,
-          uds_path: transport.uds_path
+          hostname: host,
+          port: port,
+          timeout_seconds: options.fetch(:timeout, described_class::DEFAULT_TIMEOUT),
+          ssl: options[:ssl].nil? || options[:ssl],
+          uds_path: options[:uds_path]
         ).and_return(adapter)
     end
   end

@@ -30,6 +30,9 @@ Learn more on our [official website](https://docs.datadoghq.com/tests/) and chec
 test events, coverage, retries, and transport. Tracer resets and shutdown do not
 reset the CI session. Use `Datadog::CI.shutdown!` to flush and stop CI delivery.
 
+CI transport resolves proxy configuration before tests run. Set proxy variables before CI starts.
+Each request uses a fresh HTTP client.
+
 To collect spans from tracing integrations, add both gems to your Gemfile:
 
 ```ruby

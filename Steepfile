@@ -15,6 +15,7 @@ target :lib do
   library "date"
   library "minitest"
   library "net-http"
+  library "cgi"
   library "zlib"
   library "securerandom"
   library "tmpdir"

@@ -13,6 +13,10 @@ module Datadog
 
           @uds_path: String?
 
+          @proxy_error: StandardError?
+
+          @proxy_options: [String?, Integer?, String?, String?]?
+
           attr_reader hostname: String?
 
           attr_reader port: Integer?

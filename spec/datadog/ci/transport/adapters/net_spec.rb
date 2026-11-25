@@ -22,7 +22,8 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
       allow(Datadog::CI::Transport::Adapters::NetHttpClient).to receive(:net_http)
         .with(
           adapter.hostname,
-          adapter.port
+          adapter.port,
+          anything
         ).and_return(http_connection)
 
       allow(http_connection).to receive(:open_timeout=).with(adapter.timeout)
@@ -30,6 +31,28 @@ RSpec.describe Datadog::CI::Transport::Adapters::Net do
       allow(http_connection).to receive(:use_ssl=).with(adapter.ssl)
 
       allow(http_connection).to receive(:start).and_yield(http_connection)
+    end
+  end
+
+  describe "proxy configuration" do
+    let(:client) { Datadog::CI::Transport::Adapters::NetHttpClient }
+
+    it "preserves proxy credentials and the proxy bypass list" do
+      ClimateControl.modify("http_proxy" => "http://user%2Bname:pass%2Bword@proxy.example:1234", "HTTP_PROXY" => nil,
+        "no_proxy" => nil, "NO_PROXY" => nil) do
+        options = client.proxy_options("198.51.100.1", 80)
+        expect(options).to eq(["proxy.example", 1234, "user+name", "pass+word"])
+        connection = client.net_http("198.51.100.1", 80, options)
+        expect(connection.proxy_address).to eq("proxy.example")
+        expect(connection.proxy_port).to eq(1234)
+        expect(connection.proxy_user).to eq("user+name")
+        expect(connection.proxy_pass).to eq("pass+word")
+        expect(connection.proxy_from_env?).to be(false)
+
+        ClimateControl.modify("no_proxy" => "198.51.100.1") do
+          expect(client.proxy_options("198.51.100.1", 80)).to eq([nil, nil, nil, nil])
+        end
+      end
     end
   end
 

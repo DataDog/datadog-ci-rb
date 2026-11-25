@@ -26,15 +26,25 @@ module Datadog
             @timeout = timeout_seconds
             @ssl = ssl
             @uds_path = uds_path
+            @proxy_error = nil
+            @proxy_options = begin
+              NetHttpClient.proxy_options(hostname, port) unless uds_path
+            rescue => error
+              @proxy_error = error
+              nil
+            end
           end
 
           def open(&block)
+            proxy_error = @proxy_error
+            raise proxy_error if proxy_error
+
             path = uds_path
             req = if path
               NetHttpClient.unix_socket_net_http(path)
             else
               # Without a socket, the agent settings or the agentless intake give a host.
-              NetHttpClient.net_http(_ = hostname, port).tap { |http| http.use_ssl = ssl }
+              NetHttpClient.net_http(_ = hostname, port, @proxy_options).tap { |http| http.use_ssl = ssl }
             end
 
             req.open_timeout = req.read_timeout = timeout

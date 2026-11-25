@@ -10,7 +10,9 @@ module Datadog
           def self.get_request: (String path, Hash[String, String] headers) -> Net::HTTP::Get
           def self.post_request: (String path, Hash[String, String] headers) -> Net::HTTP::Post
 
-          def self.net_http: (String hostname, Integer? port) -> Net::HTTP
+          def self.proxy_options: (String? hostname, Integer? port) -> [String?, Integer?, String?, String?]
+
+          def self.net_http: (String hostname, Integer? port, ?[String?, Integer?, String?, String?]? proxy_options) -> Net::HTTP
 
           def self.original_net_http: () -> singleton(Net::HTTP)
 

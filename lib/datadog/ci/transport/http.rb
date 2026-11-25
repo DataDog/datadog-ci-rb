@@ -48,6 +48,8 @@ module Datadog
           @timeout = timeout
           @ssl = ssl.nil? || ssl
           @compress = compress.nil? ? false : compress
+          # Resolve proxy configuration before tests replace runtime constants.
+          adapter
         end
 
         def request(

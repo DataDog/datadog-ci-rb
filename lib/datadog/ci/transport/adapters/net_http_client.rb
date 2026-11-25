@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "net/http"
+require "cgi/util"
 require "socket"
 require "timeout"
 
@@ -30,8 +31,19 @@ module Datadog
           CONNECTION_CONSTRUCTOR = original_net_http.method(:new)
           private_constant :CONNECTION_CONSTRUCTOR
 
-          def self.net_http(hostname, port)
-            CONNECTION_CONSTRUCTOR.call(hostname, port)
+          def self.proxy_options(hostname, port)
+            proxy = ::URI::HTTP.new("http", nil, hostname, port, nil, nil, nil, nil, nil).find_proxy
+            user = proxy&.user
+            password = proxy&.password
+            [proxy&.hostname, proxy&.port, (CGI.unescape(user) if user), (CGI.unescape(password) if password)]
+          end
+
+          def self.net_http(hostname, port, proxy_options = nil)
+            if proxy_options
+              CONNECTION_CONSTRUCTOR.call(hostname, port, *proxy_options)
+            else
+              CONNECTION_CONSTRUCTOR.call(hostname, port)
+            end
           end
 
           # A Net::HTTP connection to an agent on a Unix domain socket. Like the
@@ -39,7 +51,7 @@ module Datadog
           # leaves it alone; the host and port only go in the Host header.
           def self.unix_socket_net_http(uds_path)
             # @type var http: Net::HTTP & UnixSocketConnection
-            http = _ = net_http("localhost", 80).extend(UnixSocketConnection)
+            http = _ = net_http("localhost", 80, [nil, nil, nil, nil]).extend(UnixSocketConnection)
             http.uds_path = uds_path
             http
           end
