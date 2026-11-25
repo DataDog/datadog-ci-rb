@@ -161,6 +161,35 @@ RSpec.describe "RSpec instrumentation with per-test line coverage" do
     expect(parts.fetch("init")).to eq(init_lines)
   end
 
+  it "sends no record for a test skipped before it starts, and the lines that ran for one that skips itself" do
+    path = fixture_path
+    run_rspec do
+      load path
+
+      RSpec.describe "Skips" do
+        before(:context) { LineCoverageGeometry.setup_value }
+
+        xit "is skipped by its declaration" do
+          LineCoverageGeometry::Square.new(2).area
+        end
+
+        it "is skipped by its metadata", skip: "not today" do
+          LineCoverageGeometry::Square.new(2).area
+        end
+
+        it "skips itself" do
+          LineCoverageGeometry::Square.new(2).area
+          skip "not today"
+        end
+      end
+    end
+
+    expect(test_spans).to have(3).items
+    expect(find_coverage_for_test(test_span_named("is skipped by its declaration"))).to be_nil
+    expect(find_coverage_for_test(test_span_named("is skipped by its metadata"))).to be_nil
+    expect(lines_of(find_coverage_for_test(test_span_named("skips itself")))).to include(5, 6, 9, 22)
+  end
+
   it "sends line bitmaps, and shared records without a span id" do
     path = fixture_path
     run_rspec do
