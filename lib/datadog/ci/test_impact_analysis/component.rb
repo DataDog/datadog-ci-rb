@@ -300,7 +300,11 @@ module Datadog
           Telemetry.code_coverage_finished(test)
 
           line_coverage = @line_coverage
-          return write_line_coverage_event(test, line_coverage) if line_coverage
+          if line_coverage
+            return if test.line_coverage_closed_by_integration?
+
+            return write_line_coverage_event(test, line_coverage)
+          end
 
           coverage = stop_coverage
 
@@ -320,6 +324,18 @@ module Datadog
             coverage: coverage,
             custom_impacted_files: test.lock_custom_impacted_files
           )
+        end
+
+        # Writes the line coverage of a test marked with
+        # Test#line_coverage_closed_by_integration! once the test's code has run.
+        #
+        # @param test [Datadog::CI::Test] The test, after its span finished
+        # @return [Datadog::CI::TestImpactAnalysis::Coverage::Event, nil] The coverage event or nil
+        def close_line_coverage(test)
+          line_coverage = @line_coverage
+          return if line_coverage.nil? || !enabled? || !code_coverage?
+
+          write_line_coverage_event(test, line_coverage)
         end
 
         # Clears stored context coverage for a specific context.

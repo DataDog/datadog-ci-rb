@@ -41,16 +41,19 @@ RSpec.describe "Minitest instrumentation with per-test line coverage" do
     test_spans.find { |span| span.name == name }
   end
 
-  def run_minitest
+  def run_minitest(class_name, &body)
     load fixture_path
     Minitest::Runnable.reset
     Minitest.seed = 1
 
-    Class.new(Minitest::Test) do
-      def self.name
-        "LineCoverageMinitestSkips"
-      end
+    test_class = Class.new(Minitest::Test, &body)
+    test_class.define_singleton_method(:name) { class_name }
 
+    Minitest.run([])
+  end
+
+  it "sends no record for a test that Test Management disables, and the lines that ran for one that skips itself" do
+    run_minitest("LineCoverageMinitestSkips") do
       def test_passes
         assert_equal 4, LineCoverageGeometry::Square.new(2).area
       end
@@ -65,12 +68,6 @@ RSpec.describe "Minitest instrumentation with per-test line coverage" do
       end
     end
 
-    Minitest.run([])
-  end
-
-  it "sends no record for a test that Test Management disables, and the lines that ran for one that skips itself" do
-    run_minitest
-
     expect(test_spans).to have(3).items
     expect(test_span_named("test_disabled")).to have_skip_status
     expect(find_coverage_for_test(test_span_named("test_disabled"))).to be_nil
@@ -78,5 +75,22 @@ RSpec.describe "Minitest instrumentation with per-test line coverage" do
     expect(test_span_named("test_skips_itself")).to have_skip_status
     expect(lines_of(find_coverage_for_test(test_span_named("test_skips_itself")))).to include(5, 6, 9)
     expect(lines_of(find_coverage_for_test(test_span_named("test_passes")))).to include(5, 6, 9)
+  end
+
+  it "credits to the test the code that its after_teardown runs after calling super" do
+    run_minitest("LineCoverageMinitestTeardown") do
+      def after_teardown
+        super
+        LineCoverageGeometry.teardown_value
+      end
+
+      def test_area
+        assert_equal 4, LineCoverageGeometry::Square.new(2).area
+      end
+    end
+
+    expect(test_spans).to have(1).item
+    expect(first_test_span).to have_pass_status
+    expect(lines_of(find_coverage_for_test(first_test_span))).to include(9, 32)
   end
 end

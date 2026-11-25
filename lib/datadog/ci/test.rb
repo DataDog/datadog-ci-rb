@@ -368,6 +368,19 @@ module Datadog
         @skipped_before_start == true
       end
 
+      # Marks a test whose framework runs some of the test's own code after the test span
+      # finishes. Its framework integration then closes the test's line coverage itself, with
+      # TestImpactAnalysis::Component#close_line_coverage, once that code has run.
+      # @internal
+      def line_coverage_closed_by_integration!
+        @line_coverage_closed_by_integration = true
+      end
+
+      # @internal
+      def line_coverage_closed_by_integration?
+        @line_coverage_closed_by_integration == true
+      end
+
       # @internal
       def record_final_status
         status = get_tag(Ext::Test::TAG_STATUS)
