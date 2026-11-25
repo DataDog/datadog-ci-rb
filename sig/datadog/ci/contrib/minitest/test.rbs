@@ -39,6 +39,8 @@ module Datadog
 
             def run_without_datadog_reentry: () -> ::Minitest::Result
 
+            def run_with_line_coverage: [T] (Datadog::CI::Test? test_span) { () -> T } -> T
+
             def start_datadog_test_suite_if_parallel: () -> Datadog::CI::TestSuite?
 
             def start_datadog_test: () -> Datadog::CI::Test?
@@ -58,6 +60,8 @@ module Datadog
             def datadog_configuration: () -> Datadog::CI::Contrib::Minitest::Configuration::Settings
 
             def _dd_test_tracing_component: () -> Datadog::CI::TestTracing::Component
+
+            def _dd_test_impact_analysis_component: () -> (Datadog::CI::TestImpactAnalysis::Component | Datadog::CI::TestImpactAnalysis::NullComponent)
 
             def finish_with_result: (Datadog::CI::Span? span, String result_code) -> void
           end

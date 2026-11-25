@@ -93,6 +93,8 @@ module Datadog
 
         def on_test_finished: (Datadog::CI::Test test, Datadog::CI::TestTracing::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
 
+        def close_line_coverage: (Datadog::CI::Test test) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+
         def on_test_suite_started: (Datadog::CI::TestSuite test_suite) -> void
 
         def on_test_suite_finished: (Datadog::CI::TestSuite test_suite, Datadog::CI::TestTracing::Context context) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?

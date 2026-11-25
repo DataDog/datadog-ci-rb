@@ -75,6 +75,10 @@ module Datadog
           nil
         end
 
+        def close_line_coverage(_test)
+          nil
+        end
+
         def on_test_suite_started(_test_suite)
         end
 

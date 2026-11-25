@@ -48,7 +48,7 @@ module Datadog
                 test_span = start_datadog_test
                 return skip_datadog_test(test_span) if test_span&.should_skip?
 
-                super
+                run_with_line_coverage(test_span) { super }
               ensure
                 @_dd_run_in_progress = false
               end
@@ -154,6 +154,20 @@ module Datadog
               test_span
             end
 
+            # The test span finishes in after_teardown below, but an after_teardown defined by
+            # the test's class can run more code after it calls super. The test's line coverage
+            # includes that code, so it is closed when the test's run returns.
+            def run_with_line_coverage(test_span)
+              return yield if test_span.nil?
+
+              test_span.line_coverage_closed_by_integration!
+              begin
+                yield
+              ensure
+                _dd_test_impact_analysis_component.close_line_coverage(test_span)
+              end
+            end
+
             def start_datadog_test_suite_if_parallel
               return unless Helpers.parallel?(self.class)
 
@@ -233,6 +247,10 @@ module Datadog
 
             def _dd_test_tracing_component
               Datadog.send(:components).test_tracing
+            end
+
+            def _dd_test_impact_analysis_component
+              Datadog.send(:components).test_impact_analysis
             end
           end
 
