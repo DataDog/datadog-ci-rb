@@ -100,10 +100,12 @@ RSpec.describe "RSpec instrumentation with per-test line coverage" do
       end
     end
 
+    # Before Ruby 3.4, a singleton class body ends with an end event on its last line.
+    singleton_class_end = RUBY_VERSION < "3.4"
     # The top level, the module body, its rescue clause and the singleton class body in it.
-    init_lines = [2, 3, 4, 9, 10, 11, 12, 15, 24, 34]
+    init_lines = ([2, 3, 4, 9, 10, 11, 12, 15, 24, 34] + (singleton_class_end ? [7] : [])).sort
     expect(lines_of(find_coverage_for_test(test_span_named("opens a singleton class in a method")), file))
-      .to eq((init_lines + [16, 17, 18, 19, 21, 22]).sort)
+      .to eq((init_lines + [16, 17, 18, 19, 21, 22] + (singleton_class_end ? [20] : [])).sort)
     expect(lines_of(find_coverage_for_test(test_span_named("defines a class in an eval string")), file))
       .to eq((init_lines + [25, 26, 27, 28, 29, 30, 32, 33]).sort)
     # Runs after the class bodies above, which are not initialiser code, so it does not get their lines.
