@@ -608,6 +608,7 @@ module Datadog
 
           if @code_coverage_enabled && test_skipping_mode?
             @line_coverage_test_session_id = test_session.id.to_s
+            line_coverage.collect_child_processes
             Datadog.logger.debug("Collecting per-test line coverage")
             return
           end

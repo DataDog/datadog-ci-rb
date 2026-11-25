@@ -18,8 +18,10 @@ module Datadog
         # that forked and writes the same record at exit, with the lines it ran outside
         # contexts since the fork.
         #
-        # A child started without a context gets the unowned prefix. A spawn that clears
-        # the environment (unsetenv_others) or RUBYOPT starts an uncovered child.
+        # Collection starts when a test session collects line coverage
+        # (LineCoverage#collect_child_processes). A child started without a context gets
+        # the unowned prefix. A spawn that clears the environment (unsetenv_others) or
+        # RUBYOPT starts an uncovered child.
         #
         # @internal
         class ChildProcesses
