@@ -11,7 +11,7 @@ module Datadog
         #
         # The spawn methods are hooked (see ChildProcessHooks). A spawn adds two entries to
         # the child's environment: ENV_CONTEXT, the prefix of the spawning context's records
-        # in a transport directory, and RUBYOPT with "-r" and the child bootstrap appended.
+        # in a transport directory, and RUBYOPT with "-r" and the child bootstrap first.
         # A Ruby child loads the bootstrap, which opens one context for the whole process
         # and writes its lines to "<prefix>.<pid>.lines" at exit; its own children inherit
         # the environment and do the same. A forked child keeps the context of the thread
@@ -22,7 +22,7 @@ module Datadog
         # ENV_BUNDLER_ORIGINAL_RUBYOPT, and a process that runs a command with Bundler's
         # original or unbundled environment restores RUBYOPT from it, as puma does when it
         # restarts or prunes the bundle. When the child's environment has that entry, the
-        # bootstrap is appended there too, so that such commands stay covered.
+        # bootstrap goes first there too, so that such commands stay covered.
         #
         # Collection starts when a test session collects line coverage
         # (LineCoverage#collect_child_processes). A child started without a context gets
@@ -275,8 +275,11 @@ module Datadog
             end
           end
 
+          # The bootstrap goes first, so that the child's collector already runs when the
+          # libraries that RUBYOPT names load. bundler/setup is one: it runs the gemspec,
+          # which may load repository files.
           def with_bootstrap(rubyopt)
-            [rubyopt, @require_option].compact.reject(&:empty?).join(" ")
+            [@require_option, rubyopt].compact.reject(&:empty?).join(" ")
           end
 
           # The saved RUBYOPT with the bootstrap, or nil when Bundler saved none. Bundler

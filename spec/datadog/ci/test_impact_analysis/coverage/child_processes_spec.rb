@@ -188,22 +188,22 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
   end
 
   describe "the environment of a child" do
-    it "names the test's records and appends the bootstrap to the caller's RUBYOPT" do
+    it "names the test's records and puts the bootstrap first in the caller's RUBYOPT" do
       output = nil
       in_test { output = unbundled { IO.popen({"RUBYOPT" => "-W0"}, [ruby, fixture("environment")], &:read) } }
       prefix, rubyopt = eval(output) # rubocop:disable Security/Eval
 
       expect(File.dirname(prefix)).to eq(child_processes.directory)
       expect(File.basename(prefix)).to match(/\Ac\d+\z/)
-      expect(rubyopt).to eq("-W0 #{bootstrap_option}")
+      expect(rubyopt).to eq("#{bootstrap_option} -W0")
     end
 
-    it "appends the bootstrap to the inherited RUBYOPT" do
+    it "puts the bootstrap first in the inherited RUBYOPT" do
       output = nil
       in_test { output = IO.popen([ruby, fixture("environment")], &:read) }
       _prefix, rubyopt = eval(output) # rubocop:disable Security/Eval
 
-      expect(rubyopt).to eq([ENV["RUBYOPT"], bootstrap_option].compact.reject(&:empty?).join(" "))
+      expect(rubyopt).to eq([bootstrap_option, ENV["RUBYOPT"]].compact.reject(&:empty?).join(" "))
     end
 
     it "does not cover a child whose environment the caller replaces" do
@@ -244,8 +244,8 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       output
     end
 
-    it "gets the bootstrap appended" do
-      expect(saved_rubyopt_in_child({"BUNDLER_ORIG_RUBYOPT" => "-W0"})).to eq("-W0 #{bootstrap_option}".inspect)
+    it "gets the bootstrap first" do
+      expect(saved_rubyopt_in_child({"BUNDLER_ORIG_RUBYOPT" => "-W0"})).to eq("#{bootstrap_option} -W0".inspect)
     end
 
     it "gets the bootstrap when Bundler saved that RUBYOPT was not set" do
@@ -258,7 +258,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       expect(saved_rubyopt_in_child({"BUNDLER_ORIG_RUBYOPT" => ""})).to eq(bootstrap_option.inspect)
     end
 
-    it "gets the bootstrap appended when the child inherits it" do
+    it "gets the bootstrap first when the child inherits it" do
       output = nil
       in_test do
         output = unbundled do
@@ -267,7 +267,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
         end
       end
 
-      expect(output).to eq("-W0 #{bootstrap_option}".inspect)
+      expect(output).to eq("#{bootstrap_option} -W0".inspect)
     end
 
     it "is not added when Bundler saved none" do
@@ -311,7 +311,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
         run_with_original_environment(ruby, fixture("leaf"))
       end
 
-      expect(result).to eq(["-W0 #{bootstrap_option}", "", true])
+      expect(result).to eq(["#{bootstrap_option} -W0", "", true])
       expect(coverage).not_to have_key(relative("leaf"))
     end
 
@@ -326,7 +326,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
         run_with_original_environment(ruby, fixture("leaf"))
       end
 
-      expect(result).to eq(["-W0 #{bootstrap_option}", "", true])
+      expect(result).to eq(["#{bootstrap_option} -W0", "", true])
       expect(coverage).not_to have_key(relative("leaf"))
     end
   end
@@ -438,6 +438,43 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       expect(status).to be_success, output
       expect(output).to include("1 example, 0 failures")
       expect(coverage).to have_key(relative("nested_session"))
+    end
+
+    it "keeps those constants for datadog-ci when auto instrumentation in RUBYOPT loads it later" do
+      output = nil
+      coverage = in_test do
+        output = IO.popen(
+          {"RUBYOPT" => "-rbundler/setup -rdatadog/ci/auto_instrument"},
+          [ruby, fixture("loads_datadog_ci")], err: [:child, :out], &:read
+        )
+      end
+
+      expect(output).to eq("[true, true, 1]")
+      expect(coverage).to have_key(relative("loads_datadog_ci"))
+    end
+
+    it "keeps them, and loads the extension once, in a program that a child runs with Bundler's original environment" do
+      output = nil
+      coverage = in_test do
+        output = IO.popen(
+          {"BUNDLER_ORIG_RUBYOPT" => "-rbundler/setup -r datadog/ci/auto_instrument"},
+          [ruby, fixture("original_exec"), ruby, fixture("loads_datadog_ci")], err: [:child, :out], &:read
+        )
+      end
+
+      expect(output).to eq("[true, true, 1]")
+      expect(coverage).to have_key(relative("loads_datadog_ci"))
+    end
+
+    it "loads nothing but the native extension, by its path, before the libraries that RUBYOPT names" do
+      environment = {"RUBYOPT" => "-r#{fixture("loaded_features")}"}
+      covered = nil
+      in_test { covered = unbundled { IO.popen(environment, [ruby, "-e", "0"], &:read) } }
+      line_coverage_class.stop_collector
+      uncovered = unbundled { IO.popen(environment, [ruby, "-e", "0"], &:read) }
+
+      loaded = eval(covered) - eval(uncovered) # rubocop:disable Security/Eval
+      expect(loaded).to contain_exactly(described_class::BOOTSTRAP, described_class.loaded_extension_path)
     end
 
     it "leaves the source code features unavailable, not broken, in a child that loads them by code" do

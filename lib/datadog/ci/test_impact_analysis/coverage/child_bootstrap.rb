@@ -10,7 +10,8 @@
 #
 # It runs in any Ruby such a process uses, so it keeps to syntax that every Ruby parses,
 # defines no constant, method or global, and removes the Datadog modules that loading the
-# collector created. Any failure leaves the process uncovered and otherwise unchanged.
+# collector created, unless datadog-ci loads after it from RUBYOPT. Any failure leaves the
+# process uncovered and otherwise unchanged.
 begin
   # The same name as ChildProcesses::ENV_CONTEXT, which this file cannot load.
   dd_ci_line_coverage_prefix = ENV["DD_TEST_OPTIMIZATION_TIA_LINE_COVERAGE_CHILD"]
@@ -35,9 +36,15 @@ begin
     require dd_ci_line_coverage_config[1]
     dd_ci_line_collector = Object.const_get("Datadog::CI::TestImpactAnalysis::Coverage::LineCollector")
 
-    # The process may define its own Datadog, or test whether one is defined.
+    # The process may define its own Datadog, or test whether one is defined. Auto
+    # instrumentation in RUBYOPT loads datadog-ci after this file, and datadog-ci then finds
+    # the extension loaded, so it needs the modules that loading the extension defined.
     dd_ci_line_coverage_created = ["Datadog", "CI", "TestImpactAnalysis", "Coverage"][dd_ci_line_coverage_defined.size]
-    if dd_ci_line_coverage_created
+    dd_ci_line_coverage_libraries = ENV["RUBYOPT"].to_s.scan(/(?:\A|\s)-r\s*(\S+)/).flatten
+    dd_ci_line_coverage_rubyopt_loads_datadog_ci = dd_ci_line_coverage_libraries.any? do |dd_ci_line_coverage_library|
+      %r{(?:\A|/)datadog/ci/auto_instrument(?:\.rb)?\z} =~ dd_ci_line_coverage_library.to_s
+    end
+    if dd_ci_line_coverage_created && !dd_ci_line_coverage_rubyopt_loads_datadog_ci
       dd_ci_line_coverage_owner = dd_ci_line_coverage_defined.inject(Object) { |owner, name| owner.const_get(name, false) }
       dd_ci_line_coverage_owner.send(:remove_const, dd_ci_line_coverage_created)
     end
