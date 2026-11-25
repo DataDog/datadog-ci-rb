@@ -3,6 +3,7 @@
 #include "file_serialization.h"
 #include "file_dependencies.h"
 #include "iseq_collector.h"
+#include "line_coverage.h"
 
 void Init_datadog_ci_native(void) {
   // Coverage::DDCov
@@ -15,4 +16,7 @@ void Init_datadog_ci_native(void) {
   // SourceCode
   Init_datadog_method_inspect();
   Init_dd_ci_iseq_collector();
+
+  // Coverage::LineCollector
+  Init_dd_ci_line_coverage();
 }
