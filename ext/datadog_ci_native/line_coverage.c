@@ -134,6 +134,17 @@ typedef struct {
   long guards_checked; /* serial of the context whose opening last checked the guards */
 } iseq_record_t;
 
+/* An armed iseq in the map, with what a trap needs next to the key: a trap then reads no
+ * record, which would mostly miss the cache. */
+typedef struct {
+  uintptr_t iseq; /* 0: empty slot */
+  uint32_t record;
+  uint32_t file;
+  uint32_t first_site;
+  uint32_t site_count;
+  uint32_t last_site; /* the last site that trapped: an iseq's lines mostly trap in order */
+} armed_iseq_t;
+
 /* A YJIT guard: a trace instruction at a pc where YJIT can enter an iseq. */
 typedef struct {
   VALUE *slot;
@@ -153,12 +164,20 @@ typedef struct {
   uint32_t scratch_epoch;
 } file_t;
 
+/* A site a context recorded, with its file and line: reading a context back then touches
+ * no site, which would mostly miss the cache. */
+typedef struct {
+  uint32_t site;
+  uint32_t file;
+  uint32_t line;
+} hit_t;
+
 typedef struct {
   long serial; /* 0: free slot */
   bool open;
   bool fixture;
   uint64_t *bits; /* one bit per site */
-  uint32_t *hits; /* sites recorded, in order */
+  hit_t *hits;    /* sites recorded, in order */
   size_t hit_count;
   size_t hit_capacity;
 } context_t;
@@ -182,6 +201,9 @@ static struct {
   site_t *sites;
   size_t site_count;
   size_t site_capacity;
+  /* each site's pos, by site index: searching them touches few cache lines */
+  uint32_t *site_positions;
+  size_t position_capacity;
 
   iseq_record_t *records;
   size_t record_count;
@@ -197,14 +219,14 @@ static struct {
   size_t spare_counter_array_count;
   size_t spare_counter_array_capacity;
 
-  /* open addressing, iseq pointer -> record index + 1 */
-  uintptr_t *map_keys;
-  uint32_t *map_values;
+  /* open addressing by iseq pointer */
+  armed_iseq_t *map;
   size_t map_capacity;
   size_t map_count;
-  /* the last lookup; consecutive traps usually come from one iseq */
+  /* the last lookup, NULL entry for an iseq that is not armed; consecutive traps usually
+   * come from one iseq */
   const rb_iseq_t *cached_iseq;
-  long cached_record;
+  armed_iseq_t *cached_entry;
 
   file_t *files;
   size_t file_count;
@@ -222,6 +244,7 @@ static struct {
   uint64_t *unowned_bits;
   id_vector_t unowned_hits;
   id_vector_t dirty;
+  id_vector_t touched; /* files with lines in the record being built */
   uint32_t epoch;
 
   /* untraced encoding by instruction number, learned while arming; 0 while unknown */
@@ -301,33 +324,29 @@ static inline bool bit_test_and_set(uint64_t *bits, uint32_t id) {
   return was_set;
 }
 
-static bool line_bitmap_set(line_bitmap_t *bitmap, uint32_t line) {
-  uint32_t byte = line >> 3;
-  if (byte >= bitmap->length) {
-    uint32_t new_length = bitmap->length ? bitmap->length : 16;
-    while (new_length <= byte) new_length *= 2;
-    uint8_t *grown = realloc(bitmap->bytes, new_length);
-    if (!grown) {
-      st.stats.allocation_failures++;
-      return false;
-    }
-    memset(grown + bitmap->length, 0, new_length - bitmap->length);
-    bitmap->bytes = grown;
-    bitmap->length = new_length;
+static inline void bit_clear(uint64_t *bits, uint32_t id) { bits[id >> 6] &= ~((uint64_t)1 << (id & 63)); }
+
+static bool line_bitmap_reserve(line_bitmap_t *bitmap, uint32_t length) {
+  if (length <= bitmap->length) return true;
+  uint32_t new_length = bitmap->length ? bitmap->length : 16;
+  while (new_length < length) new_length *= 2;
+  uint8_t *grown = realloc(bitmap->bytes, new_length);
+  if (!grown) {
+    st.stats.allocation_failures++;
+    return false;
   }
-  /* Java order: bit (line & 7) of byte (line >> 3). */
-  bitmap->bytes[byte] |= (uint8_t)(1 << (line & 7));
+  memset(grown + bitmap->length, 0, new_length - bitmap->length);
+  bitmap->bytes = grown;
+  bitmap->length = new_length;
   return true;
 }
 
-static void line_bitmap_or(line_bitmap_t *target, const line_bitmap_t *source) {
-  for (uint32_t byte = 0; byte < source->length; byte++) {
-    uint8_t value = source->bytes[byte];
-    if (!value) continue;
-    for (int bit = 0; bit < 8; bit++) {
-      if (value & (1 << bit)) line_bitmap_set(target, byte * 8 + bit);
-    }
-  }
+static bool line_bitmap_set(line_bitmap_t *bitmap, uint32_t line) {
+  uint32_t byte = line >> 3;
+  if (!line_bitmap_reserve(bitmap, byte + 1)) return false;
+  /* Java order: bit (line & 7) of byte (line >> 3). */
+  bitmap->bytes[byte] |= (uint8_t)(1 << (line & 7));
+  return true;
 }
 
 static uint32_t line_bitmap_used_length(const line_bitmap_t *bitmap) {
@@ -336,59 +355,68 @@ static uint32_t line_bitmap_used_length(const line_bitmap_t *bitmap) {
   return length;
 }
 
+static void line_bitmap_or(line_bitmap_t *target, const line_bitmap_t *source) {
+  uint32_t length = line_bitmap_used_length(source);
+  if (!line_bitmap_reserve(target, length)) return;
+  for (uint32_t byte = 0; byte < length; byte++) target->bytes[byte] |= source->bytes[byte];
+}
+
 /* ---- iseq map ------------------------------------------------------------ */
 
 static inline size_t map_slot(uintptr_t key, size_t capacity) {
   return (size_t)(((uint64_t)(key >> 4) * 11400714819323198485ull) >> 20) & (capacity - 1);
 }
 
-static long map_get(const rb_iseq_t *iseq) {
-  if (!st.map_capacity) return -1;
+static armed_iseq_t *map_find(const rb_iseq_t *iseq) {
+  if (!st.map_capacity) return NULL;
   uintptr_t key = (uintptr_t)iseq;
   size_t index = map_slot(key, st.map_capacity);
   for (;;) {
-    uintptr_t current = st.map_keys[index];
-    if (current == key) return (long)st.map_values[index] - 1;
-    if (current == 0) return -1;
+    armed_iseq_t *entry = &st.map[index];
+    if (entry->iseq == key) return entry;
+    if (entry->iseq == 0) return NULL;
     index = (index + 1) & (st.map_capacity - 1);
   }
 }
 
-static void map_insert_unchecked(uintptr_t key, uint32_t value) {
-  size_t index = map_slot(key, st.map_capacity);
-  while (st.map_keys[index] != 0 && st.map_keys[index] != key) index = (index + 1) & (st.map_capacity - 1);
-  if (st.map_keys[index] == 0) st.map_count++;
-  st.map_keys[index] = key;
-  st.map_values[index] = value;
+static void map_insert_unchecked(const armed_iseq_t *armed) {
+  size_t index = map_slot(armed->iseq, st.map_capacity);
+  while (st.map[index].iseq != 0 && st.map[index].iseq != armed->iseq) index = (index + 1) & (st.map_capacity - 1);
+  if (st.map[index].iseq == 0) st.map_count++;
+  st.map[index] = *armed;
 }
 
-static bool map_put(const rb_iseq_t *iseq, uint32_t record) {
+static bool map_put(const iseq_record_t *record, uint32_t record_index) {
   if ((st.map_count + 1) * 2 > st.map_capacity) {
     size_t old_capacity = st.map_capacity;
-    uintptr_t *old_keys = st.map_keys;
-    uint32_t *old_values = st.map_values;
+    armed_iseq_t *old_map = st.map;
     size_t new_capacity = old_capacity ? old_capacity * 2 : 4096;
-    uintptr_t *keys = calloc(new_capacity, sizeof(uintptr_t));
-    uint32_t *values = calloc(new_capacity, sizeof(uint32_t));
-    if (!keys || !values) {
-      free(keys);
-      free(values);
+    armed_iseq_t *map = calloc(new_capacity, sizeof(armed_iseq_t));
+    if (!map) {
       st.stats.allocation_failures++;
       return false;
     }
-    st.map_keys = keys;
-    st.map_values = values;
+    st.map = map;
     st.map_capacity = new_capacity;
     st.map_count = 0;
     for (size_t i = 0; i < old_capacity; i++) {
-      if (old_keys[i]) map_insert_unchecked(old_keys[i], old_values[i]);
+      if (old_map[i].iseq) map_insert_unchecked(&old_map[i]);
     }
-    free(old_keys);
-    free(old_values);
+    free(old_map);
   }
-  map_insert_unchecked((uintptr_t)iseq, record + 1);
-  /* The cache may hold this address as unknown: a freed iseq's slot can be reused. */
+  armed_iseq_t armed = {
+      .iseq = (uintptr_t)record->iseq,
+      .record = record_index,
+      .file = record->file,
+      .first_site = record->first_site,
+      .site_count = record->site_count,
+      /* Wraps for the first site: the hint then names the first site. */
+      .last_site = record->first_site - 1,
+  };
+  map_insert_unchecked(&armed);
+  /* The cache may hold this address as unknown, or point into the old table. */
   st.cached_iseq = NULL;
+  st.cached_entry = NULL;
   return true;
 }
 
@@ -625,6 +653,10 @@ static bool add_site(uint32_t pos, struct iseq_insn_info_entry *entry, uint32_t 
   size_t capacity = st.site_capacity;
   if (!grow((void **)&st.sites, &capacity, st.site_count + 1, sizeof(site_t))) return false;
   st.site_capacity = capacity;
+  size_t position_capacity = st.position_capacity;
+  if (!grow((void **)&st.site_positions, &position_capacity, st.site_count + 1, sizeof(uint32_t))) return false;
+  st.position_capacity = position_capacity;
+  st.site_positions[st.site_count] = pos;
   site_t *site = &st.sites[st.site_count++];
   memset(site, 0, sizeof(*site));
   site->pos = pos;
@@ -703,7 +735,7 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, bool initialiser, pending
     each_child(iseq, original, push_child, &push);
   }
 
-  if (file < 0 || map_get(iseq) >= 0) goto done;
+  if (file < 0 || map_find(iseq)) goto done;
 
   unsigned int entry_count = body->insns_info.size;
   struct iseq_insn_info_entry *entries = (struct iseq_insn_info_entry *)body->insns_info.body;
@@ -817,7 +849,7 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, bool initialiser, pending
   record->file = (uint32_t)file;
   record->first_site = (uint32_t)first;
   record->site_count = (uint32_t)count;
-  if (!map_put(iseq, (uint32_t)st.record_count)) {
+  if (!map_put(record, (uint32_t)st.record_count)) {
     /* Leave the instructions armed but unknown to the hook; it ignores them. */
     st.site_count = first;
     goto done;
@@ -836,7 +868,7 @@ static void arm_tree(const rb_iseq_t *top) {
   push_pending(&pending, top, initialiser_root_p(top));
   while (pending.count > 0) {
     pending_iseq_t next = pending.items[--pending.count];
-    if (map_get(next.iseq) >= 0) continue;
+    if (map_find(next.iseq)) continue;
     long file = classify_path(rb_iseq_path(next.iseq));
     if (file < 0) continue; /* nested code shares its parent's file */
     arm_iseq(next.iseq, file, next.initialiser, &pending);
@@ -890,15 +922,14 @@ static void untrace_if_unneeded(site_t *site, const rb_iseq_t *iseq) {
 }
 
 /* Whether another site of the same insn-info entry is armed. Sites of one entry are
- * adjacent: entries cover consecutive instructions, and sites are ordered by position. */
+ * adjacent: entries cover consecutive instructions, sites are ordered by position, and
+ * the sites of other iseqs point into other tables. */
 static bool entry_armed_elsewhere(const site_t *site) {
-  const iseq_record_t *record = &st.records[site->record];
   size_t index = (size_t)(site - st.sites);
-  size_t first = record->first_site, end = first + record->site_count;
-  for (size_t i = index; i > first && st.sites[i - 1].entry == site->entry; i--) {
+  for (size_t i = index; i > 0 && st.sites[i - 1].entry == site->entry; i--) {
     if (st.sites[i - 1].flags & SITE_ARMED) return true;
   }
-  for (size_t i = index + 1; i < end && st.sites[i].entry == site->entry; i++) {
+  for (size_t i = index + 1; i < st.site_count && st.sites[i].entry == site->entry; i++) {
     if (st.sites[i].flags & SITE_ARMED) return true;
   }
   return false;
@@ -930,11 +961,12 @@ static void arm(site_t *site) {
   *site->slot = site->trace;
 }
 
-static long find_site(const iseq_record_t *record, uint32_t pos) {
-  long low = record->first_site, high = (long)record->first_site + record->site_count - 1;
+/* Sites of one iseq are ordered by position. */
+static long find_site_between(uint32_t first_site, uint32_t site_count, uint32_t pos) {
+  long low = first_site, high = (long)first_site + site_count - 1;
   while (low <= high) {
     long middle = (low + high) >> 1;
-    uint32_t current = st.sites[middle].pos;
+    uint32_t current = st.site_positions[middle];
     if (current == pos) return middle;
     if (current < pos) {
       low = middle + 1;
@@ -943,6 +975,19 @@ static long find_site(const iseq_record_t *record, uint32_t pos) {
     }
   }
   return -1;
+}
+
+static long find_site(const iseq_record_t *record, uint32_t pos) {
+  return find_site_between(record->first_site, record->site_count, pos);
+}
+
+/* Tries the site after the iseq's last trap first. */
+static long find_trapped_site(const armed_iseq_t *armed, uint32_t pos) {
+  uint32_t next = armed->last_site + 1;
+  if (next >= armed->first_site && next < armed->first_site + armed->site_count && st.site_positions[next] == pos) {
+    return next;
+  }
+  return find_site_between(armed->first_site, armed->site_count, pos);
 }
 
 /* ---- YJIT ------------------------------------------------------------------- */
@@ -1085,26 +1130,26 @@ static void on_trap(const rb_trace_arg_t *trace_arg) {
   st.stats.hook_calls++;
   const rb_control_frame_t *cfp = trace_arg->cfp;
   const rb_iseq_t *iseq = cfp->iseq;
-  long record_index;
+  armed_iseq_t *armed;
   if (iseq == st.cached_iseq) {
-    record_index = st.cached_record;
+    armed = st.cached_entry;
   } else {
-    record_index = map_get(iseq);
+    armed = map_find(iseq);
     st.cached_iseq = iseq;
-    st.cached_record = record_index;
+    st.cached_entry = armed;
   }
-  if (record_index < 0) {
+  if (!armed) {
     st.stats.foreign_calls++;
     return;
   }
-  const iseq_record_t *record = &st.records[record_index];
   /* The VM advanced pc past the instruction before calling hooks. */
   long pos = (long)(cfp->pc - ISEQ_BODY(iseq)->iseq_encoded) - 1;
-  long site_index = find_site(record, (uint32_t)pos);
+  long site_index = find_trapped_site(armed, (uint32_t)pos);
   if (site_index < 0) {
     st.stats.foreign_calls++;
     return;
   }
+  armed->last_site = (uint32_t)site_index;
   site_t *site = &st.sites[site_index];
   if (!(site->flags & SITE_ARMED)) {
     st.stats.idle_calls++;
@@ -1128,12 +1173,19 @@ static void on_trap(const rb_trace_arg_t *trace_arg) {
   context_t *context = context_for(trace_arg->ec);
   if (context) {
     if (!bit_test_and_set(context->bits, id)) {
-      if (!grow((void **)&context->hits, &context->hit_capacity, context->hit_count + 1, sizeof(uint32_t))) return;
-      context->hits[context->hit_count++] = id;
+      if (!grow((void **)&context->hits, &context->hit_capacity, context->hit_count + 1, sizeof(hit_t))) {
+        /* Stays armed, so the next execution tries again. */
+        bit_clear(context->bits, id);
+        return;
+      }
+      context->hits[context->hit_count++] = (hit_t){id, armed->file, site->line};
     }
   } else {
     st.stats.unowned_traps++;
-    if (!bit_test_and_set(st.unowned_bits, id)) id_vector_push(&st.unowned_hits, id);
+    if (!bit_test_and_set(st.unowned_bits, id) && !id_vector_push(&st.unowned_hits, id)) {
+      bit_clear(st.unowned_bits, id);
+      return;
+    }
   }
 
   for (size_t i = 0; i < st.open_count; i++) {
@@ -1149,8 +1201,6 @@ static void on_trap(const rb_trace_arg_t *trace_arg) {
 }
 
 
-static void on_trap_hook(VALUE data, const rb_trace_arg_t *trace_arg) { on_trap(trace_arg); }
-
 static void on_script_compiled(VALUE data, const rb_trace_arg_t *trace_arg) {
   VALUE compiled = trace_arg->data;
   if (RB_TYPE_P(compiled, T_ARRAY)) compiled = RARRAY_AREF(compiled, 1);
@@ -1158,6 +1208,49 @@ static void on_script_compiled(VALUE data, const rb_trace_arg_t *trace_arg) {
   VALUE gc_was_disabled = rb_gc_disable();
   arm_tree((const rb_iseq_t *)compiled);
   if (gc_was_disabled == Qfalse) rb_gc_enable();
+}
+
+static void on_event(VALUE data, const rb_trace_arg_t *trace_arg) {
+  if (trace_arg->event & TRAP_EVENT) {
+    on_trap(trace_arg);
+  } else {
+    on_script_compiled(data, trace_arg);
+  }
+}
+
+#define HOOK_FLAGS (RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG)
+
+/* A hook in Ruby's hook list, as vm_trace.c defines it from Ruby 2.7 to 4.0. */
+typedef struct event_hook {
+  rb_event_hook_flag_t hook_flags;
+  rb_event_flag_t events;
+  rb_event_hook_func_t func;
+  VALUE data;
+  struct event_hook *next;
+  struct {
+    rb_thread_t *th;
+    unsigned int target_line;
+  } filter;
+} event_hook_t;
+
+/* Every event Ruby's Coverage fires walks the whole hook list, so with SimpleCov each
+ * hook costs a few nanoseconds per executed line. Ruby refuses one hook for an internal
+ * event, the trap, and a normal one, script_compiled, though it dispatches both through
+ * the same list: the compile event joins the trap hook once Ruby has linked it. Returns
+ * false, changing nothing, unless the head of the list is that hook. */
+static bool add_compile_event_to_trap_hook(void) {
+  /* Where Ruby linked the hook. GET_EC() needs a symbol that libruby does not export. */
+  const rb_thread_t *thread = (const rb_thread_t *)RTYPEDDATA_DATA(rb_thread_current());
+  if (!thread || !thread->ec) return false;
+  rb_hook_list_t *list = rb_ec_ractor_hooks(thread->ec);
+  event_hook_t *hook = (event_hook_t *)list->hooks;
+  if (!hook || hook->func != (rb_event_hook_func_t)on_event || hook->data != Qnil || hook->events != TRAP_EVENT ||
+      hook->hook_flags != HOOK_FLAGS || hook->filter.th != NULL || hook->filter.target_line != 0) {
+    return false;
+  }
+  hook->events |= RUBY_EVENT_SCRIPT_COMPILED;
+  list->events |= RUBY_EVENT_SCRIPT_COMPILED;
+  return true;
 }
 
 /* ---- discovery of loaded code ---------------------------------------------- */
@@ -1229,10 +1322,7 @@ static void rearm_dirty_sites(void) {
 }
 
 static void context_clear(context_t *context) {
-  for (size_t i = 0; i < context->hit_count; i++) {
-    uint32_t id = context->hits[i];
-    context->bits[id >> 6] &= ~((uint64_t)1 << (id & 63));
-  }
+  for (size_t i = 0; i < context->hit_count; i++) bit_clear(context->bits, context->hits[i].site);
   context->hit_count = 0;
 }
 
@@ -1305,25 +1395,24 @@ static void release_context(context_t *context) {
   if (context->open) close_open_context(context);
   if (context->fixture) {
     for (size_t i = 0; i < context->hit_count; i++) {
-      site_t *site = &st.sites[context->hits[i]];
-      line_bitmap_set(&site_file(site)->suite_setup_lines, site->line);
+      const hit_t *hit = &context->hits[i];
+      line_bitmap_set(&st.files[hit->file].suite_setup_lines, hit->line);
     }
   }
   context_clear(context);
   context->serial = 0;
 }
 
-static void add_context_lines(context_t *context, uint32_t epoch, id_vector_t *touched) {
+static void add_context_lines(context_t *context, uint32_t epoch) {
   for (size_t i = 0; i < context->hit_count; i++) {
-    site_t *site = &st.sites[context->hits[i]];
-    uint32_t file_index = st.records[site->record].file;
-    file_t *file = &st.files[file_index];
+    const hit_t *hit = &context->hits[i];
+    file_t *file = &st.files[hit->file];
     if (file->scratch_epoch != epoch) {
       file->scratch_epoch = epoch;
       if (file->scratch.length) memset(file->scratch.bytes, 0, file->scratch.length);
-      id_vector_push(touched, file_index);
+      id_vector_push(&st.touched, hit->file);
     }
-    line_bitmap_set(&file->scratch, site->line);
+    line_bitmap_set(&file->scratch, hit->line);
   }
 }
 
@@ -1335,21 +1424,20 @@ static VALUE line_collector_coverage(VALUE self, VALUE serial, VALUE fixture_ser
   if (!context) return result;
 
   uint32_t epoch = ++st.epoch;
-  id_vector_t touched = {0};
-  add_context_lines(context, epoch, &touched);
+  st.touched.count = 0;
+  add_context_lines(context, epoch);
   if (RB_TYPE_P(fixture_serials, T_ARRAY)) {
     for (long i = 0; i < RARRAY_LEN(fixture_serials); i++) {
       VALUE fixture_serial = RARRAY_AREF(fixture_serials, i);
       context_t *fixture = FIXNUM_P(fixture_serial) ? context_by_serial(FIX2LONG(fixture_serial)) : NULL;
-      if (fixture && fixture != context) add_context_lines(fixture, epoch, &touched);
+      if (fixture && fixture != context) add_context_lines(fixture, epoch);
     }
   }
-  for (size_t i = 0; i < touched.count; i++) {
-    file_t *file = &st.files[touched.items[i]];
+  for (size_t i = 0; i < st.touched.count; i++) {
+    file_t *file = &st.files[st.touched.items[i]];
     line_bitmap_or(&file->scratch, &file->init_lines);
     rb_hash_aset(result, file->path, rb_str_new((const char *)file->scratch.bytes, line_bitmap_used_length(&file->scratch)));
   }
-  free(touched.items);
   release_context(context);
   return result;
 }
@@ -1424,12 +1512,12 @@ static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
   double started_at = now_seconds();
   /* Enabling an iseq event for the first time makes the VM discard JIT code compiled
    * without trace instructions. */
-  rb_add_event_hook2((rb_event_hook_func_t)on_trap_hook, TRAP_EVENT, Qnil,
-                     RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+  rb_add_event_hook2((rb_event_hook_func_t)on_event, TRAP_EVENT, Qnil, HOOK_FLAGS);
   st.trap_hook_installed = true;
-  rb_add_event_hook2((rb_event_hook_func_t)on_script_compiled, RUBY_EVENT_SCRIPT_COMPILED, Qnil,
-                     RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
-  st.compile_hook_installed = true;
+  if (!add_compile_event_to_trap_hook()) {
+    rb_add_event_hook2((rb_event_hook_func_t)on_script_compiled, RUBY_EVENT_SCRIPT_COMPILED, Qnil, HOOK_FLAGS);
+    st.compile_hook_installed = true;
+  }
 
   VALUE gc_was_disabled = rb_gc_disable();
   rearm_known_sites();
@@ -1444,7 +1532,7 @@ static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
 static VALUE line_collector_stop(VALUE self) {
   if (!st.started) return Qfalse;
   if (st.trap_hook_installed) {
-    rb_remove_event_hook((rb_event_hook_func_t)on_trap_hook);
+    rb_remove_event_hook((rb_event_hook_func_t)on_event);
     st.trap_hook_installed = false;
   }
   if (st.compile_hook_installed) {
@@ -1479,6 +1567,7 @@ static VALUE line_collector_stats(VALUE self) {
   STAT("iseqs_skipped", ULONG2NUM(st.stats.iseqs_skipped));
   STAT("spare_branch_counters", ULONG2NUM(st.spare_counter_array_count));
   STAT("yjit_guarded", st.yjit_guarded ? Qtrue : Qfalse);
+  STAT("single_hook", st.trap_hook_installed && !st.compile_hook_installed ? Qtrue : Qfalse);
   STAT("guards", ULONG2NUM(st.guard_count));
   STAT("guard_repairs", ULONG2NUM(st.stats.guard_repairs));
   STAT("yjit_invalidations", ULONG2NUM(st.stats.yjit_invalidations));
