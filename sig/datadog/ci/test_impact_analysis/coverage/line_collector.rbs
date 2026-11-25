@@ -7,6 +7,9 @@ module Datadog
         module LineCollector
           type bitmaps = Hash[String, String]
 
+          # The number of files, and a msgpack map {"filename", "bitmap"} for each.
+          type packed_bitmaps = [Integer, String]
+
           CONTEXT_KEY: Symbol
 
           def self.supported?: () -> bool
@@ -21,7 +24,7 @@ module Datadog
 
           def self.close_context: (Integer serial) -> bool
 
-          def self.coverage: (Integer serial, Array[Integer] fixture_serials) -> bitmaps
+          def self.coverage: (Integer serial, Array[Integer] fixture_serials) -> packed_bitmaps
 
           def self.release: (Integer serial) -> bool
 

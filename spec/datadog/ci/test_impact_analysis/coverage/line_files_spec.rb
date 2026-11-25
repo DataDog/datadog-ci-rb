@@ -6,7 +6,7 @@ require "stringio"
 require_relative "../../../../../lib/datadog/ci/test_impact_analysis/coverage/line_files"
 
 RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineFiles do
-  subject(:files) { described_class.new(bitmaps, custom_impacted_files) }
+  subject(:files) { described_class.from_bitmaps(bitmaps, custom_impacted_files) }
 
   # Lines 1 and 9 of lib/a.rb, line 3 of lib/b.rb.
   let(:bitmaps) do

@@ -28,7 +28,7 @@ module Datadog
             end
           end
 
-          EMPTY_COVERAGE = {}.freeze
+          EMPTY_COVERAGE = [0, ""].freeze
           EMPTY_SHARED = {}.freeze
 
           # The native collector must be loaded first.
@@ -128,8 +128,8 @@ module Datadog
           end
 
           # Closes the test's context and returns its lines, the lines of the fixtures it
-          # depends on and the initialiser lines of the files with any of those, as line
-          # bitmaps by repository-relative path.
+          # depends on and the initialiser lines of the files with any of those, as the
+          # number of files and their packed line bitmaps (see LineFiles).
           def finish_test(test_id, fixture_ids)
             @mutex.synchronize do
               context = remove_test(test_id)

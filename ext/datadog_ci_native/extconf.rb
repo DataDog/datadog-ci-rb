@@ -40,9 +40,9 @@ if headers_dir
     have_header("vm_core.h") && have_header("iseq.h") && (RUBY_VERSION < "3.3" || have_header("ractor_core.h"))
   end
   if line_coverage
-    $CPPFLAGS << " -I#{headers_dir}"
-    $defs << "-DDD_CI_LINE_COVERAGE"
-    $defs << "-DHAVE_RB_EXECUTION_CONTEXT_STORAGE" if RUBY_VERSION >= "3.2"
+    append_cppflags("-I#{headers_dir}")
+    append_cppflags("-DDD_CI_LINE_COVERAGE")
+    append_cppflags("-DHAVE_RB_EXECUTION_CONTEXT_STORAGE") if RUBY_VERSION >= "3.2"
   end
 end
 
