@@ -30,8 +30,9 @@
  * file's initialiser lines once per process and is never re-armed.
  *
  * Code compiled by YJIT never runs trace instructions, so it would ignore re-armed
- * sites. While YJIT is on, every pc where YJIT can enter a repository iseq holds a trace
- * instruction (a guard), which keeps repository code interpreted.
+ * sites. From the first context on, while YJIT is on, every pc where YJIT can enter a
+ * repository iseq holds a trace instruction (a guard), which keeps repository code
+ * interpreted. Stopping the collector leaves the guards in place.
  *
  * Contexts reach other threads and fibers through fiber storage (Ruby 3.2+), which
  * Ruby copies into every thread and fiber a context creates.
@@ -489,7 +490,7 @@ static long classify_path_uncached(VALUE path) {
   st.file_capacity = file_capacity;
   file_t *file = &st.files[st.file_count];
   memset(file, 0, sizeof(*file));
-  file->path = rb_obj_freeze(rb_str_new_cstr(relative));
+  file->path = rb_obj_freeze(rb_utf8_str_new_cstr(relative));
   result = (long)st.file_count++;
 
 done:
@@ -832,6 +833,17 @@ static inline context_t *context_for(const rb_execution_context_t *ec) {
   return context && context->open ? context : NULL;
 }
 
+/* The events targeted TracePoints enabled on the iseq. */
+static rb_event_flag_t local_hook_events(const rb_iseq_t *iseq) {
+#if RUBY_API_VERSION_MAJOR >= 4
+  /* Ruby 4 keeps an iseq's targeted hooks per ractor, behind a function libruby does
+   * not export: assume they need every event. */
+  return iseq->aux.exec.local_hooks_cnt ? RUBY_EVENT_TRACEPOINT_ALL : 0;
+#else
+  return iseq->aux.exec.local_hooks ? iseq->aux.exec.local_hooks->events : 0;
+#endif
+}
+
 /* Restores the untraced instruction unless the VM may still dispatch an event there. The
  * test is Ruby's own when it clears an event flag: once an event has been enabled, Ruby
  * relies on the instructions that carry it staying traced. The trap event does not count:
@@ -839,8 +851,7 @@ static inline context_t *context_for(const rb_execution_context_t *ec) {
  * site of the same entry is armed. */
 static void untrace_if_unneeded(site_t *site, const rb_iseq_t *iseq) {
   if ((site->flags & SITE_GUARD) || *site->slot != site->trace) return;
-  rb_event_flag_t needed = iseq->aux.exec.global_trace_events;
-  if (iseq->aux.exec.local_hooks) needed |= iseq->aux.exec.local_hooks->events;
+  rb_event_flag_t needed = iseq->aux.exec.global_trace_events | local_hook_events(iseq);
   if (site->entry->events & needed & ~TRAP_EVENT) return;
   if (site->flags & SITE_PLAIN_UNKNOWN) {
     if (!plain_for(site, &site->plain)) return;
@@ -1322,8 +1333,8 @@ static line_bitmap_t *select_scratch(file_t *file) { return &file->scratch; }
 /* Shared, in its three parts: init, suiteSetup, unowned. */
 static VALUE line_collector_shared(VALUE self) {
   VALUE result = rb_hash_new();
-  rb_hash_aset(result, rb_str_new_cstr("init"), bitmaps_hash(select_init));
-  rb_hash_aset(result, rb_str_new_cstr("suiteSetup"), bitmaps_hash(select_suite_setup));
+  rb_hash_aset(result, rb_utf8_str_new_cstr("init"), bitmaps_hash(select_init));
+  rb_hash_aset(result, rb_utf8_str_new_cstr("suiteSetup"), bitmaps_hash(select_suite_setup));
 
   uint32_t epoch = ++st.epoch;
   for (size_t i = 0; i < st.file_count; i++) {
@@ -1335,11 +1346,21 @@ static VALUE line_collector_shared(VALUE self) {
     site_t *site = &st.sites[st.unowned_hits.items[i]];
     line_bitmap_set(&site_file(site)->scratch, site->line);
   }
-  rb_hash_aset(result, rb_str_new_cstr("unowned"), bitmaps_hash(select_scratch));
+  rb_hash_aset(result, rb_utf8_str_new_cstr("unowned"), bitmaps_hash(select_scratch));
   return result;
 }
 
 /* ---- start and stop --------------------------------------------------------- */
+
+/* On a start after a stop: iseqs armed before the stop trap again, except for the
+ * initialiser lines already recorded. */
+static void rearm_known_sites(void) {
+  for (size_t i = 0; i < st.site_count; i++) {
+    site_t *site = &st.sites[i];
+    if ((site->flags & SITE_INIT) && (site->flags & SITE_INIT_SEEN)) continue;
+    arm(site);
+  }
+}
 
 static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
   if (st.started) return Qtrue;
@@ -1366,8 +1387,10 @@ static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
   st.compile_hook_installed = true;
 
   VALUE gc_was_disabled = rb_gc_disable();
+  rearm_known_sites();
   arm_loaded_code();
-  if (yjit_enabled()) enable_yjit_guards();
+  /* YJIT guards wait for the first context: until then every site still traps on its
+   * first execution, which YJIT cannot compile past. */
   if (gc_was_disabled == Qfalse) rb_gc_enable();
   st.stats.discovery_seconds = now_seconds() - started_at;
   return Qtrue;
@@ -1391,11 +1414,13 @@ static VALUE line_collector_stop(VALUE self) {
         site->entry->events &= ~TRAP_EVENT;
         site->flags &= ~SITE_ENTRY_FLAGGED;
       }
-      site->flags &= ~SITE_ARMED;
+      site->flags &= ~(SITE_ARMED | SITE_DIRTY);
       if (!(site->flags & SITE_SHARED)) untrace_if_unneeded(site, record->iseq);
     }
   }
   st.dirty.count = 0;
+  for (size_t i = 0; i < st.open_count; i++) st.contexts[st.open_contexts[i]].open = false;
+  st.open_count = 0;
   st.started = false;
   return Qtrue;
 }
