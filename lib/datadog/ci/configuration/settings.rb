@@ -293,6 +293,12 @@ module Datadog
                 o.default true
               end
 
+              option :tia_line_coverage_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_TIA_LINE_COVERAGE_ENABLED
+                o.default false
+              end
+
               option :code_coverage_report_upload_enabled do |o|
                 o.type :bool
                 o.env CI::Ext::Settings::ENV_CODE_COVERAGE_REPORT_UPLOAD_ENABLED

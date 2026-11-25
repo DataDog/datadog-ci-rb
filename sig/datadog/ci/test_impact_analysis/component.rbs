@@ -25,6 +25,8 @@ module Datadog
         @use_allocation_tracing: bool
         @static_dependencies_tracking_enabled: bool
         @opened_files_coverage_enabled: bool
+        @line_coverage: Coverage::LineCoverage?
+        @line_coverage_test_session_id: String?
         @test_skipping_mode: String
 
         @mutex: Thread::Mutex
@@ -56,10 +58,11 @@ module Datadog
           ?use_single_threaded_coverage: bool,
           ?use_allocation_tracing: bool,
           ?static_dependencies_tracking_enabled: bool,
-          ?opened_files_coverage_enabled: bool
+          ?opened_files_coverage_enabled: bool,
+          ?line_coverage_enabled: bool
         ) -> Component
 
-        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool, ?opened_files_coverage_enabled: bool) -> void
+        def initialize: (dd_env: String?, ?enabled: bool, ?coverage_writer: Datadog::CI::AsyncWriter?, ?api: Datadog::CI::Transport::Api::Base?, ?config_tags: Hash[String, String]?, ?test_skipping_mode: String, ?bundle_location: String?, ?use_single_threaded_coverage: bool, ?use_allocation_tracing: bool, ?static_dependencies_tracking_enabled: bool, ?opened_files_coverage_enabled: bool, ?line_coverage_enabled: bool) -> void
 
         def configure: (Datadog::CI::Remote::LibrarySettings remote_configuration, Datadog::CI::TestSession test_session) -> void
 
@@ -127,11 +130,19 @@ module Datadog
 
         def load_datadog_cov!: () -> bool
 
+        def start_line_coverage: () -> Coverage::LineCoverage?
+
+        def configure_line_coverage: (Datadog::CI::TestSession test_session) -> void
+
+        def write_line_coverage_event: (Datadog::CI::Test test, Coverage::LineCoverage line_coverage) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+
+        def write_shared_line_coverage: () -> void
+
         def populate_static_dependencies_map!: () -> void
 
         def enrich_coverage_with_static_dependencies: (Hash[String, untyped] coverage) -> void
 
-        def write: (Datadog::CI::TestImpactAnalysis::Coverage::Event event) -> void
+        def write: (Datadog::CI::TestImpactAnalysis::Coverage::Event | Datadog::CI::TestImpactAnalysis::Coverage::SharedEvent event) -> void
 
         def ensure_test_source_covered: (String test_source_file, Hash[String, untyped] coverage) -> void
 

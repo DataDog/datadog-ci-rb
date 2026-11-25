@@ -19,7 +19,10 @@ require_relative "../utils/telemetry"
 
 require_relative "coverage/event"
 require_relative "coverage/files"
+require_relative "coverage/line_coverage"
+require_relative "coverage/line_files"
 require_relative "coverage/opened_files_collector"
+require_relative "coverage/shared_event"
 require_relative "coverage/transport"
 require_relative "skippable"
 require_relative "telemetry"
@@ -57,7 +60,8 @@ module Datadog
           use_single_threaded_coverage: false,
           use_allocation_tracing: true,
           static_dependencies_tracking_enabled: false,
-          opened_files_coverage_enabled: true
+          opened_files_coverage_enabled: true,
+          line_coverage_enabled: false
         )
           @enabled = enabled
           @api = api
@@ -96,6 +100,18 @@ module Datadog
           @current_context_id = nil
           @current_context_id_mutex = Mutex.new
 
+          # Line coverage starts here, before the library settings say at test session start
+          # whether to collect coverage: by then the code the suite loaded has already run
+          # its initialisers.
+          @line_coverage = if @enabled && line_coverage_enabled
+            start_line_coverage
+          else
+            # A previous configuration may have started the collector.
+            Coverage::LineCoverage.stop_collector
+            nil
+          end
+          @line_coverage_test_session_id = nil
+
           Datadog.logger.debug("TestImpactAnalysis initialized with enabled: #{@enabled}")
         end
 
@@ -112,7 +128,9 @@ module Datadog
           test_session.set_internal_tag(Ext::Test::TAG_CODE_COVERAGE_ENABLED, @code_coverage_enabled)
           test_session.set_internal_tag(Ext::Test::TAG_ITR_TEST_SKIPPING_TYPE, @test_skipping_mode)
 
-          if @code_coverage_enabled && load_datadog_cov!
+          configure_line_coverage(test_session)
+
+          if @code_coverage_enabled && @line_coverage.nil? && load_datadog_cov!
             populate_static_dependencies_map!
             if @opened_files_coverage_enabled
               @opened_files_collector = Coverage::OpenedFilesCollector.new(
@@ -199,6 +217,12 @@ module Datadog
         def on_test_context_started(context_id)
           return unless context_coverage_enabled?
 
+          line_coverage = @line_coverage
+          if line_coverage
+            line_coverage.start_fixture(context_id)
+            return
+          end
+
           # Stop and store any existing context coverage before starting new one.
           # This ensures that outer context coverage is preserved when nested contexts start.
           stop_context_coverage_and_store
@@ -224,6 +248,13 @@ module Datadog
 
           return if !enabled? || !code_coverage?
           return if suite_skipping_mode?
+
+          line_coverage = @line_coverage
+          if line_coverage
+            Telemetry.code_coverage_started(test)
+            line_coverage.start_test(test.id)
+            return
+          end
 
           # Stop any in-progress context coverage and store it
           stop_context_coverage_and_store
@@ -268,6 +299,9 @@ module Datadog
           return unless code_coverage?
           Telemetry.code_coverage_finished(test)
 
+          line_coverage = @line_coverage
+          return write_line_coverage_event(test, line_coverage) if line_coverage
+
           coverage = stop_coverage
 
           # if test was skipped, we discard coverage data
@@ -296,6 +330,12 @@ module Datadog
         def clear_context_coverage(context_id)
           return unless context_coverage_enabled?
 
+          line_coverage = @line_coverage
+          if line_coverage
+            line_coverage.release_fixture(context_id)
+            return
+          end
+
           @current_context_id_mutex.synchronize do
             if @current_context_id == context_id
               # A skipped or failed before(:context) hook may leave collection active.
@@ -312,11 +352,11 @@ module Datadog
         end
 
         # Returns whether context coverage collection is enabled.
-        # Context coverage is disabled in single-threaded mode.
+        # Context coverage is disabled in single-threaded mode, which line coverage ignores.
         #
         # @return [Boolean]
         def context_coverage_enabled?
-          enabled? && code_coverage? && !suite_skipping_mode? && !@use_single_threaded_coverage
+          enabled? && code_coverage? && !suite_skipping_mode? && (!@line_coverage.nil? || !@use_single_threaded_coverage)
         end
 
         def skippable?(datadog_test_id)
@@ -425,6 +465,7 @@ module Datadog
         end
 
         def shutdown!
+          write_shared_line_coverage
           @coverage_writer&.stop
         end
 
@@ -499,6 +540,93 @@ module Datadog
           Core::Telemetry::Logger.report(e, description: "Failed to load coverage collector")
 
           @code_coverage_enabled = false
+        end
+
+        def start_line_coverage
+          return unless load_datadog_cov!
+
+          ignored_paths = []
+          bundle_location = @bundle_location
+          if bundle_location && File.directory?(bundle_location)
+            ignored_paths << File.join(File.realpath(bundle_location), "")
+          end
+
+          Coverage::LineCoverage.start(
+            root: File.realpath(Git::LocalRepository.root),
+            ignored_paths: ignored_paths
+          )
+        rescue => e
+          Datadog.logger.warn("Failed to start per-test line coverage: #{e.class}: #{e.message}")
+          nil
+        end
+
+        # Line coverage replaces file-level coverage for tests, so it runs only in test
+        # skipping mode.
+        def configure_line_coverage(test_session)
+          line_coverage = @line_coverage
+          return if line_coverage.nil?
+
+          if @code_coverage_enabled && test_skipping_mode?
+            @line_coverage_test_session_id = test_session.id.to_s
+            Datadog.logger.debug("Collecting per-test line coverage")
+            return
+          end
+
+          line_coverage.stop
+          @line_coverage = nil
+        end
+
+        # A record holds exactly the lines of the test: the opened files, static
+        # dependencies and test source file that file-level coverage adds have no lines.
+        # Unlike file-level coverage, a skipped test that ran code (an RSpec pending
+        # example) has a record. A test skipped by Test Impact Analysis ran none.
+        def write_line_coverage_event(test, line_coverage)
+          if test.skipped_by_test_impact_analysis?
+            line_coverage.discard_test(test.id)
+            return
+          end
+
+          bitmaps = line_coverage.finish_test(test.id, test.context_ids || [])
+          custom_impacted_files = test.lock_custom_impacted_files
+          if bitmaps.empty? && custom_impacted_files.empty?
+            Telemetry.code_coverage_is_empty
+            return
+          end
+
+          files = Coverage::LineFiles.new(bitmaps, custom_impacted_files)
+          Telemetry.code_coverage_files(files.size)
+
+          coverage_event = Coverage::Event.new(
+            test_id: test.id.to_s,
+            test_suite_id: test.test_suite_id.to_s,
+            test_session_id: test.test_session_id.to_s,
+            files: files
+          )
+
+          Datadog.logger.debug { "Writing line coverage event \n #{coverage_event.pretty_inspect}" }
+
+          write(coverage_event)
+
+          coverage_event
+        end
+
+        def write_shared_line_coverage
+          line_coverage = @line_coverage
+          test_session_id = @line_coverage_test_session_id
+          return if line_coverage.nil? || test_session_id.nil?
+
+          @line_coverage_test_session_id = nil
+          line_coverage.shared.each do |part, bitmaps|
+            next if bitmaps.empty?
+
+            write(
+              Coverage::SharedEvent.new(
+                test_session_id: test_session_id,
+                part: part,
+                files: Coverage::LineFiles.new(bitmaps)
+              )
+            )
+          end
         end
 
         def populate_static_dependencies_map!
