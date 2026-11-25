@@ -578,11 +578,12 @@ module Datadog
 
         # A record holds exactly the lines of the test: the opened files, static
         # dependencies and test source file that file-level coverage adds have no lines.
-        # Unlike file-level coverage, a skipped test that ran code (an RSpec pending
-        # example) has a record. A test skipped by Test Impact Analysis ran none.
+        # Unlike file-level coverage, a skipped test that ran code, such as an RSpec
+        # pending example or a test that calls skip, keeps the lines it ran. A test
+        # skipped before it starts has no record: one that Test Impact Analysis skips or
+        # Test Management disables, and one that its framework skips by declaration.
         def write_line_coverage_event(test, line_coverage)
-          # A test that skips itself while it runs keeps the lines it ran.
-          if test.skipped_by_test_impact_analysis? || test.skipped_before_start?
+          if test.should_skip? || test.skipped_before_start?
             line_coverage.discard_test(test.id)
             return
           end
