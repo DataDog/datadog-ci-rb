@@ -13,6 +13,16 @@ module Datadog
 
           def self.from_bitmaps: (LineCollector::bitmaps bitmaps, ?Array[String] custom_impacted_files) -> LineFiles
 
+          def self.pack: (LineCollector::bitmaps bitmaps) -> LineCollector::packed_bitmaps
+
+          def self.unpack: (String packed_bitmaps) -> LineCollector::bitmaps
+
+          def self.add_bitmaps: (LineCollector::bitmaps bitmaps, LineCollector::bitmaps more) -> LineCollector::bitmaps
+
+          def self.difference: (String bitmap, String? other) -> String?
+
+          def self.union: (String? left, String right) -> String
+
           def initialize: (Integer bitmap_count, String packed_bitmaps, ?Array[String] custom_impacted_files) -> void
 
           def each: () { (String file) -> void } -> void

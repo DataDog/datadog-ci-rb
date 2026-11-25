@@ -1,0 +1,474 @@
+# frozen_string_literal: true
+
+require "fileutils"
+require "open3"
+require "rbconfig"
+require "tmpdir"
+
+require_relative "../../../../../lib/datadog/ci/test_impact_analysis/coverage/line_coverage"
+
+RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
+  let(:line_coverage_class) { Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage }
+  let(:line_files) { Datadog::CI::TestImpactAnalysis::Coverage::LineFiles }
+  # Every spec starts the collector for the repository root: it never runs again for another root.
+  let(:root) { File.realpath(Datadog::CI::Git::LocalRepository.root) }
+  let(:ruby) { RbConfig.ruby }
+  let(:leaf_lines) { [1, 2, 3, 4] }
+  let(:line_coverage) { line_coverage_class.start(root: root, ignored_paths: []) }
+
+  before do
+    require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+    skip "per-test line coverage is not supported on this Ruby" unless line_coverage_class.supported?
+
+    line_coverage_class.stop_collector
+    line_coverage
+  end
+
+  after do
+    line_coverage_class.stop_collector
+  end
+
+  def fixture(name)
+    File.join(__dir__, "fixtures", "child_processes", "#{name}.rb")
+  end
+
+  def relative(name)
+    Datadog::CI::Git::LocalRepository.relative_to_root(fixture(name))
+  end
+
+  # Children start without Bundler, so that each one starts quickly and loads nothing of
+  # this repository but the bootstrap.
+  def unbundled(&block)
+    Bundler.with_unbundled_env(&block)
+  end
+
+  def coverage_of(test_id, fixture_ids = [])
+    count, packed = line_coverage.finish_test(test_id, fixture_ids)
+    line_files.new(count, packed).inspect_coverage
+  end
+
+  def in_test(test_id = 1)
+    line_coverage.start_test(test_id)
+    yield
+    coverage_of(test_id)
+  end
+
+  def child_processes
+    described_class.current
+  end
+
+  describe "the processes a test starts" do
+    it "credits the test with the lines of a child started with Kernel#system" do
+      expect(in_test { unbundled { system(ruby, fixture("leaf")) } }).to include(relative("leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines of a child started with Kernel#spawn" do
+      coverage = in_test { unbundled { Process.wait(spawn(ruby, fixture("leaf"))) } }
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines of a child started with Process.spawn and Kernel.system" do
+      coverage = in_test do
+        unbundled do
+          Process.wait(Process.spawn(ruby, fixture("leaf")))
+          Kernel.system(ruby, fixture("other_leaf"))
+        end
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines, relative("other_leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines of a child started with backticks" do
+      expect(in_test { unbundled { `#{ruby} #{fixture("leaf")}` } }).to include(relative("leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines of a child started with IO.popen or Open3" do
+      coverage = in_test do
+        unbundled do
+          IO.popen([ruby, fixture("leaf")], &:read)
+          Open3.capture2(ruby, fixture("other_leaf"))
+        end
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines, relative("other_leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines of a forked child and of a program it executes" do
+      coverage = in_test do
+        unbundled do
+          Process.wait(fork { load fixture("leaf") })
+          Process.wait(fork { exec(ruby, fixture("other_leaf")) })
+        end
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines, relative("other_leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines of a program that a child forked by IO.popen executes" do
+      coverage = in_test { unbundled { IO.popen("-") { |io| io ? io.read : exec(ruby, fixture("leaf")) } } }
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    # Ruby ends that child with _exit after the block, which skips the exit handlers.
+    it "leaves out the lines that a child forked by IO.popen with a block runs itself" do
+      coverage = in_test { IO.popen("-") { |io| io ? io.read : load(fixture("leaf")) } }
+
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+
+    it "credits the test with the lines of a child's child" do
+      coverage = in_test { unbundled { system(ruby, fixture("spawner"), ruby, fixture("leaf")) } }
+
+      expect(coverage).to include(relative("spawner") => [1], relative("leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines of a child that forks" do
+      coverage = in_test { unbundled { system(ruby, fixture("forker"), fixture("leaf")) } }
+
+      expect(coverage).to include(relative("forker") => [1, 2], relative("leaf") => leaf_lines)
+    end
+
+    # The children keep Bundler: changing the environment from two threads would race.
+    it "credits each of two concurrent tests with the lines of its own children" do
+      both_started = Queue.new
+      tests = {1 => "leaf", 2 => "other_leaf"}.map do |test_id, name|
+        Thread.new do
+          line_coverage.start_test(test_id)
+          both_started << test_id
+          sleep 0.01 until both_started.size == 2
+          system(ruby, fixture(name))
+        end
+      end
+      tests.each(&:join)
+
+      first = coverage_of(1)
+      second = coverage_of(2)
+      expect(first).to include(relative("leaf") => leaf_lines)
+      expect(first).not_to have_key(relative("other_leaf"))
+      expect(second).to include(relative("other_leaf") => leaf_lines)
+      expect(second).not_to have_key(relative("leaf"))
+    end
+
+    it "leaves out a child that finishes after its test, whose lines are unowned" do
+      Dir.mktmpdir do |directory|
+        signal = File.join(directory, "go")
+        pid = nil
+        coverage = in_test { pid = unbundled { spawn(ruby, fixture("waits"), signal) } }
+        FileUtils.touch(signal)
+        Process.wait(pid)
+
+        expect(coverage).not_to have_key(relative("leaf"))
+        unowned = line_coverage.shared.fetch("unowned")
+        expect(line_files.lines(unowned.fetch(relative("leaf")))).to eq(leaf_lines)
+      end
+    end
+
+    it "puts the lines of a child started outside any test in the unowned lines" do
+      unbundled { system(ruby, fixture("leaf")) }
+
+      unowned = line_coverage.shared.fetch("unowned")
+      expect(line_files.lines(unowned.fetch(relative("leaf")))).to eq(leaf_lines)
+    end
+
+    it "credits a child started by a fixture to its tests, then to the suite setup lines" do
+      line_coverage.start_fixture("fixture")
+      unbundled { system(ruby, fixture("leaf")) }
+      line_coverage.start_test(1)
+      expect(coverage_of(1, ["fixture"])).to include(relative("leaf") => leaf_lines)
+      line_coverage.start_test(2)
+      expect(coverage_of(2, ["fixture"])).to include(relative("leaf") => leaf_lines)
+      line_coverage.release_fixture("fixture")
+
+      suite_setup = line_coverage.shared.fetch("suiteSetup")
+      expect(line_files.lines(suite_setup.fetch(relative("leaf")))).to eq(leaf_lines)
+    end
+  end
+
+  describe "the environment of a child" do
+    let(:bootstrap_option) { "-r#{described_class::BOOTSTRAP}" }
+
+    it "names the test's records and appends the bootstrap to the caller's RUBYOPT" do
+      output = nil
+      in_test { output = unbundled { IO.popen({"RUBYOPT" => "-W0"}, [ruby, fixture("environment")], &:read) } }
+      prefix, rubyopt = eval(output) # rubocop:disable Security/Eval
+
+      expect(File.dirname(prefix)).to eq(child_processes.directory)
+      expect(File.basename(prefix)).to match(/\Ac\d+\z/)
+      expect(rubyopt).to eq("-W0 #{bootstrap_option}")
+    end
+
+    it "appends the bootstrap to the inherited RUBYOPT" do
+      output = nil
+      in_test { output = IO.popen([ruby, fixture("environment")], &:read) }
+      _prefix, rubyopt = eval(output) # rubocop:disable Security/Eval
+
+      expect(rubyopt).to eq([ENV["RUBYOPT"], bootstrap_option].compact.reject(&:empty?).join(" "))
+    end
+
+    it "does not cover a child whose environment the caller replaces" do
+      output = nil
+      coverage = in_test do
+        output = IO.popen({"PATH" => ENV["PATH"]}, [ruby, fixture("environment")], unsetenv_others: true, &:read)
+        system({"PATH" => ENV["PATH"]}, ruby, fixture("leaf"), unsetenv_others: true)
+      end
+
+      expect(eval(output)).to eq([nil, nil]) # rubocop:disable Security/Eval
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+
+    it "does not cover a child whose RUBYOPT the caller unsets" do
+      coverage = in_test { system({"RUBYOPT" => nil}, ruby, fixture("leaf")) }
+
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+  end
+
+  describe "the hooked methods" do
+    it "pass options and keywords through and return what the original methods return" do
+      Dir.mktmpdir do |directory|
+        in_test do
+          unbundled do
+            expect(system(ruby, "-e", "exit 0")).to be(true)
+            expect(system(ruby, "-e", "exit 3")).to be(false)
+            expect(system("/nonexistent/datadog-ci-command")).to be_nil
+            expect { system(ruby, "-e", "exit 3", exception: true) }.to raise_error(RuntimeError, /exit 3/)
+
+            reader, writer = IO.pipe
+            pid = spawn(ruby, "-e", "print Dir.pwd", chdir: directory, out: writer)
+            writer.close
+            expect(pid).to be_a(Integer)
+            Process.wait(pid)
+            expect(reader.read).to eq(File.realpath(directory))
+          end
+        end
+      end
+    end
+
+    it "start the child unchanged when the hook fails" do
+      allow(child_processes).to receive(:environment).and_raise(RuntimeError, "hook failure")
+
+      coverage = in_test { expect(unbundled { system(ruby, fixture("leaf")) }).to be(true) }
+
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+  end
+
+  describe "the child bootstrap" do
+    def run_child(*arguments)
+      unbundled { Open3.capture3(ruby, *arguments) }
+    end
+
+    it "leaves a child of another Ruby uncovered and unchanged" do
+      coverage = in_test do
+        File.write(File.join(child_processes.directory, "config"), "ruby 0.0.0 0 0 other\n/nonexistent.so\n#{root}")
+        stdout, stderr, status = run_child("-e", "print :done")
+        expect([stdout, stderr, status.success?]).to eq(["done", "", true])
+        run_child(fixture("leaf"))
+      end
+
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+
+    it "leaves a child uncovered and unchanged when the collector does not load" do
+      coverage = in_test do
+        File.write(
+          File.join(child_processes.directory, "config"),
+          [described_class.identity, "/nonexistent/datadog_ci_native.so", root].join("\n")
+        )
+        stdout, stderr, status = run_child("-e", "print :done")
+        expect([stdout, stderr, status.success?]).to eq(["done", "", true])
+        run_child(fixture("leaf"))
+      end
+
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+
+    it "leaves a child unchanged, and its test covered, when the transport directory is gone" do
+      coverage = in_test do
+        directory = child_processes.directory
+        FileUtils.rm_rf(directory)
+        stdout, stderr, status = run_child("-e", "print :done")
+
+        expect([stdout, stderr, status.success?]).to eq(["done", "", true])
+        expect(File.exist?(directory)).to be(false)
+      end
+
+      expect(coverage).to have_key(Datadog::CI::Git::LocalRepository.relative_to_root(__FILE__))
+    end
+
+    it "covers a child that closes its standard output" do
+      coverage = in_test do
+        _stdout, stderr, status = run_child(fixture("closes_stdout"))
+        expect([stderr, status.success?]).to eq(["", true])
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    it "lets the test finish without the lines of a child that is killed" do
+      coverage = in_test do
+        pid = unbundled { spawn(ruby, "-e", "sleep 30") }
+        Process.kill("KILL", pid)
+        _pid, status = Process.wait2(pid)
+        expect(status.termsig).to eq(9)
+      end
+
+      expect(coverage.keys).to all(satisfy { |file| !file.include?("fixtures/child_processes/") })
+    end
+
+    it "leaves the Datadog constant to the child" do
+      stdout = nil
+      coverage = in_test do
+        stdout, _stderr, _status = run_child(fixture("defines_datadog"), chdir: Dir.tmpdir)
+      end
+
+      expect(stdout).to eq("nil Class")
+      expect(coverage.fetch(relative("defines_datadog"))).to include(1, 2, 4)
+    end
+  end
+
+  describe "backticks" do
+    def original_backtick(command)
+      ::Kernel.instance_method(:`).super_method.bind_call(self, command)
+    end
+
+    # The hooked backtick covers the command only while the collector runs, as here.
+    def hooked_backtick(command)
+      `#{command}`
+    end
+
+    # The status of the previous command is known, so an error that leaves $? unchanged
+    # shows as that status.
+    def outcome
+      original_backtick("exit 7")
+      output = yield
+      [output, output.encoding, $?.exitstatus, $?.termsig, $?.success?]
+    rescue SystemCallError => e
+      [e.class, e.message, $?.exitstatus]
+    end
+
+    def expect_same_outcome(command)
+      original = outcome { original_backtick(command) }
+      hooked = outcome { hooked_backtick(command) }
+
+      expect(hooked).to eq(original)
+      hooked
+    end
+
+    it "returns the same output, encoding and exit status" do
+      expect(expect_same_outcome("printf 'caf\\303\\251'; exit 3")).to eq(["café".b.force_encoding(Encoding.default_external), Encoding.default_external, 3, nil, false])
+    end
+
+    it "sets $? to the status of the same child" do
+      [:original_backtick, :hooked_backtick].each do |backtick|
+        pid = Integer(send(backtick, "echo $$"))
+        expect($?.pid).to eq(pid)
+      end
+    end
+
+    it "reports the same signal for a command that a signal kills" do
+      expect(expect_same_outcome("kill -9 $$")).to eq(["", Encoding.default_external, nil, 9, nil])
+    end
+
+    it "lets the command's standard error through" do
+      [:original_backtick, :hooked_backtick].each do |backtick|
+        reader, writer = IO.pipe
+        saved = $stderr.dup
+        begin
+          $stderr.reopen(writer)
+          send(backtick, "echo to-stderr 1>&2")
+        ensure
+          $stderr.reopen(saved)
+          writer.close
+        end
+        expect(reader.read).to eq("to-stderr\n")
+      end
+    end
+
+    it "raises the same errors for a missing or a non-executable command" do
+      expect(expect_same_outcome("/nonexistent/datadog-ci-command").first).to eq(Errno::ENOENT)
+
+      Dir.mktmpdir do |directory|
+        command = File.join(directory, "not-executable")
+        File.write(command, "echo not run\n")
+        expect(expect_same_outcome(command).first).to eq(Errno::EACCES)
+      end
+    end
+
+    it "runs a command through a shell exactly when the original does" do
+      direct = "#{ruby} #{fixture("parent_pid")}"
+      shell = "#{direct}; true"
+
+      [direct, shell].each do |command|
+        original = Integer(original_backtick(command)) == Process.pid
+        hooked = unbundled { Integer(hooked_backtick(command)) == Process.pid }
+        expect(hooked).to eq(original)
+      end
+      expect(Integer(original_backtick(direct))).to eq(Process.pid)
+      expect(Integer(original_backtick(shell))).not_to eq(Process.pid)
+    end
+
+    it "returns the same very large output" do
+      command = "#{ruby} -e 'STDOUT.write(%q(x) * 8_000_000)'"
+
+      expect(unbundled { expect_same_outcome(command) }.first.bytesize).to eq(8_000_000)
+    end
+
+    it "returns the same output in another thread" do
+      expect(Thread.new { expect_same_outcome("echo threaded") }.value.first).to eq("threaded\n")
+    end
+
+    # What Object#stub of minitest-mock does, as this bundle has no minitest.
+    def stub_like_minitest(object, name, value)
+      stub_name = "__minitest_stub__#{name}"
+      metaclass = object.singleton_class
+      metaclass.send(:alias_method, stub_name, name)
+      metaclass.send(:define_method, name) { |*| value }
+      yield
+    ensure
+      metaclass.send(:undef_method, name)
+      metaclass.send(:alias_method, name, stub_name)
+      metaclass.send(:undef_method, stub_name)
+    end
+
+    it "leaves a backtick stubbed with rspec-mocks stubbed" do
+      object = Object.new
+      allow(object).to receive(:`).and_return("stubbed")
+
+      expect(object.send(:`, "echo real")).to eq("stubbed")
+    end
+
+    it "leaves a backtick stubbed with minitest stubbed, and covers the command once the stub is gone" do
+      object = Object.new
+      stub_like_minitest(object, :`, "stubbed") do
+        expect(object.send(:`, "echo real")).to eq("stubbed")
+      end
+
+      coverage = in_test do
+        expect(object.send(:`, "echo real")).to eq("real\n")
+        unbundled { object.send(:`, "#{ruby} #{fixture("leaf")}") }
+      end
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    # Without the hooks, the backtick's own frame is the only one above its caller.
+    it "adds two frames from the hooks to the backtrace of an error" do
+      locations = begin
+        original_backtick("/nonexistent/datadog-ci-command")
+      rescue Errno::ENOENT => e
+        e.backtrace_locations
+      end
+      expect(locations.first(3).map(&:base_label)).to eq(["`", "bind_call", "original_backtick"])
+
+      locations = begin
+        hooked_backtick("/nonexistent/datadog-ci-command")
+      rescue Errno::ENOENT => e
+        e.backtrace_locations
+      end
+      expect(locations.first(4).map(&:base_label)).to eq(["popen", "popen", "`", "hooked_backtick"])
+      expect(locations.first(3).map(&:path).uniq).to eq([File.join(File.dirname(described_class::BOOTSTRAP), "child_processes.rb")])
+    end
+  end
+end

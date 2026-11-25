@@ -24,6 +24,13 @@ module Datadog
           # @param bitmaps [Hash<String, String>] binary bitmaps by repository-relative path
           # @param custom_impacted_files [Array<String>] absolute or repository-relative paths
           def self.from_bitmaps(bitmaps, custom_impacted_files = Files::EMPTY_FILES)
+            count, packed = pack(bitmaps)
+            new(count, packed, custom_impacted_files)
+          end
+
+          # @param bitmaps [Hash<String, String>] binary bitmaps by repository-relative path
+          # @return [Array(Integer, String)] the number of maps and the packed maps
+          def self.pack(bitmaps)
             packer = MessagePack::Packer.new
             bitmaps.each do |file, bitmap|
               packer.write_map_header(2)
@@ -32,7 +39,43 @@ module Datadog
               packer.write(BITMAP)
               packer.write(bitmap)
             end
-            new(bitmaps.size, packer.to_s, custom_impacted_files)
+            [bitmaps.size, packer.to_s]
+          end
+
+          # @param packed_bitmaps [String] msgpack maps {"filename", "bitmap"}, back to back
+          # @return [Hash<String, String>] binary bitmaps by repository-relative path
+          def self.unpack(packed_bitmaps)
+            unpacked = {}
+            MessagePack::Unpacker.new.feed_each(packed_bitmaps) do |map|
+              unpacked[map.fetch(FILENAME)] = map.fetch(BITMAP)
+            end
+            unpacked
+          end
+
+          # Adds the lines of more bitmaps to the bitmaps, by repository-relative path.
+          def self.add_bitmaps(bitmaps, more)
+            more.each { |file, bitmap| bitmaps[file] = union(bitmaps[file], bitmap) }
+            bitmaps
+          end
+
+          # The lines of bitmap that are not in other, or nil when there are none.
+          def self.difference(bitmap, other)
+            bytes = bitmap.bytes
+            other&.each_byte&.with_index do |byte, index|
+              break if index >= bytes.size
+
+              bytes[index] &= ~byte & 0xff
+            end
+            bytes.pack("C*") unless bytes.all?(&:zero?)
+          end
+
+          def self.union(left, right)
+            return right.b if left.nil?
+
+            longer, shorter = (left.bytesize >= right.bytesize) ? [left, right] : [right, left]
+            bytes = longer.bytes
+            shorter.each_byte.with_index { |byte, index| bytes[index] |= byte }
+            bytes.pack("C*")
           end
 
           # @param bitmap_count [Integer] the number of maps in packed_bitmaps
@@ -94,11 +137,7 @@ module Datadog
 
           # Binary bitmaps by repository-relative path, unpacked.
           def bitmaps
-            unpacked = {}
-            MessagePack::Unpacker.new.feed_each(@packed_bitmaps) do |map|
-              unpacked[map.fetch(FILENAME)] = map.fetch(BITMAP)
-            end
-            unpacked
+            self.class.unpack(@packed_bitmaps)
           end
         end
       end

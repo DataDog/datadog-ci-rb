@@ -1,0 +1,133 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class ChildProcesses
+          ENV_CONTEXT: String
+
+          ENV_RUBYOPT: String
+
+          BOOTSTRAP: String
+
+          CONFIG_FILE: String
+
+          RECORD_SUFFIX: String
+
+          UNOWNED: String
+
+          self.@current: ChildProcesses?
+
+          @config: String
+          @owner_pid: Integer
+          @require_option: String
+          @mutex: Thread::Mutex
+          @directory: String?
+          @spawned_prefixes: Hash[String, bool]
+
+          def self.current: () -> ChildProcesses?
+
+          def self.start: (root: String, ignored_paths: Array[String]) -> ChildProcesses?
+
+          def self.stop: () -> void
+
+          # Spawn arguments mix an environment hash, command strings, arrays and options.
+          def self.spawn_arguments: (Array[untyped] arguments) -> Array[untyped]
+
+          def self.command_environment: () -> Hash[String, String]?
+
+          def self.before_fork: () -> void
+
+          def self.after_fork_in_child: () -> void
+
+          def self.context: () -> Integer?
+
+          def self.identity: () -> String
+
+          def self.decode_record: (String data) -> LineCollector::bitmaps
+
+          def self.encode_record: (String packed_bitmaps, LineCollector::bitmaps bitmaps) -> String
+
+          def self.field: (String bytes) -> String
+
+          def self.take_field: (String data, Integer offset) -> String
+
+          def self.field_length: (String data, Integer offset) -> Integer
+
+          def self.loaded_extension_path: () -> String?
+
+          def initialize: (root: String, ignored_paths: Array[String], extension_path: String) -> void
+
+          def directory: () -> String
+
+          def spawn_arguments: (Array[untyped] arguments) -> Array[untyped]
+
+          def environment: (Hash[untyped, untyped]? caller_environment) -> Hash[String, String]?
+
+          def record_spawn: (Integer? serial) -> String
+
+          def write_record_at_exit: () -> void
+
+          def records: (Integer serial, ?keep: bool) -> Array[LineCollector::bitmaps]
+
+          def remaining_records: () -> Hash[Integer?, Array[LineCollector::bitmaps]]
+
+          def remove_directory: () -> void
+
+          private
+
+          def prefix_for: (Integer? serial) -> String
+
+          def record_names: () -> Array[String]
+
+          def read_records: (Array[String] names, bool keep) -> Array[LineCollector::bitmaps]
+
+          def write_record: (String prefix, Integer serial, Hash[String, LineCollector::bitmaps] shared_at_fork) -> void
+        end
+
+        module ChildProcessHooks
+          self.@installed: bool
+
+          def self.install: () -> void
+
+          interface _Spawning
+            def spawn: (*untyped arguments) -> Integer
+
+            def exec: (*untyped arguments) -> bot
+          end
+
+          interface _ProcessSpawning
+            include _Spawning
+
+            def _fork: () -> Integer
+          end
+
+          interface _Popening
+            def popen: (*untyped arguments) ?{ (IO? io) -> untyped } -> untyped
+          end
+
+          module KernelMethods : ::Kernel
+            def spawn: (*untyped arguments) -> Integer
+
+            def system: (*untyped arguments) -> bool?
+
+            def exec: (*untyped arguments) -> bot
+
+            def `: (String command) -> String
+          end
+
+          module ProcessMethods : _ProcessSpawning
+            def spawn: (*untyped arguments) -> Integer
+
+            def exec: (*untyped arguments) -> bot
+
+            def _fork: () -> Integer
+          end
+
+          module IOMethods : _Popening
+            def popen: (*untyped arguments) ?{ (IO? io) -> untyped } -> untyped
+          end
+        end
+      end
+    end
+  end
+end
