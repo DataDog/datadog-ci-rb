@@ -93,6 +93,19 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
       described_class.stop_collector
     end
 
+    # Executed lines by file name, for the files in directory.
+    def lines_in(directory, packed)
+      prefix = File.join(directory.delete_prefix(File.join(root, "")), "")
+      lines = {}
+      MessagePack::Unpacker.new.feed_each(packed) do |map|
+        file = map.fetch("filename")
+        next unless file.start_with?(prefix)
+
+        lines[file.delete_prefix(prefix)] = Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.lines(map.fetch("bitmap"))
+      end
+      lines
+    end
+
     # msgpack takes a longer header for a path of 32 bytes or more and again of 256 or
     # more, and for a bitmap of 256 bytes or more.
     it "packs each file as msgpack-ruby packs its path and its binary bitmap" do
@@ -148,13 +161,43 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
         LineCoverageSpecFiles.code
         _count, packed = line_coverage.finish_test(1, [])
 
-        lines = {}
-        MessagePack::Unpacker.new.feed_each(packed) do |map|
-          lines[map.fetch("filename")] = Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.lines(map.fetch("bitmap"))
-        end
-        relative_directory = directory.delete_prefix(File.join(root, ""))
-        expect(lines).not_to have_key(File.join(relative_directory, "empty.rb"))
-        expect(lines.fetch(File.join(relative_directory, "code.rb"))).to include(2)
+        lines = lines_in(directory, packed)
+        expect(lines).not_to have_key("empty.rb")
+        expect(lines.fetch("code.rb")).to include(2)
+      end
+    end
+
+    # Before Ruby 3.3, a rescue clause compiles to an iseq without events.
+    it "counts the line of an empty rescue clause that runs" do
+      Dir.mktmpdir("lc", root) do |directory|
+        path = File.join(directory, "rescued.rb")
+        File.write(path, "def LineCoverageSpecFiles.rescued\n  Integer(\"x\")\nrescue ArgumentError\nend\n")
+
+        line_coverage = described_class.start(root: root, ignored_paths: [])
+        load path
+        line_coverage.start_test(1)
+        LineCoverageSpecFiles.rescued
+        _count, packed = line_coverage.finish_test(1, [])
+
+        expect(lines_in(directory, packed).fetch("rescued.rb")).to include(2, 3)
+      end
+    end
+
+    # From Ruby 3.4, an ensure clause compiles to an iseq with a line but without events.
+    it "counts the line of an empty ensure clause that runs" do
+      skip "an ensure clause has no line of its own before Ruby 3.4" if RUBY_VERSION < "3.4"
+
+      Dir.mktmpdir("lc", root) do |directory|
+        path = File.join(directory, "ensured.rb")
+        File.write(path, "def LineCoverageSpecFiles.ensured\n  raise ArgumentError\nensure\nend\n")
+
+        line_coverage = described_class.start(root: root, ignored_paths: [])
+        load path
+        line_coverage.start_test(1)
+        expect { LineCoverageSpecFiles.ensured }.to raise_error(ArgumentError)
+        _count, packed = line_coverage.finish_test(1, [])
+
+        expect(lines_in(directory, packed).fetch("ensured.rb")).to include(2, 3)
       end
     end
   end
