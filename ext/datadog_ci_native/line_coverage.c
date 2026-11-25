@@ -1416,12 +1416,73 @@ static void add_context_lines(context_t *context, uint32_t epoch) {
   }
 }
 
+/* ---- msgpack ---------------------------------------------------------------- */
+
+/* Coverage is packed here as msgpack-ruby packs it from Ruby: a path is a UTF-8 String,
+ * which it writes as str, and a bitmap a binary String, which it writes as bin. */
+
+static const uint8_t FILENAME_KEY[] = {0xa8, 'f', 'i', 'l', 'e', 'n', 'a', 'm', 'e'};
+static const uint8_t BITMAP_KEY[] = {0xa6, 'b', 'i', 't', 'm', 'a', 'p'};
+#define MAP_OF_TWO 0x82
+
+static size_t str_header_size(size_t length) { return length < 32 ? 1 : length < 256 ? 2 : length < 65536 ? 3 : 5; }
+
+static size_t bin_header_size(size_t length) { return length < 256 ? 2 : length < 65536 ? 3 : 5; }
+
+static uint8_t *pack_length(uint8_t *out, uint8_t marker, size_t length, int width) {
+  *out++ = marker;
+  for (int shift = (width - 1) * 8; shift >= 0; shift -= 8) *out++ = (uint8_t)(length >> shift);
+  return out;
+}
+
+static uint8_t *pack_str_header(uint8_t *out, size_t length) {
+  if (length < 32) {
+    *out++ = (uint8_t)(0xa0 | length);
+    return out;
+  }
+  if (length < 256) return pack_length(out, 0xd9, length, 1);
+  if (length < 65536) return pack_length(out, 0xda, length, 2);
+  return pack_length(out, 0xdb, length, 4);
+}
+
+static uint8_t *pack_bin_header(uint8_t *out, size_t length) {
+  if (length < 256) return pack_length(out, 0xc4, length, 1);
+  if (length < 65536) return pack_length(out, 0xc5, length, 2);
+  return pack_length(out, 0xc6, length, 4);
+}
+
+static uint8_t *pack_bytes(uint8_t *out, const void *bytes, size_t length) {
+  memcpy(out, bytes, length);
+  return out + length;
+}
+
+static size_t packed_file_size(const file_t *file) {
+  size_t path_length = (size_t)RSTRING_LEN(file->path);
+  size_t bitmap_length = line_bitmap_used_length(&file->scratch);
+  return 1 + sizeof(FILENAME_KEY) + str_header_size(path_length) + path_length + sizeof(BITMAP_KEY) +
+         bin_header_size(bitmap_length) + bitmap_length;
+}
+
+/* {"filename" => path, "bitmap" => the scratch bitmap} */
+static uint8_t *pack_file(uint8_t *out, const file_t *file) {
+  size_t path_length = (size_t)RSTRING_LEN(file->path);
+  size_t bitmap_length = line_bitmap_used_length(&file->scratch);
+  *out++ = MAP_OF_TWO;
+  out = pack_bytes(out, FILENAME_KEY, sizeof(FILENAME_KEY));
+  out = pack_str_header(out, path_length);
+  out = pack_bytes(out, RSTRING_PTR(file->path), path_length);
+  out = pack_bytes(out, BITMAP_KEY, sizeof(BITMAP_KEY));
+  out = pack_bin_header(out, bitmap_length);
+  return pack_bytes(out, file->scratch.bytes, bitmap_length);
+}
+
 /* Cov(T) = Own(T) ∪ Fixture(T) ∪ the initialiser lines of every file with a line in
- * either. Releases the test's context. */
+ * either, as [file count, one msgpack map {"filename", "bitmap"} per file, back to back].
+ * Packing it here makes one object per test, where a Hash of Strings made one per file
+ * and the writer then packed them one by one. Releases the test's context. */
 static VALUE line_collector_coverage(VALUE self, VALUE serial, VALUE fixture_serials) {
-  VALUE result = rb_hash_new();
   context_t *context = FIXNUM_P(serial) ? context_by_serial(FIX2LONG(serial)) : NULL;
-  if (!context) return result;
+  if (!context) return rb_assoc_new(INT2FIX(0), rb_str_new(NULL, 0));
 
   uint32_t epoch = ++st.epoch;
   st.touched.count = 0;
@@ -1433,13 +1494,20 @@ static VALUE line_collector_coverage(VALUE self, VALUE serial, VALUE fixture_ser
       if (fixture && fixture != context) add_context_lines(fixture, epoch);
     }
   }
+  /* Released first: an allocation below that fails raises, and must not leak the context.
+   * Releasing reads no scratch bitmap. */
+  release_context(context);
+
+  size_t size = 0;
   for (size_t i = 0; i < st.touched.count; i++) {
     file_t *file = &st.files[st.touched.items[i]];
     line_bitmap_or(&file->scratch, &file->init_lines);
-    rb_hash_aset(result, file->path, rb_str_new((const char *)file->scratch.bytes, line_bitmap_used_length(&file->scratch)));
+    size += packed_file_size(file);
   }
-  release_context(context);
-  return result;
+  VALUE packed = rb_str_new(NULL, (long)size);
+  uint8_t *out = (uint8_t *)RSTRING_PTR(packed);
+  for (size_t i = 0; i < st.touched.count; i++) out = pack_file(out, &st.files[st.touched.items[i]]);
+  return rb_assoc_new(SIZET2NUM(st.touched.count), packed);
 }
 
 static VALUE line_collector_release(VALUE self, VALUE serial) {

@@ -1,0 +1,7 @@
+module MessagePack
+  class Unpacker
+    def initialize: () -> void
+
+    def feed_each: (String data) { (untyped object) -> void } -> void
+  end
+end

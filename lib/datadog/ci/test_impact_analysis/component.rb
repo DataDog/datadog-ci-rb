@@ -628,14 +628,14 @@ module Datadog
             return
           end
 
-          bitmaps = line_coverage.finish_test(test.id, test.context_ids || [])
+          bitmap_count, packed_bitmaps = line_coverage.finish_test(test.id, test.context_ids || [])
           custom_impacted_files = test.lock_custom_impacted_files
-          if bitmaps.empty? && custom_impacted_files.empty?
+          if bitmap_count.zero? && custom_impacted_files.empty?
             Telemetry.code_coverage_is_empty
             return
           end
 
-          files = Coverage::LineFiles.new(bitmaps, custom_impacted_files)
+          files = Coverage::LineFiles.new(bitmap_count, packed_bitmaps, custom_impacted_files)
           Telemetry.code_coverage_files(files.size)
 
           coverage_event = Coverage::Event.new(
@@ -668,7 +668,7 @@ module Datadog
               Coverage::SharedEvent.new(
                 test_session_id: test_session_id,
                 part: part,
-                files: Coverage::LineFiles.new(bitmaps)
+                files: Coverage::LineFiles.from_bitmaps(bitmaps)
               )
             )
           end

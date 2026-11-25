@@ -13,7 +13,7 @@ module Datadog
             def initialize: (Integer serial, Fiber fiber, Integer? previous) -> void
           end
 
-          EMPTY_COVERAGE: LineCollector::bitmaps
+          EMPTY_COVERAGE: LineCollector::packed_bitmaps
 
           EMPTY_SHARED: Hash[String, LineCollector::bitmaps]
 
@@ -39,7 +39,7 @@ module Datadog
 
           def start_test: (Integer test_id) -> void
 
-          def finish_test: (Integer test_id, Array[String] fixture_ids) -> LineCollector::bitmaps
+          def finish_test: (Integer test_id, Array[String] fixture_ids) -> LineCollector::packed_bitmaps
 
           def discard_test: (Integer test_id) -> void
 
