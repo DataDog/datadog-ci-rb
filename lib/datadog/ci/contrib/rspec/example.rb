@@ -53,6 +53,8 @@ module Datadog
                   # Process TIA status of the test and eventually tell RSpec to skip the test
                   test_span&.itr_unskippable! if datadog_unskippable?
                   metadata[:skip] = test_span&.datadog_skip_reason if test_span&.should_skip?
+                  # RSpec runs neither the body nor the hooks of an example skipped here.
+                  test_span&.skipped_before_start! if metadata[:skip]
 
                   # before each run remove any previous exception
                   @exception = nil

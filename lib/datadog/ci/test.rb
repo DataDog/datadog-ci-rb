@@ -356,6 +356,18 @@ module Datadog
         get_tag(Ext::Test::TAG_ITR_SKIPPED_BY_ITR) == "true"
       end
 
+      # Marks a test that its framework skips before any of its own code runs, such as an
+      # RSpec example declared with `xit` or `skip` metadata. Such a test has no line coverage.
+      # @internal
+      def skipped_before_start!
+        @skipped_before_start = true
+      end
+
+      # @internal
+      def skipped_before_start?
+        @skipped_before_start == true
+      end
+
       # @internal
       def record_final_status
         status = get_tag(Ext::Test::TAG_STATUS)
