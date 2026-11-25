@@ -741,6 +741,12 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, bool initialiser, pending
   struct iseq_insn_info_entry *entries = (struct iseq_insn_info_entry *)body->insns_info.body;
   if (entry_count == 0 || !entries) goto done;
 
+  /* A script without code, such as an empty file, compiles to instructions without
+   * events. Ruby's line coverage counts no line in it, so it gets no sites. */
+  bool has_events = false;
+  for (unsigned int k = 0; k < entry_count && !has_events; k++) has_events = entries[k].events != 0;
+  if (!has_events) goto done;
+
   if (branch_coverage_p(iseq) && !add_spare_branch_counter(iseq)) {
     st.stats.iseqs_skipped++;
     goto done;
