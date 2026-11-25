@@ -3487,6 +3487,33 @@ RSpec.describe "RSpec instrumentation" do
     end
   end
 
+  context "when example groups have no selected examples" do
+    include_context "CI mode activated" do
+      let(:integration_name) { :rspec }
+    end
+
+    it "reports only the group whose examples execute" do
+      exit_code = with_new_rspec_environment do
+        RSpec.describe "Empty group" do
+        end
+        RSpec.describe "Filtered group" do
+          it("excluded") { raise "must not execute" }
+        end
+        RSpec.describe "Selected group" do
+          it("included", selected: true) { expect(true).to be(true) }
+        end
+        options = RSpec::Core::ConfigurationOptions.new(%w[--pattern none --format documentation --tag selected])
+        RSpec::Core::Runner.new(options).run(StringIO.new, StringIO.new)
+      end
+
+      expect(exit_code).to eq(0)
+      expect(test_spans.map(&:name)).to eq(["included"])
+      expect(test_suite_spans).to have(1).item
+      expect(test_suite_spans.first.name).to start_with("Selected group at ")
+      expect(test_suite_spans.first).to have_pass_status
+    end
+  end
+
   context "when all selected examples are skipped" do
     include_context "CI mode activated" do
       let(:integration_name) { :rspec }

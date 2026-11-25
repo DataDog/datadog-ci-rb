@@ -18,6 +18,7 @@ module Datadog
             def run(reporter = ::RSpec::Core::NullReporter)
               return super if ::RSpec.configuration.dry_run? && !datadog_configuration[:dry_run_enabled]
               return super unless datadog_configuration[:enabled]
+              return super if descendant_filtered_examples.empty?
 
               # skip the context hooks if all descendant example are going to be skipped
               # IMPORTANT: must happen before top_level? check because skipping hooks must happen
