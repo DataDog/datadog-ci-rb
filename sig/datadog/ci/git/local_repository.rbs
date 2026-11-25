@@ -2,6 +2,8 @@ module Datadog
   module CI
     module Git
       module LocalRepository
+        REAL_FILE: singleton(::File)
+
         self.@root: String
         self.@prefix_to_root: String
         self.@repository_name: String

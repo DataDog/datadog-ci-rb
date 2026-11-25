@@ -185,6 +185,26 @@ RSpec.describe "RSpec instrumentation with per-test line coverage" do
     expect(shared).to all(satisfy { |record| !record.key?("span_id") })
   end
 
+  it "keeps the test result and logs a warning when the test's coverage cannot be written" do
+    expect(Datadog.logger).to receive(:warn).with(/Failed to write the line coverage of a test: TypeError/)
+
+    path = fixture_path
+    run_rspec do
+      load path
+
+      RSpec.describe "Square" do
+        it "computes the area" do
+          Datadog::CI.active_test.add_impacted_files([nil])
+          expect(LineCoverageGeometry::Square.new(3).area).to eq(9)
+        end
+      end
+    end
+
+    expect(test_spans).to have(1).item
+    expect(first_test_span).to have_pass_status
+    expect(find_coverage_for_test(first_test_span)).to be_nil
+  end
+
   context "when the library settings turn code coverage off" do
     let(:code_coverage_enabled) { false }
 
