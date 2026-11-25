@@ -8,12 +8,18 @@ require "webmock/rspec"
 RSpec.describe Datadog::CI::Configuration::Extensions do
   let(:ci_settings) { double(:ci_settings) }
   let(:settings) { double(:independent_settings, ci: ci_settings) }
-  let(:application_writer) { instance_double(Datadog::Tracing::Writer, write: nil, stop: nil) }
+  let(:application_writer) do
+    writer = Datadog::Tracing::Writer.new(transport: double(:application_transport))
+    allow(writer).to receive(:write)
+    allow(writer).to receive(:stop)
+    writer
+  end
   let(:ci_writer) { instance_double(Datadog::Tracing::Writer, write: nil, stop: nil) }
   let(:bridge) { Datadog::CI::TracerBridge::Component.new(writer: ci_writer, logger: Logger.new(File::NULL)) }
   let(:components) { double(:independent_components, tracer_bridge: bridge) }
 
   before do
+    WebMock.enable!
     allow(Datadog::CI).to receive(:configuration).and_return(settings)
     allow(Datadog::CI).to receive(:configuration_changed!)
     allow(Datadog::CI).to receive(:components).with(allow_initialization: false).and_return(components)

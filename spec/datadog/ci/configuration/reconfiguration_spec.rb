@@ -65,8 +65,9 @@ RSpec.describe Datadog::CI::Configuration::Reconfiguration do
         abort "Tags were lost" unless Datadog.configuration.tags["custom-tag"] == "custom-value"
       RUBY
 
+      environment = {"BUNDLE_GEMFILE" => gemfile, "GEM_HOME" => Gem.dir, "GEM_PATH" => Gem.path.join(File::PATH_SEPARATOR)}
       output, status = Bundler.with_unbundled_env do
-        Open3.capture2e({"BUNDLE_GEMFILE" => gemfile}, RbConfig.ruby, "-rbundler/setup", "-Ilib", "-e", code)
+        Open3.capture2e(environment, RbConfig.ruby, "-rbundler/setup", "-Ilib", "-e", code)
       end
       expect(status.success?).to be(true), output
     end

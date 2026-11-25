@@ -17,6 +17,7 @@ RSpec.describe "Application spans in Test Optimization intake" do
   let(:transport) { Datadog::CI::TestTracing::Transport.new(api: api, dd_env: "ci") }
 
   before do
+    WebMock.enable!
     Datadog.configure do |c|
       c.service = "configured-service"
       c.tracing.writer = application_writer
