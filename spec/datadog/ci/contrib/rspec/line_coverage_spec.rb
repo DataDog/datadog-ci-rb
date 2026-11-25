@@ -79,6 +79,41 @@ RSpec.describe "RSpec instrumentation with per-test line coverage" do
     expect(lines_of(find_coverage_for_test(test_span_named("runs no fixture code")))).to be_nil
   end
 
+  it "treats as initialiser code only the class bodies nested in a file through class bodies" do
+    path = File.join(__dir__, "fixtures/line_coverage/nesting.rb")
+    file = Datadog::CI::Git::LocalRepository.relative_to_root(path)
+    run_rspec do
+      load path
+
+      RSpec.describe "Nesting" do
+        it "opens a singleton class in a method" do
+          expect(LineCoverageNesting.open_singleton(Object.new)).to eq(:tagged)
+        end
+
+        it "defines a class in an eval string" do
+          expect(LineCoverageNesting.eval_class).to eq(7)
+        end
+
+        it "calls a method defined in a nested class body" do
+          expect(LineCoverageNesting.answer).to eq(42)
+        end
+      end
+    end
+
+    # The top level, the module body, its rescue clause and the singleton class body in it.
+    init_lines = [2, 3, 4, 9, 10, 11, 12, 15, 24, 34]
+    expect(lines_of(find_coverage_for_test(test_span_named("opens a singleton class in a method")), file))
+      .to eq((init_lines + [16, 17, 18, 19, 21, 22]).sort)
+    expect(lines_of(find_coverage_for_test(test_span_named("defines a class in an eval string")), file))
+      .to eq((init_lines + [25, 26, 27, 28, 29, 30, 32, 33]).sort)
+    # Runs after the class bodies above, which are not initialiser code, so it does not get their lines.
+    expect(lines_of(find_coverage_for_test(test_span_named("calls a method defined in a nested class body")), file))
+      .to eq((init_lines + [5, 6]).sort)
+
+    init = shared_events.find { |event| event.part == "init" }
+    expect(init.inspect_coverage.fetch(file)).to eq(init_lines)
+  end
+
   it "credits code that a test runs on another thread to the test" do
     path = fixture_path
     run_rspec do
