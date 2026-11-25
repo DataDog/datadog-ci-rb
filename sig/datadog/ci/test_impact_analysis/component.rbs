@@ -47,6 +47,8 @@ module Datadog
         attr_reader test_skipping_enabled: bool
         attr_reader test_skipping_mode: String
 
+        def self.start_line_coverage_before_configure: (untyped settings) -> nil
+
         def self.build: (
           api: Datadog::CI::Transport::Api::Base?,
           discard_traces: bool,

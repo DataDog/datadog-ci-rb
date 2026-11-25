@@ -21,6 +21,15 @@ RSpec.describe Datadog::CI::Utils::Bundle do
       it { is_expected.to be_nil }
     end
 
+    context "with the repository root given" do
+      it "uses it instead of the git root" do
+        expect(Datadog::CI::Git::LocalRepository).not_to receive(:root)
+
+        expect(described_class.location("/path/to/repo")).to eq(bundle_path)
+        expect(described_class.location("/path/to/different/repo")).to be_nil
+      end
+    end
+
     context "when an exception is raised" do
       before do
         allow(Bundler).to receive(:bundle_path).and_raise(StandardError.new("Failed to find bundle path"))
