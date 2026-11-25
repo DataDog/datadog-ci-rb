@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "../../utils/identity"
 require_relative "../../readonly_test_session"
 require_relative "../../readonly_test_module"
 
@@ -16,6 +17,7 @@ module Datadog
             @test_session = nil
             @test_module = nil
             @test_suites = {}
+            @test_suites_pid = Utils::Identity.pid
 
             # small copies of id, name and some tags: store them in the current process to set session/module context
             # for any spans faster
@@ -25,15 +27,16 @@ module Datadog
 
           def fetch_or_activate_test_suite(test_suite_name, &block)
             @mutex.synchronize do
-              @test_suites[test_suite_name] ||= block.call
+              test_suites[test_suite_name] ||= block.call
             end
           end
 
           def fetch_single_test_suite
             @mutex.synchronize do
-              return nil if @test_suites.empty? || @test_suites.size > 1
+              suites = test_suites
+              return nil if suites.empty? || suites.size > 1
 
-              @test_suites.values.first
+              suites.values.first
             end
           end
 
@@ -58,13 +61,14 @@ module Datadog
           end
 
           def active_test_suite(test_suite_name)
-            @mutex.synchronize { @test_suites[test_suite_name] }
+            @mutex.synchronize { test_suites[test_suite_name] }
           end
 
           def stop_all_test_suites
             @mutex.synchronize do
-              @test_suites.each_value(&:finish)
-              @test_suites.clear
+              suites = test_suites
+              suites.each_value(&:finish)
+              suites.clear
             end
           end
 
@@ -77,7 +81,7 @@ module Datadog
           end
 
           def deactivate_test_suite!(test_suite_name)
-            @mutex.synchronize { @test_suites.delete(test_suite_name) }
+            @mutex.synchronize { test_suites.delete(test_suite_name) }
           end
 
           def readonly_test_session
@@ -102,6 +106,17 @@ module Datadog
             @mutex.synchronize do
               @readonly_test_module = Datadog::CI::ReadonlyTestModule.new(remote_test_module)
             end
+          end
+
+          private
+
+          def test_suites
+            pid = Utils::Identity.pid
+            if @test_suites_pid != pid
+              @test_suites = {}
+              @test_suites_pid = pid
+            end
+            @test_suites
           end
         end
       end

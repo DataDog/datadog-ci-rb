@@ -9,6 +9,47 @@ RSpec.describe Datadog::CI::TestTracing::Store::Process do
   let(:session) { Datadog::CI::TestSession.new(tracer_span) }
   let(:test_module) { Datadog::CI::TestModule.new(tracer_span) }
 
+  describe "suite ownership after a fork" do
+    let(:suite) { double(Datadog::CI::TestSuite) }
+    let(:child_suite) { double(Datadog::CI::TestSuite) }
+
+    before do
+      context.fetch_or_activate_test_suite("parent") { suite }
+      allow(Datadog::CI::Utils::Identity).to receive(:pid).and_return(Process.pid + 1)
+    end
+
+    it "does not return an inherited suite" do
+      expect(context.active_test_suite("parent")).to be_nil
+      expect(context.fetch_single_test_suite).to be_nil
+    end
+
+    it "creates and retains suites owned by the child" do
+      expect(context.fetch_or_activate_test_suite("parent") { child_suite }).to be(child_suite)
+      expect(context.active_test_suite("parent")).to be(child_suite)
+      expect(context.fetch_single_test_suite).to be(child_suite)
+      expect(context.fetch_or_activate_test_suite("parent") { raise "already active" }).to be(child_suite)
+    end
+
+    it "does not finish inherited suites during shutdown" do
+      expect(suite).not_to receive(:finish)
+      context.stop_all_test_suites
+    end
+
+    it "finishes child suites during shutdown" do
+      context.fetch_or_activate_test_suite("child") { child_suite }
+      expect(suite).not_to receive(:finish)
+      expect(child_suite).to receive(:finish)
+      context.stop_all_test_suites
+      expect(context.active_test_suite("child")).to be_nil
+    end
+
+    it "deactivates child suites without keeping inherited suites" do
+      context.fetch_or_activate_test_suite("child") { child_suite }
+      context.deactivate_test_suite!("child")
+      expect(context.fetch_single_test_suite).to be_nil
+    end
+  end
+
   describe "#active_test_session" do
     context "when a test session is active" do
       before do

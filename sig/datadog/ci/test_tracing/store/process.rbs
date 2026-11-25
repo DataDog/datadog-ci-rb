@@ -8,6 +8,7 @@ module Datadog
           @test_session: Datadog::CI::TestSession?
           @test_module: Datadog::CI::TestModule?
           @test_suites: Hash[String, Datadog::CI::TestSuite]
+          @test_suites_pid: Integer
           @readonly_test_session: Datadog::CI::TestSession?
           @readonly_test_module: Datadog::CI::TestModule?
 
@@ -41,6 +42,10 @@ module Datadog
 
           attr_reader readonly_test_session: Datadog::CI::TestSession?
           attr_reader readonly_test_module: Datadog::CI::TestModule?
+
+          private
+
+          def test_suites: () -> Hash[String, Datadog::CI::TestSuite]
         end
       end
     end

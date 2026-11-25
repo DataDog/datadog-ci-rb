@@ -978,6 +978,49 @@ RSpec.describe Datadog::CI::TestTracing::Component do
         end
       end
 
+      describe "an inherited suite in a forked worker" do
+        ["pass", "fail"].each do |status|
+          it "records a child #{status} in the parent suite" do
+            skip "fork is unavailable" unless Process.respond_to?(:fork)
+            session = test_tracing.start_test_session
+            test_module = test_tracing.start_test_module("module")
+            suite = test_tracing.start_test_suite("suite")
+            reader, writer = IO.pipe
+            pid = fork do
+              reader.close
+              child_exit = 1
+              begin
+                child_session = test_tracing.active_test_session
+                child_module = test_tracing.active_test_module
+                test_tracing.trace_test("child", "suite") do |test|
+                  (status == "pass") ? test.passed! : test.failed!
+                  test.record_final_status
+                end
+                Marshal.dump([child_session.id, child_module.id, test_tracing.active_test_suite(nil).id], writer)
+                child_exit = 0
+              ensure
+                writer.close
+                exit! child_exit
+              end
+            end
+            writer.close
+            identities = Marshal.load(reader)
+            _, child_status = Process.wait2(pid)
+            expect(child_status).to be_success
+            expect(identities).to eq([session.id, test_module.id, suite.id])
+            expect(test_tracing.active_test_suite("suite")).to be(suite)
+            suite.finish
+            expect(suite).to have_test_tag(:status, status)
+          ensure
+            reader&.close
+            writer&.close
+            Process.waitpid(pid) if pid && !child_status
+            test_module&.finish
+            session&.finish
+          end
+        end
+      end
+
       describe "#active_test" do
         subject { test_tracing.active_test }
 
