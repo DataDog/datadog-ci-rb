@@ -18,6 +18,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           # Configure CI mode
           Datadog.configuration.tracing.enabled = tracing_enabled
           settings.ci.enabled = enabled
+          settings.ci.apm_spans_enabled = apm_spans_enabled
           settings.ci.agentless_mode_enabled = agentless_enabled
           settings.ci.agentless_logs_submission_enabled = agentless_logs_submission_enabled
           settings.ci.trace_setup_teardown_enabled = trace_setup_teardown_enabled
@@ -87,6 +88,7 @@ RSpec.describe Datadog::CI::Configuration::Components do
           allow(Datadog::CI).to receive(:components).and_return(components)
         end
 
+        let(:apm_spans_enabled) { true }
         let(:api_key) { nil }
         let(:agentless_url) { nil }
         let(:dd_site) { nil }
@@ -112,6 +114,17 @@ RSpec.describe Datadog::CI::Configuration::Components do
 
         context "is enabled" do
           let(:enabled) { true }
+
+          context "when application spans are disabled" do
+            let(:apm_spans_enabled) { false }
+
+            it "keeps test tracing and coverage components while disabling the application bridge" do
+              expect(components.tracer_bridge).to be_a(Datadog::CI::TracerBridge::NullComponent)
+              expect(components.tracer).to be_a(Datadog::CI::EventTracer)
+              expect(components.test_tracing).to be_a(Datadog::CI::TestTracing::Component)
+              expect(components.code_coverage).to be_a(Datadog::CI::CodeCoverage::Component)
+            end
+          end
 
           context "when setup and teardown tracing is enabled" do
             let(:trace_setup_teardown_enabled) { true }

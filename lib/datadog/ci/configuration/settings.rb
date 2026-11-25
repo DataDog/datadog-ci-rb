@@ -57,6 +57,12 @@ module Datadog
                 o.default false
               end
 
+              option :apm_spans_enabled do |o|
+                o.type :bool
+                o.env CI::Ext::Settings::ENV_APM_SPANS_ENABLED
+                o.default true
+              end
+
               option :agentless_url do |o|
                 o.type :string, nilable: true
                 o.env CI::Ext::Settings::ENV_AGENTLESS_URL

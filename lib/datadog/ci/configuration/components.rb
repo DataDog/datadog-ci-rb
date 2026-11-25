@@ -130,7 +130,11 @@ module Datadog
             shutdown_timeout: writer_options.fetch(:shutdown_timeout, 60)
           )
           @tracer = EventTracer.new(writer: writer, service: settings.service, tags: event_tags(settings.tags, settings.env, settings.version))
-          @tracer_bridge = TracerBridge::Component.new(writer: writer, logger: CI.logger)
+          @tracer_bridge = if settings.ci.apm_spans_enabled
+            TracerBridge::Component.new(writer: writer, logger: CI.logger)
+          else
+            TracerBridge::NullComponent.new
+          end
 
           @git_tree_upload_worker = build_git_upload_worker(settings, test_visibility_api)
           @ci_remote = Remote::Component.build(

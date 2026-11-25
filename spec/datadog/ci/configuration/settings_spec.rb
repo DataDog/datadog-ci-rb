@@ -46,6 +46,18 @@ RSpec.describe Datadog::CI::Configuration::Settings do
     subject(:settings) { Datadog::CI::Configuration::RuntimeSettings.new }
 
     describe "#ci" do
+      describe "#apm_spans_enabled" do
+        it "enables application spans by default" do
+          expect(settings.ci.apm_spans_enabled).to be(true)
+        end
+
+        it "reads the application span opt-out" do
+          ClimateControl.modify("DD_CIVISIBILITY_APM_SPANS_ENABLED" => "false") do
+            expect(settings.ci.apm_spans_enabled).to be(false)
+          end
+        end
+      end
+
       describe "#enabled" do
         subject(:enabled) { settings.ci.enabled }
 
@@ -534,6 +546,8 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       end
 
       describe "#itr_code_coverage_excluded_bundle_path" do
+        before { allow(Datadog::CI::Utils::Bundle).to receive(:location).and_return(nil) }
+
         subject(:itr_code_coverage_excluded_bundle_path) do
           settings.ci.itr_code_coverage_excluded_bundle_path
         end
@@ -573,6 +587,8 @@ RSpec.describe Datadog::CI::Configuration::Settings do
       end
 
       describe "#itr_code_coverage_excluded_bundle_path=" do
+        before { allow(Datadog::CI::Utils::Bundle).to receive(:location).and_return(nil) }
+
         it "updates the #enabled setting" do
           expect { settings.ci.itr_code_coverage_excluded_bundle_path = "/path/to/excluded" }
             .to change { settings.ci.itr_code_coverage_excluded_bundle_path }

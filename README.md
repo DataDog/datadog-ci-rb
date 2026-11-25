@@ -42,6 +42,9 @@ When CI is enabled, integration spans go to the `citestcycle` intake. This inclu
 application boot spans before the test session. Spans inside tests retain their
 test context. Routing continues after the session ends to capture delayed spans.
 
+Set `DD_CIVISIBILITY_APM_SPANS_ENABLED=false` to collect only CI events and coverage.
+This leaves application trace context and writers unchanged. The default is `true`.
+
 After CI shutdown, traces use the tracer's configured writer. Configuration
 changes made during boot take effect when the test session starts.
 
