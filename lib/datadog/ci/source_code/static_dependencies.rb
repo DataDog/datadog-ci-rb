@@ -18,7 +18,9 @@ module Datadog
           # See the PR https://github.com/DataDog/datadog-ci-rb/pull/442 for more context
           if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.2")
             require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
-            true
+            # False when the process loaded the extension before datadog-ci and removed the
+            # module that holds the native method.
+            respond_to?(:collect_iseqs)
           else
             false
           end
