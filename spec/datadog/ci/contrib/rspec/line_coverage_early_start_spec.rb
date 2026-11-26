@@ -55,4 +55,21 @@ RSpec.describe "RSpec instrumentation with per-test line coverage started before
     # Initialiser lines 2, 3, 5 and 8, and the test's own lines 6 and 7.
     expect(find_coverage_for_test(first_test_span).inspect_coverage.fetch(fixture_file)).to eq([2, 3, 5, 6, 7, 8])
   end
+
+  it "collects the processes that tests start only once the test session collects line coverage" do
+    child_processes = Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses
+    collected_before_session = !child_processes.current.nil?
+    collected_in_test = nil
+
+    run_rspec do
+      RSpec.describe "Early start" do
+        it "runs in the session" do
+          collected_in_test = !child_processes.current.nil?
+        end
+      end
+    end
+
+    expect(first_test_span).to have_pass_status
+    expect([collected_before_session, collected_in_test]).to eq([false, true])
+  end
 end

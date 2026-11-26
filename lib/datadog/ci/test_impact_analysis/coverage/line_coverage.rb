@@ -16,7 +16,8 @@ module Datadog
         # creates. Lines that run in no open context are reported once per process, in
         # the unowned part of #shared.
         #
-        # The processes that a context starts record their lines for that context (see
+        # Once a test session collects line coverage (#collect_child_processes), the
+        # processes that a context starts record their lines for that context (see
         # ChildProcesses). A test gets the lines of the children that finished before it
         # did; the lines of a child that finishes later are unowned.
         #
@@ -91,8 +92,7 @@ module Datadog
 
             @first_root = root
             @running_with = [root, ignored_paths]
-            ChildProcesses.start(root: root, ignored_paths: ignored_paths)
-            new
+            new(root: root, ignored_paths: ignored_paths)
           rescue => e
             Datadog.logger.warn("Failed to start per-test line coverage: #{e.class}: #{e.message}")
             nil
@@ -109,7 +109,9 @@ module Datadog
             Datadog.logger.warn("Failed to stop per-test line coverage: #{e.class}: #{e.message}")
           end
 
-          def initialize
+          def initialize(root:, ignored_paths:)
+            @root = root
+            @ignored_paths = ignored_paths
             @mutex = Mutex.new
             @tests = {}
             @test_ids_by_serial = {}
@@ -202,6 +204,15 @@ module Datadog
           rescue => e
             log_error("collect shared lines", e)
             EMPTY_SHARED
+          end
+
+          # Starts collecting the lines of the processes that tests start. Only a test
+          # session calls it: a process that runs none, such as Rake starting the test
+          # runner, leaves its children alone, so that a child running its own session
+          # keeps the lines it runs outside its tests.
+          def collect_child_processes
+            ChildProcesses.start(root: @root, ignored_paths: @ignored_paths)
+            nil
           end
 
           def stop

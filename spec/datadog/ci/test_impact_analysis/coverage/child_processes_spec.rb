@@ -21,7 +21,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
     skip "per-test line coverage is not supported on this Ruby" unless line_coverage_class.supported?
 
     line_coverage_class.stop_collector
-    line_coverage
+    line_coverage.collect_child_processes
   end
 
   after do
@@ -222,6 +222,17 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       coverage = in_test { system({"RUBYOPT" => nil}, ruby, fixture("leaf")) }
 
       expect(coverage).not_to have_key(relative("leaf"))
+    end
+
+    # As Rake does when it starts the test runner, which runs its own session.
+    it "is unchanged in a process where no test session collects line coverage" do
+      line_coverage_class.stop_collector
+      line_coverage_class.start(root: root, ignored_paths: [])
+
+      output = unbundled { IO.popen({"RUBYOPT" => "-W0"}, [ruby, fixture("environment")], &:read) }
+
+      expect(eval(output)).to eq([nil, "-W0"]) # rubocop:disable Security/Eval
+      expect(child_processes).to be_nil
     end
   end
 

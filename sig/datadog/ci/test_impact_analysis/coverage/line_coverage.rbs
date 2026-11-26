@@ -17,6 +17,8 @@ module Datadog
 
           EMPTY_SHARED: Hash[String, LineCollector::bitmaps]
 
+          @root: String
+          @ignored_paths: Array[String]
           @mutex: Thread::Mutex
           @tests: Hash[Integer, Context]
           @test_ids_by_serial: Hash[Integer, Integer]
@@ -36,7 +38,9 @@ module Datadog
 
           def self.stop_collector: () -> void
 
-          def initialize: () -> void
+          def initialize: (root: String, ignored_paths: Array[String]) -> void
+
+          def collect_child_processes: () -> nil
 
           def start_test: (Integer test_id) -> void
 
