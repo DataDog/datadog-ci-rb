@@ -9,10 +9,12 @@ require_relative "../ext/telemetry"
 
 require_relative "../async_writer"
 require_relative "../contrib/instrumentation"
+require_relative "../git/cli"
 require_relative "../git/local_repository"
 
 require_relative "../source_code/static_dependencies"
 
+require_relative "../utils/bundle"
 require_relative "../utils/parsing"
 require_relative "../utils/stateful"
 require_relative "../utils/telemetry"
@@ -40,6 +42,34 @@ module Datadog
 
         attr_reader :correlation_id, :skippable_tests, :skippable_suites, :enabled, :test_skipping_enabled,
           :code_coverage_enabled, :test_skipping_mode
+
+        # Starts per-test line coverage before Datadog is configured, so that it sees the
+        # code that runs before a test framework loads, such as the initialisers of the
+        # files that a test helper requires. Building the component takes the collector
+        # over, or stops it.
+        #
+        # It runs in every process that loads auto instrumentation, whether or not the
+        # process runs tests, so it finds the repository root without running git and
+        # loads nothing that the process has not loaded, Bundler included.
+        def self.start_line_coverage_before_configure(settings)
+          return unless settings.ci.tia_line_coverage_enabled && settings.ci.itr_enabled
+          return unless defined?(::Bundler)
+
+          root = Git::CLI.find_git_directory(Dir.pwd)
+          return unless File.exist?(File.join(root, ".git"))
+
+          require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+          return unless Coverage::LineCoverage.supported?
+
+          Coverage::LineCoverage.start(
+            root: File.realpath(root),
+            ignored_paths: Coverage::LineCoverage.ignored_paths(Utils::Bundle.location(root))
+          )
+          nil
+        rescue LoadError, StandardError => e
+          Datadog.logger.debug { "Per-test line coverage did not start before configuration: #{e.class}: #{e.message}" }
+          nil
+        end
 
         def self.build(api:, discard_traces:, dd_env:, **options)
           coverage_writer = unless api.nil? || discard_traces
@@ -561,15 +591,9 @@ module Datadog
         def start_line_coverage
           return unless load_datadog_cov!
 
-          ignored_paths = []
-          bundle_location = @bundle_location
-          if bundle_location && File.directory?(bundle_location)
-            ignored_paths << File.join(File.realpath(bundle_location), "")
-          end
-
           Coverage::LineCoverage.start(
             root: File.realpath(Git::LocalRepository.root),
-            ignored_paths: ignored_paths
+            ignored_paths: Coverage::LineCoverage.ignored_paths(@bundle_location)
           )
         rescue => e
           Datadog.logger.warn("Failed to start per-test line coverage: #{e.class}: #{e.message}")

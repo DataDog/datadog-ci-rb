@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "open3"
+require "tmpdir"
+
 require_relative "../../../../lib/datadog/ci/test_impact_analysis/component"
 require_relative "../../../../lib/datadog/ci/test_optimization_cache/component"
 
@@ -1528,6 +1531,102 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Component do
         expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TESTS_SKIPPED)).to be_nil
         expect(test_session_span.get_tag(Datadog::CI::Ext::Test::TAG_ITR_TEST_SKIPPING_COUNT)).to be_nil
       end
+    end
+  end
+
+  describe ".start_line_coverage_before_configure" do
+    let(:line_coverage) { Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage }
+    let(:line_coverage_enabled) { true }
+    let(:itr_enabled_setting) { true }
+    let(:settings) do
+      double(
+        "settings",
+        ci: double("ci settings", tia_line_coverage_enabled: line_coverage_enabled, itr_enabled: itr_enabled_setting)
+      )
+    end
+    let(:root) { Datadog::CI::Git::CLI.find_git_directory(Dir.pwd) }
+
+    before do
+      require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+      skip "per-test line coverage is not supported on this Ruby" unless line_coverage.supported?
+      skip "the specs do not run in a git repository" unless File.exist?(File.join(root, ".git"))
+    end
+
+    it "starts the collector for the repository root without running git" do
+      ignored_paths = line_coverage.ignored_paths(Datadog::CI::Utils::Bundle.location(root))
+      expect(Datadog::CI::Git::LocalRepository).not_to receive(:root)
+      expect(Datadog::CI::Utils::Command).not_to receive(:exec_command)
+      expect(line_coverage).to receive(:start).with(root: File.realpath(root), ignored_paths: ignored_paths)
+
+      described_class.start_line_coverage_before_configure(settings)
+    end
+
+    context "when the line coverage switch is off" do
+      let(:line_coverage_enabled) { false }
+
+      it "does not start the collector" do
+        expect(line_coverage).not_to receive(:start)
+
+        described_class.start_line_coverage_before_configure(settings)
+      end
+    end
+
+    context "when Test Impact Analysis is disabled" do
+      let(:itr_enabled_setting) { false }
+
+      it "does not start the collector" do
+        expect(line_coverage).not_to receive(:start)
+
+        described_class.start_line_coverage_before_configure(settings)
+      end
+    end
+
+    context "when the process has not loaded Bundler" do
+      it "does not start the collector, so that it does not load Bundler" do
+        hide_const("Bundler")
+        expect(line_coverage).not_to receive(:start)
+
+        described_class.start_line_coverage_before_configure(settings)
+      end
+    end
+
+    context "outside a git repository" do
+      it "does not start the collector" do
+        Dir.mktmpdir do |directory|
+          allow(Datadog::CI::Git::CLI).to receive(:find_git_directory).and_return(directory)
+          expect(line_coverage).not_to receive(:start)
+
+          described_class.start_line_coverage_before_configure(settings)
+        end
+      end
+    end
+
+    it "logs a failure at debug level without raising it" do
+      allow(line_coverage).to receive(:start).and_raise(StandardError, "collector failure")
+      debug_messages = []
+      allow(Datadog.logger).to receive(:debug) { |&message| debug_messages << message&.call }
+
+      expect(described_class.start_line_coverage_before_configure(settings)).to be_nil
+      expect(debug_messages).to include(a_string_including("collector failure"))
+    end
+
+    it "runs when auto instrumentation is required, with the line coverage switch on only" do
+      script = <<~RUBY
+        require "datadog/ci/auto_instrument"
+        require "datadog_ci_native.\#{RUBY_VERSION}_\#{RUBY_PLATFORM}"
+        print("collector running: \#{Datadog::CI::TestImpactAnalysis::Coverage::LineCollector.stop}")
+      RUBY
+      outputs = ["true", "false"].map do |switch|
+        env = {
+          Datadog::CI::Ext::Settings::ENV_TIA_LINE_COVERAGE_ENABLED => switch,
+          Datadog::CI::Ext::Settings::ENV_ITR_ENABLED => "true"
+        }
+        stdout, stderr, status = Open3.capture3(env, RbConfig.ruby, "-Ilib", "-e", script)
+        expect(status.success?).to be(true), stderr
+        stdout
+      end
+
+      expect(outputs).to match([end_with("collector running: true"), end_with("collector running: false")])
     end
   end
 end
