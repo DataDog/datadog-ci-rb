@@ -79,6 +79,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
 
   describe "#finish_test" do
     let(:root) { File.realpath(Datadog::CI::Git::LocalRepository.root) }
+    let(:collector) { Datadog::CI::TestImpactAnalysis::Coverage::LineCollector }
 
     before do
       require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
@@ -127,6 +128,33 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
         )
         expect(bitmaps.keys.map(&:bytesize)).to include(be < 32, be >= 256)
         expect(bitmaps.values.map(&:bytesize)).to include(be < 256, be >= 256)
+      end
+    end
+
+    it "gives a script without code no site and no line" do
+      Dir.mktmpdir("lc", root) do |directory|
+        empty_path = File.join(directory, "empty.rb")
+        code_path = File.join(directory, "code.rb")
+        File.write(empty_path, "")
+        File.write(code_path, "def LineCoverageSpecFiles.code\n  1\nend\n")
+
+        line_coverage = described_class.start(root: root, ignored_paths: [])
+        load code_path
+        line_coverage.start_test(1)
+        sites = collector.stats.fetch(:sites)
+        load empty_path
+        Object.new.instance_eval(File.read(empty_path), empty_path, 1)
+        expect(collector.stats.fetch(:sites)).to eq(sites)
+        LineCoverageSpecFiles.code
+        _count, packed = line_coverage.finish_test(1, [])
+
+        lines = {}
+        MessagePack::Unpacker.new.feed_each(packed) do |map|
+          lines[map.fetch("filename")] = Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.lines(map.fetch("bitmap"))
+        end
+        relative_directory = directory.delete_prefix(File.join(root, ""))
+        expect(lines).not_to have_key(File.join(relative_directory, "empty.rb"))
+        expect(lines.fetch(File.join(relative_directory, "code.rb"))).to include(2)
       end
     end
   end
