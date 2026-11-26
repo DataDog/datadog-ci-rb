@@ -9,6 +9,19 @@ require "tmpdir"
 require_relative "../../../../../lib/datadog/ci/test_impact_analysis/coverage/line_coverage"
 
 RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
+  # Executed lines by file name, for the files in directory.
+  def lines_in(directory, packed)
+    prefix = File.join(directory.delete_prefix(File.join(root, "")), "")
+    lines = {}
+    MessagePack::Unpacker.new.feed_each(packed) do |map|
+      file = map.fetch("filename")
+      next unless file.start_with?(prefix)
+
+      lines[file.delete_prefix(prefix)] = Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.lines(map.fetch("bitmap"))
+    end
+    lines
+  end
+
   describe ".ignored_paths" do
     it "ignores the bundle location when it is a directory" do
       Dir.mktmpdir do |bundle_location|
@@ -93,19 +106,6 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
 
     after do
       described_class.stop_collector
-    end
-
-    # Executed lines by file name, for the files in directory.
-    def lines_in(directory, packed)
-      prefix = File.join(directory.delete_prefix(File.join(root, "")), "")
-      lines = {}
-      MessagePack::Unpacker.new.feed_each(packed) do |map|
-        file = map.fetch("filename")
-        next unless file.start_with?(prefix)
-
-        lines[file.delete_prefix(prefix)] = Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.lines(map.fetch("bitmap"))
-      end
-      lines
     end
 
     # msgpack takes a longer header for a path of 32 bytes or more and again of 256 or
@@ -201,6 +201,175 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
 
         expect(lines_in(directory, packed).fetch("ensured.rb")).to include(2, 3)
       end
+    end
+  end
+
+  # Bundler loads files of the repository while it reads its gemspec, which can be before
+  # the collector starts.
+  describe "the initialiser lines of files that loaded before the start" do
+    let(:root) { File.realpath(Datadog::CI::Git::LocalRepository.root) }
+    let(:collector) { Datadog::CI::TestImpactAnalysis::Coverage::LineCollector }
+
+    before do
+      require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+      skip "per-test line coverage is not supported on this Ruby" unless described_class.supported?
+
+      described_class.stop_collector
+      stub_const("LineCoverageSpecFiles", Module.new)
+    end
+
+    after do
+      described_class.stop_collector
+    end
+
+    def straight_source(name)
+      <<~RUBY
+        module LineCoverageSpecFiles
+          #{name.upcase} = 1
+          class #{name}
+            NAME = "#{name}"
+            def self.name_of
+              NAME
+            end
+          end
+        end
+      RUBY
+    end
+
+    # The branch is in the module body, which holds the class body.
+    def branched_source(name)
+      <<~RUBY
+        module LineCoverageSpecFiles
+          #{name.upcase} = defined?(::LineCoverageSpecNoSuchConstant) ? 1 : 2
+          class #{name}
+            NAME = "#{name}"
+          end
+          def self.#{name.downcase}
+            #{name.upcase}
+          end
+        end
+      RUBY
+    end
+
+    def left_out_lines(path)
+      bitmap = collector.stats.fetch(:loaded_lines_left_by_file).fetch(path.delete_prefix(File.join(root, "")))
+      Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.lines(bitmap)
+    end
+
+    it "credits the lines that the collector records when it sees the file load, if no branch can skip them" do
+      Dir.mktmpdir("lc", root) do |directory|
+        File.write(File.join(directory, "before.rb"), straight_source("Before"))
+        File.write(File.join(directory, "after.rb"), straight_source("After"))
+        require File.join(directory, "before.rb")
+
+        line_coverage = described_class.start(root: root, ignored_paths: [])
+        require File.join(directory, "after.rb")
+        line_coverage.start_test(1)
+        LineCoverageSpecFiles::Before.name_of
+        LineCoverageSpecFiles::After.name_of
+        _count, packed = line_coverage.finish_test(1, [])
+
+        lines = lines_in(directory, packed)
+        expect(lines.fetch("before.rb")).to eq([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        expect(lines.fetch("after.rb")).to eq(lines.fetch("before.rb"))
+      end
+    end
+
+    it "leaves out and reports the lines of initialiser code that a branch may have skipped" do
+      Dir.mktmpdir("lc", root) do |directory|
+        before_path = File.join(directory, "before.rb")
+        File.write(before_path, branched_source("Before"))
+        File.write(File.join(directory, "after.rb"), branched_source("After"))
+        require before_path
+
+        line_coverage = described_class.start(root: root, ignored_paths: [])
+        require File.join(directory, "after.rb")
+        line_coverage.start_test(1)
+        LineCoverageSpecFiles.before
+        LineCoverageSpecFiles.after
+        _count, packed = line_coverage.finish_test(1, [])
+
+        lines = lines_in(directory, packed)
+        # The top level and the method.
+        expect(lines.fetch("before.rb")).to eq([1, 7, 8])
+        expect(left_out_lines(before_path)).to eq([2, 3, 4, 5, 6, 9])
+        expect((lines.fetch("before.rb") + left_out_lines(before_path)).sort).to eq(lines.fetch("after.rb"))
+      end
+    end
+
+    it "compiles a file that loaded before a start once, and none that loaded while the collector ran" do
+      Dir.mktmpdir("lc", root) do |directory|
+        paths = %w[first second third].map { |name| File.join(directory, "#{name}.rb") }
+        paths.zip(%w[First Second Third]).each { |path, name| File.write(path, straight_source(name)) }
+        # Every repository file loaded so far is then known.
+        described_class.start(root: root, ignored_paths: [])
+        described_class.stop_collector
+        compiled = collector.stats.fetch(:loaded_files)
+
+        require paths[0]
+        described_class.start(root: root, ignored_paths: [])
+        expect(collector.stats.fetch(:loaded_files)).to eq(compiled + 1)
+        require paths[1]
+        described_class.stop_collector
+        require paths[2]
+        described_class.start(root: root, ignored_paths: [])
+
+        expect(collector.stats.fetch(:loaded_files)).to eq(compiled + 2)
+      end
+    end
+
+    it "credits no initialiser line of a file that no longer compiles, and keeps $!" do
+      Dir.mktmpdir("lc", root) do |directory|
+        path = File.join(directory, "changed.rb")
+        File.write(path, straight_source("Changed"))
+        require path
+        File.write(path, "module LineCoverageSpecFiles\n  def (\nend\n")
+        failures = collector.stats.fetch(:loaded_file_failures)
+
+        line_coverage = nil
+        begin
+          raise ArgumentError, "raised before the start"
+        rescue ArgumentError => error
+          line_coverage = described_class.start(root: root, ignored_paths: [])
+          expect($!).to be(error)
+        end
+        line_coverage.start_test(1)
+        LineCoverageSpecFiles::Changed.name_of
+        _count, packed = line_coverage.finish_test(1, [])
+
+        expect(collector.stats.fetch(:loaded_file_failures)).to eq(failures + 1)
+        expect(lines_in(directory, packed).fetch("changed.rb")).to eq([6, 7])
+      end
+    end
+
+    it "gives the copy that it compiles no absolute path, so that a search of the heap for the file's code skips it" do
+      Dir.mktmpdir("lc", root) do |directory|
+        path = File.join(directory, "copied.rb")
+        File.write(path, straight_source("Copied"))
+        require path
+
+        copies = nil
+        gc_was_disabled = GC.disable
+        begin
+          described_class.start(root: root, ignored_paths: [])
+          copies = ObjectSpace.each_object(RubyVM::InstructionSequence).select { |iseq| iseq.path == path }
+        ensure
+          GC.enable unless gc_was_disabled
+        end
+
+        expect(copies.map(&:absolute_path)).to include("")
+        expect(copies.select { |iseq| iseq.absolute_path == path }.map(&:label)).not_to include("<compiled>")
+      end
+    end
+
+    # In a child process, so that this process does not run Ruby's Coverage.
+    it "leaves Ruby's Coverage results alone, and shows a file's warnings only once" do
+      script = File.join(__dir__, "fixtures", "line_coverage", "coverage_before_start.rb")
+      stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I", File.join(root, "lib"), script, root)
+
+      expect(status).to be_success, stderr
+      expect(stdout).to eq("[true, true, true]")
+      expect(stderr.scan("assigned but unused variable").size).to eq(1)
     end
   end
 
