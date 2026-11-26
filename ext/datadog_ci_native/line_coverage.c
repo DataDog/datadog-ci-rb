@@ -24,6 +24,10 @@
  * Initialiser code (a file's top level and class or module bodies) records into the
  * file's initialiser lines once per process and is never re-armed.
  *
+ * Code compiled by YJIT never runs trace instructions, so it would ignore re-armed
+ * sites. While YJIT is on, every pc where YJIT can enter a repository iseq holds a trace
+ * instruction (a guard), which keeps repository code interpreted.
+ *
  * Contexts reach other threads and fibers through fiber storage (Ruby 3.2+), which
  * Ruby copies into every thread and fiber a context creates.
  */
@@ -43,6 +47,7 @@ void Init_dd_ci_line_coverage(void) {
   VALUE mCoverage = rb_define_module_under(mTIA, "Coverage");
   VALUE mLineCollector = rb_define_module_under(mCoverage, "LineCollector");
   rb_define_singleton_method(mLineCollector, "supported?", supported_p, 0);
+  rb_define_singleton_method(mLineCollector, "yjit_supported?", supported_p, 0);
 }
 
 #else
@@ -61,7 +66,9 @@ void Init_dd_ci_line_coverage(void) {
 #pragma GCC diagnostic pop
 
 #include <ruby/debug.h>
+#include <ruby/version.h>
 
+#include <dlfcn.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -90,6 +97,7 @@ enum site_flag {
   SITE_INIT_SEEN = 1 << 4,     /* initialiser line recorded */
   SITE_ENTRY_FLAGGED = 1 << 5, /* we set the trap event in its entry */
   SITE_SHARED = 1 << 6,        /* Ruby's Coverage set the trap event in its entry */
+  SITE_GUARD = 1 << 7,         /* keeps YJIT out of its iseq: never untraced */
 };
 
 typedef struct {
@@ -98,7 +106,7 @@ typedef struct {
   VALUE trace;  /* encoding that traps */
   struct iseq_insn_info_entry *entry;
   uint32_t pos;
-  uint32_t file;
+  uint32_t record;
   uint32_t line;
   uint16_t insn;
   uint8_t flags;
@@ -109,9 +117,19 @@ typedef struct {
 
 typedef struct {
   const rb_iseq_t *iseq;
+  uint32_t file;
   uint32_t first_site;
   uint32_t site_count;
+  uint32_t first_guard;
+  uint32_t guard_count;
+  long guards_checked; /* serial of the context whose opening last checked the guards */
 } iseq_record_t;
+
+/* A YJIT guard: a trace instruction at a pc where YJIT can enter an iseq. */
+typedef struct {
+  VALUE *slot;
+  VALUE value;
+} guard_t;
 
 typedef struct {
   uint8_t *bytes;
@@ -147,6 +165,7 @@ static struct {
   bool compile_hook_installed;
   bool line_hook_installed;
   bool branch_hook_installed;
+  bool yjit_guarded; /* every armed iseq has its YJIT guards */
   rb_event_flag_t trap_event;
   VALUE root;          /* realpath of the repository root, with a trailing '/' */
   VALUE ignored_paths; /* realpath prefixes excluded on top of the dependency directories */
@@ -160,6 +179,10 @@ static struct {
   iseq_record_t *records;
   size_t record_count;
   size_t record_capacity;
+
+  guard_t *guards;
+  size_t guard_count;
+  size_t guard_capacity;
 
   /* open addressing, iseq pointer -> record index + 1 */
   uintptr_t *map_keys;
@@ -197,6 +220,8 @@ static struct {
     unsigned long foreign_calls;
     unsigned long idle_calls;
     unsigned long trap_event_switches;
+    unsigned long guard_repairs;
+    unsigned long yjit_invalidations;
     unsigned long entry_aliases;
     unsigned long traps;
     unsigned long init_traps;
@@ -212,6 +237,24 @@ static struct {
 } st;
 
 static VALUE state_holder = Qnil;
+
+static inline file_t *site_file(const site_t *site) { return &st.files[st.records[site->record].file]; }
+
+/* YJIT exists only in some builds, so its symbols are looked up at runtime. */
+#if RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR < 3
+static bool (*yjit_enabled_function)(void);
+#else
+static const bool *yjit_enabled_variable;
+#endif
+static void (*yjit_invalidate_all)(void);
+
+static bool yjit_enabled(void) {
+#if RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR < 3
+  return yjit_enabled_function && yjit_enabled_function();
+#else
+  return yjit_enabled_variable && *yjit_enabled_variable;
+#endif
+}
 
 /* ---- small containers --------------------------------------------------- */
 
@@ -537,7 +580,7 @@ static void switch_trap_event_to_line(void) {
 
 /* ---- arming --------------------------------------------------------------- */
 
-static bool add_site(uint32_t pos, struct iseq_insn_info_entry *entry, uint32_t file, uint32_t line, uint8_t flags) {
+static bool add_site(uint32_t pos, struct iseq_insn_info_entry *entry, uint32_t record, uint32_t line, uint8_t flags) {
   size_t capacity = st.site_capacity;
   if (!grow((void **)&st.sites, &capacity, st.site_count + 1, sizeof(site_t))) return false;
   st.site_capacity = capacity;
@@ -545,11 +588,13 @@ static bool add_site(uint32_t pos, struct iseq_insn_info_entry *entry, uint32_t 
   memset(site, 0, sizeof(*site));
   site->pos = pos;
   site->entry = entry;
-  site->file = file;
+  site->record = record;
   site->line = line;
   site->flags = flags;
   return true;
 }
+
+static void guard_iseq(iseq_record_t *record);
 
 /* Finds the line-start instructions of `iseq`, registers them as sites, and arms them.
  * Pushes the child iseqs onto `children` when given. */
@@ -616,7 +661,7 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***childr
     if (k >= 1 && k <= entry_count) {
       if (entries[k - 1].events == 0) plain_learn(insn, encoded[pos]);
       if ((entries[k - 1].events & RUBY_EVENT_LINE) && lines[k - 1] > 0 && insn < INSN_TABLE_SIZE) {
-        if (!add_site(pos, &entries[k - 1], (uint32_t)file, (uint32_t)lines[k - 1], base_flags)) break;
+        if (!add_site(pos, &entries[k - 1], (uint32_t)st.record_count, (uint32_t)lines[k - 1], base_flags)) break;
         st.sites[st.site_count - 1].insn = (uint16_t)insn;
       }
     }
@@ -670,15 +715,19 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***childr
   }
 
   iseq_record_t *record = &st.records[st.record_count];
+  memset(record, 0, sizeof(*record));
   record->iseq = iseq;
+  record->file = (uint32_t)file;
   record->first_site = (uint32_t)first;
   record->site_count = (uint32_t)count;
   if (!map_put(iseq, (uint32_t)st.record_count)) {
-    /* Leave the sites armed but unknown to the hook; it ignores them. */
+    /* Leave the instructions armed but unknown to the hook; it ignores them. */
+    st.site_count = first;
     goto done;
   }
   st.record_count++;
   st.stats.iseqs_armed++;
+  if (st.yjit_guarded) guard_iseq(record);
 
 done:
   if (!had_original) ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
@@ -722,7 +771,7 @@ static inline context_t *context_for(const rb_execution_context_t *ec) {
  * test is Ruby's own when it clears an event flag: once an event has been enabled, Ruby
  * relies on the instructions that carry it staying traced. */
 static void untrace_if_unneeded(site_t *site, const rb_iseq_t *iseq) {
-  if (*site->slot != site->trace) return;
+  if ((site->flags & SITE_GUARD) || *site->slot != site->trace) return;
   rb_event_flag_t needed = iseq->aux.exec.global_trace_events;
   if (iseq->aux.exec.local_hooks) needed |= iseq->aux.exec.local_hooks->events;
   if (site->entry->events & needed) return;
@@ -774,6 +823,126 @@ static long find_site(const iseq_record_t *record, uint32_t pos) {
   return -1;
 }
 
+/* ---- YJIT ------------------------------------------------------------------- */
+
+/* YJIT compiles from the instruction where the interpreter enters an iseq and stops at
+ * the first trace instruction, which it cannot compile. A trace instruction at every
+ * such pc keeps the iseq interpreted, where re-armed traps take effect. The entries are
+ * pc 0, each optional-argument entry, and each catch table continuation. Guarding again
+ * rewrites the same pcs. */
+static void guard_iseq(iseq_record_t *record) {
+  const rb_iseq_t *iseq = record->iseq;
+  const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+  unsigned int entry_count = body->insns_info.size;
+  struct iseq_insn_info_entry *entries = (struct iseq_insn_info_entry *)body->insns_info.body;
+  if (entry_count == 0 || !entries) return;
+
+  size_t opt_count = body->param.flags.has_opt ? (size_t)body->param.opt_num + 1 : 0;
+  size_t catch_count = body->catch_table ? body->catch_table->size : 0;
+  size_t pc_count = 0;
+  unsigned int *pcs = malloc((1 + opt_count + catch_count) * sizeof(unsigned int));
+  int *lines = malloc(entry_count * sizeof(int));
+  bool *flagged = calloc(entry_count, sizeof(bool));
+  if (!pcs || !lines || !flagged) {
+    st.stats.allocation_failures++;
+    goto done;
+  }
+  pcs[pc_count++] = 0;
+  for (size_t i = 0; i < opt_count; i++) pcs[pc_count++] = (unsigned int)body->param.opt_table[i];
+  for (size_t i = 0; i < catch_count; i++) {
+    unsigned int cont = UNALIGNED_MEMBER_PTR(body->catch_table, entries[i])->cont;
+    if (cont < body->iseq_size) pcs[pc_count++] = cont;
+  }
+
+  for (unsigned int k = 0; k < entry_count; k++) {
+    lines[k] = entries[k].line_no;
+    entries[k].line_no = (int)k + 1;
+  }
+  bool retrace = false;
+  for (size_t i = 0; i < pc_count; i++) {
+    unsigned int pc = pcs[i];
+    long site_index = find_site(record, pc);
+    if (site_index >= 0) {
+      site_t *site = &st.sites[site_index];
+      site->flags |= SITE_GUARD;
+      *site->slot = site->trace;
+      continue;
+    }
+    /* Not a site: let the VM trace it through a passing event flag. */
+    unsigned int k = rb_iseq_line_no(iseq, pc);
+    if (k < 1 || k > entry_count) continue;
+    if (!(entries[k - 1].events & st.trap_event)) {
+      entries[k - 1].events |= st.trap_event;
+      flagged[k - 1] = true;
+    }
+    retrace = true;
+  }
+  for (unsigned int k = 0; k < entry_count; k++) entries[k].line_no = lines[k];
+
+  if (retrace) {
+    rb_iseq_t *mutable_iseq = (rb_iseq_t *)iseq;
+    rb_event_flag_t global_events = mutable_iseq->aux.exec.global_trace_events;
+    mutable_iseq->aux.exec.global_trace_events = 0;
+    rb_iseq_trace_set(iseq, global_events | st.trap_event);
+    for (unsigned int k = 0; k < entry_count; k++) {
+      if (flagged[k]) entries[k].events &= ~st.trap_event;
+    }
+  }
+
+  if (record->guard_count == 0) {
+    size_t capacity = st.guard_capacity;
+    if (!grow((void **)&st.guards, &capacity, st.guard_count + pc_count, sizeof(guard_t))) goto done;
+    st.guard_capacity = capacity;
+    record->first_guard = (uint32_t)st.guard_count;
+    record->guard_count = (uint32_t)pc_count;
+    st.guard_count += pc_count;
+  }
+  /* What each pc holds now, to notice when Ruby untraces it. */
+  VALUE *encoded = (VALUE *)body->iseq_encoded;
+  for (size_t i = 0; i < pc_count && i < record->guard_count; i++) {
+    guard_t *guard = &st.guards[record->first_guard + i];
+    guard->slot = &encoded[pcs[i]];
+    guard->value = encoded[pcs[i]];
+  }
+
+done:
+  free(pcs);
+  free(lines);
+  free(flagged);
+}
+
+static void invalidate_yjit_code(void) {
+  if (!yjit_invalidate_all) return;
+  yjit_invalidate_all();
+  st.stats.yjit_invalidations++;
+}
+
+static void enable_yjit_guards(void) {
+  for (size_t i = 0; i < st.record_count; i++) guard_iseq(&st.records[i]);
+  st.yjit_guarded = true;
+  /* Drops what YJIT compiled before the guards. */
+  invalidate_yjit_code();
+}
+
+/* Removing a targeted TracePoint makes Ruby recompute the iseq's trace instructions,
+ * which untraces guards at pcs whose events it no longer needs; YJIT may have compiled
+ * the iseq since. Returns whether the guards had to be restored. */
+static bool repair_guards(iseq_record_t *record) {
+  if (record->guards_checked == st.next_serial) return false;
+  record->guards_checked = st.next_serial;
+  for (uint32_t i = 0; i < record->guard_count; i++) {
+    const guard_t *guard = &st.guards[record->first_guard + i];
+    if (*guard->slot != guard->value) {
+      guard_iseq(record);
+      st.stats.guard_repairs++;
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ---- the trap ----------------------------------------------------------------- */
+
 static void on_trap(const rb_trace_arg_t *trace_arg) {
   st.stats.hook_calls++;
   const rb_control_frame_t *cfp = trace_arg->cfp;
@@ -809,7 +978,7 @@ static void on_trap(const rb_trace_arg_t *trace_arg) {
     st.stats.init_traps++;
     if (!(site->flags & SITE_INIT_SEEN)) {
       site->flags |= SITE_INIT_SEEN;
-      line_bitmap_set(&st.files[site->file].init_lines, site->line);
+      line_bitmap_set(&site_file(site)->init_lines, site->line);
     }
     disarm(site, iseq);
     return;
@@ -891,11 +1060,15 @@ static void arm_loaded_code(void) {
 /* ---- contexts --------------------------------------------------------------- */
 
 static void rearm_dirty_sites(void) {
+  bool repaired = false;
   for (size_t i = 0; i < st.dirty.count; i++) {
     site_t *site = &st.sites[st.dirty.items[i]];
     site->flags &= ~SITE_DIRTY;
+    /* Before arming, which would restore a guard site and hide the damage. */
+    if (st.yjit_guarded && repair_guards(&st.records[site->record])) repaired = true;
     arm(site);
   }
+  if (repaired) invalidate_yjit_code();
   st.stats.rearms += st.dirty.count;
   st.dirty.count = 0;
 }
@@ -953,6 +1126,8 @@ static VALUE line_collector_open_context(int argc, VALUE *argv, VALUE self) {
   context->fixture = RTEST(fixture);
   context->hit_count = 0;
   st.open_contexts[st.open_count++] = (uint32_t)index;
+  /* YJIT can be turned on at runtime (RubyVM::YJIT.enable). */
+  if (!st.yjit_guarded && yjit_enabled()) enable_yjit_guards();
   rearm_dirty_sites();
   return LONG2FIX(context->serial);
 }
@@ -973,7 +1148,7 @@ static void release_context(context_t *context) {
   if (context->fixture) {
     for (size_t i = 0; i < context->hit_count; i++) {
       site_t *site = &st.sites[context->hits[i]];
-      line_bitmap_set(&st.files[site->file].suite_setup_lines, site->line);
+      line_bitmap_set(&site_file(site)->suite_setup_lines, site->line);
     }
   }
   context_clear(context);
@@ -983,11 +1158,12 @@ static void release_context(context_t *context) {
 static void add_context_lines(context_t *context, uint32_t epoch, id_vector_t *touched) {
   for (size_t i = 0; i < context->hit_count; i++) {
     site_t *site = &st.sites[context->hits[i]];
-    file_t *file = &st.files[site->file];
+    uint32_t file_index = st.records[site->record].file;
+    file_t *file = &st.files[file_index];
     if (file->scratch_epoch != epoch) {
       file->scratch_epoch = epoch;
       if (file->scratch.length) memset(file->scratch.bytes, 0, file->scratch.length);
-      id_vector_push(touched, site->file);
+      id_vector_push(touched, file_index);
     }
     line_bitmap_set(&file->scratch, site->line);
   }
@@ -1055,7 +1231,7 @@ static VALUE line_collector_shared(VALUE self) {
   }
   for (size_t i = 0; i < st.unowned_hits.count; i++) {
     site_t *site = &st.sites[st.unowned_hits.items[i]];
-    line_bitmap_set(&st.files[site->file].scratch, site->line);
+    line_bitmap_set(&site_file(site)->scratch, site->line);
   }
   rb_hash_aset(result, rb_str_new_cstr("unowned"), bitmaps_hash(select_scratch));
   return result;
@@ -1086,6 +1262,7 @@ static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
 
   VALUE gc_was_disabled = rb_gc_disable();
   arm_loaded_code();
+  if (yjit_enabled()) enable_yjit_guards();
   if (gc_was_disabled == Qfalse) rb_gc_enable();
   st.stats.discovery_seconds = now_seconds() - started_at;
   return Qtrue;
@@ -1124,6 +1301,10 @@ static VALUE line_collector_stats(VALUE self) {
   STAT("files", ULONG2NUM(st.file_count));
   STAT("trap_event", rb_str_new_cstr(st.trap_event == RUBY_EVENT_COVERAGE_LINE ? "coverage_line" : "coverage_branch"));
   STAT("trap_event_switches", ULONG2NUM(st.stats.trap_event_switches));
+  STAT("yjit_guarded", st.yjit_guarded ? Qtrue : Qfalse);
+  STAT("guards", ULONG2NUM(st.guard_count));
+  STAT("guard_repairs", ULONG2NUM(st.stats.guard_repairs));
+  STAT("yjit_invalidations", ULONG2NUM(st.stats.yjit_invalidations));
   STAT("hook_calls", ULONG2NUM(st.stats.hook_calls));
   STAT("foreign_calls", ULONG2NUM(st.stats.foreign_calls));
   STAT("idle_calls", ULONG2NUM(st.stats.idle_calls));
@@ -1152,6 +1333,17 @@ static VALUE line_collector_stats(VALUE self) {
 }
 
 static VALUE supported_p(VALUE self) { return Qtrue; }
+
+/* Whether the collector can keep repository code out of YJIT in this Ruby. False also
+ * when Ruby is built without YJIT. */
+static VALUE yjit_supported_p(VALUE self) {
+#if RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR < 3
+  bool found = yjit_enabled_function != NULL;
+#else
+  bool found = yjit_enabled_variable != NULL;
+#endif
+  return found && yjit_invalidate_all ? Qtrue : Qfalse;
+}
 
 /* ---- GC ------------------------------------------------------------------- */
 
@@ -1182,11 +1374,19 @@ void Init_dd_ci_line_coverage(void) {
   st.path_cache = Qnil;
   st.context_key = ID2SYM(rb_intern("__datadog_ci_coverage_context"));
 
+#if RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR < 3
+  yjit_enabled_function = (bool (*)(void))dlsym(RTLD_DEFAULT, "rb_yjit_enabled_p");
+#else
+  yjit_enabled_variable = (const bool *)dlsym(RTLD_DEFAULT, "rb_yjit_enabled_p");
+#endif
+  yjit_invalidate_all = (void (*)(void))dlsym(RTLD_DEFAULT, "rb_yjit_tracing_invalidate_all");
+
   state_holder = TypedData_Wrap_Struct(rb_cObject, &state_type, &st);
   rb_gc_register_mark_object(state_holder);
 
   rb_define_const(mLineCollector, "CONTEXT_KEY", st.context_key);
   rb_define_singleton_method(mLineCollector, "supported?", supported_p, 0);
+  rb_define_singleton_method(mLineCollector, "yjit_supported?", yjit_supported_p, 0);
   rb_define_singleton_method(mLineCollector, "start", line_collector_start, 2);
   rb_define_singleton_method(mLineCollector, "stop", line_collector_stop, 0);
   rb_define_singleton_method(mLineCollector, "open_context", line_collector_open_context, -1);
