@@ -28,7 +28,10 @@
  *
  * Initialiser code (a file's top level and the class and module bodies nested in it
  * through class and module bodies only) records into the file's initialiser lines once
- * per process and is never re-armed.
+ * per process and is never re-armed. For a repository file that finished loading before
+ * the start, the collector compiles the file's source again without running it, and
+ * records the lines of every initialiser iseq that must have run whole: one without
+ * branches, held only by such iseqs.
  *
  * Code compiled by YJIT never runs trace instructions, so it would ignore re-armed
  * sites. From the first context on, while YJIT is on, every pc where YJIT can enter a
@@ -76,12 +79,15 @@ void Init_dd_ci_line_coverage(void) {
 #include <ruby/version.h>
 
 #include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 /* Generated into insns_info.inc, which the private headers do not ship; exported by
  * libruby for debuggers. */
@@ -161,7 +167,11 @@ typedef struct {
   line_bitmap_t init_lines;
   line_bitmap_t suite_setup_lines;
   line_bitmap_t scratch;
+  /* initialiser lines of a file loaded before a start that may not have run */
+  line_bitmap_t initialisers_left;
   uint32_t scratch_epoch;
+  /* the collector saw the file load, or credited its initialisers at a start */
+  bool initialisers_known;
 } file_t;
 
 /* A site a context recorded, with its file and line: reading a context back then touches
@@ -196,7 +206,10 @@ static struct {
   VALUE root;          /* realpath of the repository root, with a trailing '/' */
   VALUE ignored_paths; /* realpath prefixes excluded on top of the dependency directories */
   VALUE path_cache;    /* iseq path -> file index (Integer) or false */
+  VALUE files_by_path; /* repository-relative path -> file index (Integer) */
   VALUE context_key;   /* fiber storage key */
+  VALUE compile_options; /* for compiling files loaded before the start */
+  bool crediting_loaded_files;
 
   site_t *sites;
   size_t site_count;
@@ -274,6 +287,12 @@ static struct {
     unsigned long allocation_failures;
     unsigned long event_flag_syncs;
     double discovery_seconds;
+    unsigned long loaded_files; /* repository files loaded before a start, compiled again */
+    unsigned long loaded_file_failures;
+    unsigned long loaded_files_with_branches;
+    unsigned long loaded_lines_credited;
+    unsigned long loaded_lines_left;
+    double loaded_files_seconds;
   } stats;
 } st;
 
@@ -519,13 +538,21 @@ static long classify_path_uncached(VALUE path) {
     part = end + 1;
   }
 
+  /* A start after a stop classifies paths again; the file keeps its entry. */
+  VALUE relative_path = rb_obj_freeze(rb_utf8_str_new_cstr(relative));
+  VALUE known = rb_hash_lookup2(st.files_by_path, relative_path, Qundef);
+  if (known != Qundef) {
+    result = FIX2LONG(known);
+    goto done;
+  }
   size_t file_capacity = st.file_capacity;
   if (!grow((void **)&st.files, &file_capacity, st.file_count + 1, sizeof(file_t))) goto done;
   st.file_capacity = file_capacity;
   file_t *file = &st.files[st.file_count];
   memset(file, 0, sizeof(*file));
-  file->path = rb_obj_freeze(rb_utf8_str_new_cstr(relative));
+  file->path = relative_path;
   result = (long)st.file_count++;
+  rb_hash_aset(st.files_by_path, relative_path, LONG2FIX(result));
 
 done:
   free(real);
@@ -1216,12 +1243,20 @@ static void on_trap(const rb_trace_arg_t *trace_arg) {
 
 
 static void on_script_compiled(VALUE data, const rb_trace_arg_t *trace_arg) {
+  /* What the collector compiles itself never runs. */
+  if (st.crediting_loaded_files) return;
   VALUE compiled = trace_arg->data;
   if (RB_TYPE_P(compiled, T_ARRAY)) compiled = RARRAY_AREF(compiled, 1);
   if (!RB_TYPE_P(compiled, T_IMEMO) || imemo_type(compiled) != imemo_iseq) return;
+  const rb_iseq_t *iseq = (const rb_iseq_t *)compiled;
   VALUE gc_was_disabled = rb_gc_disable();
-  arm_tree((const rb_iseq_t *)compiled);
+  arm_tree(iseq);
   if (gc_was_disabled == Qfalse) rb_gc_enable();
+  /* The file loads now, so its initialiser lines trap. */
+  if (initialiser_root_p(iseq)) {
+    long file = classify_path(rb_iseq_path(iseq));
+    if (file >= 0) st.files[file].initialisers_known = true;
+  }
 }
 
 static void on_event(VALUE data, const rb_trace_arg_t *trace_arg) {
@@ -1317,6 +1352,199 @@ static void arm_loaded_code(void) {
   }
   st_free_table(nested);
   free(list.items);
+}
+
+/* ---- initialisers of files loaded before the start -------------------------- */
+
+/* Instruction numbers from RubyVM::INSTRUCTION_NAMES; -1 when not found. */
+static long insn_leave = -1;
+static long insn_throw = -1;
+static ID id_compile;
+
+/* Whether `iseq`, once it starts, runs each of its instructions in order up to its last
+ * one, unless it raises: no jump or branch, no throw, no leave before the last
+ * instruction, and no catch table entry but break. A break entry continues right after
+ * the call whose block breaks. */
+static bool runs_whole_p(const rb_iseq_t *iseq, const VALUE *original) {
+  const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+  if (body->catch_table) {
+    for (unsigned int i = 0; i < body->catch_table->size; i++) {
+      if (UNALIGNED_MEMBER_PTR(body->catch_table, entries[i])->type != CATCH_TYPE_BREAK) return false;
+    }
+  }
+  for (unsigned int pos = 0; pos < body->iseq_size;) {
+    VALUE insn = original[pos];
+    unsigned int length = rb_vm_insn_len_info[insn];
+    if ((long)insn == insn_throw || ((long)insn == insn_leave && pos + length < body->iseq_size)) return false;
+    const char *types = &rb_vm_insn_op_base[rb_vm_insn_op_offset[insn]];
+    for (int j = 0; types[j]; j++) {
+      if (types[j] == OPERAND_TYPE_OFFSET || types[j] == OPERAND_TYPE_CDHASH) return false;
+    }
+    pos += length;
+  }
+  return true;
+}
+
+/* Sets the line of every site that arm_iseq would find in `iseq`. */
+static void add_site_lines(const rb_iseq_t *iseq, const VALUE *original, line_bitmap_t *lines) {
+  const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+  unsigned int entry_count = body->insns_info.size;
+  const struct iseq_insn_info_entry *entries = body->insns_info.body;
+  if (entry_count == 0 || !entries) return;
+  if (body->type == ISEQ_TYPE_TOP || body->type == ISEQ_TYPE_MAIN || body->type == ISEQ_TYPE_EVAL) {
+    bool has_events = false;
+    for (unsigned int k = 0; k < entry_count && !has_events; k++) has_events = entries[k].events != 0;
+    if (!has_events) return;
+  }
+  for (unsigned int pos = 0; pos < body->iseq_size;) {
+    VALUE insn = original[pos];
+    unsigned int line = rb_iseq_line_no(iseq, pos);
+    if (line > 0) line_bitmap_set(lines, line);
+    pos += rb_vm_insn_len_info[insn];
+  }
+}
+
+/* While walking a fresh compile, an iseq's `initialiser` says whether every iseq holding
+ * it ran whole. */
+typedef struct {
+  pending_iseqs_t *pending;
+  bool ran_whole;
+} loaded_child_push_t;
+
+static void push_loaded_child(const rb_iseq_t *child, void *data) {
+  loaded_child_push_t *push = (loaded_child_push_t *)data;
+  if (initialiser_child_p(child, true)) push_pending(push->pending, child, push->ran_whole);
+}
+
+static unsigned long count_lines(const line_bitmap_t *lines) {
+  unsigned long count = 0;
+  for (uint32_t byte = 0; byte < lines->length; byte++) count += (unsigned long)__builtin_popcount(lines->bytes[byte]);
+  return count;
+}
+
+/* The file's bytes as a UTF-8 string, which is how Ruby reads source; nil if unreadable. */
+static VALUE read_source(VALUE path) {
+  int fd = open(StringValueCStr(path), O_RDONLY | O_CLOEXEC);
+  if (fd < 0) return Qnil;
+  struct stat file_stat;
+  if (fstat(fd, &file_stat) != 0 || !S_ISREG(file_stat.st_mode) || file_stat.st_size > LONG_MAX) {
+    close(fd);
+    return Qnil;
+  }
+  VALUE source = rb_utf8_str_new(NULL, (long)file_stat.st_size);
+  char *buffer = RSTRING_PTR(source);
+  long length = 0;
+  while (length < (long)file_stat.st_size) {
+    ssize_t count = read(fd, buffer + length, (size_t)(file_stat.st_size - length));
+    if (count < 0 && errno == EINTR) continue;
+    if (count <= 0) break;
+    length += count;
+  }
+  close(fd);
+  if (length != (long)file_stat.st_size) return Qnil;
+  return source;
+}
+
+static VALUE compile_source(VALUE data) {
+  VALUE *argv = (VALUE *)data;
+  return rb_funcallv(rb_cISeq, id_compile, 5, argv);
+}
+
+/* Compiles the source of a file that finished loading, without running it. Compiling the
+ * source keeps Ruby's Coverage data of the file, which compile_file resets before Ruby
+ * 3.4, and $VERBOSE nil keeps its warnings from showing twice. The copy's absolute path
+ * is empty, so that code which looks for the file's iseqs in the heap until the GC frees
+ * the copy, such as the static dependency scan, skips it. Returns nil if it cannot be
+ * compiled. Exceptions other than StandardError and ScriptError, such as an interrupt,
+ * propagate. */
+static VALUE compile_loaded_file(VALUE path) {
+  VALUE source = read_source(path);
+  if (NIL_P(source)) return Qnil;
+  VALUE argv[5] = {source, path, rb_str_new(NULL, 0), INT2FIX(1), st.compile_options};
+  VALUE errinfo = rb_errinfo();
+  VALUE verbose = ruby_verbose;
+  ruby_verbose = Qnil;
+  int state = 0;
+  VALUE compiled = rb_protect(compile_source, (VALUE)argv, &state);
+  ruby_verbose = verbose;
+  if (state) {
+    VALUE error = rb_errinfo();
+    if (state != TAG_RAISE ||
+        (!rb_obj_is_kind_of(error, rb_eStandardError) && !rb_obj_is_kind_of(error, rb_eScriptError))) {
+      st.crediting_loaded_files = false;
+      rb_jump_tag(state);
+    }
+    rb_set_errinfo(errinfo);
+    return Qnil;
+  }
+  return rb_obj_is_kind_of(compiled, rb_cISeq) ? compiled : Qnil;
+}
+
+/* A required file is in $LOADED_FEATURES once its top-level iseq has run to its end. An
+ * initialiser iseq without branches then ran whole if every iseq holding it did, since
+ * initialiser code runs once per load. Lines of the other initialiser iseqs may not have
+ * run and are left out. */
+static void credit_loaded_file(long file, VALUE path) {
+  VALUE compiled = compile_loaded_file(path);
+  if (NIL_P(compiled)) {
+    st.stats.loaded_file_failures++;
+    return;
+  }
+
+  line_bitmap_t credited = {0};
+  line_bitmap_t left = {0};
+  pending_iseqs_t pending = {0};
+  /* Raw iseq pointers stay valid only while no GC can move or free them. */
+  VALUE gc_was_disabled = rb_gc_disable();
+  push_pending(&pending, rb_iseqw_to_iseq(compiled), true);
+  while (pending.count > 0) {
+    pending_iseq_t next = pending.items[--pending.count];
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(next.iseq);
+    if (!body || body->iseq_size == 0 || !ISEQ_EXECUTABLE_P(next.iseq)) continue;
+    bool had_original = ISEQ_ORIGINAL_ISEQ(next.iseq) != NULL;
+    const VALUE *original = rb_iseq_original_iseq(next.iseq);
+    bool ran_whole = next.initialiser && runs_whole_p(next.iseq, original);
+    add_site_lines(next.iseq, original, ran_whole ? &credited : &left);
+    loaded_child_push_t push = {&pending, ran_whole};
+    each_child(next.iseq, original, push_loaded_child, &push);
+    if (!had_original) ISEQ_ORIGINAL_ISEQ_CLEAR(next.iseq);
+  }
+  free(pending.items);
+  if (gc_was_disabled == Qfalse) rb_gc_enable();
+  RB_GC_GUARD(compiled);
+
+  /* A line that a credited iseq shares with another, such as a class line, ran. */
+  for (uint32_t byte = 0; byte < left.length && byte < credited.length; byte++) left.bytes[byte] &= ~credited.bytes[byte];
+  unsigned long left_count = count_lines(&left);
+  st.stats.loaded_lines_credited += count_lines(&credited);
+  st.stats.loaded_lines_left += left_count;
+  if (left_count) st.stats.loaded_files_with_branches++;
+  line_bitmap_or(&st.files[file].init_lines, &credited);
+  line_bitmap_or(&st.files[file].initialisers_left, &left);
+  free(credited.bytes);
+  free(left.bytes);
+}
+
+/* Credits the initialisers of the repository files that loaded while the collector did
+ * not run. */
+static void credit_loaded_files(void) {
+  if (insn_leave < 0 || insn_throw < 0) return;
+  VALUE features = rb_gv_get("$LOADED_FEATURES");
+  if (!RB_TYPE_P(features, T_ARRAY)) return;
+  double started_at = now_seconds();
+  features = rb_ary_dup(features);
+  st.crediting_loaded_files = true;
+  for (long i = 0; i < RARRAY_LEN(features); i++) {
+    VALUE path = RARRAY_AREF(features, i);
+    long file = classify_path(path);
+    if (file < 0 || st.files[file].initialisers_known) continue;
+    st.files[file].initialisers_known = true;
+    st.stats.loaded_files++;
+    credit_loaded_file(file, path);
+  }
+  st.crediting_loaded_files = false;
+  st.stats.loaded_files_seconds += now_seconds() - started_at;
+  RB_GC_GUARD(features);
 }
 
 /* ---- Ractors ---------------------------------------------------------------- */
@@ -1574,6 +1802,7 @@ static VALUE bitmaps_hash(line_bitmap_t *(*select)(file_t *)) {
 static line_bitmap_t *select_init(file_t *file) { return &file->init_lines; }
 static line_bitmap_t *select_suite_setup(file_t *file) { return &file->suite_setup_lines; }
 static line_bitmap_t *select_scratch(file_t *file) { return &file->scratch; }
+static line_bitmap_t *select_initialisers_left(file_t *file) { return &file->initialisers_left; }
 
 /* Shared, in its three parts: init, suiteSetup, unowned. */
 static VALUE line_collector_shared(VALUE self) {
@@ -1638,6 +1867,8 @@ static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
    * first execution, which YJIT cannot compile past. */
   if (gc_was_disabled == Qfalse) rb_gc_enable();
   st.stats.discovery_seconds = now_seconds() - started_at;
+  /* After the discovery, which would arm the iseqs it compiles. */
+  credit_loaded_files();
   return Qtrue;
 }
 
@@ -1698,6 +1929,13 @@ static VALUE line_collector_stats(VALUE self) {
   STAT("allocation_failures", ULONG2NUM(st.stats.allocation_failures));
   STAT("event_flag_syncs", ULONG2NUM(st.stats.event_flag_syncs));
   STAT("discovery_seconds", DBL2NUM(st.stats.discovery_seconds));
+  STAT("loaded_files", ULONG2NUM(st.stats.loaded_files));
+  STAT("loaded_file_failures", ULONG2NUM(st.stats.loaded_file_failures));
+  STAT("loaded_files_with_branches", ULONG2NUM(st.stats.loaded_files_with_branches));
+  STAT("loaded_lines_credited", ULONG2NUM(st.stats.loaded_lines_credited));
+  STAT("loaded_lines_left", ULONG2NUM(st.stats.loaded_lines_left));
+  STAT("loaded_lines_left_by_file", bitmaps_hash(select_initialisers_left));
+  STAT("loaded_files_seconds", DBL2NUM(st.stats.loaded_files_seconds));
   unsigned long unknown = 0, shared = 0, init = 0;
   for (size_t i = 0; i < st.site_count; i++) {
     if (st.sites[i].flags & SITE_PLAIN_UNKNOWN) unknown++;
@@ -1730,6 +1968,8 @@ static void state_mark(void *unused) {
   rb_gc_mark(st.root);
   rb_gc_mark(st.ignored_paths);
   rb_gc_mark(st.path_cache);
+  rb_gc_mark(st.files_by_path);
+  rb_gc_mark(st.compile_options);
   for (size_t i = 0; i < st.file_count; i++) rb_gc_mark(st.files[i].path);
   /* Pins every armed iseq: sites point into their instruction buffers. */
   for (size_t i = 0; i < st.record_count; i++) rb_gc_mark((VALUE)st.records[i].iseq);
@@ -1768,6 +2008,21 @@ void Init_dd_ci_line_coverage(void) {
 
   state_holder = TypedData_Wrap_Struct(rb_cObject, &state_type, &st);
   rb_gc_register_mark_object(state_holder);
+
+  st.files_by_path = rb_hash_new();
+  /* Ruby's Coverage must not see the files the collector compiles. */
+  st.compile_options = rb_hash_new();
+  rb_hash_aset(st.compile_options, ID2SYM(rb_intern("coverage_enabled")), Qfalse);
+  rb_obj_freeze(st.compile_options);
+  id_compile = rb_intern("compile");
+  ID instruction_names = rb_intern("INSTRUCTION_NAMES");
+  VALUE names = rb_const_defined(rb_cRubyVM, instruction_names) ? rb_const_get(rb_cRubyVM, instruction_names) : Qnil;
+  for (long i = 0; RB_TYPE_P(names, T_ARRAY) && i < RARRAY_LEN(names); i++) {
+    VALUE name = RARRAY_AREF(names, i);
+    if (!RB_TYPE_P(name, T_STRING) || RSTRING_LEN(name) != 5) continue;
+    if (memcmp(RSTRING_PTR(name), "leave", 5) == 0) insn_leave = i;
+    if (memcmp(RSTRING_PTR(name), "throw", 5) == 0) insn_throw = i;
+  }
 
   rb_define_const(mLineCollector, "CONTEXT_KEY", st.context_key);
   rb_define_singleton_method(mLineCollector, "supported?", supported_p, 0);
