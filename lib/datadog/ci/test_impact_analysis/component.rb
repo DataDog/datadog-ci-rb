@@ -608,6 +608,9 @@ module Datadog
           write(coverage_event)
 
           coverage_event
+        rescue => e
+          Datadog.logger.warn("Failed to write the line coverage of a test: #{e.class}: #{e.message}")
+          nil
         end
 
         def write_shared_line_coverage

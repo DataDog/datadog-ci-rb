@@ -16,6 +16,10 @@ module Datadog
   module CI
     module Git
       module LocalRepository
+        # File as loaded: a test can replace the constant, as FakeFS does,
+        # while datadog-ci turns the paths it reports into repository paths.
+        REAL_FILE = ::File
+
         def self.root
           return @root if defined?(@root)
 
@@ -30,7 +34,7 @@ module Datadog
           root_path = root
           return path if root_path.nil?
 
-          if File.absolute_path?(path)
+          if REAL_FILE.absolute_path?(path)
             # prefix_index is where the root path ends in the given path
             prefix_index = root_path.size
 
@@ -39,7 +43,7 @@ module Datadog
             return "" if path.size < prefix_index
 
             # this means that the root is not a prefix of this path somehow
-            return "" if path[prefix_index] != File::SEPARATOR
+            return "" if path[prefix_index] != REAL_FILE::SEPARATOR
 
             res = path[prefix_index + 1..]
           else
@@ -52,11 +56,11 @@ module Datadog
               if @prefix_to_root == ""
                 return path
               elsif @prefix_to_root
-                return File.join(@prefix_to_root, path)
+                return REAL_FILE.join(@prefix_to_root, path)
               end
             end
 
-            pathname = Pathname.new(File.expand_path(path))
+            pathname = Pathname.new(REAL_FILE.expand_path(path))
             root_path = Pathname.new(root_path)
 
             # relative_path_from is an expensive function

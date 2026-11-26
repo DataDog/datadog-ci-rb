@@ -61,6 +61,18 @@ RSpec.describe ::Datadog::CI::Git::LocalRepository do
       it { is_expected.to eq("foo/bar") }
     end
 
+    context "when a test replaced File and Pathname, as FakeFS does" do
+      before do
+        allow(described_class).to receive(:root).and_return("#{Dir.pwd}/foo")
+        stub_const("File", Class.new(StringIO))
+        stub_const("Pathname", Class.new)
+      end
+
+      it "still makes absolute paths repository-relative" do
+        expect(described_class.relative_to_root("#{Dir.pwd}/foo/baz/qux.rb")).to eq("baz/qux.rb")
+      end
+    end
+
     context "when git root is not nil" do
       context "when path is absolute" do
         before do

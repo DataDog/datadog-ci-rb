@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "msgpack"
+require "stringio"
 
 require_relative "../../../../../lib/datadog/ci/test_impact_analysis/coverage/line_files"
 
@@ -41,6 +42,20 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineFiles do
       expect(unpacked.drop(2)).to eq([{"filename" => "docs/a.md"}, {"filename" => "docs/b.md"}])
       expect(files.size).to eq(4)
       expect(files.to_enum(:each).to_a).to eq(["lib/a.rb", "lib/b.rb", "docs/a.md", "docs/b.md"])
+    end
+  end
+
+  context "when a test replaced File, as FakeFS does" do
+    let(:root) { Datadog::CI::Git::LocalRepository.root }
+    let(:custom_impacted_files) { ["#{root}/docs/b.md"] }
+
+    before do
+      custom_impacted_files
+      stub_const("File", Class.new(StringIO))
+    end
+
+    it "still makes custom impacted files repository-relative" do
+      expect(unpacked.drop(2)).to eq([{"filename" => "docs/b.md"}])
     end
   end
 
