@@ -8,7 +8,7 @@ require_relative "../../../../../lib/datadog/ci/test_impact_analysis/coverage/sh
 RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::SharedEvent do
   subject(:event) { described_class.new(test_session_id: "42", part: "unowned", files: files) }
 
-  let(:files) { Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.new("lib/a.rb" => [0b0000_0100].pack("C*")) }
+  let(:files) { Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.from_bitmaps("lib/a.rb" => [0b0000_0100].pack("C*")) }
 
   it "carries the part in place of a span id" do
     expect(MessagePack.unpack(MessagePack.pack(event))).to eq(
