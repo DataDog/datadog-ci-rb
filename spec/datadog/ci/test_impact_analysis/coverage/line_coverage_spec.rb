@@ -318,6 +318,25 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
       end
     end
 
+    it "credits a file that loaded through a symlink from outside the root while its code is live" do
+      Dir.mktmpdir("lc", root) do |directory|
+        path = File.join(directory, "linked.rb")
+        File.write(path, straight_source("Linked"))
+        Dir.mktmpdir do |outside|
+          link = File.join(outside, "linked.rb")
+          File.symlink(path, link)
+          require link
+
+          line_coverage = described_class.start(root: root, ignored_paths: [])
+          line_coverage.start_test(1)
+          LineCoverageSpecFiles::Linked.name_of
+          _count, packed = line_coverage.finish_test(1, [])
+
+          expect(lines_in(directory, packed).fetch("linked.rb")).to eq([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        end
+      end
+    end
+
     it "credits no initialiser line of a file that no longer compiles, and keeps $!" do
       Dir.mktmpdir("lc", root) do |directory|
         path = File.join(directory, "changed.rb")

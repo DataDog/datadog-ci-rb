@@ -500,9 +500,41 @@ static bool has_suffix(const char *string, size_t length, const char *suffix) {
   return length >= suffix_length && memcmp(string + length - suffix_length, suffix, suffix_length) == 0;
 }
 
-/* The accuracy reference's file rule: a regular `.rb` file whose realpath is under the
- * repository root, with no dependency directory (vendor, node_modules, .bundle, gems)
- * on its path and no hidden directory. */
+/* Whether an absolute path is under the repository root, outside the ignored paths, with
+ * no dependency directory (vendor, node_modules, .bundle, gems) and no hidden directory
+ * on its path below the root. */
+static bool repository_path_p(const char *path, size_t length) {
+  const char *root = RSTRING_PTR(st.root);
+  size_t root_length = RSTRING_LEN(st.root);
+  if (length <= root_length || memcmp(path, root, root_length) != 0) return false;
+
+  for (long i = 0; i < RARRAY_LEN(st.ignored_paths); i++) {
+    VALUE ignored = RARRAY_AREF(st.ignored_paths, i);
+    size_t ignored_length = RSTRING_LEN(ignored);
+    if (ignored_length > 0 && length >= ignored_length && memcmp(path, RSTRING_PTR(ignored), ignored_length) == 0) return false;
+  }
+
+  const char *part = path + root_length;
+  const char *path_end = path + length;
+  while (part < path_end) {
+    const char *end = memchr(part, '/', (size_t)(path_end - part));
+    size_t part_length = end ? (size_t)(end - part) : (size_t)(path_end - part);
+    bool directory = end != NULL;
+    if ((part_length == 6 && memcmp(part, "vendor", 6) == 0) ||
+        (part_length == 12 && memcmp(part, "node_modules", 12) == 0) ||
+        (part_length == 7 && memcmp(part, ".bundle", 7) == 0) ||
+        (part_length == 4 && memcmp(part, "gems", 4) == 0)) {
+      return false;
+    }
+    if (directory && part_length > 0 && part[0] == '.') return false;
+    if (!end) break;
+    part = end + 1;
+  }
+  return true;
+}
+
+/* The accuracy reference's file rule: a regular `.rb` file whose realpath is a repository
+ * path. */
 static long classify_path_uncached(VALUE path) {
   const char *raw = RSTRING_PTR(path);
   long raw_length = RSTRING_LEN(path);
@@ -514,34 +546,9 @@ static long classify_path_uncached(VALUE path) {
 
   long result = -1;
   struct stat file_stat;
-  const char *root = RSTRING_PTR(st.root);
-  size_t root_length = RSTRING_LEN(st.root);
-  size_t real_length = strlen(real);
+  if (!repository_path_p(real, strlen(real))) goto done;
   if (stat(real, &file_stat) != 0 || !S_ISREG(file_stat.st_mode)) goto done;
-  if (real_length <= root_length || memcmp(real, root, root_length) != 0) goto done;
-
-  for (long i = 0; i < RARRAY_LEN(st.ignored_paths); i++) {
-    VALUE ignored = RARRAY_AREF(st.ignored_paths, i);
-    size_t ignored_length = RSTRING_LEN(ignored);
-    if (ignored_length > 0 && real_length >= ignored_length && memcmp(real, RSTRING_PTR(ignored), ignored_length) == 0) goto done;
-  }
-
-  const char *relative = real + root_length;
-  const char *part = relative;
-  while (*part) {
-    const char *end = strchr(part, '/');
-    size_t part_length = end ? (size_t)(end - part) : strlen(part);
-    bool directory = end != NULL;
-    if ((part_length == 6 && memcmp(part, "vendor", 6) == 0) ||
-        (part_length == 12 && memcmp(part, "node_modules", 12) == 0) ||
-        (part_length == 7 && memcmp(part, ".bundle", 7) == 0) ||
-        (part_length == 4 && memcmp(part, "gems", 4) == 0)) {
-      goto done;
-    }
-    if (directory && part_length > 0 && part[0] == '.') goto done;
-    if (!end) break;
-    part = end + 1;
-  }
+  const char *relative = real + RSTRING_LEN(st.root);
 
   /* A start after a stop classifies paths again; the file keeps its entry. */
   VALUE relative_path = rb_obj_freeze(rb_utf8_str_new_cstr(relative));
@@ -1541,7 +1548,19 @@ static void credit_loaded_files(void) {
   st.crediting_loaded_files = true;
   for (long i = 0; i < RARRAY_LEN(features); i++) {
     VALUE path = RARRAY_AREF(features, i);
-    long file = classify_path(path);
+    if (!RB_TYPE_P(path, T_STRING)) continue;
+    /* The discovery classified the files whose code is still live. Most of the others
+     * are libraries, and the path they loaded from shows it, which saves resolving each
+     * one; a repository file among them that loaded through a symlink from outside the
+     * root is skipped too. */
+    long file;
+    VALUE cached = rb_hash_lookup2(st.path_cache, path, Qundef);
+    if (cached != Qundef) {
+      file = cached == Qfalse ? -1 : FIX2LONG(cached);
+    } else {
+      if (!repository_path_p(RSTRING_PTR(path), (size_t)RSTRING_LEN(path))) continue;
+      file = classify_path(path);
+    }
     if (file < 0 || st.files[file].initialisers_known) continue;
     st.files[file].initialisers_known = true;
     st.stats.loaded_files++;
