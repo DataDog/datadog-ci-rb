@@ -6,13 +6,20 @@
  * Per-test line coverage with one-shot traps.
  *
  * Every instruction that starts a line in repository code (an instruction carrying
- * RUBY_EVENT_LINE) is a site. A site is armed by switching its instruction to the trace
- * variant and adding RUBY_EVENT_COVERAGE_LINE to its event flags, so the VM calls one
- * internal hook when it runs. The hook records the line for the context the running
- * fiber carries (a test, a suite fixture, or none), then disarms the site once every
- * open context has recorded it. Sites disarmed this way are re-armed when the next
- * context opens. Steady-state code runs untraced; the cost is one trap per distinct
- * (context, line).
+ * RUBY_EVENT_LINE) is a site. A site is armed by adding the trap event to its event
+ * flags and switching its instruction to the trace variant, so the VM calls one internal
+ * hook when it runs. The hook records the line for the context the running fiber
+ * carries (a test, a suite fixture, or none), then disarms the site once every open
+ * context has recorded it: it clears the trap event and restores the untraced
+ * instruction unless the VM still dispatches another event there. Sites disarmed this
+ * way are re-armed when the next context opens. Steady-state code runs untraced; the
+ * cost is one trap per distinct (context, line).
+ *
+ * The trap event is one of the two events reserved for Ruby's Coverage, whichever it
+ * does not use: RUBY_EVENT_COVERAGE_BRANCH, or RUBY_EVENT_COVERAGE_LINE once code
+ * compiled under branch coverage shows up. With line and branch coverage both on, sites
+ * whose flags already carry RUBY_EVENT_COVERAGE_LINE are shared: Ruby keeps them traced,
+ * so the hook runs on every execution and returns early unless the site is armed.
  *
  * Initialiser code (a file's top level and class or module bodies) records into the
  * file's initialiser lines once per process and is never re-armed.
@@ -70,13 +77,19 @@ extern const unsigned short rb_vm_insn_op_offset[];
 
 #define OPERAND_TYPE_ISEQ 'S'
 
+/* Defined in internal/thread.h, which the private headers do not ship. */
+#ifndef COVERAGE_INDEX_BRANCHES
+#define COVERAGE_INDEX_BRANCHES 1
+#endif
+
 enum site_flag {
   SITE_INIT = 1 << 0,          /* initialiser code */
-  SITE_NO_DISARM = 1 << 1,     /* Ruby's Coverage counts this line: never disarm */
+  SITE_ARMED = 1 << 1,         /* traps on its next execution */
   SITE_PLAIN_UNKNOWN = 1 << 2, /* already traced when found; untraced encoding unknown */
   SITE_DIRTY = 1 << 3,         /* disarmed, re-armed when the next context opens */
   SITE_INIT_SEEN = 1 << 4,     /* initialiser line recorded */
-  SITE_ENTRY_FLAGGED = 1 << 5, /* we added RUBY_EVENT_COVERAGE_LINE to its entry */
+  SITE_ENTRY_FLAGGED = 1 << 5, /* we set the trap event in its entry */
+  SITE_SHARED = 1 << 6,        /* Ruby's Coverage set the trap event in its entry */
 };
 
 typedef struct {
@@ -87,8 +100,12 @@ typedef struct {
   uint32_t pos;
   uint32_t file;
   uint32_t line;
+  uint16_t insn;
   uint8_t flags;
 } site_t;
+
+/* Above any instruction number the VM defines; insns.inc is not shipped. */
+#define INSN_TABLE_SIZE 512
 
 typedef struct {
   const rb_iseq_t *iseq;
@@ -127,7 +144,10 @@ typedef struct {
 
 static struct {
   bool started;
-  bool hooks_installed;
+  bool compile_hook_installed;
+  bool line_hook_installed;
+  bool branch_hook_installed;
+  rb_event_flag_t trap_event;
   VALUE root;          /* realpath of the repository root, with a trailing '/' */
   VALUE ignored_paths; /* realpath prefixes excluded on top of the dependency directories */
   VALUE path_cache;    /* iseq path -> file index (Integer) or false */
@@ -146,6 +166,9 @@ static struct {
   uint32_t *map_values;
   size_t map_capacity;
   size_t map_count;
+  /* the last lookup; consecutive traps usually come from one iseq */
+  const rb_iseq_t *cached_iseq;
+  long cached_record;
 
   file_t *files;
   size_t file_count;
@@ -165,15 +188,16 @@ static struct {
   id_vector_t dirty;
   uint32_t epoch;
 
-  /* untraced encoding by traced encoding, learned while arming */
-  VALUE *pair_trace;
-  VALUE *pair_plain;
-  size_t pair_count;
-  size_t pair_capacity;
+  /* untraced encoding by instruction number, learned while arming; 0 while unknown */
+  VALUE plain_by_insn[INSN_TABLE_SIZE];
+  size_t plain_known;
 
   struct {
     unsigned long hook_calls;
     unsigned long foreign_calls;
+    unsigned long idle_calls;
+    unsigned long trap_event_switches;
+    unsigned long entry_aliases;
     unsigned long traps;
     unsigned long init_traps;
     unsigned long unowned_traps;
@@ -307,33 +331,25 @@ static bool map_put(const rb_iseq_t *iseq, uint32_t record) {
     free(old_values);
   }
   map_insert_unchecked((uintptr_t)iseq, record + 1);
+  /* The cache may hold this address as unknown: a freed iseq's slot can be reused. */
+  st.cached_iseq = NULL;
   return true;
 }
 
 /* ---- encodings ------------------------------------------------------------ */
 
-static void pair_learn(VALUE trace, VALUE plain) {
-  for (size_t i = 0; i < st.pair_count; i++) {
-    if (st.pair_trace[i] == trace) return;
-  }
-  size_t capacity = st.pair_capacity;
-  if (!grow((void **)&st.pair_trace, &capacity, st.pair_count + 1, sizeof(VALUE))) return;
-  capacity = st.pair_capacity;
-  if (!grow((void **)&st.pair_plain, &capacity, st.pair_count + 1, sizeof(VALUE))) return;
-  st.pair_capacity = capacity;
-  st.pair_trace[st.pair_count] = trace;
-  st.pair_plain[st.pair_count] = plain;
-  st.pair_count++;
+/* The VM only switches an instruction to its trace variant when its entry carries an
+ * enabled event, so an instruction whose entry carries none shows its untraced encoding. */
+static void plain_learn(VALUE insn, VALUE plain) {
+  if (insn >= INSN_TABLE_SIZE || st.plain_by_insn[insn]) return;
+  st.plain_by_insn[insn] = plain;
+  st.plain_known++;
 }
 
-static bool pair_plain_for(VALUE trace, VALUE *plain) {
-  for (size_t i = 0; i < st.pair_count; i++) {
-    if (st.pair_trace[i] == trace) {
-      *plain = st.pair_plain[i];
-      return true;
-    }
-  }
-  return false;
+static bool plain_for(const site_t *site, VALUE *plain) {
+  if (site->insn >= INSN_TABLE_SIZE || !st.plain_by_insn[site->insn]) return false;
+  *plain = st.plain_by_insn[site->insn];
+  return true;
 }
 
 /* ---- bitsets -------------------------------------------------------------- */
@@ -453,6 +469,72 @@ static bool initialiser_label_p(VALUE label) {
   return memchr(rest, '>', (size_t)(text + length - 1 - rest)) == NULL;
 }
 
+/* ---- the trap event --------------------------------------------------------- */
+
+static void on_trap_line(VALUE data, const rb_trace_arg_t *trace_arg);
+static void on_trap_branch(VALUE data, const rb_trace_arg_t *trace_arg);
+
+static void install_trap_hook(rb_event_flag_t event) {
+  /* Enabling an iseq event for the first time makes the VM discard JIT code compiled
+   * without trace instructions. */
+  rb_event_hook_flag_t flags = RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG;
+  if (event == RUBY_EVENT_COVERAGE_LINE && !st.line_hook_installed) {
+    rb_add_event_hook2((rb_event_hook_func_t)on_trap_line, RUBY_EVENT_COVERAGE_LINE, Qnil, flags);
+    st.line_hook_installed = true;
+  } else if (event == RUBY_EVENT_COVERAGE_BRANCH && !st.branch_hook_installed) {
+    rb_add_event_hook2((rb_event_hook_func_t)on_trap_branch, RUBY_EVENT_COVERAGE_BRANCH, Qnil, flags);
+    st.branch_hook_installed = true;
+  }
+}
+
+static void remove_trap_hook(rb_event_flag_t event) {
+  if (event == RUBY_EVENT_COVERAGE_LINE && st.line_hook_installed) {
+    rb_remove_event_hook((rb_event_hook_func_t)on_trap_line);
+    st.line_hook_installed = false;
+  } else if (event == RUBY_EVENT_COVERAGE_BRANCH && st.branch_hook_installed) {
+    rb_remove_event_hook((rb_event_hook_func_t)on_trap_branch);
+    st.branch_hook_installed = false;
+  }
+}
+
+/* Whether the iseq was compiled under Ruby's branch coverage. Its branch hook then reads
+ * a counter index for every instruction that carries RUBY_EVENT_COVERAGE_BRANCH, so that
+ * event must stay off every other instruction. */
+static bool branch_coverage_p(const rb_iseq_t *iseq) {
+  VALUE coverage = ISEQ_COVERAGE(iseq);
+  return RB_TYPE_P(coverage, T_ARRAY) && RARRAY_LEN(coverage) > COVERAGE_INDEX_BRANCHES &&
+         RTEST(RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES));
+}
+
+/* Moves every trap to RUBY_EVENT_COVERAGE_LINE. Sites whose entry already carries it,
+ * from Ruby's line coverage, become shared. */
+static void switch_trap_event_to_line(void) {
+  if (st.trap_event == RUBY_EVENT_COVERAGE_LINE) return;
+  install_trap_hook(RUBY_EVENT_COVERAGE_LINE);
+  for (size_t i = 0; i < st.site_count; i++) {
+    site_t *site = &st.sites[i];
+    if (site->flags & SITE_ENTRY_FLAGGED) {
+      site->entry->events &= ~st.trap_event;
+      site->flags &= ~SITE_ENTRY_FLAGGED;
+    }
+  }
+  for (size_t i = 0; i < st.site_count; i++) {
+    site_t *site = &st.sites[i];
+    site->flags &= ~SITE_SHARED;
+    if (site->entry->events & RUBY_EVENT_COVERAGE_LINE) site->flags |= SITE_SHARED;
+  }
+  for (size_t i = 0; i < st.site_count; i++) {
+    site_t *site = &st.sites[i];
+    if ((site->flags & SITE_ARMED) && !(site->flags & SITE_SHARED)) {
+      site->entry->events |= RUBY_EVENT_COVERAGE_LINE;
+      site->flags |= SITE_ENTRY_FLAGGED;
+    }
+  }
+  remove_trap_hook(st.trap_event);
+  st.trap_event = RUBY_EVENT_COVERAGE_LINE;
+  st.stats.trap_event_switches++;
+}
+
 /* ---- arming --------------------------------------------------------------- */
 
 static bool add_site(uint32_t pos, struct iseq_insn_info_entry *entry, uint32_t file, uint32_t line, uint8_t flags) {
@@ -510,6 +592,9 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***childr
   struct iseq_insn_info_entry *entries = (struct iseq_insn_info_entry *)body->insns_info.body;
   if (entry_count == 0 || !entries) goto done;
 
+  if (branch_coverage_p(iseq)) switch_trap_event_to_line();
+  uint8_t base_flags = SITE_ARMED | (initialiser_label_p(rb_iseq_label(iseq)) ? SITE_INIT : 0);
+
   /* rb_iseq_line_no(iseq, pos) returns the line of the entry covering pos; numbering
    * the entries first turns it into the entry lookup, whatever the table encoding. No
    * Ruby code runs while the numbers are swapped. */
@@ -523,16 +608,17 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***childr
     entries[k].line_no = (int)k + 1;
   }
 
-  uint8_t base_flags = initialiser_label_p(rb_iseq_label(iseq)) ? SITE_INIT : 0;
-  VALUE coverage = ISEQ_COVERAGE(iseq);
-  if (RB_TYPE_P(coverage, T_ARRAY)) base_flags |= SITE_NO_DISARM;
-
+  VALUE *encoded = (VALUE *)body->iseq_encoded;
   size_t first = st.site_count;
   for (unsigned int pos = 0; pos < body->iseq_size;) {
     VALUE insn = original[pos];
     unsigned int k = rb_iseq_line_no(iseq, pos);
-    if (k >= 1 && k <= entry_count && (entries[k - 1].events & RUBY_EVENT_LINE) && lines[k - 1] > 0) {
-      if (!add_site(pos, &entries[k - 1], (uint32_t)file, (uint32_t)lines[k - 1], base_flags)) break;
+    if (k >= 1 && k <= entry_count) {
+      if (entries[k - 1].events == 0) plain_learn(insn, encoded[pos]);
+      if ((entries[k - 1].events & RUBY_EVENT_LINE) && lines[k - 1] > 0 && insn < INSN_TABLE_SIZE) {
+        if (!add_site(pos, &entries[k - 1], (uint32_t)file, (uint32_t)lines[k - 1], base_flags)) break;
+        st.sites[st.site_count - 1].insn = (uint16_t)insn;
+      }
     }
     pos += rb_vm_insn_len_info[insn];
   }
@@ -552,15 +638,18 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***childr
   }
   st.record_capacity = record_capacity;
 
-  VALUE *encoded = (VALUE *)body->iseq_encoded;
   for (size_t i = first; i < st.site_count; i++) {
     site_t *site = &st.sites[i];
     site->slot = &encoded[site->pos];
     site->plain = *site->slot;
-    if (!(site->entry->events & RUBY_EVENT_COVERAGE_LINE)) {
-      site->entry->events |= RUBY_EVENT_COVERAGE_LINE;
-      site->flags |= SITE_ENTRY_FLAGGED;
-    }
+    if (i > first && st.sites[i - 1].entry == site->entry) st.stats.entry_aliases++;
+    if (site->entry->events & st.trap_event) site->flags |= SITE_SHARED;
+  }
+  for (size_t i = first; i < st.site_count; i++) {
+    site_t *site = &st.sites[i];
+    if (site->flags & SITE_SHARED) continue;
+    site->entry->events |= st.trap_event;
+    site->flags |= SITE_ENTRY_FLAGGED;
   }
 
   /* Let the VM switch the flagged instructions to their trace variants. It keeps every
@@ -568,20 +657,15 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, const rb_iseq_t ***childr
   rb_iseq_t *mutable_iseq = (rb_iseq_t *)iseq;
   rb_event_flag_t global_events = mutable_iseq->aux.exec.global_trace_events;
   mutable_iseq->aux.exec.global_trace_events = 0;
-  rb_iseq_trace_set(iseq, global_events | RUBY_EVENT_COVERAGE_LINE);
+  rb_iseq_trace_set(iseq, global_events | st.trap_event);
 
   for (size_t i = first; i < st.site_count; i++) {
     site_t *site = &st.sites[i];
     site->trace = *site->slot;
     if (site->trace != site->plain) {
-      pair_learn(site->trace, site->plain);
-    } else {
-      VALUE plain;
-      if (pair_plain_for(site->trace, &plain)) {
-        site->plain = plain;
-      } else {
-        site->flags |= SITE_PLAIN_UNKNOWN;
-      }
+      plain_learn(site->insn, site->plain);
+    } else if (!plain_for(site, &site->plain)) {
+      site->flags |= SITE_PLAIN_UNKNOWN;
     }
   }
 
@@ -634,21 +718,45 @@ static inline context_t *context_for(const rb_execution_context_t *ec) {
   return context && context->open ? context : NULL;
 }
 
-/* Restores the untraced instruction unless another consumer still needs it traced. */
-static bool disarm(site_t *site, const rb_execution_context_t *ec, const rb_iseq_t *iseq) {
-  if (site->flags & SITE_NO_DISARM) return false;
+/* Restores the untraced instruction unless the VM may still dispatch an event there. The
+ * test is Ruby's own when it clears an event flag: once an event has been enabled, Ruby
+ * relies on the instructions that carry it staying traced. */
+static void untrace_if_unneeded(site_t *site, const rb_iseq_t *iseq) {
+  if (*site->slot != site->trace) return;
+  rb_event_flag_t needed = iseq->aux.exec.global_trace_events;
+  if (iseq->aux.exec.local_hooks) needed |= iseq->aux.exec.local_hooks->events;
+  if (site->entry->events & needed) return;
   if (site->flags & SITE_PLAIN_UNKNOWN) {
-    VALUE plain;
-    if (!pair_plain_for(site->trace, &plain)) return false;
-    site->plain = plain;
+    if (!plain_for(site, &site->plain)) return;
     site->flags &= ~SITE_PLAIN_UNKNOWN;
   }
-  rb_event_flag_t others = rb_ec_ractor_hooks(ec)->events & ~RUBY_EVENT_COVERAGE_LINE;
-  if (iseq->aux.exec.local_hooks) others |= iseq->aux.exec.local_hooks->events;
-  if (site->entry->events & others) return false;
   *site->slot = site->plain;
+}
+
+/* Returns whether the site was armed. A shared site stays traced for Ruby's Coverage;
+ * the hook ignores it until it is armed again. */
+static bool disarm(site_t *site, const rb_iseq_t *iseq) {
+  if (!(site->flags & SITE_ARMED)) return false;
+  site->flags &= ~SITE_ARMED;
   st.stats.disarms++;
+  if (site->flags & SITE_SHARED) return true;
+  if (site->flags & SITE_ENTRY_FLAGGED) {
+    site->entry->events &= ~st.trap_event;
+    site->flags &= ~SITE_ENTRY_FLAGGED;
+  }
+  untrace_if_unneeded(site, iseq);
   return true;
+}
+
+static void arm(site_t *site) {
+  if (site->flags & SITE_ARMED) return;
+  site->flags |= SITE_ARMED;
+  if (site->flags & SITE_SHARED) return;
+  if (!(site->flags & SITE_ENTRY_FLAGGED)) {
+    site->entry->events |= st.trap_event;
+    site->flags |= SITE_ENTRY_FLAGGED;
+  }
+  *site->slot = site->trace;
 }
 
 static long find_site(const iseq_record_t *record, uint32_t pos) {
@@ -666,11 +774,18 @@ static long find_site(const iseq_record_t *record, uint32_t pos) {
   return -1;
 }
 
-static void on_coverage_line(VALUE data, const rb_trace_arg_t *trace_arg) {
+static void on_trap(const rb_trace_arg_t *trace_arg) {
   st.stats.hook_calls++;
   const rb_control_frame_t *cfp = trace_arg->cfp;
   const rb_iseq_t *iseq = cfp->iseq;
-  long record_index = map_get(iseq);
+  long record_index;
+  if (iseq == st.cached_iseq) {
+    record_index = st.cached_record;
+  } else {
+    record_index = map_get(iseq);
+    st.cached_iseq = iseq;
+    st.cached_record = record_index;
+  }
   if (record_index < 0) {
     st.stats.foreign_calls++;
     return;
@@ -679,8 +794,15 @@ static void on_coverage_line(VALUE data, const rb_trace_arg_t *trace_arg) {
   /* The VM advanced pc past the instruction before calling hooks. */
   long pos = (long)(cfp->pc - ISEQ_BODY(iseq)->iseq_encoded) - 1;
   long site_index = find_site(record, (uint32_t)pos);
-  if (site_index < 0) return;
+  if (site_index < 0) {
+    st.stats.foreign_calls++;
+    return;
+  }
   site_t *site = &st.sites[site_index];
+  if (!(site->flags & SITE_ARMED)) {
+    st.stats.idle_calls++;
+    return;
+  }
   st.stats.traps++;
 
   if (site->flags & SITE_INIT) {
@@ -689,7 +811,7 @@ static void on_coverage_line(VALUE data, const rb_trace_arg_t *trace_arg) {
       site->flags |= SITE_INIT_SEEN;
       line_bitmap_set(&st.files[site->file].init_lines, site->line);
     }
-    disarm(site, trace_arg->ec, iseq);
+    disarm(site, iseq);
     return;
   }
 
@@ -711,11 +833,15 @@ static void on_coverage_line(VALUE data, const rb_trace_arg_t *trace_arg) {
       return;
     }
   }
-  if (disarm(site, trace_arg->ec, iseq) && !(site->flags & SITE_DIRTY)) {
+  if (disarm(site, iseq) && !(site->flags & SITE_DIRTY)) {
     site->flags |= SITE_DIRTY;
     id_vector_push(&st.dirty, id);
   }
 }
+
+static void on_trap_line(VALUE data, const rb_trace_arg_t *trace_arg) { on_trap(trace_arg); }
+
+static void on_trap_branch(VALUE data, const rb_trace_arg_t *trace_arg) { on_trap(trace_arg); }
 
 static void on_script_compiled(VALUE data, const rb_trace_arg_t *trace_arg) {
   VALUE compiled = trace_arg->data;
@@ -768,7 +894,7 @@ static void rearm_dirty_sites(void) {
   for (size_t i = 0; i < st.dirty.count; i++) {
     site_t *site = &st.sites[st.dirty.items[i]];
     site->flags &= ~SITE_DIRTY;
-    *site->slot = site->trace;
+    arm(site);
   }
   st.stats.rearms += st.dirty.count;
   st.dirty.count = 0;
@@ -952,13 +1078,11 @@ static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
   st.started = true;
 
   double started_at = now_seconds();
-  /* The hook goes in first: enabling an iseq event for the first time makes the VM
-   * discard JIT code compiled without trace instructions. */
-  rb_add_event_hook2((rb_event_hook_func_t)on_coverage_line, RUBY_EVENT_COVERAGE_LINE, Qnil,
-                     RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+  st.trap_event = RUBY_EVENT_COVERAGE_BRANCH;
+  install_trap_hook(st.trap_event);
   rb_add_event_hook2((rb_event_hook_func_t)on_script_compiled, RUBY_EVENT_SCRIPT_COMPILED, Qnil,
                      RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
-  st.hooks_installed = true;
+  st.compile_hook_installed = true;
 
   VALUE gc_was_disabled = rb_gc_disable();
   arm_loaded_code();
@@ -969,22 +1093,22 @@ static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
 
 static VALUE line_collector_stop(VALUE self) {
   if (!st.started) return Qfalse;
-  if (st.hooks_installed) {
-    rb_remove_event_hook((rb_event_hook_func_t)on_coverage_line);
+  remove_trap_hook(RUBY_EVENT_COVERAGE_LINE);
+  remove_trap_hook(RUBY_EVENT_COVERAGE_BRANCH);
+  if (st.compile_hook_installed) {
     rb_remove_event_hook((rb_event_hook_func_t)on_script_compiled);
-    st.hooks_installed = false;
+    st.compile_hook_installed = false;
   }
-  /* ruby_current_ec is not exported; reach the ec through the current thread. */
-  rb_execution_context_t *ec = ((rb_thread_t *)RTYPEDDATA_DATA(rb_thread_current()))->ec;
   for (size_t r = 0; r < st.record_count; r++) {
     const iseq_record_t *record = &st.records[r];
     for (uint32_t i = 0; i < record->site_count; i++) {
       site_t *site = &st.sites[record->first_site + i];
       if (site->flags & SITE_ENTRY_FLAGGED) {
-        site->entry->events &= ~RUBY_EVENT_COVERAGE_LINE;
+        site->entry->events &= ~st.trap_event;
         site->flags &= ~SITE_ENTRY_FLAGGED;
       }
-      if (*site->slot == site->trace) disarm(site, ec, record->iseq);
+      site->flags &= ~SITE_ARMED;
+      if (!(site->flags & SITE_SHARED)) untrace_if_unneeded(site, record->iseq);
     }
   }
   st.dirty.count = 0;
@@ -998,8 +1122,12 @@ static VALUE line_collector_stats(VALUE self) {
   STAT("sites", ULONG2NUM(st.site_count));
   STAT("iseqs", ULONG2NUM(st.record_count));
   STAT("files", ULONG2NUM(st.file_count));
+  STAT("trap_event", rb_str_new_cstr(st.trap_event == RUBY_EVENT_COVERAGE_LINE ? "coverage_line" : "coverage_branch"));
+  STAT("trap_event_switches", ULONG2NUM(st.stats.trap_event_switches));
   STAT("hook_calls", ULONG2NUM(st.stats.hook_calls));
   STAT("foreign_calls", ULONG2NUM(st.stats.foreign_calls));
+  STAT("idle_calls", ULONG2NUM(st.stats.idle_calls));
+  STAT("entry_aliases", ULONG2NUM(st.stats.entry_aliases));
   STAT("traps", ULONG2NUM(st.stats.traps));
   STAT("init_traps", ULONG2NUM(st.stats.init_traps));
   STAT("unowned_traps", ULONG2NUM(st.stats.unowned_traps));
@@ -1007,17 +1135,17 @@ static VALUE line_collector_stats(VALUE self) {
   STAT("disarms", ULONG2NUM(st.stats.disarms));
   STAT("rearms", ULONG2NUM(st.stats.rearms));
   STAT("iseqs_scanned", ULONG2NUM(st.stats.iseqs_scanned));
-  STAT("encoding_pairs", ULONG2NUM(st.pair_count));
+  STAT("plain_encodings_known", ULONG2NUM(st.plain_known));
   STAT("allocation_failures", ULONG2NUM(st.stats.allocation_failures));
   STAT("discovery_seconds", DBL2NUM(st.stats.discovery_seconds));
-  unsigned long unknown = 0, no_disarm = 0, init = 0;
+  unsigned long unknown = 0, shared = 0, init = 0;
   for (size_t i = 0; i < st.site_count; i++) {
     if (st.sites[i].flags & SITE_PLAIN_UNKNOWN) unknown++;
-    if (st.sites[i].flags & SITE_NO_DISARM) no_disarm++;
+    if (st.sites[i].flags & SITE_SHARED) shared++;
     if (st.sites[i].flags & SITE_INIT) init++;
   }
   STAT("plain_unknown_sites", ULONG2NUM(unknown));
-  STAT("no_disarm_sites", ULONG2NUM(no_disarm));
+  STAT("shared_sites", ULONG2NUM(shared));
   STAT("init_sites", ULONG2NUM(init));
 #undef STAT
   return result;
