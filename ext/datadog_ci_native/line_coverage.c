@@ -76,6 +76,7 @@ void Init_dd_ci_line_coverage(void) {
 #pragma GCC diagnostic pop
 
 #include <ruby/debug.h>
+#include <ruby/thread.h>
 #include <ruby/version.h>
 
 #include <dlfcn.h>
@@ -263,6 +264,9 @@ static struct {
   /* the GC count after the last event flag sync, and whether a GC was still running then */
   size_t gc_count_at_flag_sync;
   bool gc_running_at_flag_sync;
+  rb_vm_t *vm;
+  bool ractor_seen; /* a Ractor other than the main one ran while the collector watched */
+  rb_internal_thread_event_hook_t *thread_start_hook;
 
   /* untraced encoding by instruction number, learned while arming; 0 while unknown */
   VALUE plain_by_insn[INSN_TABLE_SIZE];
@@ -286,6 +290,7 @@ static struct {
     unsigned long iseqs_scanned;
     unsigned long allocation_failures;
     unsigned long event_flag_syncs;
+    unsigned long gc_event_flag_syncs;
     double discovery_seconds;
     unsigned long loaded_files; /* repository files loaded before a start, compiled again */
     unsigned long loaded_file_failures;
@@ -1549,22 +1554,89 @@ static void credit_loaded_files(void) {
 
 /* ---- Ractors ---------------------------------------------------------------- */
 
+/* Before Ruby 4, the GC that frees a Ractor sets the VM's global event flags to that
+ * Ractor's hooks: none. The VM checks those flags before it dispatches an instruction
+ * event, so no trap fires until a hook of the main Ractor is added or removed, which sets
+ * the flags from the main Ractor's hooks again. The cleared flags also turn off the GC's
+ * own events, so the end of the GC step that freed the Ractor cannot be hooked. Once a
+ * Ractor other than the main one has run, the start of every GC step that the main Ractor
+ * runs asks for a postponed job, which sets the flags again when the thread next checks
+ * for interrupts: when a method returns or a loop goes round. For the GC steps of other
+ * Ractors, the first context boundary after GC activity also sets them. */
+
 #if RUBY_API_VERSION_MAJOR < 4
 static VALUE gc_state_key;
 static VALUE gc_state_none;
 
 static void on_event_flag_sync(VALUE data, const rb_trace_arg_t *trace_arg) {}
 
-/* Before Ruby 4, the GC that frees a Ractor sets the VM's global event flags to that
- * Ractor's hooks: none. The VM checks those flags before it dispatches an instruction
- * event, so no trap fires until a hook of the main Ractor is added or removed, which sets
- * the flags from the main Ractor's hooks again. Ruby exports neither the flags nor whether
- * a Ractor ever ran, so the first context boundary after GC activity adds and removes a
- * hook. With no other Ractor running, the flags keep their value. */
-static void sync_event_flags(void) {
-  if (rb_gc_count() == st.gc_count_at_flag_sync && !st.gc_running_at_flag_sync) return;
+static void set_event_flags(void) {
   rb_add_event_hook2((rb_event_hook_func_t)on_event_flag_sync, TRAP_EVENT, Qnil, HOOK_FLAGS);
   rb_remove_event_hook((rb_event_hook_func_t)on_event_flag_sync);
+}
+
+static bool on_main_ractor(void) {
+  const rb_thread_t *thread = (const rb_thread_t *)RTYPEDDATA_DATA(rb_thread_current());
+  return thread && thread->ractor == thread->vm->ractor.main_ractor;
+}
+
+/* Any thread that checks for interrupts may run the job. */
+static void restore_event_flags(void *unused) {
+  if (!st.started || !on_main_ractor()) return;
+  set_event_flags();
+  st.stats.gc_event_flag_syncs++;
+}
+
+#if RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR < 3
+static void request_event_flag_restore(void) { rb_postponed_job_register_one(0, restore_event_flags, NULL); }
+#else
+static rb_postponed_job_handle_t restore_event_flags_job = POSTPONED_JOB_HANDLE_INVALID;
+
+static void request_event_flag_restore(void) {
+  if (restore_event_flags_job != POSTPONED_JOB_HANDLE_INVALID) rb_postponed_job_trigger(restore_event_flags_job);
+}
+#endif
+
+static void on_gc_enter(VALUE data, const rb_trace_arg_t *trace_arg) {
+  if (!st.ractor_seen) {
+    if (st.vm->ractor.cnt < 2) return;
+    st.ractor_seen = true;
+  }
+  request_event_flag_restore();
+}
+
+/* Ruby counts a Ractor before it starts the Ractor's thread, so this sees a Ractor that
+ * finishes between two GC steps. */
+static void on_thread_start(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *unused) {
+  if (st.vm->ractor.cnt > 1) st.ractor_seen = true;
+}
+
+static void watch_ractors(void) {
+  st.vm = ((const rb_thread_t *)RTYPEDDATA_DATA(rb_thread_current()))->vm;
+  if (st.vm->ractor.cnt > 1) st.ractor_seen = true;
+  if (!st.thread_start_hook) {
+    st.thread_start_hook = rb_internal_thread_add_event_hook(on_thread_start, RUBY_INTERNAL_THREAD_EVENT_STARTED, NULL);
+  }
+#if !(RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR < 3)
+  if (restore_event_flags_job == POSTPONED_JOB_HANDLE_INVALID) {
+    restore_event_flags_job = rb_postponed_job_preregister(0, restore_event_flags, NULL);
+  }
+#endif
+  rb_add_event_hook2((rb_event_hook_func_t)on_gc_enter, RUBY_INTERNAL_EVENT_GC_ENTER, Qnil, HOOK_FLAGS);
+}
+
+static void unwatch_ractors(void) {
+  rb_remove_event_hook((rb_event_hook_func_t)on_gc_enter);
+  if (st.thread_start_hook) {
+    rb_internal_thread_remove_event_hook(st.thread_start_hook);
+    st.thread_start_hook = NULL;
+  }
+}
+
+/* With no other Ractor running, the flags keep their value. */
+static void sync_event_flags(void) {
+  if (rb_gc_count() == st.gc_count_at_flag_sync && !st.gc_running_at_flag_sync) return;
+  set_event_flags();
   st.stats.event_flag_syncs++;
   /* A lazy sweep still running can free a Ractor before the next GC starts. */
   st.gc_count_at_flag_sync = rb_gc_count();
@@ -1572,6 +1644,8 @@ static void sync_event_flags(void) {
 }
 #else
 /* Ruby 4 checks the hooks of the running Ractor instead. */
+static void watch_ractors(void) {}
+static void unwatch_ractors(void) {}
 static void sync_event_flags(void) {}
 #endif
 
@@ -1859,6 +1933,7 @@ static VALUE line_collector_start(VALUE self, VALUE root, VALUE ignored_paths) {
     rb_add_event_hook2((rb_event_hook_func_t)on_script_compiled, RUBY_EVENT_SCRIPT_COMPILED, Qnil, HOOK_FLAGS);
     st.compile_hook_installed = true;
   }
+  watch_ractors();
 
   VALUE gc_was_disabled = rb_gc_disable();
   rearm_known_sites();
@@ -1882,6 +1957,7 @@ static VALUE line_collector_stop(VALUE self) {
     rb_remove_event_hook((rb_event_hook_func_t)on_script_compiled);
     st.compile_hook_installed = false;
   }
+  unwatch_ractors();
   for (size_t r = 0; r < st.record_count; r++) {
     const iseq_record_t *record = &st.records[r];
     for (uint32_t i = 0; i < record->site_count; i++) {
@@ -1928,6 +2004,8 @@ static VALUE line_collector_stats(VALUE self) {
   STAT("plain_encodings_known", ULONG2NUM(st.plain_known));
   STAT("allocation_failures", ULONG2NUM(st.stats.allocation_failures));
   STAT("event_flag_syncs", ULONG2NUM(st.stats.event_flag_syncs));
+  STAT("gc_event_flag_syncs", ULONG2NUM(st.stats.gc_event_flag_syncs));
+  STAT("ractor_seen", st.ractor_seen ? Qtrue : Qfalse);
   STAT("discovery_seconds", DBL2NUM(st.stats.discovery_seconds));
   STAT("loaded_files", ULONG2NUM(st.stats.loaded_files));
   STAT("loaded_file_failures", ULONG2NUM(st.stats.loaded_file_failures));

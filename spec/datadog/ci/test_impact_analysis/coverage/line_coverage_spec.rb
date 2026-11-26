@@ -388,12 +388,16 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
     end
 
     # In a child process, so that this process starts no Ractor.
-    it "records the lines of the next test" do
+    it "records the lines that run after that GC, between two tests and during a test" do
       stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I", File.join(root, "lib"), script, root)
 
       expect(status).to be_success, stderr
-      line = File.readlines(script).index { |source| source.strip == ":after_collection" } + 1
-      expect(stdout.split(",").map(&:to_i)).to include(line)
+      ractor_seen, second, third = stdout.lines.map(&:chomp)
+      source = File.readlines(script).map(&:strip)
+      expect(second.split(",").map(&:to_i)).to include(source.index(":after_collection") + 1)
+      expect(third.split(",").map(&:to_i)).to include(source.index(":after_collection_in_test") + 1)
+      # Ruby 4 does not need the collector to watch for Ractors.
+      expect(ractor_seen).to eq((RUBY_VERSION < "4").to_s)
     end
   end
 end
