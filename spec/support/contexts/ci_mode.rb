@@ -34,6 +34,7 @@ RSpec.shared_context "CI mode activated" do
   let(:require_git) { false }
   let(:bundle_path) { nil }
   let(:use_single_threaded_coverage) { false }
+  let(:line_coverage_enabled) { false }
   let(:flaky_test_retries_enabled) { false }
   let(:early_flake_detection_enabled) { false }
   let(:known_tests_enabled) { early_flake_detection_enabled }
@@ -186,6 +187,7 @@ RSpec.shared_context "CI mode activated" do
       c.ci.itr_code_coverage_excluded_bundle_path = bundle_path
       c.ci.itr_code_coverage_use_single_threaded_mode = use_single_threaded_coverage
       c.ci.tia_static_dependencies_tracking_enabled = static_dependencies_tracking_enabled
+      c.ci.tia_line_coverage_enabled = line_coverage_enabled
 
       # test retries
       c.ci.retry_failed_tests_max_attempts = retry_failed_tests_max_attempts

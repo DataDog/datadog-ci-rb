@@ -1,0 +1,24 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class LineFiles
+          @bitmaps: LineCollector::bitmaps
+          @custom_impacted_files: Array[String]
+
+          def initialize: (LineCollector::bitmaps bitmaps, ?Array[String] custom_impacted_files) -> void
+
+          def each: () { (String file) -> void } -> void
+
+          def size: () -> Integer
+
+          def write_to: (untyped packer) -> untyped
+
+          def inspect_coverage: () -> Hash[String, Array[Integer] | true]
+
+          def self.lines: (String bitmap) -> Array[Integer]
+        end
+      end
+    end
+  end
+end

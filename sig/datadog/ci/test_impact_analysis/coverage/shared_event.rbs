@@ -1,0 +1,29 @@
+module Datadog
+  module CI
+    module TestImpactAnalysis
+      module Coverage
+        class SharedEvent
+          @test_session_id: String
+
+          @part: String
+
+          @files: LineFiles
+
+          attr_reader test_session_id: String
+
+          attr_reader part: String
+
+          def initialize: (test_session_id: String, part: String, files: LineFiles) -> void
+
+          def valid?: () -> bool
+
+          def inspect_coverage: () -> Hash[String, Array[Integer] | true]
+
+          def to_msgpack: (?untyped? packer) -> untyped
+
+          def to_s: () -> String
+        end
+      end
+    end
+  end
+end
