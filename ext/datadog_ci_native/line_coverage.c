@@ -78,6 +78,7 @@ void Init_dd_ci_line_coverage(void) {
 #include <ruby/debug.h>
 #include <ruby/thread.h>
 #include <ruby/version.h>
+#include <ruby/vm.h>
 
 #include <dlfcn.h>
 #include <errno.h>
@@ -85,6 +86,7 @@ void Init_dd_ci_line_coverage(void) {
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -199,6 +201,20 @@ typedef struct {
   size_t capacity;
 } id_vector_t;
 
+/* The parts of the lines outside contexts, in the order LineCollector.shared returns them. */
+enum { SHARED_INIT, SHARED_SUITE_SETUP, SHARED_UNOWNED, SHARED_PART_COUNT };
+
+/* A record of a context that the process writes when the VM exits (see write_exit_records). */
+typedef struct {
+  char *prefix; /* the record's path without ".<pid>.lines" */
+  size_t prefix_length;
+  long serial;
+  /* When the record holds only the lines outside contexts added since it was registered:
+   * those lines then, SHARED_PART_COUNT bitmaps per file. NULL when it holds all of them. */
+  line_bitmap_t *baseline;
+  size_t baseline_file_count;
+} exit_record_t;
+
 static struct {
   bool started;
   bool compile_hook_installed;
@@ -260,6 +276,11 @@ static struct {
   id_vector_t dirty;
   id_vector_t touched; /* files with lines in the record being built */
   uint32_t epoch;
+
+  exit_record_t *exit_records; /* in the order they were registered */
+  size_t exit_record_count;
+  size_t exit_record_capacity;
+  bool exit_hook_registered;
 
   /* the GC count after the last event flag sync, and whether a GC was still running then */
   size_t gc_count_at_flag_sync;
@@ -1771,8 +1792,8 @@ static VALUE line_collector_close_context(VALUE self, VALUE serial) {
   return Qtrue;
 }
 
-static void release_context(context_t *context) {
-  if (context->open) close_open_context(context);
+/* Frees the slot of a closed context. A fixture's lines stay in the suite setup lines. */
+static void release_closed_context(context_t *context) {
   if (context->fixture) {
     for (size_t i = 0; i < context->hit_count; i++) {
       const hit_t *hit = &context->hits[i];
@@ -1781,6 +1802,11 @@ static void release_context(context_t *context) {
   }
   context_clear(context);
   context->serial = 0;
+}
+
+static void release_context(context_t *context) {
+  if (context->open) close_open_context(context);
+  release_closed_context(context);
 }
 
 static void add_context_lines(context_t *context, uint32_t epoch) {
@@ -1912,12 +1938,8 @@ static line_bitmap_t *select_suite_setup(file_t *file) { return &file->suite_set
 static line_bitmap_t *select_scratch(file_t *file) { return &file->scratch; }
 static line_bitmap_t *select_initialisers_left(file_t *file) { return &file->initialisers_left; }
 
-/* Shared, in its three parts: init, suiteSetup, unowned. */
-static VALUE line_collector_shared(VALUE self) {
-  VALUE result = rb_hash_new();
-  rb_hash_aset(result, rb_utf8_str_new_cstr("init"), bitmaps_hash(select_init));
-  rb_hash_aset(result, rb_utf8_str_new_cstr("suiteSetup"), bitmaps_hash(select_suite_setup));
-
+/* Puts each file's unowned lines in its scratch bitmap. */
+static void fill_scratch_with_unowned_lines(void) {
   uint32_t epoch = ++st.epoch;
   for (size_t i = 0; i < st.file_count; i++) {
     file_t *file = &st.files[i];
@@ -1928,8 +1950,275 @@ static VALUE line_collector_shared(VALUE self) {
     site_t *site = &st.sites[st.unowned_hits.items[i]];
     line_bitmap_set(&site_file(site)->scratch, site->line);
   }
+}
+
+/* Shared, in its three parts: init, suiteSetup, unowned. */
+static VALUE line_collector_shared(VALUE self) {
+  VALUE result = rb_hash_new();
+  rb_hash_aset(result, rb_utf8_str_new_cstr("init"), bitmaps_hash(select_init));
+  rb_hash_aset(result, rb_utf8_str_new_cstr("suiteSetup"), bitmaps_hash(select_suite_setup));
+  fill_scratch_with_unowned_lines();
   rb_hash_aset(result, rb_utf8_str_new_cstr("unowned"), bitmaps_hash(select_scratch));
   return result;
+}
+
+/* ---- records written at exit ---------------------------------------------------- */
+
+/* A part of a file's lines outside contexts. The unowned part is the scratch bitmap, after
+ * fill_scratch_with_unowned_lines. */
+static const line_bitmap_t *shared_part(const file_t *file, int part) {
+  switch (part) {
+    case SHARED_INIT:
+      return &file->init_lines;
+    case SHARED_SUITE_SETUP:
+      return &file->suite_setup_lines;
+    default:
+      return &file->scratch;
+  }
+}
+
+static void free_bitmaps(line_bitmap_t *bitmaps, size_t count) {
+  for (size_t i = 0; i < count; i++) free(bitmaps[i].bytes);
+  free(bitmaps);
+}
+
+/* The lines outside contexts now, as a record's baseline. */
+static bool copy_shared_lines(exit_record_t *record) {
+  size_t file_count = st.file_count;
+  size_t bitmap_count = file_count * SHARED_PART_COUNT;
+  line_bitmap_t *baseline = calloc(bitmap_count ? bitmap_count : 1, sizeof(line_bitmap_t));
+  if (!baseline) {
+    st.stats.allocation_failures++;
+    return false;
+  }
+  fill_scratch_with_unowned_lines();
+  for (size_t i = 0; i < file_count; i++) {
+    for (int part = 0; part < SHARED_PART_COUNT; part++) {
+      const line_bitmap_t *lines = shared_part(&st.files[i], part);
+      uint32_t length = line_bitmap_used_length(lines);
+      if (!length) continue;
+      line_bitmap_t *copy = &baseline[i * SHARED_PART_COUNT + part];
+      copy->bytes = malloc(length);
+      if (!copy->bytes) {
+        st.stats.allocation_failures++;
+        free_bitmaps(baseline, bitmap_count);
+        return false;
+      }
+      memcpy(copy->bytes, lines->bytes, length);
+      copy->length = length;
+    }
+  }
+  record->baseline = baseline;
+  record->baseline_file_count = file_count;
+  return true;
+}
+
+typedef struct {
+  uint8_t *bytes;
+  size_t length;
+  size_t capacity;
+  bool failed;
+} byte_buffer_t;
+
+/* Room for length more bytes at the end, or NULL once an allocation failed. */
+static uint8_t *buffer_extend(byte_buffer_t *buffer, size_t length) {
+  if (buffer->failed) return NULL;
+  if (!grow((void **)&buffer->bytes, &buffer->capacity, buffer->length + length, 1)) {
+    buffer->failed = true;
+    return NULL;
+  }
+  uint8_t *out = buffer->bytes + buffer->length;
+  buffer->length += length;
+  return out;
+}
+
+static uint8_t *pack_uint32(uint8_t *out, uint32_t value) {
+  for (int shift = 24; shift >= 0; shift -= 8) *out++ = (uint8_t)(value >> shift);
+  return out;
+}
+
+/* A path and a bitmap, each as a 32-bit big-endian length and the bytes. */
+static void buffer_add_file_lines(byte_buffer_t *buffer, const file_t *file, const uint8_t *bitmap, uint32_t length) {
+  size_t path_length = (size_t)RSTRING_LEN(file->path);
+  uint8_t *out = buffer_extend(buffer, 4 + path_length + 4 + length);
+  if (!out) return;
+  out = pack_uint32(out, (uint32_t)path_length);
+  out = pack_bytes(out, RSTRING_PTR(file->path), path_length);
+  out = pack_uint32(out, length);
+  pack_bytes(out, bitmap, length);
+}
+
+/* Every line outside contexts: the parts in order, each in the order of the file table. */
+static void buffer_add_shared_lines(byte_buffer_t *buffer) {
+  for (int part = 0; part < SHARED_PART_COUNT; part++) {
+    if (part == SHARED_UNOWNED) fill_scratch_with_unowned_lines();
+    for (size_t i = 0; i < st.file_count; i++) {
+      const line_bitmap_t *lines = shared_part(&st.files[i], part);
+      uint32_t length = line_bitmap_used_length(lines);
+      if (length) buffer_add_file_lines(buffer, &st.files[i], lines->bytes, length);
+    }
+  }
+}
+
+/* The lines outside contexts that the baseline lacks: per file, the union over the parts of
+ * the part's lines minus the baseline's, at the length of the longest such part, with files
+ * in the order in which they first have such lines. */
+static void buffer_add_shared_lines_since(byte_buffer_t *buffer, const exit_record_t *record) {
+  size_t file_count = st.file_count;
+  line_bitmap_t *added = calloc(file_count ? file_count : 1, sizeof(line_bitmap_t));
+  uint32_t *order = malloc((file_count ? file_count : 1) * sizeof(uint32_t));
+  size_t order_count = 0;
+  if (!added || !order) {
+    st.stats.allocation_failures++;
+    buffer->failed = true;
+  }
+  for (int part = 0; part < SHARED_PART_COUNT && !buffer->failed; part++) {
+    if (part == SHARED_UNOWNED) fill_scratch_with_unowned_lines();
+    for (size_t i = 0; i < file_count && !buffer->failed; i++) {
+      const line_bitmap_t *lines = shared_part(&st.files[i], part);
+      uint32_t length = line_bitmap_used_length(lines);
+      const line_bitmap_t *before =
+          i < record->baseline_file_count ? &record->baseline[i * SHARED_PART_COUNT + part] : NULL;
+      uint32_t before_length = before ? before->length : 0;
+      bool any = false;
+      for (uint32_t byte = 0; byte < length && !any; byte++) {
+        any = (lines->bytes[byte] & (byte < before_length ? (uint8_t)~before->bytes[byte] : 0xff)) != 0;
+      }
+      if (!any) continue;
+
+      line_bitmap_t *target = &added[i];
+      if (target->length == 0) order[order_count++] = (uint32_t)i;
+      if (length > target->length) {
+        uint8_t *grown = realloc(target->bytes, length);
+        if (!grown) {
+          st.stats.allocation_failures++;
+          buffer->failed = true;
+          break;
+        }
+        memset(grown + target->length, 0, length - target->length);
+        target->bytes = grown;
+        target->length = length;
+      }
+      for (uint32_t byte = 0; byte < length; byte++) {
+        target->bytes[byte] |= lines->bytes[byte] & (byte < before_length ? (uint8_t)~before->bytes[byte] : 0xff);
+      }
+    }
+  }
+  for (size_t k = 0; k < order_count && !buffer->failed; k++) {
+    buffer_add_file_lines(buffer, &st.files[order[k]], added[order[k]].bytes, added[order[k]].length);
+  }
+  if (added) free_bitmaps(added, file_count);
+  free(order);
+}
+
+static bool write_all(int fd, const uint8_t *bytes, size_t length) {
+  while (length > 0) {
+    ssize_t written = write(fd, bytes, length);
+    if (written < 0) {
+      if (errno == EINTR) continue;
+      return false;
+    }
+    bytes += written;
+    length -= (size_t)written;
+  }
+  return true;
+}
+
+/* Writes "<prefix>.<pid>.lines.tmp", then renames it, as File.binwrite and File.rename would. */
+static void write_record_file(const exit_record_t *record, const uint8_t *bytes, size_t length) {
+  size_t capacity = record->prefix_length + 48;
+  char *path = malloc(capacity);
+  char *temporary = malloc(capacity);
+  if (path && temporary) {
+    snprintf(path, capacity, "%s.%ld.lines", record->prefix, (long)getpid());
+    snprintf(temporary, capacity, "%s.tmp", path);
+    int fd = open(temporary, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0666);
+    if (fd >= 0) {
+      bool written = write_all(fd, bytes, length);
+      if (close(fd) != 0) written = false;
+      if (!written || rename(temporary, path) != 0) unlink(temporary);
+    }
+  }
+  free(path);
+  free(temporary);
+}
+
+/* As the record that LineCollector.coverage and LineCollector.shared give (see
+ * ChildProcesses.decode_record), with the context released. The context is closed without
+ * close_open_context: no Ruby code runs any more, and syncing the event flags or arming
+ * sites would touch the VM. */
+static void write_exit_record(const exit_record_t *record) {
+  byte_buffer_t buffer = {0};
+  uint32_t epoch = ++st.epoch;
+  st.touched.count = 0;
+  context_t *context = context_by_serial(record->serial);
+  if (context) {
+    add_context_lines(context, epoch);
+    if (context->open) {
+      context->open = false;
+      remove_open((size_t)(context - st.contexts));
+    }
+    release_closed_context(context);
+  }
+  size_t packed_size = 0;
+  for (size_t i = 0; i < st.touched.count; i++) {
+    file_t *file = &st.files[st.touched.items[i]];
+    line_bitmap_or(&file->scratch, &file->init_lines);
+    packed_size += packed_file_size(file);
+  }
+  uint8_t *out = buffer_extend(&buffer, 4 + packed_size);
+  if (out) {
+    out = pack_uint32(out, (uint32_t)packed_size);
+    for (size_t i = 0; i < st.touched.count; i++) out = pack_file(out, &st.files[st.touched.items[i]]);
+  }
+  if (record->baseline) {
+    buffer_add_shared_lines_since(&buffer, record);
+  } else {
+    buffer_add_shared_lines(&buffer);
+  }
+  if (!buffer.failed) write_record_file(record, buffer.bytes, buffer.length);
+  free(buffer.bytes);
+}
+
+/* Ruby runs the VM's exit hooks after every at_exit block and finalizer, while it frees the
+ * VM, and a forked child inherits them. Ruby removes the event hooks right after the at_exit
+ * blocks, so the records hold every line the collector saw, but none that a finalizer or the
+ * ensure clause of a thread that the exit kills runs. The writer reads the collector's own
+ * memory and the bytes of the file paths, which Ruby frees after the hooks, and allocates
+ * with malloc only. The last record registered is written first, as at_exit blocks run. A
+ * process that ends with exit! or SIGKILL, or that crashes, writes none. */
+static void write_exit_records(rb_vm_t *vm) {
+  for (size_t i = st.exit_record_count; i > 0; i--) write_exit_record(&st.exit_records[i - 1]);
+}
+
+/* Registers the record of a context, written to "<prefix>.<pid>.lines" when the process
+ * exits. With shared_since_now, the record holds only the lines outside contexts added from
+ * now on. Returns false when nothing was registered. */
+static VALUE line_collector_write_record_at_exit(VALUE self, VALUE prefix, VALUE serial, VALUE shared_since_now) {
+  if (!RB_TYPE_P(prefix, T_STRING) || !FIXNUM_P(serial)) return Qfalse;
+  size_t prefix_length = (size_t)RSTRING_LEN(prefix);
+  if (memchr(RSTRING_PTR(prefix), 0, prefix_length)) return Qfalse;
+  size_t capacity = st.exit_record_capacity;
+  if (!grow((void **)&st.exit_records, &capacity, st.exit_record_count + 1, sizeof(exit_record_t))) return Qfalse;
+  st.exit_record_capacity = capacity;
+
+  exit_record_t record = {.prefix = malloc(prefix_length + 1), .prefix_length = prefix_length, .serial = FIX2LONG(serial)};
+  if (!record.prefix) {
+    st.stats.allocation_failures++;
+    return Qfalse;
+  }
+  memcpy(record.prefix, RSTRING_PTR(prefix), prefix_length);
+  record.prefix[prefix_length] = '\0';
+  if (RTEST(shared_since_now) && !copy_shared_lines(&record)) {
+    free(record.prefix);
+    return Qfalse;
+  }
+  if (!st.exit_hook_registered) {
+    ruby_vm_at_exit(write_exit_records);
+    st.exit_hook_registered = true;
+  }
+  st.exit_records[st.exit_record_count++] = record;
+  return Qtrue;
 }
 
 /* ---- start and stop --------------------------------------------------------- */
@@ -2148,6 +2437,7 @@ void Init_dd_ci_line_coverage(void) {
   rb_define_singleton_method(mLineCollector, "coverage", line_collector_coverage, 2);
   rb_define_singleton_method(mLineCollector, "release", line_collector_release, 1);
   rb_define_singleton_method(mLineCollector, "shared", line_collector_shared, 0);
+  rb_define_singleton_method(mLineCollector, "write_record_at_exit", line_collector_write_record_at_exit, 3);
   rb_define_singleton_method(mLineCollector, "stats", line_collector_stats, 0);
 }
 

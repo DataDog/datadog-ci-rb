@@ -58,17 +58,6 @@ module Datadog
             bitmaps
           end
 
-          # The lines of bitmap that are not in other, or nil when there are none.
-          def self.difference(bitmap, other)
-            bytes = bitmap.bytes
-            other&.each_byte&.with_index do |byte, index|
-              break if index >= bytes.size
-
-              bytes[index] &= ~byte & 0xff
-            end
-            bytes.pack("C*") unless bytes.all?(&:zero?)
-          end
-
           def self.union(left, right)
             return right.b if left.nil?
 

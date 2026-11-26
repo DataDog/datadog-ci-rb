@@ -30,6 +30,8 @@ module Datadog
 
           def self.shared: () -> Hash[String, bitmaps]
 
+          def self.write_record_at_exit: (String prefix, Integer serial, bool shared_since_now) -> bool
+
           def self.stats: () -> Hash[Symbol, untyped]
         end
       end

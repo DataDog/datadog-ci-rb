@@ -2,7 +2,8 @@
 
 # Loaded through RUBYOPT into the processes that a test starts (see ChildProcesses), so
 # that the lines they run count for that test. It loads only the native line collector,
-# opens one context for the whole process and writes the context's lines at exit.
+# opens one context for the whole process and has the collector write the context's lines
+# at exit, after the process's exit handlers.
 #
 # The whole process belongs to that test, so the record holds the context's lines and
 # every line the collector keeps outside contexts, such as initialisers (see
@@ -58,25 +59,7 @@ begin
 
     if dd_ci_line_coverage_serial
       Fiber[dd_ci_line_collector::CONTEXT_KEY] = dd_ci_line_coverage_serial
-      # Ruby before 2.5 cannot parse rescue in a do block.
-      at_exit do
-        begin # standard:disable Style/RedundantBegin
-          dd_ci_line_coverage_packed = dd_ci_line_collector.coverage(dd_ci_line_coverage_serial, [])[1].b
-          dd_ci_line_coverage_record = [dd_ci_line_coverage_packed.bytesize].pack("N") + dd_ci_line_coverage_packed
-          dd_ci_line_collector.shared.each_value do |dd_ci_line_coverage_bitmaps|
-            dd_ci_line_coverage_bitmaps.each do |dd_ci_line_coverage_file, dd_ci_line_coverage_bitmap|
-              [dd_ci_line_coverage_file.b, dd_ci_line_coverage_bitmap.b].each do |dd_ci_line_coverage_bytes|
-                dd_ci_line_coverage_record << [dd_ci_line_coverage_bytes.bytesize].pack("N") << dd_ci_line_coverage_bytes
-              end
-            end
-          end
-          dd_ci_line_coverage_path = "#{dd_ci_line_coverage_prefix}.#{Process.pid}.lines"
-          File.binwrite("#{dd_ci_line_coverage_path}.tmp", dd_ci_line_coverage_record)
-          File.rename("#{dd_ci_line_coverage_path}.tmp", dd_ci_line_coverage_path)
-        rescue StandardError, ScriptError
-          nil
-        end
-      end
+      dd_ci_line_collector.write_record_at_exit(dd_ci_line_coverage_prefix, dd_ci_line_coverage_serial, false)
     end
   end
 rescue StandardError, ScriptError

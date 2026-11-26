@@ -130,16 +130,6 @@ module Datadog
               bitmaps
             end
 
-            def encode_record(packed_bitmaps, bitmaps)
-              record = field(packed_bitmaps)
-              bitmaps.each { |file, bitmap| record << field(file) << field(bitmap) }
-              record
-            end
-
-            def field(bytes)
-              [bytes.bytesize].pack("N") + bytes.b
-            end
-
             def take_field(data, offset)
               length = field_length(data, offset)
               raise ArgumentError, "truncated record" if offset + 4 + length > data.bytesize
@@ -224,7 +214,8 @@ module Datadog
           end
 
           # In a forked child: keeps the forking thread's context, or opens one for the
-          # whole process, and writes its lines at exit.
+          # whole process, and has the collector write its lines at exit, after the exit
+          # handlers. The record holds the lines the child runs outside contexts from now on.
           def write_record_at_exit
             serial = self.class.context
             # Set before the fork, so no lock that a thread of the parent held is needed.
@@ -235,8 +226,7 @@ module Datadog
 
               Fiber[LineCollector::CONTEXT_KEY] = serial
             end
-            shared_at_fork = LineCollector.shared
-            at_exit { write_record(prefix, serial, shared_at_fork) }
+            LineCollector.write_record_at_exit(prefix, serial, true)
           end
 
           # Records of the finished children of a context, as bitmaps by path. A taken
@@ -315,23 +305,6 @@ module Datadog
               Datadog.logger.debug { "Line coverage ignored the record of a child process: #{e.class}: #{e.message}" }
               nil
             end
-          end
-
-          def write_record(prefix, serial, shared_at_fork)
-            _count, packed = LineCollector.coverage(serial, [])
-            added = {}
-            LineCollector.shared.each do |part, bitmaps|
-              before = shared_at_fork.fetch(part, {})
-              bitmaps.each do |file, bitmap|
-                difference = LineFiles.difference(bitmap, before[file])
-                added[file] = LineFiles.union(added[file], difference) if difference
-              end
-            end
-            path = "#{prefix}.#{Process.pid}#{RECORD_SUFFIX}"
-            File.binwrite("#{path}.tmp", self.class.encode_record(packed, added))
-            File.rename("#{path}.tmp", path)
-          rescue => e
-            Datadog.logger.debug { "Line coverage did not write the lines of a forked process: #{e.class}: #{e.message}" }
           end
         end
 

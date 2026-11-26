@@ -131,6 +131,29 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       expect(coverage).to include(relative("forker") => [1, 2], relative("leaf") => leaf_lines)
     end
 
+    it "credits the test with the lines that a child runs in its last exit handler" do
+      coverage = in_test { unbundled { system(ruby, "-r", fixture("loads_leaf_at_exit"), "-e", "nil") } }
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    # The child inherits the handler, which then runs after every handler the child registers.
+    it "credits the test with the lines that a forked child runs in an exit handler of its parent" do
+      in_forked_child = false
+      at_exit { load(fixture("leaf")) if in_forked_child }
+      coverage = in_test { Process.wait(fork { in_forked_child = true }) }
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    # Ruby removes every event hook after the exit handlers, before it ends the other threads.
+    it "leaves out the lines that a child runs after its exit handlers" do
+      coverage = in_test { unbundled { system(ruby, fixture("exits_thread")) } }
+
+      expect(coverage).to include(relative("exits_thread") => [3, 4, 5, 6, 10])
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+
     # The children keep Bundler: changing the environment from two threads would race.
     it "credits each of two concurrent tests with the lines of its own children" do
       both_started = Queue.new

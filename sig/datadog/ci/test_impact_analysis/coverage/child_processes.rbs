@@ -49,10 +49,6 @@ module Datadog
 
           def self.decode_record: (String data) -> LineCollector::bitmaps
 
-          def self.encode_record: (String packed_bitmaps, LineCollector::bitmaps bitmaps) -> String
-
-          def self.field: (String bytes) -> String
-
           def self.take_field: (String data, Integer offset) -> String
 
           def self.field_length: (String data, Integer offset) -> Integer
@@ -90,8 +86,6 @@ module Datadog
           def record_names: () -> Array[String]
 
           def read_records: (Array[String] names, bool keep) -> Array[LineCollector::bitmaps]
-
-          def write_record: (String prefix, Integer serial, Hash[String, LineCollector::bitmaps] shared_at_fork) -> void
         end
 
         module ChildProcessHooks
