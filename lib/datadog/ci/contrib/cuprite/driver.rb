@@ -22,18 +22,34 @@ module Datadog
           module InstanceMethods
             def visit(url)
               result = super
+              datadog_tag_navigation(url)
+              result
+            end
 
-              return result unless datadog_configuration[:enabled]
+            def reset!
+              datadog_end_rum_session("reset!")
+              super
+            end
+
+            def quit
+              datadog_end_rum_session("quit")
+              super
+            end
+
+            private
+
+            def datadog_tag_navigation(url)
+              return unless datadog_configuration[:enabled]
 
               Datadog.logger.debug("[Cuprite] Navigation to #{url}")
 
               # on session reset Capybara navigates to about:blank
-              return result if url == "about:blank"
+              return if url == "about:blank"
 
               active_test = Datadog::CI.active_test
               Datadog.logger.debug("[Cuprite] Active test: #{active_test}")
 
-              return result unless active_test
+              return unless active_test
 
               # Set the test's trace id as a cookie in browser session
               Datadog.logger.debug do
@@ -51,29 +67,11 @@ module Datadog
               # set the tags specific to the browser test
               active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_DRIVER, "cuprite")
               active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_DRIVER_VERSION, datadog_integration.version)
-              active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_NAME, browser.options.browser_name || "chrome")
+              active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_NAME, browser.options.to_h[:browser_name] || "chrome")
               active_test.set_internal_tag(CI::Ext::Test::TAG_BROWSER_VERSION, browser.version.product)
-
-              result
+            rescue => e
+              Datadog.logger.warn("[Cuprite] Could not record browser navigation: #{e.class}: #{e.message}")
             end
-
-            def reset!
-              Datadog.logger.debug("[Cuprite] Driver reset! event")
-
-              datadog_end_rum_session
-
-              super
-            end
-
-            def quit
-              Datadog.logger.debug("[Cuprite] Driver quit event")
-
-              datadog_end_rum_session
-
-              super
-            end
-
-            private
 
             def datadog_integration
               CI::Contrib::Instrumentation.fetch_integration(:cuprite)
@@ -83,17 +81,21 @@ module Datadog
               Datadog.configuration.ci[:cuprite]
             end
 
-            def datadog_end_rum_session
-              return unless datadog_configuration[:enabled]
+            def datadog_end_rum_session(event)
+              active_browser = @browser
+              return unless active_browser && datadog_configuration[:enabled]
 
-              executor = ScriptExecutor.new(browser)
+              Datadog.logger.debug("[Cuprite] Driver #{event} event")
+              executor = ScriptExecutor.new(active_browser)
               Utils::RUM.stop_rum_session(executor, rum_flush_wait_millis: datadog_configuration[:rum_flush_wait_millis])
 
-              domain = URI.parse(browser.current_url).host
+              domain = URI.parse(active_browser.current_url).host
               return unless domain
 
               Datadog.logger.debug("[Cuprite] Deleting Datadog cookie")
-              browser.cookies.remove(name: CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID, domain: domain)
+              active_browser.cookies.remove(name: CI::Ext::RUM::COOKIE_TEST_EXECUTION_ID, domain: domain)
+            rescue => e
+              Datadog.logger.warn("[Cuprite] Could not end the RUM session during #{event}: #{e.class}: #{e.message}")
             end
           end
         end

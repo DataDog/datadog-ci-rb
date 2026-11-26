@@ -16,11 +16,13 @@ module Datadog
 
             private
 
+            def datadog_tag_navigation: (String url) -> void
+
             def datadog_integration: () -> untyped
 
             def datadog_configuration: () -> Datadog::CI::Contrib::Cuprite::Configuration::Settings
 
-            def datadog_end_rum_session: () -> (nil | untyped)
+            def datadog_end_rum_session: (String event) -> void
           end
         end
       end
