@@ -21,6 +21,7 @@ module Datadog
           @tests: Hash[Integer, Context]
           @test_ids_by_serial: Hash[Integer, Integer]
           @fixtures: Hash[String, Context]
+          @fixture_serials: Hash[Integer, bool]
           @open_fixture_id: String?
 
           self.@running_with: [String, Array[String]]?
@@ -52,6 +53,10 @@ module Datadog
           def stop: () -> void
 
           private
+
+          def add_child_records: (LineCollector::packed_bitmaps coverage, Integer serial, Array[Integer] fixture_serials) -> LineCollector::packed_bitmaps
+
+          def add_remaining_child_records: (Hash[String, LineCollector::bitmaps] shared) -> Hash[String, LineCollector::bitmaps]
 
           def close_open_fixture: () -> void
 

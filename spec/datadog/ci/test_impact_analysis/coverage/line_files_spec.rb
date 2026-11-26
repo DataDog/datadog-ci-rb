@@ -66,4 +66,37 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineFiles do
       expect(files.inspect_coverage).to eq("lib/a.rb" => [1, 9], "lib/b.rb" => [3], "docs/a.md" => true)
     end
   end
+
+  describe "bitmap helpers" do
+    it "packs and unpacks bitmaps by path" do
+      count, packed = described_class.pack(bitmaps)
+
+      expect(count).to eq(2)
+      expect(described_class.unpack(packed)).to eq(bitmaps)
+    end
+
+    it "unites bitmaps of different lengths" do
+      union = described_class.union([0b0000_0010].pack("C*"), [0b0000_1000, 0b0000_0001].pack("C*"))
+
+      expect(described_class.lines(union)).to eq([1, 3, 8])
+      expect(union.encoding).to eq(Encoding::BINARY)
+    end
+
+    it "takes the lines of one bitmap that another lacks, or nil when it lacks none" do
+      left = [0b0000_1010, 0b0000_0001].pack("C*")
+
+      expect(described_class.lines(described_class.difference(left, [0b0000_0010].pack("C*")))).to eq([3, 8])
+      expect(described_class.lines(described_class.difference(left, nil))).to eq([1, 3, 8])
+      expect(described_class.difference(left, [0b1111_1111, 0b0000_0001, 0b0000_0001].pack("C*"))).to be_nil
+    end
+
+    it "adds the lines of more bitmaps by path" do
+      more = {"lib/a.rb" => [0b0000_0100].pack("C*"), "lib/c.rb" => [0b0000_0001].pack("C*")}
+
+      added = described_class.add_bitmaps(bitmaps.dup, more)
+
+      expect(added.transform_values { |bitmap| described_class.lines(bitmap) })
+        .to eq("lib/a.rb" => [1, 2, 9], "lib/b.rb" => [3], "lib/c.rb" => [0])
+    end
+  end
 end

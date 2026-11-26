@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require_relative "child_processes"
+require_relative "line_files"
+
 module Datadog
   module CI
     module TestImpactAnalysis
@@ -12,6 +15,10 @@ module Datadog
         # fiber storage, which Ruby copies into every thread and fiber the context
         # creates. Lines that run in no open context are reported once per process, in
         # the unowned part of #shared.
+        #
+        # The processes that a context starts record their lines for that context (see
+        # ChildProcesses). A test gets the lines of the children that finished before it
+        # did; the lines of a child that finishes later are unowned.
         #
         # Errors are logged and never raised: the methods run inside customer tests.
         #
@@ -84,6 +91,7 @@ module Datadog
 
             @first_root = root
             @running_with = [root, ignored_paths]
+            ChildProcesses.start(root: root, ignored_paths: ignored_paths)
             new
           rescue => e
             Datadog.logger.warn("Failed to start per-test line coverage: #{e.class}: #{e.message}")
@@ -93,6 +101,7 @@ module Datadog
           # Stops the collector if this process loaded and started it.
           def self.stop_collector
             @running_with = nil
+            ChildProcesses.stop
             return unless defined?(LineCollector) && LineCollector.supported?
 
             LineCollector.stop
@@ -105,6 +114,7 @@ module Datadog
             @tests = {}
             @test_ids_by_serial = {}
             @fixtures = {}
+            @fixture_serials = {}
             @open_fixture_id = nil
           end
 
@@ -136,7 +146,8 @@ module Datadog
               return EMPTY_COVERAGE if context.nil?
 
               fixture_serials = fixture_ids.filter_map { |fixture_id| @fixtures[fixture_id]&.serial }
-              LineCollector.coverage(context.serial, fixture_serials)
+              coverage = LineCollector.coverage(context.serial, fixture_serials)
+              add_child_records(coverage, context.serial, fixture_serials)
             end
           rescue => e
             log_error("finish a test", e)
@@ -166,6 +177,7 @@ module Datadog
               previous = Fiber[LineCollector::CONTEXT_KEY]
               Fiber[LineCollector::CONTEXT_KEY] = serial
               @fixtures[fixture_id] = Context.new(serial, Fiber.current, previous)
+              @fixture_serials[serial] = true
               @open_fixture_id = fixture_id
             end
           rescue => e
@@ -186,7 +198,7 @@ module Datadog
           # Lines that are in no test's own lines, by part: "init", "suiteSetup" and
           # "unowned", each as line bitmaps by repository-relative path.
           def shared
-            LineCollector.shared
+            add_remaining_child_records(LineCollector.shared)
           rescue => e
             log_error("collect shared lines", e)
             EMPTY_SHARED
@@ -197,6 +209,39 @@ module Datadog
           end
 
           private
+
+          # The lines of the context's finished children, and those of the fixtures it
+          # depends on, which later tests read again.
+          def add_child_records(coverage, serial, fixture_serials)
+            child_processes = ChildProcesses.current
+            return coverage if child_processes.nil?
+
+            records = child_processes.records(serial)
+            fixture_serials.each { |fixture_serial| records.concat(child_processes.records(fixture_serial, keep: true)) }
+            return coverage if records.empty?
+
+            bitmaps = LineFiles.unpack(coverage[1])
+            records.each { |record| LineFiles.add_bitmaps(bitmaps, record) }
+            LineFiles.pack(bitmaps)
+          end
+
+          # The children that finished after their test are unowned; those of a fixture are
+          # in its suite setup part.
+          def add_remaining_child_records(shared)
+            child_processes = ChildProcesses.current
+            return shared if child_processes.nil?
+
+            remaining = child_processes.remaining_records
+            return shared if remaining.empty?
+
+            shared = shared.transform_values(&:dup)
+            remaining.each do |serial, records|
+              part = (serial && @fixture_serials.key?(serial)) ? "suiteSetup" : "unowned"
+              bitmaps = shared[part] ||= {}
+              records.each { |record| LineFiles.add_bitmaps(bitmaps, record) }
+            end
+            shared
+          end
 
           def close_open_fixture
             fixture_id = @open_fixture_id
