@@ -6,6 +6,7 @@ module Datadog
       @in_test_discovery_mode: bool
       @context_ids: Array[String]?
       @skipped_before_start: bool?
+      @line_coverage_closed_by_integration: bool?
       @custom_impacted_files: Array[String]
       @inherited_custom_impacted_files: Array[String]
 
@@ -42,6 +43,8 @@ module Datadog
       def skipped_by_test_impact_analysis?: () -> bool
       def skipped_before_start!: () -> void
       def skipped_before_start?: () -> bool
+      def line_coverage_closed_by_integration!: () -> void
+      def line_coverage_closed_by_integration?: () -> bool
       def peek_duration: () -> Float
       def apply_automation_exclusions: (prevent_failure_suppression: bool, no_auto_retry: bool) -> void
       def prevent_failure_suppression?: () -> bool
