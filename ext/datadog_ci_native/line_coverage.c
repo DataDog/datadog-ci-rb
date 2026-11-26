@@ -742,10 +742,13 @@ static void arm_iseq(const rb_iseq_t *iseq, long file, bool initialiser, pending
   if (entry_count == 0 || !entries) goto done;
 
   /* A script without code, such as an empty file, compiles to instructions without
-   * events. Ruby's line coverage counts no line in it, so it gets no sites. */
-  bool has_events = false;
-  for (unsigned int k = 0; k < entry_count && !has_events; k++) has_events = entries[k].events != 0;
-  if (!has_events) goto done;
+   * events, and no line of it runs, so it gets no sites. Other iseqs without events keep
+   * theirs: before Ruby 3.3, an empty rescue clause has no events, yet its line runs. */
+  if (body->type == ISEQ_TYPE_TOP || body->type == ISEQ_TYPE_MAIN || body->type == ISEQ_TYPE_EVAL) {
+    bool has_events = false;
+    for (unsigned int k = 0; k < entry_count && !has_events; k++) has_events = entries[k].events != 0;
+    if (!has_events) goto done;
+  }
 
   if (branch_coverage_p(iseq) && !add_spare_branch_counter(iseq)) {
     st.stats.iseqs_skipped++;
