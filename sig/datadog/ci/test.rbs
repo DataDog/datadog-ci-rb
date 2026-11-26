@@ -5,6 +5,7 @@ module Datadog
       @local_test_id: Datadog::CI::TestSuite::test_id?
       @in_test_discovery_mode: bool
       @context_ids: Array[String]?
+      @skipped_before_start: bool?
       @custom_impacted_files: Array[String]
       @inherited_custom_impacted_files: Array[String]
 
@@ -39,6 +40,8 @@ module Datadog
       def should_skip?: () -> bool
       def should_ignore_failures?: () -> bool
       def skipped_by_test_impact_analysis?: () -> bool
+      def skipped_before_start!: () -> void
+      def skipped_before_start?: () -> bool
       def peek_duration: () -> Float
       def apply_automation_exclusions: (prevent_failure_suppression: bool, no_auto_retry: bool) -> void
       def prevent_failure_suppression?: () -> bool
