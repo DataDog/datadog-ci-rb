@@ -17,12 +17,17 @@ RSpec.describe "Browser tests with cuprite" do
   let(:reset_url) { nil }
   let(:current_url) { "http://www.example.com" }
   let(:cookies_spy) { instance_spy(Ferrum::Cookies) }
+  let(:browser_options) { Ferrum::Browser::Options.new }
+  let(:visit_result) { Object.new }
+  let(:navigation_methods) do
+    [:visit, :goto, :go_to].select { |method| Capybara::Cuprite::Browser.method_defined?(method) }
+  end
   let(:browser) do
     instance_double(
       Capybara::Cuprite::Browser,
       :cookies => cookies_spy,
       :current_url => current_url,
-      :options => instance_double(Ferrum::Browser::Options, browser_name: "mockbrowser"),
+      :options => browser_options,
       :version => instance_double(Ferrum::Browser::VersionInfo, product: "mockversion"),
       :raise_on_unhandled_modal= => nil,
       :url_blacklist= => nil,
@@ -70,13 +75,10 @@ RSpec.describe "Browser tests with cuprite" do
   before do
     FileUtils.cp(steps_file_definition_path, steps_file_for_run_path)
 
-    expect(Capybara::Cuprite::Browser).to receive(:new).and_return(browser)
-    allow(browser).to receive(:evaluate_func) do |script|
+    allow(Capybara::Cuprite::Browser).to receive(:new).and_return(browser)
+    allow(browser).to receive(:evaluate) do |script|
       executed_scripts << script
-      "true"
-    end
-    allow(browser).to receive(:visit) do |url|
-      visited_urls << url
+      true
     end
     if reset_url
       allow(browser).to receive(:reset) do
@@ -84,8 +86,11 @@ RSpec.describe "Browser tests with cuprite" do
       end
     end
     allow(browser).to receive(:base_url=)
-    allow(browser).to receive(:goto) do |url|
-      visited_urls << url
+    navigation_methods.each do |method|
+      allow(browser).to receive(method) do |url|
+        visited_urls << url
+        visit_result
+      end
     end
 
     if Capybara::Cuprite.respond_to?(:deprecation_warning)
@@ -104,14 +109,9 @@ RSpec.describe "Browser tests with cuprite" do
 
   it "reports the browser test and its tags" do
     expect(visited_urls).to eq(["http://www.example.com"])
-    expect(executed_scripts).to eq(
-      [
-        Datadog::CI::Contrib::Cuprite::ScriptExecutor::WRAPPED_SCRIPTS[Datadog::CI::Ext::RUM::SCRIPT_IS_RUM_ACTIVE],
-        Datadog::CI::Contrib::Cuprite::ScriptExecutor::WRAPPED_SCRIPTS[Datadog::CI::Ext::RUM::SCRIPT_STOP_RUM_SESSION],
-        Datadog::CI::Contrib::Cuprite::ScriptExecutor::WRAPPED_SCRIPTS[Datadog::CI::Ext::RUM::SCRIPT_IS_RUM_ACTIVE],
-        Datadog::CI::Contrib::Cuprite::ScriptExecutor::WRAPPED_SCRIPTS[Datadog::CI::Ext::RUM::SCRIPT_STOP_RUM_SESSION]
-      ]
-    )
+    rum_active = Datadog::CI::Ext::RUM::SCRIPT_IS_RUM_ACTIVE
+    stop_rum = Datadog::CI::Ext::RUM::SCRIPT_STOP_RUM_SESSION
+    expect(executed_scripts).to eq(["(function() {\n#{rum_active}\n})()", "(function() {\n#{stop_rum}\n})()"] * 2)
 
     expect(test_spans).to have(1).item
 
@@ -128,10 +128,18 @@ RSpec.describe "Browser tests with cuprite" do
       :browser_driver_version,
       Gem.loaded_specs["cuprite"].version.to_s
     )
-    expect(first_test_span).to have_test_tag(:browser_name, "mockbrowser")
+    expect(first_test_span).to have_test_tag(:browser_name, "chrome")
     expect(first_test_span).to have_test_tag(:browser_version, "mockversion")
 
     expect(first_test_span).to have_test_tag(:is_rum_active, "true")
+  end
+
+  context "when the browser name is configured" do
+    let(:browser_options) { Ferrum::Browser::Options.new(browser_name: "chromium") }
+
+    it "reports the configured browser name" do
+      expect(first_test_span).to have_test_tag(:browser_name, "chromium")
+    end
   end
 
   context "when navigation redirects to another host" do
@@ -156,6 +164,48 @@ RSpec.describe "Browser tests with cuprite" do
     it "quits without removing a cookie from a blank page" do
       expect(cookies_spy).to have_received(:remove).once
       expect(browser).to have_received(:quit)
+    end
+  end
+
+  describe "driver lifecycle" do
+    let(:driver) { Capybara::Cuprite::Driver.new(nil) }
+
+    it "skips RUM teardown when the driver has never used a browser" do
+      expect(browser).not_to receive(:evaluate)
+
+      driver.quit
+    end
+
+    it "preserves the visit result when navigation instrumentation fails" do
+      allow(Datadog::CI).to receive(:active_test).and_raise(StandardError, "test lookup failed")
+      expect(Datadog.logger).to receive(:warn).with(/Could not record browser navigation.*test lookup failed/)
+
+      expect(driver.visit(current_url)).to equal(visit_result)
+    end
+
+    it "preserves exceptions from the underlying driver" do
+      driver.browser
+      failure = StandardError.new("browser operation failed")
+      navigation_methods.each { |method| allow(browser).to receive(method).and_raise(failure) }
+      allow(browser).to receive(:reset).and_raise(failure)
+      allow(browser).to receive(:quit).and_raise(failure)
+
+      expect { driver.visit(current_url) }.to raise_error { |error| expect(error).to equal(failure) }
+      expect { driver.reset! }.to raise_error { |error| expect(error).to equal(failure) }
+      expect { driver.quit }.to raise_error { |error| expect(error).to equal(failure) }
+    end
+
+    it "resets and quits the driver when RUM instrumentation fails" do
+      driver.browser
+      allow(browser).to receive(:evaluate).and_raise(StandardError, "script failed")
+      expect(Datadog.logger).to receive(:warn).with(/during reset!.*script failed/)
+      expect(Datadog.logger).to receive(:warn).with(/during quit.*script failed/)
+      expect(browser).to receive(:reset)
+      quit_result = Object.new
+      expect(browser).to receive(:quit).and_return(quit_result)
+
+      driver.reset!
+      expect(driver.quit).to equal(quit_result)
     end
   end
 end

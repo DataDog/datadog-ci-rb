@@ -12,7 +12,7 @@ class Ferrum::Browser
 
   def options: () -> Ferrum::Browser::Options
 
-  def evaluate_func: (String script) -> String
+  def evaluate: (String script) -> Object
 
   def current_url: () -> String
 
@@ -26,7 +26,7 @@ class Ferrum::Cookies
 end
 
 class Ferrum::Browser::Options
-  def browser_name: () -> String
+  def to_h: () -> Hash[Symbol, Object]
 end
 
 class Ferrum::Browser::VersionInfo
@@ -34,6 +34,8 @@ class Ferrum::Browser::VersionInfo
 end
 
 module Capybara::Cuprite::Driver
+  @browser: Ferrum::Browser?
+
   def visit: (String url) -> untyped
 
   def reset!: () -> void

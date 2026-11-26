@@ -4,11 +4,10 @@ module Datadog
       module Cuprite
         class ScriptExecutor
           @ferrum_browser: Ferrum::Browser
-          WRAPPED_SCRIPTS: ::Hash[::String, ::String]
 
           def initialize: (Ferrum::Browser ferrum_browser) -> void
 
-          def execute_script: (String script) -> String
+          def execute_script: (String script) -> Object
         end
       end
     end
