@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "json"
 require "msgpack"
 require "open3"
 require "rbconfig"
@@ -417,6 +418,35 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
       expect(third.split(",").map(&:to_i)).to include(source.index(":after_collection_in_test") + 1)
       # Ruby 4 does not need the collector to watch for Ractors.
       expect(ractor_seen).to eq((RUBY_VERSION < "4").to_s)
+    end
+  end
+
+  # While it arms new code, the collector stops the GC from starting a collection, but does not
+  # finish the one in progress, which may compact.
+  describe "when code compiles during a compacting GC" do
+    let(:root) { File.realpath(Datadog::CI::Git::LocalRepository.root) }
+    let(:script) { File.join(__dir__, "fixtures", "line_coverage", "gc_during_arming.rb") }
+
+    before do
+      require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+      skip "per-test line coverage is not supported on this Ruby" unless described_class.supported?
+
+      # So that the child does not load the bootstrap of child processes.
+      described_class.stop_collector
+    end
+
+    # In a child process, so that GC.stress and GC.auto_compact stay out of this process.
+    it "records every nested line, with and without GC.stress, and leaves the collection in progress" do
+      Dir.mktmpdir("lc", root) do |directory|
+        stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I", File.join(root, "lib"), script, root, directory)
+
+        expect(status).to be_success, stderr
+        expect(JSON.parse(stdout)).to eq(
+          "run" => {"complete" => 10, "marking after the second load" => 5},
+          "stress" => {"complete" => 10, "marking after the second load" => 5},
+          "gc_disable_no_rest" => true
+        )
+      end
     end
   end
 end

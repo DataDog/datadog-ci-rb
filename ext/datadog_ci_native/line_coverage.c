@@ -321,6 +321,16 @@ static bool yjit_enabled(void) {
 #endif
 }
 
+/* rb_gc_disable_no_rest is internal, so it is looked up at runtime too. */
+static VALUE (*gc_disable_no_rest_function)(void);
+
+/* Stops the GC from starting a collection, like rb_gc_disable, but does not finish the one
+ * in progress first: finishing it can take milliseconds. Without the internal function, it
+ * is rb_gc_disable. */
+static VALUE gc_disable_no_rest(void) {
+  return gc_disable_no_rest_function ? gc_disable_no_rest_function() : rb_gc_disable();
+}
+
 /* ---- small containers --------------------------------------------------- */
 
 static bool grow(void **items, size_t *capacity, size_t needed, size_t item_size) {
@@ -1261,7 +1271,12 @@ static void on_script_compiled(VALUE data, const rb_trace_arg_t *trace_arg) {
   if (RB_TYPE_P(compiled, T_ARRAY)) compiled = RARRAY_AREF(compiled, 1);
   if (!RB_TYPE_P(compiled, T_IMEMO) || imemo_type(compiled) != imemo_iseq) return;
   const rb_iseq_t *iseq = (const rb_iseq_t *)compiled;
-  VALUE gc_was_disabled = rb_gc_disable();
+  /* A collection in progress still advances when Ruby allocates an object, and it may
+   * compact, which would move the iseqs that arm_tree holds as raw pointers. Classifying
+   * the path first, with the GC on, leaves arm_tree nothing to allocate: nested iseqs
+   * share the top iseq's path. */
+  classify_path(rb_iseq_path(iseq));
+  VALUE gc_was_disabled = gc_disable_no_rest();
   arm_tree(iseq);
   if (gc_was_disabled == Qfalse) rb_gc_enable();
   /* The file loads now, so its initialiser lines trap. */
@@ -2005,6 +2020,7 @@ static VALUE line_collector_stats(VALUE self) {
   STAT("iseqs_skipped", ULONG2NUM(st.stats.iseqs_skipped));
   STAT("spare_branch_counters", ULONG2NUM(st.spare_counter_array_count));
   STAT("yjit_guarded", st.yjit_guarded ? Qtrue : Qfalse);
+  STAT("gc_disable_no_rest", gc_disable_no_rest_function ? Qtrue : Qfalse);
   STAT("single_hook", st.trap_hook_installed && !st.compile_hook_installed ? Qtrue : Qfalse);
   STAT("guards", ULONG2NUM(st.guard_count));
   STAT("guard_repairs", ULONG2NUM(st.stats.guard_repairs));
@@ -2102,6 +2118,7 @@ void Init_dd_ci_line_coverage(void) {
   yjit_enabled_variable = (const bool *)dlsym(RTLD_DEFAULT, "rb_yjit_enabled_p");
 #endif
   yjit_invalidate_all = (void (*)(void))dlsym(RTLD_DEFAULT, "rb_yjit_tracing_invalidate_all");
+  gc_disable_no_rest_function = (VALUE (*)(void))dlsym(RTLD_DEFAULT, "rb_gc_disable_no_rest");
 
   state_holder = TypedData_Wrap_Struct(rb_cObject, &state_type, &st);
   rb_gc_register_mark_object(state_holder);
