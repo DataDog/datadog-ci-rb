@@ -2,6 +2,8 @@
 
 require "fileutils"
 require "msgpack"
+require "open3"
+require "rbconfig"
 require "tmpdir"
 
 require_relative "../../../../../lib/datadog/ci/test_impact_analysis/coverage/line_coverage"
@@ -199,6 +201,30 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
 
         expect(lines_in(directory, packed).fetch("ensured.rb")).to include(2, 3)
       end
+    end
+  end
+
+  # Before Ruby 4, the GC that frees a Ractor turns off the VM's event flags, and with them
+  # every line trap.
+  describe "after the GC frees a finished Ractor" do
+    let(:root) { File.realpath(Datadog::CI::Git::LocalRepository.root) }
+    let(:script) { File.join(__dir__, "fixtures", "line_coverage", "ractor_gc.rb") }
+
+    before do
+      require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+      skip "per-test line coverage is not supported on this Ruby" unless described_class.supported?
+
+      # So that the child does not load the bootstrap of child processes.
+      described_class.stop_collector
+    end
+
+    # In a child process, so that this process starts no Ractor.
+    it "records the lines of the next test" do
+      stdout, stderr, status = Open3.capture3(RbConfig.ruby, "-I", File.join(root, "lib"), script, root)
+
+      expect(status).to be_success, stderr
+      line = File.readlines(script).index { |source| source.strip == ":after_collection" } + 1
+      expect(stdout.split(",").map(&:to_i)).to include(line)
     end
   end
 end

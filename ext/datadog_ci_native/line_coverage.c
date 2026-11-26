@@ -247,6 +247,10 @@ static struct {
   id_vector_t touched; /* files with lines in the record being built */
   uint32_t epoch;
 
+  /* the GC count after the last event flag sync, and whether a GC was still running then */
+  size_t gc_count_at_flag_sync;
+  bool gc_running_at_flag_sync;
+
   /* untraced encoding by instruction number, learned while arming; 0 while unknown */
   VALUE plain_by_insn[INSN_TABLE_SIZE];
   size_t plain_known;
@@ -268,6 +272,7 @@ static struct {
     unsigned long iseqs_armed;
     unsigned long iseqs_scanned;
     unsigned long allocation_failures;
+    unsigned long event_flag_syncs;
     double discovery_seconds;
   } stats;
 } st;
@@ -1314,6 +1319,34 @@ static void arm_loaded_code(void) {
   free(list.items);
 }
 
+/* ---- Ractors ---------------------------------------------------------------- */
+
+#if RUBY_API_VERSION_MAJOR < 4
+static VALUE gc_state_key;
+static VALUE gc_state_none;
+
+static void on_event_flag_sync(VALUE data, const rb_trace_arg_t *trace_arg) {}
+
+/* Before Ruby 4, the GC that frees a Ractor sets the VM's global event flags to that
+ * Ractor's hooks: none. The VM checks those flags before it dispatches an instruction
+ * event, so no trap fires until a hook of the main Ractor is added or removed, which sets
+ * the flags from the main Ractor's hooks again. Ruby exports neither the flags nor whether
+ * a Ractor ever ran, so the first context boundary after GC activity adds and removes a
+ * hook. With no other Ractor running, the flags keep their value. */
+static void sync_event_flags(void) {
+  if (rb_gc_count() == st.gc_count_at_flag_sync && !st.gc_running_at_flag_sync) return;
+  rb_add_event_hook2((rb_event_hook_func_t)on_event_flag_sync, TRAP_EVENT, Qnil, HOOK_FLAGS);
+  rb_remove_event_hook((rb_event_hook_func_t)on_event_flag_sync);
+  st.stats.event_flag_syncs++;
+  /* A lazy sweep still running can free a Ractor before the next GC starts. */
+  st.gc_count_at_flag_sync = rb_gc_count();
+  st.gc_running_at_flag_sync = rb_gc_latest_gc_info(gc_state_key) != gc_state_none;
+}
+#else
+/* Ruby 4 checks the hooks of the running Ractor instead. */
+static void sync_event_flags(void) {}
+#endif
+
 /* ---- contexts --------------------------------------------------------------- */
 
 static void rearm_dirty_sites(void) {
@@ -1382,6 +1415,7 @@ static VALUE line_collector_open_context(int argc, VALUE *argv, VALUE self) {
   st.open_contexts[st.open_count++] = (uint32_t)index;
   /* YJIT can be turned on at runtime (RubyVM::YJIT.enable). */
   if (!st.yjit_guarded && yjit_enabled()) enable_yjit_guards();
+  sync_event_flags();
   rearm_dirty_sites();
   return LONG2FIX(context->serial);
 }
@@ -1389,6 +1423,7 @@ static VALUE line_collector_open_context(int argc, VALUE *argv, VALUE self) {
 static void close_open_context(context_t *context) {
   context->open = false;
   remove_open((size_t)(context - st.contexts));
+  sync_event_flags();
   /* What runs until the next context opens is unowned, and only armed sites record it. */
   if (st.open_count == 0) rearm_dirty_sites();
 }
@@ -1661,6 +1696,7 @@ static VALUE line_collector_stats(VALUE self) {
   STAT("iseqs_scanned", ULONG2NUM(st.stats.iseqs_scanned));
   STAT("plain_encodings_known", ULONG2NUM(st.plain_known));
   STAT("allocation_failures", ULONG2NUM(st.stats.allocation_failures));
+  STAT("event_flag_syncs", ULONG2NUM(st.stats.event_flag_syncs));
   STAT("discovery_seconds", DBL2NUM(st.stats.discovery_seconds));
   unsigned long unknown = 0, shared = 0, init = 0;
   for (size_t i = 0; i < st.site_count; i++) {
@@ -1718,6 +1754,10 @@ void Init_dd_ci_line_coverage(void) {
   st.path_cache = Qnil;
   st.context_key = ID2SYM(rb_intern("__datadog_ci_coverage_context"));
   st.spare_counters = st_init_numtable();
+#if RUBY_API_VERSION_MAJOR < 4
+  gc_state_key = ID2SYM(rb_intern("state"));
+  gc_state_none = ID2SYM(rb_intern("none"));
+#endif
 
 #if RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR < 3
   yjit_enabled_function = (bool (*)(void))dlsym(RTLD_DEFAULT, "rb_yjit_enabled_p");
