@@ -352,6 +352,16 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       end
     end
 
+    it "keep private the Kernel methods they hook" do
+      hooked = [:spawn, :system, :exec, :`]
+
+      expect(Kernel.ancestors).to include(Datadog::CI::TestImpactAnalysis::Coverage::ChildProcessHooks::PrivateKernelMethods)
+      expect(Object.public_instance_methods).not_to include(*hooked)
+      expect(Object.private_instance_methods).to include(*hooked)
+      expect(Kernel.public_methods).to include(*hooked)
+      expect(Object.new.respond_to?(:system)).to be(false)
+    end
+
     it "start the child unchanged when the hook fails" do
       allow(child_processes).to receive(:environment).and_raise(RuntimeError, "hook failure")
 

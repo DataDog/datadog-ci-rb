@@ -125,6 +125,8 @@ module Datadog
             def `: (String command) -> String
           end
 
+          PrivateKernelMethods: Module
+
           module ProcessMethods : _ProcessSpawning
             def spawn: (*untyped arguments) -> Integer
 

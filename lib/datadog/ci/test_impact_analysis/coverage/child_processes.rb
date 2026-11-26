@@ -344,7 +344,7 @@ module Datadog
             return if @installed
 
             @installed = true
-            ::Kernel.prepend(KernelMethods)
+            ::Kernel.prepend(PrivateKernelMethods)
             ::Kernel.singleton_class.prepend(KernelMethods)
             ::Process.singleton_class.prepend(ProcessMethods)
             ::IO.singleton_class.prepend(IOMethods)
@@ -374,6 +374,13 @@ module Datadog
 
               ::IO.popen(environment, command, &:read)
             end
+          end
+
+          # Kernel's instance methods are private, and so are their hooks: no object starts to
+          # respond to them. A copy rather than a module that includes KernelMethods, so that
+          # each hook stays a method of its own and super_method still finds the original.
+          PrivateKernelMethods = KernelMethods.dup.tap do |copy|
+            copy.module_eval { private :spawn, :system, :exec, :` }
           end
 
           # Process.spawn, .exec and ._fork, which Kernel#fork, Process.fork and
