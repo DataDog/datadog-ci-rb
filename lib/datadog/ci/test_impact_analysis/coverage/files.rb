@@ -78,7 +78,7 @@ module Datadog
               end
               @custom_impacted_files.each do |file|
                 # The public API defines relative custom paths as repository-relative.
-                relative_file = if File.absolute_path?(file)
+                relative_file = if Git::LocalRepository::REAL_FILE.absolute_path?(file)
                   Git::LocalRepository.relative_to_root(file)
                 else
                   file
