@@ -7,26 +7,43 @@ module Datadog
     module Codeowners
       # Responsible for matching a test source file path to a list of owners
       class Matcher
+        CACHE_MISS = Object.new.freeze
+
         def initialize(codeowners_file_path)
           @rules = parse(codeowners_file_path)
           @rules.reverse!
+          @cache = {}
+          @mutex = Mutex.new
         end
 
         def list_owners(file_path)
+          return nil if @rules.empty?
+
+          cached = @mutex.synchronize { @cache.fetch(file_path, CACHE_MISS) }
+          return cached if cached.is_a?(Array)
+          return nil if cached.nil?
+
           # treat all file paths that we check as absolute from the repository root
-          file_path = "/#{file_path}" unless file_path.start_with?("/")
+          normalized_path = file_path.start_with?("/") ? file_path : "/#{file_path}"
 
-          Datadog.logger.debug { "Matching file path #{file_path} to CODEOWNERS rules" }
+          Datadog.logger.debug { "Matching file path #{normalized_path} to CODEOWNERS rules" }
 
+          matched_owners = nil
           @rules.each do |rule|
-            if rule.match?(file_path)
+            if rule.match?(normalized_path)
               Datadog.logger.debug { "Matched rule [#{rule.pattern}] with owners #{rule.owners}" }
-              return rule.owners
+              matched_owners = rule.owners
+              break
             end
           end
 
-          Datadog.logger.debug { "CODEOWNERS rule not matched" }
-          nil
+          Datadog.logger.debug { "CODEOWNERS rule not matched" } if matched_owners.nil?
+
+          @mutex.synchronize do
+            @cache[file_path] = matched_owners
+          end
+
+          matched_owners
         end
 
         private
