@@ -4,6 +4,8 @@ module Datadog
   module CI
     module SourceCode
       module PathFilter
+        SEPARATOR_BYTE: Integer?
+
         def self.included?: (String path, String root_path, String? ignored_path) -> bool
 
         private

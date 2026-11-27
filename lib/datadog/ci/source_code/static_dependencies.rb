@@ -38,6 +38,8 @@ module Datadog
       end
 
       module StaticDependencies
+        EMPTY_DEPENDENCIES = {}.freeze
+
         # Populate the static dependencies map by scanning all live ISeqs.
         #
         # @param root_path [String] Only process files under this path
@@ -48,7 +50,30 @@ module Datadog
 
           extractor = StaticDependenciesExtractor.new(root_path, ignored_path)
 
+          included_iseqs = []
+          # @type var included_iseqs: Array[RubyVM::InstructionSequence]
           ISeqCollector.collect.each do |iseq|
+            path = iseq.absolute_path
+            next unless path.is_a?(String) && PathFilter.included?(path, root_path, ignored_path)
+
+            included_iseqs << iseq
+          end
+
+          # Parent ISeq#to_a already embeds all lexically nested descendant ISeqs
+          # (in body and catch_table), so only extract root ISeqs to avoid
+          # redundant ISeq#to_a allocations and repeated bytecode scans.
+          child_iseqs = {}
+          # @type var child_iseqs: Hash[RubyVM::InstructionSequence, bool]
+          included_iseqs.each do |iseq|
+            parent_path = iseq.absolute_path
+            iseq.each_child do |child|
+              child_iseqs[child] = true if child.absolute_path == parent_path
+            end
+          end
+
+          included_iseqs.each do |iseq|
+            next if child_iseqs.key?(iseq)
+
             extractor.extract(iseq)
           end
 
@@ -60,10 +85,10 @@ module Datadog
         # @param file [String, nil] The file path to look up
         # @return [Hash{String => Boolean}] Dependencies hash or empty hash
         def self.fetch_static_dependencies(file)
-          return {} unless @dependencies_map
-          return {} if file.nil?
+          return EMPTY_DEPENDENCIES unless @dependencies_map
+          return EMPTY_DEPENDENCIES if file.nil?
 
-          @dependencies_map.fetch(file, {})
+          @dependencies_map.fetch(file, EMPTY_DEPENDENCIES)
         end
       end
     end

@@ -23,6 +23,9 @@ module Datadog
       #   # => { "/app/foo.rb" => { "/app/bar.rb" => true } }
       #
       class StaticDependenciesExtractor
+        CACHE_MISS = Object.new.freeze
+        private_constant :CACHE_MISS
+
         # BytecodeScanner scans Ruby bytecode instructions for constant references.
         #
         # This class traverses the ISeq#to_a representation to find:
@@ -31,15 +34,60 @@ module Datadog
         #
         # @api private
         class BytecodeScanner
-          # Scan an ISeq body for constant references.
+          ISEQ_FORMAT_HEADER = "YARVInstructionSequence/SimpleDataFormat"
+          private_constant :ISEQ_FORMAT_HEADER
+
+          # Scan an ISeq body (or full SimpleDataFormat array) for constant references.
           #
-          # @param body [Array] The ISeq body array (last element of ISeq#to_a)
+          # @param body [Array] The ISeq body array (last element of ISeq#to_a) or ISeq#to_a
           # @return [Array<String>] Array of constant name strings found in the bytecode
           def scan(body)
             return [] unless body.is_a?(Array)
 
             constants = []
-            scan_value(body, constants)
+            # @type var constants: Array[String]
+            stack = [body]
+            # @type var stack: Array[Array[untyped]]
+
+            while (arr = stack.pop)
+              len = arr.size
+              next if len == 0
+
+              first = arr[0]
+              if first.is_a?(Symbol)
+                if len >= 2
+                  if first == :getconstant
+                    handle_getconstant(arr, constants)
+                    next
+                  elsif first == :opt_getconstant_path
+                    handle_opt_getconstant_path(arr, constants)
+                    next
+                  end
+                else
+                  next
+                end
+                i = 1
+              elsif first == ISEQ_FORMAT_HEADER && len >= 14
+                catch_table = arr[12]
+                iseq_body = arr[13]
+                stack << catch_table if catch_table.is_a?(Array) && !catch_table.empty?
+                stack << iseq_body if iseq_body.is_a?(Array) && !iseq_body.empty?
+                next
+              else
+                i = 0
+              end
+
+              while i < len
+                elem = arr[i]
+                if elem.is_a?(Array)
+                  scan_child_array(elem, stack, constants)
+                elsif elem.is_a?(Hash)
+                  push_hash_containers(elem, stack)
+                end
+                i += 1
+              end
+            end
+
             constants
           end
 
@@ -49,63 +97,72 @@ module Datadog
           # @param symbol_array [Array<Symbol>] Array of constant name symbols
           # @return [String] The qualified constant path string
           def build_constant_path(symbol_array)
-            symbol_array
-              .select { |part| part.is_a?(Symbol) }
-              .join("::")
+            size = symbol_array.size
+            return "" if size == 0
+
+            if size == 1
+              part = symbol_array[0]
+              return part.is_a?(Symbol) ? part.to_s : ""
+            end
+
+            if symbol_array.all?(Symbol)
+              symbol_array.join("::")
+            else
+              symbol_array
+                .select { |part| part.is_a?(Symbol) }
+                .join("::")
+            end
           end
 
           private
 
-          # Recursively scan a Ruby value for constant references.
-          #
-          # @param value [Object] Any Ruby value from the ISeq representation
-          # @param constants [Array<String>] Accumulator for found constants
-          def scan_value(value, constants)
-            case value
-            when Array
-              scan_array(value, constants)
-            when Hash
-              scan_hash(value, constants)
+          def scan_child_array(elem, stack, constants)
+            elen = elem.size
+            return if elen == 0
+
+            efirst = elem[0]
+            if efirst.is_a?(Symbol)
+              return if elen < 2
+
+              if efirst == :opt_send_without_block
+                # Operand is only a call_data Hash (never contains constant instructions)
+                nil
+              elsif efirst == :getconstant
+                handle_getconstant(elem, constants)
+              elsif efirst == :opt_getconstant_path
+                handle_opt_getconstant_path(elem, constants)
+              elsif efirst == :send || efirst == :invokesuper
+                # arr[1] is call_data Hash; only arr[2] (block ISeq) can contain instructions
+                blk = elem[2]
+                stack << blk if blk.is_a?(Array)
+              elsif elen == 2
+                operand = elem[1]
+                if operand.is_a?(Array)
+                  stack << operand
+                elsif operand.is_a?(Hash)
+                  push_hash_containers(operand, stack)
+                end
+              else
+                stack << elem
+              end
+            else
+              stack << elem
             end
           end
 
-          # Scan an array for instructions and nested values.
-          #
-          # @param arr [Array] Array to scan
-          # @param constants [Array<String>] Accumulator for found constants
-          def scan_array(arr, constants)
-            handle_instruction(arr, constants)
-
-            arr.each do |elem|
-              scan_value(elem, constants)
-            end
-          end
-
-          # Scan a hash for constant references in keys and values.
-          #
-          # @param hash [Hash] Hash to scan
-          # @param constants [Array<String>] Accumulator for found constants
-          def scan_hash(hash, constants)
+          def push_hash_containers(hash, stack)
             hash.each do |key, val|
-              scan_value(key, constants)
-              scan_value(val, constants)
-            end
-          end
+              if key.is_a?(Array)
+                stack << key
+              elsif key.is_a?(Hash)
+                push_hash_containers(key, stack)
+              end
 
-          # Check if an array is a bytecode instruction and handle it.
-          # Instructions have the form [:instruction_name, ...args].
-          #
-          # @param arr [Array] Potential instruction array
-          # @param constants [Array<String>] Accumulator for found constants
-          def handle_instruction(arr, constants)
-            return if arr.size < 2
-            return unless arr[0].is_a?(Symbol)
-
-            case arr[0]
-            when :getconstant
-              handle_getconstant(arr, constants)
-            when :opt_getconstant_path
-              handle_opt_getconstant_path(arr, constants)
+              if val.is_a?(Array)
+                stack << val
+              elsif val.is_a?(Hash)
+                push_hash_containers(val, stack)
+              end
             end
           end
 
@@ -152,6 +209,7 @@ module Datadog
           @ignored_path = ignored_path
           @dependencies_map = {}
           @bytecode_scanner = BytecodeScanner.new
+          @resolved_constants_cache = {}
         end
 
         # Extract constant dependencies from an ISeq.
@@ -163,11 +221,11 @@ module Datadog
           return if path.nil?
           return unless PathFilter.included?(path, root_path, ignored_path)
 
-          body = extract_body(iseq)
-          return if body.nil?
+          iseq_array = extract_body(iseq)
+          return if iseq_array.nil?
 
           deps = get_or_create_deps(path)
-          constant_names = @bytecode_scanner.scan(body)
+          constant_names = @bytecode_scanner.scan(iseq_array)
 
           constant_names.each do |const_name|
             resolve_and_store_dependency(const_name, deps)
@@ -179,6 +237,7 @@ module Datadog
         # @return [void]
         def reset
           @dependencies_map = {}
+          @resolved_constants_cache = {}
         end
 
         private
@@ -195,14 +254,17 @@ module Datadog
           path
         end
 
-        # Extract the body array from an ISeq's SimpleDataFormat.
-        # The body is the last element of ISeq#to_a.
+        # Extract the SimpleDataFormat array (or body) from an ISeq.
+        # Returning the full SimpleDataFormat array allows BytecodeScanner
+        # to scan both catch_table (index 12) and body (index 13).
         #
         # @param iseq [RubyVM::InstructionSequence]
         # @return [Array, nil]
         def extract_body(iseq)
           arr = iseq.to_a
           return nil unless arr.is_a?(Array) && !arr.empty?
+
+          return arr if arr.size >= 14 && arr[13].is_a?(Array)
 
           body = arr[-1]
           return nil unless body.is_a?(Array)
@@ -224,11 +286,14 @@ module Datadog
         # @param deps [Hash{String => Boolean}]
         # @return [void]
         def resolve_and_store_dependency(constant_name, deps)
-          file_path = ConstantResolver.resolve_path(constant_name)
-          return if file_path.nil?
-          return unless PathFilter.included?(file_path, root_path, ignored_path)
+          file_path = @resolved_constants_cache.fetch(constant_name, CACHE_MISS)
+          if file_path.equal?(CACHE_MISS)
+            resolved = ConstantResolver.resolve_path(constant_name)
+            file_path = (resolved && PathFilter.included?(resolved, root_path, ignored_path)) ? resolved : nil
+            @resolved_constants_cache[constant_name] = file_path
+          end
 
-          deps[file_path] = true
+          deps[file_path] = true if file_path.is_a?(String)
         end
       end
     end

@@ -12,6 +12,8 @@ module Datadog
       end
 
       module StaticDependencies
+        EMPTY_DEPENDENCIES: Hash[String, bool]
+
         @dependencies_map: Hash[String, Hash[String, bool]]?
 
         def self.populate!: (String root_path, String? ignored_path) -> Hash[String, Hash[String, bool]]
