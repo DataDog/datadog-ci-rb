@@ -28,6 +28,7 @@ module Datadog
         /x.freeze
 
         TIME_PATTERN = /
+          (?=[0-9MTWFS])
           \b
           (?:
             \d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?
@@ -39,6 +40,7 @@ module Datadog
           \b
         /x.freeze
         DATE_PATTERN = /
+          (?=[0-9MTWFS])
           \b
           (?:
             \d{4}-\d{2}-\d{2}
@@ -48,31 +50,82 @@ module Datadog
           \b
         /x.freeze
         RANGE_PATTERN = /
-          (^|[^\w.])
+          (?=[-\dDT:"'])
+          (?<![\w.])
           (?:-?\d+(?:\.\d+)?|DATE|TIME|:[a-zA-Z_]\w*|"[^"]*"|'[^']*')
           \s*\.{2,3}\s*
           (?:-?\d+(?:\.\d+)?|DATE|TIME|:[a-zA-Z_]\w*|"[^"]*"|'[^']*')
-          (?=$|[^\w.])
+          (?![\w.])
         /x.freeze
+
+        INSPECT_PATTERN = /\#<
+          (?:
+            (Date)(?::[^>\n]*)?
+            |
+            (DateTime|Time)(?::[^>\n]*)?
+            |
+            Class:(#{CONSTANT_NAME}|0x[0-9a-fA-F]+)(?:\s[^>\n]*)?
+            |
+            (#{CONSTANT_NAME})(?::[^>\n]*)?
+            |
+            [^>\n]+
+          )
+        >/x.freeze
+        NEEDS_NORMALIZATION_PATTERN = /#<|[(\[{]|\.\.|\d{4}/.freeze
+        FOUR_DIGITS_PATTERN = /\d{4}/.freeze
+        ARRAY_LITERAL_PATTERN = /\A\[\s*(?:\]|[^\]]*,|(?:"|'|:|-?\d|true\b|false\b|nil\b|#<|\[|\{))/.freeze
+        EMPTY_HASH_PATTERN = /\A\{\s*\}\z/.freeze
+        HASH_KEY_PATTERN = /(?:\A\{|,)\s*(?:"[^"]+"|'[^']+'|:[a-zA-Z_]\w*|[a-zA-Z_]\w*)\s*:/.freeze
+
+        ARRAY_LITERAL_MATCH_PATTERN = /\[(?=\s*(?:\]|[^\[\]\n]*,|(?:"|'|:|-?\d|true\b|false\b|nil\b|\#<|\[|\{)))[^\[\]\n]{0,300}\]/.freeze
+        HASH_LITERAL_MATCH_PATTERN = /\{(?=\s*\}|[^{}\n]*=>|(?:[^{}\n]*,)?\s*(?:"[^"}\n]+"|'[^'}\n]+'|:[a-zA-Z_]\w*|[a-zA-Z_]\w*)\s*:)[^{}\n]{0,300}\}/.freeze
 
         def self.normalize(name)
           return name unless name.is_a?(String)
           return name if name.empty?
+          return name unless name.match?(NEEDS_NORMALIZATION_PATTERN)
 
-          normalized = name.gsub(DATE_INSPECT_PATTERN, "DATE")
-          normalized.gsub!(TIME_INSPECT_PATTERN, "TIME")
-          normalized.gsub!(CLASS_INSPECT_PATTERN) do
-            class_name = Regexp.last_match(1).to_s
-            class_name.start_with?("0x") ? "CLASS" : "CLASS:#{class_name}"
+          normalized = name.dup
+
+          if normalized.include?("#<")
+            normalized.gsub!(INSPECT_PATTERN) do
+              if Regexp.last_match(1)
+                "DATE"
+              elsif Regexp.last_match(2)
+                "TIME"
+              elsif (class_name = Regexp.last_match(3))
+                class_name.start_with?("0x") ? "CLASS" : "CLASS:#{class_name}"
+              elsif (const_name = Regexp.last_match(4))
+                "OBJECT:#{const_name}"
+              else
+                "OBJECT"
+              end
+            end
           end
-          normalized.gsub!(NAMED_OBJECT_INSPECT_PATTERN) { "OBJECT:#{Regexp.last_match(1)}" }
-          normalized.gsub!(OBJECT_INSPECT_PATTERN, "OBJECT")
-          normalized.gsub!(ACTIVE_RECORD_CLASS_INSPECT_PATTERN) { Regexp.last_match(1).to_s }
-          normalized.gsub!(ARRAY_PATTERN) { |value| array_literal?(value) ? "ARRAY" : value }
-          normalized.gsub!(HASH_PATTERN) { |value| hash_literal?(value) ? "HASH" : value }
-          normalized.gsub!(TIME_PATTERN, "TIME")
-          normalized.gsub!(DATE_PATTERN, "DATE")
-          normalized.gsub!(RANGE_PATTERN) { "#{Regexp.last_match(1)}RANGE" }
+
+          if normalized.include?("(")
+            normalized.gsub!(ACTIVE_RECORD_CLASS_INSPECT_PATTERN, '\1')
+          end
+
+          if normalized.include?("[")
+            normalized.gsub!(ARRAY_LITERAL_MATCH_PATTERN, "ARRAY")
+          end
+
+          if normalized.include?("{")
+            normalized.gsub!(HASH_LITERAL_MATCH_PATTERN, "HASH")
+          end
+
+          if normalized.match?(FOUR_DIGITS_PATTERN)
+            if normalized.include?(":") && normalized.gsub!(TIME_PATTERN, "TIME")
+              normalized.gsub!(DATE_PATTERN, "DATE") if normalized.match?(FOUR_DIGITS_PATTERN)
+            else
+              normalized.gsub!(DATE_PATTERN, "DATE")
+            end
+          end
+
+          if normalized.include?("..")
+            normalized.gsub!(RANGE_PATTERN, "RANGE")
+          end
 
           normalized
         rescue => e
@@ -84,19 +137,12 @@ module Datadog
         HASH_PATTERN = /\{[^{}\n]{0,300}\}/.freeze
 
         def self.array_literal?(value)
-          content = value[1, value.length - 2].to_s.strip
-          return true if content.empty?
-
-          content.include?(",") || content.match?(/\A(?:"|'|:|-?\d|true\b|false\b|nil\b|#<|\[|\{)/)
+          value.match?(ARRAY_LITERAL_PATTERN)
         end
         private_class_method :array_literal?
 
         def self.hash_literal?(value)
-          content = value[1, value.length - 2].to_s.strip
-          return true if content.empty?
-
-          content.include?("=>") ||
-            content.match?(/(?:\A|,)\s*(?:"[^"]+"|'[^']+'|:[a-zA-Z_]\w*|[a-zA-Z_]\w*)\s*:/)
+          value.include?("=>") || value.match?(EMPTY_HASH_PATTERN) || value.match?(HASH_KEY_PATTERN)
         end
         private_class_method :hash_literal?
 

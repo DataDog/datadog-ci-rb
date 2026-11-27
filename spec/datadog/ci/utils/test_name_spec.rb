@@ -111,5 +111,17 @@ RSpec.describe Datadog::CI::Utils::TestName do
       expect(described_class.normalize("record=:Article"))
         .to eq("record=:Article")
     end
+
+    it "returns plain names unchanged without copying" do
+      plain = +"renders the dashboard for an active user"
+      expect(described_class.normalize(plain)).to equal(plain)
+    end
+
+    it "normalizes combined inspect, time, date, range, and collection values" do
+      input = "handles #<Order:0x001 @id=1> with #<Date: 2026-07-09 ((2461231j,0s,0n),+0s,2299161j)> " \
+        "at 2026-07-09 10:11:12 +0200 and 2026-07-10 for 1..5 with {:a=>1}"
+      expect(described_class.normalize(input))
+        .to eq("handles OBJECT:Order with DATE at TIME and DATE for RANGE with HASH")
+    end
   end
 end
