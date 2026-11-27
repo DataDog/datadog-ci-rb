@@ -9,9 +9,13 @@ module Datadog
 
           ENV_BUNDLER_ORIGINAL_RUBYOPT: String
 
+          ENV_RUBYLIB: String
+
           BUNDLER_UNSET: String
 
           BOOTSTRAP: String
+
+          RUBYGEMS_HOOK: String
 
           CONFIG_FILE: String
 
@@ -24,6 +28,7 @@ module Datadog
           @config: String
           @owner_pid: Integer
           @require_option: String
+          @rubygems_hook: String?
           @mutex: Thread::Mutex
           @directory: String?
           @spawned_prefixes: Hash[String, bool]
@@ -78,6 +83,8 @@ module Datadog
           def child_value: (Hash[untyped, untyped]? caller_environment, String name) -> String?
 
           def with_bootstrap: (String? rubyopt) -> String
+
+          def with_rubygems_hook: (Hash[untyped, untyped]? caller_environment) -> String?
 
           def bundler_original_rubyopt: (String? saved) -> String?
 

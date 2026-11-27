@@ -9,14 +9,21 @@ module Datadog
       module Coverage
         # The lines of the processes that a test starts, which count for that test.
         #
-        # The spawn methods are hooked (see ChildProcessHooks). A spawn adds two entries to
-        # the child's environment: ENV_CONTEXT, the prefix of the spawning context's records
-        # in a transport directory, and RUBYOPT with "-r" and the child bootstrap first.
-        # A Ruby child loads the bootstrap, which opens one context for the whole process
-        # and writes its lines to "<prefix>.<pid>.lines" at exit; its own children inherit
-        # the environment and do the same. A forked child keeps the context of the thread
-        # that forked and writes the same record at exit, with the lines it ran outside
-        # contexts since the fork.
+        # The spawn methods are hooked (see ChildProcessHooks). A spawn adds entries to the
+        # child's environment: ENV_CONTEXT, the prefix of the spawning context's records in
+        # a transport directory, RUBYOPT with "-r" and the child bootstrap first, and
+        # RUBYLIB with the RubyGems hook directory first. A Ruby child loads the bootstrap,
+        # which opens one context for the whole process and writes its lines to
+        # "<prefix>.<pid>.lines" at exit; its own children inherit the environment and do
+        # the same. A forked child keeps the context of the thread that forked and writes
+        # the same record at exit, with the lines it ran outside contexts since the fork.
+        #
+        # RubyGems loads Bundler while it starts when BUNDLER_SETUP is set, as it is for
+        # `bundle exec` and for the processes that such a process starts, and Bundler.setup
+        # evaluates gemspecs, which may run repository code. That happens before Ruby loads
+        # what RUBYOPT names, so the hook directory's rubygems/defaults/ruby.rb, which
+        # RubyGems loads earlier, loads the bootstrap first. RUBYOPT still loads it where
+        # RubyGems does not run that hook.
         #
         # Bundler keeps the RUBYOPT of the process that first loaded it in
         # ENV_BUNDLER_ORIGINAL_RUBYOPT, and a process that runs a command with Bundler's
@@ -36,7 +43,9 @@ module Datadog
           ENV_BUNDLER_ORIGINAL_RUBYOPT = "BUNDLER_ORIG_RUBYOPT"
           # What Bundler keeps in ENV_BUNDLER_ORIGINAL_RUBYOPT when RUBYOPT was not set.
           BUNDLER_UNSET = "BUNDLER_ENVIRONMENT_PRESERVER_INTENTIONALLY_NIL"
+          ENV_RUBYLIB = "RUBYLIB"
           BOOTSTRAP = File.expand_path("child_bootstrap.rb", File.dirname(__FILE__))
+          RUBYGEMS_HOOK = File.expand_path("rubygems_hook", File.dirname(__FILE__))
           CONFIG_FILE = "config"
           RECORD_SUFFIX = ".lines"
           UNOWNED = "unowned"
@@ -154,6 +163,8 @@ module Datadog
             @config = [self.class.identity, extension_path, root, *ignored_paths].join("\n")
             @owner_pid = Process.pid
             @require_option = "-r#{BOOTSTRAP}"
+            # RUBYLIB cannot name a directory whose path holds its separator.
+            @rubygems_hook = RUBYGEMS_HOOK.include?(File::PATH_SEPARATOR) ? nil : RUBYGEMS_HOOK
             @mutex = Mutex.new
             @directory = nil
             @spawned_prefixes = {}
@@ -204,6 +215,8 @@ module Datadog
             }
             bundler_rubyopt = bundler_original_rubyopt(child_value(caller_environment, ENV_BUNDLER_ORIGINAL_RUBYOPT))
             entries[ENV_BUNDLER_ORIGINAL_RUBYOPT] = bundler_rubyopt if bundler_rubyopt
+            rubylib = with_rubygems_hook(caller_environment)
+            entries[ENV_RUBYLIB] = rubylib if rubylib
             entries
           end
 
@@ -270,6 +283,18 @@ module Datadog
           # which may load repository files.
           def with_bootstrap(rubyopt)
             [@require_option, rubyopt].compact.reject(&:empty?).join(" ")
+          end
+
+          # The child's RUBYLIB with the hook directory first, or nil to leave it as it is:
+          # when the caller unsets RUBYLIB, RUBYOPT alone loads the bootstrap.
+          def with_rubygems_hook(caller_environment)
+            hook = @rubygems_hook
+            return nil if hook.nil?
+
+            rubylib = child_value(caller_environment, ENV_RUBYLIB)
+            return nil if caller_environment&.key?(ENV_RUBYLIB) && rubylib.nil?
+
+            [hook, rubylib].compact.reject(&:empty?).join(File::PATH_SEPARATOR)
           end
 
           # The saved RUBYOPT with the bootstrap, or nil when Bundler saved none. Bundler
