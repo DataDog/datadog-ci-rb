@@ -34,7 +34,8 @@ module Datadog
           def self.shared: () -> Hash[String, bitmaps]
 
           # Also replaces Kernel#exit!, Kernel.exit! and Process.exit! with an exit! that writes
-          # the records first.
+          # the records first, then ends the process as Ruby's own does, or calls the exit! that
+          # code had patched before.
           def self.write_record_at_exit: (String prefix, Integer serial, bool shared_since_now) -> bool
 
           def self.stats: () -> Hash[Symbol, untyped]

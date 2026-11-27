@@ -207,6 +207,9 @@ typedef struct {
 /* The parts of the lines outside contexts, in the order LineCollector.shared returns them. */
 enum { SHARED_INIT, SHARED_SUITE_SETUP, SHARED_UNOWNED, SHARED_PART_COUNT };
 
+/* The exit! methods that a process that registers a record replaces (see hook_exit_bang). */
+enum { EXIT_BANG_OF_KERNEL_INSTANCES, EXIT_BANG_OF_KERNEL, EXIT_BANG_OF_PROCESS, EXIT_BANG_COUNT };
+
 /* A record of a context that the process writes when the VM exits (see write_exit_records). */
 typedef struct {
   char *prefix; /* the record's path without ".<pid>.lines" */
@@ -285,6 +288,8 @@ static struct {
   size_t exit_record_capacity;
   bool exit_hook_registered;
   bool exit_bang_hooked;
+  /* per exit! the collector replaced, the definition it replaced if that is not Ruby's own */
+  VALUE exit_bang_replaced[EXIT_BANG_COUNT];
 
   /* the GC count after the last event flag sync, and whether a GC was still running then */
   size_t gc_count_at_flag_sync;
@@ -2148,21 +2153,23 @@ static void write_record_file(const exit_record_t *record, const uint8_t *bytes,
 }
 
 /* As the record that LineCollector.coverage and LineCollector.shared give (see
- * ChildProcesses.decode_record), with the context released. The context is closed without
+ * ChildProcesses.decode_record). With release, the context is released, and closed without
  * close_open_context: no Ruby code runs any more, and syncing the event flags or arming
- * sites would touch the VM. */
-static void write_exit_record(const exit_record_t *record) {
+ * sites would touch the VM. Without it, the context stays open and keeps its lines. */
+static void write_exit_record(const exit_record_t *record, bool release) {
   byte_buffer_t buffer = {0};
   uint32_t epoch = ++st.epoch;
   st.touched.count = 0;
   context_t *context = context_by_serial(record->serial);
   if (context) {
     add_context_lines(context, epoch);
-    if (context->open) {
-      context->open = false;
-      remove_open((size_t)(context - st.contexts));
+    if (release) {
+      if (context->open) {
+        context->open = false;
+        remove_open((size_t)(context - st.contexts));
+      }
+      release_closed_context(context);
     }
-    release_closed_context(context);
   }
   size_t packed_size = 0;
   for (size_t i = 0; i < st.touched.count; i++) {
@@ -2193,7 +2200,7 @@ static void write_exit_record(const exit_record_t *record) {
  * process that ends with exit! writes them before it ends (see exit_bang); one that is
  * killed with SIGKILL, or that crashes, writes none. */
 static void write_exit_records(rb_vm_t *vm) {
-  for (size_t i = st.exit_record_count; i > 0; i--) write_exit_record(&st.exit_records[i - 1]);
+  for (size_t i = st.exit_record_count; i > 0; i--) write_exit_record(&st.exit_records[i - 1], true);
 }
 
 /* ---- exit! ------------------------------------------------------------------ */
@@ -2203,15 +2210,41 @@ static void write_exit_records(rb_vm_t *vm) {
  * record of 30,000 files. */
 #define EXIT_WRITE_DEADLINE_SECONDS 5
 
-static int exit_bang_status;
-static struct timespec exit_bang_deadline;
+/* What the watchdog of one write in exit! needs. */
+typedef struct {
+  unsigned long write_number; /* the number of the write it guards */
+  struct timespec deadline; /* on CLOCK_MONOTONIC */
+  int status;
+} exit_write_guard_t;
 
-/* Ends the process at the deadline with the status exit! was given. It touches nothing of
- * Ruby's, so it ends the process even while the writing thread holds the GVL. */
-static void *exit_bang_watchdog(void *unused) {
-  while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &exit_bang_deadline, NULL) == EINTR) {
+/* How many writes in exit! started, and the number of the last one that finished. */
+static unsigned long exit_writes_started;
+static unsigned long exit_writes_finished;
+
+/* Sleeps until the deadline, then ends the process with the status exit! was given, unless its
+ * write finished. It touches nothing of Ruby's, so it ends the process even while the writing
+ * thread holds the GVL. It sleeps with nanosleep, as not every system has clock_nanosleep. */
+static void *exit_write_watchdog(void *argument) {
+  exit_write_guard_t *guard = argument;
+  for (;;) {
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
+      struct timespec whole = {EXIT_WRITE_DEADLINE_SECONDS, 0};
+      nanosleep(&whole, NULL);
+      break;
+    }
+    time_t seconds = guard->deadline.tv_sec - now.tv_sec;
+    long nanoseconds = guard->deadline.tv_nsec - now.tv_nsec;
+    if (nanoseconds < 0) {
+      seconds--;
+      nanoseconds += 1000000000L;
+    }
+    if (seconds < 0 || (seconds == 0 && nanoseconds == 0)) break;
+    struct timespec remaining = {seconds, nanoseconds};
+    nanosleep(&remaining, NULL);
   }
-  _exit(exit_bang_status);
+  if (__atomic_load_n(&exit_writes_finished, __ATOMIC_SEQ_CST) < guard->write_number) _exit(guard->status);
+  free(guard);
   return NULL;
 }
 
@@ -2227,45 +2260,132 @@ static int exit_bang_status_of(VALUE argument) {
   return status;
 }
 
-/* Writes the registered records now, as the VM's exit hook would, unless no watchdog can
- * guard the writes: a blocked write must not keep the process from ending. */
-static void write_exit_records_before_exit(int status) {
-  struct timespec now;
-  if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) return;
-  exit_bang_status = status;
-  exit_bang_deadline = now;
-  exit_bang_deadline.tv_sec += EXIT_WRITE_DEADLINE_SECONDS;
+/* The status Ruby's own exit! would give for no argument, true, false or an Integer that fits,
+ * and EXIT_FAILURE otherwise. It raises nothing and calls no Ruby code. */
+static int exit_bang_status_without_errors(int argc, VALUE *argv) {
+  if (argc == 0 || argv[0] == Qfalse) return EXIT_FAILURE;
+  if (argv[0] == Qtrue) return EXIT_SUCCESS;
+  if (FIXNUM_P(argv[0])) {
+    long status = FIX2LONG(argv[0]);
+    if (status >= INT_MIN && status <= INT_MAX) return status == 0 ? EXIT_SUCCESS : (int)status;
+  }
+  return EXIT_FAILURE;
+}
+
+/* Writes the registered records now, as the VM's exit hook would, unless no watchdog can guard
+ * the write: a blocked write must not keep the process from ending. The contexts stay open and
+ * the records registered, so a process that carries on, because a stub of exit! returned or
+ * exit! raised, writes them again when it exits. */
+static void write_exit_records_in_exit_bang(int status) {
+  exit_write_guard_t *guard = malloc(sizeof(exit_write_guard_t));
+  if (!guard) {
+    st.stats.allocation_failures++;
+    return;
+  }
+  if (clock_gettime(CLOCK_MONOTONIC, &guard->deadline) != 0) {
+    free(guard);
+    return;
+  }
+  guard->deadline.tv_sec += EXIT_WRITE_DEADLINE_SECONDS;
+  guard->status = status;
+  unsigned long write_number = __atomic_add_fetch(&exit_writes_started, 1, __ATOMIC_SEQ_CST);
+  guard->write_number = write_number;
 
   /* No signal reaches the watchdog, so the process's handlers never run on it. */
   sigset_t blocked, previous;
   sigfillset(&blocked);
-  if (pthread_sigmask(SIG_SETMASK, &blocked, &previous) != 0) return;
+  if (pthread_sigmask(SIG_SETMASK, &blocked, &previous) != 0) {
+    free(guard);
+    return;
+  }
   pthread_t watchdog;
-  int created = pthread_create(&watchdog, NULL, exit_bang_watchdog, NULL);
+  int created = pthread_create(&watchdog, NULL, exit_write_watchdog, guard);
   pthread_sigmask(SIG_SETMASK, &previous, NULL);
-  if (created != 0) return;
+  if (created != 0) {
+    free(guard);
+    return;
+  }
   pthread_detach(watchdog);
 
-  size_t count = st.exit_record_count;
-  st.exit_record_count = 0; /* the VM's exit hook does not write them again */
-  for (size_t i = count; i > 0; i--) write_exit_record(&st.exit_records[i - 1]);
+  for (size_t i = st.exit_record_count; i > 0; i--) write_exit_record(&st.exit_records[i - 1], false);
+  __atomic_store_n(&exit_writes_finished, write_number, __ATOMIC_SEQ_CST);
 }
 
 /* exit! as Ruby defines it (rb_f_exit_bang in process.c), except that it writes the registered
- * records first: exit! ends the process with _exit, which skips the VM's exit hooks. The
- * contexts close as at exit, without touching the VM, and the few instructions until _exit
- * record nothing. */
-static VALUE exit_bang(int argc, VALUE *argv, VALUE self) {
-  int status = EXIT_FAILURE;
-  if (rb_check_arity(argc, 0, 1) == 1) status = exit_bang_status_of(argv[0]);
-  if (st.exit_record_count > 0) write_exit_records_before_exit(status);
-  _exit(status);
+ * records first: exit! ends the process with _exit, which skips the VM's exit hooks. Where code
+ * had patched exit! before the collector replaced it (see hook_exit_bang), it writes the
+ * records, then calls that patch with the same arguments and block, and returns what it
+ * returns. */
+static VALUE exit_bang(int which, int argc, VALUE *argv, VALUE self) {
+  VALUE replaced = st.exit_bang_replaced[which];
+  if (!RTEST(replaced)) {
+    int status = EXIT_FAILURE;
+    if (rb_check_arity(argc, 0, 1) == 1) status = exit_bang_status_of(argv[0]);
+    if (st.exit_record_count > 0) write_exit_records_in_exit_bang(status);
+    _exit(status);
+  }
+  if (st.exit_record_count > 0) write_exit_records_in_exit_bang(exit_bang_status_without_errors(argc, argv));
+  VALUE buffer;
+  VALUE *arguments = ALLOCV_N(VALUE, buffer, argc + 1);
+  arguments[0] = self;
+  for (int i = 0; i < argc; i++) arguments[i + 1] = argv[i];
+  VALUE block = rb_block_given_p() ? rb_block_proc() : Qnil;
+  VALUE result = rb_funcall_with_block_kw(replaced, rb_intern("bind_call"), argc + 1, arguments, block,
+                                          RB_PASS_CALLED_KEYWORDS);
+  ALLOCV_END(buffer);
+  return result;
 }
 
-static VALUE define_exit_bang(VALUE unused) {
-  rb_define_private_method(rb_mKernel, "exit!", exit_bang, -1);
-  rb_define_singleton_method(rb_mKernel, "exit!", exit_bang, -1);
-  rb_define_singleton_method(rb_mProcess, "exit!", exit_bang, -1);
+static VALUE exit_bang_of_kernel_instances(int argc, VALUE *argv, VALUE self) {
+  return exit_bang(EXIT_BANG_OF_KERNEL_INSTANCES, argc, argv, self);
+}
+
+static VALUE exit_bang_of_kernel(int argc, VALUE *argv, VALUE self) {
+  return exit_bang(EXIT_BANG_OF_KERNEL, argc, argv, self);
+}
+
+static VALUE exit_bang_of_process(int argc, VALUE *argv, VALUE self) {
+  return exit_bang(EXIT_BANG_OF_PROCESS, argc, argv, self);
+}
+
+/* The class or module whose own method table holds each exit! that the collector replaces. */
+static VALUE exit_bang_owner(int which) {
+  switch (which) {
+    case EXIT_BANG_OF_KERNEL_INSTANCES:
+      return rb_mKernel;
+    case EXIT_BANG_OF_KERNEL:
+      return rb_singleton_class(rb_mKernel);
+    default:
+      return rb_singleton_class(rb_mProcess);
+  }
+}
+
+/* Replaces the exit! in the owner's own method table, not in a module prepended to it, with the
+ * same visibility, and keeps what it replaced unless that is Ruby's own: a C function, which
+ * has no source location. */
+static VALUE replace_exit_bang(VALUE which_value) {
+  int which = FIX2INT(which_value);
+  VALUE owner = exit_bang_owner(which);
+  VALUE name = ID2SYM(rb_intern("exit!"));
+  VALUE method = rb_funcall(owner, rb_intern("instance_method"), 1, name);
+  while (!NIL_P(method) && rb_funcall(method, rb_intern("owner"), 0) != owner) {
+    method = rb_funcall(method, rb_intern("super_method"), 0);
+  }
+  if (NIL_P(method)) return Qnil;
+
+  bool is_public = RTEST(rb_funcall(owner, rb_intern("public_method_defined?"), 2, name, Qfalse));
+  bool is_protected = !is_public && RTEST(rb_funcall(owner, rb_intern("protected_method_defined?"), 2, name, Qfalse));
+  st.exit_bang_replaced[which] = NIL_P(rb_funcall(method, rb_intern("source_location"), 0)) ? Qfalse : method;
+  VALUE (*function)(int, VALUE *, VALUE) = which == EXIT_BANG_OF_KERNEL_INSTANCES ? exit_bang_of_kernel_instances
+                                           : which == EXIT_BANG_OF_KERNEL         ? exit_bang_of_kernel
+                                                                                  : exit_bang_of_process;
+  if (is_public) {
+    rb_define_method(owner, "exit!", function, -1);
+  } else if (is_protected) {
+    rb_define_protected_method(owner, "exit!", function, -1);
+  } else {
+    rb_define_private_method(owner, "exit!", function, -1);
+  }
   return Qnil;
 }
 
@@ -2273,15 +2393,18 @@ static VALUE define_exit_bang(VALUE unused) {
  * private, Kernel.exit! and Process.exit!. Prepending to Kernel instead would move Kernel's
  * methods to an origin class, and Ruby 3.3 and 3.4 abort when that happens before YJIT looks
  * them up at boot, as it does when RubyGems loads the bootstrap. Only a process that
- * registers a record replaces them: a forked or started child of a test. Defining a method
- * calls the module's method_added hooks, so any error they raise is dropped. */
+ * registers a record replaces them: a forked or started child of a test. A forked child
+ * inherits what the test process defined, such as a stub of exit!, which then runs after the
+ * write. An error from the lookups or from a method_added hook leaves that exit! as it is. */
 static void hook_exit_bang(void) {
   VALUE verbose = ruby_verbose;
   ruby_verbose = Qnil; /* no "method redefined" warning */
-  int state = 0;
-  rb_protect(define_exit_bang, Qnil, &state);
+  for (int which = 0; which < EXIT_BANG_COUNT; which++) {
+    int state = 0;
+    rb_protect(replace_exit_bang, INT2FIX(which), &state);
+    if (state) rb_set_errinfo(Qnil);
+  }
   ruby_verbose = verbose;
-  if (state) rb_set_errinfo(Qnil);
 }
 
 /* Registers the record of a context, written to "<prefix>.<pid>.lines" when the process
@@ -2469,6 +2592,7 @@ static void state_mark(void *unused) {
   rb_gc_mark(st.path_cache);
   rb_gc_mark(st.files_by_path);
   rb_gc_mark(st.compile_options);
+  for (int i = 0; i < EXIT_BANG_COUNT; i++) rb_gc_mark(st.exit_bang_replaced[i]);
   for (size_t i = 0; i < st.file_count; i++) rb_gc_mark(st.files[i].path);
   /* Pins every armed iseq: sites point into their instruction buffers. */
   for (size_t i = 0; i < st.record_count; i++) rb_gc_mark((VALUE)st.records[i].iseq);

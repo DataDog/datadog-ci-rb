@@ -443,6 +443,85 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       expect(exit_bang_methods).to eq(methods)
     end
 
+    # A forked child inherits the exit! that the test process patched before the fork, in the
+    # method table where the child replaces exit!.
+    it "runs an exit! that the test process patched before the fork, and credits the test with the child's lines" do
+      reader, writer = IO.pipe
+      Kernel.module_eval do
+        alias_method :exit_bang_before_patch, :exit!
+        def exit!(*arguments)
+          $stdout.write("patched\n")
+          exit_bang_before_patch(*arguments)
+        end
+        private :exit!, :exit_bang_before_patch
+      end
+      coverage = in_test do
+        status = wait_for(fork do
+          reader.close
+          $stdout.reopen(writer)
+          $stdout.sync = true
+          load(fixture("leaf"))
+          exit!(3)
+        end)
+        writer.close
+        expect(status.exitstatus).to eq(3)
+      end
+
+      expect(reader.read).to eq("patched\n")
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    ensure
+      Kernel.module_eval do
+        alias_method :exit!, :exit_bang_before_patch
+        remove_method :exit_bang_before_patch
+        private :exit!
+      end
+    end
+
+    it "leaves Process.exit! stubbed in a child forked after the test stubbed it, and the child carries on past the deadline" do
+      deadline = Datadog::CI::TestImpactAnalysis::Coverage::LineCollector::EXIT_WRITE_DEADLINE_SECONDS
+      allow(Process).to receive(:exit!).and_return(:stubbed)
+      reader, writer = IO.pipe
+      coverage = in_test do
+        status = wait_for(fork do
+          reader.close
+          writer.puts(Process.exit!(3).inspect)
+          writer.close
+          sleep(deadline + 1)
+          load(fixture("leaf"))
+        end)
+        writer.close
+        expect(status.exitstatus).to eq(0)
+      end
+
+      expect(reader.read).to eq(":stubbed\n")
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    # What Object#stub of minitest-mock does.
+    it "leaves Kernel.exit! stubbed as minitest stubs it in a child forked after the test stubbed it" do
+      metaclass = Kernel.singleton_class
+      metaclass.send(:alias_method, :__minitest_stub__exit!, :exit!)
+      metaclass.send(:define_method, :exit!) { |*| :stubbed }
+      reader, writer = IO.pipe
+      coverage = in_test do
+        status = wait_for(fork do
+          reader.close
+          writer.puts(Kernel.exit!(3).inspect)
+          writer.close
+          load(fixture("leaf"))
+        end)
+        writer.close
+        expect(status.exitstatus).to eq(0)
+      end
+
+      expect(reader.read).to eq(":stubbed\n")
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    ensure
+      metaclass.send(:undef_method, :exit!)
+      metaclass.send(:alias_method, :exit!, :__minitest_stub__exit!)
+      metaclass.send(:undef_method, :__minitest_stub__exit!)
+    end
+
     # A child forked once the collector stops keeps Ruby's own exit!, which is the reference.
     it "converts the argument of exit! as Ruby's own exit! does, with the same errors" do
       converts = Struct.new(:to_int).new(4)
