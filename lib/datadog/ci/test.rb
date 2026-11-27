@@ -407,12 +407,16 @@ module Datadog
       end
 
       def record_test_result(datadog_status)
+        suite = test_suite
+        return unless suite
+
+        test_id = local_test_id
         # if this test was already executed in this test suite, mark it as retried
-        if test_suite&.test_executed?(local_test_id)
+        if suite.test_executed?(test_id)
           set_internal_tag(Ext::Test::TAG_IS_RETRY, "true")
         end
 
-        test_suite&.record_test_result(local_test_id, datadog_status)
+        suite.record_test_result(test_id, datadog_status)
       end
     end
   end

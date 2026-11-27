@@ -22,6 +22,7 @@ module Datadog
         @local_test_suites_mode: bool
         @trace_setup_teardown_enabled: bool
         @configuration_locked: bool
+        @recorded_test_started: bool
 
         attr_reader logical_test_session_name: String?
 
@@ -109,6 +110,8 @@ module Datadog
         def validate_source_location: (Datadog::CI::Test test) -> void
 
         def null_span: () -> Datadog::CI::Span
+
+        def find_active_test_suite: (String normalized_test_suite_name) -> Datadog::CI::TestSuite?
 
         def single_active_test_suite: () -> Datadog::CI::TestSuite?
 

@@ -6,6 +6,7 @@ require "datadog/core/environment/platform"
 
 require_relative "ext/test"
 require_relative "ext/app_types"
+require_relative "ext/metadata"
 require_relative "utils/test_run"
 require_relative "utils/protected_tags"
 require_relative "ext/git"
@@ -119,7 +120,12 @@ module Datadog
       # @param [String] key the key of the tag.
       # @return [String] the value of the tag.
       def get_tag(key)
-        shared_tags[key] || tracer_span.get_tag(key)
+        if Ext::Metadata::SHARED_TAGS.include?(key)
+          value = shared_tags[key]
+          return value unless value.nil?
+        end
+
+        @tracer_span.get_tag(key)
       end
 
       # Sets a custom tag. SDK-owned fields are read-only through this method.
@@ -155,7 +161,12 @@ module Datadog
       # @param [String] key the key of the metric.
       # @return [Numeric] value the value of the metric.
       def get_metric(key)
-        shared_tags[key] || tracer_span.get_metric(key)
+        if Ext::Metadata::SHARED_TAGS.include?(key)
+          value = shared_tags[key]
+          return value unless value.nil?
+        end
+
+        @tracer_span.get_metric(key)
       end
 
       # Sets a custom metric. SDK-owned fields are read-only through this method.
