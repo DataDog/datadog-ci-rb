@@ -7,8 +7,6 @@ module Datadog
   module CI
     module Git
       class Diff
-        FILE_CHANGE_REGEX = /^diff --git a\/(?<file>.+?) b\//.freeze
-        LINES_CHANGE_REGEX = /^@@ -\d+(?:,\d+)? \+(?<start>\d+)(?:,(?<count>\d+))? @@/.freeze
         DIFF_SCAN_REGEX = /^(?:diff --git a\/(.+?) b\/|@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@)/.freeze
         private_constant :DIFF_SCAN_REGEX
 
