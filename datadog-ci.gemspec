@@ -46,6 +46,9 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "datadog", "~> 2.4"
+  # Private VM headers for per-test line coverage: 3.5.6 packages release headers for
+  # every Ruby the collector supports, 3.2 to 4.0. datadog 2.4 depends on another header gem.
+  spec.add_dependency "datadog-ruby_core_source", ">= 3.5.6", "< 4"
   spec.add_dependency "msgpack"
   spec.add_dependency "drb"
 

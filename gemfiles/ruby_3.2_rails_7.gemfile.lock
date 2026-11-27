@@ -16,6 +16,7 @@ PATH
   specs:
     datadog-ci (1.44.1)
       datadog (~> 2.4)
+      datadog-ruby_core_source (>= 3.5.6, < 4)
       drb
       msgpack
 
