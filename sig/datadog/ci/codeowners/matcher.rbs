@@ -2,7 +2,11 @@ module Datadog
   module CI
     module Codeowners
       class Matcher
+        CACHE_MISS: Object
+
         @rules: Array[Rule]
+        @cache: Hash[String, Array[String]?]
+        @mutex: Mutex
 
         def initialize: (String codeowners_file_path) -> void
 

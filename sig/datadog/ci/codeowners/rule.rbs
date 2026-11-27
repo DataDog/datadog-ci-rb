@@ -2,9 +2,15 @@ module Datadog
   module CI
     module Codeowners
       class Rule
-        @pattern: String
+        GLOB_CHARS: Regexp
 
+        @pattern: String
         @owners: Array[String]
+        @flags: Integer
+        @match_all: bool
+        @directory_prefix: String?
+        @literal_prefix: String?
+        @directory_pattern: String?
 
         attr_reader pattern: String
 
@@ -12,11 +18,11 @@ module Datadog
 
         def initialize: (String pattern, Array[String] owners) -> void
 
-        def match?: (String file_path) -> untyped
+        def match?: (String file_path) -> bool
 
         private
 
-        def flags: () -> Integer
+        def compute_flags: (String pattern) -> Integer
       end
     end
   end

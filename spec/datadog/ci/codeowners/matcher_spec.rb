@@ -294,6 +294,29 @@ RSpec.describe Datadog::CI::Codeowners::Matcher do
           expect(matcher.list_owners("spec/helpers_spec.rb")).to eq(["@qa-team"])
         end
       end
+
+      context "when caching repeated and concurrent lookups" do
+        let(:codeowners_content) do
+          <<-CODEOWNERS
+            /app/models/ @models-team
+            /app/services/*.rb @services-team
+          CODEOWNERS
+        end
+
+        it "returns consistent results for repeated hits and misses across threads" do
+          threads = Array.new(4) do
+            Thread.new do
+              20.times do
+                expect(matcher.list_owners("/app/models/user.rb")).to eq(["@models-team"])
+                expect(matcher.list_owners("app/services/billing.rb")).to eq(["@services-team"])
+                expect(matcher.list_owners("app/controllers/home_controller.rb")).to be_nil
+              end
+            end
+          end
+
+          threads.each(&:value)
+        end
+      end
     end
   end
 end
