@@ -207,6 +207,8 @@ module Datadog
         end
 
         def record_test_started
+          return if @any_tests_started
+
           @mutex.synchronize { @any_tests_started = true }
         end
 
@@ -265,7 +267,13 @@ module Datadog
           ci_span.set_default_tags
           ci_span.set_environment_runtime_tags
           ci_span.set_internal_tags(@runtime_tags_overrides) unless @runtime_tags_overrides.empty?
-          ci_span.set_internal_tags(tags.reject { |key, _| Ext::Metadata::SHARED_TAGS.include?(key.to_s) })
+          has_shared_tags = tags.any? { |key, _| Ext::Metadata::SHARED_TAGS.include?(key.is_a?(String) ? key : key.to_s) }
+          filtered_tags = if has_shared_tags
+            tags.reject { |key, _| Ext::Metadata::SHARED_TAGS.include?(key.is_a?(String) ? key : key.to_s) }
+          else
+            tags
+          end
+          ci_span.set_internal_tags(filtered_tags)
           ci_span.set_internal_metric(Ext::Test::METRIC_CPU_COUNT, Utils::TestRun.virtual_cpu_count)
         end
 

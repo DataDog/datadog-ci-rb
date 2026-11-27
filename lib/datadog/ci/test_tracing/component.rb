@@ -82,6 +82,7 @@ module Datadog
           # Another test runner that splits workload by test is knapsack_pro, but we lack distributed test sessions/test suties
           # support for that one (as of 2025-03).
           @local_test_suites_mode = true
+          @recorded_test_started = false
         end
 
         def shared_tags
@@ -102,6 +103,7 @@ module Datadog
           # Forks inherit this flag; fresh workers acquire it when joining the distributed session.
           @configuration_locked = true
           @local_test_suites_mode = local_test_suites_mode
+          @recorded_test_started = false
 
           start_drb_service
 
@@ -137,7 +139,7 @@ module Datadog
           test_name = Utils::TestName.normalize(test_name)
           test_suite_name = Utils::TestName.normalize(test_suite_name)
 
-          test_suite = active_test_suite(test_suite_name)
+          test_suite = find_active_test_suite(test_suite_name)
           tags[Ext::Test::TAG_SUITE] ||= test_suite_name
 
           if block
@@ -199,13 +201,7 @@ module Datadog
           # we return the single active test suite because most of the time there is only one test suite running
           return single_active_test_suite if test_suite_name.nil?
 
-          test_suite_name = Utils::TestName.normalize(test_suite_name)
-
-          # when fetching test_suite to use as test's context, try local context instance first
-          local_test_suite = @context.active_test_suite(test_suite_name)
-          return local_test_suite if local_test_suite
-
-          maybe_remote_context.active_test_suite(test_suite_name)
+          find_active_test_suite(Utils::TestName.normalize(test_suite_name))
         end
 
         def deactivate_test
@@ -223,6 +219,7 @@ module Datadog
           # Only the session owner can release the lock. Distributed workers retain their
           # remote feature state for their lifetime, including after the parent's session ends.
           @configuration_locked = false unless client_process?
+          @recorded_test_started = false
           nil
         end
 
@@ -235,7 +232,7 @@ module Datadog
 
         def deactivate_test_suite(test_suite_name)
           test_suite_name = Utils::TestName.normalize(test_suite_name)
-          test_suite = active_test_suite(test_suite_name)
+          test_suite = find_active_test_suite(test_suite_name)
           on_test_suite_finished(test_suite) if test_suite
 
           # deactivation always happens on the same process where test suite is located
@@ -315,7 +312,10 @@ module Datadog
         end
 
         def on_test_started(test)
-          maybe_remote_context.record_test_started
+          unless @recorded_test_started
+            maybe_remote_context.record_test_started
+            @recorded_test_started = true
+          end
 
           # Sometimes test suite is not being assigned correctly.
           # Fix it by fetching the one single running test suite from the process context.
@@ -370,6 +370,14 @@ module Datadog
         end
 
         # HELPERS
+        def find_active_test_suite(normalized_test_suite_name)
+          # when fetching test_suite to use as test's context, try local context instance first
+          local_test_suite = @context.active_test_suite(normalized_test_suite_name)
+          return local_test_suite if local_test_suite
+
+          maybe_remote_context.active_test_suite(normalized_test_suite_name)
+        end
+
         def single_active_test_suite
           # when fetching test_suite to use as test's context, try local context instance first
           local_test_suite = @context.single_active_test_suite
