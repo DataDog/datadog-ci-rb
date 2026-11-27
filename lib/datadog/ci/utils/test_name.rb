@@ -58,26 +58,9 @@ module Datadog
           (?![\w.])
         /x.freeze
 
-        INSPECT_PATTERN = /\#<
-          (?:
-            (Date)(?::[^>\n]*)?
-            |
-            (DateTime|Time)(?::[^>\n]*)?
-            |
-            Class:(#{CONSTANT_NAME}|0x[0-9a-fA-F]+)(?:\s[^>\n]*)?
-            |
-            (#{CONSTANT_NAME})(?::[^>\n]*)?
-            |
-            [^>\n]+
-          )
-        >/x.freeze
         NEEDS_NORMALIZATION_PATTERN = /#<|[(\[{]|\.\.|\d{4}/.freeze
         FOUR_DIGITS_PATTERN = /\d{4}/.freeze
-        ARRAY_LITERAL_PATTERN = /\A\[\s*(?:\]|[^\]]*,|(?:"|'|:|-?\d|true\b|false\b|nil\b|#<|\[|\{))/.freeze
-        EMPTY_HASH_PATTERN = /\A\{\s*\}\z/.freeze
-        HASH_KEY_PATTERN = /(?:\A\{|,)\s*(?:"[^"]+"|'[^']+'|:[a-zA-Z_]\w*|[a-zA-Z_]\w*)\s*:/.freeze
-
-        ARRAY_LITERAL_MATCH_PATTERN = /\[(?=\s*(?:\]|[^\[\]\n]*,|(?:"|'|:|-?\d|true\b|false\b|nil\b|\#<|\[|\{)))[^\[\]\n]{0,300}\]/.freeze
+        ARRAY_LITERAL_MATCH_PATTERN = /\[(?=\s*(?:\]|[^\[\]\n]*,|(?:"|'|:|-?\d|true\b|false\b|nil\b|#<|\[|\{)))[^\[\]\n]{0,300}\]/.freeze
         HASH_LITERAL_MATCH_PATTERN = /\{(?=\s*\}|[^{}\n]*=>|(?:[^{}\n]*,)?\s*(?:"[^"}\n]+"|'[^'}\n]+'|:[a-zA-Z_]\w*|[a-zA-Z_]\w*)\s*:)[^{}\n]{0,300}\}/.freeze
 
         def self.normalize(name)
@@ -88,17 +71,20 @@ module Datadog
           normalized = name.dup
 
           if normalized.include?("#<")
-            normalized.gsub!(INSPECT_PATTERN) do
-              if Regexp.last_match(1)
-                "DATE"
-              elsif Regexp.last_match(2)
-                "TIME"
-              elsif (class_name = Regexp.last_match(3))
-                class_name.start_with?("0x") ? "CLASS" : "CLASS:#{class_name}"
-              elsif (const_name = Regexp.last_match(4))
-                "OBJECT:#{const_name}"
-              else
-                "OBJECT"
+            normalized.gsub!(DATE_INSPECT_PATTERN, "DATE") if normalized.include?("#<Date")
+            if normalized.include?("#<")
+              if normalized.include?("#<DateTime") || normalized.include?("#<Time")
+                normalized.gsub!(TIME_INSPECT_PATTERN, "TIME")
+              end
+              if normalized.include?("#<Class:")
+                normalized.gsub!(CLASS_INSPECT_PATTERN) do
+                  class_name = Regexp.last_match(1).to_s
+                  class_name.start_with?("0x") ? "CLASS" : "CLASS:#{class_name}"
+                end
+              end
+              if normalized.include?("#<")
+                normalized.gsub!(NAMED_OBJECT_INSPECT_PATTERN, 'OBJECT:\1')
+                normalized.gsub!(OBJECT_INSPECT_PATTERN, "OBJECT") if normalized.include?("#<")
               end
             end
           end
@@ -132,19 +118,6 @@ module Datadog
           warn_normalization_error(e)
           name
         end
-
-        ARRAY_PATTERN = /\[[^\[\]\n]{0,300}\]/.freeze
-        HASH_PATTERN = /\{[^{}\n]{0,300}\}/.freeze
-
-        def self.array_literal?(value)
-          value.match?(ARRAY_LITERAL_PATTERN)
-        end
-        private_class_method :array_literal?
-
-        def self.hash_literal?(value)
-          value.include?("=>") || value.match?(EMPTY_HASH_PATTERN) || value.match?(HASH_KEY_PATTERN)
-        end
-        private_class_method :hash_literal?
 
         def self.warn_normalization_error(error)
           Datadog.logger.warn { "Unable to normalize test name: #{error.class}: #{error.message}" }

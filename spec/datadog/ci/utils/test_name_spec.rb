@@ -123,5 +123,20 @@ RSpec.describe Datadog::CI::Utils::TestName do
       expect(described_class.normalize(input))
         .to eq("handles OBJECT:Order with DATE at TIME and DATE for RANGE with HASH")
     end
+
+    it "normalizes object inspections containing nested Date, Time, DateTime, and Class inspections" do
+      expect(described_class.normalize("is expected to eq #<User:0x123 @birthday=#<Date: 2026-07-09>, @id=123>"))
+        .to eq("is expected to eq OBJECT:User")
+      expect(described_class.normalize("is expected to eq #<User:0x123 @created_at=#<Time: 2026-07-09>, @id=123>"))
+        .to eq("is expected to eq OBJECT:User")
+      expect(described_class.normalize("is expected to eq #<User:0x123 @updated_at=#<DateTime: 2026-07-09>, @id=123>"))
+        .to eq("is expected to eq OBJECT:User")
+      expect(described_class.normalize("is expected to eq #<User:0x123 @klass=#<Class:0x000000010>, @id=123>"))
+        .to eq("is expected to eq OBJECT:User")
+      expect(described_class.normalize("is expected to eq #<User:0x123 @klass=#<Class:Admin::User>, @id=123>"))
+        .to eq("is expected to eq OBJECT:User")
+      expect(described_class.normalize("is expected to eq #<0x000000010>"))
+        .to eq("is expected to eq OBJECT")
+    end
   end
 end
