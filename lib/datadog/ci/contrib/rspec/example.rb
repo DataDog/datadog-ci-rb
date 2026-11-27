@@ -432,7 +432,7 @@ module Datadog
 
             def ci_queue?
               !!defined?(::RSpec::Queue::ExampleExtension) &&
-                self.class.ancestors.include?(::RSpec::Queue::ExampleExtension)
+                is_a?(::RSpec::Queue::ExampleExtension)
             end
           end
         end

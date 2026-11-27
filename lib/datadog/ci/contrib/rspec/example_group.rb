@@ -72,20 +72,28 @@ module Datadog
             end
 
             def all_examples_skipped_by_datadog?
-              descendant_filtered_examples.all? do |example|
-                datadog_test_id = example.datadog_test_id
-                datadog_fqn_test_id = example.datadog_fqn_test_id
+              components = Datadog.send(:components)
+              tia = components.test_impact_analysis
+              tm = components.test_management
+              tia_skipping = !!(tia&.enabled? && tia.skipping_tests?)
+              tm_enabled = !!tm&.enabled
 
-                # Don't skip if the test is marked as attempt_to_fix (it should run and be retried)
-                next false if !example.datadog_no_auto_retry? && test_management_component&.attempt_to_fix?(datadog_fqn_test_id)
+              return false unless tia_skipping || tm_enabled
+
+              descendant_filtered_examples.all? do |example|
+                if tm_enabled
+                  datadog_fqn_test_id = example.datadog_fqn_test_id
+                  # Don't skip if the test is marked as attempt_to_fix (it should run and be retried)
+                  next false if !example.datadog_no_auto_retry? && tm&.attempt_to_fix?(datadog_fqn_test_id)
+                end
 
                 # Skip by Test Impact Analysis: test is skippable and not marked as unskippable
-                tia_skipped = !example.datadog_unskippable? &&
-                  test_impact_analysis_component&.skippable?(datadog_test_id)
+                tia_skipped = tia_skipping && !example.datadog_unskippable? &&
+                  tia&.skippable?(example.datadog_test_id)
 
                 # Skip by Test Management: test is disabled
-                test_management_disabled = !example.datadog_prevent_failure_suppression? &&
-                  test_management_component&.disabled?(datadog_fqn_test_id)
+                test_management_disabled = tm_enabled && !example.datadog_prevent_failure_suppression? &&
+                  tm&.disabled?(datadog_fqn_test_id)
 
                 tia_skipped || test_management_disabled
               end

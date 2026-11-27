@@ -12,6 +12,7 @@ module Datadog
           @failed_test_suites_count: Integer
           @test_results: Hash[[String, Integer], String]
           @incomplete_results: bool
+          @ok_method_modes: Hash[Class, Symbol]
 
           attr_reader config: untyped
 

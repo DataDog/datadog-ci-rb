@@ -322,13 +322,13 @@ module Datadog
         def skippable?(datadog_test_id)
           return false if !enabled? || !skipping_tests?
 
-          @mutex.synchronize { @skippable_tests.include?(datadog_test_id) }
+          @skippable_tests.include?(datadog_test_id)
         end
 
         def skippable_suite?(test_suite_name)
           return false if !enabled? || !skipping_suites?
 
-          @mutex.synchronize { @skippable_suites.include?(test_suite_name) }
+          @skippable_suites.include?(test_suite_name)
         end
 
         def mark_if_skippable(test)
@@ -511,11 +511,16 @@ module Datadog
         def enrich_coverage_with_static_dependencies(coverage)
           return unless @static_dependencies_tracking_enabled
 
-          coverage.keys.each do |file|
-            coverage.merge!(
-              Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
-            )
+          static_deps = nil
+          # @type var static_deps: Array[String]?
+          coverage.each_key do |file|
+            deps = Datadog::CI::SourceCode::StaticDependencies.fetch_static_dependencies(file)
+            next if deps.empty?
+
+            (static_deps ||= []).concat(deps.keys)
           end
+
+          static_deps&.each { |dep| coverage[dep] = true }
         end
 
         def ensure_test_source_covered(test_source_file, coverage)
