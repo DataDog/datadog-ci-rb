@@ -36,6 +36,8 @@ module Datadog
 
           def self.start: (root: String, ignored_paths: Array[String]) -> LineCoverage?
 
+          def self.log_unsupported: () -> void
+
           def self.stop_collector: () -> void
 
           def initialize: (root: String, ignored_paths: Array[String]) -> void

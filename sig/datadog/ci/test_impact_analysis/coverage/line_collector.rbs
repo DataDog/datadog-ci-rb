@@ -2,8 +2,9 @@ module Datadog
   module CI
     module TestImpactAnalysis
       module Coverage
-        # Implemented in ext/datadog_ci_native/line_coverage.c. Only supported? and
-        # yjit_supported? exist when the extension was built without line coverage.
+        # Implemented in ext/datadog_ci_native/line_coverage.c. Only supported?,
+        # yjit_supported?, unsupported_reason and vm_headers exist when the extension was
+        # built without line coverage.
         module LineCollector
           type bitmaps = Hash[String, String]
 
@@ -18,6 +19,12 @@ module Datadog
           def self.supported?: () -> bool
 
           def self.yjit_supported?: () -> bool
+
+          # Why the extension was built without line coverage, or nil when it has it.
+          def self.unsupported_reason: () -> String?
+
+          # The private VM headers line coverage was built with, or nil without line coverage.
+          def self.vm_headers: () -> String?
 
           def self.start: (String root, Array[String] ignored_paths) -> bool
 

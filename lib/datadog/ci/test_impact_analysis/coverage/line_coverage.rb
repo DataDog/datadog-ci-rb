@@ -63,9 +63,7 @@ module Datadog
           # repository-relative path, so it never runs again for another root.
           def self.start(root:, ignored_paths:)
             unless supported?
-              Datadog.logger.warn(
-                "Per-test line coverage is not supported on this Ruby: falling back to file-level coverage"
-              )
+              log_unsupported
               return nil
             end
 
@@ -96,6 +94,40 @@ module Datadog
           rescue => e
             Datadog.logger.warn("Failed to start per-test line coverage: #{e.class}: #{e.message}")
             nil
+          end
+
+          # Logs why the collector cannot run in this process. The extension records why
+          # it was built without line coverage. On Ruby 3.2 or later that is an install to
+          # fix, so it is an error.
+          def self.log_unsupported
+            unless defined?(LineCollector)
+              Datadog.logger.warn(
+                "Per-test line coverage is not available: datadog-ci's native extension is not loaded. " \
+                "Falling back to file-level coverage"
+              )
+              return
+            end
+
+            unless LineCollector.supported?
+              reason = LineCollector.unsupported_reason
+              if Gem::Version.new(RUBY_VERSION) < Gem::Version.new("3.2")
+                Datadog.logger.warn("Per-test line coverage is not available: #{reason}. Falling back to file-level coverage")
+                return
+              end
+
+              Datadog.logger.error(
+                "Per-test line coverage is not available: datadog-ci's native extension was built without it, " \
+                "because #{reason}. To fix it, run `bundle update datadog-ruby_core_source`, then " \
+                "`bundle pristine datadog-ci` (without Bundler: `gem update datadog-ruby_core_source`, then " \
+                "`gem pristine datadog-ci`). Falling back to file-level coverage"
+              )
+              return
+            end
+
+            Datadog.logger.warn(
+              "Per-test line coverage is not available: this Ruby offers no way to keep repository code out of " \
+              "YJIT. Falling back to file-level coverage"
+            )
           end
 
           # Stops the collector if this process loaded and started it.

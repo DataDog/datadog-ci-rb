@@ -2,6 +2,12 @@
 
 #include "line_coverage.h"
 
+/* What extconf.rb recorded about the build: the headers line coverage was built with, or
+ * why it was built without line coverage. */
+#ifdef DD_CI_LINE_COVERAGE_BUILD_RECORD
+#include "line_coverage_build.h"
+#endif
+
 /*
  * Per-test line coverage with one-shot traps.
  *
@@ -48,7 +54,17 @@
 
 #ifndef DD_CI_LINE_COVERAGE_SUPPORTED
 
+#ifndef DD_CI_LINE_COVERAGE_UNSUPPORTED_REASON
+#define DD_CI_LINE_COVERAGE_UNSUPPORTED_REASON "the build recorded no reason"
+#endif
+
 static VALUE supported_p(VALUE self) { return Qfalse; }
+
+static VALUE unsupported_reason(VALUE self) {
+  return rb_obj_freeze(rb_str_new_cstr(DD_CI_LINE_COVERAGE_UNSUPPORTED_REASON));
+}
+
+static VALUE vm_headers(VALUE self) { return Qnil; }
 
 void Init_dd_ci_line_coverage(void) {
   VALUE mDatadog = rb_define_module("Datadog");
@@ -58,6 +74,8 @@ void Init_dd_ci_line_coverage(void) {
   VALUE mLineCollector = rb_define_module_under(mCoverage, "LineCollector");
   rb_define_singleton_method(mLineCollector, "supported?", supported_p, 0);
   rb_define_singleton_method(mLineCollector, "yjit_supported?", supported_p, 0);
+  rb_define_singleton_method(mLineCollector, "unsupported_reason", unsupported_reason, 0);
+  rb_define_singleton_method(mLineCollector, "vm_headers", vm_headers, 0);
 }
 
 #else
@@ -2573,6 +2591,14 @@ static VALUE line_collector_stats(VALUE self) {
 
 static VALUE supported_p(VALUE self) { return Qtrue; }
 
+#ifndef DD_CI_LINE_COVERAGE_VM_HEADERS
+#define DD_CI_LINE_COVERAGE_VM_HEADERS "headers the build did not record"
+#endif
+
+static VALUE unsupported_reason(VALUE self) { return Qnil; }
+
+static VALUE vm_headers(VALUE self) { return rb_obj_freeze(rb_str_new_cstr(DD_CI_LINE_COVERAGE_VM_HEADERS)); }
+
 /* Whether the collector can keep repository code out of YJIT in this Ruby. False also
  * when Ruby is built without YJIT. */
 static VALUE yjit_supported_p(VALUE self) {
@@ -2652,6 +2678,8 @@ void Init_dd_ci_line_coverage(void) {
   rb_define_const(mLineCollector, "EXIT_WRITE_DEADLINE_SECONDS", INT2FIX(EXIT_WRITE_DEADLINE_SECONDS));
   rb_define_singleton_method(mLineCollector, "supported?", supported_p, 0);
   rb_define_singleton_method(mLineCollector, "yjit_supported?", yjit_supported_p, 0);
+  rb_define_singleton_method(mLineCollector, "unsupported_reason", unsupported_reason, 0);
+  rb_define_singleton_method(mLineCollector, "vm_headers", vm_headers, 0);
   rb_define_singleton_method(mLineCollector, "start", line_collector_start, 2);
   rb_define_singleton_method(mLineCollector, "stop", line_collector_stop, 0);
   rb_define_singleton_method(mLineCollector, "open_context", line_collector_open_context, -1);

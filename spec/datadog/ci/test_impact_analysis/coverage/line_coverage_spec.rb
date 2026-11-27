@@ -36,6 +36,69 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
     end
   end
 
+  describe "the build record" do
+    let(:collector) { Datadog::CI::TestImpactAnalysis::Coverage::LineCollector }
+
+    before { require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}" }
+
+    it "names the headers of a build with line coverage, or why a build has none" do
+      if collector.supported?
+        expect(collector.vm_headers).to match(/\Athe ruby-\d+\.\d+\.\d+-p\d+ headers of datadog-ruby_core_source \S+\z/)
+        expect(collector.unsupported_reason).to be_nil
+      else
+        expect(collector.vm_headers).to be_nil
+        expect(collector.unsupported_reason).to be_a(String).and(satisfy { |reason| !reason.empty? })
+      end
+    end
+  end
+
+  describe ".start when the collector cannot run" do
+    let(:collector) { Datadog::CI::TestImpactAnalysis::Coverage::LineCollector }
+    let(:reason) { "datadog-ruby_core_source 3.4.3 has no headers of a Ruby 4.0 release up to 4.0.10" }
+
+    before do
+      require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+      allow(collector).to receive(:supported?).and_return(false)
+      allow(collector).to receive(:unsupported_reason).and_return(reason)
+    end
+
+    it "logs an error that names the recorded reason and the fix on Ruby 3.2 or later" do
+      stub_const("RUBY_VERSION", "4.0.10")
+      expect(Datadog.logger).to receive(:error).with(
+        a_string_including(
+          "datadog-ci's native extension was built without it, because #{reason}.",
+          "run `bundle update datadog-ruby_core_source`, then `bundle pristine datadog-ci`",
+          "Falling back to file-level coverage"
+        )
+      )
+      expect(collector).not_to receive(:start)
+
+      expect(described_class.start(root: Dir.pwd, ignored_paths: [])).to be_nil
+    end
+
+    it "logs a warning on Ruby older than 3.2, where no install has line coverage" do
+      stub_const("RUBY_VERSION", "3.1.6")
+      allow(collector).to receive(:unsupported_reason).and_return("it needs Ruby 3.2 or later")
+      expect(Datadog.logger).not_to receive(:error)
+      expect(Datadog.logger).to receive(:warn).with(
+        "Per-test line coverage is not available: it needs Ruby 3.2 or later. Falling back to file-level coverage"
+      )
+
+      expect(described_class.start(root: Dir.pwd, ignored_paths: [])).to be_nil
+    end
+
+    it "logs a warning when the collector cannot keep repository code out of YJIT" do
+      skip "this Ruby has no YJIT" unless defined?(RubyVM::YJIT)
+
+      allow(collector).to receive(:supported?).and_return(true)
+      allow(collector).to receive(:yjit_supported?).and_return(false)
+      expect(Datadog.logger).to receive(:warn).with(/no way to keep repository code out of YJIT/)
+      expect(collector).not_to receive(:start)
+
+      expect(described_class.start(root: Dir.pwd, ignored_paths: [])).to be_nil
+    end
+  end
+
   describe ".start" do
     # Every spec starts the collector for the repository root: it never runs again for another root.
     let(:root) { File.realpath(Datadog::CI::Git::LocalRepository.root) }
