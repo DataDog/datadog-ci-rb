@@ -7,6 +7,8 @@ module Datadog
           MINIMUM_DURATION_NANO: 0
           MAXIMUM_DURATION_NANO: 9223372036854775807
 
+          EMPTY_ERRORS: Hash[String, Set[String]]
+
           CONTENT_FIELDS: Array[String | Hash[String, String]]
           REQUIRED_FIELDS: Array[String]
 
@@ -15,12 +17,15 @@ module Datadog
           @options: Hash[Symbol, untyped]
 
           @meta: Hash[untyped, untyped]
-          @errors: Hash[String, Set[String]]
+          @errors: Hash[String, Set[String]]?
           @validated: bool
 
           @content_fields_count: Integer
           @start: Integer
           @duration: Integer
+          @test_session_id: Integer?
+          @test_module_id: Integer?
+          @test_suite_id: Integer?
 
           @test_tracing: Datadog::CI::TestTracing::Component
 
@@ -80,6 +85,7 @@ module Datadog
 
           private
 
+          def prepare_meta: (Hash[untyped, untyped] raw_meta) -> Hash[untyped, untyped]
           def validate_start_time!: () -> void
           def validate_duration!: () -> void
           def validate_required_fields!: () -> void

@@ -13,6 +13,11 @@ module Datadog
 
           REQUIRED_FIELDS: ::Array[String]
 
+          @name: String?
+          @resource: String?
+
+          def to_msgpack: (?untyped? packer) -> untyped
+
           def content_fields: () -> ::Array[String | ::Hash[::String, String]]
 
           def content_map_size: () -> Integer

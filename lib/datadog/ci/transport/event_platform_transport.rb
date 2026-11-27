@@ -89,8 +89,16 @@ module Datadog
 
           write_payload_header(packer)
 
-          packer.write_array_header(encoded_events.count)
-          (packer.buffer.to_a + encoded_events).join
+          packer.write_array_header(encoded_events.size)
+
+          header = packer.to_s
+          total_size = header.bytesize
+          encoded_events.each { |e| total_size += e.bytesize }
+
+          result = String.new(capacity: total_size, encoding: Encoding::BINARY)
+          result << header
+          encoded_events.each { |e| result << e }
+          result
         end
 
         def event_too_large?(event, encoded_event)

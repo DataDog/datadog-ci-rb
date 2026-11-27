@@ -14,6 +14,9 @@ module Datadog
           MINIMUM_DURATION_NANO = 0
           MAXIMUM_DURATION_NANO = 9223372036854775807
 
+          EMPTY_ERRORS = {}.freeze
+          private_constant :EMPTY_ERRORS
+
           CONTENT_FIELDS = [
             "name", "resource", "service",
             "error", "start", "duration",
@@ -30,11 +33,9 @@ module Datadog
             @span = span
             @options = options
 
-            @meta = MetaTruncation.truncate_string_values(
-              @span.meta.reject { |key, _| Ext::Test::TRANSIENT_TAGS.include?(key) }
-            )
+            @meta = prepare_meta(@span.meta)
 
-            @errors = {}
+            @errors = nil
             @validated = false
           end
 
@@ -43,8 +44,10 @@ module Datadog
 
             packer.write_map_header(3)
 
-            write_field(packer, "type", "event_type")
-            write_field(packer, "version")
+            packer.write("type")
+            packer.write(event_type)
+            packer.write("version")
+            packer.write(version)
 
             packer.write("content")
             packer.write_map_header(content_map_size)
@@ -52,10 +55,12 @@ module Datadog
             content_fields.each do |field|
               if field.is_a?(Hash)
                 field.each do |field_name, method|
-                  write_field(packer, field_name, method)
+                  packer.write(field_name)
+                  packer.write(send(method))
                 end
               else
-                write_field(packer, field)
+                packer.write(field)
+                packer.write(send(field))
               end
             end
           end
@@ -64,11 +69,12 @@ module Datadog
           def valid?
             validate! unless @validated
 
-            @errors.empty?
+            errors = @errors
+            errors.nil? || errors.empty?
           end
 
           def validate!
-            @errors.clear
+            @errors&.clear
 
             validate_required_fields!
             validate_start_time!
@@ -78,7 +84,7 @@ module Datadog
           end
 
           def validation_errors
-            @errors
+            @errors || EMPTY_ERRORS
           end
 
           def content_fields
@@ -106,15 +112,21 @@ module Datadog
           end
 
           def test_session_id
-            to_integer(@span.get_tag(Ext::Test::TAG_TEST_SESSION_ID))
+            return @test_session_id if defined?(@test_session_id)
+
+            @test_session_id = to_integer(@span.get_tag(Ext::Test::TAG_TEST_SESSION_ID))
           end
 
           def test_module_id
-            to_integer(@span.get_tag(Ext::Test::TAG_TEST_MODULE_ID))
+            return @test_module_id if defined?(@test_module_id)
+
+            @test_module_id = to_integer(@span.get_tag(Ext::Test::TAG_TEST_MODULE_ID))
           end
 
           def test_suite_id
-            to_integer(@span.get_tag(Ext::Test::TAG_TEST_SUITE_ID))
+            return @test_suite_id if defined?(@test_suite_id)
+
+            @test_suite_id = to_integer(@span.get_tag(Ext::Test::TAG_TEST_SUITE_ID))
           end
 
           def version
@@ -169,15 +181,62 @@ module Datadog
 
           private
 
+          def prepare_meta(raw_meta)
+            has_transient = raw_meta.key?(Ext::Test::TAG_TEST_SESSION_ID) ||
+              raw_meta.key?(Ext::Test::TAG_TEST_MODULE_ID) ||
+              raw_meta.key?(Ext::Test::TAG_TEST_SUITE_ID)
+
+            needs_truncation = false
+            raw_meta.each_value do |value|
+              if value.is_a?(String) && value.bytesize > MetaTruncation::MAX_META_STRING_LENGTH &&
+                  value.length > MetaTruncation::MAX_META_STRING_LENGTH
+                needs_truncation = true
+                break
+              end
+            end
+
+            return raw_meta unless has_transient || needs_truncation
+
+            filtered = raw_meta.dup
+            if has_transient
+              filtered.delete(Ext::Test::TAG_TEST_SESSION_ID)
+              filtered.delete(Ext::Test::TAG_TEST_MODULE_ID)
+              filtered.delete(Ext::Test::TAG_TEST_SUITE_ID)
+            end
+
+            if needs_truncation
+              filtered.each do |key, value|
+                if value.is_a?(String) && value.bytesize > MetaTruncation::MAX_META_STRING_LENGTH &&
+                    value.length > MetaTruncation::MAX_META_STRING_LENGTH
+                  filtered[key] = value[0, MetaTruncation::MAX_META_STRING_LENGTH]
+                end
+              end
+            end
+
+            filtered
+          end
+
           def validate_start_time!
-            validate_required!("start")
-            validate_greater_than_or_equal!("start", MINIMUM_TIMESTAMP_NANO)
+            start_value = start
+            if start_value.nil?
+              add_error("start", "is required")
+            elsif start_value < MINIMUM_TIMESTAMP_NANO
+              add_error("start", "must be greater than or equal to #{MINIMUM_TIMESTAMP_NANO}")
+            end
           end
 
           def validate_duration!
-            validate_required!("duration")
-            validate_greater_than_or_equal!("duration", MINIMUM_DURATION_NANO)
-            validate_less_than_or_equal!("duration", MAXIMUM_DURATION_NANO)
+            duration_value = duration
+            if duration_value.nil?
+              add_error("duration", "is required")
+            else
+              if duration_value < MINIMUM_DURATION_NANO
+                add_error("duration", "must be greater than or equal to #{MINIMUM_DURATION_NANO}")
+              end
+              if duration_value > MAXIMUM_DURATION_NANO
+                add_error("duration", "must be less than or equal to #{MAXIMUM_DURATION_NANO}")
+              end
+            end
           end
 
           def validate_required_fields!
@@ -193,24 +252,26 @@ module Datadog
           end
 
           def validate_greater_than_or_equal!(field, value)
-            return if send(field).nil?
+            field_value = send(field)
+            return if field_value.nil?
 
-            if send(field) < value
+            if field_value < value
               add_error(field, "must be greater than or equal to #{value}")
             end
           end
 
           def validate_less_than_or_equal!(field, value)
-            return if send(field).nil?
+            field_value = send(field)
+            return if field_value.nil?
 
-            if send(field) > value
+            if field_value > value
               add_error(field, "must be less than or equal to #{value}")
             end
           end
 
           def add_error(field, message)
-            @errors[field] ||= Set.new
-            @errors[field] << message
+            errors = (@errors ||= {})
+            (errors[field] ||= Set.new) << message
           end
 
           def required_fields
