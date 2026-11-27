@@ -39,6 +39,33 @@ module Datadog
           EMPTY_COVERAGE = [0, ""].freeze
           EMPTY_SHARED = {}.freeze
 
+          # Code that the collector records in a test of its own each time it starts: an
+          # extension built with headers that describe other VM structures than this Ruby's
+          # can record no lines, or wrong ones. The path has no .rb suffix, so no repository
+          # file has it.
+          SELF_CHECK_PATH = "datadog-ci line coverage self-check"
+          SELF_CHECK_SOURCE = <<~RUBY
+            value = 1
+            check = lambda do |item|
+              item + value
+            end
+            if check.call(value) > 1
+              value += 1
+            else
+              value -= 1
+            end
+            value
+          RUBY
+          SELF_CHECK_LINES_RUN = [1, 2, 3, 5, 6, 10].freeze
+          # The line of the branch that does not run. Code follows the branch: when a branch
+          # is the last code, Ruby can attribute the return after the other branch to it.
+          SELF_CHECK_LINE_SKIPPED = 8
+          # No test has started when the self-check runs, and it finishes before one does.
+          SELF_CHECK_TEST_ID = 0
+
+          INSTALL_FIX = "To fix it, run `bundle update datadog-ruby_core_source`, then `bundle pristine datadog-ci` " \
+            "(without Bundler: `gem update datadog-ruby_core_source`, then `gem pristine datadog-ci`)."
+
           # The native collector must be loaded first.
           def self.supported?
             return false unless defined?(LineCollector) && LineCollector.supported?
@@ -90,7 +117,16 @@ module Datadog
 
             @first_root = root
             @running_with = [root, ignored_paths]
-            new(root: root, ignored_paths: ignored_paths)
+            line_coverage = new(root: root, ignored_paths: ignored_paths)
+            return line_coverage if running_with || line_coverage.self_check_passed?
+
+            Datadog.logger.error(
+              "Per-test line coverage is not available: datadog-ci's native extension, built with " \
+              "#{LineCollector.vm_headers}, did not record the right lines in a check when it started, so those " \
+              "headers probably do not match Ruby #{RUBY_VERSION}. #{INSTALL_FIX} Falling back to file-level coverage"
+            )
+            stop_collector
+            nil
           rescue => e
             Datadog.logger.warn("Failed to start per-test line coverage: #{e.class}: #{e.message}")
             nil
@@ -117,9 +153,7 @@ module Datadog
 
               Datadog.logger.error(
                 "Per-test line coverage is not available: datadog-ci's native extension was built without it, " \
-                "because #{reason}. To fix it, run `bundle update datadog-ruby_core_source`, then " \
-                "`bundle pristine datadog-ci` (without Bundler: `gem update datadog-ruby_core_source`, then " \
-                "`gem pristine datadog-ci`). Falling back to file-level coverage"
+                "because #{reason}. #{INSTALL_FIX} Falling back to file-level coverage"
               )
               return
             end
@@ -249,6 +283,30 @@ module Datadog
 
           def stop
             LineCoverage.stop_collector
+          end
+
+          # Runs SELF_CHECK_SOURCE in a test of its own, and checks that the test has the
+          # lines that ran and not the one that did not.
+          def self_check_passed?
+            compiled = RubyVM::InstructionSequence.compile(
+              SELF_CHECK_SOURCE, SELF_CHECK_PATH, SELF_CHECK_PATH, 1, coverage_enabled: false
+            )
+            return false unless LineCollector.arm_self_check(compiled)
+
+            start_test(SELF_CHECK_TEST_ID)
+            begin
+              compiled.eval
+            ensure
+              _count, packed = finish_test(SELF_CHECK_TEST_ID, [])
+            end
+            bitmap = LineFiles.unpack(packed)[SELF_CHECK_PATH]
+            return false if bitmap.nil?
+
+            lines = LineFiles.lines(bitmap)
+            (SELF_CHECK_LINES_RUN - lines).empty? && !lines.include?(SELF_CHECK_LINE_SKIPPED)
+          rescue => e
+            log_error("run its self-check", e)
+            false
           end
 
           private

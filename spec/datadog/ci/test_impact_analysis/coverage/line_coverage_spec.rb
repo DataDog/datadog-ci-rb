@@ -122,6 +122,48 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage do
       expect(described_class.start(root: root, ignored_paths: [])).to be_a(described_class)
     end
 
+    it "checks at the start that the collector records the lines that run, and keeps the check's lines out of tests" do
+      expect(collector).to receive(:arm_self_check).and_call_original
+      line_coverage = described_class.start(root: root, ignored_paths: [])
+      expect(line_coverage).to be_a(described_class)
+
+      line_coverage.start_test(1)
+      _count, packed = line_coverage.finish_test(1, [])
+
+      self_check_path = described_class::SELF_CHECK_PATH
+      expect(Datadog::CI::TestImpactAnalysis::Coverage::LineFiles.unpack(packed)).not_to have_key(self_check_path)
+      expect(line_coverage.shared.values).to all(satisfy { |bitmaps| !bitmaps.key?(self_check_path) })
+    end
+
+    it "does not check again when it takes over a running collector" do
+      described_class.start(root: root, ignored_paths: [])
+      expect(collector).not_to receive(:arm_self_check)
+
+      expect(described_class.start(root: root, ignored_paths: [])).to be_a(described_class)
+    end
+
+    it "checks again on a start after a stop" do
+      described_class.start(root: root, ignored_paths: [])
+      described_class.stop_collector
+      expect(collector).to receive(:arm_self_check).and_call_original
+
+      expect(described_class.start(root: root, ignored_paths: [])).to be_a(described_class)
+    end
+
+    it "stops the collector and logs an error that names the headers when the check records no lines" do
+      allow(collector).to receive(:coverage).and_return([0, ""])
+      expect(Datadog.logger).to receive(:error).with(
+        a_string_including(
+          "built with #{collector.vm_headers}, did not record the right lines in a check when it started",
+          "run `bundle update datadog-ruby_core_source`, then `bundle pristine datadog-ci`",
+          "Falling back to file-level coverage"
+        )
+      )
+
+      expect(described_class.start(root: root, ignored_paths: [])).to be_nil
+      expect(collector.stop).to be(false)
+    end
+
     it "stops a running collector and falls back when the ignored paths differ" do
       described_class.start(root: root, ignored_paths: [])
       expect(Datadog.logger).to receive(:warn).with(/is running with repository root #{Regexp.escape(root)} and ignored paths \[\]/)

@@ -38,6 +38,9 @@ module Datadog
 
           def self.release: (Integer serial) -> bool
 
+          # Arms compiled code as the self-check's own file (see LineCoverage#self_check_passed?).
+          def self.arm_self_check: (RubyVM::InstructionSequence compiled) -> bool
+
           def self.shared: () -> Hash[String, bitmaps]
 
           # Also replaces Kernel#exit!, Kernel.exit! and Process.exit! with an exit! that writes

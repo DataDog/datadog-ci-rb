@@ -17,6 +17,18 @@ module Datadog
 
           EMPTY_SHARED: Hash[String, LineCollector::bitmaps]
 
+          SELF_CHECK_PATH: String
+
+          SELF_CHECK_SOURCE: String
+
+          SELF_CHECK_LINES_RUN: Array[Integer]
+
+          SELF_CHECK_LINE_SKIPPED: Integer
+
+          SELF_CHECK_TEST_ID: Integer
+
+          INSTALL_FIX: String
+
           @root: String
           @ignored_paths: Array[String]
           @mutex: Thread::Mutex
@@ -57,6 +69,8 @@ module Datadog
           def shared: () -> Hash[String, LineCollector::bitmaps]
 
           def stop: () -> void
+
+          def self_check_passed?: () -> bool
 
           private
 

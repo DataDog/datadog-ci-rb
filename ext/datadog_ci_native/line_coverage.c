@@ -285,6 +285,8 @@ static struct {
   file_t *files;
   size_t file_count;
   size_t file_capacity;
+  bool self_check_file_known;
+  uint32_t self_check_file; /* the file of the code that arm_self_check arms */
 
   context_t *contexts;
   size_t context_count;
@@ -1950,6 +1952,40 @@ static VALUE line_collector_release(VALUE self, VALUE serial) {
   return Qtrue;
 }
 
+/* Arms compiled code as the self-check's own file, named by the code's path: LineCoverage
+ * runs the code in a test of its own and checks the lines that test records. The path has
+ * no .rb suffix, so no repository file has it, and no other test runs the code. */
+static VALUE line_collector_arm_self_check(VALUE self, VALUE compiled) {
+  if (!st.started) return Qfalse;
+  const rb_iseq_t *iseq = rb_iseqw_to_iseq(compiled);
+  if (!st.self_check_file_known) {
+    VALUE path = rb_obj_freeze(rb_str_dup(rb_iseq_path(iseq)));
+    size_t file_capacity = st.file_capacity;
+    if (!grow((void **)&st.files, &file_capacity, st.file_count + 1, sizeof(file_t))) return Qfalse;
+    st.file_capacity = file_capacity;
+    file_t *file = &st.files[st.file_count];
+    memset(file, 0, sizeof(*file));
+    file->path = path;
+    file->initialisers_known = true;
+    st.self_check_file = (uint32_t)st.file_count++;
+    st.self_check_file_known = true;
+  }
+
+  size_t record_count = st.record_count;
+  pending_iseqs_t pending = {0};
+  /* As in on_script_compiled: no GC may move or free the iseqs held as raw pointers. */
+  VALUE gc_was_disabled = gc_disable_no_rest();
+  push_pending(&pending, iseq, false);
+  while (pending.count > 0) {
+    pending_iseq_t next = pending.items[--pending.count];
+    if (!map_find(next.iseq)) arm_iseq(next.iseq, (long)st.self_check_file, false, &pending);
+  }
+  if (gc_was_disabled == Qfalse) rb_gc_enable();
+  free(pending.items);
+  RB_GC_GUARD(compiled);
+  return st.record_count > record_count ? Qtrue : Qfalse;
+}
+
 static VALUE bitmaps_hash(line_bitmap_t *(*select)(file_t *)) {
   VALUE result = rb_hash_new();
   for (size_t i = 0; i < st.file_count; i++) {
@@ -2686,6 +2722,7 @@ void Init_dd_ci_line_coverage(void) {
   rb_define_singleton_method(mLineCollector, "close_context", line_collector_close_context, 1);
   rb_define_singleton_method(mLineCollector, "coverage", line_collector_coverage, 2);
   rb_define_singleton_method(mLineCollector, "release", line_collector_release, 1);
+  rb_define_singleton_method(mLineCollector, "arm_self_check", line_collector_arm_self_check, 1);
   rb_define_singleton_method(mLineCollector, "shared", line_collector_shared, 0);
   rb_define_singleton_method(mLineCollector, "write_record_at_exit", line_collector_write_record_at_exit, 3);
   rb_define_singleton_method(mLineCollector, "stats", line_collector_stats, 0);
