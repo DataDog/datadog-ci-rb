@@ -4,6 +4,7 @@ module Datadog
       class Diff
         FILE_CHANGE_REGEX: Regexp
         LINES_CHANGE_REGEX: Regexp
+        DIFF_SCAN_REGEX: Regexp
 
         @changed_files: Hash[String, ChangedLines]
 
