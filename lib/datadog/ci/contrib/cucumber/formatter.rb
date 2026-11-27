@@ -24,6 +24,7 @@ module Datadog
             @failed_test_suites_count = 0
             @test_results = {}
             @incomplete_results = false
+            @ok_method_modes = {}
 
             bind_events(config)
           end
@@ -214,10 +215,24 @@ module Datadog
 
           def ok?(result)
             # in minor update in Cucumber 9.2.0, the arity of the `ok?` method changed
-            parameters = result.method(:ok?).parameters
-            if parameters.empty?
+            klass = result.class
+            mode = @ok_method_modes[klass]
+            if mode.nil?
+              parameters = result.method(:ok?).parameters
+              mode = if parameters.empty?
+                :no_args
+              elsif parameters == [%i[opt be_strict]]
+                :positional
+              else
+                :keyword
+              end
+              @ok_method_modes[klass] = mode if klass.method_defined?(:ok?)
+            end
+
+            case mode
+            when :no_args
               result.ok?
-            elsif parameters == [%i[opt be_strict]]
+            when :positional
               result.ok?(@config.strict)
             else
               result.ok?(strict: @config.strict)
