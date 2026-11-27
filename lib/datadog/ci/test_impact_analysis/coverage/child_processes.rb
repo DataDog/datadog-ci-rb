@@ -159,12 +159,12 @@ module Datadog
             end
           end
 
-          def initialize(root:, ignored_paths:, extension_path:)
+          def initialize(root:, ignored_paths:, extension_path:, rubygems_hook: RUBYGEMS_HOOK)
             @config = [self.class.identity, extension_path, root, *ignored_paths].join("\n")
             @owner_pid = Process.pid
             @require_option = "-r#{BOOTSTRAP}"
             # RUBYLIB cannot name a directory whose path holds its separator.
-            @rubygems_hook = RUBYGEMS_HOOK.include?(File::PATH_SEPARATOR) ? nil : RUBYGEMS_HOOK
+            @rubygems_hook = rubygems_hook.include?(File::PATH_SEPARATOR) ? nil : rubygems_hook
             @mutex = Mutex.new
             @directory = nil
             @spawned_prefixes = {}

@@ -335,10 +335,39 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       expect(child_rubylib).to eq([hook, rubylib].join(File::PATH_SEPARATOR))
     end
 
+    it "keeps every entry of a RUBYLIB that holds empty ones, in order, after the hook directory" do
+      rubylib_with_empty_entries = ["", "/rubylib/a", "", "/rubylib/b", ""].join(File::PATH_SEPARATOR)
+      child_rubylib, load_path = load_path_in_child({"RUBYLIB" => rubylib_with_empty_entries, "RUBYOPT" => "-W0"})
+      uncovered_output = unbundled do
+        IO.popen({"RUBYLIB" => rubylib_with_empty_entries, "RUBYOPT" => nil}, [ruby, fixture("load_path")], &:read)
+      end
+      _, uncovered_load_path = eval(uncovered_output) # rubocop:disable Security/Eval
+
+      expect(child_rubylib).to eq([hook, rubylib_with_empty_entries].join(File::PATH_SEPARATOR))
+      expect(load_path).to eq(uncovered_load_path)
+      expect(load_path.first(2)).to eq(["/rubylib/a", "/rubylib/b"])
+    end
+
     it "gets the hook directory alone when it is empty" do
       child_rubylib, = load_path_in_child({"RUBYLIB" => ""})
 
       expect(child_rubylib).to eq(hook)
+    end
+
+    it "is left as it is when the hook directory's path holds the separator" do
+      child_processes_with_unusable_hook = described_class.new(
+        root: root,
+        ignored_paths: [],
+        extension_path: described_class.loaded_extension_path,
+        rubygems_hook: File.join(Dir.tmpdir, "rubygems#{File::PATH_SEPARATOR}hook")
+      )
+      entries = nil
+      in_test { entries = child_processes_with_unusable_hook.environment({"RUBYLIB" => rubylib}) }
+
+      expect(entries).not_to have_key("RUBYLIB")
+      expect(entries.fetch("RUBYOPT")).to start_with(bootstrap_option)
+    ensure
+      child_processes_with_unusable_hook&.remove_directory
     end
 
     it "stays unset when the caller unsets it" do

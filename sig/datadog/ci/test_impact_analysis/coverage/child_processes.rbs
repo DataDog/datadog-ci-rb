@@ -60,7 +60,7 @@ module Datadog
 
           def self.loaded_extension_path: () -> String?
 
-          def initialize: (root: String, ignored_paths: Array[String], extension_path: String) -> void
+          def initialize: (root: String, ignored_paths: Array[String], extension_path: String, ?rubygems_hook: String) -> void
 
           def directory: () -> String
 
