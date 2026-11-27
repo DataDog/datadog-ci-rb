@@ -15,18 +15,16 @@ module Datadog
         TIME_PATTERN: Regexp
         DATE_PATTERN: Regexp
         RANGE_PATTERN: Regexp
-        ARRAY_PATTERN: Regexp
-        HASH_PATTERN: Regexp
+        NEEDS_NORMALIZATION_PATTERN: Regexp
+        FOUR_DIGITS_PATTERN: Regexp
+        ARRAY_LITERAL_MATCH_PATTERN: Regexp
+        HASH_LITERAL_MATCH_PATTERN: Regexp
 
         def self.normalize: (String name) -> String
                          | (nil name) -> nil
                          | (Symbol name) -> Symbol
 
         private
-
-        def self.array_literal?: (String value) -> bool
-
-        def self.hash_literal?: (String value) -> bool
 
         def self.warn_normalization_error: (untyped error) -> nil
       end

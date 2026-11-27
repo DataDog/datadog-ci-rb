@@ -8,7 +8,15 @@ require "datadog/ci/utils/test_name"
 
 iterations = Integer(ENV.fetch("ITERATIONS", "100000"))
 
-samples = [
+plain_samples = [
+  "UserModelTest",
+  "creates a user with valid attributes",
+  "UsersController at ./spec/controllers/users_controller_spec.rb",
+  "test_should_redirect_when_unauthenticated",
+  "returns 200 OK for authorized requests"
+].freeze
+
+mixed_samples = [
   "plain test name",
   "is expected to eq #<User:0x000000010 @id=1>",
   "is expected to eq User",
@@ -21,23 +29,39 @@ samples = [
   "renders {template}"
 ].freeze
 
-names = Array.new(iterations) { |index| samples[index % samples.length] }
+plain_names = Array.new(iterations) { |index| plain_samples[index % plain_samples.length] }
+mixed_names = Array.new(iterations) { |index| mixed_samples[index % mixed_samples.length] }
 
 puts "Ruby #{RUBY_VERSION} (#{RUBY_PLATFORM})"
 puts "Test names: #{iterations}"
 puts
 
+allocations = {}
+
 Benchmark.bm(32) do |benchmark|
-  GC.start
+  {
+    "test_name.normalize plain suite" => plain_names,
+    "test_name.normalize mixed suite" => mixed_names
+  }.each do |label, names|
+    GC.start
+    alloc_before = GC.stat(:total_allocated_objects)
 
-  benchmark.report("test_name.normalize mixed suite") do
-    normalized_count = 0
+    benchmark.report(label) do
+      normalized_count = 0
 
-    names.each do |name|
-      Datadog::CI::Utils::TestName.normalize(name)
-      normalized_count += 1
+      names.each do |name|
+        Datadog::CI::Utils::TestName.normalize(name)
+        normalized_count += 1
+      end
+
+      raise "normalized #{normalized_count}, expected #{iterations}" unless normalized_count == iterations
     end
 
-    raise "normalized #{normalized_count}, expected #{iterations}" unless normalized_count == iterations
+    allocations[label] = GC.stat(:total_allocated_objects) - alloc_before
   end
+end
+
+puts
+allocations.each do |label, count|
+  puts format("%-32s allocated objects: %d", label, count)
 end
