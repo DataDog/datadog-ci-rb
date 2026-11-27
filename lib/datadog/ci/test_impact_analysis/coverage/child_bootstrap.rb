@@ -65,3 +65,18 @@ begin
 rescue StandardError, ScriptError
   nil
 end
+
+# ChildProcesses points BUNDLER_SETUP at this file in a child that has it, so that
+# RubyGems, which requires BUNDLER_SETUP while it starts, loads the collector before
+# Bundler.setup. Then this file stands for the one it replaced: it loads that file, and
+# lets its errors through as RubyGems would.
+dd_ci_line_coverage_bundler_setup = ENV["BUNDLER_SETUP"]
+if !defined?(Bundler) && dd_ci_line_coverage_bundler_setup && File.identical?(dd_ci_line_coverage_bundler_setup, __FILE__)
+  # The same name as ChildProcesses::ENV_SAVED_BUNDLER_SETUP.
+  dd_ci_line_coverage_saved_bundler_setup = ENV["DD_TEST_OPTIMIZATION_TIA_LINE_COVERAGE_BUNDLER_SETUP"]
+  if dd_ci_line_coverage_saved_bundler_setup.nil? || dd_ci_line_coverage_saved_bundler_setup.empty?
+    require "bundler/setup"
+  else
+    require dd_ci_line_coverage_saved_bundler_setup
+  end
+end

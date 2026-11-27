@@ -302,6 +302,112 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
     end
   end
 
+  describe "BUNDLER_SETUP in the environment of a child" do
+    def bundler_environment_in_child(caller_environment = {})
+      output = nil
+      in_test { output = unbundled { IO.popen(caller_environment, [ruby, fixture("bundler_environment")], &:read) } }
+      eval(output) # rubocop:disable Security/Eval
+    end
+
+    it "names the bootstrap, keeps the path it replaced, and the child loads that file" do
+      expect(bundler_environment_in_child({"BUNDLER_SETUP" => fixture("bundler_setup")}))
+        .to eq([described_class::BOOTSTRAP, fixture("bundler_setup"), nil, true])
+    end
+
+    it "names the bootstrap when the child inherits it" do
+      output = nil
+      in_test do
+        output = unbundled do
+          ENV["BUNDLER_SETUP"] = fixture("bundler_setup")
+          IO.popen([ruby, fixture("bundler_environment")], &:read)
+        end
+      end
+
+      expect(eval(output)).to eq([described_class::BOOTSTRAP, fixture("bundler_setup"), nil, true]) # rubocop:disable Security/Eval
+    end
+
+    it "stays unset when the caller unsets it, and in a child that does not have it" do
+      expect(bundler_environment_in_child({"BUNDLER_SETUP" => nil})).to eq([nil, nil, nil, false])
+      expect(bundler_environment_in_child).to eq([nil, nil, nil, false])
+    end
+
+    # Bundler.setup names its own file in BUNDLER_SETUP again (Bundler::Runtime#setup sets
+    # the bundle environment), so the child's own children start Bundler first.
+    it "loads Bundler's own setup in a child that has lost the path it replaced" do
+      output = nil
+      in_test do
+        output = IO.popen(
+          {"BUNDLER_SETUP" => described_class::BOOTSTRAP, described_class::ENV_SAVED_BUNDLER_SETUP => nil},
+          [ruby, fixture("bundler_environment")], &:read
+        )
+      end
+
+      expect(eval(output)).to eq([ENV["BUNDLER_SETUP"], nil, "Bundler", false]) # rubocop:disable Security/Eval
+    end
+
+    it "loads Bundler's setup in a child of the test's own bundle, as before" do
+      output = nil
+      in_test { output = IO.popen([ruby, fixture("bundler_environment")], &:read) }
+
+      expect(eval(output)).to eq([ENV["BUNDLER_SETUP"], ENV["BUNDLER_SETUP"], "Bundler", false]) # rubocop:disable Security/Eval
+    end
+  end
+
+  # As in a child of a process that `bundle exec` started, which inherits BUNDLER_SETUP:
+  # puma's tests start puma that way. RubyGems loads Bundler while it starts, before
+  # what RUBYOPT names, and Bundler.setup evaluates the gemspec, which may run
+  # repository code.
+  describe "a child that RubyGems starts with Bundler" do
+    let(:manifest_lines) { [1, 2, 3] }
+
+    it "credits the test with the repository code that Bundler.setup runs" do
+      coverage = in_test do
+        unbundled { system({"BUNDLER_SETUP" => fixture("bundler_setup")}, ruby, fixture("leaf")) }
+      end
+
+      expect(coverage).to include(relative("manifest") => manifest_lines, relative("leaf") => leaf_lines)
+    end
+
+    context "through `bundle exec` with a gemspec that runs repository code" do
+      around do |example|
+        Dir.mktmpdir("datadog-ci-child-processes-bundle-") do |directory|
+          gemfile = File.join(directory, "Gemfile")
+          # Bundler 4 exports BUNDLE_LOCKFILE for `bundle exec`, so without it a nested
+          # `bundle exec` writes this bundle's lock over the test bundle's.
+          @bundle_environment = {"BUNDLE_GEMFILE" => gemfile, "BUNDLE_LOCKFILE" => "#{gemfile}.lock"}
+          File.write(gemfile, "gemspec\n")
+          File.write(File.join(directory, "child_processes_fixture.gemspec"), <<~GEMSPEC)
+            require #{fixture("manifest").inspect}
+            child_processes_manifest
+            Gem::Specification.new do |spec|
+              spec.name = "child_processes_fixture"
+              spec.version = "0.0.1"
+              spec.summary = "Runs repository code when Bundler evaluates it"
+              spec.authors = ["Datadog"]
+            end
+          GEMSPEC
+          example.run
+        end
+      end
+
+      it "credits the test with that code in a program started without Bundler" do
+        pending "`bundle exec` sets BUNDLER_SETUP again before it runs the program"
+        coverage = in_test do
+          unbundled { system(@bundle_environment, "bundle", "exec", ruby, fixture("leaf")) }
+        end
+
+        expect(coverage).to include(relative("manifest") => manifest_lines, relative("leaf") => leaf_lines)
+      end
+
+      it "credits the test with that code in a program started from the test's own bundle" do
+        pending "`bundle exec` sets BUNDLER_SETUP again before it runs the program"
+        coverage = in_test { system(@bundle_environment, "bundle", "exec", ruby, fixture("leaf")) }
+
+        expect(coverage).to include(relative("manifest") => manifest_lines, relative("leaf") => leaf_lines)
+      end
+    end
+  end
+
   # As puma does when it restarts or prunes the bundle.
   describe "a program that a child runs with Bundler's original environment" do
     def run_with_original_environment(*program)

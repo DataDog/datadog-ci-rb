@@ -18,6 +18,13 @@ module Datadog
         # that forked and writes the same record at exit, with the lines it ran outside
         # contexts since the fork.
         #
+        # RubyGems requires BUNDLER_SETUP while it starts, before Ruby loads what RUBYOPT
+        # names. `bundle exec` sets it, and the processes that such a process starts inherit
+        # it, so Bundler.setup evaluates gemspecs, which may run repository code, before the
+        # bootstrap would start the collector. In a child that has BUNDLER_SETUP, it names the
+        # bootstrap, and ENV_SAVED_BUNDLER_SETUP keeps the path it replaced, which the
+        # bootstrap requires after it starts the collector.
+        #
         # Bundler keeps the RUBYOPT of the process that first loaded it in
         # ENV_BUNDLER_ORIGINAL_RUBYOPT, and a process that runs a command with Bundler's
         # original or unbundled environment restores RUBYOPT from it, as puma does when it
@@ -36,6 +43,9 @@ module Datadog
           ENV_BUNDLER_ORIGINAL_RUBYOPT = "BUNDLER_ORIG_RUBYOPT"
           # What Bundler keeps in ENV_BUNDLER_ORIGINAL_RUBYOPT when RUBYOPT was not set.
           BUNDLER_UNSET = "BUNDLER_ENVIRONMENT_PRESERVER_INTENTIONALLY_NIL"
+          ENV_BUNDLER_SETUP = "BUNDLER_SETUP"
+          # The same name in the bootstrap, which cannot load this file.
+          ENV_SAVED_BUNDLER_SETUP = "DD_TEST_OPTIMIZATION_TIA_LINE_COVERAGE_BUNDLER_SETUP"
           BOOTSTRAP = File.expand_path("child_bootstrap.rb", File.dirname(__FILE__))
           CONFIG_FILE = "config"
           RECORD_SUFFIX = ".lines"
@@ -204,6 +214,8 @@ module Datadog
             }
             bundler_rubyopt = bundler_original_rubyopt(child_value(caller_environment, ENV_BUNDLER_ORIGINAL_RUBYOPT))
             entries[ENV_BUNDLER_ORIGINAL_RUBYOPT] = bundler_rubyopt if bundler_rubyopt
+            bundler_setup = bundler_setup_entries(caller_environment)
+            entries.merge!(bundler_setup) if bundler_setup
             entries
           end
 
@@ -270,6 +282,15 @@ module Datadog
           # which may load repository files.
           def with_bootstrap(rubyopt)
             [@require_option, rubyopt].compact.reject(&:empty?).join(" ")
+          end
+
+          # BUNDLER_SETUP naming the bootstrap, and the path it replaced, or nil when the
+          # child does not have it or it already names the bootstrap.
+          def bundler_setup_entries(caller_environment)
+            bundler_setup = child_value(caller_environment, ENV_BUNDLER_SETUP)
+            return nil if bundler_setup.nil? || bundler_setup.empty? || bundler_setup == BOOTSTRAP
+
+            {ENV_BUNDLER_SETUP => BOOTSTRAP, ENV_SAVED_BUNDLER_SETUP => bundler_setup}
           end
 
           # The saved RUBYOPT with the bootstrap, or nil when Bundler saved none. Bundler

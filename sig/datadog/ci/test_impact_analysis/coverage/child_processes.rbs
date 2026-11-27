@@ -11,6 +11,10 @@ module Datadog
 
           BUNDLER_UNSET: String
 
+          ENV_BUNDLER_SETUP: String
+
+          ENV_SAVED_BUNDLER_SETUP: String
+
           BOOTSTRAP: String
 
           CONFIG_FILE: String
@@ -78,6 +82,8 @@ module Datadog
           def child_value: (Hash[untyped, untyped]? caller_environment, String name) -> String?
 
           def with_bootstrap: (String? rubyopt) -> String
+
+          def bundler_setup_entries: (Hash[untyped, untyped]? caller_environment) -> Hash[String, String]?
 
           def bundler_original_rubyopt: (String? saved) -> String?
 
