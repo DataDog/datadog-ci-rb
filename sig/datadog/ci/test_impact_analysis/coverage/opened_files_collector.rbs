@@ -5,6 +5,9 @@ module Datadog
         class OpenedFilesCollector
           type collections = Hash[Fiber, Hash[String, bool]]
 
+          EMPTY_COLLECTIONS: collections
+          EMPTY_RESULT: Hash[String, bool]
+
           @resolver: FileDependencies
           @collections: collections
           @mutex: Thread::Mutex

@@ -70,6 +70,8 @@ struct dd_cov_data {
   // A collision only repeats path processing; it can never suppress coverage.
   VALUE last_filename;
   VALUE seen_filenames[SEEN_FILENAME_CACHE_SIZE];
+  uint16_t seen_filename_slots[SEEN_FILENAME_CACHE_SIZE];
+  uint16_t seen_filename_count;
 
   // Line tracepoint can work in two modes: single threaded and multi threaded
   //
@@ -106,9 +108,10 @@ static void dd_cov_mark(void *ptr) {
   if (dd_cov_data->last_filename != Qnil) {
     rb_gc_mark(dd_cov_data->last_filename);
   }
-  for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
-    if (dd_cov_data->seen_filenames[i] != Qnil) {
-      rb_gc_mark(dd_cov_data->seen_filenames[i]);
+  for (uint16_t i = 0; i < dd_cov_data->seen_filename_count; i++) {
+    VALUE seen = dd_cov_data->seen_filenames[dd_cov_data->seen_filename_slots[i]];
+    if (seen != Qnil) {
+      rb_gc_mark(seen);
     }
   }
 
@@ -161,6 +164,7 @@ static VALUE dd_cov_allocate(VALUE klass) {
   for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
     dd_cov_data->seen_filenames[i] = Qnil;
   }
+  dd_cov_data->seen_filename_count = 0;
   dd_cov_data->threading_mode = multi;
 
   dd_cov_data->allocation_tracing_enabled = false;
@@ -236,6 +240,10 @@ static void on_line_event(rb_event_flag_t event, VALUE data, VALUE self, ID id,
   }
 
   dd_cov_data->last_filename = filename;
+  if (dd_cov_data->seen_filenames[cache_index] == Qnil) {
+    dd_cov_data->seen_filename_slots[dd_cov_data->seen_filename_count++] =
+        (uint16_t)cache_index;
+  }
   dd_cov_data->seen_filenames[cache_index] = filename;
   record_impacted_file(dd_cov_data, filename);
 }
@@ -469,7 +477,8 @@ static VALUE dd_cov_stop(VALUE self) {
   // stop line tracepoint
   if (dd_cov_data->threading_mode == single) {
     VALUE thval = rb_thread_current();
-    if (!rb_equal(thval, dd_cov_data->th_covered)) {
+    if (thval != dd_cov_data->th_covered &&
+        !rb_equal(thval, dd_cov_data->th_covered)) {
       rb_raise(rb_eRuntimeError, "Coverage was not started by this thread");
     }
 
@@ -486,21 +495,24 @@ static VALUE dd_cov_stop(VALUE self) {
     dd_cov_data->allocation_hook_active = false;
   }
 
-  // process classes covered by allocation tracing
-  st_foreach(dd_cov_data->klasses_table, each_instantiated_klass,
-             (st_data_t)dd_cov_data);
-  dd_cov_data->last_allocated_klass = Qnil;
-  memset(dd_cov_data->seen_allocated_klasses, 0,
-         sizeof(dd_cov_data->seen_allocated_klasses));
-  st_clear(dd_cov_data->klasses_table);
+  // process classes covered by allocation tracing only if any were recorded
+  if (dd_cov_data->last_allocated_klass != Qnil) {
+    st_foreach(dd_cov_data->klasses_table, each_instantiated_klass,
+               (st_data_t)dd_cov_data);
+    dd_cov_data->last_allocated_klass = Qnil;
+    memset(dd_cov_data->seen_allocated_klasses, 0,
+           sizeof(dd_cov_data->seen_allocated_klasses));
+    st_clear(dd_cov_data->klasses_table);
+  }
 
   VALUE res = dd_cov_data->impacted_files;
 
   dd_cov_data->impacted_files = rb_hash_new();
   dd_cov_data->last_filename = Qnil;
-  for (size_t i = 0; i < SEEN_FILENAME_CACHE_SIZE; i++) {
-    dd_cov_data->seen_filenames[i] = Qnil;
+  for (uint16_t i = 0; i < dd_cov_data->seen_filename_count; i++) {
+    dd_cov_data->seen_filenames[dd_cov_data->seen_filename_slots[i]] = Qnil;
   }
+  dd_cov_data->seen_filename_count = 0;
 
   return res;
 }

@@ -14,8 +14,16 @@
 struct packed_files_context {
   VALUE root;
   VALUE packed;
+  const char *root_ptr;
+  char *buf_ptr;
+  long buf_len;
+  long buf_cap;
   long root_len;
+  int utf8_enc;
+  int usascii_enc;
+  int bin_enc;
   uint32_t files_count;
+  size_t header_reserve;
   bool fast_path_supported;
 };
 
@@ -30,53 +38,66 @@ static bool string_bytes_are_ascii(VALUE string) {
   return true;
 }
 
-static void packed_files_append_u16(VALUE packed, uint16_t value) {
-  unsigned char bytes[2] = {(unsigned char)(value >> 8),
-                            (unsigned char)value};
-  rb_str_cat(packed, (const char *)bytes, 2);
+static inline void
+packed_files_ensure_capacity(struct packed_files_context *context,
+                             long needed) {
+  if (context->buf_len + needed <= context->buf_cap) {
+    return;
+  }
+
+  long min_cap = context->buf_len + needed;
+  long new_cap = context->buf_cap * 2;
+  if (new_cap < min_cap) {
+    new_cap = min_cap;
+  }
+
+  rb_str_set_len(context->packed, context->buf_len);
+  rb_str_modify_expand(context->packed, new_cap - context->buf_len);
+  context->buf_ptr = RSTRING_PTR(context->packed);
+  context->root_ptr = RSTRING_PTR(context->root);
+  context->buf_cap = (long)rb_str_capacity(context->packed);
 }
 
-static void packed_files_append_u32(VALUE packed, uint32_t value) {
-  unsigned char bytes[4] = {
-      (unsigned char)(value >> 24), (unsigned char)(value >> 16),
-      (unsigned char)(value >> 8), (unsigned char)value};
-  rb_str_cat(packed, (const char *)bytes, 4);
-}
-
-static void packed_files_append_string_header(VALUE packed, uint32_t len,
-                                              bool binary) {
-  unsigned char byte;
+static inline size_t packed_files_encode_string_header(unsigned char *out,
+                                                       uint32_t len,
+                                                       bool binary) {
   if (binary) {
     if (len < 256) {
-      byte = 0xc4;
-      rb_str_cat(packed, (const char *)&byte, 1);
-      byte = (unsigned char)len;
-      rb_str_cat(packed, (const char *)&byte, 1);
+      out[0] = 0xc4;
+      out[1] = (unsigned char)len;
+      return 2;
     } else if (len < 65536) {
-      byte = 0xc5;
-      rb_str_cat(packed, (const char *)&byte, 1);
-      packed_files_append_u16(packed, (uint16_t)len);
+      out[0] = 0xc5;
+      out[1] = (unsigned char)(len >> 8);
+      out[2] = (unsigned char)len;
+      return 3;
     } else {
-      byte = 0xc6;
-      rb_str_cat(packed, (const char *)&byte, 1);
-      packed_files_append_u32(packed, len);
+      out[0] = 0xc6;
+      out[1] = (unsigned char)(len >> 24);
+      out[2] = (unsigned char)(len >> 16);
+      out[3] = (unsigned char)(len >> 8);
+      out[4] = (unsigned char)len;
+      return 5;
     }
   } else if (len < 32) {
-    byte = (unsigned char)(0xa0U | len);
-    rb_str_cat(packed, (const char *)&byte, 1);
+    out[0] = (unsigned char)(0xa0U | len);
+    return 1;
   } else if (len < 256) {
-    byte = 0xd9;
-    rb_str_cat(packed, (const char *)&byte, 1);
-    byte = (unsigned char)len;
-    rb_str_cat(packed, (const char *)&byte, 1);
+    out[0] = 0xd9;
+    out[1] = (unsigned char)len;
+    return 2;
   } else if (len < 65536) {
-    byte = 0xda;
-    rb_str_cat(packed, (const char *)&byte, 1);
-    packed_files_append_u16(packed, (uint16_t)len);
+    out[0] = 0xda;
+    out[1] = (unsigned char)(len >> 8);
+    out[2] = (unsigned char)len;
+    return 3;
   } else {
-    byte = 0xdb;
-    rb_str_cat(packed, (const char *)&byte, 1);
-    packed_files_append_u32(packed, len);
+    out[0] = 0xdb;
+    out[1] = (unsigned char)(len >> 24);
+    out[2] = (unsigned char)(len >> 16);
+    out[3] = (unsigned char)(len >> 8);
+    out[4] = (unsigned char)len;
+    return 5;
   }
 }
 
@@ -85,27 +106,27 @@ static bool packed_files_append_entry(struct packed_files_context *context,
   if (file == Qnil && !additional_file) {
     return true;
   }
-  if (!RB_TYPE_P(file, T_STRING) || rb_obj_class(file) != rb_cString) {
+  if (!RB_TYPE_P(file, T_STRING) || RBASIC_CLASS(file) != rb_cString) {
     context->fast_path_supported = false;
     return false;
   }
 
-  long relative_len = RSTRING_LEN(file);
-  long relative_offset = 0;
   const char *file_ptr = RSTRING_PTR(file);
   long file_len = RSTRING_LEN(file);
-  if (memchr(file_ptr, '\0', (size_t)file_len) != NULL) {
-    context->fast_path_supported = false;
-    return false;
-  }
+
+  long relative_len = file_len;
+  long relative_offset = 0;
   bool absolute = file_len > 0 && file_ptr[0] == '/';
   if (absolute) {
     if (file_len <= context->root_len ||
-        memcmp(file_ptr, RSTRING_PTR(context->root),
-               (size_t)context->root_len) != 0 ||
+        memcmp(file_ptr, context->root_ptr, (size_t)context->root_len) != 0 ||
         file_ptr[context->root_len] != '/') {
       // Absolute additional files outside the immutable repository root are
       // ignored. Primary files are already filtered by the same root.
+      if (memchr(file_ptr, '\0', (size_t)file_len) != NULL) {
+        context->fast_path_supported = false;
+        return false;
+      }
       return true;
     }
 
@@ -126,10 +147,15 @@ static bool packed_files_append_entry(struct packed_files_context *context,
     return true;
   }
 
+  if (memchr(file_ptr + relative_offset, '\0', (size_t)relative_len) != NULL) {
+    context->fast_path_supported = false;
+    return false;
+  }
+
   int encoding_index = rb_enc_get_index(file);
-  bool binary = encoding_index == rb_ascii8bit_encindex();
-  if (!binary && encoding_index != rb_utf8_encindex() &&
-      encoding_index != rb_usascii_encindex() &&
+  bool binary = encoding_index == context->bin_enc;
+  if (!binary && encoding_index != context->utf8_enc &&
+      encoding_index != context->usascii_enc &&
       (!rb_enc_str_asciicompat_p(file) || !string_bytes_are_ascii(file))) {
     context->fast_path_supported = false;
     return false;
@@ -142,12 +168,23 @@ static bool packed_files_append_entry(struct packed_files_context *context,
 
   static const unsigned char filename_entry_prefix[] = {
       0x81, 0xa8, 'f', 'i', 'l', 'e', 'n', 'a', 'm', 'e'};
-  rb_str_cat(context->packed, (const char *)filename_entry_prefix,
-             sizeof(filename_entry_prefix));
-  packed_files_append_string_header(context->packed, (uint32_t)relative_len,
-                                    binary);
+  unsigned char str_header[5];
+  size_t str_header_len = packed_files_encode_string_header(
+      str_header, (uint32_t)relative_len, binary);
+
+  long entry_len = (long)(sizeof(filename_entry_prefix) + str_header_len) +
+                   relative_len;
+  packed_files_ensure_capacity(context, entry_len);
+
+  // Re-fetch RSTRING_PTR(file) after potential GC during buffer expansion.
   const char *relative_ptr = RSTRING_PTR(file) + relative_offset;
-  rb_str_cat(context->packed, relative_ptr, relative_len);
+  char *dst = context->buf_ptr + context->buf_len;
+  memcpy(dst, filename_entry_prefix, sizeof(filename_entry_prefix));
+  memcpy(dst + sizeof(filename_entry_prefix), str_header, str_header_len);
+  memcpy(dst + sizeof(filename_entry_prefix) + str_header_len, relative_ptr,
+         (size_t)relative_len);
+
+  context->buf_len += entry_len;
   context->files_count++;
   return true;
 }
@@ -181,14 +218,14 @@ packed_files_write_array_header(struct packed_files_context *context) {
     header_len = 5;
   }
 
-  long body_len = RSTRING_LEN(context->packed) - 5;
-  char *packed_ptr = RSTRING_PTR(context->packed);
-  if (header_len != 5) {
-    memmove(packed_ptr + header_len, packed_ptr + 5, (size_t)body_len);
-    rb_str_resize(context->packed, body_len + (long)header_len);
-    packed_ptr = RSTRING_PTR(context->packed);
+  long body_len = context->buf_len - (long)context->header_reserve;
+  char *packed_ptr = context->buf_ptr;
+  if (header_len != context->header_reserve) {
+    memmove(packed_ptr + header_len, packed_ptr + context->header_reserve,
+            (size_t)body_len);
   }
   memcpy(packed_ptr, header, header_len);
+  rb_str_set_len(context->packed, body_len + (long)header_len);
 }
 
 static VALUE file_serialization_pack_files(VALUE module, VALUE primary_files,
@@ -196,20 +233,39 @@ static VALUE file_serialization_pack_files(VALUE module, VALUE primary_files,
                                            VALUE root) {
   Check_Type(primary_files, T_HASH);
   Check_Type(additional_files, T_ARRAY);
-  if (!RB_TYPE_P(root, T_STRING) || rb_obj_class(root) != rb_cString ||
-      RSTRING_LEN(root) == 0 || !string_bytes_are_ascii(root)) {
+  if (!RB_TYPE_P(root, T_STRING) || RBASIC_CLASS(root) != rb_cString ||
+      RSTRING_LEN(root) == 0 || !string_bytes_are_ascii(root) ||
+      memchr(RSTRING_PTR(root), '\0', (size_t)RSTRING_LEN(root)) != NULL) {
     return Qnil;
   }
 
   long additional_files_len = RARRAY_LEN(additional_files);
+  size_t max_files =
+      (size_t)RHASH_SIZE(primary_files) + (size_t)additional_files_len;
+  size_t header_reserve =
+      max_files < 16 ? 1 : (max_files < 65536 ? 3 : 5);
+  size_t initial_cap = max_files * 64 + 16;
+  if (initial_cap < 256) {
+    initial_cap = 256;
+  } else if (initial_cap > 4 * 1024 * 1024) {
+    initial_cap = 4 * 1024 * 1024;
+  }
 
+  VALUE packed = rb_str_buf_new((long)initial_cap);
   struct packed_files_context context = {
       .root = root,
-      .packed = rb_str_buf_new(4096),
+      .packed = packed,
+      .root_ptr = RSTRING_PTR(root),
+      .buf_ptr = RSTRING_PTR(packed),
+      .buf_len = (long)header_reserve,
+      .buf_cap = (long)rb_str_capacity(packed),
       .root_len = RSTRING_LEN(root),
+      .utf8_enc = rb_utf8_encindex(),
+      .usascii_enc = rb_usascii_encindex(),
+      .bin_enc = rb_ascii8bit_encindex(),
       .files_count = 0,
+      .header_reserve = header_reserve,
       .fast_path_supported = true};
-  rb_str_resize(context.packed, 5);
 
   rb_hash_foreach(primary_files, pack_primary_file_i, (VALUE)&context);
   if (!context.fast_path_supported) {
