@@ -7,9 +7,13 @@ module Datadog
         # Resolves dependency names and applies the same boundaries to aliases
         # and their targets. It owns no per-test state or instrumentation.
         class FileDependencies
+          EMPTY_PATHS = [].freeze
+          private_constant :EMPTY_PATHS
+
           def initialize(root:, ignored_path:)
             @root = File.join(root, "")
             @ignored_path = File.join(ignored_path, "") if ignored_path
+            @native_paths_available = respond_to?(:native_paths, true)
           end
 
           def paths_for(file)
@@ -17,9 +21,9 @@ module Datadog
             when String then file
             when File then native_file_path(file)
             end
-            return [] unless path
+            return EMPTY_PATHS unless path
 
-            if respond_to?(:native_paths, true)
+            if @native_paths_available
               paths = native_paths(path, @root, @ignored_path)
               return paths if paths
             end

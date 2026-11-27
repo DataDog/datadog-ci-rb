@@ -3,8 +3,11 @@ module Datadog
     module TestImpactAnalysis
       module Coverage
         class FileDependencies
+          EMPTY_PATHS: Array[String]
+
           @root: String
           @ignored_path: String?
+          @native_paths_available: bool
 
           def initialize: (root: String, ignored_path: String?) -> void
           def paths_for: (String | File file) -> Array[String]

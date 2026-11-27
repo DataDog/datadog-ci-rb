@@ -7,26 +7,45 @@ module Datadog
     module TestImpactAnalysis
       module Coverage
         class OpenedFilesCollector
+          EMPTY_COLLECTIONS = {}.freeze
+          EMPTY_RESULT = {}.freeze
+          private_constant :EMPTY_COLLECTIONS, :EMPTY_RESULT
+
           def initialize(root:, ignored_path:)
             @resolver = FileDependencies.new(root: root, ignored_path: ignored_path)
-            @collections = {}
+            @collections = EMPTY_COLLECTIONS
             @mutex = Mutex.new
           end
 
           def start
+            fiber = Fiber.current
             @mutex.synchronize do
               # Native collectors belong to the current fiber through Thread#[].
               # Replace the registry so readers can retain a snapshot without locking.
-              @collections = @collections.merge(Fiber.current => @collections[Fiber.current] || {})
+              if @collections.empty?
+                @collections = {fiber => {}}
+              else
+                next_collections = @collections.dup
+                next_collections[fiber] ||= {}
+                @collections = next_collections
+              end
             end
           end
 
           def stop
+            fiber = Fiber.current
             @mutex.synchronize do
-              collections = @collections.dup
-              collection = collections.delete(Fiber.current)
-              @collections = collections
-              collection || {}
+              collection = @collections[fiber]
+              return EMPTY_RESULT unless collection
+
+              if @collections.size == 1
+                @collections = EMPTY_COLLECTIONS
+              else
+                collections = @collections.dup
+                collections.delete(fiber)
+                @collections = collections
+              end
+              collection
             end
           end
 
