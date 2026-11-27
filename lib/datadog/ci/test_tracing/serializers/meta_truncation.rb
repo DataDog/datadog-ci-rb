@@ -8,7 +8,7 @@ module Datadog
           MAX_META_STRING_LENGTH = 5000
 
           def self.truncate_value(value)
-            return value unless value.is_a?(String) && value.length > MAX_META_STRING_LENGTH
+            return value unless value.is_a?(String) && value.bytesize > MAX_META_STRING_LENGTH && value.length > MAX_META_STRING_LENGTH
 
             value[0, MAX_META_STRING_LENGTH]
           end

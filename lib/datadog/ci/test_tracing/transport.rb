@@ -47,16 +47,18 @@ module Datadog
         end
 
         def encode_events(traces)
+          options = {itr_correlation_id: test_impact_analysis&.correlation_id}
           traces.flat_map do |trace|
-            trace.spans.filter_map { |span| encode_span(trace, span) }
+            trace.spans.filter_map { |span| encode_span(trace, span, options) }
           end
         end
 
-        def encode_span(trace, span)
+        def encode_span(trace, span, options = nil)
+          options ||= {itr_correlation_id: test_impact_analysis&.correlation_id}
           serializer = Serializers::Factories::TestSuiteLevel.serializer(
             trace,
             span,
-            options: {itr_correlation_id: test_impact_analysis&.correlation_id}
+            options: options
           )
 
           if serializer.valid?
