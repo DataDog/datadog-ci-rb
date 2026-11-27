@@ -7,8 +7,8 @@ module Datadog
   module CI
     module Git
       class Diff
-        FILE_CHANGE_REGEX = /^diff --git a\/(?<file>.+?) b\//.freeze
-        LINES_CHANGE_REGEX = /^@@ -\d+(?:,\d+)? \+(?<start>\d+)(?:,(?<count>\d+))? @@/.freeze
+        DIFF_SCAN_REGEX = /^(?:diff --git a\/(.+?) b\/|@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@)/.freeze
+        private_constant :DIFF_SCAN_REGEX
 
         def initialize(changed_files: {})
           @changed_files = changed_files # Hash of file_path => ChangedLines
@@ -46,37 +46,25 @@ module Datadog
           return new if output.nil? || output.empty?
 
           changed_files = {}
+          # @type var changed_files: Hash[String, ChangedLines]
           current_file = nil
+          current_lines = nil
+          # @type var current_lines: ChangedLines?
 
-          output.each_line do |line|
-            # Match lines like: diff --git a/foo/bar.rb b/foo/bar.rb
-            # This captures git changes on file level
-            match = FILE_CHANGE_REGEX.match(line)
-            if match && match[:file]
-              # this path here is already relative from the git root
-              changed_file = match[:file]
-
-              unless changed_file.nil? || changed_file.empty?
+          output.scan(DIFF_SCAN_REGEX) do |changed_file, start_str, count_str|
+            if changed_file.is_a?(String)
+              unless changed_file.empty?
                 current_file = changed_file
-                changed_files[current_file] ||= ChangedLines.new
+                current_lines = (changed_files[changed_file] ||= ChangedLines.new)
               end
 
-              Datadog.logger.debug { "matched changed_file: #{changed_file} from git diff line: #{line}" }
-
-              next
-            end
-
-            # Match lines like: @@ -1,2 +3,4 @@
-            match = LINES_CHANGE_REGEX.match(line)
-            if match && match[:start] && current_file
-              start_line = match[:start].to_i
-
-              line_count = 1 # Default to 1 line if count not specified
-              line_count = match[:count].to_i if match[:count]
-
+              Datadog.logger.debug { "matched changed_file: #{changed_file}" }
+            elsif start_str.is_a?(String) && current_lines
+              start_line = start_str.to_i
+              line_count = count_str ? count_str.to_i : 1
               end_line = start_line + line_count - 1
 
-              changed_files[current_file].add_interval(start_line, end_line)
+              current_lines.add_interval(start_line, end_line)
 
               Datadog.logger.debug { "Added interval [#{start_line}, #{end_line}] for file: #{current_file}" }
             end
