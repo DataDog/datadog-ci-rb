@@ -4,9 +4,13 @@ module Datadog
   module CI
     module SourceCode
       class StaticDependenciesExtractor
+        CACHE_MISS: Object
+
         # Internal class for scanning bytecode for constant references.
         # @api private
         class BytecodeScanner
+          ISEQ_FORMAT_HEADER: String
+
           type instruction = Array[Symbol | untyped]
           type iseq_body = Array[untyped]
 
@@ -16,13 +20,9 @@ module Datadog
 
           private
 
-          def scan_value: (untyped value, Array[String] constants) -> void
+          def scan_child_array: (Array[untyped] elem, Array[Array[untyped]] stack, Array[String] constants) -> void
 
-          def scan_array: (Array[untyped] arr, Array[String] constants) -> void
-
-          def scan_hash: (Hash[untyped, untyped] hash, Array[String] constants) -> void
-
-          def handle_instruction: (Array[untyped] arr, Array[String] constants) -> void
+          def push_hash_containers: (Hash[untyped, untyped] hash, Array[Array[untyped]] stack) -> void
 
           def handle_getconstant: (instruction instruction, Array[String] constants) -> void
 
@@ -38,6 +38,7 @@ module Datadog
         attr_reader ignored_path: String?
 
         @bytecode_scanner: BytecodeScanner
+        @resolved_constants_cache: Hash[String, String?]
 
         def initialize: (String root_path, String? ignored_path) -> void
 

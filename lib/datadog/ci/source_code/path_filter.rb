@@ -11,6 +11,8 @@ module Datadog
       #
       # This module mirrors the C implementation in datadog_common.c (dd_ci_is_path_included).
       module PathFilter
+        SEPARATOR_BYTE = File::SEPARATOR.getbyte(0)
+
         # Check if a file path should be included in analysis.
         #
         # @param path [String] The file path to check
@@ -31,8 +33,8 @@ module Datadog
         def self.directory_prefix?(path, prefix)
           return false unless path.start_with?(prefix)
 
-          path.length == prefix.length || prefix.end_with?(File::SEPARATOR) ||
-            path[prefix.length] == File::SEPARATOR
+          path.bytesize == prefix.bytesize || prefix.end_with?(File::SEPARATOR) ||
+            path.getbyte(prefix.bytesize) == SEPARATOR_BYTE
         end
         private_class_method :directory_prefix?
       end

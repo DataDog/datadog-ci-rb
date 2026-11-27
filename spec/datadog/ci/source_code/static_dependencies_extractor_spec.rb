@@ -188,6 +188,42 @@ RSpec.describe Datadog::CI::SourceCode::StaticDependenciesExtractor, skip: !Data
 
       expect(extractor.dependencies_map).to eq({})
     end
+
+    it "re-resolves constants after reset" do
+      expect(Datadog::CI::SourceCode::ConstantResolver)
+        .to receive(:resolve_path)
+        .with("Constants::BaseConstant")
+        .once
+        .and_call_original
+
+      # Already cached from `before` block, so this call does not re-resolve
+      extractor.extract(iseq)
+      extractor.reset
+      # After reset, the constant must be resolved again
+      extractor.extract(iseq)
+    end
+  end
+
+  describe "constant resolution caching" do
+    let(:iseq_first) { RubyVM::InstructionSequence.of(FullyQualifiedConsumer.instance_method(:use_base)) }
+    let(:iseq_second) { RubyVM::InstructionSequence.of(MultiDepsConsumer.instance_method(:use_all)) }
+
+    it "resolves each constant name only once across multiple ISeqs" do
+      expect(Datadog::CI::SourceCode::ConstantResolver)
+        .to receive(:resolve_path)
+        .with("Constants::BaseConstant")
+        .once
+        .and_call_original
+      allow(Datadog::CI::SourceCode::ConstantResolver).to receive(:resolve_path).and_call_original
+
+      extractor.extract(iseq_first)
+      extractor.extract(iseq_second)
+
+      expect(extractor.dependencies_map[absolute_fixture_path("consumers/fully_qualified_consumer.rb")])
+        .to have_key(absolute_fixture_path("constants/base_constant.rb"))
+      expect(extractor.dependencies_map[absolute_fixture_path("consumers/multi_deps_consumer.rb")])
+        .to have_key(absolute_fixture_path("constants/base_constant.rb"))
+    end
   end
 
   describe "integration with ConstantResolver" do
