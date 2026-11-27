@@ -302,6 +302,136 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
     end
   end
 
+  describe "RUBYLIB in the environment of a child" do
+    let(:hook) { described_class::RUBYGEMS_HOOK }
+    let(:rubylib) { ["/rubylib/a", "/rubylib/b"].join(File::PATH_SEPARATOR) }
+
+    def load_path_in_child(caller_environment)
+      output = nil
+      in_test { output = unbundled { IO.popen(caller_environment, [ruby, fixture("load_path")], &:read) } }
+      eval(output) # rubocop:disable Security/Eval
+    end
+
+    it "gets the hook directory first, and the child's load path stays the one it has without it" do
+      child_rubylib, load_path = load_path_in_child({"RUBYLIB" => rubylib, "RUBYOPT" => "-W0"})
+      uncovered_output = unbundled { IO.popen({"RUBYLIB" => rubylib, "RUBYOPT" => nil}, [ruby, fixture("load_path")], &:read) }
+      _, uncovered_load_path = eval(uncovered_output) # rubocop:disable Security/Eval
+
+      expect(child_rubylib).to eq([hook, rubylib].join(File::PATH_SEPARATOR))
+      expect(load_path).to eq(uncovered_load_path)
+      expect(load_path.first(2)).to eq(["/rubylib/a", "/rubylib/b"])
+    end
+
+    it "gets the hook directory first when the child inherits it" do
+      output = nil
+      in_test do
+        output = unbundled do
+          ENV["RUBYLIB"] = rubylib
+          IO.popen([ruby, fixture("load_path")], &:read)
+        end
+      end
+      child_rubylib, = eval(output) # rubocop:disable Security/Eval
+
+      expect(child_rubylib).to eq([hook, rubylib].join(File::PATH_SEPARATOR))
+    end
+
+    it "gets the hook directory alone when it is empty" do
+      child_rubylib, = load_path_in_child({"RUBYLIB" => ""})
+
+      expect(child_rubylib).to eq(hook)
+    end
+
+    it "stays unset when the caller unsets it" do
+      child_rubylib, = load_path_in_child({"RUBYLIB" => nil})
+
+      expect(child_rubylib).to be_nil
+    end
+
+    it "lets a defaults file of the user's own, which the hook directory hides, load as before" do
+      user_rubylib = File.join(__dir__, "fixtures", "child_processes", "user_defaults")
+      output = nil
+      coverage = in_test do
+        output = unbundled { IO.popen({"RUBYLIB" => user_rubylib}, [ruby, fixture("leaf")], &:read) }
+      end
+      uncovered_output = unbundled { IO.popen({"RUBYLIB" => user_rubylib, "RUBYOPT" => nil}, [ruby, fixture("leaf")], &:read) }
+
+      expect(output).to eq("user defaults loaded;")
+      expect(uncovered_output).to eq(output)
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+  end
+
+  # As in a child of a process that `bundle exec` started, which inherits BUNDLER_SETUP:
+  # puma's tests start puma that way. RubyGems loads Bundler while it starts, before
+  # what RUBYOPT names, and Bundler.setup evaluates the gemspec, which may run
+  # repository code.
+  describe "a child that RubyGems starts with Bundler" do
+    let(:manifest_lines) { [1, 2, 3] }
+
+    it "credits the test with the repository code that Bundler.setup runs" do
+      coverage = in_test do
+        unbundled { system({"BUNDLER_SETUP" => fixture("bundler_setup")}, ruby, fixture("leaf")) }
+      end
+
+      expect(coverage).to include(relative("manifest") => manifest_lines, relative("leaf") => leaf_lines)
+    end
+
+    it "loses the lines of methods that code runs when the caller unsets RUBYLIB" do
+      coverage = in_test do
+        unbundled { system({"BUNDLER_SETUP" => fixture("bundler_setup"), "RUBYLIB" => nil}, ruby, fixture("leaf")) }
+      end
+
+      expect(coverage.fetch(relative("manifest"), [])).not_to include(2)
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    context "through `bundle exec` with a gemspec that runs repository code" do
+      around do |example|
+        Dir.mktmpdir("datadog-ci-child-processes-bundle-") do |directory|
+          gemfile = File.join(directory, "Gemfile")
+          # Bundler 4 exports BUNDLE_LOCKFILE for `bundle exec`, so without it a nested
+          # `bundle exec` writes this bundle's lock over the test bundle's.
+          @bundle_environment = {"BUNDLE_GEMFILE" => gemfile, "BUNDLE_LOCKFILE" => "#{gemfile}.lock"}
+          File.write(gemfile, "gemspec\n")
+          File.write(File.join(directory, "child_processes_fixture.gemspec"), <<~GEMSPEC)
+            require #{fixture("manifest").inspect}
+            child_processes_manifest
+            Gem::Specification.new do |spec|
+              spec.name = "child_processes_fixture"
+              spec.version = "0.0.1"
+              spec.summary = "Runs repository code when Bundler evaluates it"
+              spec.authors = ["Datadog"]
+            end
+          GEMSPEC
+          example.run
+        end
+      end
+
+      it "credits the test with that code in a program started without Bundler" do
+        coverage = in_test do
+          unbundled { system(@bundle_environment, "bundle", "exec", ruby, fixture("leaf")) }
+        end
+
+        expect(coverage).to include(relative("manifest") => manifest_lines, relative("leaf") => leaf_lines)
+      end
+
+      it "credits the test with that code in a program started from the test's own bundle" do
+        coverage = in_test { system(@bundle_environment, "bundle", "exec", ruby, fixture("leaf")) }
+
+        expect(coverage).to include(relative("manifest") => manifest_lines, relative("leaf") => leaf_lines)
+      end
+
+      it "loses the lines of methods that code runs when the caller unsets RUBYLIB" do
+        coverage = in_test do
+          unbundled { system(@bundle_environment.merge("RUBYLIB" => nil), "bundle", "exec", ruby, fixture("leaf")) }
+        end
+
+        expect(coverage.fetch(relative("manifest"), [])).not_to include(2)
+        expect(coverage).to include(relative("leaf") => leaf_lines)
+      end
+    end
+  end
+
   # As puma does when it restarts or prunes the bundle.
   describe "a program that a child runs with Bundler's original environment" do
     def run_with_original_environment(*program)
@@ -489,7 +619,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       expect(coverage).to have_key(relative("loads_datadog_ci"))
     end
 
-    it "loads nothing but the native extension, by its path, before the libraries that RUBYOPT names" do
+    it "loads nothing but the RubyGems hook and the native extension, by their paths, before the libraries that RUBYOPT names" do
       environment = {"RUBYOPT" => "-r#{fixture("loaded_features")}"}
       covered = nil
       in_test { covered = unbundled { IO.popen(environment, [ruby, "-e", "0"], &:read) } }
@@ -497,7 +627,11 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
       uncovered = unbundled { IO.popen(environment, [ruby, "-e", "0"], &:read) }
 
       loaded = eval(covered) - eval(uncovered) # rubocop:disable Security/Eval
-      expect(loaded).to contain_exactly(described_class::BOOTSTRAP, described_class.loaded_extension_path)
+      expect(loaded).to contain_exactly(
+        File.join(described_class::RUBYGEMS_HOOK, "rubygems", "defaults", "ruby.rb"),
+        described_class::BOOTSTRAP,
+        described_class.loaded_extension_path
+      )
     end
 
     it "leaves the source code features unavailable, not broken, in a child that loads them by code" do
