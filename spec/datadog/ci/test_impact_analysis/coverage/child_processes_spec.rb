@@ -263,6 +263,225 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
     end
   end
 
+  # exit! ends the process with _exit, which skips the exit handlers and the VM's exit hooks,
+  # so the collector's exit! writes the child's record first.
+  describe "a child that ends with exit!" do
+    def wait_for(pid)
+      _pid, status = Process.wait2(pid)
+      status
+    end
+
+    it "credits the test with the lines that a forked child runs before it calls exit!" do
+      coverage = in_test do
+        status = wait_for(fork do
+          load(fixture("leaf"))
+          exit!(3)
+        end)
+        expect(status.exitstatus).to eq(3)
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines that a forked child runs in a trap that calls Process.exit!" do
+      coverage = in_test do
+        reader, writer = IO.pipe
+        pid = fork do
+          reader.close
+          Signal.trap("TERM") do
+            load(fixture("leaf"))
+            Process.exit!(0)
+          end
+          writer.puts("ready")
+          writer.close
+          sleep
+        end
+        writer.close
+        reader.gets
+        Process.kill("TERM", pid)
+        expect(wait_for(pid).exitstatus).to eq(0)
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines that a forked child runs on a thread that calls Kernel.exit!" do
+      coverage = in_test do
+        status = wait_for(fork do
+          Thread.new do
+            load(fixture("leaf"))
+            Kernel.exit!(true)
+          end
+          sleep
+        end)
+        expect(status.exitstatus).to eq(0)
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    it "credits the test with the lines of a started child that ends with exit!" do
+      coverage = in_test do
+        expect(unbundled { system(ruby, "-e", "load #{fixture("leaf").dump}; exit!(true)") }).to be(true)
+      end
+
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    it "ends a forked child of a process that collects no coverage with the status it gives" do
+      line_coverage_class.stop_collector
+
+      expect(wait_for(fork { exit!(5) }).exitstatus).to eq(5)
+      expect(wait_for(fork { exit! }).exitstatus).to eq(1)
+    end
+
+    it "ends the child with the status it gives, and prints nothing, when its record cannot be written" do
+      reader, writer = IO.pipe
+      coverage = in_test do
+        FileUtils.rm_rf(child_processes.directory)
+        status = wait_for(fork do
+          reader.close
+          $stderr.reopen(writer)
+          load(fixture("leaf"))
+          exit!(4)
+        end)
+        writer.close
+        expect(status.exitstatus).to eq(4)
+      end
+
+      expect(reader.read).to eq("")
+      expect(coverage).not_to have_key(relative("leaf"))
+    end
+
+    # The record file is a FIFO with no reader, so opening it blocks, and only the deadline ends
+    # the child.
+    it "ends the child at the deadline with the status it gives when writing the record blocks" do
+      deadline = Datadog::CI::TestImpactAnalysis::Coverage::LineCollector::EXIT_WRITE_DEADLINE_SECONDS
+      reader, writer = IO.pipe
+      elapsed = nil
+      record = nil
+      in_test do
+        directory = child_processes.directory
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        pid = fork do
+          reader.close
+          $stderr.reopen(writer)
+          File.mkfifo(File.join(directory, "c#{described_class.context}.#{Process.pid}.lines.tmp"))
+          exit!(6)
+        end
+        status = wait_for(pid)
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+        writer.close
+        record = File.join(directory, "c#{described_class.context}.#{pid}.lines")
+        expect(status.exitstatus).to eq(6)
+      end
+
+      expect(reader.read).to eq("")
+      expect(File.exist?(record)).to be(false)
+      expect(elapsed).to be >= deadline
+      expect(elapsed).to be < deadline + 5
+    end
+
+    it "prints no warning when a started child with warnings on replaces exit!" do
+      output = nil
+      coverage = in_test do
+        output = unbundled { Open3.capture3(ruby, "-w", "-e", "load #{fixture("leaf").dump}; exit!(true)") }
+      end
+
+      _stdout, stderr, status = output
+      expect(stderr).to eq("")
+      expect(status.exitstatus).to eq(0)
+      expect(coverage).to include(relative("leaf") => leaf_lines)
+    end
+
+    def exit_bang_methods
+      [Kernel.instance_method(:exit!), Kernel.method(:exit!).unbind, Process.method(:exit!).unbind]
+    end
+
+    def exit_bang_shape
+      [
+        exit_bang_methods.map { |method| method.owner.inspect },
+        Kernel.private_method_defined?(:exit!),
+        Process.private_method_defined?(:exit!),
+        Object.new.respond_to?(:exit!),
+        Kernel.respond_to?(:exit!),
+        Process.respond_to?(:exit!)
+      ]
+    end
+
+    def exit_bang_ancestors
+      [Object, Kernel, Kernel.singleton_class, Process, Process.singleton_class].map(&:ancestors)
+    end
+
+    it "replaces exit! in a child that registers a record, with the same owners, visibility and ancestors" do
+      methods = exit_bang_methods
+      ancestors = exit_bang_ancestors
+      reader, writer = IO.pipe
+      in_test do
+        status = wait_for(fork do
+          reader.close
+          writer.write(Marshal.dump([
+            exit_bang_methods.zip(methods).map { |now, before| now == before },
+            exit_bang_ancestors == ancestors,
+            exit_bang_shape
+          ]))
+          writer.close
+          exit!(0)
+        end)
+        writer.close
+        expect(status.exitstatus).to eq(0)
+      end
+
+      expect(Marshal.load(reader.read)).to eq([[false, false, false], true, exit_bang_shape])
+      expect(exit_bang_shape).to eq([["Kernel", "#<Class:Kernel>", "#<Class:Process>"], true, false, false, true, true])
+    end
+
+    it "leaves exit! of the test process as it is" do
+      methods = exit_bang_methods
+      in_test { wait_for(fork { exit!(0) }) }
+
+      expect(exit_bang_methods).to eq(methods)
+    end
+
+    # A child forked once the collector stops keeps Ruby's own exit!, which is the reference.
+    it "converts the argument of exit! as Ruby's own exit! does, with the same errors" do
+      converts = Struct.new(:to_int).new(4)
+      arguments = [[], [true], [false], [0], [7], [-1], [256], [3.9], [converts], [nil], ["1"], [2**70], [1, 2]]
+      ruby_exit_bang = Kernel.instance_method(:exit!)
+      outcome = lambda do |argument_list|
+        reader, writer = IO.pipe
+        pid = fork do
+          reader.close
+          writer.sync = true
+          writer.puts((Kernel.instance_method(:exit!) == ruby_exit_bang) ? "ruby" : "replaced")
+          begin
+            exit!(*argument_list)
+          rescue => e
+            writer.puts("#{e.class}: #{e.message}")
+          end
+          writer.close
+          exit!(100)
+        end
+        writer.close
+        status = wait_for(pid)
+        kind, error = reader.read.lines(chomp: true)
+        reader.close
+        [kind, status.exitstatus, error]
+      end
+
+      replaced = nil
+      in_test { replaced = arguments.map(&outcome) }
+      line_coverage_class.stop_collector
+      ruby_own = arguments.map(&outcome)
+
+      expect(replaced.map(&:first)).to all(eq("replaced"))
+      expect(ruby_own.map(&:first)).to all(eq("ruby"))
+      expect(replaced.map { |result| result.drop(1) }).to eq(ruby_own.map { |result| result.drop(1) })
+      expect(replaced.map { |_kind, status, _error| status }).to eq([1, 0, 1, 0, 7, 255, 0, 3, 4, 100, 100, 100, 100])
+      expect(replaced.map { |_kind, _status, error| error&.split(":")&.first }.compact).to eq(%w[TypeError TypeError RangeError ArgumentError])
+    end
+  end
+
   describe "the environment of a child" do
     it "names the test's records and puts the bootstrap first in the caller's RUBYOPT" do
       output = nil

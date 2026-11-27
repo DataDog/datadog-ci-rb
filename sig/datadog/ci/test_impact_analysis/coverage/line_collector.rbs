@@ -12,6 +12,9 @@ module Datadog
 
           CONTEXT_KEY: Symbol
 
+          # How long exit! may spend writing the records registered with write_record_at_exit.
+          EXIT_WRITE_DEADLINE_SECONDS: Integer
+
           def self.supported?: () -> bool
 
           def self.yjit_supported?: () -> bool
@@ -30,6 +33,8 @@ module Datadog
 
           def self.shared: () -> Hash[String, bitmaps]
 
+          # Also replaces Kernel#exit!, Kernel.exit! and Process.exit! with an exit! that writes
+          # the records first.
           def self.write_record_at_exit: (String prefix, Integer serial, bool shared_since_now) -> bool
 
           def self.stats: () -> Hash[Symbol, untyped]

@@ -17,6 +17,8 @@ module Datadog
         # "<prefix>.<pid>.lines" at exit; its own children inherit the environment and do
         # the same. A forked child keeps the context of the thread that forked and writes
         # the same record at exit, with the lines it ran outside contexts since the fork.
+        # Both kinds of child also write their record when they end with exit!, which skips
+        # the exit handlers.
         #
         # RubyGems loads Bundler while it starts when BUNDLER_SETUP is set, as it is for
         # `bundle exec` and for the processes that such a process starts, and Bundler.setup

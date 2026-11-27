@@ -84,12 +84,15 @@ void Init_dd_ci_line_coverage(void) {
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 /* Generated into insns_info.inc, which the private headers do not ship; exported by
@@ -281,6 +284,7 @@ static struct {
   size_t exit_record_count;
   size_t exit_record_capacity;
   bool exit_hook_registered;
+  bool exit_bang_hooked;
 
   /* the GC count after the last event flag sync, and whether a GC was still running then */
   size_t gc_count_at_flag_sync;
@@ -2186,18 +2190,111 @@ static void write_exit_record(const exit_record_t *record) {
  * ensure clause of a thread that the exit kills runs. The writer reads the collector's own
  * memory and the bytes of the file paths, which Ruby frees after the hooks, and allocates
  * with malloc only. The last record registered is written first, as at_exit blocks run. A
- * process that ends with exit! or SIGKILL, or that crashes, writes none. */
+ * process that ends with exit! writes them before it ends (see exit_bang); one that is
+ * killed with SIGKILL, or that crashes, writes none. */
 static void write_exit_records(rb_vm_t *vm) {
   for (size_t i = st.exit_record_count; i > 0; i--) write_exit_record(&st.exit_records[i - 1]);
 }
 
+/* ---- exit! ------------------------------------------------------------------ */
+
+/* How long exit! may spend writing the records before the process ends without them. Writing a
+ * record took at most 0.4 s on a machine with six runnable threads per CPU, and 20 ms for a
+ * record of 30,000 files. */
+#define EXIT_WRITE_DEADLINE_SECONDS 5
+
+static int exit_bang_status;
+static struct timespec exit_bang_deadline;
+
+/* Ends the process at the deadline with the status exit! was given. It touches nothing of
+ * Ruby's, so it ends the process even while the writing thread holds the GVL. */
+static void *exit_bang_watchdog(void *unused) {
+  while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &exit_bang_deadline, NULL) == EINTR) {
+  }
+  _exit(exit_bang_status);
+  return NULL;
+}
+
+/* The status exit! ends the process with, converted as Ruby converts it (exit_status_code in
+ * process.c), with the same errors. */
+static int exit_bang_status_of(VALUE argument) {
+  if (argument == Qtrue) return EXIT_SUCCESS;
+  if (argument == Qfalse) return EXIT_FAILURE;
+  int status = NUM2INT(argument);
+#if EXIT_SUCCESS != 0
+  if (status == 0) status = EXIT_SUCCESS;
+#endif
+  return status;
+}
+
+/* Writes the registered records now, as the VM's exit hook would, unless no watchdog can
+ * guard the writes: a blocked write must not keep the process from ending. */
+static void write_exit_records_before_exit(int status) {
+  struct timespec now;
+  if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) return;
+  exit_bang_status = status;
+  exit_bang_deadline = now;
+  exit_bang_deadline.tv_sec += EXIT_WRITE_DEADLINE_SECONDS;
+
+  /* No signal reaches the watchdog, so the process's handlers never run on it. */
+  sigset_t blocked, previous;
+  sigfillset(&blocked);
+  if (pthread_sigmask(SIG_SETMASK, &blocked, &previous) != 0) return;
+  pthread_t watchdog;
+  int created = pthread_create(&watchdog, NULL, exit_bang_watchdog, NULL);
+  pthread_sigmask(SIG_SETMASK, &previous, NULL);
+  if (created != 0) return;
+  pthread_detach(watchdog);
+
+  size_t count = st.exit_record_count;
+  st.exit_record_count = 0; /* the VM's exit hook does not write them again */
+  for (size_t i = count; i > 0; i--) write_exit_record(&st.exit_records[i - 1]);
+}
+
+/* exit! as Ruby defines it (rb_f_exit_bang in process.c), except that it writes the registered
+ * records first: exit! ends the process with _exit, which skips the VM's exit hooks. The
+ * contexts close as at exit, without touching the VM, and the few instructions until _exit
+ * record nothing. */
+static VALUE exit_bang(int argc, VALUE *argv, VALUE self) {
+  int status = EXIT_FAILURE;
+  if (rb_check_arity(argc, 0, 1) == 1) status = exit_bang_status_of(argv[0]);
+  if (st.exit_record_count > 0) write_exit_records_before_exit(status);
+  _exit(status);
+}
+
+static VALUE define_exit_bang(VALUE unused) {
+  rb_define_private_method(rb_mKernel, "exit!", exit_bang, -1);
+  rb_define_singleton_method(rb_mKernel, "exit!", exit_bang, -1);
+  rb_define_singleton_method(rb_mProcess, "exit!", exit_bang, -1);
+  return Qnil;
+}
+
+/* Replaces exit! where Ruby defines it, with the same visibility: Kernel#exit!, which is
+ * private, Kernel.exit! and Process.exit!. Prepending to Kernel instead would move Kernel's
+ * methods to an origin class, and Ruby 3.3 and 3.4 abort when that happens before YJIT looks
+ * them up at boot, as it does when RubyGems loads the bootstrap. Only a process that
+ * registers a record replaces them: a forked or started child of a test. Defining a method
+ * calls the module's method_added hooks, so any error they raise is dropped. */
+static void hook_exit_bang(void) {
+  VALUE verbose = ruby_verbose;
+  ruby_verbose = Qnil; /* no "method redefined" warning */
+  int state = 0;
+  rb_protect(define_exit_bang, Qnil, &state);
+  ruby_verbose = verbose;
+  if (state) rb_set_errinfo(Qnil);
+}
+
 /* Registers the record of a context, written to "<prefix>.<pid>.lines" when the process
- * exits. With shared_since_now, the record holds only the lines outside contexts added from
- * now on. Returns false when nothing was registered. */
+ * exits, or ends with exit!. With shared_since_now, the record holds only the lines outside
+ * contexts added from now on. Returns false when nothing was registered. */
 static VALUE line_collector_write_record_at_exit(VALUE self, VALUE prefix, VALUE serial, VALUE shared_since_now) {
   if (!RB_TYPE_P(prefix, T_STRING) || !FIXNUM_P(serial)) return Qfalse;
   size_t prefix_length = (size_t)RSTRING_LEN(prefix);
   if (memchr(RSTRING_PTR(prefix), 0, prefix_length)) return Qfalse;
+  if (!st.exit_bang_hooked) {
+    hook_exit_bang();
+    st.exit_bang_hooked = true;
+  }
   size_t capacity = st.exit_record_capacity;
   if (!grow((void **)&st.exit_records, &capacity, st.exit_record_count + 1, sizeof(exit_record_t))) return Qfalse;
   st.exit_record_capacity = capacity;
@@ -2428,6 +2525,7 @@ void Init_dd_ci_line_coverage(void) {
   }
 
   rb_define_const(mLineCollector, "CONTEXT_KEY", st.context_key);
+  rb_define_const(mLineCollector, "EXIT_WRITE_DEADLINE_SECONDS", INT2FIX(EXIT_WRITE_DEADLINE_SECONDS));
   rb_define_singleton_method(mLineCollector, "supported?", supported_p, 0);
   rb_define_singleton_method(mLineCollector, "yjit_supported?", yjit_supported_p, 0);
   rb_define_singleton_method(mLineCollector, "start", line_collector_start, 2);

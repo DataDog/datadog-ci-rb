@@ -3,7 +3,7 @@
 # Loaded through RUBYOPT into the processes that a test starts (see ChildProcesses), so
 # that the lines they run count for that test. It loads only the native line collector,
 # opens one context for the whole process and has the collector write the context's lines
-# at exit, after the process's exit handlers.
+# at exit, after the process's exit handlers, or in exit!, which skips them.
 #
 # The whole process belongs to that test, so the record holds the context's lines and
 # every line the collector keeps outside contexts, such as initialisers (see
@@ -11,8 +11,9 @@
 #
 # It runs in any Ruby such a process uses, so it keeps to syntax that every Ruby parses,
 # defines no constant, method or global, and removes the Datadog modules that loading the
-# collector created, unless datadog-ci loads after it from RUBYOPT. Any failure leaves the
-# process uncovered and otherwise unchanged.
+# collector created, unless datadog-ci loads after it from RUBYOPT. Registering the record
+# makes the collector replace exit! (see LineCollector.write_record_at_exit). Any failure
+# leaves the process uncovered and otherwise unchanged.
 begin
   # The same name as ChildProcesses::ENV_CONTEXT, which this file cannot load.
   dd_ci_line_coverage_prefix = ENV["DD_TEST_OPTIMIZATION_TIA_LINE_COVERAGE_CHILD"]
