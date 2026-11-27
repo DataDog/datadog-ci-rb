@@ -1,0 +1,4 @@
+def child_processes_first_window
+  :first_window
+end
+child_processes_first_window

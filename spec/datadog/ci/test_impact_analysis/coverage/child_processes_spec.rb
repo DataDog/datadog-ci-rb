@@ -210,6 +210,59 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::ChildProcesses do
     end
   end
 
+  # A forked child keeps the context open at the fork. Its record holds the lines of that
+  # context, those of the test before the fork included, and the lines that the child runs
+  # outside any context after the fork. Every fixture here has the lines of leaf.rb.
+  describe "the record of a child forked in the second test of a process" do
+    def lines_by_path(bitmaps)
+      bitmaps.transform_values { |bitmap| line_files.lines(bitmap) }
+    end
+
+    # Runs a first test, code outside any test, then a second test whose child runs leaf.rb
+    # in the test's context and other_leaf.rb outside any context. Returns the child's
+    # records and the second test's own lines: the records are taken first, so the test's
+    # lines leave out the child's.
+    def fork_in_second_test
+      in_test(1) { load fixture("first_window") }
+      load fixture("between_windows")
+      line_coverage.start_test(2)
+      serial = described_class.context
+      load fixture("second_window")
+      pid = fork do
+        load fixture("leaf")
+        Fiber.new(storage: {}) { load fixture("other_leaf") }.resume
+      end
+      Process.wait(pid)
+      records = child_processes.records(serial).map { |record| lines_by_path(record) }
+      [records, coverage_of(2)]
+    end
+
+    it "belongs to the second test alone, and holds nothing of the first" do
+      records, = fork_in_second_test
+
+      expect(records.size).to eq(1)
+      expect(records.first).to include(relative("leaf") => leaf_lines)
+      expect(records.first).not_to have_key(relative("first_window"))
+      expect(child_processes.remaining_records).to be_empty
+    end
+
+    it "holds the lines that the child runs outside any context from the fork on, and none from before" do
+      records, = fork_in_second_test
+
+      expect(records.first).to include(relative("other_leaf") => leaf_lines)
+      expect(records.first).not_to have_key(relative("between_windows"))
+      expect(line_coverage.shared.fetch("unowned")).to have_key(relative("between_windows"))
+    end
+
+    it "holds the lines that the test ran before the fork, which the test's own lines hold too" do
+      records, test_coverage = fork_in_second_test
+
+      expect(records.first).to include(relative("second_window") => leaf_lines)
+      expect(test_coverage).to include(relative("second_window") => leaf_lines)
+      expect(test_coverage).not_to have_key(relative("leaf"))
+    end
+  end
+
   describe "the environment of a child" do
     it "names the test's records and puts the bootstrap first in the caller's RUBYOPT" do
       output = nil
