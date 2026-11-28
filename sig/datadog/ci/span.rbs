@@ -92,6 +92,8 @@ module Datadog
 
       private
 
+      def set_error: (untyped exception) -> void
+
       def shared_tags: () -> Hash[String, String]
 
       def test_tracing: () -> Datadog::CI::TestTracing::Component

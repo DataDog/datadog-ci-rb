@@ -163,6 +163,47 @@ RSpec.describe Datadog::CI::Span do
         span.failed!(exception: "error")
       end
     end
+
+    context "when the exception is an Exception" do
+      let(:library) { Datadog::CI::Utils::ErrorStack::LIBRARY_DIRECTORIES.first }
+      let(:exception) do
+        Errno::ENOENT.new("missing.json").tap do |error|
+          error.set_backtrace([
+            "#{library}contrib/file_access/instrumentation.rb:63:in `read'",
+            "#{library}contrib/file_access/instrumentation.rb:63:in `read'",
+            "/repo/test/fixture_test.rb:10:in `test_read'"
+          ])
+        end
+      end
+
+      it "records the stack without the datadog-ci frames on top" do
+        allow(tracer_span).to receive(:status=)
+        allow(tracer_span).to receive(:set_tag)
+        expect(tracer_span).to receive(:set_error).with([
+          Errno::ENOENT,
+          "No such file or directory - missing.json",
+          "/repo/test/fixture_test.rb:10:in `read': No such file or directory - missing.json (Errno::ENOENT)\n" \
+          "\tfrom /repo/test/fixture_test.rb:10:in `test_read'\n"
+        ])
+
+        span.failed!(exception: exception)
+      end
+
+      it "records the exception as the tracer does when formatting its stack fails" do
+        broken_class = Class.new(StandardError) do
+          def backtrace
+            :not_a_backtrace
+          end
+        end
+        broken = broken_class.new("broken")
+        allow(tracer_span).to receive(:status=)
+        allow(tracer_span).to receive(:set_tag)
+        expect(Datadog.logger).to receive(:warn).with(/Failed to format the stack of .*: NoMethodError: /)
+        expect(tracer_span).to receive(:set_error).with(broken)
+
+        span.failed!(exception: broken)
+      end
+    end
   end
 
   describe "#skipped!" do
