@@ -39,4 +39,16 @@ RSpec.describe "Cucumber file dependencies" do
   end
 
   it_behaves_like "file dependencies from the framework runner"
+
+  context "with per-test line coverage" do
+    include_context "framework line coverage"
+
+    it "names the feature file, without lines, in the record of the scenario" do
+      run_framework
+      feature = Datadog::CI::Git::LocalRepository.relative_to_root(File.join(fixture_directory, "readers.feature"))
+
+      reader = file_events.find { |event| fixture_dependencies(event).any? }
+      expect(reader.fetch("files")).to include({"filename" => feature})
+    end
+  end
 end

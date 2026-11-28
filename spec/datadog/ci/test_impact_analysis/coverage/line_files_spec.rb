@@ -6,7 +6,7 @@ require "stringio"
 require_relative "../../../../../lib/datadog/ci/test_impact_analysis/coverage/line_files"
 
 RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineFiles do
-  subject(:files) { described_class.from_bitmaps(bitmaps, custom_impacted_files) }
+  subject(:files) { described_class.from_bitmaps(bitmaps, files_without_lines) }
 
   # Lines 1 and 9 of lib/a.rb, line 3 of lib/b.rb.
   let(:bitmaps) do
@@ -15,7 +15,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineFiles do
       "lib/b.rb" => [0b0000_1000].pack("C*")
     }
   end
-  let(:custom_impacted_files) { [] }
+  let(:files_without_lines) { [] }
 
   def unpacked
     packer = MessagePack::Packer.new
@@ -36,7 +36,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineFiles do
 
   context "with custom impacted files" do
     let(:root) { Datadog::CI::Git::LocalRepository.root }
-    let(:custom_impacted_files) { ["docs/a.md", File.join(root, "docs/b.md"), "lib/a.rb", ""] }
+    let(:files_without_lines) { ["docs/a.md", File.join(root, "docs/b.md"), "lib/a.rb", ""] }
 
     it "adds them without lines, repository-relative, once per file" do
       expect(unpacked.drop(2)).to eq([{"filename" => "docs/a.md"}, {"filename" => "docs/b.md"}])
@@ -45,12 +45,34 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineFiles do
     end
   end
 
+  context "when a file without lines comes more than once" do
+    let(:root) { Datadog::CI::Git::LocalRepository.root }
+    # A test's source file that the test also opened, once with its absolute path, and a file it opened twice
+    let(:files_without_lines) { ["features/a.feature", File.join(root, "features/a.feature"), "docs/a.md", "docs/a.md"] }
+
+    it "names it once" do
+      expect(unpacked.drop(2)).to eq([{"filename" => "features/a.feature"}, {"filename" => "docs/a.md"}])
+      expect(files.size).to eq(4)
+    end
+  end
+
+  context "when a file without lines has a binary name" do
+    let(:files_without_lines) { ["test/builder/line.ru".b, "test/\xFF.bin".b] }
+
+    it "writes a name with UTF-8 bytes as a string, and other names as binary" do
+      names = unpacked.drop(2).map { |entry| entry.fetch("filename") }
+
+      expect(names).to eq(["test/builder/line.ru", "test/\xFF.bin".b])
+      expect(names.map(&:encoding)).to eq([Encoding::UTF_8, Encoding::BINARY])
+    end
+  end
+
   context "when a test replaced File, as FakeFS does" do
     let(:root) { Datadog::CI::Git::LocalRepository.root }
-    let(:custom_impacted_files) { ["#{root}/docs/b.md"] }
+    let(:files_without_lines) { ["#{root}/docs/b.md"] }
 
     before do
-      custom_impacted_files
+      files_without_lines
       stub_const("File", Class.new(StringIO))
     end
 
@@ -60,7 +82,7 @@ RSpec.describe Datadog::CI::TestImpactAnalysis::Coverage::LineFiles do
   end
 
   describe "#inspect_coverage" do
-    let(:custom_impacted_files) { ["docs/a.md"] }
+    let(:files_without_lines) { ["docs/a.md"] }
 
     it "decodes the line numbers" do
       expect(files.inspect_coverage).to eq("lib/a.rb" => [1, 9], "lib/b.rb" => [3], "docs/a.md" => true)
