@@ -39,6 +39,18 @@ RSpec.shared_context "framework file dependencies" do
   end
 end
 
+RSpec.shared_context "framework line coverage" do
+  let(:line_coverage_enabled) { true }
+  let(:line_coverage) { Datadog::CI::TestImpactAnalysis::Coverage::LineCoverage }
+
+  before do
+    require "datadog_ci_native.#{RUBY_VERSION}_#{RUBY_PLATFORM}"
+    skip "per-test line coverage is not supported on this Ruby" unless line_coverage.supported?
+  end
+
+  after { line_coverage.stop_collector }
+end
+
 RSpec.shared_examples "file dependencies from the framework runner" do
   it "attributes all three hooks only to the test that reads the fixtures" do
     run_framework
@@ -72,6 +84,26 @@ RSpec.shared_examples "file dependencies from the framework runner" do
       expect(file_events.size).to eq(1)
       expect(fixture_dependencies(file_events.first).size).to eq(3)
       expect(file_events.first).not_to have_key("span_id")
+    end
+  end
+
+  context "with per-test line coverage" do
+    include_context "framework line coverage"
+
+    it "names the fixtures, without lines, only in the record of the test that reads them" do
+      run_framework
+      expect(test_spans.size).to eq(2)
+      expect(test_spans).to all have_pass_status
+
+      readers = file_events.select { |event| fixture_dependencies(event).any? }
+      expect(readers.size).to eq(1)
+      expect(fixture_dependencies(readers.first)).to match_array(
+        fixture_paths.map { |path| Datadog::CI::Git::LocalRepository.relative_to_root(path) }
+      )
+      expect(test_spans.map(&:id)).to include(readers.first.fetch("span_id"))
+
+      fixture_entries = readers.first.fetch("files").select { |file| fixture_dependencies(readers.first).include?(file["filename"]) }
+      expect(fixture_entries).to all(satisfy { |file| !file.key?("bitmap") })
     end
   end
 end

@@ -7,6 +7,8 @@ module Datadog
 
         FILE_STORAGE_KEY: String
 
+        NO_OPENED_FILES: Hash[String, bool]
+
         @enabled: bool
         @test_skipping_enabled: bool
         @code_coverage_enabled: bool
@@ -34,6 +36,8 @@ module Datadog
         # Context coverage: stores coverage collected during before(:context)/before(:all) hooks
         @context_coverages: Hash[String, Hash[String, untyped]]
         @context_coverages_mutex: Thread::Mutex
+        @opened_files_until_close: Hash[Integer, Hash[String, bool]]
+        @opened_files_until_close_mutex: Thread::Mutex
 
         # Currently active context ID for context coverage collection
         @current_context_id: String?
@@ -138,7 +142,11 @@ module Datadog
 
         def configure_line_coverage: (Datadog::CI::TestSession test_session) -> void
 
-        def write_line_coverage_event: (Datadog::CI::Test test, Coverage::LineCoverage line_coverage) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
+        def start_opened_files_collector: () -> void
+
+        def keep_opened_files_until_close: (Datadog::CI::Test test, Hash[String, bool] opened_files) -> void
+
+        def write_line_coverage_event: (Datadog::CI::Test test, Coverage::LineCoverage line_coverage, Hash[String, bool] opened_files) -> Datadog::CI::TestImpactAnalysis::Coverage::Event?
 
         def write_shared_line_coverage: () -> void
 

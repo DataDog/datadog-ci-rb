@@ -9,9 +9,9 @@ module Datadog
 
           @bitmap_count: Integer
           @packed_bitmaps: String
-          @custom_impacted_files: Array[String]
+          @files_without_lines: Array[String]
 
-          def self.from_bitmaps: (LineCollector::bitmaps bitmaps, ?Array[String] custom_impacted_files) -> LineFiles
+          def self.from_bitmaps: (LineCollector::bitmaps bitmaps, ?Array[String] files_without_lines) -> LineFiles
 
           def self.pack: (LineCollector::bitmaps bitmaps) -> LineCollector::packed_bitmaps
 
@@ -21,7 +21,7 @@ module Datadog
 
           def self.union: (String? left, String right) -> String
 
-          def initialize: (Integer bitmap_count, String packed_bitmaps, ?Array[String] custom_impacted_files) -> void
+          def initialize: (Integer bitmap_count, String packed_bitmaps, ?Array[String] files_without_lines) -> void
 
           def each: () { (String file) -> void } -> void
 
@@ -36,6 +36,8 @@ module Datadog
           private
 
           def bitmaps: () -> LineCollector::bitmaps
+
+          def utf8_path: (String path) -> String
         end
       end
     end
