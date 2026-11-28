@@ -573,15 +573,29 @@ static bool repository_path_p(const char *path, size_t length) {
   return true;
 }
 
+/* Ruby stores the realpath it computed for a required or loaded file, and for the main
+ * script, in the file's iseqs. Evals given a file name store none. */
+static const char *stored_realpath(VALUE stored) {
+  if (!RB_TYPE_P(stored, T_STRING)) return NULL;
+  const char *pointer = RSTRING_PTR(stored);
+  long length = RSTRING_LEN(stored);
+  if (length < 1 || pointer[0] != '/' || memchr(pointer, 0, length) != NULL) return NULL;
+  return StringValueCStr(stored);
+}
+
 /* The accuracy reference's file rule: a regular `.rb` file whose realpath is a repository
- * path. */
-static long classify_path_uncached(VALUE path) {
+ * path. The realpath is the one Ruby stored in the file's iseq when there is one, which
+ * saves a realpath(3) call per file. */
+static long classify_path_uncached(VALUE path, VALUE stored) {
   const char *raw = RSTRING_PTR(path);
   long raw_length = RSTRING_LEN(path);
   if (memchr(raw, 0, raw_length) != NULL) return -1;
   if (!has_suffix(raw, raw_length, ".rb")) return -1;
 
-  char *real = realpath(StringValueCStr(path), NULL);
+  /* A copy, because what follows allocates, and a compacting collection may move the
+   * string that holds the stored realpath. */
+  const char *from_iseq = stored_realpath(stored);
+  char *real = from_iseq ? strdup(from_iseq) : realpath(StringValueCStr(path), NULL);
   if (!real) return -1;
 
   long result = -1;
@@ -611,13 +625,19 @@ done:
   return result;
 }
 
-static long classify_path(VALUE path) {
+static long classify_path_with_stored(VALUE path, VALUE stored) {
   if (!RB_TYPE_P(path, T_STRING)) return -1;
   VALUE cached = rb_hash_lookup2(st.path_cache, path, Qundef);
   if (cached != Qundef) return cached == Qfalse ? -1 : FIX2LONG(cached);
-  long file = classify_path_uncached(path);
+  long file = classify_path_uncached(path, stored);
   rb_hash_aset(st.path_cache, rb_obj_freeze(rb_str_dup(path)), file < 0 ? Qfalse : LONG2FIX(file));
   return file;
+}
+
+static long classify_path(VALUE path) { return classify_path_with_stored(path, Qnil); }
+
+static long classify_iseq_path(const rb_iseq_t *iseq) {
+  return classify_path_with_stored(rb_iseq_path(iseq), rb_iseq_realpath(iseq));
 }
 
 /* Initialiser code is a file's top-level iseq and the class and module bodies nested in
@@ -962,7 +982,7 @@ static void arm_tree(const rb_iseq_t *top) {
   while (pending.count > 0) {
     pending_iseq_t next = pending.items[--pending.count];
     if (map_find(next.iseq)) continue;
-    long file = classify_path(rb_iseq_path(next.iseq));
+    long file = classify_iseq_path(next.iseq);
     if (file < 0) continue; /* nested code shares its parent's file */
     arm_iseq(next.iseq, file, next.initialiser, &pending);
   }
@@ -1305,13 +1325,13 @@ static void on_script_compiled(VALUE data, const rb_trace_arg_t *trace_arg) {
    * compact, which would move the iseqs that arm_tree holds as raw pointers. Classifying
    * the path first, with the GC on, leaves arm_tree nothing to allocate: nested iseqs
    * share the top iseq's path. */
-  classify_path(rb_iseq_path(iseq));
+  classify_iseq_path(iseq);
   VALUE gc_was_disabled = gc_disable_no_rest();
   arm_tree(iseq);
   if (gc_was_disabled == Qfalse) rb_gc_enable();
   /* The file loads now, so its initialiser lines trap. */
   if (initialiser_root_p(iseq)) {
-    long file = classify_path(rb_iseq_path(iseq));
+    long file = classify_iseq_path(iseq);
     if (file >= 0) st.files[file].initialisers_known = true;
   }
 }
@@ -1396,7 +1416,7 @@ static void arm_loaded_code(void) {
   size_t repository_count = 0;
   for (size_t i = 0; i < list.count; i++) {
     const rb_iseq_t *iseq = list.items[i];
-    if (classify_path(rb_iseq_path(iseq)) < 0) continue;
+    if (classify_iseq_path(iseq) < 0) continue;
     list.items[repository_count++] = iseq;
     const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
     if (!body || body->iseq_size == 0 || !ISEQ_EXECUTABLE_P(iseq)) continue;
