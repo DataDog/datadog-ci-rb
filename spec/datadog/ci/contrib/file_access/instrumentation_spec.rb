@@ -662,5 +662,46 @@ RSpec.describe Datadog::CI::Contrib::FileAccess::Integration do
         expect(events.last.inspect_coverage).to have_key(path)
       end
     end
+
+    context "when a test fails inside a file call" do
+      let(:missing) { File.join(directory, "missing.json") }
+      let(:wrapper_file) { "contrib/file_access/instrumentation.rb" }
+
+      def fail_test_with(error)
+        read_in_test { |test| test.failed!(exception: error) }
+        first_test_span.get_tag("error.stack")
+      end
+
+      it "records the test's own frame on top of the stack of a failing File.read" do
+        line = __LINE__ + 2
+        error = begin
+          File.read(missing)
+        rescue Errno::ENOENT => e
+          e
+        end
+        expect(error.backtrace.first).to include(wrapper_file)
+
+        stack = fail_test_with(error)
+
+        expect(stack.lines.first).to start_with("#{__FILE__}:#{line}:in ")
+        expect(stack.lines.first).to include("missing.json (Errno::ENOENT)")
+        expect(stack).not_to include(wrapper_file)
+      end
+
+      it "records the test's own frame on top of the stack of a failing File.open" do
+        line = __LINE__ + 2
+        error = begin
+          File.open(missing)
+        rescue Errno::ENOENT => e
+          e
+        end
+        expect(error.backtrace.first(2).join).to include(wrapper_file)
+
+        stack = fail_test_with(error)
+
+        expect(stack.lines.first).to start_with("#{__FILE__}:#{line}:in ")
+        expect(stack).not_to include(wrapper_file)
+      end
+    end
   end
 end

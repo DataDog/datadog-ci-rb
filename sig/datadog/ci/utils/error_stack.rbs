@@ -1,0 +1,23 @@
+module Datadog
+  module CI
+    module Utils
+      module ErrorStack
+        LIBRARY_DIRECTORIES: Array[String]
+
+        FRAME_LOCATION: Regexp
+
+        FRAME_LABEL: Regexp
+
+        def self.full_message: (Exception exception) -> String
+
+        def self.without_library_frames: (Array[String] backtrace) -> Array[String]
+
+        def self.library_frame?: (String frame) -> bool
+
+        def self.relocate: (String frame, String caller_frame) -> String?
+
+        def self.append: (Exception exception, String stack) -> void
+      end
+    end
+  end
+end

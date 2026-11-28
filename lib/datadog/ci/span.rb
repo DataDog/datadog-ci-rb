@@ -6,6 +6,7 @@ require "datadog/core/environment/platform"
 
 require_relative "ext/test"
 require_relative "ext/app_types"
+require_relative "utils/error_stack"
 require_relative "utils/test_run"
 require_relative "utils/protected_tags"
 require_relative "ext/git"
@@ -102,7 +103,7 @@ module Datadog
       def failed!(exception: nil)
         tracer_span.status = 1
         tracer_span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::FAIL)
-        tracer_span.set_error(exception) unless exception.nil?
+        set_error(exception) unless exception.nil?
       end
 
       # Sets the status of the span to "skip".
@@ -111,7 +112,7 @@ module Datadog
       # @return [void]
       def skipped!(exception: nil, reason: nil)
         tracer_span.set_tag(Ext::Test::TAG_STATUS, Ext::Test::Status::SKIP)
-        tracer_span.set_error(exception) unless exception.nil?
+        set_error(exception) unless exception.nil?
         tracer_span.set_tag(Ext::Test::TAG_SKIP_REASON, reason) unless reason.nil?
       end
 
@@ -296,6 +297,18 @@ module Datadog
       end
 
       private
+
+      def set_error(exception)
+        unless exception.is_a?(Exception)
+          tracer_span.set_error(exception)
+          return
+        end
+
+        tracer_span.set_error([exception.class, exception.message, Utils::ErrorStack.full_message(exception)])
+      rescue => e
+        Datadog.logger.warn("Failed to format the stack of #{exception.class}: #{e.class}: #{e.message}")
+        tracer_span.set_error(exception)
+      end
 
       def shared_tags
         return EMPTY_TAGS unless Ext::AppTypes::CI_SPAN_TYPES.include?(type)
